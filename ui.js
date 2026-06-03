@@ -42,6 +42,11 @@ const GameUI = (function() {
   let _gachaIndex = 0;            // ガチャカルーセルの現在位置
   let _dojoGenres = [];       // 空=その教科の全ジャンル
   let _dojoType = '';         // ''=両方 / 'typing' / 'choice'
+  // 出題範囲フルウィンドウ（道場・難易度複数選択）の確定済み状態
+  let _rangeDiffs = ['junior'];  // 選択中の難易度（複数・最上位ほど出やすい）
+  let _rangeGenres = [];         // 選択中ジャンル（教科混在可・空=全ジャンル）
+  let _rangeType = '';           // ''=両方 / 'typing' / 'choice'
+  let _rangeGrades = [];         // 選択中の学年(1/2/3)・空=全学年
   // レアリティ文字色（§12 openGachaRateModal で使用）
   const RARITY_TEXT_COLORS = {
     'Common':    'text-slate-300',
@@ -68,6 +73,7 @@ const GameUI = (function() {
         _nameEl.className = 'font-black text-white text-sm';
         _nameEl.textContent = GameEngine.player.name;
       }
+      renderPlayerGradeLabel();
       const bpEl = document.getElementById('menu-battle-power');
       if (bpEl) bpEl.textContent = power.toLocaleString();
       const spEl = document.getElementById('menu-stat-pts');
@@ -577,30 +583,15 @@ const GameUI = (function() {
       { key: 'senior',  label: '発展', sub: 'むずかしい', color: 'bg-indigo-800 hover:bg-indigo-700', locked_desc: '中級ボス3体全員撃破' },
       { key: 'supreme', label: '受験', sub: '最難関',     color: 'bg-purple-800 hover:bg-purple-700', locked_desc: '上級ボス3体全員撃破' }
     ];
-    const _dojoRewardMult = { junior:1, mid:3, senior:8, supreme:25 };
+    // 敵HPの難易度倍率（engine.js spawnNextDojoEnemy と一致）／ゴールドの難易度倍率は緩やか（engine.js 報酬計算と一致）。
+    const _dojoHpMult   = { junior:1, mid:3,   senior:8, supreme:25 };
+    const _dojoGoldMult = { junior:1, mid:1.5, senior:2, supreme:3 };
+    // 敵レベル→報酬カーブ（engine.js と一致：+20%/Lv）
+    const _dojoLvScale  = (lv) => 1.0 + (Math.max(1, lv) - 1) * 0.2;
 
     function openDojoPopup() {
-      const unlocks = GameEngine.getDojoUnlockStatus();
-      const grid = document.getElementById('dojo-popup-difficulty-grid');
-      grid.innerHTML = '';
-      _dojoList.forEach(d => {
-        const isUnlocked = unlocks[d.key];
-        const btn = document.createElement('button');
-        btn.id = `dojo-popup-btn-${d.key}`;
-        if (isUnlocked) {
-          btn.className = `${d.color} text-white font-bold py-2.5 rounded-xl text-xs transition-all flex flex-col items-center gap-0.5 border-2 border-transparent`;
-          btn.onclick = () => selectDojoPopupDifficulty(d.key);
-          btn.innerHTML = `<span class="text-sm">${d.label}</span><span class="text-[9px] opacity-80">${d.sub}</span>`;
-        } else {
-          btn.className = 'bg-slate-800 text-slate-500 font-bold py-2.5 rounded-xl text-xs cursor-not-allowed flex flex-col items-center gap-0.5 border-2 border-slate-700/40';
-          btn.disabled = true;
-          btn.innerHTML = `<span class="text-sm">🔒 ${d.label}</span><span class="text-[8px] text-rose-400 font-normal">${d.locked_desc}</span>`;
-        }
-        grid.appendChild(btn);
-      });
-      // デフォルト選択
-      const firstUnlocked = _dojoList.find(d => unlocks[d.key]);
-      if (firstUnlocked) selectDojoPopupDifficulty(firstUnlocked.key);
+      // 難易度ロック廃止：保存済み選択をそのまま使う（空なら基礎へ）。
+      if (!_rangeDiffs.length) _rangeDiffs = ['junior'];
 
       const maxLv = GameEngine.getMaxDojoEnemyLevel();
       const slider = document.getElementById('dojo-popup-lv-slider');
@@ -609,9 +600,233 @@ const GameUI = (function() {
       document.getElementById('dojo-popup-lv-max').textContent = maxLv;
       updateDojoPopupLevel(slider.value);
 
-      renderDojoPopupFilters();
+      renderDojoRangeSummary();
 
       document.getElementById('dojo-popup').classList.remove('hidden');
+    }
+
+    // 道場popの「範囲を選ぶ」ボタンの要約表示
+    function renderDojoRangeSummary() {
+      const el = document.getElementById('dojo-range-summary');
+      if (!el) return;
+      const order = ['junior', 'mid', 'senior', 'supreme'];
+      const diffs = _rangeDiffs.slice().sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      const dLabels = GameData.DIFFICULTIES.filter(d => diffs.indexOf(d.key) >= 0).map(d => d.label).join('・');
+      const total = GameData.getQuestions({ diffs: diffs, genres: _rangeGenres.length ? _rangeGenres : null, type: _rangeType || null, grades: _rangeGrades }).length;
+      const gtxt = _rangeGenres.length ? _rangeGenres.map(k => (GameData.GENRES.find(g => g.key === k) || {}).label).join('・') : '全ジャンル';
+      const gradeTxt = _rangeGrades.length ? '・' + _rangeGrades.slice().sort().map(g => '中' + g).join('/') : '';
+      el.textContent = `${dLabels}${gradeTxt}・${gtxt}（${total}問）`;
+    }
+
+    // ── 出題範囲フルウィンドウ ── 作業用state（確定前）
+    let _rwDiffs = new Set(), _rwGenres = new Set(), _rwType = '', _rwGrades = new Set();
+    const _RANGE_SUBJ_TEXT = { chemistry:'text-teal-300', physics:'text-indigo-300', biology:'text-green-300', earth:'text-amber-300' };
+    const _RANGE_DIFF_DESC = { junior:'習いたての基本。まずはここから。', mid:'基礎の次。少しひねった問題。', senior:'発展的な内容。応用が解けたら。', supreme:'入試レベル。最難関。' };
+
+    function openRangeWindow() {
+      _rwDiffs = new Set(_rangeDiffs);
+      if (_rwDiffs.size === 0) _rwDiffs.add('junior');
+      _rwGenres = new Set(_rangeGenres);
+      _rwType = _rangeType;
+      _rwGrades = new Set(_rangeGrades);
+      renderRangeDiffTabs(); renderRangeGradeRow(); renderRangeTypeRow(); renderRangeBody(); renderRangePreview();
+      document.getElementById('range-window').classList.remove('hidden');
+    }
+
+    function closeRangeWindow(confirm) {
+      if (confirm) {
+        const order = ['junior', 'mid', 'senior', 'supreme'];
+        _rangeDiffs = [..._rwDiffs].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+        if (!_rangeDiffs.length) _rangeDiffs = ['junior'];
+        _rangeGenres = [..._rwGenres];
+        _rangeType = _rwType;
+        _rangeGrades = [..._rwGrades].sort();
+        renderDojoRangeSummary();
+        const sl = document.getElementById('dojo-popup-lv-slider');
+        if (sl) updateDojoPopupLevel(sl.value); // 報酬は最上位難易度で再計算
+      }
+      document.getElementById('range-window').classList.add('hidden');
+    }
+
+    function _rangeTopDiff() {
+      const order = ['junior', 'mid', 'senior', 'supreme'];
+      return [..._rwDiffs].sort((a, b) => order.indexOf(a) - order.indexOf(b)).pop() || 'junior';
+    }
+
+    function renderRangeDiffTabs() {
+      const box = document.getElementById('range-diff-tabs');
+      let html = '<span class="text-[10px] text-slate-400 mr-1">難易度:</span>';
+      GameData.DIFFICULTIES.forEach(d => {
+        const on = _rwDiffs.has(d.key);
+        html += `<button onclick="GameUI.toggleRangeDiff('${d.key}')" class="${on ? d.color + ' text-white ring-2 ring-white/30' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-3 rounded-lg text-xs">${on ? '✓ ' : ''}${d.label}</button>`;
+      });
+      html += `<div class="w-full text-[10px] text-slate-400 mt-1">💡 ${_RANGE_DIFF_DESC[_rangeTopDiff()] || ''}</div>`;
+      box.innerHTML = html;
+    }
+
+    // 学年フィルタ行（色は日付連動。今年度 中1=緑/中2=黄/中3=赤、毎年4/1に巡回）
+    function renderRangeGradeRow() {
+      const box = document.getElementById('range-grade-row');
+      if (!box) return;
+      let html = '<span class="text-[10px] text-slate-400 mr-1">学年:</span>';
+      const allOn = _rwGrades.size === 0;
+      html += `<button onclick="GameUI.toggleRangeGrade(0)" class="${allOn ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">すべて</button>`;
+      [1, 2, 3].forEach(g => {
+        const on = _rwGrades.has(g);
+        const cls = on ? GameData.getGradeBadgeClass(g) + ' ring-2 ring-white/40' : 'bg-slate-800 text-slate-300';
+        html += `<button onclick="GameUI.toggleRangeGrade(${g})" class="${cls} font-bold py-1 px-2.5 rounded-lg text-[10px]">中${g}</button>`;
+      });
+      box.innerHTML = html;
+    }
+
+    function renderRangeTypeRow() {
+      const box = document.getElementById('range-type-row');
+      let html = '<span class="text-[10px] text-slate-400 mr-1">形式:</span>';
+      [['', '両方'], ['typing', '⌨️ タイピング'], ['choice', '🔘 選択式']].forEach(([val, label]) => {
+        const on = _rwType === val;
+        html += `<button onclick="GameUI.setRangeType('${val}')" class="${on ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${label}</button>`;
+      });
+      box.innerHTML = html;
+    }
+
+    function renderRangeBody() {
+      const body = document.getElementById('range-body');
+      const diffs = [..._rwDiffs];
+      const grades = [..._rwGrades];
+      let html = '';
+      GameData.SUBJECTS.forEach(sub => {
+        const genres = GameData.GENRES.filter(g => g.subject === sub.key);
+        const cards = genres.map(g => {
+          const cnt = GameData.getQuestions({ diffs: diffs, genres: [g.key], type: _rwType || null, grades: grades }).length;
+          const grade = GameData.getGenreGradeRange(g.key, diffs);
+          // またぐ時は「上の学年」で色付け（要望どおり）
+          const gradeBadgeCls = GameData.getGradeBadgeClass(GameData.getGenreGradeMax(g.key, diffs));
+          const exs = (GameData.GENRE_EXAMPLES[g.key] || []).slice(0, 3).join('・');
+          if (cnt === 0) {
+            return `<div class="bg-slate-800/70 rounded-xl p-2.5 opacity-40">
+              <div class="flex items-center gap-1.5"><span class="text-base">${g.icon}</span>
+                <span class="font-bold text-slate-400 text-xs">${g.label}</span>
+                ${grade ? `<span class="text-[8px] bg-slate-700 text-slate-300 px-1 rounded">${grade}</span>` : ''}
+                <span class="ml-auto text-[8px] text-slate-500">この範囲には無し</span></div></div>`;
+          }
+          const on = _rwGenres.has(g.key);
+          return `<div onclick="GameUI.toggleRangeGenre('${g.key}')" class="rounded-xl p-2.5 cursor-pointer transition-all ${on ? 'bg-cyan-900 ring-2 ring-cyan-400' : 'bg-slate-800 hover:bg-slate-700'}">
+            <div class="flex items-center gap-1.5 mb-1"><span class="text-base">${g.icon}</span>
+              <span class="font-bold text-white text-xs">${g.label}</span>
+              <span class="text-[8px] ${gradeBadgeCls} px-1 rounded font-bold">${grade}</span>
+              <span class="ml-auto text-[10px] font-mono ${on ? 'text-cyan-200' : 'text-cyan-400'}">${cnt}問</span>
+              ${on ? '<span class="text-cyan-300 text-xs">✓</span>' : ''}</div>
+            <div class="text-[10px] text-slate-400 pl-6">例) ${exs}</div></div>`;
+        }).join('');
+        const selCnt = genres.filter(g => _rwGenres.has(g.key)).length;
+        html += `<div class="mb-4">
+          <div class="flex items-center gap-2 mb-2"><span class="text-sm">${sub.icon}</span>
+            <span class="font-black ${_RANGE_SUBJ_TEXT[sub.key] || 'text-slate-300'} text-sm">${sub.label}</span>
+            ${selCnt ? `<span class="text-[9px] bg-cyan-900 text-cyan-300 px-1.5 py-0.5 rounded">${selCnt}個選択中</span>` : ''}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${cards}</div></div>`;
+      });
+      body.innerHTML = html;
+    }
+
+    function renderRangePreview() {
+      const diffs = [..._rwDiffs];
+      const grades = [..._rwGrades];
+      const el = document.getElementById('range-preview');
+      const genres = [..._rwGenres];
+      const total = GameData.getQuestions({ diffs: diffs, genres: genres.length ? genres : null, type: _rwType || null, grades: grades }).length;
+      if (total === 0) { el.innerHTML = '<span class="text-rose-300">選んだ範囲に合う問題がありません。難易度・学年・形式を見直してください。</span>'; return; }
+      // 実際に問題があるジャンルだけ（教科またぎの明示に使う）
+      const pickList = genres.length ? genres : GameData.GENRES.map(g => g.key);
+      const have = pickList.filter(k => GameData.getQuestions({ diffs: diffs, genres: [k], type: _rwType || null, grades: grades }).length > 0);
+      const subs = [...new Set(have.map(k => (GameData.GENRES.find(g => g.key === k) || {}).subject))].filter(Boolean)
+        .map(s => (GameData.SUBJECTS.find(x => x.key === s) || {}).label);
+      const dLabels = GameData.DIFFICULTIES.filter(d => diffs.indexOf(d.key) >= 0).map(d => d.label).join('・');
+      const names = have.map(k => (GameData.GENRES.find(g => g.key === k) || {}).label).join('・');
+      const scope = genres.length ? names : '全ジャンル';
+      const cross = subs.length > 1 ? `<span class="text-yellow-300 font-bold">${subs.join('＋')}をまたいで</span> ` : '';
+      el.innerHTML = `難易度 <b>${dLabels}</b> ／ ${cross}<b>${scope}</b> から <b class="text-yellow-300">${total}問</b>`;
+    }
+
+    function toggleRangeDiff(key) {
+      if (_rwDiffs.has(key)) { if (_rwDiffs.size > 1) _rwDiffs.delete(key); } // 最低1つは残す
+      else _rwDiffs.add(key);
+      renderRangeDiffTabs(); renderRangeBody(); renderRangePreview();
+    }
+    function toggleRangeGenre(key) {
+      if (_rwGenres.has(key)) _rwGenres.delete(key); else _rwGenres.add(key);
+      renderRangeBody(); renderRangePreview();
+    }
+    function toggleRangeGrade(g) {
+      if (g === 0) { _rwGrades.clear(); }
+      else if (_rwGrades.has(g)) _rwGrades.delete(g); else _rwGrades.add(g);
+      renderRangeGradeRow(); renderRangeBody(); renderRangePreview();
+    }
+    function setRangeType(val) { _rwType = val; renderRangeTypeRow(); renderRangeBody(); renderRangePreview(); }
+
+    // ── 学年を超える範囲の警告 ──
+    // 現在の選択（_rangeDiffs/_rangeGenres/_rangeType/_rangeGrades）の中で、生徒の学年より上の内容を含むジャンル一覧。
+    function _outOfGradeGenres(pg) {
+      const diffs = _rangeDiffs.slice();
+      const genres = _rangeGenres.length ? _rangeGenres : GameData.GENRES.map(g => g.key);
+      const res = [];
+      genres.forEach(k => {
+        const above = [];
+        [1, 2, 3].forEach(gr => {
+          if (gr <= pg) return;
+          if (_rangeGrades.length && _rangeGrades.indexOf(gr) < 0) return; // 学年フィルタを尊重
+          if (GameData.getQuestions({ diffs: diffs, genres: [k], type: _rangeType || null, grades: [gr] }).length > 0) above.push(gr);
+        });
+        if (above.length) { const g = GameData.GENRES.find(x => x.key === k); res.push({ key: k, label: g ? g.label : k, icon: g ? g.icon : '', grades: above }); }
+      });
+      return res;
+    }
+    function _showGradeWarn(list, pg) {
+      document.getElementById('grade-warn-sub').textContent = `あなたは中${pg}。下の範囲は、それより上の学年の内容を含みます。`;
+      document.getElementById('grade-warn-list').innerHTML = list.map(it => {
+        const cls = GameData.getGradeBadgeClass(Math.max.apply(null, it.grades));
+        return `<div class="flex items-center gap-2 text-xs text-white"><span>${it.icon}</span><span class="font-bold">${it.label}</span>`
+          + `<span class="ml-auto text-[9px] ${cls} px-1.5 py-0.5 rounded font-bold">${it.grades.map(g => '中' + g).join('/')}</span></div>`;
+      }).join('');
+      document.getElementById('grade-warn-popup').classList.remove('hidden');
+    }
+    function closeGradeWarn() { document.getElementById('grade-warn-popup').classList.add('hidden'); }
+    function _doEnterDojo(gradesOverride) {
+      closeGradeWarn();
+      closeDojoPopup();
+      GameEngine.startDojo(_rangeDiffs.slice(), _rangeGenres.slice(), _rangeType || null, gradesOverride || _rangeGrades.slice());
+    }
+    function challengeKeepingOverGrade() { _doEnterDojo(_rangeGrades.slice()); } // 外さずそのまま
+    function challengeRemovingOverGrade() {
+      const pg = GameEngine.player.grade || 1;
+      let capped = (_rangeGrades.length ? _rangeGrades : [1, 2, 3]).filter(g => g <= pg);
+      if (!capped.length) capped = [pg];
+      _doEnterDojo(capped); // 自分の学年以下にキャップ＝範囲外を外す
+    }
+
+    // ── 学年設定モーダル ──
+    function openGradeModal() { renderGradeButtons(); document.getElementById('grade-edit-modal').classList.remove('hidden'); }
+    function closeGradeModal() { document.getElementById('grade-edit-modal').classList.add('hidden'); }
+    function renderGradeButtons() {
+      const cur = GameEngine.player.grade;
+      document.getElementById('grade-edit-buttons').innerHTML = [1, 2, 3].map(g => {
+        const on = cur === g;
+        const cls = on ? GameData.getGradeBadgeClass(g) + ' ring-2 ring-white/60' : 'bg-slate-800 text-slate-300 hover:bg-slate-700';
+        return `<button onclick="GameUI.setPlayerGradeFromModal(${g})" class="${cls} font-black py-3 rounded-xl text-sm transition-all">中${g}</button>`;
+      }).join('');
+    }
+    function setPlayerGradeFromModal(g) {
+      GameEngine.setPlayerGrade(g);
+      renderGradeButtons();
+      renderPlayerGradeLabel();
+      if (g) closeGradeModal();
+    }
+    function renderPlayerGradeLabel() {
+      const el = document.getElementById('menu-player-grade');
+      if (!el) return;
+      const g = GameEngine.player && GameEngine.player.grade;
+      if (!g) { el.textContent = '学年: 未設定'; el.className = 'text-[10px] text-slate-400 font-bold'; return; }
+      el.innerHTML = `学年: <span class="${GameData.getGradeBadgeClass(g)} px-1.5 py-0.5 rounded">中${g}</span>`;
+      el.className = 'text-[10px] font-bold';
     }
 
     // 道場ポップアップ: ジャンル＋形式の絞り込みチップ
@@ -674,10 +889,12 @@ const GameUI = (function() {
       val = Math.min(val, maxLv);
       GameEngine.player.dojoEnemyLevel = val;
       document.getElementById('dojo-popup-lv-display').textContent = 'Lv.' + val;
-      const mult = _dojoRewardMult[_dojoPopupDifficulty] || 1;
-      const est = Math.floor(900 * mult * Math.max(1, val / 10));
+      // 報酬・敵HPは選択した中で最上位の難易度を基準にする
+      const _order = ['junior', 'mid', 'senior', 'supreme'];
+      const _topDiff = _rangeDiffs.slice().sort((a, b) => _order.indexOf(a) - _order.indexOf(b)).pop() || 'junior';
+      const est = Math.floor(900 * (_dojoGoldMult[_topDiff] || 1) * _dojoLvScale(val));
       document.getElementById('dojo-popup-reward').textContent = `推定報酬: 🪙 ${est.toLocaleString()}/敵`;
-      document.getElementById('dojo-popup-hp').textContent = `敵HP: ${(100 * mult * Math.max(1, val)).toLocaleString()}`;
+      document.getElementById('dojo-popup-hp').textContent = `敵HP: ${(100 * (_dojoHpMult[_topDiff] || 1) * Math.max(1, val)).toLocaleString()}`;
       // メイン画面の表示も同期
       if (document.getElementById('dojo-enemy-level-display')) updateDojoLevelUI(val);
     }
@@ -687,10 +904,11 @@ const GameUI = (function() {
     }
 
     function enterDojoFromPopup() {
-      closeDojoPopup();
-      // ジャンル未選択（すべて）でも教科の範囲に限定する（化学の道場に物理が混ざらないように）
-      const genres = _dojoGenres.length ? _dojoGenres.slice() : _genreKeysForSubject(_dojoSubject);
-      GameEngine.startDojo(_dojoPopupDifficulty, genres, _dojoType || null);
+      // 学年を設定済みで、選択範囲が自分の学年より上を含むなら確認ポップを出す（入場は保留）
+      const pg = GameEngine.player.grade;
+      const oog = pg ? _outOfGradeGenres(pg) : [];
+      if (oog.length) { _showGradeWarn(oog, pg); return; }
+      _doEnterDojo(_rangeGrades.slice());
     }
     // 教科に属するジャンルキーの配列
     function _genreKeysForSubject(subject) {
@@ -710,7 +928,7 @@ const GameUI = (function() {
       const slider = document.getElementById('dojo-enemy-level-slider');
       if (slider) { slider.max = maxLv; slider.value = val; }
       _set('dojo-enemy-level-max', maxLv);
-      const est = Math.floor(900 * Math.max(1, val / 10));
+      const est = Math.floor(900 * _dojoLvScale(val));
       _set('dojo-reward-preview', '推定報酬: 🪙 ' + est.toLocaleString() + '/敵');
       _set('dojo-hp-preview', '敵HP: ' + (100 * Math.max(1, val)).toLocaleString());
       GameEngine.saveUserDataLocal();
@@ -1525,29 +1743,21 @@ const GameUI = (function() {
       renderLibraryContent(libraryCurrentTier);
     }
 
-      // 難易度タブ（基礎/応用/発展/受験）。未解禁はロック表示。
+      // 難易度タブ（基礎/応用/発展/受験）。ロック廃止＝全て閲覧・挑戦できる。
       function renderLibraryTabs() {
-      const unlocks = GameEngine.getDojoUnlockStatus();
       const tabContainer = document.getElementById('library-tabs');
       tabContainer.innerHTML = '';
       GameData.DIFFICULTIES.forEach(d => {
         const btn = document.createElement('button');
         const isActive = d.key === libraryCurrentTier;
-        const locked = !unlocks[d.key];
-        if (locked) {
-          btn.className = 'bg-slate-800/60 text-slate-500 font-bold py-1.5 px-3 rounded-xl text-xs cursor-not-allowed';
-          btn.textContent = '🔒 ' + d.label;
-          btn.title = d.boss + 'ボス3体撃破で解禁';
-        } else {
-          btn.className = (isActive ? d.color + ' text-white ring-2 ring-white/30' : 'bg-slate-800 hover:bg-slate-700 text-slate-300')
-            + ' font-bold py-1.5 px-3 rounded-xl text-xs transition-all';
-          btn.textContent = d.label;
-          btn.onclick = () => {
-            libraryCurrentTier = d.key;
-            renderLibraryTabs();
-            renderLibraryContent(d.key);
-          };
-        }
+        btn.className = (isActive ? d.color + ' text-white ring-2 ring-white/30' : 'bg-slate-800 hover:bg-slate-700 text-slate-300')
+          + ' font-bold py-1.5 px-3 rounded-xl text-xs transition-all';
+        btn.textContent = d.label;
+        btn.onclick = () => {
+          libraryCurrentTier = d.key;
+          renderLibraryTabs();
+          renderLibraryContent(d.key);
+        };
         tabContainer.appendChild(btn);
       });
     }
@@ -1621,9 +1831,8 @@ const GameUI = (function() {
       const genreColor = k => _genreColorMap[k] || 'text-slate-400';
 
       let html = '';
-      // ヘッダー＋「この範囲で道場に挑戦」ボタン
-      const unlocks = GameEngine.getDojoUnlockStatus();
-      const canChallenge = unlocks[tierKey] && questions.length > 0;
+      // ヘッダー＋「この範囲で道場に挑戦」ボタン（難易度ロックは廃止＝問題があれば常に挑戦可）
+      const canChallenge = questions.length > 0;
       html += `<div class="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div class="text-[10px] text-slate-400 flex items-center gap-2">
           <span class="px-2 py-0.5 rounded ${dInfo.color} text-white font-bold">${dInfo.label}</span>
@@ -1631,7 +1840,7 @@ const GameUI = (function() {
         </div>
         ${canChallenge
           ? `<button onclick="GameUI.challengeFromLibrary()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded-xl text-[11px] transition-all active:scale-95">🥋 この範囲で道場に挑戦</button>`
-          : `<span class="text-[10px] text-slate-500">${unlocks[tierKey] ? '該当する問題がありません' : '🔒 ' + dInfo.boss + 'ボス撃破で解禁'}</span>`}
+          : `<span class="text-[10px] text-slate-500">該当する問題がありません</span>`}
       </div>`;
 
       if (questions.length === 0) {
@@ -1674,8 +1883,7 @@ const GameUI = (function() {
 
       // 図書館の絞り込みをそのまま道場に引き継いで入場
       function challengeFromLibrary() {
-      const unlocks = GameEngine.getDojoUnlockStatus();
-      if (!unlocks[libraryCurrentTier]) { alert('この難易度はまだ解禁されていません。'); return; }
+      // 難易度ロック廃止＝そのまま入場（案内は学年警告に一本化）
       // ジャンル未選択（すべて）でも教科の範囲に限定
       const genres = _libGenres.length ? _libGenres.slice() : _genreKeysForSubject(_libSubject);
       GameEngine.startDojo(libraryCurrentTier, genres, _libType || null);
@@ -1704,8 +1912,14 @@ const GameUI = (function() {
 
       function updateComboBadge() {
       const badge = document.getElementById('conbo-meter');
-      if (GameEngine.battle.currentCombo > 0) {
-        badge.textContent = `${GameEngine.battle.currentCombo} COMBO`;
+      const c = GameEngine.battle.currentCombo;
+      if (c > 0) {
+        badge.textContent = `${c} COMBO`;
+        // コンボが伸びるほど熱い色に（10/20/30で段階変化）
+        badge.style.background = c >= 30 ? 'linear-gradient(90deg,#ef4444,#f59e0b)'
+                               : c >= 20 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)'
+                               : c >= 10 ? 'linear-gradient(90deg,#8b5cf6,#22d3ee)'
+                               :           'linear-gradient(90deg,#06b6d4,#3b82f6)';
         badge.style.opacity = '1';
         badge.classList.remove('combo-bounce');
         void badge.offsetWidth;
@@ -1766,32 +1980,53 @@ const GameUI = (function() {
         ? 'linear-gradient(90deg,#92400e,#fbbf24)'
         : 'linear-gradient(90deg,#dc2626,#f87171)';
 
-      document.getElementById('enemy-action-bar').style.width = `${GameEngine.battle.enemyActionGauge}%`;
-      document.getElementById('enemy-action-label').textContent = GameEngine.battle.enemyIsStunned ? '気絶中！' : `${Math.floor(GameEngine.battle.enemyActionGauge)}%`;
+      // 行動ゲージ（=敵の攻撃まで）。満タン近くで赤く点滅して「まもなく攻撃」を予告
+      const _actG = GameEngine.battle.enemyActionGauge;
+      const _aBar = document.getElementById('enemy-action-bar');
+      const _aLbl = document.getElementById('enemy-action-label');
+      const _aWrap = _aBar.parentElement;
+      _aBar.style.width = `${_actG}%`;
+      if (GameEngine.battle.enemyIsStunned) {
+        _aLbl.textContent = '気絶中！'; _aLbl.className = 'text-amber-300';
+        _aWrap.classList.remove('gauge-warn'); _aBar.style.background = '';
+      } else if (_actG >= 80) {
+        _aLbl.textContent = 'まもなく攻撃!'; _aLbl.className = 'text-rose-400 font-black';
+        _aWrap.classList.add('gauge-warn'); _aBar.style.background = 'linear-gradient(90deg,#f43f5e,#fb7185)';
+      } else {
+        _aLbl.textContent = `${Math.floor(_actG)}%`; _aLbl.className = 'text-cyan-400';
+        _aWrap.classList.remove('gauge-warn'); _aBar.style.background = '';
+      }
 
-      document.getElementById('enemy-ultimate-bar').style.width = `${Math.min(100, GameEngine.battle.enemyUltGauge)}%`;
-      document.getElementById('enemy-ultimate-label').textContent = `${Math.floor(GameEngine.battle.enemyUltGauge)}%`;
+      // 必殺ゲージ（=必殺技まで）。満タン近くで紫点滅で予告
+      const _ultG = Math.min(100, GameEngine.battle.enemyUltGauge);
+      const _uBar = document.getElementById('enemy-ultimate-bar');
+      const _uLbl = document.getElementById('enemy-ultimate-label');
+      const _uWrap = _uBar.parentElement;
+      _uBar.style.width = `${_ultG}%`;
+      if (_ultG >= 80) {
+        _uLbl.textContent = 'まもなく必殺!'; _uLbl.className = 'text-fuchsia-300 font-black';
+        _uWrap.classList.add('gauge-warn');
+      } else {
+        _uLbl.textContent = `${Math.floor(_ultG)}%`; _uLbl.className = 'text-purple-400';
+        _uWrap.classList.remove('gauge-warn');
+      }
 
       document.getElementById('typing-miss-gauge').textContent = GameEngine.battle.missCount;
 
+      // コンボバフ: 自分HPのすぐ下に小さいアイコンで「乗っている」ことを示す（詳細は出さず軽く）
       const buffList = document.getElementById('combo-buff-list');
-      buffList.innerHTML = '';
       if (GameEngine.battle.comboBuffs.length === 0) {
-        buffList.innerHTML = `<div class="text-[10px] text-slate-500">5コンボ以上繋ぐと、バフが発動します。</div>`;
+        buffList.innerHTML = '';
       } else {
-        GameEngine.battle.comboBuffs.forEach(buff => {
-          buffList.innerHTML += `
-            <div class="flex justify-between items-center bg-slate-950 p-2 rounded border border-cyan-900/30 text-[10px] text-cyan-400 font-mono">
-              <span>⚔️ 攻撃バフ: +${Math.floor(buff.val)}</span>
-              <span>${buff.duration.toFixed(1)}s</span>
-            </div>
-          `;
-        });
+        const totalBuff = Math.floor(GameEngine.battle.comboBuffs.reduce((s, b) => s + b.val, 0));
+        buffList.innerHTML =
+          `<span class="inline-flex items-center gap-0.5 bg-cyan-950/80 border border-cyan-700 text-cyan-300 text-[11px] font-black px-2 py-0.5 rounded-full" title="コンボ攻撃バフ発動中">`
+          + `⚔️+${totalBuff}<span class="text-[9px] text-cyan-500/80 ml-0.5">x${GameEngine.battle.comboBuffs.length}</span></span>`;
       }
 
       const statsSummary = document.getElementById('battle-stats-summary');
       let activeBuffsSum = GameEngine.battle.comboBuffs.reduce((sum, b) => sum + b.val, 0);
-      statsSummary.innerHTML = `
+      if (statsSummary) statsSummary.innerHTML = `
         <div class="flex justify-between"><span>最大HP:</span><span class="text-white">${stats.hp}</span></div>
         <div class="flex justify-between"><span>実質攻撃力:</span><span class="text-white">${stats.atk} <span class="text-cyan-400">${activeBuffsSum > 0 ? `(+${Math.floor(activeBuffsSum)})` : ''}</span></span></div>
         <div class="flex justify-between"><span>防御力:</span><span class="text-white">${stats.def}</span></div>
@@ -1805,8 +2040,10 @@ const GameUI = (function() {
 
       function endBattle(isVictory) {
       GameEngine.battle.active = false;
+      GameEngine.battle.paused = false; // ⏸ ポーズ状態を必ず解除（撤退や次戦で固まらないように）
+      hidePauseScreen();
       clearInterval(GameEngine.battleInterval);
-      
+
       const bEl = document.getElementById('screen-battle');
       bEl.classList.add('hidden'); bEl.style.display = 'none';
       const rEl = document.getElementById('result-screen');
@@ -1938,6 +2175,53 @@ const GameUI = (function() {
     var inp = document.getElementById('hidden-input');
     if (inp) { inp.value = ''; inp.focus(); }
   }
+  // engine.js から resumeGame 後に入力欄へフォーカスを戻すためのブリッジ名
+  function focusBattleInput() { focusHiddenInput(); }
+
+  // ⏸ ポーズ画面の表示。engine.pauseGame から、今戦闘で稼いだコインと総コインを受け取る。
+  function showPauseScreen(earnedThisBattle, totalGold) {
+    var e = document.getElementById('pause-earned-gold');
+    if (e) e.textContent = (earnedThisBattle || 0).toLocaleString();
+    var t = document.getElementById('pause-total-gold');
+    if (t) t.textContent = (totalGold || 0).toLocaleString();
+
+    // 戦闘ステータス（実質攻撃力はコンボバフ込みで表示＝盛る楽しさ）
+    var ps = document.getElementById('pause-stats');
+    if (ps) {
+      var s = GameEngine.getEffectiveStats();
+      var buffSum = Math.floor((GameEngine.battle.comboBuffs || []).reduce(function(a, b){ return a + b.val; }, 0));
+      var atkTotal = s.atk + buffSum;
+      function row(label, val, hi) {
+        return '<div class="flex justify-between"><span class="text-slate-400">' + label + '</span><span class="' + (hi ? 'text-cyan-300 font-bold' : 'text-white') + '">' + val + '</span></div>';
+      }
+      ps.innerHTML =
+        row('⚔️ 実質攻撃力', s.atk.toLocaleString() + (buffSum > 0 ? ' <span class="text-cyan-400">+' + buffSum + '</span> = ' + atkTotal.toLocaleString() : ''), true) +
+        row('❤️ 最大HP', s.hp.toLocaleString()) +
+        row('🛡️ 防御力', s.def.toLocaleString()) +
+        row('🔁 攻撃回数', s.atkCount + '回') +
+        row('💥 クリティカル率', (s.critRate * 100).toFixed(0) + '%') +
+        row('💚 コンボ回復量', '+' + s.cpRecover) +
+        row('😵 スタン力', s.stanAtk.toFixed(1) + '秒') +
+        row('🛡 スタン耐性', s.stanDef.toFixed(1) + '秒');
+    }
+
+    var ov = document.getElementById('pause-overlay');
+    if (ov) { ov.classList.remove('hidden'); ov.classList.add('flex'); }
+  }
+  function hidePauseScreen() {
+    var ov = document.getElementById('pause-overlay');
+    if (ov) { ov.classList.add('hidden'); ov.classList.remove('flex'); }
+  }
+
+  // 正解/ミスの手応え: HUDパネルを一瞬光らせる（'correct' 緑 / 'miss' 赤）
+  function flashPanel(kind) {
+    var p = document.getElementById('hud-panel');
+    if (!p) return;
+    var cls = kind === 'miss' ? 'flash-miss' : 'flash-correct';
+    p.classList.remove('flash-correct', 'flash-miss');
+    void p.offsetWidth;
+    p.classList.add(cls);
+  }
 
 
   return {
@@ -1954,6 +2238,7 @@ const GameUI = (function() {
     updateMenuUI,
     // 戦闘UI
     updateBattleUI, updateComboBadge, updateComboBurstButton, showDamagePopup, endBattle, quitBattle,
+    showPauseScreen, hidePauseScreen, focusBattleInput, flashPanel,
     // ガチャ
     openGachaRateModal, closeGachaRateModal, showGachaResults, showGachaUntilResult,
     gachaCarouselPrev, gachaCarouselNext, gachaCarouselGo, renderGachaCarousel, renderGachaTools,
@@ -1966,6 +2251,11 @@ const GameUI = (function() {
     openDojoPopup, closeDojoPopup, enterDojoFromPopup,
     selectDojoPopupDifficulty, updateDojoPopupLevel, updateDojoLevelUI,
     renderDojoPopupFilters, setDojoSubject, toggleDojoGenre, setDojoType,
+    // 出題範囲フルウィンドウ（道場・難易度複数選択）
+    openRangeWindow, closeRangeWindow, toggleRangeDiff, toggleRangeGenre, setRangeType, toggleRangeGrade,
+    // 学年: 設定モーダル・警告ポップ・メニュー表示
+    openGradeModal, closeGradeModal, setPlayerGradeFromModal, renderPlayerGradeLabel,
+    closeGradeWarn, challengeKeepingOverGrade, challengeRemovingOverGrade,
     // ステータスポップアップ
     openStatPopup, closeStatPopup, renderStatList,
     openSaveLoadModal, closeSaveLoadModal, copySaveCode, loadSaveCode,

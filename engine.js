@@ -53,6 +53,13 @@ let player = {
     function openEquipModal(item)      { if (typeof GameUI !== 'undefined') GameUI.openEquipModal(item); }
     function closeEquipModal()         { if (typeof GameUI !== 'undefined') GameUI.closeEquipModal(); }
     function updateDojoLevelUI(val)    { if (typeof GameUI !== 'undefined') GameUI.updateDojoLevelUI(val); }
+    function flashPanel(kind)          { if (typeof GameUI !== 'undefined' && GameUI.flashPanel) GameUI.flashPanel(kind); }
+    // 敵/ボスの登場演出（フェードイン＋ズーム）。アバター差し替え後に呼ぶ。
+    function playBossEnter() {
+      var el = document.getElementById('enemy-avatar');
+      if (!el) return;
+      el.classList.remove('boss-enter'); void el.offsetWidth; el.classList.add('boss-enter');
+    }
 
     // 画像表示ヘルパー: imgPath が読み込めれば要素に画像を入れ、失敗時は emoji にフォールバック。
     // これにより assets/ に画像が無くても従来の絵文字で動作する。
@@ -127,7 +134,10 @@ let player = {
       // クイズ（ボス必殺技の選択式）状態。表示中はタイピングを無効化する。
       quizActive: false,
       quizCorrect: 0,
-      quizChoiceCount: 0
+      quizChoiceCount: 0,
+
+      // ⏸ ポーズ状態。trueの間は戦闘ループ(敵の進行)も入力も止める。
+      paused: false
     };
 
 
@@ -241,7 +251,13 @@ let player = {
     //  genres : 絞り込むジャンル配列（null/空=全ジャンル）
     //  type   : 'typing'/'choice'（null=両方）
     //  ※ 図書館で設定した範囲（道場の battle.filterGenres / battle.filterType）を尊重する。
-    function getWeightedQuestion(tier, genres, type) {
+    // 選んだ難易度の中で「最上位ほど出やすい」重み付け。小さいほど上に偏る（0.4=上位約6割）。
+    const DIFF_TOP_BIAS = 0.4;
+
+    // 配列で複数難易度が渡された道場用: 選択集合の中から最上位偏重で1問。
+    //  単一の文字列(tier)が渡された場合は従来挙動（ボス等）に委譲する。
+    function getWeightedQuestion(tier, genres, type, grades) {
+      if (Array.isArray(tier)) return _weightedFromDiffSet(tier, genres, type, grades);
       const tiers = ['junior', 'mid', 'senior', 'supreme'];
       const idx = tiers.indexOf(tier);
       const r = Math.random();
@@ -250,12 +266,45 @@ let player = {
       if (idx >= 2 && r > 0.9)  selectedTier = tiers[idx - 2];
 
       // 選んだ難易度でフィルタに合う問題を取得。空なら指定難易度のみ→さらに空なら全難易度で再取得。
-      let pool = GameData.getQuestions({ diff: selectedTier, genres: genres, type: type });
-      if (pool.length === 0) pool = GameData.getQuestions({ diff: tier, genres: genres, type: type });
-      if (pool.length === 0) pool = GameData.getQuestions({ genres: genres, type: type });
+      let pool = GameData.getQuestions({ diff: selectedTier, genres: genres, type: type, grades: grades });
+      if (pool.length === 0) pool = GameData.getQuestions({ diff: tier, genres: genres, type: type, grades: grades });
+      if (pool.length === 0) pool = GameData.getQuestions({ genres: genres, type: type, grades: grades });
       if (pool.length === 0) pool = GameData.getQuestions({ diff: tier }); // 最終フォールバック
       if (pool.length === 0) return null;
 
+      let q, tries = 0;
+      do { q = pool[Math.floor(Math.random() * pool.length)]; tries++; }
+      while (q === _lastQuestion && tries < 10 && pool.length > 1);
+      _lastQuestion = q;
+      return q;
+    }
+
+    // 複数難易度（道場の範囲選択）から最上位偏重で1問選ぶ。grades=学年の絞り込み（任意）。
+    function _weightedFromDiffSet(diffs, genres, type, grades) {
+      const order = ['junior', 'mid', 'senior', 'supreme'];
+      // 実際に問題が存在する難易度だけ残し、低→高に並べる
+      let avail = (diffs || [])
+        .filter(d => order.indexOf(d) >= 0)
+        .sort((a, b) => order.indexOf(a) - order.indexOf(b))
+        .filter(d => GameData.getQuestions({ diff: d, genres: genres, type: type, grades: grades }).length > 0);
+      // フォールバック: 形式を外す→ジャンルだけ→選択難易度だけ
+      if (avail.length === 0) {
+        let pool = GameData.getQuestions({ diffs: diffs, genres: genres, grades: grades });
+        if (pool.length === 0) pool = GameData.getQuestions({ genres: genres, type: type, grades: grades });
+        if (pool.length === 0) pool = GameData.getQuestions({ diffs: diffs });
+        if (pool.length === 0) return null;
+        let q0 = pool[Math.floor(Math.random() * pool.length)];
+        _lastQuestion = q0;
+        return q0;
+      }
+      // 最上位（配列末尾）= 重み1、下にいくほど ×DIFF_TOP_BIAS
+      const weights = new Array(avail.length);
+      for (let i = avail.length - 1, w = 1; i >= 0; i--, w *= DIFF_TOP_BIAS) weights[i] = w;
+      const total = weights.reduce((s, x) => s + x, 0);
+      let r = Math.random() * total, picked = avail[avail.length - 1];
+      for (let i = avail.length - 1; i >= 0; i--) { r -= weights[i]; if (r <= 0) { picked = avail[i]; break; } }
+
+      const pool = GameData.getQuestions({ diff: picked, genres: genres, type: type, grades: grades });
       let q, tries = 0;
       do { q = pool[Math.floor(Math.random() * pool.length)]; tries++; }
       while (q === _lastQuestion && tries < 10 && pool.length > 1);
@@ -301,6 +350,13 @@ let player = {
       } else {
         alert('名前を入力してください！');
       }
+    }
+
+    // 🎓 自分の学年を保存（1=中1 / 2=中2 / 3=中3 / null=未設定）。出題範囲の警告判定に使う。
+    function setPlayerGrade(g) {
+      player.grade = (g === 1 || g === 2 || g === 3) ? g : null;
+      saveUserDataLocal();
+      updateMenuUI();
     }
 
     // 🔄 ステータス振り直し: 全ステータスを0に戻し、消費ゴールドの70%を返金
@@ -609,18 +665,23 @@ let player = {
     //  difficulty : 難易度キー
     //  filterGenres : 出題ジャンル配列（null/空=全ジャンル）
     //  filterType   : 'typing'/'choice'/null（出題形式）
-    function startDojo(difficulty, filterGenres, filterType) {
-      const unlocks = getDojoUnlockStatus();
-      if (!unlocks[difficulty]) {
-        alert('この難易度の道場はロックされています。条件となるボスを全て討伐して解放してください！');
-        return;
-      }
+    function startDojo(difficulty, filterGenres, filterType, filterGrades) {
+      const order = ['junior', 'mid', 'senior', 'supreme'];
+      // difficulty は配列（範囲選択）または文字列（図書館など旧経路）。配列に正規化。
+      // 難易度のハードロックは廃止：全難易度を最初から選べる（案内は学年警告に一本化）。
+      let diffs = (Array.isArray(difficulty) ? difficulty.slice() : [difficulty])
+        .filter(d => order.indexOf(d) >= 0);
+      if (diffs.length === 0) diffs = ['junior'];
+      diffs.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      const topDiff = diffs[diffs.length - 1]; // 最上位＝報酬・敵の強さ・速度の基準
 
       battle.active = true;
       battle.mode = 'dojo';
-      battle.difficulty = difficulty;
+      battle.diffs = diffs;
+      battle.difficulty = topDiff;
       battle.filterGenres = (filterGenres && filterGenres.length) ? filterGenres : null;
       battle.filterType = filterType || null;
+      battle.filterGrades = (filterGrades && filterGrades.length) ? filterGrades : null; // 学年の絞り込み（任意）
       // 道場の必殺クイズ教科: 選択ジャンルの教科から導出（混在/未指定なら null=全教科）
       battle.subject = (function(){
         if (!battle.filterGenres) return null;
@@ -645,7 +706,9 @@ let player = {
       battle.playerHp = stats.hp;
       initBattleSkillState(stats);
 
-      document.getElementById('battle-mode-title').textContent = `道場特訓: ${{'junior':'基礎','mid':'応用','senior':'発展','supreme':'受験'}[difficulty]} (敵Lv.${player.dojoEnemyLevel})`;
+      const _dLbl = { junior:'基礎', mid:'応用', senior:'発展', supreme:'受験' };
+      const _diffTitle = diffs.length > 1 ? `${_dLbl[topDiff]}まで` : _dLbl[topDiff];
+      document.getElementById('battle-mode-title').textContent = `道場特訓: ${_diffTitle} (敵Lv.${player.dojoEnemyLevel})`;
       try {
         spawnNextDojoEnemy();
       } catch(e) {
@@ -655,7 +718,7 @@ let player = {
         battle.active = false;
         return;
       }
-      setBattleBackground(difficulty);
+      setBattleBackground(topDiff);
       GameUI.showBattleScreen();
       startBattleLoop();
     }
@@ -672,7 +735,7 @@ let player = {
       const _dojoAv = document.getElementById('enemy-avatar');
       _dojoAv.style.filter = `drop-shadow(${_dojoGlow[battle.difficulty] || '0 0 20px #22d3ee'})`;
 
-      const prob = getWeightedQuestion(battle.difficulty, battle.filterGenres, battle.filterType);
+      const prob = getWeightedQuestion(battle.diffs || [battle.difficulty], battle.filterGenres, battle.filterType, battle.filterGrades);
       battle.currentQuestion = prob;
       battle.typedSoFar = '';
 
@@ -716,6 +779,7 @@ let player = {
         setVisualImg(document.getElementById('enemy-avatar'), 'assets/mob/dojo_' + _v + '.png', '👾');
         document.getElementById('enemy-name').textContent = `道場の仮想敵 [Lv.${lvScale}]`;
       }
+      playBossEnter();
 
       // 問題を描画（タイピング or 選択式を出し分け。道場はヒントあり）
       renderQuestion(prob, true);
@@ -726,6 +790,26 @@ let player = {
     // ── 問題描画（タイピング/選択式の出し分け）──
     //  prob     : 問題オブジェクト
     //  showHint : true=道場（答えをヒント表示）/ false=ボス（暗記勝負）
+    // タイピング入力をマス目HTMLで描画。1文字=1マス。
+    //  reveal: 'all'(道場=お手本全表示) / 'first'(ヒント武器=先頭1文字) / 'none'(ボス=伏せる)
+    function buildAnswerCells(formula, typedLen, reveal) {
+      formula = String(formula || '');
+      let html = '';
+      for (let i = 0; i < formula.length; i++) {
+        const ch = formula.charAt(i);
+        const safe = ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch;
+        let cls = 'tcell';
+        let content = '&nbsp;';
+        if (i < typedLen) { cls += ' done'; content = safe; }
+        else {
+          if (i === typedLen) cls += ' cur';
+          if (reveal === 'all' || (reveal === 'first' && i === 0)) content = safe;
+        }
+        html += '<span class="' + cls + '">' + content + '</span>';
+      }
+      return html;
+    }
+
     function renderQuestion(prob, showHint) {
       const typingArea = document.getElementById('typing-area');
       const choiceArea = document.getElementById('choice-area');
@@ -749,32 +833,16 @@ let player = {
       const _fmt = (t) => prob.plain ? t : GameData.fmtChem(t);
       // ヒント武器: 答えの最初の1文字だけ開示（道場ヒント表示時は元から全部見えるので無関係）
       const _hintOn = !showHint && (battle.playerSkills || []).indexOf('ヒント') >= 0;
+      const _reveal = showHint ? 'all' : (_hintOn ? 'first' : 'none');
+      const _cells = buildAnswerCells(prob.formula, 0, _reveal);
+      const _guide = document.getElementById('typing-guide');
       if (prob.display) {
-        const _fd = _fmt(prob.display);
-        if (showHint) {
-          // 道場: 括弧内を黄色強調して表示
-          const _hint = '<span style="color:#fbbf24;font-weight:900">' + _fmt(prob.formula) + '</span>';
-          document.getElementById('typing-guide').innerHTML =
-            _fd.replace('[ ? ]', '<span style="color:#f59e0b">[ </span>' + _hint + '<span style="color:#f59e0b"> ]</span>');
-        } else {
-          // ボス: 灰色空欄。ヒント武器なら先頭1文字だけ黄色開示。
-          let _inner;
-          if (_hintOn && prob.formula.length > 0) {
-            _inner = '<span style="color:#fbbf24;font-weight:900">' + _fmt(prob.formula[0]) + '</span>'
-                   + '<span style="color:#475569">' + '_'.repeat(Math.max(0, prob.formula.length - 1)) + '</span>';
-          } else {
-            _inner = '<span style="color:#475569">' + '_'.repeat(prob.formula.length) + '</span>';
-          }
-          document.getElementById('typing-guide').innerHTML =
-            _fd.replace('[ ? ]', '<span style="color:#64748b">[ </span>' + _inner + '<span style="color:#64748b"> ]</span>');
-        }
+        // 穴埋め問題: 式はそのまま、[ ? ] をマス目に置換
+        _guide.innerHTML = _fmt(prob.display).replace('[ ? ]',
+          '<span style="color:#64748b">[</span>' + _cells + '<span style="color:#64748b">]</span>');
       } else {
-        const _ge = document.getElementById('typing-guide');
-        if (showHint) { _ge.textContent = _fmt(prob.formula); }
-        else if (_hintOn && prob.formula.length > 0) {
-          _ge.innerHTML = '<span style="color:#fbbf24;font-weight:900">' + _fmt(prob.formula[0]) + '</span>'
-                        + '<span style="color:#475569">' + '?'.repeat(Math.max(0, prob.formula.length - 1)) + '</span>';
-        } else { _ge.textContent = '????'; }
+        // 通常問題: 答え全体をマス目で表示
+        _guide.innerHTML = _cells;
       }
       document.getElementById('typing-user').textContent = '';
     }
@@ -857,7 +925,8 @@ let player = {
       _bossAvEl.style.filter = `drop-shadow(${_bossGlow[boss.tier] || '0 0 20px #ef4444'})`;
       setBattleBackground(boss.tier);
       document.getElementById('enemy-name').textContent = boss.name;
-      document.getElementById('battle-mode-title').textContent = `👹 ボス実践: ${boss.name}`;
+      document.getElementById('battle-mode-title').textContent = `👹 ボス実践`;
+      playBossEnter();
 
       nextQuestion();
       GameUI.showBattleScreen();
@@ -921,7 +990,8 @@ let player = {
         _lvLabel = '  [HP' + (_levels.hp||1) + ' ATK' + (_levels.atk||1) + ' 速' + (_levels.speed||1) + ' 必' + (_levels.ult||1) + ']';
       }
       document.getElementById('enemy-name').textContent = boss.name + _lvLabel;
-      document.getElementById('battle-mode-title').textContent = (boss.kind === 'pure' ? '🌌 最強の試練: ' : '⚔️ 専科の試練: ') + boss.name;
+      document.getElementById('battle-mode-title').textContent = (boss.kind === 'pure' ? '🌌 最強の試練' : '⚔️ 専科の試練');
+      playBossEnter();
 
       nextQuestion();
       GameUI.showBattleScreen();
@@ -966,6 +1036,7 @@ let player = {
 
       battleInterval = setInterval(() => {
         if (!battle.active) return;
+        if (battle.paused) return; // ⏸ ポーズ中は敵の進行・タイマーを全停止
 
         // 0. ボーナスモンスターの制限時間（30秒で逃走→次の敵へ）
         if (battle.isBonus && battle.bonusTimeLeft > 0) {
@@ -1275,7 +1346,7 @@ let player = {
     //  正解 = タイピング正解と同じ攻撃処理（processCorrectAnswer）
     //  不正解 = ミス扱い（怒りゲージ加算）。攻撃は発生しない。
     function answerChoice(selectedIdx) {
-      if (!battle.active || battle.isStunned || isFeedbacking || battle.quizActive) return;
+      if (!battle.active || battle.isStunned || isFeedbacking || battle.quizActive || battle.paused) return;
       if (selectedIdx === battle.hintKilledChoice) return; // ヒントで暗転した選択肢は選べない（キー入力経路も封鎖）
       const prob = battle.currentQuestion;
       if (!prob || prob.type !== 'choice') return;
@@ -1294,6 +1365,7 @@ let player = {
           'choice-btn bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm text-left border border-emerald-400';
         battle.missCount++;
         playSound('wrong');
+        flashPanel('miss');
         if (battle.missCount >= 50 && !battle.isRaged) {
           battle.isRaged = true;
           document.getElementById('rage-warning-badge').classList.remove('hidden');
@@ -1321,7 +1393,7 @@ let player = {
 
     // タイピング入力イベント
     function handleKeyInput(char) {
-      if (!battle.active || battle.isStunned || isFeedbacking) return;
+      if (!battle.active || battle.isStunned || isFeedbacking || battle.paused) return;
 
       // ⑦ コンボ爆撃: Enterキーで発動（タイピング中Enterは元々無視＝衝突なし。スキル/コンボ不足なら内部で弾く）
       if (char === 'ENTER') { comboBurst(); return; }
@@ -1382,7 +1454,8 @@ let player = {
       } else {
         battle.missCount++;
         playSound('wrong');
-        
+        flashPanel('miss');
+
         // 50回タイプミスで怒り狂暴化
         if (battle.missCount >= 50 && !battle.isRaged) {
           battle.isRaged = true;
@@ -1398,36 +1471,27 @@ let player = {
 
     function renderCorrectCasedInput() {
       const q = battle.currentQuestion.formula;
-      const correctCased = q.slice(0, battle.typedSoFar.length);
-      const remLen = q.length - correctCased.length;
+      const typedLen = battle.typedSoFar.length;
       const guideEl = document.getElementById('typing-guide');
+      // 道場=お手本全表示 / ヒント武器=先頭 / ボス=伏せる
+      const reveal = (battle.mode === 'dojo') ? 'all'
+                   : ((battle.playerSkills || []).indexOf('ヒント') >= 0 ? 'first' : 'none');
+      const cells = buildAnswerCells(q, typedLen, reveal);
 
       if (battle.currentQuestion.display) {
-        // 穴埋め問題: 入力中の括弧内を色分け表示
         const base = battle.currentQuestion.plain ? battle.currentQuestion.display : GameData.fmtChem(battle.currentQuestion.display);
-        const typedSpan = correctCased
-          ? '<span style="color:#22d3ee;font-weight:900">' + correctCased + '</span>' : '';
-        const remSpan = remLen > 0
-          ? '<span style="color:#475569">' + '_'.repeat(remLen) + '</span>' : '';
         guideEl.innerHTML = base.replace('[ ? ]',
-          '<span style="color:#64748b">[ </span>' + typedSpan + remSpan + '<span style="color:#64748b"> ]</span>');
-        document.getElementById('typing-user').textContent = '';
+          '<span style="color:#64748b">[</span>' + cells + '<span style="color:#64748b">]</span>');
       } else {
-        // 通常問題: 打鍵した文字を typing-user に、残りガイドを typing-guide に
-        document.getElementById('typing-user').textContent = correctCased;
-        if (battle.mode === 'dojo') {
-          // 道場: ガイドにfull formula（ヒント）を保持
-          guideEl.textContent = battle.currentQuestion.plain ? q : GameData.fmtChem(q);
-        } else {
-          // ボス: 答えを見せない。残り文字数分の空白を表示
-          guideEl.textContent = remLen > 0 ? '_'.repeat(remLen) : '';
-        }
+        guideEl.innerHTML = cells;
       }
+      document.getElementById('typing-user').textContent = '';
     }
 
     function processCorrectAnswer() {
       isFeedbacking = true;
       playSound('correct');
+      flashPanel('correct');
 
       const p = getEffectiveStats();
       const skills = p.skills || [];
@@ -1584,11 +1648,12 @@ let player = {
       if (battle.enemyHp <= 0) {
         setTimeout(() => {
           if (battle.mode === 'dojo') {
-            const rewardMult = battle.difficulty === 'junior' ? 1 : (battle.difficulty === 'mid' ? 3 : (battle.difficulty === 'senior' ? 8 : 25));
+            // 難易度倍率は緩やか(1/1.5/2/3)＝範囲は自由に選べるので難易度での荒稼ぎを抑える。敵HP倍率(spawn時の1/3/8/25)とは別物。
+            const rewardMult = battle.difficulty === 'junior' ? 1 : (battle.difficulty === 'mid' ? 1.5 : (battle.difficulty === 'senior' ? 2 : 3));
             // 報酬: 基本900コイン × 難易度倍率 × 敵レベルスケール
             const baseGold = 900 * rewardMult;
-            // 敵レベルスケール: Lv.1=1.0倍, Lv.5=1.4倍, Lv.10=1.9倍 (1レベル=+10%の報酬増加)
-            const enemyLvScale = 1.0 + (Math.max(1, battle.dojoEnemyLevel || 1) - 1) * 0.1;
+            // 稼ぎの主役は敵レベル(=ボス撃破で上限解禁)。カーブを急に＝+20%/Lv。Lv.1=1.0/Lv.10=2.8/Lv.100=20.8倍。
+            const enemyLvScale = 1.0 + (Math.max(1, battle.dojoEnemyLevel || 1) - 1) * 0.2;
             const bonusMult = battle.isBonus ? 20 : 1; // ボーナスモンスターは20倍ゴールド
             const finalGoldEarn = Math.floor(baseGold * enemyLvScale * (goldMul || 1) * bonusMult);
 
@@ -1612,7 +1677,7 @@ let player = {
     //   攻撃力は大きく下がる代わり（getEffectiveStatsで×0.4）、この一撃が火力源。問題を解いて溜める動機づけ。
     const COMBO_BURST_MIN = 5;
     function comboBurst() {
-      if (!battle.active || battle.isStunned || isFeedbacking || battle.quizActive || battle.forcedUltActive) return;
+      if (!battle.active || battle.isStunned || isFeedbacking || battle.quizActive || battle.forcedUltActive || battle.paused) return;
       if ((battle.playerSkills || []).indexOf('コンボ爆撃') < 0) return;
       if (battle.currentCombo < COMBO_BURST_MIN) return;
       const p = getEffectiveStats();
@@ -1650,11 +1715,12 @@ let player = {
         _nqTier = GameData.BOSSES_DB.find(b => b.id === battle.bossId).tier;
         _type = 'typing';
       } else {
-        _nqTier = battle.difficulty;
+        _nqTier = battle.diffs || [battle.difficulty]; // 道場: 選択した難易度集合（最上位偏重）
         _type = battle.filterType;
       }
       const _genres = battle.filterGenres;
-      battle.currentQuestion = getWeightedQuestion(_nqTier, _genres, _type);
+      const _grades = isBoss || battle.isEndgame ? null : battle.filterGrades; // 学年絞り込みは道場のみ
+      battle.currentQuestion = getWeightedQuestion(_nqTier, _genres, _type, _grades);
       battle.typedSoFar = '';
 
       // ドン！演出
@@ -1758,6 +1824,22 @@ let player = {
 
     function quitBattle() {
       GameUI.endBattle(false);
+    }
+
+    // ⏸ ポーズ開閉。battle.paused を切り替え、UI側にポーズ画面の表示/非表示を依頼する。
+    //   paused=true の間は battleInterval（敵の進行）も入力ハンドラも全て早期returnで止まる。
+    function pauseGame() {
+      if (!battle.active || battle.paused) return;
+      battle.paused = true;
+      if (typeof GameUI !== 'undefined' && GameUI.showPauseScreen) {
+        GameUI.showPauseScreen(battle.goldEarnedInSession || 0, player.gold || 0);
+      }
+    }
+    function resumeGame() {
+      if (!battle.paused) return;
+      battle.paused = false;
+      if (typeof GameUI !== 'undefined' && GameUI.hidePauseScreen) GameUI.hidePauseScreen();
+      if (typeof GameUI !== 'undefined' && GameUI.focusBattleInput) GameUI.focusBattleInput();
     }
 
     // ==========================================
@@ -2199,10 +2281,10 @@ let player = {
     get battle() { return battle; },
     getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar,
     startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion,
-    processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, quitBattle, endBattle,
+    processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, quitBattle, endBattle, pauseGame, resumeGame,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,
     autoSortInventory, saveUserDataLocal, loadUserData, resetAllData,
-    pullGacha, pullGachaMulti, pullUntilStat, gachaPrice, exportSave, importSave, getSaveCode, applySaveCode, changePlayerName, closeNameEditModal, savePlayerName,
+    pullGacha, pullGachaMulti, pullUntilStat, gachaPrice, exportSave, importSave, getSaveCode, applySaveCode, changePlayerName, closeNameEditModal, savePlayerName, setPlayerGrade,
     upgradeStatWithGold, resetStatPointsAction, fillCurrentPvpCode, startPvPBattle,
     fillSampleTournamentCSV, buildTournament, activateDebugMode,
     get isFeedbacking() { return isFeedbacking; }, set isFeedbacking(v) { isFeedbacking = v; },

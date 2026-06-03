@@ -72,6 +72,86 @@ const GameData = (function() {
       { key: 'earth_space', subject: 'earth',     label: '地球と宇宙（天体）', icon: '🪐', diffs: ['mid', 'senior'] }
     ];
 
+    // ジャンル×難易度ごとの「学年」（1=中1, 2=中2, 3=中3）。指導要領に準拠した代表値。
+    //  同じジャンルでも難易度が上がると上の学年内容になる（例: 反応式 基礎=中2 → 受験=中3）。
+    //  ※先生が調整しやすいよう一覧化。存在しない難易度は省略（getQuestions が空を返す）。
+    const GENRE_GRADES = {
+      formula:      { junior:2, mid:2 },
+      reaction:     { junior:2, mid:2, senior:3, supreme:3 },
+      ion:          { junior:3, mid:3 },
+      experiment:   { junior:1, mid:1 },
+      light_sound:  { junior:1, mid:1 },
+      force:        { junior:1, mid:1 },
+      electricity:  { junior:2, mid:2, senior:3, supreme:3 },
+      motion:       { mid:3, senior:3, supreme:3 },
+      bio_plant:    { junior:1, mid:1, senior:2 },
+      bio_human:    { junior:2, mid:2, senior:2 },
+      bio_cell:     { mid:2, senior:3 },
+      bio_eco:      { junior:1, mid:3 },
+      earth_land:   { junior:1, mid:1, senior:2 },
+      earth_weather:{ junior:2, mid:2, senior:2 },
+      earth_space:  { mid:3, senior:3 }
+    };
+
+    // 範囲選択画面に出す「具体例」（表示ヒント・各3個まで）。先生が差し替え可。
+    const GENRE_EXAMPLES = {
+      formula:      ['H₂O 水', 'CO₂ 二酸化炭素', '酸化銀'],
+      reaction:     ['水の電気分解', '銅の酸化', '中和反応'],
+      ion:          ['水素イオン H⁺', 'ナトリウムイオン'],
+      experiment:   ['ガスバーナー', '気体の集め方'],
+      light_sound:  ['凸レンズ', '音の速さ', '反射'],
+      force:        ['浮力', '圧力', 'ばねの力'],
+      electricity:  ['オームの法則', '電力', '電磁誘導'],
+      motion:       ['速さ', '仕事', '力学的エネルギー'],
+      bio_plant:    ['光合成', '蒸散', '道管と師管'],
+      bio_human:    ['消化', '血液の循環', '刺激と反応'],
+      bio_cell:     ['細胞分裂', '遺伝の規則性', 'DNA'],
+      bio_eco:      ['食物連鎖', '分解者', '動物の分類'],
+      earth_land:   ['火山', '地震 P波S波', '地層'],
+      earth_weather:['前線', '湿度', '気圧'],
+      earth_space:  ['太陽の動き', '月の満ち欠け', '季節']
+    };
+
+    // 学年番号→ラベル。diffs(配列)を渡すと、そのジャンルで該当する学年の範囲を「中2」or「中2〜中3」で返す。
+    function gradeNumToLabel(n) { return n ? ('中' + n) : ''; }
+    function getGenreGradeRange(genre, diffs) {
+      const g = GENRE_GRADES[genre]; if (!g) return '';
+      const keys = (diffs && diffs.length) ? diffs : Object.keys(g);
+      const nums = keys.map(d => g[d]).filter(n => n);
+      if (!nums.length) return '';
+      const lo = Math.min.apply(null, nums), hi = Math.max.apply(null, nums);
+      return lo === hi ? gradeNumToLabel(lo) : (gradeNumToLabel(lo) + '〜' + gradeNumToLabel(hi));
+    }
+    // そのジャンル×難易度集合での「上の学年」（またぐ時は上に合わせる＝色・判定の基準）。
+    function getGenreGradeMax(genre, diffs) {
+      const g = GENRE_GRADES[genre]; if (!g) return 0;
+      const keys = (diffs && diffs.length) ? diffs : Object.keys(g);
+      const nums = keys.map(d => g[d]).filter(n => n);
+      return nums.length ? Math.max.apply(null, nums) : 0;
+    }
+
+    // 学年カラー（学校固有・日付連動）。緑→黄→赤 の3年サイクルが進級に追従し、毎年4/1に切替。
+    //  今年度(2026年度): 中1=緑/中2=黄/中3=赤。 来年度(2027〜): 中1=赤/中2=緑/中3=黄 … と巡回。
+    const GRADE_COLOR_CYCLE = ['green', 'yellow', 'red']; // index0=緑,1=黄,2=赤
+    const GRADE_COLOR_STYLE = {
+      green:  { badge: 'bg-green-700',  text: 'text-green-300',  ring: 'ring-green-400',  label: '緑' },
+      yellow: { badge: 'bg-yellow-600', text: 'text-yellow-300', ring: 'ring-yellow-400', label: '黄' },
+      red:    { badge: 'bg-red-700',    text: 'text-red-300',    ring: 'ring-red-400',    label: '赤' }
+    };
+    // 年度（4/1始まり）。2026年度を基準アンカーにする。
+    function _schoolYear(d) { return (d.getMonth() + 1) >= 4 ? d.getFullYear() : d.getFullYear() - 1; }
+    function getGradeColorKey(gradeNum) {
+      if (!gradeNum) return 'green';
+      const sy = _schoolYear(new Date());
+      const idx = (((gradeNum - 1) - (sy - 2026)) % 3 + 3) % 3;
+      return GRADE_COLOR_CYCLE[idx];
+    }
+    // 学年バッジのCSSクラス（背景色＋白文字）。またぐ時の上学年を渡す。
+    function getGradeBadgeClass(gradeNum) {
+      const s = GRADE_COLOR_STYLE[getGradeColorKey(gradeNum)] || GRADE_COLOR_STYLE.green;
+      return s.badge + ' text-white';
+    }
+
     // ==========================================
     //   §2  QUESTION_DB  全問題（2軸タグ付きフラット配列）
     // ==========================================
@@ -119,30 +199,30 @@ const GameData = (function() {
       { genre: 'formula', diff: 'mid', type: 'typing', name: '硫酸バリウム',      formula: 'BaSO4', desc: '水に溶けにくい白い沈殿。' },
 
       // ───────── 反応式 reaction：基礎（junior）＝基本の化合・酸化・燃焼 ─────────
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '水の電気分解', formula: 'O2',  display: '2H2O → 2H2 + [ ? ]', desc: '水に電流を流すと水素と酸素に分解する。陽極から酸素。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '水の電気分解', formula: 'H2O', display: '2[ ? ] → 2H2 + O2', desc: '反応の前後で原子の種類と数は変わらない。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '水の電気分解', formula: 'H2',  display: '2H2O → 2[ ? ] + O2', desc: '陰極からは酸素の2倍の体積の水素が発生する。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '銅の酸化反応', formula: 'CuO', display: '2Cu + O2 → 2[ ? ]', desc: '銅を加熱すると酸素と結びつき黒い酸化銅になる。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '銅の酸化反応', formula: 'Cu',  display: '2[ ? ] + O2 → 2CuO', desc: '酸化の前後で質量は酸素の分だけ増える。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: 'マグネシウムの燃焼', formula: 'MgO', display: '2Mg + O2 → 2[ ? ]', desc: 'マグネシウムが酸素と激しく結びつく。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: 'マグネシウムの燃焼', formula: 'Mg',  display: '2[ ? ] + O2 → 2MgO', desc: '強い光を出して燃え、白い酸化マグネシウムになる。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '木炭(炭素)の燃焼', formula: 'CO2', display: 'C + O2 → [ ? ]', desc: '炭素が酸素と結びついて二酸化炭素になる。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '木炭(炭素)の燃焼', formula: 'C',   display: '[ ? ] + O2 → CO2', desc: '燃焼は酸素と結びつく酸化の一種。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '鉄と硫黄の化合', formula: 'FeS', display: 'Fe + S → [ ? ]', desc: '鉄と硫黄が結びつき別の物質（硫化鉄）になる。' },
-      { genre: 'reaction', diff: 'junior', type: 'typing', name: '鉄と硫黄の化合', formula: 'Fe',  display: '[ ? ] + S → FeS', desc: '化合すると元の物質の性質は失われる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '水の電気分解', formula: 'O2',  display: '2H2O → 2H2 + [ ? ]', desc: '水に電流を流すと水素と酸素に分解する。陽極では酸素が発生し、体積は水素の半分になる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '水の電気分解', formula: 'H2O', display: '2[ ? ] → 2H2 + O2', desc: '反応の前後で原子の種類と数は変わらないため、水分子2個から水素2個と酸素1個ができる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '水の電気分解', formula: 'H2',  display: '2H2O → 2[ ? ] + O2', desc: '陰極では水素が発生する。水素と酸素の体積比は2:1になる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '銅の酸化反応', formula: 'CuO', display: '2Cu + O2 → 2[ ? ]', desc: '銅を加熱すると空気中の酸素と結びつき、黒色の酸化銅になる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '銅の酸化反応', formula: 'Cu',  display: '2[ ? ] + O2 → 2CuO', desc: '銅原子2個と酸素分子1個から酸化銅2個ができる。酸素が加わるので質量は増える。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: 'マグネシウムの燃焼', formula: 'MgO', display: '2Mg + O2 → 2[ ? ]', desc: 'マグネシウムは燃えると酸素と結びつき、白色の酸化マグネシウムになる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: 'マグネシウムの燃焼', formula: 'Mg',  display: '2[ ? ] + O2 → 2MgO', desc: '強い光を出す燃焼反応。反応前後でMg原子とO原子の数がそろうように係数2をつける。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '木炭(炭素)の燃焼', formula: 'CO2', display: 'C + O2 → [ ? ]', desc: '炭素が十分な酸素中で完全燃焼すると、二酸化炭素ができる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '木炭(炭素)の燃焼', formula: 'C',   display: '[ ? ] + O2 → CO2', desc: '燃焼は酸素と結びつく酸化の一種。炭素原子1個が二酸化炭素1個に入る。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '鉄と硫黄の化合', formula: 'FeS', display: 'Fe + S → [ ? ]', desc: '鉄と硫黄を加熱すると化合し、もとの鉄とは性質が違う硫化鉄になる。' },
+      { genre: 'reaction', diff: 'junior', type: 'typing', name: '鉄と硫黄の化合', formula: 'Fe',  display: '[ ? ] + S → FeS', desc: '化合すると新しい物質ができる。硫化鉄は鉄のようには磁石につきにくい。' },
 
       // ───────── 反応式 reaction：応用（mid）＝分解・還元・沈殿 ─────────
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '炭酸水素ナトリウムの分解', formula: 'Na2CO3', display: '2NaHCO3 → [ ? ] + H2O + CO2', desc: '加熱で炭酸ナトリウム・水・二酸化炭素に分かれる。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '炭酸水素ナトリウムの分解', formula: 'NaHCO3', display: '2[ ? ] → Na2CO3 + H2O + CO2', desc: '1種類の物質が複数に分かれる分解反応。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '炭酸水素ナトリウムの分解', formula: 'CO2', display: '2NaHCO3 → Na2CO3 + H2O + [ ? ]', desc: '発生する気体は石灰水を白くにごらせる。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '酸化銀の熱分解', formula: 'Ag2O', display: '2[ ? ] → 4Ag + O2', desc: '加熱すると銀と酸素に分解する。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '酸化銀の熱分解', formula: 'Ag',  display: '2Ag2O → 4[ ? ] + O2', desc: '分解後に残る白い金属が銀。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '銅の還元反応', formula: 'Cu',  display: '2CuO + C → 2[ ? ] + CO2', desc: '酸化銅から酸素をうばって銅にもどす。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '銅の還元反応', formula: 'CuO', display: '2[ ? ] + C → 2Cu + CO2', desc: '炭素が酸素と結びつくことで銅が還元される。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '銅の還元反応', formula: 'CO2', display: '2CuO + C → 2Cu + [ ? ]', desc: '還元と同時に炭素は酸化されている。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '硫酸と塩化バリウムの反応', formula: 'BaSO4', display: 'H2SO4 + BaCl2 → 2HCl + [ ? ]', desc: '白い沈殿（硫酸バリウム）ができる。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '硫酸と塩化バリウムの反応', formula: 'H2SO4', display: '[ ? ] + BaCl2 → 2HCl + BaSO4', desc: 'イオンが結びついて沈殿が生じる反応。' },
-      { genre: 'reaction', diff: 'mid', type: 'typing', name: '硫酸と塩化バリウムの反応', formula: 'HCl', display: 'H2SO4 + BaCl2 → 2[ ? ] + BaSO4', desc: '沈殿のほかに塩酸が生じる。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '炭酸水素ナトリウムの分解', formula: 'Na2CO3', display: '2NaHCO3 → [ ? ] + H2O + CO2', desc: '加熱すると炭酸ナトリウム・水・二酸化炭素に分かれる。重そうの熱分解としてよく出る反応。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '炭酸水素ナトリウムの分解', formula: 'NaHCO3', display: '2[ ? ] → Na2CO3 + H2O + CO2', desc: '1種類の物質が複数の物質に分かれる分解反応。係数2でNaやHの数をそろえる。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '炭酸水素ナトリウムの分解', formula: 'CO2', display: '2NaHCO3 → Na2CO3 + H2O + [ ? ]', desc: '発生する気体は二酸化炭素。石灰水を白くにごらせる性質で確かめられる。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '酸化銀の熱分解', formula: 'Ag2O', display: '2[ ? ] → 4Ag + O2', desc: '酸化銀を加熱すると、銀と酸素に分解する。反応後に残る金属は銀。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '酸化銀の熱分解', formula: 'Ag',  display: '2Ag2O → 4[ ? ] + O2', desc: '分解後に残る白っぽい金属が銀。酸素は火のついた線香を激しく燃やす。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '銅の還元反応', formula: 'Cu',  display: '2CuO + C → 2[ ? ] + CO2', desc: '炭素が酸化銅から酸素をうばうため、酸化銅は赤色の銅に還元される。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '銅の還元反応', formula: 'CuO', display: '2[ ? ] + C → 2Cu + CO2', desc: '酸化銅は酸素を失って銅になる。酸素を失う変化を還元という。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '銅の還元反応', formula: 'CO2', display: '2CuO + C → 2Cu + [ ? ]', desc: '還元と同時に、炭素は酸素と結びついて二酸化炭素になる。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '硫酸と塩化バリウムの反応', formula: 'BaSO4', display: 'H2SO4 + BaCl2 → 2HCl + [ ? ]', desc: 'Ba2+とSO42-が結びつき、水に溶けにくい白色沈殿の硫酸バリウムができる。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '硫酸と塩化バリウムの反応', formula: 'H2SO4', display: '[ ? ] + BaCl2 → 2HCl + BaSO4', desc: '水溶液中のイオンが組み替わり、沈殿ができる反応。硫酸イオンが目印になる。' },
+      { genre: 'reaction', diff: 'mid', type: 'typing', name: '硫酸と塩化バリウムの反応', formula: 'HCl', display: 'H2SO4 + BaCl2 → 2[ ? ] + BaSO4', desc: 'BaSO4の沈殿のほかに塩酸が生じる。Cl原子が2個あるのでHClは2個になる。' },
 
       // ───────── 反応式 reaction：発展（senior）＝電気分解・中和 ─────────
       { genre: 'reaction', diff: 'senior', type: 'typing', name: '塩化銅水溶液の電気分解', formula: 'CuCl2', display: '[ ? ] → Cu + Cl2', desc: '電流で銅（陰極）と塩素（陽極）に分かれる。' },
@@ -159,6 +239,12 @@ const GameData = (function() {
       { genre: 'reaction', diff: 'senior', type: 'typing', name: 'アンモニアと塩化水素の反応', formula: 'NH4Cl', display: 'NH3 + HCl → [ ? ]', desc: 'アンモニアと塩化水素が反応すると、白い固体の塩化アンモニウムができる。' },
       { genre: 'reaction', diff: 'senior', type: 'typing', name: '硫酸と水酸化ナトリウムの中和', formula: 'Na2SO4', display: 'H2SO4 + 2NaOH → [ ? ] + 2H2O', desc: '硫酸のH+は2個あるため、水酸化ナトリウム2個と中和して硫酸ナトリウムと水をつくる。' },
       { genre: 'reaction', diff: 'senior', type: 'typing', name: '硫酸と水酸化ナトリウムの中和', formula: 'NaOH', display: 'H2SO4 + 2[ ? ] → Na2SO4 + 2H2O', desc: '酸のH+とアルカリのOH-が1対1で水になるので、硫酸1に対して水酸化ナトリウム2が必要。' },
+      { genre: 'reaction', diff: 'senior', type: 'typing', name: '二酸化炭素と石灰水の反応', formula: 'CaCO3', display: 'CO2 + Ca(OH)2 → [ ? ] + H2O', desc: '二酸化炭素を石灰水に通すと、水に溶けにくい炭酸カルシウムができて白くにごる。' },
+      { genre: 'reaction', diff: 'senior', type: 'typing', name: '二酸化炭素と石灰水の反応', formula: 'H2O', display: 'CO2 + Ca(OH)2 → CaCO3 + [ ? ]', desc: '石灰水の白いにごりはCaCO3。残ったHとOは水としてそろえる。' },
+      { genre: 'reaction', diff: 'senior', type: 'typing', name: '炭酸ナトリウムと塩酸の反応', formula: 'NaCl', display: 'Na2CO3 + 2HCl → 2[ ? ] + H2O + CO2', desc: '炭酸塩に酸を加えると二酸化炭素が発生する。Naが2個あるのでNaClも2個できる。' },
+      { genre: 'reaction', diff: 'senior', type: 'typing', name: '過酸化水素水の分解', formula: 'O2', display: '2H2O2 → 2H2O + [ ? ]', desc: '二酸化マンガンを加えると過酸化水素が分解し、酸素が発生する。触媒は反応式には入れない。' },
+      { genre: 'reaction', diff: 'senior', type: 'typing', name: '鉄と硫酸銅水溶液の反応', formula: 'Cu', display: 'Fe + CuSO4 → FeSO4 + [ ? ]', desc: '鉄の方が銅より陽イオンになりやすいため、銅イオンから銅の単体が出てくる。' },
+      { genre: 'reaction', diff: 'senior', type: 'typing', name: '水酸化カルシウムと塩酸の中和', formula: 'CaCl2', display: 'Ca(OH)2 + 2HCl → [ ? ] + 2H2O', desc: '水酸化カルシウムはOHを2個もつので、塩酸2個と中和して塩化カルシウムと水をつくる。' },
 
       // ───────── 反応式 reaction：受験（supreme）＝難関の反応式 ─────────
       { genre: 'reaction', diff: 'supreme', type: 'typing', name: '硫酸と水酸化バリウムの中和', formula: 'BaSO4', display: 'H2SO4 + Ba(OH)2 → [ ? ] + 2H2O', desc: '中和で水と硫酸バリウムの沈殿が同時にできる。' },
@@ -173,18 +259,24 @@ const GameData = (function() {
       { genre: 'reaction', diff: 'supreme', type: 'typing', name: '硝酸銀と塩化ナトリウムの反応', formula: 'AgCl', display: 'AgNO3 + NaCl → [ ? ] + NaNO3', desc: '銀イオンと塩化物イオンが結びつき、水に溶けにくい白色沈殿の塩化銀ができる。' },
       { genre: 'reaction', diff: 'supreme', type: 'typing', name: '硫酸銅水溶液と水酸化ナトリウムの反応', formula: 'Cu(OH)2', display: 'CuSO4 + 2NaOH → [ ? ] + Na2SO4', desc: '銅イオンと水酸化物イオンが結びつくと、青白い沈殿の水酸化銅ができる。' },
       { genre: 'reaction', diff: 'supreme', type: 'typing', name: '酸化鉄の炭素による還元', formula: 'Fe', display: '2Fe2O3 + 3C → 4[ ? ] + 3CO2', desc: '酸化鉄から酸素が取り除かれて鉄になる。炭素は酸素と結びつき二酸化炭素になる。' },
+      { genre: 'reaction', diff: 'supreme', type: 'typing', name: 'ブタンの燃焼', formula: 'O2', display: '2C4H10 + 13[ ? ] → 8CO2 + 10H2O', desc: 'ブタンの完全燃焼ではCO2とH2Oができる。右辺の酸素原子26個に合わせ、O2は13個必要。' },
+      { genre: 'reaction', diff: 'supreme', type: 'typing', name: 'ブタンの燃焼', formula: 'H2O', display: '2C4H10 + 13O2 → 8CO2 + 10[ ? ]', desc: '水素原子は左辺で20個あるため、水分子は10個になる。炭素と水素を先にそろえると考えやすい。' },
+      { genre: 'reaction', diff: 'supreme', type: 'typing', name: 'グルコースの燃焼', formula: 'CO2', display: 'C6H12O6 + 6O2 → 6[ ? ] + 6H2O', desc: 'グルコースが完全燃焼すると二酸化炭素と水になる。炭素原子が6個なのでCO2も6個。' },
+      { genre: 'reaction', diff: 'supreme', type: 'typing', name: '炭酸ナトリウムと塩化カルシウムの反応', formula: 'CaCO3', display: 'Na2CO3 + CaCl2 → [ ? ] + 2NaCl', desc: 'Ca2+とCO32-が結びつき、水に溶けにくい炭酸カルシウムの白色沈殿ができる。' },
+      { genre: 'reaction', diff: 'supreme', type: 'typing', name: '酸化銅の水素による還元', formula: 'H2O', display: 'CuO + H2 → Cu + [ ? ]', desc: '水素が酸化銅から酸素をうばい、水になる。酸化銅は酸素を失って銅に還元される。' },
+      { genre: 'reaction', diff: 'supreme', type: 'typing', name: '硫化鉄と塩酸の反応', formula: 'H2S', display: 'FeS + 2HCl → FeCl2 + [ ? ]', desc: '硫化鉄に塩酸を加えると硫化水素が発生する。係数2で塩素と水素の数をそろえる。' },
 
       // ───────── イオン ion：基礎（junior）＝主要な単原子イオン ─────────
       { genre: 'ion', diff: 'junior', type: 'typing', name: '水素イオン',      formula: 'H+',  desc: '水素原子が電子を1個失った陽イオン。酸性の正体。' },
       { genre: 'ion', diff: 'junior', type: 'typing', name: 'ナトリウムイオン', formula: 'Na+', desc: 'ナトリウム原子が電子1個を失った陽イオン。' },
       { genre: 'ion', diff: 'junior', type: 'typing', name: 'カリウムイオン',   formula: 'K+',  desc: 'カリウム原子が電子1個を失った陽イオン。' },
-      { genre: 'ion', diff: 'junior', type: 'typing', name: 'カルシウムイオン', formula: 'Ca2+', desc: '電子2個を失った陽イオン。' },
-      { genre: 'ion', diff: 'junior', type: 'typing', name: 'マグネシウムイオン', formula: 'Mg2+', desc: '電子2個を失った陽イオン。' },
-      { genre: 'ion', diff: 'junior', type: 'typing', name: '亜鉛イオン',       formula: 'Zn2+', desc: '電子2個を失った陽イオン。' },
-      { genre: 'ion', diff: 'junior', type: 'typing', name: '銅イオン',         formula: 'Cu2+', desc: '水溶液中で青色を示す陽イオン。' },
-      { genre: 'ion', diff: 'junior', type: 'typing', name: 'バリウムイオン',   formula: 'Ba2+', desc: '電子2個を失った陽イオン。' },
-      { genre: 'ion', diff: 'junior', type: 'typing', name: '塩化物イオン',     formula: 'Cl-', desc: '塩素原子が電子1個を受け取った陰イオン。' },
-      { genre: 'ion', diff: 'junior', type: 'typing', name: '水酸化物イオン',   formula: 'OH-', desc: 'アルカリ性の正体となる陰イオン。' },
+      { genre: 'ion', diff: 'junior', type: 'typing', name: 'カルシウムイオン', formula: 'Ca2+', desc: 'カルシウム原子が電子2個を失った陽イオン。塩化カルシウムなどにふくまれる。' },
+      { genre: 'ion', diff: 'junior', type: 'typing', name: 'マグネシウムイオン', formula: 'Mg2+', desc: 'マグネシウム原子が電子2個を失った陽イオン。金属原子は電子を失って陽イオンになりやすい。' },
+      { genre: 'ion', diff: 'junior', type: 'typing', name: '亜鉛イオン',       formula: 'Zn2+', desc: '亜鉛原子が電子2個を失った陽イオン。酸と反応すると水溶液中でZn2+になる。' },
+      { genre: 'ion', diff: 'junior', type: 'typing', name: '銅イオン',         formula: 'Cu2+', desc: '水溶液中で青色を示す陽イオン。塩化銅や硫酸銅の水溶液で見られる。' },
+      { genre: 'ion', diff: 'junior', type: 'typing', name: 'バリウムイオン',   formula: 'Ba2+', desc: 'バリウム原子が電子2個を失った陽イオン。硫酸イオンと結びつくと白色沈殿をつくる。' },
+      { genre: 'ion', diff: 'junior', type: 'typing', name: '塩化物イオン',     formula: 'Cl-', desc: '塩素原子が電子1個を受け取った陰イオン。塩酸や塩化ナトリウムの水溶液にふくまれる。' },
+      { genre: 'ion', diff: 'junior', type: 'typing', name: '水酸化物イオン',   formula: 'OH-', desc: 'アルカリ性の正体となる陰イオン。H+と結びつくと水H2Oになる。' },
 
       // ───────── イオン ion：応用（mid）＝多原子イオン・イオン化傾向 ─────────
       { genre: 'ion', diff: 'mid', type: 'typing', name: 'アンモニウムイオン', formula: 'NH4+',  desc: '多原子イオン。全体で+1の電荷をもつ。' },
@@ -195,6 +287,10 @@ const GameData = (function() {
       { genre: 'ion', diff: 'mid', type: 'typing', name: '水酸化ナトリウムの電離', formula: 'OH-', display: 'NaOH → Na+ + [ ? ]', desc: '水酸化ナトリウムは水中でナトリウムイオンと水酸化物イオンに分かれ、アルカリ性を示す。' },
       { genre: 'ion', diff: 'mid', type: 'typing', name: '硫酸の電離', formula: 'SO42-', display: 'H2SO4 → 2H+ + [ ? ]', desc: '硫酸は水中で2個の水素イオンと1個の硫酸イオンに分かれる。' },
       { genre: 'ion', diff: 'mid', type: 'typing', name: '塩化銅の電離', formula: 'Cu2+', display: 'CuCl2 → [ ? ] + 2Cl-', desc: '塩化銅は水中で銅イオンと塩化物イオンに分かれる。銅イオンは水溶液を青色に見せる。' },
+      { genre: 'ion', diff: 'mid', type: 'typing', name: '炭酸水素イオン', formula: 'HCO3-', desc: '炭酸水素ナトリウムなどにふくまれる多原子イオン。全体で-1の電荷をもつ。' },
+      { genre: 'ion', diff: 'mid', type: 'typing', name: '水酸化カルシウムの電離', formula: 'Ca2+', display: 'Ca(OH)2 → [ ? ] + 2OH-', desc: '水酸化カルシウムは水中でカルシウムイオン1個と水酸化物イオン2個に分かれる。' },
+      { genre: 'ion', diff: 'mid', type: 'typing', name: '塩化バリウムの電離', formula: 'Ba2+', display: 'BaCl2 → [ ? ] + 2Cl-', desc: '塩化バリウムは水中でBa2+とCl-に分かれる。Ba2+はSO42-の検出に使われる。' },
+      { genre: 'ion', diff: 'mid', type: 'typing', name: '硫酸ナトリウムの電離', formula: 'Na+', display: 'Na2SO4 → 2[ ? ] + SO42-', desc: '硫酸ナトリウムはナトリウムイオン2個と硫酸イオン1個に分かれる。電荷の合計は0になる。' },
       // イオン化傾向（参考: K > Ca > Na > Mg > Al > Zn > Fe > Cu > Ag）
       { genre: 'ion', diff: 'mid', type: 'typing', name: 'イオン化傾向: ZnとCuを比較', formula: 'Zn', display: 'CuとZn ─ 陽イオンになりやすいのは [ ? ]', desc: 'イオン化傾向は Zn>Cu。亜鉛の方が陽イオンになりやすい。' },
       { genre: 'ion', diff: 'mid', type: 'typing', name: 'イオン化傾向: FeとCuを比較', formula: 'Fe', display: 'CuとFe ─ 陽イオンになりやすいのは [ ? ]', desc: 'イオン化傾向は Fe>Cu。鉄の方が陽イオンになりやすい。' },
@@ -1343,6 +1439,21 @@ const GameData = (function() {
       { q: 'うすい塩酸に水酸化ナトリウム水溶液を少しずつ加え、BTB溶液が緑色になったところで加えるのをやめた。水を蒸発させると主に残る物質は何か？',
         c: ['塩化ナトリウム', '水酸化ナトリウム', '塩化水素', '炭酸ナトリウム'], a: 0,
         desc: '塩酸と水酸化ナトリウムがちょうど中和すると、塩化ナトリウムと水ができる。水を蒸発させると塩が残る。' },
+      { q: '石灰水にストローで息を吹き込むと白くにごった。さらに長く二酸化炭素を通し続けると、にごりがうすくなることがある。最初の白いにごりの主成分は何か？',
+        c: ['炭酸カルシウム', '塩化カルシウム', '水酸化ナトリウム', '硫酸バリウム'], a: 0,
+        desc: '二酸化炭素と石灰水の水酸化カルシウムが反応し、水に溶けにくい炭酸カルシウムができるため白くにごる。' },
+      { q: '炭酸ナトリウム水溶液にうすい塩酸を少しずつ加えると、気体が発生した。発生した気体を石灰水に通すと白くにごった。この気体は何か？',
+        c: ['水素', '酸素', '二酸化炭素', '塩素'], a: 2,
+        desc: '炭酸塩に酸を加えると二酸化炭素が発生する。二酸化炭素は石灰水を白くにごらせる。' },
+      { q: '水酸化カルシウム水溶液にうすい塩酸を加えていくと、アルカリ性が弱まり中性に近づいた。この中和で主にできる塩はどれか？',
+        c: ['塩化カルシウム', '炭酸カルシウム', '硫酸カルシウム', '水酸化ナトリウム'], a: 0,
+        desc: 'Ca(OH)2のCa2+と塩酸のCl-から塩化カルシウムができ、H+とOH-は水になる。' },
+      { q: '過酸化水素水に二酸化マンガンを加えると気体が発生した。反応後も二酸化マンガンはほとんど残っていた。この実験で二酸化マンガンの役割は何か？',
+        c: ['反応で消費される燃料', '酸素そのもの', '反応を助ける触媒', '発生した水素を吸収する物質'], a: 2,
+        desc: '二酸化マンガンは過酸化水素の分解を速める触媒で、反応の前後でほとんど変化しない。' },
+      { q: '硫酸銅水溶液に鉄くぎを入れてしばらく置くと、くぎの表面に赤色の物質が付着し、水溶液の青色がうすくなった。赤色の物質として正しいものはどれか？',
+        c: ['銅', '鉄', '硫黄', '酸化銀'], a: 0,
+        desc: '鉄は銅より陽イオンになりやすいため、銅イオンが電子を受け取って銅の単体として析出する。' },
 
       // ───────── 必殺技 追加（物理・生物・地学・subject付き）─────────
   { subject: 'physics',
@@ -1430,6 +1541,11 @@ const GameData = (function() {
         if (opts.diffs && opts.diffs.indexOf(q.diff) < 0) return false;
         if (opts.genres && opts.genres.length && opts.genres.indexOf(q.genre) < 0) return false;
         if (opts.type && q.type !== opts.type) return false;
+        if (opts.grades && opts.grades.length) {
+          var gg = GENRE_GRADES[q.genre];
+          var gnum = gg ? gg[q.diff] : null;
+          if (!gnum || opts.grades.indexOf(gnum) < 0) return false;
+        }
         return true;
       });
     }
@@ -1949,6 +2065,8 @@ const GameData = (function() {
     // ==========================================
     return {
       QUESTION_DB, ULTIMATE_QUIZZES, SUBJECTS, GENRES, DIFFICULTIES, getQuestions, getAvailableGenres,
+      GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
+      GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,
       BOSSES_DB, ENDGAME_BOSSES_DB, getEndgameBossStats, PERMA_BUFF_CAP, getPermaBuffTotals,
       TITLES_DB, isTitleUnlocked, AVATARS_DB,
       GACHA_DB, GACHA_MILESTONE_BOSSES, getGachaPrice, gachaDiscountPct, RARITY_DB, CYAN_GLOW_CLASS,
