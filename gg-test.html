@@ -22,6 +22,7 @@
       --green: #15965d;
       --red: #d64545;
       --gold: #c8861a;
+      --violet: #7c3aed;
       --shadow: rgba(32, 40, 50, .16);
     }
 
@@ -38,10 +39,8 @@
 
     body { min-height: 100vh; }
 
-    button {
-      font: inherit;
-      color: inherit;
-    }
+    button,
+    select { font: inherit; color: inherit; }
 
     .app {
       width: min(1120px, 100%);
@@ -78,6 +77,11 @@
       letter-spacing: 0;
     }
 
+    h3 {
+      margin-bottom: 6px;
+      font-size: 18px;
+    }
+
     .subtitle,
     .muted {
       color: var(--muted);
@@ -86,7 +90,9 @@
 
     .panel,
     .tile,
-    .modal-card {
+    .modal-card,
+    .unit-card,
+    .formation-slot {
       border: 2px solid var(--line);
       border-radius: 8px;
       background: rgba(255, 255, 255, .92);
@@ -113,11 +119,25 @@
       box-shadow: 0 5px 0 #bfd3ff;
     }
 
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+      transform: none;
+      box-shadow: 0 3px 0 #d5dde8;
+    }
+
     .btn.primary {
       color: #fff;
       border-color: #1d4ed8;
       background: var(--blue);
       box-shadow: 0 4px 0 #173f9c;
+    }
+
+    .btn.danger {
+      color: #fff;
+      border-color: #b91c1c;
+      background: var(--red);
+      box-shadow: 0 4px 0 #8f1717;
     }
 
     .btn.ghost {
@@ -159,12 +179,15 @@
 
     .home-grid {
       display: grid;
-      grid-template-columns: 1.25fr .75fr;
+      grid-template-columns: 1.1fr .9fr;
       gap: 10px;
     }
 
     .stage-list,
-    .home-buttons {
+    .home-buttons,
+    .shop-grid,
+    .card-grid,
+    .castle-grid {
       display: grid;
       gap: 8px;
     }
@@ -178,10 +201,7 @@
       text-align: left;
     }
 
-    .stage-card h3 {
-      margin: 0 0 4px;
-      font-size: 20px;
-    }
+    .stage-card h3 { margin: 0 0 4px; }
 
     .home-buttons .btn {
       width: 100%;
@@ -196,7 +216,8 @@
       justify-content: flex-end;
     }
 
-    .pill {
+    .pill,
+    .rarity-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -207,6 +228,10 @@
       padding: 5px 9px;
       font-weight: 800;
     }
+
+    .rarity-pill.n { border-color: #94a3b8; color: #475569; }
+    .rarity-pill.r { border-color: #38bdf8; color: #0369a1; }
+    .rarity-pill.sr { border-color: #c084fc; color: #7e22ce; }
 
     .modal {
       position: fixed;
@@ -221,7 +246,9 @@
     .modal.show { display: grid; }
 
     .modal-card {
-      width: min(560px, 100%);
+      width: min(760px, 100%);
+      max-height: min(88vh, 760px);
+      overflow: auto;
       padding: 16px;
     }
 
@@ -231,6 +258,105 @@
       justify-content: flex-end;
       flex-wrap: wrap;
       margin-top: 12px;
+    }
+
+    .shop-grid {
+      grid-template-columns: repeat(3, 1fr);
+      margin: 10px 0;
+    }
+
+    .shop-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px;
+    }
+
+    .card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .unit-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      box-shadow: none;
+    }
+
+    .unit-card.selected {
+      border-color: var(--blue);
+      background: #eef7ff;
+    }
+
+    .unit-face {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border: 2px solid rgba(32,40,50,.2);
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 50% 28%, #fff 0 13px, transparent 14px),
+        linear-gradient(180deg, #fef3c7, #ffffff);
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .unit-card small {
+      display: block;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .formation-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .formation-slot {
+      min-height: 104px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: none;
+    }
+
+    .select-line {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .select-line select {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 6px 8px;
+      font-weight: 700;
+    }
+
+    .gacha-result {
+      min-height: 140px;
+      display: grid;
+      place-items: center;
+      border: 2px dashed #f2b94b;
+      border-radius: 8px;
+      background: #fff8e8;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .gacha-result.pop { animation: prizePop .38s ease; }
+
+    @keyframes prizePop {
+      0% { transform: scale(.92); filter: brightness(1.2); }
+      100% { transform: scale(1); filter: brightness(1); }
     }
 
     .hud {
@@ -348,7 +474,8 @@
       border: 2px solid rgba(32,40,50,.22);
       border-radius: 8px;
       background: #fffdfa;
-      font-size: 26px;
+      font-size: 21px;
+      font-weight: 900;
       transform: translateX(-50%);
       box-shadow: 0 5px 0 rgba(32,40,50,.12);
       transition: left .08s linear;
@@ -500,7 +627,10 @@
       .app { padding: 8px; }
       .topbar,
       .home-grid,
-      .question-panel {
+      .question-panel,
+      .shop-grid,
+      .card-grid,
+      .select-line {
         grid-template-columns: 1fr;
       }
       h1 { font-size: 24px; }
@@ -518,7 +648,8 @@
         right: 62px;
       }
       .question { font-size: 23px; }
-      .score-grid { grid-template-columns: 1fr; }
+      .score-grid,
+      .formation-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -529,7 +660,7 @@
         <button id="startTile" class="start-tile tile" type="button" aria-label="グラマー・ガードを開始">
           <div>
             <h1>グラマー・ガード NYANKO</h1>
-            <p class="subtitle">英語の4択で味方を出して、横1レーンの城を守るミニRPG</p>
+            <p class="subtitle">英語の4択問題で味方を出し、横1レーンの城を守るミニRPG</p>
           </div>
           <div class="start-frame">入口タイル</div>
           <strong>四角い枠をクリックしてスタート</strong>
@@ -541,7 +672,7 @@
       <header class="topbar">
         <div>
           <h1>グラマー・ガード NYANKO</h1>
-          <p class="subtitle">ホーム：P1では画面遷移とステージ1の戦闘を通します。</p>
+          <p class="subtitle">ガチャ、強化、編成で味方を育ててからステージへ出撃します。</p>
         </div>
         <div class="status-line">
           <span class="pill">英語ゴールド <span id="homeGold">0</span> G</span>
@@ -561,14 +692,18 @@
               <strong>出撃</strong>
             </button>
           </div>
+
+          <h2 style="margin-top:14px;">編成</h2>
+          <div id="formationSlots" class="formation-row"></div>
+          <button id="formationBtn" class="btn ghost" type="button">編成を変える</button>
         </section>
 
         <aside class="panel" style="padding:12px;">
           <h2>ホーム機能</h2>
           <div class="home-buttons">
-            <button class="btn ghost" type="button">味方ガチャ（P2予定）</button>
-            <button class="btn ghost" type="button">味方強化（P2予定）</button>
-            <button class="btn ghost" type="button">城強化（P2予定）</button>
+            <button id="gachaBtn" class="btn ghost" type="button">味方ガチャ</button>
+            <button id="unitUpgradeBtn" class="btn ghost" type="button">味方強化</button>
+            <button id="castleUpgradeBtn" class="btn ghost" type="button">城強化</button>
             <button id="exchangeBoxBtn" class="btn ghost" type="button">アイテム交換ボックス（連携時）</button>
           </div>
         </aside>
@@ -579,7 +714,7 @@
       <header class="topbar">
         <div>
           <h1>ステージ1：be動詞の入口</h1>
-          <p class="subtitle">正解すると1ユニットが出撃します。タイピングはありません。</p>
+          <p class="subtitle">正解すると編成した味方が順番に出撃します。タイピングはありません。</p>
         </div>
         <button id="battleHomeBtn" class="btn ghost" type="button">ホームへ</button>
       </header>
@@ -604,8 +739,8 @@
       </section>
 
       <section id="battleLane" class="battle-lane" aria-label="横1レーン防衛">
-        <div id="allyCastle" class="castle left" title="自分の城">🏠</div>
-        <div id="enemyCastle" class="castle right" title="敵の城">🏯</div>
+        <div id="allyCastle" class="castle left" title="自分の城">城</div>
+        <div id="enemyCastle" class="castle right" title="敵の城">敵</div>
       </section>
 
       <section class="question-panel">
@@ -613,8 +748,8 @@
           <div id="questionTag" class="tagline">grammar / junior / 4択</div>
           <p id="questionText" class="question">I ( ) a student.</p>
           <div id="hintText" class="hint">ヒント：I の be動詞は am。</div>
-          <div id="descText" class="desc">解説：主語が I のとき be動詞は am。</div>
-          <div id="messageText" class="message">正解すると、ガードねこが1体出撃します。</div>
+          <div id="descText" class="desc">解説：主語が I のとき、be動詞は am。</div>
+          <div id="messageText" class="message">正解すると、編成中の味方が1体出撃します。</div>
         </div>
         <div class="choices-box">
           <div id="choices" class="choices"></div>
@@ -644,10 +779,10 @@
   <div id="stageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="stageModalTitle">
     <section class="modal-card">
       <h2 id="stageModalTitle">ステージ1：be動詞の入口</h2>
-      <p class="muted">出題範囲：中1はじめの be動詞。敵はゆっくり進みます。正解して味方を出し、敵の城HPを0にします。</p>
+      <p class="muted">出題範囲：中1はじめの be動詞。正解して味方を出し、敵の城HPを0にします。</p>
       <div class="score-grid">
         <div class="score">問題形式<strong>4択</strong></div>
-        <div class="score">ユニット<strong>1種</strong></div>
+        <div class="score">編成枠<strong>3体</strong></div>
         <div class="score">目標<strong>敵城破壊</strong></div>
       </div>
       <div class="modal-actions">
@@ -657,21 +792,93 @@
     </section>
   </div>
 
+  <div id="gachaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="gachaModalTitle">
+    <section class="modal-card">
+      <h2 id="gachaModalTitle">味方ガチャ</h2>
+      <p class="muted">1回50G。排出率：N 72% / R 23% / SR 5%。同じ味方も所持できます。</p>
+      <div class="shop-grid">
+        <div class="shop-card"><span class="rarity-pill n">N</span><p class="muted">基本性能。強化費用が軽い。</p></div>
+        <div class="shop-card"><span class="rarity-pill r">R</span><p class="muted">少し高性能。ステージ序盤の主力。</p></div>
+        <div class="shop-card"><span class="rarity-pill sr">SR</span><p class="muted">高性能。出たら編成候補。</p></div>
+      </div>
+      <div id="gachaResult" class="gacha-result">ガチャ結果はここに表示されます。</div>
+      <div class="modal-actions">
+        <button id="closeGachaBtn" class="btn ghost" type="button">閉じる</button>
+        <button id="pullGachaBtn" class="btn primary" type="button">50Gで引く</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="unitModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="unitModalTitle">
+    <section class="modal-card">
+      <h2 id="unitModalTitle">味方強化</h2>
+      <p class="muted">所持している味方を英語ゴールドでレベルアップします。</p>
+      <div id="unitList" class="card-grid"></div>
+      <div class="modal-actions">
+        <button id="closeUnitBtn" class="btn ghost" type="button">閉じる</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="castleModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="castleModalTitle">
+    <section class="modal-card">
+      <h2 id="castleModalTitle">城強化</h2>
+      <p class="muted">強化値はバトル開始時の城HP・エネルギー・コンボ補正に反映されます。</p>
+      <div id="castleList" class="castle-grid"></div>
+      <div class="modal-actions">
+        <button id="closeCastleBtn" class="btn ghost" type="button">閉じる</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="formationModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="formationModalTitle">
+    <section class="modal-card">
+      <h2 id="formationModalTitle">編成</h2>
+      <p class="muted">正解時に出撃する味方を3体まで選びます。左から順番に出ます。</p>
+      <div id="formationEditor"></div>
+      <div class="modal-actions">
+        <button id="closeFormationBtn" class="btn primary" type="button">決定</button>
+      </div>
+    </section>
+  </div>
+
   <script>
     (() => {
       "use strict";
 
       const SAVE_KEY = "gg_nyanko_save_v1";
+      const GACHA_COST = 50;
 
       const QUESTIONS = [
-        { question: "I ( ) a student.", choices: ["am", "is", "are", "be"], answer: 0, hint: "I の be動詞は am。", desc: "主語が I のとき be動詞は am を使います。" },
-        { question: "You ( ) a student.", choices: ["is", "are", "be", "am"], answer: 1, hint: "You の be動詞は are。", desc: "主語が You のとき be動詞は are を使います。" },
-        { question: "He ( ) a student.", choices: ["are", "be", "am", "is"], answer: 3, hint: "He / She / It は is。", desc: "主語が He のとき be動詞は is を使います。" },
-        { question: "She ( ) a student.", choices: ["be", "am", "is", "are"], answer: 2, hint: "He / She / It は is。", desc: "主語が She のとき be動詞は is を使います。" },
-        { question: "We ( ) students.", choices: ["is", "are", "am", "be"], answer: 1, hint: "We / They は are。", desc: "主語が We のとき be動詞は are を使います。" },
-        { question: "They ( ) students.", choices: ["are", "is", "am", "be"], answer: 0, hint: "We / They は are。", desc: "主語が They のとき be動詞は are を使います。" },
+        { question: "I ( ) a student.", choices: ["am", "is", "are", "be"], answer: 0, hint: "I の be動詞は am。", desc: "主語が I のとき、be動詞は am を使います。" },
+        { question: "You ( ) a student.", choices: ["is", "are", "be", "am"], answer: 1, hint: "You の be動詞は are。", desc: "主語が You のとき、be動詞は are を使います。" },
+        { question: "He ( ) a student.", choices: ["are", "be", "am", "is"], answer: 3, hint: "He / She / It は is。", desc: "主語が He のとき、be動詞は is を使います。" },
+        { question: "She ( ) a student.", choices: ["be", "am", "is", "are"], answer: 2, hint: "He / She / It は is。", desc: "主語が She のとき、be動詞は is を使います。" },
+        { question: "We ( ) students.", choices: ["is", "are", "am", "be"], answer: 1, hint: "We / They は are。", desc: "主語が We のとき、be動詞は are を使います。" },
+        { question: "They ( ) students.", choices: ["are", "is", "am", "be"], answer: 0, hint: "We / They は are。", desc: "主語が They のとき、be動詞は are を使います。" },
         { question: "I ( ) soccer every day.", choices: ["plays", "am", "play", "does"], answer: 2, hint: "I の一般動詞はそのまま。", desc: "I の現在形では一般動詞を原形で使います。" },
         { question: "She ( ) soccer every day.", choices: ["play", "plays", "are", "do"], answer: 1, hint: "She の現在形は動詞に s。", desc: "三人称単数の現在形なので plays になります。" }
+      ];
+
+      const UNIT_TYPES = {
+        guard: { name: "ガードねこ", mark: "G", role: "壁", hp: 34, attack: 8, speed: 30, cost: 24, cd: .86, range: 34, trait: "HPが高い前衛。" },
+        arrow: { name: "アローねこ", mark: "A", role: "遠距離", hp: 20, attack: 12, speed: 38, cost: 30, cd: .82, range: 78, trait: "少し離れて攻撃。" },
+        magic: { name: "マジックねこ", mark: "M", role: "押し返し", hp: 18, attack: 10, speed: 34, cost: 34, cd: .95, range: 62, push: 16, trait: "攻撃時に敵を押し返す。" },
+        knight: { name: "ナイトねこ", mark: "K", role: "強攻撃", hp: 26, attack: 17, speed: 44, cost: 38, cd: 1.04, range: 38, trait: "攻撃力が高い。" },
+        hint: { name: "ヒントねこ", mark: "H", role: "補助", hp: 22, attack: 7, speed: 36, cost: 22, cd: .72, range: 46, energyRefund: 7, trait: "出撃後に少しエネルギー回復。" }
+      };
+
+      const RARITIES = {
+        N: { rate: 72, mult: 1, costAdd: 0, className: "n" },
+        R: { rate: 23, mult: 1.18, costAdd: 8, className: "r" },
+        SR: { rate: 5, mult: 1.42, costAdd: 18, className: "sr" }
+      };
+
+      const CASTLE_UPGRADES = [
+        { key: "hp", name: "城HP", desc: "バトル開始時の自分の城HPを増やします。", base: 140, step: 16 },
+        { key: "energy", name: "初期エネルギー", desc: "開始時の英語エネルギーを増やします。", base: 70, step: 8 },
+        { key: "regen", name: "回復速度", desc: "時間で増える英語エネルギーを速くします。", base: 9, step: 1.2 },
+        { key: "combo", name: "コンボ補正", desc: "正解時のコンボ攻撃補正を少し強くします。", base: 1, step: .08 }
       ];
 
       const els = {
@@ -687,6 +894,24 @@
         stageModal: document.getElementById("stageModal"),
         closeStageModalBtn: document.getElementById("closeStageModalBtn"),
         startBattleBtn: document.getElementById("startBattleBtn"),
+        gachaModal: document.getElementById("gachaModal"),
+        gachaBtn: document.getElementById("gachaBtn"),
+        closeGachaBtn: document.getElementById("closeGachaBtn"),
+        pullGachaBtn: document.getElementById("pullGachaBtn"),
+        gachaResult: document.getElementById("gachaResult"),
+        unitModal: document.getElementById("unitModal"),
+        unitUpgradeBtn: document.getElementById("unitUpgradeBtn"),
+        closeUnitBtn: document.getElementById("closeUnitBtn"),
+        unitList: document.getElementById("unitList"),
+        castleModal: document.getElementById("castleModal"),
+        castleUpgradeBtn: document.getElementById("castleUpgradeBtn"),
+        closeCastleBtn: document.getElementById("closeCastleBtn"),
+        castleList: document.getElementById("castleList"),
+        formationModal: document.getElementById("formationModal"),
+        formationBtn: document.getElementById("formationBtn"),
+        closeFormationBtn: document.getElementById("closeFormationBtn"),
+        formationSlots: document.getElementById("formationSlots"),
+        formationEditor: document.getElementById("formationEditor"),
         battleHomeBtn: document.getElementById("battleHomeBtn"),
         resultHomeBtn: document.getElementById("resultHomeBtn"),
         retryBtn: document.getElementById("retryBtn"),
@@ -719,7 +944,11 @@
       const saveData = {
         gold: 0,
         bestStage: 0,
-        slowMode: false
+        slowMode: false,
+        nextUnitId: 1,
+        units: [],
+        formation: [],
+        castle: { hp: 0, energy: 0, regen: 0, combo: 0 }
       };
 
       const battle = {
@@ -730,11 +959,15 @@
         allyHp: 140,
         enemyHp: 90,
         energy: 70,
+        energyMax: 100,
+        energyRegen: 9,
+        comboBoost: 1,
         combo: 0,
         correct: 0,
         wrong: 0,
         questionIndex: 0,
         nextId: 1,
+        spawnCursor: 0,
         allies: [],
         enemies: [],
         lastTime: 0,
@@ -761,21 +994,42 @@
       function loadSave() {
         try {
           const raw = localStorage.getItem(SAVE_KEY);
-          if (!raw) return;
+          if (!raw) {
+            giveStarterUnit();
+            return;
+          }
           const parsed = JSON.parse(raw);
           saveData.gold = Number(parsed.gold || 0);
           saveData.bestStage = Number(parsed.bestStage || 0);
           saveData.slowMode = Boolean(parsed.slowMode);
+          saveData.nextUnitId = Number(parsed.nextUnitId || 1);
+          saveData.units = Array.isArray(parsed.units) ? parsed.units.filter(isValidUnit) : [];
+          saveData.formation = Array.isArray(parsed.formation) ? parsed.formation.map(Number).filter(Boolean).slice(0, 3) : [];
+          saveData.castle = Object.assign({ hp: 0, energy: 0, regen: 0, combo: 0 }, parsed.castle || {});
+          if (saveData.units.length === 0) giveStarterUnit();
+          normalizeFormation();
         } catch (_) {
           showError("セーブ読み込みに失敗しました。初期状態で開始します。");
+          giveStarterUnit();
         }
+      }
+
+      function isValidUnit(unit) {
+        return unit && UNIT_TYPES[unit.type] && RARITIES[unit.rarity] && Number(unit.id) && Number(unit.level) > 0;
+      }
+
+      function giveStarterUnit() {
+        const starter = createUnit("guard", "N");
+        saveData.units = [starter];
+        saveData.formation = [starter.id];
+        saveData.nextUnitId = Math.max(saveData.nextUnitId, starter.id + 1);
       }
 
       function save() {
         try {
           localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
         } catch (_) {
-          showError("セーブできませんでした。file://やブラウザ設定が原因の場合があります。");
+          showError("セーブできませんでした。file:// やブラウザ設定が原因の場合があります。");
         }
       }
 
@@ -786,9 +1040,21 @@
       }
 
       function renderHome() {
+        normalizeFormation();
         els.homeGold.textContent = saveData.gold;
         els.slowMode.checked = saveData.slowMode;
         els.exchangeBoxBtn.style.display = GG_CONFIG.rpgIntegration ? "block" : "none";
+        renderFormationSlots();
+        els.pullGachaBtn.disabled = saveData.gold < GACHA_COST;
+      }
+
+      function openModal(modal) {
+        renderHome();
+        modal.classList.add("show");
+      }
+
+      function closeModal(modal) {
+        modal.classList.remove("show");
       }
 
       function openStageModal() {
@@ -797,6 +1063,235 @@
 
       function closeStageModal() {
         els.stageModal.classList.remove("show");
+      }
+
+      function openGacha() {
+        els.gachaResult.textContent = "ガチャ結果はここに表示されます。";
+        openModal(els.gachaModal);
+      }
+
+      function pullGacha() {
+        if (saveData.gold < GACHA_COST) {
+          els.gachaResult.textContent = "英語ゴールドが足りません。ステージで正解して貯めましょう。";
+          return;
+        }
+        saveData.gold -= GACHA_COST;
+        const unit = createRandomUnit();
+        saveData.units.push(unit);
+        normalizeFormation();
+        if (saveData.formation.length < 3) saveData.formation.push(unit.id);
+        save();
+        renderHome();
+        els.gachaResult.classList.remove("pop");
+        void els.gachaResult.offsetWidth;
+        els.gachaResult.classList.add("pop");
+        els.gachaResult.innerHTML = renderPrize(unit);
+      }
+
+      function createRandomUnit() {
+        const rarity = rollRarity();
+        const typeKeys = Object.keys(UNIT_TYPES);
+        const type = typeKeys[Math.floor(Math.random() * typeKeys.length)];
+        return createUnit(type, rarity);
+      }
+
+      function createUnit(type, rarity) {
+        const id = saveData.nextUnitId++;
+        return { id, type, rarity, level: 1 };
+      }
+
+      function rollRarity() {
+        const roll = Math.random() * 100;
+        if (roll < RARITIES.SR.rate) return "SR";
+        if (roll < RARITIES.SR.rate + RARITIES.R.rate) return "R";
+        return "N";
+      }
+
+      function renderPrize(unit) {
+        const type = UNIT_TYPES[unit.type];
+        const rarity = RARITIES[unit.rarity];
+        return '<div class="unit-face">' + type.mark + '</div>' +
+          '<h3><span class="rarity-pill ' + rarity.className + '">' + unit.rarity + '</span> ' + type.name + '</h3>' +
+          '<p class="muted">' + type.role + ' / ' + type.trait + '</p>';
+      }
+
+      function renderUnitList() {
+        els.unitList.innerHTML = "";
+        if (saveData.units.length === 0) {
+          els.unitList.textContent = "所持している味方がいません。";
+          return;
+        }
+        saveData.units.forEach(unit => {
+          const stats = getUnitStats(unit);
+          const cost = unitUpgradeCost(unit);
+          const card = document.createElement("article");
+          card.className = "unit-card";
+          card.innerHTML = '<div class="unit-face">' + stats.mark + '</div>' +
+            '<div><strong><span class="rarity-pill ' + RARITIES[unit.rarity].className + '">' + unit.rarity + '</span> ' + stats.name + ' Lv.' + unit.level + '</strong>' +
+            '<small>' + stats.role + ' / HP ' + stats.hp + ' / 攻撃 ' + stats.attack + ' / コスト ' + stats.cost + '</small>' +
+            '<small>' + stats.trait + '</small></div>';
+          const actions = document.createElement("div");
+          actions.className = "modal-actions";
+          actions.style.gridColumn = "1 / -1";
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn primary";
+          btn.textContent = cost + "Gで強化";
+          btn.disabled = saveData.gold < cost;
+          btn.addEventListener("click", () => {
+            upgradeUnit(unit.id);
+          });
+          actions.appendChild(btn);
+          card.appendChild(actions);
+          els.unitList.appendChild(card);
+        });
+      }
+
+      function upgradeUnit(id) {
+        const unit = findUnit(id);
+        if (!unit) return;
+        const cost = unitUpgradeCost(unit);
+        if (saveData.gold < cost) return;
+        saveData.gold -= cost;
+        unit.level += 1;
+        save();
+        renderHome();
+        renderUnitList();
+        renderFormationEditor();
+      }
+
+      function unitUpgradeCost(unit) {
+        return 24 + unit.level * 18 + RARITIES[unit.rarity].costAdd;
+      }
+
+      function renderCastleList() {
+        els.castleList.innerHTML = "";
+        CASTLE_UPGRADES.forEach(upgrade => {
+          const level = Number(saveData.castle[upgrade.key] || 0);
+          const cost = castleUpgradeCost(level);
+          const card = document.createElement("article");
+          card.className = "shop-card";
+          card.innerHTML = '<h3>' + upgrade.name + ' Lv.' + level + '</h3>' +
+            '<p class="muted">' + upgrade.desc + '</p>' +
+            '<strong>現在値: ' + castleValueText(upgrade, level) + '</strong>';
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn primary";
+          btn.textContent = cost + "Gで強化";
+          btn.disabled = saveData.gold < cost;
+          btn.addEventListener("click", () => upgradeCastle(upgrade.key));
+          card.appendChild(btn);
+          els.castleList.appendChild(card);
+        });
+      }
+
+      function upgradeCastle(key) {
+        const level = Number(saveData.castle[key] || 0);
+        const cost = castleUpgradeCost(level);
+        if (saveData.gold < cost) return;
+        saveData.gold -= cost;
+        saveData.castle[key] = level + 1;
+        save();
+        renderHome();
+        renderCastleList();
+      }
+
+      function castleUpgradeCost(level) {
+        return 35 + level * 28;
+      }
+
+      function castleValueText(upgrade, level) {
+        const value = upgrade.base + upgrade.step * level;
+        return upgrade.key === "combo" ? value.toFixed(2) + "倍" : Math.round(value);
+      }
+
+      function renderFormationSlots() {
+        els.formationSlots.innerHTML = "";
+        for (let i = 0; i < 3; i += 1) {
+          const unit = findUnit(saveData.formation[i]);
+          const slot = document.createElement("article");
+          slot.className = "formation-slot";
+          if (unit) {
+            const stats = getUnitStats(unit);
+            slot.innerHTML = '<div class="unit-face" style="margin:0 auto 6px;">' + stats.mark + '</div>' +
+              '<strong>' + stats.name + '</strong><br>' +
+              '<span class="muted">' + unit.rarity + ' Lv.' + unit.level + ' / ' + stats.role + '</span>';
+          } else {
+            slot.innerHTML = '<strong>空き枠</strong><br><span class="muted">味方を選べます</span>';
+          }
+          els.formationSlots.appendChild(slot);
+        }
+      }
+
+      function renderFormationEditor() {
+        els.formationEditor.innerHTML = "";
+        for (let i = 0; i < 3; i += 1) {
+          const row = document.createElement("div");
+          row.className = "select-line";
+          const select = document.createElement("select");
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "空き枠";
+          select.appendChild(empty);
+          saveData.units.forEach(unit => {
+            const stats = getUnitStats(unit);
+            const option = document.createElement("option");
+            option.value = String(unit.id);
+            option.textContent = stats.name + " " + unit.rarity + " Lv." + unit.level + " / " + stats.role;
+            select.appendChild(option);
+          });
+          select.value = saveData.formation[i] ? String(saveData.formation[i]) : "";
+          select.addEventListener("change", () => {
+            saveData.formation[i] = Number(select.value) || 0;
+            normalizeFormation();
+            save();
+            renderHome();
+            renderFormationEditor();
+          });
+          const label = document.createElement("strong");
+          label.textContent = "枠 " + (i + 1);
+          row.appendChild(select);
+          row.appendChild(label);
+          els.formationEditor.appendChild(row);
+        }
+      }
+
+      function normalizeFormation() {
+        const seen = new Set();
+        saveData.formation = saveData.formation
+          .map(Number)
+          .filter(id => {
+            if (!id || seen.has(id) || !findUnit(id)) return false;
+            seen.add(id);
+            return true;
+          })
+          .slice(0, 3);
+        if (saveData.formation.length === 0 && saveData.units[0]) saveData.formation.push(saveData.units[0].id);
+      }
+
+      function findUnit(id) {
+        return saveData.units.find(unit => unit.id === Number(id));
+      }
+
+      function getUnitStats(unit) {
+        const type = UNIT_TYPES[unit.type];
+        const rarity = RARITIES[unit.rarity];
+        const levelBonus = 1 + (unit.level - 1) * .12;
+        const mult = rarity.mult * levelBonus;
+        return {
+          name: type.name,
+          mark: type.mark,
+          role: type.role,
+          trait: type.trait,
+          hp: Math.round(type.hp * mult),
+          attack: Math.round(type.attack * mult),
+          speed: Math.round(type.speed * (1 + (unit.level - 1) * .03)),
+          cost: Math.max(12, Math.round(type.cost - (unit.level - 1) * .7)),
+          cd: Math.max(.42, type.cd - (unit.level - 1) * .025),
+          range: type.range,
+          push: type.push || 0,
+          energyRefund: type.energyRefund || 0
+        };
       }
 
       function startBattle() {
@@ -809,16 +1304,26 @@
       }
 
       function resetBattle() {
+        const hpLevel = Number(saveData.castle.hp || 0);
+        const energyLevel = Number(saveData.castle.energy || 0);
+        const regenLevel = Number(saveData.castle.regen || 0);
+        const comboLevel = Number(saveData.castle.combo || 0);
         battle.active = false;
         battle.ended = false;
+        battle.allyHpMax = 140 + hpLevel * 16;
+        battle.enemyHpMax = 90;
         battle.allyHp = battle.allyHpMax;
         battle.enemyHp = battle.enemyHpMax;
-        battle.energy = 70;
+        battle.energyMax = 100;
+        battle.energy = Math.min(battle.energyMax, 70 + energyLevel * 8);
+        battle.energyRegen = 9 + regenLevel * 1.2;
+        battle.comboBoost = 1 + comboLevel * .08;
         battle.combo = 0;
         battle.correct = 0;
         battle.wrong = 0;
         battle.questionIndex = 0;
         battle.nextId = 1;
+        battle.spawnCursor = 0;
         battle.allies = [];
         battle.enemies = [];
         battle.enemySpawnTimer = .5;
@@ -826,7 +1331,7 @@
         els.allyCastle.classList.remove("damaged");
         els.enemyCastle.classList.remove("damaged");
         renderQuestion();
-        setMessage("正解すると、ガードねこが1体出撃します。");
+        setMessage("正解すると、編成中の味方が1体出撃します。");
         updateHud();
       }
 
@@ -857,7 +1362,7 @@
           button.classList.add("correct");
           battle.correct += 1;
           battle.combo += 1;
-          battle.energy = Math.min(100, battle.energy + 12);
+          battle.energy = Math.min(battle.energyMax, battle.energy + 12);
           spawnAlly();
           setMessage("正解！味方が出撃しました。コンボで少し強くなります。");
         } else {
@@ -866,7 +1371,7 @@
           battle.wrong += 1;
           battle.combo = Math.floor(battle.combo / 2);
           battle.allyHp = Math.max(1, battle.allyHp - 2);
-          setMessage("おしい。負けにはしません。解説を見て次を選ぼう。");
+          setMessage("おしい。負けにはしません。解説を見て次を選びましょう。");
         }
 
         battle.questionIndex += 1;
@@ -877,33 +1382,46 @@
       }
 
       function spawnAlly() {
-        const cost = 28;
-        if (battle.energy < cost) {
+        normalizeFormation();
+        const unitData = findUnit(saveData.formation[battle.spawnCursor % saveData.formation.length]);
+        battle.spawnCursor += 1;
+        if (!unitData) {
+          setMessage("編成できる味方がいません。ホームでガチャを引いてください。");
+          return;
+        }
+        const stats = getUnitStats(unitData);
+        if (battle.energy < stats.cost) {
           setMessage("正解！英語エネルギーがたまったら出撃できます。");
           return;
         }
-        battle.energy -= cost;
-        const unit = makeUnit("ally", "🐱", 94);
+        battle.energy -= stats.cost;
+        if (stats.energyRefund) battle.energy = Math.min(battle.energyMax, battle.energy + stats.energyRefund);
+        const unit = makeUnit("ally", stats.mark, 94);
         battle.allies.push({
           el: unit,
           x: 94,
-          hp: 22,
-          attack: 13 + Math.min(6, battle.combo),
-          speed: 46,
-          attackTimer: 0
+          hp: stats.hp,
+          attack: Math.round(stats.attack + Math.min(7, battle.combo * battle.comboBoost)),
+          speed: stats.speed,
+          attackTimer: 0,
+          cd: stats.cd,
+          range: stats.range,
+          push: stats.push
         });
-        showFloat("出撃", 112, "#15965d");
+        showFloat(stats.name + " 出撃", 112, "#15965d");
       }
 
       function spawnEnemy() {
-        const unit = makeUnit("enemy", "👾", laneRight());
+        const unit = makeUnit("enemy", "E", laneRight());
         battle.enemies.push({
           el: unit,
           x: laneRight(),
           hp: 24,
           attack: 6,
           speed: 18,
-          attackTimer: 0
+          attackTimer: 0,
+          cd: 1.05,
+          range: 34
         });
       }
 
@@ -923,7 +1441,7 @@
         battle.lastTime = time;
 
         if (!battle.ended) {
-          battle.energy = Math.min(100, battle.energy + dt * 9);
+          battle.energy = Math.min(battle.energyMax, battle.energy + dt * battle.energyRegen);
           battle.enemySpawnTimer -= dt;
           if (battle.enemySpawnTimer <= 0) {
             spawnEnemy();
@@ -943,7 +1461,7 @@
         battle.allies.forEach(ally => {
           const target = nearestEnemy(ally.x);
           ally.attackTimer -= dt;
-          if (target && Math.abs(target.x - ally.x) < 38) {
+          if (target && Math.abs(target.x - ally.x) < ally.range) {
             attackIfReady(ally, target, "enemy");
           } else {
             ally.x += ally.speed * dt;
@@ -953,7 +1471,7 @@
         battle.enemies.forEach(enemy => {
           const target = nearestAlly(enemy.x);
           enemy.attackTimer -= dt;
-          if (target && Math.abs(target.x - enemy.x) < 38) {
+          if (target && Math.abs(target.x - enemy.x) < enemy.range) {
             attackIfReady(enemy, target, "ally");
           } else if (enemy.x <= 86) {
             attackCastle(enemy);
@@ -980,8 +1498,9 @@
       function attackIfReady(attacker, target, side) {
         if (attacker.attackTimer > 0) return;
         target.hp -= attacker.attack;
+        if (side === "enemy" && attacker.push) target.x = Math.min(laneRight(), target.x + attacker.push);
         target.el.classList.add("hit");
-        attacker.attackTimer = .72;
+        attacker.attackTimer = attacker.cd;
         showFloat("-" + attacker.attack, target.x, side === "enemy" ? "#d64545" : "#2563eb");
         setTimeout(() => target.el.classList.remove("hit"), 220);
       }
@@ -989,7 +1508,7 @@
       function attackCastle(enemy) {
         if (enemy.attackTimer > 0) return;
         battle.allyHp = Math.max(0, battle.allyHp - enemy.attack);
-        enemy.attackTimer = 1.05;
+        enemy.attackTimer = enemy.cd;
         els.allyCastle.classList.add("damaged");
         showFloat("-" + enemy.attack, 70, "#2563eb");
         setTimeout(() => els.allyCastle.classList.remove("damaged"), 220);
@@ -1030,15 +1549,15 @@
       function finishBattle(won) {
         battle.ended = true;
         battle.active = false;
-        const reward = won ? 30 + battle.correct * 2 : battle.correct;
+        const reward = won ? 60 + battle.correct * 3 : battle.correct;
         saveData.gold += reward;
         if (won) saveData.bestStage = Math.max(saveData.bestStage, 1);
         save();
 
         els.resultTitle.textContent = won ? "勝利！" : "作戦変更";
         els.resultText.textContent = won
-          ? "敵の城をこわしました。ホームへ戻れます。"
-          : "負けてもゴールドは減りません。もう一度選び直せます。";
+          ? "敵の城をこわしました。ホームへ戻って強化できます。"
+          : "負けてもゴールドは少し残ります。編成や強化を見直しましょう。";
         els.resultCorrect.textContent = battle.correct;
         els.resultWrong.textContent = battle.wrong;
         els.resultGold.textContent = reward;
@@ -1048,7 +1567,7 @@
       function updateHud() {
         setMeter(els.allyHpText, els.allyHpBar, battle.allyHp, battle.allyHpMax);
         setMeter(els.enemyHpText, els.enemyHpBar, battle.enemyHp, battle.enemyHpMax);
-        setMeter(els.energyText, els.energyBar, battle.energy, 100);
+        setMeter(els.energyText, els.energyBar, battle.energy, battle.energyMax);
         els.comboText.textContent = battle.combo;
         els.comboBar.style.width = Math.min(100, battle.combo * 16) + "%";
       }
@@ -1091,6 +1610,24 @@
       els.stageOneBtn.addEventListener("click", openStageModal);
       els.closeStageModalBtn.addEventListener("click", closeStageModal);
       els.startBattleBtn.addEventListener("click", startBattle);
+      els.gachaBtn.addEventListener("click", openGacha);
+      els.closeGachaBtn.addEventListener("click", () => closeModal(els.gachaModal));
+      els.pullGachaBtn.addEventListener("click", pullGacha);
+      els.unitUpgradeBtn.addEventListener("click", () => {
+        renderUnitList();
+        openModal(els.unitModal);
+      });
+      els.closeUnitBtn.addEventListener("click", () => closeModal(els.unitModal));
+      els.castleUpgradeBtn.addEventListener("click", () => {
+        renderCastleList();
+        openModal(els.castleModal);
+      });
+      els.closeCastleBtn.addEventListener("click", () => closeModal(els.castleModal));
+      els.formationBtn.addEventListener("click", () => {
+        renderFormationEditor();
+        openModal(els.formationModal);
+      });
+      els.closeFormationBtn.addEventListener("click", () => closeModal(els.formationModal));
       els.battleHomeBtn.addEventListener("click", goHome);
       els.resultHomeBtn.addEventListener("click", goHome);
       els.retryBtn.addEventListener("click", startBattle);
@@ -1100,6 +1637,8 @@
       });
 
       loadSave();
+      normalizeFormation();
+      save();
       renderHome();
     })();
   </script>
