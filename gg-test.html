@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>グラマー・ガード NYANKO MVP</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #667085;
+      --paper: #fffdf7;
+      --line: #d8dee6;
+      --green: #29a36a;
+      --red: #dc4c4c;
+      --blue: #3478f6;
+      --gold: #d99a22;
+      --lane: #f2eadf;
+      --sky: #dff3ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Yu Gothic", "Meiryo", system-ui, sans-serif;
+      background: linear-gradient(180deg, var(--sky) 0%, #f8fbff 42%, #f4efe6 100%);
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 3.4vw, 36px);
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .soft-toggle,
+    .small-btn {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.9);
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      box-shadow: 0 2px 0 rgba(31,41,51,.08);
+    }
+
+    .soft-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    .soft-toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--blue);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .meter {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.88);
+      border-radius: 8px;
+      padding: 9px;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .bar {
+      height: 13px;
+      border-radius: 999px;
+      background: #eef1f4;
+      overflow: hidden;
+      border: 1px solid rgba(31,41,51,.08);
+    }
+
+    .fill {
+      height: 100%;
+      width: 100%;
+      transition: width .18s linear;
+    }
+
+    .fill.ally { background: var(--green); }
+    .fill.enemy { background: var(--red); }
+    .fill.energy { background: var(--blue); }
+    .fill.gold { background: var(--gold); }
+
+    .battle {
+      position: relative;
+      height: clamp(210px, 34vh, 330px);
+      border: 2px solid #bdc7d1;
+      border-radius: 8px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 44%),
+        linear-gradient(180deg, #b9e9ff 0 43%, var(--lane) 43% 100%);
+      box-shadow: 0 8px 22px rgba(35, 45, 55, .14);
+    }
+
+    .lane-line {
+      position: absolute;
+      left: 80px;
+      right: 80px;
+      bottom: 72px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(132, 93, 54, .22);
+    }
+
+    .castle {
+      position: absolute;
+      bottom: 50px;
+      width: 82px;
+      height: 92px;
+      display: grid;
+      place-items: center;
+      font-size: 50px;
+      filter: drop-shadow(0 5px 0 rgba(31,41,51,.12));
+    }
+
+    .castle.left { left: 14px; }
+    .castle.right { right: 14px; }
+
+    .unit {
+      position: absolute;
+      bottom: 60px;
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 2px solid rgba(31,41,51,.22);
+      border-radius: 50%;
+      background: #fffaf0;
+      font-size: 28px;
+      transform: translateX(-50%);
+      box-shadow: 0 5px 0 rgba(31,41,51,.12);
+      transition: left .08s linear;
+    }
+
+    .unit.enemy {
+      background: #fff1f1;
+      border-color: rgba(190, 61, 61, .42);
+    }
+
+    .unit.rush {
+      background: #fff4dc;
+      border-color: rgba(202, 132, 29, .52);
+    }
+
+    .float-text {
+      position: absolute;
+      pointer-events: none;
+      font-weight: 800;
+      animation: floatUp .75s ease-out forwards;
+      text-shadow: 0 2px 0 white;
+    }
+
+    @keyframes floatUp {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-26px); }
+    }
+
+    .question-panel {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .question-box,
+    .choices-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.94);
+      padding: 12px;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .question {
+      margin: 0 0 10px;
+      font-size: clamp(22px, 4vw, 34px);
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .hint,
+    .desc,
+    .message {
+      border-radius: 8px;
+      padding: 8px 10px;
+      line-height: 1.5;
+    }
+
+    .hint {
+      background: #eef7ff;
+      border: 1px solid #b8dcff;
+      margin-bottom: 8px;
+    }
+
+    .desc {
+      background: #fff7e8;
+      border: 1px solid #f0d39f;
+    }
+
+    .message {
+      margin-top: 8px;
+      background: #f4f6f8;
+      border: 1px solid var(--line);
+      min-height: 42px;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .choice {
+      min-height: 58px;
+      border: 2px solid #bfc8d2;
+      border-radius: 8px;
+      background: #ffffff;
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #d4dae1;
+      transition: transform .08s ease, box-shadow .08s ease, border-color .12s ease;
+    }
+
+    .choice:hover,
+    .choice:focus-visible {
+      border-color: var(--blue);
+      outline: none;
+      transform: translateY(-1px);
+      box-shadow: 0 5px 0 #c5d8fb;
+    }
+
+    .choice:disabled {
+      cursor: default;
+      opacity: .7;
+      transform: none;
+    }
+
+    .choice.correct {
+      border-color: var(--green);
+      background: #edf9f2;
+    }
+
+    .choice.wrong {
+      border-color: var(--red);
+      background: #fff0f0;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(255, 255, 255, .72);
+      text-align: center;
+      padding: 24px;
+      z-index: 10;
+    }
+
+    .overlay.show { display: grid; }
+
+    .result {
+      width: min(420px, 100%);
+      border: 2px solid #9aa9b7;
+      border-radius: 8px;
+      background: white;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(31,41,51,.24);
+    }
+
+    .result h2 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    .result p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 760px) {
+      .topbar,
+      .question-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        justify-content: flex-start;
+      }
+
+      .hud {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .battle {
+        height: 260px;
+      }
+
+      .castle {
+        width: 64px;
+        font-size: 42px;
+      }
+
+      .lane-line {
+        left: 58px;
+        right: 58px;
+      }
+
+      .choices {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>グラマー・ガード NYANKO</h1>
+        <p class="subtitle">はじめての文法ガード：4択でガードねこを出して、敵城をこわそう。</p>
+      </div>
+      <div class="controls">
+        <label class="soft-toggle">
+          <input id="slowMode" type="checkbox">
+          ゆっくりモード
+        </label>
+        <button id="restartBtn" class="small-btn" type="button">もう一度</button>
+      </div>
+    </header>
+
+    <section class="hud" aria-label="ステータス">
+      <div class="meter">
+        <div class="meter-label"><span>自分の城</span><strong id="allyHpText">120 / 120</strong></div>
+        <div class="bar"><div id="allyHpBar" class="fill ally"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-label"><span>敵の城</span><strong id="enemyHpText">90 / 90</strong></div>
+        <div class="bar"><div id="enemyHpBar" class="fill enemy"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-label"><span>英語エネルギー</span><strong id="energyText">0 / 100</strong></div>
+        <div class="bar"><div id="energyBar" class="fill energy"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-label"><span>英語ゴールド</span><strong id="goldText">0 G</strong></div>
+        <div class="bar"><div id="goldBar" class="fill gold"></div></div>
+      </div>
+    </section>
+
+    <section id="battle" class="battle" aria-label="バトルレーン">
+      <div class="lane-line"></div>
+      <div class="castle left" title="自分の城">🏠</div>
+      <div class="castle right" title="敵の城">🏯</div>
+      <div id="overlay" class="overlay">
+        <div class="result">
+          <h2 id="resultTitle">勝ち！</h2>
+          <p id="resultText">ガードねこが敵城を守り抜きました。</p>
+          <button id="resultRestartBtn" class="small-btn" type="button">もう一度あそぶ</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="question-panel">
+      <div class="question-box">
+        <div class="tagline">grammar / junior / 4択</div>
+        <p id="questionText" class="question">I ( ) a student.</p>
+        <div id="hintText" class="hint">ヒント：I の be動詞は am。</div>
+        <div id="descText" class="desc">解説：主語が I のとき be動詞は am。</div>
+        <div id="messageText" class="message">正解すると、ガードねこが1体出撃します。</div>
+      </div>
+      <div class="choices-box">
+        <div id="choices" class="choices"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      // 実機で「動かない」時に原因が分かるよう、エラーを画面に出す（初心者がそのまま報告できるように）。
+      window.addEventListener("error", (e) => {
+        try {
+          let box = document.getElementById("gg-error-box");
+          if (!box) {
+            box = document.createElement("div");
+            box.id = "gg-error-box";
+            box.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#7f1d1d;color:#fff;font:12px/1.5 sans-serif;padding:8px 12px;white-space:pre-wrap;";
+            document.body.appendChild(box);
+          }
+          box.textContent = "⚠️ エラー: " + (e.message || e.error) + " (" + (e.lineno || "?") + "行)";
+        } catch (_) {}
+      });
+
+      const SAVE_KEY = "gg_nyanko_save_v1";
+
+      // MVPは単独HTMLで開けることを優先するため、english_questions.js の grammar junior から抜粋して埋め込む。
+      const QUESTIONS = [
+        { question: "I ( ) a student.", choices: ["am", "is", "are", "be"], answer: 0, hint: "I の be動詞は am。", desc: "主語が I のとき be動詞は am。" },
+        { question: "You ( ) a student.", choices: ["is", "are", "be", "am"], answer: 1, hint: "you の be動詞は are。", desc: "主語が you のとき be動詞は are。" },
+        { question: "He ( ) a student.", choices: ["are", "be", "am", "is"], answer: 3, hint: "he / she / it は is を使う。", desc: "主語が he のとき be動詞は is。" },
+        { question: "She ( ) a student.", choices: ["be", "am", "is", "are"], answer: 2, hint: "he / she / it は is を使う。", desc: "主語が she のとき be動詞は is。" },
+        { question: "It ( ) a student.", choices: ["am", "is", "are", "be"], answer: 1, hint: "it は1つのものを表すので is。", desc: "主語が it のとき be動詞は is。" },
+        { question: "We ( ) a student.", choices: ["is", "are", "be", "am"], answer: 1, hint: "we / they は are を使う。", desc: "主語が we のとき be動詞は are。" },
+        { question: "They ( ) a student.", choices: ["are", "be", "am", "is"], answer: 0, hint: "we / they は are を使う。", desc: "主語が they のとき be動詞は are。" },
+        { question: "I ( ) soccer every day.", choices: ["does", "am", "play", "plays"], answer: 2, hint: "I の一般動詞はそのままの形。", desc: "主語が I の現在の一般動詞は原形を使う。" },
+        { question: "I ( ) music every day.", choices: ["am", "like", "likes", "does"], answer: 1, hint: "I の一般動詞はそのままの形。", desc: "主語が I の現在の一般動詞は原形を使う。" },
+        { question: "She ( ) soccer every day.", choices: ["play", "plays", "do", "are"], answer: 1, hint: "She の現在形は動詞に s がつく。", desc: "主語が三人称単数の現在形なので動詞に s または es を付ける。" }
+      ];
+
+      const els = {
+        battle: document.getElementById("battle"),
+        overlay: document.getElementById("overlay"),
+        resultTitle: document.getElementById("resultTitle"),
+        resultText: document.getElementById("resultText"),
+        allyHpText: document.getElementById("allyHpText"),
+        allyHpBar: document.getElementById("allyHpBar"),
+        enemyHpText: document.getElementById("enemyHpText"),
+        enemyHpBar: document.getElementById("enemyHpBar"),
+        energyText: document.getElementById("energyText"),
+        energyBar: document.getElementById("energyBar"),
+        goldText: document.getElementById("goldText"),
+        goldBar: document.getElementById("goldBar"),
+        questionText: document.getElementById("questionText"),
+        hintText: document.getElementById("hintText"),
+        descText: document.getElementById("descText"),
+        messageText: document.getElementById("messageText"),
+        choices: document.getElementById("choices"),
+        slowMode: document.getElementById("slowMode"),
+        restartBtn: document.getElementById("restartBtn"),
+        resultRestartBtn: document.getElementById("resultRestartBtn")
+      };
+
+      const state = {
+        allyHpMax: 120,
+        enemyHpMax: 90,
+        allyHp: 120,
+        enemyHp: 90,
+        energy: 60,
+        gold: 0,
+        questionIndex: 0,
+        wrongStreak: 0,
+        allies: [],
+        enemies: [],
+        lastTime: 0,
+        enemySpawnTimer: 0,
+        hintCatTimer: 0,
+        nextId: 1,
+        ended: false,
+        slowMode: false
+      };
+
+      function loadSave() {
+        try {
+          const raw = localStorage.getItem(SAVE_KEY);
+          if (!raw) return;
+          const save = JSON.parse(raw);
+          state.gold = Number(save.gold || 0);
+          state.slowMode = Boolean(save.slowMode);
+          els.slowMode.checked = state.slowMode;
+        } catch (_) {
+          // 壊れたセーブで遊べなくならないよう、MVPでは無視して初期状態に戻す。
+        }
+      }
+
+      function save() {
+        // file:// やプライベートモードでは localStorage が例外を投げることがある。
+        // セーブできなくても遊べる方が大事なので、失敗は黙って無視する（北極星）。
+        try {
+          localStorage.setItem(SAVE_KEY, JSON.stringify({
+            gold: state.gold,
+            slowMode: state.slowMode
+          }));
+        } catch (_) { /* セーブ不可でも続行 */ }
+      }
+
+      function resetGame() {
+        state.allyHp = state.allyHpMax;
+        state.enemyHp = state.enemyHpMax;
+        state.energy = 60;
+        state.questionIndex = 0;
+        state.wrongStreak = 0;
+        state.allies = [];
+        state.enemies = [];
+        state.lastTime = performance.now();
+        state.enemySpawnTimer = 0;
+        state.hintCatTimer = 0;
+        state.ended = false;
+        [...els.battle.querySelectorAll(".unit, .float-text")].forEach(node => node.remove());
+        els.overlay.classList.remove("show");
+        renderQuestion();
+        setMessage("正解すると、ガードねこが1体出撃します。");
+        updateHud();
+      }
+
+      function renderQuestion() {
+        const q = QUESTIONS[state.questionIndex % QUESTIONS.length];
+        els.questionText.textContent = q.question;
+        els.hintText.textContent = "ヒント：" + q.hint;
+        els.descText.textContent = "解説：" + q.desc;
+        els.choices.innerHTML = "";
+
+        q.choices.forEach((choice, index) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "choice";
+          btn.textContent = choice;
+          btn.addEventListener("click", () => answerQuestion(index, btn));
+          els.choices.appendChild(btn);
+        });
+      }
+
+      function answerQuestion(index, button) {
+        if (state.ended) return;
+        const q = QUESTIONS[state.questionIndex % QUESTIONS.length];
+        const buttons = [...els.choices.querySelectorAll("button")];
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (index === q.answer) {
+          button.classList.add("correct");
+          state.wrongStreak = 0;
+          const spawned = spawnAlly(false);
+          if (spawned) {
+            setMessage("正解！ガードねこが出撃しました。");
+          } else {
+            setMessage("正解！英語エネルギーがたまったら出撃できます。");
+          }
+          state.questionIndex += 1;
+        } else {
+          button.classList.add("wrong");
+          buttons[q.answer].classList.add("correct");
+          state.wrongStreak += 1;
+          state.allyHp = Math.max(1, state.allyHp - 2);
+          setMessage(state.wrongStreak >= 2
+            ? "だいじょうぶ。ヒントねこが少し助けます。次はヒントを見て選ぼう。"
+            : "おしい。城ダメージは少しだけです。解説を見てもう一度。");
+          state.questionIndex += 1;
+        }
+
+        updateHud();
+        setTimeout(() => {
+          renderQuestion();
+          updateHud();
+        }, 800);
+      }
+
+      function spawnAlly(isHelper) {
+        const cost = isHelper ? 0 : 30;
+        if (state.energy < cost) return false;
+        state.energy -= cost;
+
+        const unit = makeUnit("ally", isHelper ? "😺" : "🐱", 94);
+        state.allies.push({
+          id: unit.dataset.id,
+          el: unit,
+          x: 94,
+          hp: isHelper ? 12 : 18,
+          attack: isHelper ? 8 : 12,
+          attackTimer: 0,
+          speed: isHelper ? 34 : 42
+        });
+        return true;
+      }
+
+      function spawnEnemy(kind) {
+        const rush = kind === "rush";
+        const unit = makeUnit(rush ? "enemy rush" : "enemy", rush ? "💨" : "👾", laneRight());
+        state.enemies.push({
+          id: unit.dataset.id,
+          el: unit,
+          x: laneRight(),
+          hp: rush ? 18 : 24,
+          attack: rush ? 7 : 6,
+          attackTimer: 0,
+          speed: rush ? 28 : 18
+        });
+      }
+
+      function makeUnit(className, face, x) {
+        const el = document.createElement("div");
+        el.className = "unit " + className;
+        el.dataset.id = String(state.nextId++);
+        el.textContent = face;
+        el.style.left = x + "px";
+        els.battle.appendChild(el);
+        return el;
+      }
+
+      function updateGame(time) {
+        const dt = Math.min(0.04, (time - state.lastTime) / 1000 || 0);
+        state.lastTime = time;
+
+        if (!state.ended) {
+          state.energy = Math.min(100, state.energy + dt * 9);
+          state.enemySpawnTimer -= dt;
+          state.hintCatTimer -= dt;
+
+          if (state.enemySpawnTimer <= 0) {
+            spawnEnemy(Math.random() < 0.28 ? "rush" : "normal");
+            state.enemySpawnTimer = state.slowMode ? 4.4 : 3.2;
+          }
+
+          // 連続ミスで詰まらないよう、救済は勝ちを奪わない弱い味方として出す。
+          if (state.wrongStreak >= 2 && state.hintCatTimer <= 0) {
+            spawnAlly(true);
+            state.hintCatTimer = 5.5;
+          }
+
+          moveAndFight(dt);
+          updateHud();
+          checkEnd();
+        }
+
+        requestAnimationFrame(updateGame);
+      }
+
+      function moveAndFight(dt) {
+        const enemySpeedRate = state.slowMode ? 0.55 : 1;
+
+        state.allies.forEach(ally => {
+          const target = nearestEnemy(ally.x);
+          ally.attackTimer -= dt;
+          if (target && Math.abs(target.x - ally.x) < 38) {
+            attackIfReady(ally, target, "enemy");
+          } else {
+            ally.x += ally.speed * dt;
+          }
+        });
+
+        state.enemies.forEach(enemy => {
+          const target = nearestAlly(enemy.x);
+          enemy.attackTimer -= dt;
+          if (target && Math.abs(target.x - enemy.x) < 38) {
+            attackIfReady(enemy, target, "ally");
+          } else if (enemy.x <= 86) {
+            attackCastle(enemy);
+          } else {
+            enemy.x -= enemy.speed * enemySpeedRate * dt;
+          }
+        });
+
+        state.allies.forEach(ally => {
+          if (ally.x >= laneRight() - 48) {
+            state.enemyHp = Math.max(0, state.enemyHp - 18);
+            showFloat("-18", laneRight() - 50, "#dc4c4c");
+            ally.hp = 0;
+          }
+        });
+
+        cleanupUnits();
+        state.allies.forEach(unit => unit.el.style.left = unit.x + "px");
+        state.enemies.forEach(unit => unit.el.style.left = unit.x + "px");
+      }
+
+      function attackIfReady(attacker, target, side) {
+        if (attacker.attackTimer > 0) return;
+        target.hp -= attacker.attack;
+        attacker.attackTimer = 0.72;
+        showFloat("-" + attacker.attack, target.x, side === "enemy" ? "#dc4c4c" : "#3478f6");
+      }
+
+      function attackCastle(enemy) {
+        if (enemy.attackTimer > 0) return;
+        state.allyHp = Math.max(0, state.allyHp - enemy.attack);
+        enemy.attackTimer = 1.05;
+        showFloat("-" + enemy.attack, 70, "#3478f6");
+      }
+
+      function nearestEnemy(x) {
+        return state.enemies
+          .filter(enemy => enemy.hp > 0 && enemy.x >= x - 12)
+          .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
+      }
+
+      function nearestAlly(x) {
+        return state.allies
+          .filter(ally => ally.hp > 0 && ally.x <= x + 12)
+          .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
+      }
+
+      function cleanupUnits() {
+        state.allies = state.allies.filter(unit => keepUnit(unit));
+        state.enemies = state.enemies.filter(unit => keepUnit(unit));
+      }
+
+      function keepUnit(unit) {
+        if (unit.hp > 0) return true;
+        unit.el.remove();
+        return false;
+      }
+
+      function checkEnd() {
+        if (state.enemyHp <= 0) {
+          finish(true);
+        } else if (state.allyHp <= 0) {
+          finish(false);
+        }
+      }
+
+      function finish(won) {
+        state.ended = true;
+        if (won) {
+          state.gold += 30;
+          els.resultTitle.textContent = "勝ち！";
+          els.resultText.textContent = "英語ゴールド +30。ゆっくりモードでも報酬は同じです。";
+        } else {
+          els.resultTitle.textContent = "もう一回！";
+          els.resultText.textContent = "負けてもゴールドは減りません。ヒントを見ながら守り直そう。";
+        }
+        save();
+        updateHud();
+        els.overlay.classList.add("show");
+      }
+
+      function showFloat(text, x, color) {
+        const el = document.createElement("div");
+        el.className = "float-text";
+        el.textContent = text;
+        el.style.left = x + "px";
+        el.style.bottom = "116px";
+        el.style.color = color;
+        els.battle.appendChild(el);
+        setTimeout(() => el.remove(), 800);
+      }
+
+      function setMessage(text) {
+        els.messageText.textContent = text;
+      }
+
+      function updateHud() {
+        setMeter(els.allyHpText, els.allyHpBar, state.allyHp, state.allyHpMax, true);
+        setMeter(els.enemyHpText, els.enemyHpBar, state.enemyHp, state.enemyHpMax, true);
+        setMeter(els.energyText, els.energyBar, state.energy, 100, true);
+        els.goldText.textContent = state.gold + " G";
+        els.goldBar.style.width = Math.min(100, state.gold % 100) + "%";
+      }
+
+      function setMeter(textEl, barEl, value, max, showMax) {
+        const rounded = Math.ceil(value);
+        textEl.textContent = showMax ? `${rounded} / ${max}` : String(rounded);
+        barEl.style.width = Math.max(0, Math.min(100, value / max * 100)) + "%";
+      }
+
+      function laneRight() {
+        return els.battle.clientWidth - 96;
+      }
+
+      els.slowMode.addEventListener("change", () => {
+        state.slowMode = els.slowMode.checked;
+        save();
+        setMessage(state.slowMode
+          ? "ゆっくりモードON。敵が遅くなります。報酬は同じです。"
+          : "ゆっくりモードOFF。通常の速さです。");
+      });
+      els.restartBtn.addEventListener("click", resetGame);
+      els.resultRestartBtn.addEventListener("click", resetGame);
+
+      loadSave();
+      resetGame();
+      requestAnimationFrame(updateGame);
+    })();
+  </script>
+</body>
+</html>
