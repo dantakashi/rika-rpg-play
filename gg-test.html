@@ -224,6 +224,18 @@
       background: #fff8e6;
     }
 
+    .stage-card.cleared {
+      border-left: 6px solid var(--green);
+    }
+
+    .stage-mastery {
+      color: #fff;
+    }
+    .stage-mastery.none { background: #94a3b8 !important; border-color: #94a3b8 !important; }
+    .stage-mastery.practice { background: var(--red) !important; border-color: var(--red) !important; }
+    .stage-mastery.good { background: var(--gold) !important; border-color: var(--gold) !important; }
+    .stage-mastery.master { background: var(--green) !important; border-color: var(--green) !important; }
+
     .chapter-tabs,
     .mode-tabs {
       display: grid;
@@ -661,9 +673,39 @@
     }
 
     .result-card {
+      position: relative;
+      overflow: hidden;
       width: min(680px, 100%);
       padding: 18px;
       text-align: center;
+    }
+
+    .result-card.win { animation: resultPop .5s cubic-bezier(.2, 1.4, .4, 1); }
+    .result-card.win h1 { animation: titleGlow 1.2s ease 1; }
+
+    @keyframes resultPop {
+      0% { transform: scale(.9); opacity: .4; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes titleGlow {
+      0%, 100% { text-shadow: none; }
+      40% { text-shadow: 0 0 14px rgba(200, 134, 26, .8); }
+    }
+
+    .confetti {
+      position: absolute;
+      top: -14px;
+      width: 9px;
+      height: 14px;
+      border-radius: 2px;
+      pointer-events: none;
+      animation: confettiFall 1.3s ease-in forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0); opacity: 1; }
+      100% { transform: translateY(420px) rotate(var(--rot)); opacity: 0; }
     }
 
     .score-grid {
@@ -684,6 +726,149 @@
       display: block;
       margin-top: 4px;
       font-size: 24px;
+    }
+
+    .tagline.review {
+      color: var(--violet);
+      font-weight: 900;
+    }
+
+    .result-feedback {
+      margin: 6px 0 10px;
+      border: 2px solid #b7d5ff;
+      border-radius: 8px;
+      background: #eef7ff;
+      padding: 10px 12px;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.5;
+      color: #1d4ed8;
+    }
+
+    .result-medals {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+    .medal {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f8fafc;
+      padding: 5px 12px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .medal.review { border-color: #c084fc; background: #f7efff; color: #7e22ce; }
+    .medal.gold { border-color: #f2b94b; background: #fff8e6; color: #b45309; }
+
+    .zukan-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .zukan-card {
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .zukan-card.practice { border-left-color: var(--red); }
+    .zukan-card.good { border-left-color: var(--gold); }
+    .zukan-card.master { border-left-color: var(--green); background: #f0faf4; }
+    .zukan-card.none { border-left-color: #cbd5e1; opacity: .8; }
+
+    .zukan-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .zukan-head strong { font-size: 16px; }
+
+    .zukan-badge {
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .zukan-badge.practice { background: var(--red); }
+    .zukan-badge.good { background: var(--gold); }
+    .zukan-badge.master { background: var(--green); }
+    .zukan-badge.none { background: #94a3b8; }
+
+    .zukan-acc { font-size: 13px; font-weight: 800; color: var(--ink); }
+
+    .flash-correct { animation: flashCorrect .44s ease; }
+    .flash-miss { animation: flashMiss .44s ease; }
+
+    @keyframes flashCorrect {
+      0% { box-shadow: 0 0 0 0 rgba(21,150,93,.55); }
+      40% { box-shadow: 0 0 0 6px rgba(21,150,93,.28); }
+      100% { box-shadow: 0 0 0 0 rgba(21,150,93,0); }
+    }
+
+    @keyframes flashMiss {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    .sparkle {
+      position: absolute;
+      z-index: 5;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      pointer-events: none;
+      animation: sparkleFly .6s ease-out forwards;
+    }
+
+    @keyframes sparkleFly {
+      from { opacity: 1; transform: translate(0, 0) scale(1); }
+      to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.4); }
+    }
+
+    .fill.combo[data-tier="warm"] { background: #ef8e1a; }
+    .fill.combo[data-tier="hot"] { background: linear-gradient(90deg, #f97316, #ef4444); }
+
+    #comboText[data-tier="warm"] { color: #ef8e1a; }
+    #comboText[data-tier="hot"] { color: #ef4444; font-size: 16px; }
+
+    .castle.left.gate {
+      box-shadow: 0 0 0 4px rgba(21,150,93,.5), 0 5px 0 rgba(32,40,50,.12);
+      background: #eaffee;
+    }
+
+    .castle.left.low { animation: lowPulse 1s ease-in-out infinite; }
+
+    @keyframes lowPulse {
+      0%, 100% { box-shadow: 0 5px 0 rgba(32,40,50,.12); }
+      50% { box-shadow: 0 0 0 4px rgba(245,158,11,.4), 0 5px 0 rgba(32,40,50,.12); }
+    }
+
+    .castle.right.crack1 { background: #ffe9e9; }
+    .castle.right.crack2 { background: #ffd5d5; border-color: rgba(214,69,69,.6); }
+    .castle.right.crack2::after {
+      content: "💥";
+      position: absolute;
+      top: -10px;
+      right: -6px;
+      font-size: 22px;
     }
 
     @media (max-width: 760px) {
@@ -713,7 +898,8 @@
       }
       .question { font-size: 23px; }
       .score-grid,
-      .formation-row { grid-template-columns: 1fr; }
+      .formation-row,
+      .zukan-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -770,6 +956,7 @@
             <button id="gachaBtn" class="btn ghost" type="button">味方ガチャ</button>
             <button id="unitUpgradeBtn" class="btn ghost" type="button">味方強化</button>
             <button id="castleUpgradeBtn" class="btn ghost" type="button">城強化</button>
+            <button id="zukanBtn" class="btn ghost" type="button">学習の図鑑</button>
             <button id="exchangeBoxBtn" class="btn ghost" type="button">アイテム交換ボックス（連携時）</button>
           </div>
         </aside>
@@ -805,8 +992,8 @@
       </section>
 
       <section id="battleLane" class="battle-lane" aria-label="横1レーン防衛">
-        <div id="allyCastle" class="castle left" title="自分の城">城</div>
-        <div id="enemyCastle" class="castle right" title="敵の城">敵</div>
+        <div id="allyCastle" class="castle left" title="自分の城">🏰</div>
+        <div id="enemyCastle" class="castle right" title="敵の城">🏯</div>
       </section>
 
       <section class="question-panel">
@@ -840,6 +1027,8 @@
             <div class="score">ミス<strong id="resultWrong">0</strong></div>
             <div class="score">獲得G<strong id="resultGold">0</strong></div>
           </div>
+          <p id="resultFeedback" class="result-feedback">今日守れたテーマがここに表示されます。</p>
+          <div id="resultMedals" class="result-medals"></div>
           <div class="modal-actions">
             <button id="retryBtn" class="btn ghost" type="button">もう一度</button>
             <button id="resultHomeBtn" class="btn primary" type="button">ホームへ戻る</button>
@@ -911,6 +1100,18 @@
       <div id="formationEditor"></div>
       <div class="modal-actions">
         <button id="closeFormationBtn" class="btn primary" type="button">決定</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="zukanModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="zukanModalTitle">
+    <section class="modal-card">
+      <h2 id="zukanModalTitle">学習の図鑑</h2>
+      <p class="muted">テーマごとの成長を記録します。たくさん守るほど「練習中→守れた→得意」と育ちます。</p>
+      <p id="zukanSummary" class="mode-note"></p>
+      <div id="zukanList" class="zukan-grid"></div>
+      <div class="modal-actions">
+        <button id="closeZukanBtn" class="btn ghost" type="button">閉じる</button>
       </div>
     </section>
   </div>
@@ -2283,11 +2484,11 @@
       }
 
       const UNIT_TYPES = {
-        guard: { name: "ガードねこ", mark: "G", role: "壁", hp: 34, attack: 8, speed: 30, cost: 24, cd: .86, range: 34, trait: "HPが高い前衛。" },
-        arrow: { name: "アローねこ", mark: "A", role: "遠距離", hp: 20, attack: 12, speed: 38, cost: 30, cd: .82, range: 78, trait: "少し離れて攻撃。" },
-        magic: { name: "マジックねこ", mark: "M", role: "押し返し", hp: 18, attack: 10, speed: 34, cost: 34, cd: .95, range: 62, push: 16, trait: "攻撃時に敵を押し返す。" },
-        knight: { name: "ナイトねこ", mark: "K", role: "強攻撃", hp: 26, attack: 17, speed: 44, cost: 38, cd: 1.04, range: 38, trait: "攻撃力が高い。" },
-        hint: { name: "ヒントねこ", mark: "H", role: "補助", hp: 22, attack: 7, speed: 36, cost: 22, cd: .72, range: 46, energyRefund: 7, trait: "出撃後に少しエネルギー回復。" }
+        guard: { name: "ガードねこ", mark: "🛡️", role: "壁", hp: 34, attack: 8, speed: 30, cost: 24, cd: .86, range: 34, trait: "HPが高い前衛。" },
+        arrow: { name: "アローねこ", mark: "🏹", role: "遠距離", hp: 20, attack: 12, speed: 38, cost: 30, cd: .82, range: 78, trait: "少し離れて攻撃。" },
+        magic: { name: "マジックねこ", mark: "🔮", role: "押し返し", hp: 18, attack: 10, speed: 34, cost: 34, cd: .95, range: 62, push: 16, trait: "攻撃時に敵を押し返す。" },
+        knight: { name: "ナイトねこ", mark: "⚔️", role: "強攻撃", hp: 26, attack: 17, speed: 44, cost: 38, cd: 1.04, range: 38, trait: "攻撃力が高い。" },
+        hint: { name: "ヒントねこ", mark: "💡", role: "補助", hp: 22, attack: 7, speed: 36, cost: 22, cd: .72, range: 46, energyRefund: 7, trait: "出撃後に少しエネルギー回復。" }
       };
 
       const RARITIES = {
@@ -2369,7 +2570,15 @@
         resultText: document.getElementById("resultText"),
         resultCorrect: document.getElementById("resultCorrect"),
         resultWrong: document.getElementById("resultWrong"),
-        resultGold: document.getElementById("resultGold")
+        resultGold: document.getElementById("resultGold"),
+        resultFeedback: document.getElementById("resultFeedback"),
+        resultMedals: document.getElementById("resultMedals"),
+        questionPanel: document.querySelector(".question-panel"),
+        comboMeter: document.getElementById("comboMeter"),
+        zukanModal: document.getElementById("zukanModal"),
+        zukanBtn: document.getElementById("zukanBtn"),
+        closeZukanBtn: document.getElementById("closeZukanBtn"),
+        zukanList: document.getElementById("zukanList")
       };
 
       const saveData = {
@@ -2382,7 +2591,9 @@
         nextUnitId: 1,
         units: [],
         formation: [],
-        castle: { hp: 0, energy: 0, regen: 0, combo: 0 }
+        castle: { hp: 0, energy: 0, regen: 0, combo: 0 },
+        quizStats: {},
+        weakThemes: []
       };
 
       const battle = {
@@ -2412,7 +2623,16 @@
         currentChoiceCount: 2,
         questions: [],
         stage: STAGE_DEFS[0],
-        enemyUnit: STAGE_DEFS[0].enemy
+        enemyUnit: STAGE_DEFS[0].enemy,
+        answered: 0,
+        newCursor: 0,
+        reviewQueue: [],
+        isReview: false,
+        lastWasReview: false,
+        reviewSuccess: 0,
+        wrongStreak: 0,
+        currentQuestion: null,
+        themeTally: { c: 0, t: 0 }
       };
 
       let selectedStageId = 1;
@@ -2452,6 +2672,8 @@
           saveData.units = Array.isArray(parsed.units) ? parsed.units.filter(isValidUnit) : [];
           saveData.formation = Array.isArray(parsed.formation) ? parsed.formation.map(Number).filter(Boolean).slice(0, 3) : [];
           saveData.castle = Object.assign({ hp: 0, energy: 0, regen: 0, combo: 0 }, parsed.castle || {});
+          saveData.quizStats = (parsed.quizStats && typeof parsed.quizStats === "object") ? parsed.quizStats : {};
+          saveData.weakThemes = Array.isArray(parsed.weakThemes) ? parsed.weakThemes.map(String) : [];
           migrateChapterProgress();
           if (saveData.units.length === 0) giveStarterUnit();
           normalizeFormation();
@@ -2544,22 +2766,24 @@
         stages.forEach(stage => {
           const cleared = best >= stage.routeIndex;
           const recommended = stage.routeIndex === nextRecommended;
+          const status = themeStatus(saveData.quizStats[stage.theme]);
           const button = document.createElement("button");
           button.type = "button";
-          button.className = "stage-card btn" + (recommended ? " recommended" : "");
+          button.className = "stage-card btn" + (recommended ? " recommended" : "") + (cleared ? " cleared" : "");
+          const label = cleared ? "✓ クリア済" : recommended ? "⭐ おすすめ" : "出撃";
           button.innerHTML =
             '<span>' +
               '<h3>' + stage.name + '</h3>' +
               '<span class="muted">' + stage.description + '</span>' +
               '<span class="stage-meta">' +
-                '<span>' + stage.chapterLabel + '</span>' +
                 '<span>' + stage.themeLabel + '</span>' +
                 '<span>' + stage.diffLabel + '</span>' +
                 '<span>' + stage.questionCount + '問</span>' +
                 '<span>' + getChoiceMode() + '択</span>' +
+                '<span class="stage-mastery ' + status.key + '">' + status.label + '</span>' +
               '</span>' +
             '</span>' +
-            '<strong>' + (cleared ? 'クリア済' : recommended ? 'おすすめ' : '出撃') + '</strong>';
+            '<strong>' + label + '</strong>';
           button.addEventListener("click", () => openStageModal(stage.id));
           els.stageList.appendChild(button);
         });
@@ -2861,6 +3085,15 @@
         battle.autoSpawnInterval = saveData.slowMode ? 6.2 : 5.2;
         battle.currentAnswer = 0;
         battle.currentChoiceCount = getChoiceMode();
+        battle.answered = 0;
+        battle.newCursor = 0;
+        battle.reviewQueue = [];
+        battle.isReview = false;
+        battle.lastWasReview = false;
+        battle.reviewSuccess = 0;
+        battle.wrongStreak = 0;
+        battle.currentQuestion = null;
+        battle.themeTally = { c: 0, t: 0 };
         battle.questions = makeStageQuestions(stage);
         [...els.battleLane.querySelectorAll(".unit, .float-text")].forEach(node => node.remove());
         els.allyCastle.classList.remove("damaged");
@@ -2873,13 +3106,33 @@
         updateHud();
       }
 
+      function pickNextQuestion() {
+        const dueIndex = battle.reviewQueue.findIndex(item => item.dueAt <= battle.answered);
+        // 復習は新しい問題と交互に。連続させず、苦手の練習と新出を両立させる。
+        if (dueIndex >= 0 && !battle.lastWasReview) {
+          const item = battle.reviewQueue.splice(dueIndex, 1)[0];
+          battle.isReview = true;
+          battle.lastWasReview = true;
+          return item.q;
+        }
+        battle.isReview = false;
+        battle.lastWasReview = false;
+        const q = battle.questions[battle.newCursor % battle.questions.length];
+        battle.newCursor += 1;
+        return q;
+      }
+
       function renderQuestion() {
-        const q = battle.questions[battle.questionIndex % battle.questions.length];
-        const mode = getChoiceMode();
+        const q = pickNextQuestion();
+        battle.currentQuestion = q;
+        // 2連続不正解からはやさしく2択に絞る（北極星の安全弁）
+        const mode = battle.wrongStreak >= 2 ? 2 : getChoiceMode();
         const optionSet = makeChoiceOptions(q, mode);
         battle.currentAnswer = optionSet.answer;
         battle.currentChoiceCount = optionSet.choices.length;
-        els.questionTag.textContent = q.genre + " / " + q.diff + " / " + optionSet.choices.length + "択";
+        els.questionTag.textContent =
+          (battle.isReview ? "🔁 復習 / " : "") + q.genre + " / " + q.diff + " / " + optionSet.choices.length + "択";
+        els.questionTag.classList.toggle("review", battle.isReview);
         els.questionText.textContent = q.question;
         els.hintText.textContent = "ヒント：" + q.hint;
         els.descText.textContent = "解説：" + q.desc;
@@ -2892,6 +3145,17 @@
           btn.addEventListener("click", () => answerQuestion(index, btn));
           els.choices.appendChild(btn);
         });
+      }
+
+      function scheduleReview(q) {
+        if (!q) return;
+        if (battle.reviewQueue.some(item => item.q.id === q.id)) return;
+        battle.reviewQueue.push({ q, dueAt: battle.answered + 2 });
+      }
+
+      function recordResult(ok) {
+        battle.themeTally.t += 1;
+        if (ok) battle.themeTally.c += 1;
       }
 
       function makeChoiceOptions(question, mode) {
@@ -2910,29 +3174,54 @@
         if (battle.ended) return;
         const buttons = [...els.choices.querySelectorAll("button")];
         buttons.forEach(btn => btn.disabled = true);
+        const question = battle.currentQuestion;
+        const wasReview = battle.isReview;
 
         if (index === battle.currentAnswer) {
           button.classList.add("correct");
           battle.correct += 1;
           battle.combo += 1;
+          battle.wrongStreak = 0;
+          recordResult(true);
           const energyGain = battle.currentChoiceCount === 4 ? 18 : 8;
           battle.energy = Math.min(battle.energyMax, battle.energy + energyGain);
           spawnAlly({ free: true, source: "correct" });
-          setMessage("正解！追加の味方が出撃しました。" + battle.currentChoiceCount + "択ボーナスでエネルギー+" + energyGain + "。");
+          if (wasReview) {
+            battle.reviewSuccess += 1;
+            spawnAlly({ free: true, source: "correct" });
+            setMessage("🔁 復習成功！前に間違えた問題を取り返しました。すごい！味方が追加出撃。");
+            celebrate("review");
+          } else {
+            setMessage("正解！追加の味方が出撃しました。" + battle.currentChoiceCount + "択ボーナスでエネルギー+" + energyGain + "。");
+            celebrate("correct");
+          }
         } else {
           button.classList.add("wrong");
           if (buttons[battle.currentAnswer]) buttons[battle.currentAnswer].classList.add("correct");
           battle.wrong += 1;
+          battle.wrongStreak += 1;
           battle.combo = Math.floor(battle.combo / 2);
           battle.allyHp = Math.max(1, battle.allyHp - 2);
-          setMessage("おしい。負けにはしません。解説を見て次を選びましょう。");
+          recordResult(false);
+          if (question) scheduleReview(question);
+          celebrate("miss");
+          if (battle.wrongStreak >= 3) {
+            spawnAlly({ free: true, source: "auto" });
+            setMessage("だいじょうぶ。助っ人の味方が出撃しました。次はヒントを見て、ゆっくり選ぼう。");
+            battle.wrongStreak = 0;
+          } else if (battle.wrongStreak >= 2) {
+            setMessage("おしい。次の問題はやさしい2択にします。解説を見てみよう。");
+          } else {
+            setMessage("おしい。負けにはしません。解説を見て次を選びましょう。");
+          }
         }
 
+        battle.answered += 1;
         battle.questionIndex += 1;
         updateHud();
         setTimeout(() => {
           if (!battle.ended) renderQuestion();
-        }, 720);
+        }, 760);
       }
 
       function spawnAlly(options) {
@@ -2969,10 +3258,11 @@
           push: stats.push
         });
         showFloat((config.source === "auto" ? "自動 " : "") + stats.name + " 出撃", 112, "#15965d");
+        flashGate();
       }
 
       function spawnEnemy() {
-        const unit = makeUnit("enemy", "E", laneRight());
+        const unit = makeUnit("enemy", "👾", laneRight());
         const enemy = battle.enemyUnit || STAGE_DEFS[0].enemy;
         battle.enemies.push({
           el: unit,
@@ -3115,7 +3405,7 @@
       function finishBattle(won) {
         battle.ended = true;
         battle.active = false;
-        const reward = won ? 60 + battle.correct * 3 : battle.correct;
+        const reward = (won ? 60 + battle.correct * 3 : battle.correct) + battle.reviewSuccess * 4;
         saveData.gold += reward;
         if (won) {
           saveData.bestStage = Math.max(saveData.bestStage, battle.stage.id);
@@ -3124,16 +3414,103 @@
             battle.stage.routeIndex
           );
         }
+        mergeThemeStats();
+        updateWeakThemes();
         save();
 
         els.resultTitle.textContent = won ? "勝利！" : "作戦変更";
         els.resultText.textContent = won
           ? "敵の城をこわしました。ホームへ戻って強化できます。"
-          : "負けてもゴールドは少し残ります。編成や強化を見直しましょう。";
+          : "負けてもゴールドは少し残ります。あせらずに、もう一度ためそう。";
         els.resultCorrect.textContent = battle.correct;
         els.resultWrong.textContent = battle.wrong;
         els.resultGold.textContent = reward;
+        renderResultFeedback(won);
         setScreen("result");
+        resultCelebrate(won);
+      }
+
+      function resultCelebrate(won) {
+        const card = els.screens.result.querySelector(".result-card");
+        if (!card) return;
+        card.classList.remove("win");
+        void card.offsetWidth;
+        card.classList.toggle("win", won);
+        if (!won) return;
+        const colors = ["#15965d", "#2563eb", "#c8861a", "#7c3aed", "#d64545"];
+        for (let i = 0; i < 24; i += 1) {
+          const piece = document.createElement("div");
+          piece.className = "confetti";
+          piece.style.left = (8 + Math.random() * 84) + "%";
+          piece.style.background = colors[i % colors.length];
+          piece.style.animationDelay = (Math.random() * 0.25) + "s";
+          piece.style.setProperty("--rot", (Math.random() * 360) + "deg");
+          card.appendChild(piece);
+          setTimeout(() => piece.remove(), 1400);
+        }
+      }
+
+      function mergeThemeStats() {
+        const theme = battle.stage.theme;
+        if (!theme || battle.themeTally.t === 0) return;
+        const entry = saveData.quizStats[theme] || { c: 0, t: 0, label: battle.stage.themeLabel };
+        entry.c += battle.themeTally.c;
+        entry.t += battle.themeTally.t;
+        entry.label = battle.stage.themeLabel;
+        saveData.quizStats[theme] = entry;
+      }
+
+      function themeStatus(stat) {
+        if (!stat || stat.t === 0) return { key: "none", label: "未挑戦", acc: 0 };
+        const acc = stat.c / stat.t;
+        if (acc >= 0.8) return { key: "master", label: "得意", acc };
+        if (acc >= 0.5) return { key: "good", label: "守れた", acc };
+        return { key: "practice", label: "練習中", acc };
+      }
+
+      function updateWeakThemes() {
+        const weak = [];
+        STAGE_DEFS.forEach(stage => {
+          if (!stage.theme) return;
+          const status = themeStatus(saveData.quizStats[stage.theme]);
+          if (status.key === "practice" && weak.indexOf(stage.theme) < 0) weak.push(stage.theme);
+        });
+        saveData.weakThemes = weak;
+      }
+
+      function renderResultFeedback(won) {
+        const total = battle.correct + battle.wrong;
+        const acc = total > 0 ? battle.correct / total : 0;
+        const themeLabel = battle.stage.themeLabel;
+        let message;
+        if (total === 0) {
+          message = "次は問題に答えて、味方を出してみよう。";
+        } else if (acc >= 0.8) {
+          message = "「" + themeLabel + "」はよく守れた！この調子で次のステージへ進もう。";
+        } else if (acc >= 0.5) {
+          message = "「" + themeLabel + "」はあと少し。もう一度ためすと「得意」になれるよ。";
+        } else {
+          message = "「" + themeLabel + "」を少し復習しよう。あせらなくて大丈夫。ヒントを見ながらでOK。";
+        }
+        els.resultFeedback.textContent = message;
+
+        const medals = [];
+        medals.push('<span class="medal">正答率 ' + Math.round(acc * 100) + '%</span>');
+        if (battle.reviewSuccess > 0) {
+          medals.push('<span class="medal review">🔁 復習成功 ' + battle.reviewSuccess + '</span>');
+        }
+        if (battle.correct >= 5 && battle.wrong === 0) {
+          medals.push('<span class="medal gold">✨ ノーミス</span>');
+        }
+        const best = bestComboLabel();
+        if (best) medals.push('<span class="medal">' + best + '</span>');
+        els.resultMedals.innerHTML = medals.join("");
+      }
+
+      function bestComboLabel() {
+        if (battle.correct >= 8) return "🔥 たくさん正解";
+        if (battle.correct >= 4) return "👍 いい守り";
+        return "";
       }
 
       function updateHud() {
@@ -3142,6 +3519,14 @@
         setMeter(els.energyText, els.energyBar, battle.energy, battle.energyMax);
         els.comboText.textContent = battle.combo;
         els.comboBar.style.width = Math.min(100, battle.combo * 16) + "%";
+        const comboTier = battle.combo >= 8 ? "hot" : battle.combo >= 4 ? "warm" : "";
+        els.comboBar.dataset.tier = comboTier;
+        els.comboText.dataset.tier = comboTier;
+        const enemyRatio = battle.enemyHpMax > 0 ? battle.enemyHp / battle.enemyHpMax : 1;
+        els.enemyCastle.classList.toggle("crack1", enemyRatio <= 0.6 && enemyRatio > 0.3);
+        els.enemyCastle.classList.toggle("crack2", enemyRatio <= 0.3);
+        const allyRatio = battle.allyHpMax > 0 ? battle.allyHp / battle.allyHpMax : 1;
+        els.allyCastle.classList.toggle("low", allyRatio <= 0.3);
       }
 
       function setMeter(textEl, barEl, value, max) {
@@ -3167,6 +3552,77 @@
 
       function laneRight() {
         return els.battleLane.clientWidth - 96;
+      }
+
+      function celebrate(type) {
+        const panel = els.questionPanel;
+        if (panel) {
+          const cls = type === "miss" ? "flash-miss" : "flash-correct";
+          panel.classList.remove("flash-correct", "flash-miss");
+          void panel.offsetWidth;
+          panel.classList.add(cls);
+          setTimeout(() => panel.classList.remove(cls), 460);
+        }
+        if (type === "review") {
+          burstSparkles(laneRight() / 2, "#7c3aed", 10);
+          showFloat("復習成功！", laneRight() / 2, "#7c3aed");
+        } else if (type === "correct") {
+          burstSparkles(140, "#15965d", 6);
+        }
+      }
+
+      function burstSparkles(x, color, count) {
+        for (let i = 0; i < count; i += 1) {
+          const dot = document.createElement("div");
+          dot.className = "sparkle";
+          const angle = (Math.PI * 2 * i) / count + Math.random();
+          const dist = 24 + Math.random() * 30;
+          dot.style.left = x + "px";
+          dot.style.bottom = (118 + Math.random() * 18) + "px";
+          dot.style.background = color;
+          dot.style.setProperty("--dx", Math.cos(angle) * dist + "px");
+          dot.style.setProperty("--dy", (-Math.abs(Math.sin(angle)) * dist - 10) + "px");
+          els.battleLane.appendChild(dot);
+          setTimeout(() => dot.remove(), 620);
+        }
+      }
+
+      function flashGate() {
+        els.allyCastle.classList.add("gate");
+        setTimeout(() => els.allyCastle.classList.remove("gate"), 320);
+      }
+
+      function renderZukan() {
+        els.zukanList.innerHTML = "";
+        const seen = new Set();
+        let attempted = 0;
+        let mastered = 0;
+        STAGE_DEFS.forEach(stage => {
+          if (!stage.theme || seen.has(stage.theme)) return;
+          seen.add(stage.theme);
+          const stat = saveData.quizStats[stage.theme];
+          const status = themeStatus(stat);
+          if (status.key !== "none") attempted += 1;
+          if (status.key === "master") mastered += 1;
+          const card = document.createElement("article");
+          card.className = "zukan-card " + status.key;
+          const accText = status.key === "none"
+            ? "まだ挑戦していません"
+            : "正答率 " + Math.round(status.acc * 100) + "％（" + (stat.c) + "/" + (stat.t) + "問）";
+          card.innerHTML =
+            '<div class="zukan-head">' +
+              '<strong>' + stage.themeLabel + '</strong>' +
+              '<span class="zukan-badge ' + status.key + '">' + status.label + '</span>' +
+            '</div>' +
+            '<span class="muted">' + stage.chapterLabel + ' / ' + stage.diffLabel + '</span>' +
+            '<span class="zukan-acc">' + accText + '</span>';
+          els.zukanList.appendChild(card);
+        });
+        const summary = document.getElementById("zukanSummary");
+        if (summary) {
+          summary.textContent = "テーマ " + seen.size + " 種類のうち、" +
+            attempted + " 個に挑戦、" + mastered + " 個が「得意」になりました。";
+        }
       }
 
       function setSelectedChapter(chapter) {
@@ -3219,6 +3675,11 @@
         openModal(els.formationModal);
       });
       els.closeFormationBtn.addEventListener("click", () => closeModal(els.formationModal));
+      els.zukanBtn.addEventListener("click", () => {
+        renderZukan();
+        openModal(els.zukanModal);
+      });
+      els.closeZukanBtn.addEventListener("click", () => closeModal(els.zukanModal));
       els.battleHomeBtn.addEventListener("click", goHome);
       els.resultHomeBtn.addEventListener("click", goHome);
       els.retryBtn.addEventListener("click", startBattle);
