@@ -203,6 +203,27 @@
 
     .stage-card h3 { margin: 0 0 4px; }
 
+    .stage-card .stage-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .stage-card .stage-meta span {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.72);
+      padding: 3px 7px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .stage-card.recommended {
+      border-color: var(--gold);
+      background: #fff8e6;
+    }
+
     .home-buttons .btn {
       width: 100%;
       text-align: left;
@@ -683,15 +704,7 @@
       <div class="home-grid">
         <section class="panel" style="padding:12px;">
           <h2>ステージ選択</h2>
-          <div class="stage-list">
-            <button id="stageOneBtn" class="stage-card btn" type="button">
-              <span>
-                <h3>ステージ1：be動詞の入口</h3>
-                <span class="muted">I / You / He / She の超基本。全問4択。</span>
-              </span>
-              <strong>出撃</strong>
-            </button>
-          </div>
+          <div id="stageList" class="stage-list"></div>
 
           <h2 style="margin-top:14px;">編成</h2>
           <div id="formationSlots" class="formation-row"></div>
@@ -1265,7 +1278,7 @@
         {genre:"grammar",diff:"junior",type:"choice",question:"Do you ( ) Kyoto?",choices:["is","visit","visits","are"],answer:1,desc:"Do を使う疑問文では一般動詞は原形に戻る。"},
         {genre:"grammar",diff:"junior",type:"choice",question:"Tom is here. ( ) is kind.",choices:["He","She","It","They"],answer:0,desc:"前の名詞に合う代名詞を選ぶ。"},
         {genre:"grammar",diff:"junior",type:"choice",question:"Mary is here. ( ) is kind.",choices:["She","It","They","He"],answer:0,desc:"前の名詞に合う代名詞を選ぶ。"},
-        {genre:"grammar",diff:"junior",type:"choice",question:"Tom and Mary is here. ( ) is kind.",choices:["It","They","He","She"],answer:1,desc:"前の名詞に合う代名詞を選ぶ。"},
+        {genre:"grammar",diff:"junior",type:"choice",question:"Tom and Mary are here. ( ) is kind.",choices:["It","They","He","She"],answer:1,desc:"前の名詞に合う代名詞を選ぶ。"},
         {genre:"grammar",diff:"junior",type:"choice",question:"my mother is here. ( ) is kind.",choices:["They","He","She","It"],answer:2,desc:"前の名詞に合う代名詞を選ぶ。"},
         {genre:"grammar",diff:"junior",type:"choice",question:"my friends is here. ( ) is kind.",choices:["He","She","It","They"],answer:3,desc:"前の名詞に合う代名詞を選ぶ。"},
         {genre:"grammar",diff:"junior",type:"choice",question:"this cat is here. ( ) is kind.",choices:["She","It","They","He"],answer:1,desc:"前の名詞に合う代名詞を選ぶ。"},
@@ -1922,6 +1935,97 @@
       const STAGE_ONE_QUESTION_COUNT = 8;
       const RAW_QUESTIONS = ENGLISH_QUESTION_DB.concat(ENGLISH_QUESTION_DB_BATCH2);
       const QUESTION_POOL = normalizeQuestionPool(RAW_QUESTIONS);
+      const STAGE_DEFS = [
+        {
+          id: 1,
+          name: "ステージ1：be動詞の入口",
+          theme: "be",
+          themeLabel: "be動詞",
+          diffLabel: "junior",
+          description: "I / You / He / She と am / is / are を中心にした、はじめて用の超やさしい導入です。",
+          questionCount: 8,
+          filters: { genre: "grammar", diff: "junior", theme: "be" },
+          enemy: { hp: 60, unitHp: 16, attack: 3, speed: 12, interval: 5.2, firstDelay: 1.8 },
+          recommended: true
+        },
+        {
+          id: 2,
+          name: "ステージ2：be動詞の基本",
+          theme: "be",
+          themeLabel: "am / is / are",
+          diffLabel: "junior",
+          description: "be動詞と代名詞をくり返して、主語に合う形を選ぶ練習をします。",
+          questionCount: 9,
+          filters: { genre: "grammar", diff: "junior", theme: "be" },
+          enemy: { hp: 82, unitHp: 20, attack: 5, speed: 16, interval: 4.4, firstDelay: 1.2 }
+        },
+        {
+          id: 3,
+          name: "ステージ3：基本単語パトロール",
+          theme: "word-basic",
+          themeLabel: "基本単語",
+          diffLabel: "junior",
+          description: "身近な名詞・動詞・形容詞を、英語から意味を選ぶ4択で確認します。",
+          questionCount: 10,
+          filters: { genre: "word", diff: "junior" },
+          enemy: { hp: 92, unitHp: 22, attack: 5, speed: 17, interval: 4.1, firstDelay: 1.0 }
+        },
+        {
+          id: 4,
+          name: "ステージ4：一般動詞の道",
+          theme: "general-verb",
+          themeLabel: "一般動詞",
+          diffLabel: "junior",
+          description: "play / go / eat / like など、現在形の一般動詞の入口です。",
+          questionCount: 10,
+          filters: { genre: "grammar", diff: "junior", theme: "general-verb" },
+          enemy: { hp: 104, unitHp: 24, attack: 6, speed: 18, interval: 3.9, firstDelay: .9 }
+        },
+        {
+          id: 5,
+          name: "ステージ5：疑問文の門",
+          theme: "question",
+          themeLabel: "疑問文",
+          diffLabel: "junior-mid",
+          description: "Do / Does / Is / Are や疑問詞を使う文を中心に出題します。",
+          questionCount: 11,
+          filters: { genre: "grammar", diffs: ["junior", "mid"], theme: "question" },
+          enemy: { hp: 116, unitHp: 26, attack: 7, speed: 20, interval: 3.7, firstDelay: .8 }
+        },
+        {
+          id: 6,
+          name: "ステージ6：否定文の砦",
+          theme: "negative",
+          themeLabel: "否定文",
+          diffLabel: "junior-mid",
+          description: "don't / doesn't / isn't など、否定文の形を重点的に確認します。",
+          questionCount: 11,
+          filters: { genre: "grammar", diffs: ["junior", "mid"], theme: "negative" },
+          enemy: { hp: 126, unitHp: 28, attack: 7, speed: 21, interval: 3.5, firstDelay: .8 }
+        },
+        {
+          id: 7,
+          name: "ステージ7：三単現の壁",
+          theme: "third-person",
+          themeLabel: "三単現",
+          diffLabel: "mid",
+          description: "plays / has / goes など、三人称単数現在の見分けを練習します。",
+          questionCount: 12,
+          filters: { genre: "grammar", diffs: ["junior", "mid"], theme: "third-person" },
+          enemy: { hp: 138, unitHp: 30, attack: 8, speed: 22, interval: 3.3, firstDelay: .7 }
+        },
+        {
+          id: 8,
+          name: "ステージ8：疑問詞の森",
+          theme: "question-word",
+          themeLabel: "疑問詞",
+          diffLabel: "mid",
+          description: "what / where / when / who / how など、疑問詞の意味と使い方を扱います。",
+          questionCount: 12,
+          filters: { genres: ["grammar", "word"], diffs: ["mid", "junior"], theme: "question-word" },
+          enemy: { hp: 150, unitHp: 32, attack: 8, speed: 23, interval: 3.1, firstDelay: .7 }
+        }
+      ];
 
       function normalizeQuestionPool(rawQuestions) {
         const words = rawQuestions.filter(item => item && item.genre === "word");
@@ -1995,18 +2099,59 @@
         const count = filters.count || STAGE_ONE_QUESTION_COUNT;
         let pool = QUESTION_POOL.filter(question => {
           const genreOk = !filters.genre || question.genre === filters.genre;
+          const genresOk = !filters.genres || filters.genres.indexOf(question.genre) >= 0;
           const diffOk = !filters.diff || question.diff === filters.diff;
-          return genreOk && diffOk;
+          const diffsOk = !filters.diffs || filters.diffs.indexOf(question.diff) >= 0;
+          const themeOk = !filters.theme || matchesTheme(question, filters.theme);
+          return genreOk && genresOk && diffOk && diffsOk && themeOk;
         });
-        if (pool.length < count && filters.diff) {
-          pool = QUESTION_POOL.filter(question => question.diff === filters.diff);
+        if (pool.length < count && (filters.diff || filters.diffs)) {
+          pool = QUESTION_POOL.filter(question => {
+            if (filters.diff) return question.diff === filters.diff;
+            return filters.diffs.indexOf(question.diff) >= 0;
+          });
         }
         if (pool.length < count) pool = QUESTION_POOL;
         return repeatSample(pool, count);
       }
 
-      function makeStageOneQuestions() {
-        return selectQuestions({ genre: "grammar", diff: "junior", count: STAGE_ONE_QUESTION_COUNT });
+      function matchesTheme(question, theme) {
+        const text = [
+          question.question,
+          question.desc,
+          question.hint,
+          question.choices.join(" ")
+        ].join(" ").toLowerCase();
+        const answerText = String(question.choices[question.answer] || "").toLowerCase();
+        if (theme === "be") {
+          return /\b(am|is|are|be)\b/.test(text) || /\( \) a student/.test(text);
+        }
+        if (theme === "general-verb") {
+          return /\b(play|plays|go|goes|eat|eats|like|likes|have|has|study|studies|watch|watches|read|reads|speak|speaks|want|wants|visit|visits)\b/.test(text);
+        }
+        if (theme === "question") {
+          return /\?/.test(text) || /\b(do|does|is|are|what|where|when|who|how|can)\b/.test(answerText);
+        }
+        if (theme === "negative") {
+          return /\b(not|don't|doesn't|isn't|aren't|can't|didn't|won't|no)\b/.test(text);
+        }
+        if (theme === "third-person") {
+          return /\b(she|he|it|tom|mary|my brother|my sister)\b/.test(text) &&
+            /\b(plays|goes|has|likes|eats|studies|watches|reads|speaks|wants|visits|does)\b/.test(text);
+        }
+        if (theme === "question-word") {
+          return /\b(what|where|when|who|whose|which|why|how|question|answer)\b/.test(text);
+        }
+        return true;
+      }
+
+      function getStageDef(stageId) {
+        return STAGE_DEFS.find(stage => stage.id === Number(stageId)) || STAGE_DEFS[0];
+      }
+
+      function makeStageQuestions(stage) {
+        const filters = Object.assign({}, stage.filters, { count: stage.questionCount || STAGE_ONE_QUESTION_COUNT });
+        return selectQuestions(filters);
       }
 
       function repeatSample(pool, count) {
@@ -2059,9 +2204,10 @@
           result: document.getElementById("resultScreen")
         },
         startTile: document.getElementById("startTile"),
-        stageOneBtn: document.getElementById("stageOneBtn"),
+        stageList: document.getElementById("stageList"),
         exchangeBoxBtn: document.getElementById("exchangeBoxBtn"),
         stageModal: document.getElementById("stageModal"),
+        stageModalTitle: document.getElementById("stageModalTitle"),
         closeStageModalBtn: document.getElementById("closeStageModalBtn"),
         startBattleBtn: document.getElementById("startBattleBtn"),
         gachaModal: document.getElementById("gachaModal"),
@@ -2142,8 +2288,12 @@
         enemies: [],
         lastTime: 0,
         enemySpawnTimer: 0,
-        questions: []
+        questions: [],
+        stage: STAGE_DEFS[0],
+        enemyUnit: STAGE_DEFS[0].enemy
       };
+
+      let selectedStageId = 1;
 
       function showError(message) {
         try {
@@ -2215,8 +2365,33 @@
         els.homeGold.textContent = saveData.gold;
         els.slowMode.checked = saveData.slowMode;
         els.exchangeBoxBtn.style.display = GG_CONFIG.rpgIntegration ? "block" : "none";
+        renderStageList();
         renderFormationSlots();
         els.pullGachaBtn.disabled = saveData.gold < GACHA_COST;
+      }
+
+      function renderStageList() {
+        els.stageList.innerHTML = "";
+        const nextRecommended = Math.min(STAGE_DEFS.length, Number(saveData.bestStage || 0) + 1);
+        STAGE_DEFS.forEach(stage => {
+          const cleared = Number(saveData.bestStage || 0) >= stage.id;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "stage-card btn" + (stage.id === nextRecommended ? " recommended" : "");
+          button.innerHTML =
+            '<span>' +
+              '<h3>' + stage.name + '</h3>' +
+              '<span class="muted">' + stage.description + '</span>' +
+              '<span class="stage-meta">' +
+                '<span>' + stage.themeLabel + '</span>' +
+                '<span>' + stage.diffLabel + '</span>' +
+                '<span>' + stage.questionCount + '問</span>' +
+              '</span>' +
+            '</span>' +
+            '<strong>' + (cleared ? 'クリア済' : stage.id === nextRecommended ? 'おすすめ' : '出撃') + '</strong>';
+          button.addEventListener("click", () => openStageModal(stage.id));
+          els.stageList.appendChild(button);
+        });
       }
 
       function openModal(modal) {
@@ -2228,7 +2403,16 @@
         modal.classList.remove("show");
       }
 
-      function openStageModal() {
+      function openStageModal(stageId) {
+        const stage = getStageDef(stageId || selectedStageId);
+        selectedStageId = stage.id;
+        els.stageModalTitle.textContent = stage.name;
+        const desc = els.stageModal.querySelector(".modal-card > p");
+        if (desc) desc.textContent = stage.description;
+        const scores = els.stageModal.querySelectorAll(".score strong");
+        if (scores[0]) scores[0].textContent = stage.themeLabel;
+        if (scores[1]) scores[1].textContent = stage.diffLabel;
+        if (scores[2]) scores[2].textContent = stage.questionCount + "問";
         els.stageModal.classList.add("show");
       }
 
@@ -2475,14 +2659,18 @@
       }
 
       function resetBattle() {
+        const stage = getStageDef(selectedStageId);
+        const enemy = stage.enemy || STAGE_DEFS[0].enemy;
         const hpLevel = Number(saveData.castle.hp || 0);
         const energyLevel = Number(saveData.castle.energy || 0);
         const regenLevel = Number(saveData.castle.regen || 0);
         const comboLevel = Number(saveData.castle.combo || 0);
+        battle.stage = stage;
+        battle.enemyUnit = enemy;
         battle.active = false;
         battle.ended = false;
         battle.allyHpMax = 140 + hpLevel * 16;
-        battle.enemyHpMax = 90;
+        battle.enemyHpMax = enemy.hp;
         battle.allyHp = battle.allyHpMax;
         battle.enemyHp = battle.enemyHpMax;
         battle.energyMax = 100;
@@ -2497,11 +2685,13 @@
         battle.spawnCursor = 0;
         battle.allies = [];
         battle.enemies = [];
-        battle.enemySpawnTimer = .5;
-        battle.questions = makeStageOneQuestions();
+        battle.enemySpawnTimer = enemy.firstDelay || .5;
+        battle.questions = makeStageQuestions(stage);
         [...els.battleLane.querySelectorAll(".unit, .float-text")].forEach(node => node.remove());
         els.allyCastle.classList.remove("damaged");
         els.enemyCastle.classList.remove("damaged");
+        const title = els.screens.battle.querySelector(".topbar h1");
+        if (title) title.textContent = stage.name;
         renderQuestion();
         setMessage("正解すると、編成中の味方が1体出撃します。");
         updateHud();
@@ -2585,12 +2775,13 @@
 
       function spawnEnemy() {
         const unit = makeUnit("enemy", "E", laneRight());
+        const enemy = battle.enemyUnit || STAGE_DEFS[0].enemy;
         battle.enemies.push({
           el: unit,
           x: laneRight(),
-          hp: 24,
-          attack: 6,
-          speed: 18,
+          hp: enemy.unitHp,
+          attack: enemy.attack,
+          speed: enemy.speed,
           attackTimer: 0,
           cd: 1.05,
           range: 34
@@ -2617,7 +2808,7 @@
           battle.enemySpawnTimer -= dt;
           if (battle.enemySpawnTimer <= 0) {
             spawnEnemy();
-            battle.enemySpawnTimer = saveData.slowMode ? 4.2 : 3.0;
+            battle.enemySpawnTimer = (battle.enemyUnit.interval || 3.0) * (saveData.slowMode ? 1.35 : 1);
           }
           moveUnits(dt);
           updateHud();
@@ -2723,7 +2914,7 @@
         battle.active = false;
         const reward = won ? 60 + battle.correct * 3 : battle.correct;
         saveData.gold += reward;
-        if (won) saveData.bestStage = Math.max(saveData.bestStage, 1);
+        if (won) saveData.bestStage = Math.max(saveData.bestStage, battle.stage.id);
         save();
 
         els.resultTitle.textContent = won ? "勝利！" : "作戦変更";
@@ -2779,7 +2970,6 @@
         renderHome();
         setScreen("home");
       });
-      els.stageOneBtn.addEventListener("click", openStageModal);
       els.closeStageModalBtn.addEventListener("click", closeStageModal);
       els.startBattleBtn.addEventListener("click", startBattle);
       els.gachaBtn.addEventListener("click", openGacha);
