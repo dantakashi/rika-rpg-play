@@ -224,6 +224,36 @@
       background: #fff8e6;
     }
 
+    .chapter-tabs,
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .chapter-tabs .btn,
+    .mode-tabs .btn {
+      text-align: center;
+      box-shadow: 0 3px 0 #d5dde8;
+    }
+
+    .chapter-tabs .active,
+    .mode-tabs .active {
+      color: #fff;
+      border-color: #1d4ed8;
+      background: var(--blue);
+      box-shadow: 0 3px 0 #173f9c;
+    }
+
+    .mode-note {
+      margin: -2px 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
     .home-buttons .btn {
       width: 100%;
       text-align: left;
@@ -590,6 +620,18 @@
       min-height: 38px;
     }
 
+    .battle-tools {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .battle-tools .mode-tabs {
+      margin: 0;
+    }
+
     .choices {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -651,7 +693,8 @@
       .question-panel,
       .shop-grid,
       .card-grid,
-      .select-line {
+      .select-line,
+      .battle-tools {
         grid-template-columns: 1fr;
       }
       h1 { font-size: 24px; }
@@ -704,6 +747,11 @@
       <div class="home-grid">
         <section class="panel" style="padding:12px;">
           <h2>ステージ選択</h2>
+          <div class="chapter-tabs" aria-label="章を選ぶ">
+            <button id="wordChapterBtn" class="btn active" type="button">単語の章</button>
+            <button id="grammarChapterBtn" class="btn" type="button">文法の章</button>
+          </div>
+          <p id="chapterNote" class="mode-note">まずは単語から。英語が苦手でも入りやすい章です。</p>
           <div id="stageList" class="stage-list"></div>
 
           <h2 style="margin-top:14px;">編成</h2>
@@ -713,6 +761,11 @@
 
         <aside class="panel" style="padding:12px;">
           <h2>ホーム機能</h2>
+          <div class="mode-tabs" aria-label="出題モード">
+            <button id="mode2Btn" class="btn active" type="button">2択</button>
+            <button id="mode4Btn" class="btn" type="button">4択</button>
+          </div>
+          <p id="modeNote" class="mode-note">2択はやさしめ。4択で正解すると英語エネルギーが多くたまります。</p>
           <div class="home-buttons">
             <button id="gachaBtn" class="btn ghost" type="button">味方ガチャ</button>
             <button id="unitUpgradeBtn" class="btn ghost" type="button">味方強化</button>
@@ -758,6 +811,13 @@
 
       <section class="question-panel">
         <div class="question-box">
+          <div class="battle-tools">
+            <strong>出題</strong>
+            <div class="mode-tabs" aria-label="この問題の選択肢数">
+              <button id="battleMode2Btn" class="btn active" type="button">2択</button>
+              <button id="battleMode4Btn" class="btn" type="button">4択</button>
+            </div>
+          </div>
           <div id="questionTag" class="tagline">grammar / junior / 4択</div>
           <p id="questionText" class="question">I ( ) a student.</p>
           <div id="hintText" class="hint">ヒント：I の be動詞は am。</div>
@@ -1938,91 +1998,115 @@
       const STAGE_DEFS = [
         {
           id: 1,
-          name: "ステージ1：be動詞の入口",
-          theme: "be",
-          themeLabel: "be動詞",
+          chapter: "word",
+          chapterLabel: "単語の章",
+          routeIndex: 1,
+          name: "単語1：身近な基本単語",
+          theme: "word-basic",
+          themeLabel: "基本単語",
           diffLabel: "junior",
-          description: "I / You / He / She と am / is / are を中心にした、はじめて用の超やさしい導入です。",
+          description: "食べ物・学校・家族など、最初に覚えたい英単語を意味で選びます。",
           questionCount: 8,
-          filters: { genre: "grammar", diff: "junior", theme: "be" },
+          filters: { genre: "word", diff: "junior" },
           enemy: { hp: 60, unitHp: 16, attack: 3, speed: 12, interval: 5.2, firstDelay: 1.8 },
           recommended: true
         },
         {
           id: 2,
-          name: "ステージ2：be動詞の基本",
-          theme: "be",
-          themeLabel: "am / is / are",
+          chapter: "word",
+          chapterLabel: "単語の章",
+          routeIndex: 2,
+          name: "単語2：動きと気持ち",
+          theme: "word-action",
+          themeLabel: "動詞・形容詞",
           diffLabel: "junior",
-          description: "be動詞と代名詞をくり返して、主語に合う形を選ぶ練習をします。",
+          description: "go / come / happy / good など、文を読む土台になる語を確認します。",
           questionCount: 9,
-          filters: { genre: "grammar", diff: "junior", theme: "be" },
+          filters: { genre: "word", diff: "junior", theme: "word-action" },
           enemy: { hp: 82, unitHp: 20, attack: 5, speed: 16, interval: 4.4, firstDelay: 1.2 }
         },
         {
           id: 3,
-          name: "ステージ3：基本単語パトロール",
-          theme: "word-basic",
-          themeLabel: "基本単語",
-          diffLabel: "junior",
-          description: "身近な名詞・動詞・形容詞を、英語から意味を選ぶ4択で確認します。",
+          chapter: "word",
+          chapterLabel: "単語の章",
+          routeIndex: 3,
+          name: "単語3：生活と場所",
+          theme: "word-life",
+          themeLabel: "生活・場所",
+          diffLabel: "mid",
+          description: "駅・図書館・食事・買い物など、会話や長文で出やすい語を扱います。",
           questionCount: 10,
-          filters: { genre: "word", diff: "junior" },
+          filters: { genre: "word", diff: "mid", theme: "word-life" },
           enemy: { hp: 92, unitHp: 22, attack: 5, speed: 17, interval: 4.1, firstDelay: 1.0 }
         },
         {
           id: 4,
-          name: "ステージ4：一般動詞の道",
-          theme: "general-verb",
-          themeLabel: "一般動詞",
-          diffLabel: "junior",
-          description: "play / go / eat / like など、現在形の一般動詞の入口です。",
+          chapter: "word",
+          chapterLabel: "単語の章",
+          routeIndex: 4,
+          name: "単語4：受験語いチャレンジ",
+          theme: "word-exam",
+          themeLabel: "受験語い",
+          diffLabel: "senior",
+          description: "高校受験で役立つ少し難しめの語いを、意味選択で広げます。",
           questionCount: 10,
-          filters: { genre: "grammar", diff: "junior", theme: "general-verb" },
+          filters: { genre: "word", diffs: ["senior", "supreme"] },
           enemy: { hp: 104, unitHp: 24, attack: 6, speed: 18, interval: 3.9, firstDelay: .9 }
         },
         {
           id: 5,
-          name: "ステージ5：疑問文の門",
-          theme: "question",
-          themeLabel: "疑問文",
-          diffLabel: "junior-mid",
-          description: "Do / Does / Is / Are や疑問詞を使う文を中心に出題します。",
-          questionCount: 11,
-          filters: { genre: "grammar", diffs: ["junior", "mid"], theme: "question" },
+          chapter: "grammar",
+          chapterLabel: "文法の章",
+          routeIndex: 1,
+          name: "文法1：be動詞の入口",
+          theme: "be",
+          themeLabel: "be動詞",
+          diffLabel: "junior",
+          description: "I / You / He / She と am / is / are を中心にした導入です。",
+          questionCount: 8,
+          filters: { genre: "grammar", diff: "junior", theme: "be" },
           enemy: { hp: 116, unitHp: 26, attack: 7, speed: 20, interval: 3.7, firstDelay: .8 }
         },
         {
           id: 6,
-          name: "ステージ6：否定文の砦",
-          theme: "negative",
-          themeLabel: "否定文",
-          diffLabel: "junior-mid",
-          description: "don't / doesn't / isn't など、否定文の形を重点的に確認します。",
-          questionCount: 11,
-          filters: { genre: "grammar", diffs: ["junior", "mid"], theme: "negative" },
+          chapter: "grammar",
+          chapterLabel: "文法の章",
+          routeIndex: 2,
+          name: "文法2：中1基本文法",
+          theme: "grammar-basic",
+          themeLabel: "中1基本文法",
+          diffLabel: "junior",
+          description: "一般動詞・名詞の複数形など、中1前半の基本文法をまとめて確認します。",
+          questionCount: 10,
+          filters: { genre: "grammar", diff: "junior" },
           enemy: { hp: 126, unitHp: 28, attack: 7, speed: 21, interval: 3.5, firstDelay: .8 }
         },
         {
           id: 7,
-          name: "ステージ7：三単現の壁",
-          theme: "third-person",
-          themeLabel: "三単現",
-          diffLabel: "mid",
-          description: "plays / has / goes など、三人称単数現在の見分けを練習します。",
+          chapter: "grammar",
+          chapterLabel: "文法の章",
+          routeIndex: 3,
+          name: "文法3：疑問文と否定文",
+          theme: "question-negative",
+          themeLabel: "疑問文・否定文",
+          diffLabel: "junior-mid",
+          description: "Do / Does / Is / Are の疑問文と、don't / isn't などの否定文をまとめて練習します。",
           questionCount: 12,
-          filters: { genre: "grammar", diffs: ["junior", "mid"], theme: "third-person" },
+          filters: { genre: "grammar", diffs: ["junior", "mid"], themes: ["question", "negative"] },
           enemy: { hp: 138, unitHp: 30, attack: 8, speed: 22, interval: 3.3, firstDelay: .7 }
         },
         {
           id: 8,
-          name: "ステージ8：疑問詞の森",
-          theme: "question-word",
-          themeLabel: "疑問詞",
+          chapter: "grammar",
+          chapterLabel: "文法の章",
+          routeIndex: 4,
+          name: "文法4：三単現と疑問詞",
+          theme: "third-question-word",
+          themeLabel: "三単現・疑問詞",
           diffLabel: "mid",
-          description: "what / where / when / who / how など、疑問詞の意味と使い方を扱います。",
+          description: "三人称単数現在と、what / where / when / who / how の使い方を確認します。",
           questionCount: 12,
-          filters: { genres: ["grammar", "word"], diffs: ["mid", "junior"], theme: "question-word" },
+          filters: { genre: "grammar", diffs: ["junior", "mid"], themes: ["third-person", "question-word"] },
           enemy: { hp: 150, unitHp: 32, attack: 8, speed: 23, interval: 3.1, firstDelay: .7 }
         }
       ];
@@ -2103,44 +2187,67 @@
           const diffOk = !filters.diff || question.diff === filters.diff;
           const diffsOk = !filters.diffs || filters.diffs.indexOf(question.diff) >= 0;
           const themeOk = !filters.theme || matchesTheme(question, filters.theme);
-          return genreOk && genresOk && diffOk && diffsOk && themeOk;
+          const themesOk = !filters.themes || filters.themes.some(theme => matchesTheme(question, theme));
+          return genreOk && genresOk && diffOk && diffsOk && themeOk && themesOk;
         });
-        if (pool.length < count && (filters.diff || filters.diffs)) {
+        if (pool.length === 0 && (filters.diff || filters.diffs)) {
           pool = QUESTION_POOL.filter(question => {
+            const genreOk = !filters.genre || question.genre === filters.genre;
+            const genresOk = !filters.genres || filters.genres.indexOf(question.genre) >= 0;
+            if (!genreOk || !genresOk) return false;
             if (filters.diff) return question.diff === filters.diff;
             return filters.diffs.indexOf(question.diff) >= 0;
           });
         }
-        if (pool.length < count) pool = QUESTION_POOL;
+        if (pool.length === 0) {
+          pool = QUESTION_POOL.filter(question => {
+            const genreOk = !filters.genre || question.genre === filters.genre;
+            const genresOk = !filters.genres || filters.genres.indexOf(question.genre) >= 0;
+            return genreOk && genresOk;
+          });
+        }
+        if (pool.length === 0) pool = QUESTION_POOL;
         return repeatSample(pool, count);
       }
 
       function matchesTheme(question, theme) {
-        const text = [
+        const promptText = [
           question.question,
           question.desc,
-          question.hint,
-          question.choices.join(" ")
+          question.hint
         ].join(" ").toLowerCase();
+        const choiceText = question.choices.join(" ").toLowerCase();
+        const text = (promptText + " " + choiceText).toLowerCase();
         const answerText = String(question.choices[question.answer] || "").toLowerCase();
         if (theme === "be") {
-          return /\b(am|is|are|be)\b/.test(text) || /\( \) a student/.test(text);
+          return /\b(am|is|are|be)\b/.test(promptText) || /\( \) a student/.test(promptText);
         }
         if (theme === "general-verb") {
-          return /\b(play|plays|go|goes|eat|eats|like|likes|have|has|study|studies|watch|watches|read|reads|speak|speaks|want|wants|visit|visits)\b/.test(text);
+          return /\b(play|plays|go|goes|eat|eats|like|likes|study|studies|watch|watches|read|reads|speak|speaks|want|wants|visit|visits)\b/.test(promptText);
         }
         if (theme === "question") {
-          return /\?/.test(text) || /\b(do|does|is|are|what|where|when|who|how|can)\b/.test(answerText);
+          return /\?/.test(promptText) || /\b(what|where|when|who|whose|which|why|how)\b/.test(promptText);
         }
         if (theme === "negative") {
-          return /\b(not|don't|doesn't|isn't|aren't|can't|didn't|won't|no)\b/.test(text);
+          return /\b(not|don't|doesn't|isn't|aren't|can't|didn't|won't|no)\b/.test(promptText);
         }
         if (theme === "third-person") {
-          return /\b(she|he|it|tom|mary|my brother|my sister)\b/.test(text) &&
+          return /\b(she|he|it|tom|mary|my brother|my sister)\b/.test(promptText) &&
             /\b(plays|goes|has|likes|eats|studies|watches|reads|speaks|wants|visits|does)\b/.test(text);
         }
         if (theme === "question-word") {
-          return /\b(what|where|when|who|whose|which|why|how|question|answer)\b/.test(text);
+          return /\b(what|where|when|who|whose|which|why|how|question|answer)\b/.test(promptText);
+        }
+        if (theme === "word-action") {
+          return question.genre === "word" &&
+            /\b(go|come|see|watch|read|write|speak|say|listen|hear|eat|drink|like|want|have|make|play|run|walk|swim|big|small|long|short|new|old|hot|cold|fast|slow|happy|sad|good|bad)\b/.test(promptText);
+        }
+        if (theme === "word-life") {
+          return question.genre === "word" &&
+            /\b(station|hospital|library|museum|airport|bridge|street|park|shop|market|breakfast|lunch|dinner|vegetable|fruit|meat|chicken|sugar|salt|cook|buy|sell|open|close|start|finish|study|learn|teach|help|ask|answer|find|meet|send|receive|bring|take|give|use|need|wait)\b/.test(promptText);
+        }
+        if (theme === "word-basic" || theme === "word-exam") {
+          return question.genre === "word";
         }
         return true;
       }
@@ -2205,6 +2312,14 @@
         },
         startTile: document.getElementById("startTile"),
         stageList: document.getElementById("stageList"),
+        wordChapterBtn: document.getElementById("wordChapterBtn"),
+        grammarChapterBtn: document.getElementById("grammarChapterBtn"),
+        chapterNote: document.getElementById("chapterNote"),
+        mode2Btn: document.getElementById("mode2Btn"),
+        mode4Btn: document.getElementById("mode4Btn"),
+        battleMode2Btn: document.getElementById("battleMode2Btn"),
+        battleMode4Btn: document.getElementById("battleMode4Btn"),
+        modeNote: document.getElementById("modeNote"),
         exchangeBoxBtn: document.getElementById("exchangeBoxBtn"),
         stageModal: document.getElementById("stageModal"),
         stageModalTitle: document.getElementById("stageModalTitle"),
@@ -2260,6 +2375,9 @@
       const saveData = {
         gold: 0,
         bestStage: 0,
+        bestByChapter: { word: 0, grammar: 0 },
+        selectedChapter: "word",
+        choiceMode: "2",
         slowMode: false,
         nextUnitId: 1,
         units: [],
@@ -2288,6 +2406,10 @@
         enemies: [],
         lastTime: 0,
         enemySpawnTimer: 0,
+        autoSpawnTimer: 0,
+        autoSpawnInterval: 5.4,
+        currentAnswer: 0,
+        currentChoiceCount: 2,
         questions: [],
         stage: STAGE_DEFS[0],
         enemyUnit: STAGE_DEFS[0].enemy
@@ -2322,11 +2444,15 @@
           const parsed = JSON.parse(raw);
           saveData.gold = Number(parsed.gold || 0);
           saveData.bestStage = Number(parsed.bestStage || 0);
+          saveData.bestByChapter = Object.assign({ word: 0, grammar: 0 }, parsed.bestByChapter || {});
+          saveData.selectedChapter = parsed.selectedChapter === "grammar" ? "grammar" : "word";
+          saveData.choiceMode = parsed.choiceMode === "4" ? "4" : "2";
           saveData.slowMode = Boolean(parsed.slowMode);
           saveData.nextUnitId = Number(parsed.nextUnitId || 1);
           saveData.units = Array.isArray(parsed.units) ? parsed.units.filter(isValidUnit) : [];
           saveData.formation = Array.isArray(parsed.formation) ? parsed.formation.map(Number).filter(Boolean).slice(0, 3) : [];
           saveData.castle = Object.assign({ hp: 0, energy: 0, regen: 0, combo: 0 }, parsed.castle || {});
+          migrateChapterProgress();
           if (saveData.units.length === 0) giveStarterUnit();
           normalizeFormation();
         } catch (_) {
@@ -2344,6 +2470,15 @@
         saveData.units = [starter];
         saveData.formation = [starter.id];
         saveData.nextUnitId = Math.max(saveData.nextUnitId, starter.id + 1);
+      }
+
+      function migrateChapterProgress() {
+        const oldBest = Number(saveData.bestStage || 0);
+        STAGE_DEFS.forEach(stage => {
+          if (stage.id <= oldBest) {
+            saveData.bestByChapter[stage.chapter] = Math.max(Number(saveData.bestByChapter[stage.chapter] || 0), stage.routeIndex);
+          }
+        });
       }
 
       function save() {
@@ -2365,30 +2500,66 @@
         els.homeGold.textContent = saveData.gold;
         els.slowMode.checked = saveData.slowMode;
         els.exchangeBoxBtn.style.display = GG_CONFIG.rpgIntegration ? "block" : "none";
+        renderChapterTabs();
+        renderModeTabs();
         renderStageList();
         renderFormationSlots();
         els.pullGachaBtn.disabled = saveData.gold < GACHA_COST;
       }
 
+      function renderChapterTabs() {
+        const chapter = getSelectedChapter();
+        els.wordChapterBtn.classList.toggle("active", chapter === "word");
+        els.grammarChapterBtn.classList.toggle("active", chapter === "grammar");
+        els.chapterNote.textContent = chapter === "word"
+          ? "まずは単語から。英語が苦手でも入りやすい章です。"
+          : "文法の章です。単語で慣れてから、文の形を練習します。";
+      }
+
+      function renderModeTabs() {
+        const mode = getChoiceMode();
+        els.mode2Btn.classList.toggle("active", mode === 2);
+        els.mode4Btn.classList.toggle("active", mode === 4);
+        els.battleMode2Btn.classList.toggle("active", mode === 2);
+        els.battleMode4Btn.classList.toggle("active", mode === 4);
+        els.modeNote.textContent = mode === 2
+          ? "2択は迷いにくい設定です。正解時の英語エネルギーは少なめです。"
+          : "4択は難しい設定です。正解時の英語エネルギーが多くたまります。";
+      }
+
+      function getSelectedChapter() {
+        return saveData.selectedChapter === "grammar" ? "grammar" : "word";
+      }
+
+      function getChoiceMode() {
+        return saveData.choiceMode === "4" ? 4 : 2;
+      }
+
       function renderStageList() {
         els.stageList.innerHTML = "";
-        const nextRecommended = Math.min(STAGE_DEFS.length, Number(saveData.bestStage || 0) + 1);
-        STAGE_DEFS.forEach(stage => {
-          const cleared = Number(saveData.bestStage || 0) >= stage.id;
+        const chapter = getSelectedChapter();
+        const stages = STAGE_DEFS.filter(stage => stage.chapter === chapter);
+        const best = Number(saveData.bestByChapter[chapter] || 0);
+        const nextRecommended = Math.min(stages.length, best + 1);
+        stages.forEach(stage => {
+          const cleared = best >= stage.routeIndex;
+          const recommended = stage.routeIndex === nextRecommended;
           const button = document.createElement("button");
           button.type = "button";
-          button.className = "stage-card btn" + (stage.id === nextRecommended ? " recommended" : "");
+          button.className = "stage-card btn" + (recommended ? " recommended" : "");
           button.innerHTML =
             '<span>' +
               '<h3>' + stage.name + '</h3>' +
               '<span class="muted">' + stage.description + '</span>' +
               '<span class="stage-meta">' +
+                '<span>' + stage.chapterLabel + '</span>' +
                 '<span>' + stage.themeLabel + '</span>' +
                 '<span>' + stage.diffLabel + '</span>' +
                 '<span>' + stage.questionCount + '問</span>' +
+                '<span>' + getChoiceMode() + '択</span>' +
               '</span>' +
             '</span>' +
-            '<strong>' + (cleared ? 'クリア済' : stage.id === nextRecommended ? 'おすすめ' : '出撃') + '</strong>';
+            '<strong>' + (cleared ? 'クリア済' : recommended ? 'おすすめ' : '出撃') + '</strong>';
           button.addEventListener("click", () => openStageModal(stage.id));
           els.stageList.appendChild(button);
         });
@@ -2410,7 +2581,7 @@
         const desc = els.stageModal.querySelector(".modal-card > p");
         if (desc) desc.textContent = stage.description;
         const scores = els.stageModal.querySelectorAll(".score strong");
-        if (scores[0]) scores[0].textContent = stage.themeLabel;
+        if (scores[0]) scores[0].textContent = stage.themeLabel + " / " + getChoiceMode() + "択";
         if (scores[1]) scores[1].textContent = stage.diffLabel;
         if (scores[2]) scores[2].textContent = stage.questionCount + "問";
         els.stageModal.classList.add("show");
@@ -2686,25 +2857,34 @@
         battle.allies = [];
         battle.enemies = [];
         battle.enemySpawnTimer = enemy.firstDelay || .5;
+        battle.autoSpawnTimer = 1.6;
+        battle.autoSpawnInterval = saveData.slowMode ? 6.2 : 5.2;
+        battle.currentAnswer = 0;
+        battle.currentChoiceCount = getChoiceMode();
         battle.questions = makeStageQuestions(stage);
         [...els.battleLane.querySelectorAll(".unit, .float-text")].forEach(node => node.remove());
         els.allyCastle.classList.remove("damaged");
         els.enemyCastle.classList.remove("damaged");
         const title = els.screens.battle.querySelector(".topbar h1");
         if (title) title.textContent = stage.name;
+        renderModeTabs();
         renderQuestion();
-        setMessage("正解すると、編成中の味方が1体出撃します。");
+        setMessage("時間で味方が自動出撃します。正解すると追加で1体出撃します。");
         updateHud();
       }
 
       function renderQuestion() {
         const q = battle.questions[battle.questionIndex % battle.questions.length];
-        els.questionTag.textContent = q.genre + " / " + q.diff + " / 4択";
+        const mode = getChoiceMode();
+        const optionSet = makeChoiceOptions(q, mode);
+        battle.currentAnswer = optionSet.answer;
+        battle.currentChoiceCount = optionSet.choices.length;
+        els.questionTag.textContent = q.genre + " / " + q.diff + " / " + optionSet.choices.length + "択";
         els.questionText.textContent = q.question;
         els.hintText.textContent = "ヒント：" + q.hint;
         els.descText.textContent = "解説：" + q.desc;
         els.choices.innerHTML = "";
-        q.choices.forEach((choice, index) => {
+        optionSet.choices.forEach((choice, index) => {
           const btn = document.createElement("button");
           btn.type = "button";
           btn.className = "btn choice";
@@ -2714,22 +2894,34 @@
         });
       }
 
+      function makeChoiceOptions(question, mode) {
+        const correct = question.choices[question.answer];
+        const wrongs = question.choices.filter((_, index) => index !== question.answer);
+        const choices = mode === 2
+          ? shuffleCopy([correct, shuffleCopy(wrongs)[0]])
+          : shuffleCopy(question.choices.slice(0, 4));
+        return {
+          choices,
+          answer: choices.indexOf(correct)
+        };
+      }
+
       function answerQuestion(index, button) {
         if (battle.ended) return;
-        const q = battle.questions[battle.questionIndex % battle.questions.length];
         const buttons = [...els.choices.querySelectorAll("button")];
         buttons.forEach(btn => btn.disabled = true);
 
-        if (index === q.answer) {
+        if (index === battle.currentAnswer) {
           button.classList.add("correct");
           battle.correct += 1;
           battle.combo += 1;
-          battle.energy = Math.min(battle.energyMax, battle.energy + 12);
-          spawnAlly();
-          setMessage("正解！味方が出撃しました。コンボで少し強くなります。");
+          const energyGain = battle.currentChoiceCount === 4 ? 18 : 8;
+          battle.energy = Math.min(battle.energyMax, battle.energy + energyGain);
+          spawnAlly({ free: true, source: "correct" });
+          setMessage("正解！追加の味方が出撃しました。" + battle.currentChoiceCount + "択ボーナスでエネルギー+" + energyGain + "。");
         } else {
           button.classList.add("wrong");
-          buttons[q.answer].classList.add("correct");
+          if (buttons[battle.currentAnswer]) buttons[battle.currentAnswer].classList.add("correct");
           battle.wrong += 1;
           battle.combo = Math.floor(battle.combo / 2);
           battle.allyHp = Math.max(1, battle.allyHp - 2);
@@ -2743,7 +2935,8 @@
         }, 720);
       }
 
-      function spawnAlly() {
+      function spawnAlly(options) {
+        const config = options || {};
         normalizeFormation();
         const unitData = findUnit(saveData.formation[battle.spawnCursor % saveData.formation.length]);
         battle.spawnCursor += 1;
@@ -2752,25 +2945,30 @@
           return;
         }
         const stats = getUnitStats(unitData);
-        if (battle.energy < stats.cost) {
+        let assistScale = 1;
+        if (!config.free && battle.energy < stats.cost && !config.allowAssist) {
           setMessage("正解！英語エネルギーがたまったら出撃できます。");
           return;
         }
-        battle.energy -= stats.cost;
+        if (!config.free && battle.energy >= stats.cost) {
+          battle.energy -= stats.cost;
+        } else if (!config.free && config.allowAssist) {
+          assistScale = .82;
+        }
         if (stats.energyRefund) battle.energy = Math.min(battle.energyMax, battle.energy + stats.energyRefund);
         const unit = makeUnit("ally", stats.mark, 94);
         battle.allies.push({
           el: unit,
           x: 94,
-          hp: stats.hp,
-          attack: Math.round(stats.attack + Math.min(7, battle.combo * battle.comboBoost)),
-          speed: stats.speed,
+          hp: Math.max(1, Math.round(stats.hp * assistScale)),
+          attack: Math.max(1, Math.round((stats.attack + Math.min(7, battle.combo * battle.comboBoost)) * assistScale)),
+          speed: Math.round(stats.speed * (.92 + assistScale * .08)),
           attackTimer: 0,
           cd: stats.cd,
           range: stats.range,
           push: stats.push
         });
-        showFloat(stats.name + " 出撃", 112, "#15965d");
+        showFloat((config.source === "auto" ? "自動 " : "") + stats.name + " 出撃", 112, "#15965d");
       }
 
       function spawnEnemy() {
@@ -2806,9 +3004,14 @@
         if (!battle.ended) {
           battle.energy = Math.min(battle.energyMax, battle.energy + dt * battle.energyRegen);
           battle.enemySpawnTimer -= dt;
+          battle.autoSpawnTimer -= dt;
           if (battle.enemySpawnTimer <= 0) {
             spawnEnemy();
             battle.enemySpawnTimer = (battle.enemyUnit.interval || 3.0) * (saveData.slowMode ? 1.35 : 1);
+          }
+          if (battle.autoSpawnTimer <= 0) {
+            spawnAlly({ allowAssist: true, source: "auto" });
+            battle.autoSpawnTimer = battle.autoSpawnInterval;
           }
           moveUnits(dt);
           updateHud();
@@ -2914,7 +3117,13 @@
         battle.active = false;
         const reward = won ? 60 + battle.correct * 3 : battle.correct;
         saveData.gold += reward;
-        if (won) saveData.bestStage = Math.max(saveData.bestStage, battle.stage.id);
+        if (won) {
+          saveData.bestStage = Math.max(saveData.bestStage, battle.stage.id);
+          saveData.bestByChapter[battle.stage.chapter] = Math.max(
+            Number(saveData.bestByChapter[battle.stage.chapter] || 0),
+            battle.stage.routeIndex
+          );
+        }
         save();
 
         els.resultTitle.textContent = won ? "勝利！" : "作戦変更";
@@ -2960,6 +3169,20 @@
         return els.battleLane.clientWidth - 96;
       }
 
+      function setSelectedChapter(chapter) {
+        saveData.selectedChapter = chapter === "grammar" ? "grammar" : "word";
+        save();
+        renderHome();
+      }
+
+      function setChoiceMode(mode) {
+        saveData.choiceMode = mode === 4 ? "4" : "2";
+        save();
+        renderModeTabs();
+        renderStageList();
+        if (battle.active && !battle.ended) renderQuestion();
+      }
+
       function goHome() {
         battle.active = false;
         renderHome();
@@ -2970,6 +3193,12 @@
         renderHome();
         setScreen("home");
       });
+      els.wordChapterBtn.addEventListener("click", () => setSelectedChapter("word"));
+      els.grammarChapterBtn.addEventListener("click", () => setSelectedChapter("grammar"));
+      els.mode2Btn.addEventListener("click", () => setChoiceMode(2));
+      els.mode4Btn.addEventListener("click", () => setChoiceMode(4));
+      els.battleMode2Btn.addEventListener("click", () => setChoiceMode(2));
+      els.battleMode4Btn.addEventListener("click", () => setChoiceMode(4));
       els.closeStageModalBtn.addEventListener("click", closeStageModal);
       els.startBattleBtn.addEventListener("click", startBattle);
       els.gachaBtn.addEventListener("click", openGacha);
