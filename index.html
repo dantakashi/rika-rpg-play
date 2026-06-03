@@ -245,7 +245,7 @@
           <span id="header-gold" class="text-yellow-300 font-bold">0</span>
         </div>
         <div class="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-          <span class="text-cyan-400 font-bold text-[9px]">STR</span>
+          <span class="text-cyan-400 font-bold text-[9px]">戦闘力</span>
           <span id="header-level" class="text-cyan-300 font-bold">0</span>
         </div>
       </div>
@@ -366,7 +366,7 @@
               <span class="text-2xl">⚔️</span> 対戦シミュレーター
             </button>
             <button onclick="openBuildGuide()" style="background-image:url('assets/ui/btn_guide.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-fuchsia-800 hover:bg-fuchsia-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
-              <span class="text-2xl">📖</span> ビルドガイド（15種）
+              <span class="text-2xl">📖</span> ビルドガイド
             </button>
             <button onclick="openEndgamePopup()" style="background-image:url('assets/ui/btn_endgame.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-gradient-to-r from-purple-800 to-pink-800 hover:from-purple-700 hover:to-pink-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-purple-950/40">
               <span class="text-2xl">⚔️</span> 専科の試練（裏ボス）
@@ -474,19 +474,28 @@
 
       <!-- ボス出題範囲ポップアップ -->
       <div id="boss-range-popup" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-rose-700/60 rounded-2xl p-5 w-full max-w-sm shadow-2xl shadow-rose-950/40">
-          <h3 class="font-black text-base text-white mb-1 flex items-center gap-2" id="boss-range-title">👹 ボス</h3>
-          <p class="text-[10px] text-slate-400 mb-4" id="boss-range-sub">出題ジャンルを選べます。</p>
+        <div class="bg-slate-900 border border-rose-700/60 rounded-2xl p-5 w-full max-w-lg shadow-2xl shadow-rose-950/40 max-h-[92vh] flex flex-col">
+          <h3 class="font-black text-base text-white mb-1 flex items-center gap-2 shrink-0" id="boss-range-title">👹 ボス</h3>
+          <p class="text-[11px] text-slate-400 mb-2 shrink-0" id="boss-range-sub">教科・ジャンル・形式を選べます（得意分野で挑戦OK）。</p>
 
-          <p class="text-[10px] text-slate-400 mb-2 font-bold tracking-wide">📋 出題ジャンル（任意・複数選択可）</p>
-          <div id="boss-range-genres" class="flex flex-wrap gap-2 mb-3"></div>
-          <div class="bg-rose-950/30 border border-rose-800/40 rounded-xl p-2 mb-4 text-[9px] text-rose-300 leading-relaxed">
-            💡 通常攻撃の問題はタイピング形式です。選んだジャンルの問題が必ず出題されます。<br>必殺技は長文クイズ（選択式）です。
+          <!-- 形式（タイピング/選択式）選択 -->
+          <div class="flex flex-wrap gap-1.5 items-center mb-2 shrink-0" id="boss-range-type"></div>
+
+          <!-- 教科ごとのジャンルカード（問題数・例・学年バッジ付き／スクロール領域） -->
+          <div id="boss-range-genres" class="flex-1 overflow-y-auto -mx-1 px-1"></div>
+
+          <div class="bg-rose-950/30 border border-rose-800/40 rounded-xl p-2 mt-3 text-[10px] text-rose-200 leading-relaxed shrink-0">
+            💡 選んだ範囲・形式で通常攻撃の問題が出ます。必殺技は長文クイズ（選択式）です。
+          </div>
+          <!-- ライブプレビュー -->
+          <div class="bg-cyan-950/40 border border-cyan-700/50 rounded-xl p-2.5 my-3 shrink-0">
+            <div class="text-[10px] text-cyan-300 font-bold mb-0.5">🎯 この範囲で出る問題</div>
+            <div id="boss-range-preview" class="text-[12px] text-white leading-relaxed">—</div>
           </div>
 
-          <div class="flex gap-2">
-            <button onclick="GameUI.closeBossRangePopup()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-xs transition-all">キャンセル</button>
-            <button onclick="GameUI.startBossFromRange()" class="flex-1 bg-rose-700 hover:bg-rose-600 text-white font-bold py-2 rounded-xl text-xs transition-all">⚔️ 挑戦する</button>
+          <div class="flex gap-2 shrink-0">
+            <button onclick="GameUI.closeBossRangePopup()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl text-sm transition-all">キャンセル</button>
+            <button onclick="GameUI.startBossFromRange()" class="flex-[2] bg-rose-700 hover:bg-rose-600 text-white font-black py-2.5 rounded-xl text-sm transition-all active:scale-95">⚔️ 挑戦する</button>
           </div>
         </div>
       </div>
@@ -781,7 +790,7 @@
 
                 <!-- 選択式（4択/2択）の表示エリア。クリック または 1〜4キーで回答 -->
                 <div id="choice-area" class="hidden">
-                  <div class="text-sm text-amber-400 mb-2 font-bold">❓ 正しいものを選べ！（クリック または 1〜4キー）</div>
+                  <div class="text-sm text-amber-400 mb-2 font-bold">❓ 正しいものを選べ！（クリック または 数字キー）</div>
                   <h3 class="text-lg font-bold text-white mb-3 leading-relaxed px-1" id="choice-question-txt"></h3>
                   <!-- 2×2配置（縦並びだとボスが隠れるため）。狭い画面では1列に折返す -->
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl mx-auto" id="choice-buttons"></div>

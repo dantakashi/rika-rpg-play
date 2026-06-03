@@ -188,22 +188,12 @@ const GameUI = (function() {
            + '<span class="slot-badge">' + (SLOT_ICON[item.type] || '') + '</span>';
     }
     // 装備アイコンは「個別画像 assets/equip/<id>.png」方式（シート切り出しはズレるため廃止）。
-    // 画像が存在すれば表示、無ければ絵文字。存在判定は遅延プリロードで行い、読めたら再描画。
-    const _equipIconOK = {};
-    function _ensureEquipIcon(id) {
-      if (id in _equipIconOK) return;
-      _equipIconOK[id] = false;
-      const im = new Image();
-      im.onload = () => { _equipIconOK[id] = true; if (typeof GameEngine !== 'undefined' && GameEngine.player) updateMenuUI(); };
-      im.src = 'assets/equip/' + id + '.png';
-    }
+    // 画像があれば表示、無ければ絵文字へ自動フォールバック（onerror）。ボス/アバターと同じ方式に統一
+    // ＝どの画面・モーダルでも確実に描画される（旧プリロード方式はモーダルを再描画できず絵文字のままになった）。
     function _equipIcon(item, px) {
-      _ensureEquipIcon(item.id);
-      if (_equipIconOK[item.id]) {
-        return `<img src="assets/equip/${item.id}.png" style="width:${px}px;height:${px}px;object-fit:contain;display:inline-block">`;
-      }
-      // 画像が無い場合は絵文字。サイズ(px)に合わせて絵文字も拡大する。
-      return `<span style="font-size:${Math.round(px * 0.8)}px;line-height:1;display:inline-block">${item.emoji}</span>`;
+      const fs = Math.round(px * 0.8);
+      return `<img src="assets/equip/${item.id}.png" style="width:${px}px;height:${px}px;object-fit:contain;display:inline-block" `
+        + `onerror="this.replaceWith(Object.assign(document.createElement('span'),{style:'font-size:${fs}px;line-height:1;display:inline-block',textContent:'${item.emoji}'}))">`;
     }
 
     // 装備カードの共通クラス（色＋輝き）。最大強化のSSR/URは専用演出。
@@ -655,7 +645,7 @@ const GameUI = (function() {
 
     function renderRangeDiffTabs() {
       const box = document.getElementById('range-diff-tabs');
-      let html = '<span class="text-[10px] text-slate-400 mr-1">難易度:</span>';
+      let html = '<span class="text-xs text-slate-400 mr-1 font-bold">難易度:</span>';
       GameData.DIFFICULTIES.forEach(d => {
         const on = _rwDiffs.has(d.key);
         html += `<button onclick="GameUI.toggleRangeDiff('${d.key}')" class="${on ? d.color + ' text-white ring-2 ring-white/30' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-3 rounded-lg text-xs">${on ? '✓ ' : ''}${d.label}</button>`;
@@ -668,7 +658,7 @@ const GameUI = (function() {
     function renderRangeGradeRow() {
       const box = document.getElementById('range-grade-row');
       if (!box) return;
-      let html = '<span class="text-[10px] text-slate-400 mr-1">学年:</span>';
+      let html = '<span class="text-xs text-slate-400 mr-1 font-bold">学年:</span>';
       const allOn = _rwGrades.size === 0;
       html += `<button onclick="GameUI.toggleRangeGrade(0)" class="${allOn ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">すべて</button>`;
       [1, 2, 3].forEach(g => {
@@ -681,7 +671,7 @@ const GameUI = (function() {
 
     function renderRangeTypeRow() {
       const box = document.getElementById('range-type-row');
-      let html = '<span class="text-[10px] text-slate-400 mr-1">形式:</span>';
+      let html = '<span class="text-xs text-slate-400 mr-1 font-bold">形式:</span>';
       [['', '両方'], ['typing', '⌨️ タイピング'], ['choice', '🔘 選択式']].forEach(([val, label]) => {
         const on = _rwType === val;
         html += `<button onclick="GameUI.setRangeType('${val}')" class="${on ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${label}</button>`;
@@ -836,22 +826,22 @@ const GameUI = (function() {
       let html = '';
       // 教科セレクタ
       html += '<div class="flex flex-wrap items-center gap-1.5 mb-2">';
-      html += '<span class="text-[10px] text-slate-400 mr-1">教科:</span>';
+      html += '<span class="text-xs text-slate-400 mr-1 font-bold">教科:</span>';
       GameData.SUBJECTS.forEach(s => {
         const active = _dojoSubject === s.key;
         html += `<button onclick="GameUI.setDojoSubject('${s.key}')" class="${active ? s.color + ' text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${s.icon} ${s.label}</button>`;
       });
       // ジャンル（選択中教科のもののみ）
       html += '</div><div class="flex flex-wrap items-center gap-1.5 mb-2">';
-      html += '<span class="text-[10px] text-slate-400 mr-1">ジャンル:</span>';
+      html += '<span class="text-xs text-slate-400 mr-1 font-bold">ジャンル:</span>';
       const allActive = _dojoGenres.length === 0;
       html += `<button onclick="GameUI.toggleDojoGenre('')" class="${allActive ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">すべて</button>`;
       GameData.GENRES.filter(g => g.subject === _dojoSubject).forEach(g => {
         const active = _dojoGenres.indexOf(g.key) >= 0;
-        html += `<button onclick="GameUI.toggleDojoGenre('${g.key}')" class="${active ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${g.icon} ${g.label}</button>`;
+        html += `<button onclick="GameUI.toggleDojoGenre('${g.key}')" class="${active ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">${g.icon} ${g.label}</button>`;
       });
       html += '</div><div class="flex flex-wrap items-center gap-1.5">';
-      html += '<span class="text-[10px] text-slate-400 mr-1">形式:</span>';
+      html += '<span class="text-xs text-slate-400 mr-1 font-bold">形式:</span>';
       [['','両方'],['typing','⌨️ タイピング'],['choice','🔘 選択式']].forEach(([val, label]) => {
         const active = _dojoType === val;
         html += `<button onclick="GameUI.setDojoType('${val}')" class="${active ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${label}</button>`;
@@ -1264,28 +1254,90 @@ const GameUI = (function() {
     // ── ボス出題範囲ポップアップ ──
     let _bossRangeTarget = null;   // 対象ボス
     let _bossRangeGenres = [];     // 選択中ジャンル（空=全ジャンル）
+    let _bossRangeType = '';       // 出題形式（''=両方／'typing'／'choice'）
 
     function openBossRangePopup(boss) {
       _bossRangeTarget = boss;
       _bossRangeGenres = [];
+      _bossRangeType = '';
       document.getElementById('boss-range-title').textContent = `👹 ${boss.name}`;
       const dLabel = (GameData.DIFFICULTIES.find(d => d.key === boss.tier) || {}).label || '';
-      document.getElementById('boss-range-sub').textContent = `難易度: ${dLabel} ／ 出題ジャンルを選べます（未選択=全範囲）`;
+      document.getElementById('boss-range-sub').textContent = `難易度: ${dLabel}（固定）／ 教科・ジャンル・形式を選べます。得意分野で挑戦OK`;
+      renderBossRangeType();
       renderBossRangeGenres();
       document.getElementById('boss-range-popup').classList.remove('hidden');
     }
 
-    // そのボスの難易度で「タイピング問題が実在する」ジャンルだけ表示（必ず該当範囲の問題が含まれる）
-    function renderBossRangeGenres() {
-      const box = document.getElementById('boss-range-genres');
-      // ボスの教科に属するジャンルだけ（化学ボスに物理ジャンルを出さない）。subject 未設定の旧ボスは化学扱い。
-      const avail = GameData.getAvailableGenres(_bossRangeTarget.tier, 'typing', _bossRangeTarget.subject || 'chemistry');
-      let html = `<button onclick="GameUI.toggleBossRangeGenre('')" class="${_bossRangeGenres.length === 0 ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">すべて</button>`;
-      avail.forEach(g => {
-        const active = _bossRangeGenres.indexOf(g.key) >= 0;
-        html += `<button onclick="GameUI.toggleBossRangeGenre('${g.key}')" class="${active ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">${g.icon} ${g.label}</button>`;
+    function renderBossRangeType() {
+      const box = document.getElementById('boss-range-type');
+      if (!box) return;
+      let html = '<span class="text-xs text-slate-400 mr-1 font-bold">形式:</span>';
+      [['', '両方'], ['typing', '⌨️ タイピング'], ['choice', '🔘 選択式']].forEach(([val, label]) => {
+        const on = _bossRangeType === val;
+        html += `<button onclick="GameUI.setBossRangeType('${val}')" class="${on ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-xs">${label}</button>`;
       });
       box.innerHTML = html;
+    }
+
+    function setBossRangeType(val) {
+      _bossRangeType = val;
+      // 形式を変えると、対応するジャンルが変わりうるので、消えたジャンルは選択解除
+      _bossRangeGenres = _bossRangeGenres.filter(k =>
+        GameData.getQuestions({ diff: _bossRangeTarget.tier, genres: [k], type: _bossRangeType || null }).length > 0);
+      renderBossRangeType();
+      renderBossRangeGenres();
+    }
+
+    // 全教科のジャンルを、道場と同じ豊かなカード（問題数・例・学年バッジ）で表示。
+    // 難易度はボス固定。形式は _bossRangeType。生物/地学/物理も選べる＝得意分野で戦える。
+    function renderBossRangeGenres() {
+      const box = document.getElementById('boss-range-genres');
+      const tier = _bossRangeTarget.tier;
+      const allOn = _bossRangeGenres.length === 0;
+      let html = `<div onclick="GameUI.toggleBossRangeGenre('')" class="rounded-xl p-2.5 mb-2 cursor-pointer transition-all ${allOn ? 'bg-cyan-900 ring-2 ring-cyan-400' : 'bg-slate-800 hover:bg-slate-700'}">
+          <div class="flex items-center gap-1.5"><span class="text-base">🎲</span>
+            <span class="font-bold text-white text-xs">すべて（全教科・全ジャンルからランダム）</span>
+            ${allOn ? '<span class="ml-auto text-cyan-300 text-xs">✓</span>' : ''}</div></div>`;
+      GameData.SUBJECTS.forEach(sub => {
+        const genres = GameData.GENRES.filter(g => g.subject === sub.key);
+        const cards = genres.map(g => {
+          const cnt = GameData.getQuestions({ diff: tier, genres: [g.key], type: _bossRangeType || null }).length;
+          if (cnt === 0) return '';
+          const grade = GameData.getGenreGradeRange(g.key, [tier]);
+          const gradeCls = GameData.getGradeBadgeClass(GameData.getGenreGradeMax(g.key, [tier]));
+          const exs = (GameData.GENRE_EXAMPLES[g.key] || []).slice(0, 3).join('・');
+          const on = _bossRangeGenres.indexOf(g.key) >= 0;
+          return `<div onclick="GameUI.toggleBossRangeGenre('${g.key}')" class="rounded-xl p-2.5 cursor-pointer transition-all ${on ? 'bg-cyan-900 ring-2 ring-cyan-400' : 'bg-slate-800 hover:bg-slate-700'}">
+            <div class="flex items-center gap-1.5 mb-1"><span class="text-base">${g.icon}</span>
+              <span class="font-bold text-white text-xs">${g.label}</span>
+              ${grade ? `<span class="text-[8px] ${gradeCls} px-1 rounded font-bold">${grade}</span>` : ''}
+              <span class="ml-auto text-[10px] font-mono ${on ? 'text-cyan-200' : 'text-cyan-400'}">${cnt}問</span>
+              ${on ? '<span class="text-cyan-300 text-xs">✓</span>' : ''}</div>
+            ${exs ? `<div class="text-[10px] text-slate-400 pl-6">例) ${exs}</div>` : ''}</div>`;
+        }).filter(Boolean).join('');
+        if (!cards) return; // この教科にこの難易度/形式の問題が無ければ節ごと省略
+        const selCnt = genres.filter(g => _bossRangeGenres.indexOf(g.key) >= 0).length;
+        html += `<div class="mb-3">
+          <div class="flex items-center gap-2 mb-1.5"><span class="text-sm">${sub.icon}</span>
+            <span class="font-black text-slate-200 text-sm">${sub.label}</span>
+            ${selCnt ? `<span class="text-[9px] bg-cyan-900 text-cyan-300 px-1.5 py-0.5 rounded">${selCnt}個選択中</span>` : ''}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${cards}</div></div>`;
+      });
+      box.innerHTML = html;
+      renderBossRangePreview();
+    }
+
+    // ボス範囲の下部プレビュー（難易度＝固定・形式＝選択値）
+    function renderBossRangePreview() {
+      const el = document.getElementById('boss-range-preview');
+      if (!el || !_bossRangeTarget) return;
+      const tier = _bossRangeTarget.tier;
+      const dLabel = (GameData.DIFFICULTIES.find(d => d.key === tier) || {}).label || '';
+      const genres = _bossRangeGenres.length ? _bossRangeGenres : null;
+      const total = GameData.getQuestions({ diff: tier, genres: genres, type: _bossRangeType || null }).length;
+      const gtxt = _bossRangeGenres.length ? _bossRangeGenres.map(k => (GameData.GENRES.find(g => g.key === k) || {}).label).join('・') : '全教科・全ジャンル';
+      const tLabel = _bossRangeType === 'typing' ? 'タイピング' : (_bossRangeType === 'choice' ? '選択式' : 'タイピング＋選択式');
+      el.textContent = `${dLabel}・${gtxt}・${tLabel}（${total}問）`;
     }
 
     function toggleBossRangeGenre(key) {
@@ -1304,7 +1356,7 @@ const GameUI = (function() {
     function startBossFromRange() {
       const boss = _bossRangeTarget;
       closeBossRangePopup();
-      GameEngine.startBossBattle(boss, _bossRangeGenres.length ? _bossRangeGenres.slice() : null);
+      GameEngine.startBossBattle(boss, _bossRangeGenres.length ? _bossRangeGenres.slice() : null, _bossRangeType || null);
     }
 
     // ── 専科の試練（範囲限定の裏ボス）ポップアップ ── 難易度設定なし・固定（Lv1相当）
@@ -1664,14 +1716,46 @@ const GameUI = (function() {
     // ── 📖 ビルドガイド / 📋 排出装備一覧 ──
     function closeGuideModal() { document.getElementById('guide-modal').classList.add('hidden'); }
     function openBuildGuide() {
-      document.getElementById('guide-modal-title').textContent = '📖 ビルドガイド（15種）';
-      const html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-2">' + GameData.BUILD_GUIDE.map(b =>
-        `<div class="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5">
-          <div class="flex justify-between items-center"><span class="font-black text-cyan-300 text-xs">${b.n}. ${b.name}</span><span class="text-yellow-400 text-[10px]">${'★'.repeat(b.diff + 1)}</span></div>
-          <div class="text-[9px] text-slate-300 mt-1">重点ステータス: <span class="text-white">${b.focus}</span></div>
-          <div class="text-[9px] text-amber-300/90 mt-0.5">前提スキル装備: ${b.req}</div>
-        </div>`).join('') + '</div>'
-        + '<div class="text-[9px] text-slate-500 mt-3 leading-relaxed">★の数＝必要なユニークスキル装備の個数（多いほど上級者向け）。ユニークスキル付きのUR装備は、ラスボス撃破後に解禁される「ケイオスガチャ」で入手できます。</div>';
+      document.getElementById('guide-modal-title').textContent = '📖 ビルドガイド';
+      // ★の少ない順（diff昇順）に並べ、難易度グループの見出しを付ける＝作りやすい順＝おすすめ順。
+      const groups = [
+        { diff: 0, label: '★ まず作れる（UR装備なし・最初におすすめ）', color: 'text-emerald-300' },
+        { diff: 1, label: '★★ UR装備を1個そろえる', color: 'text-cyan-300' },
+        { diff: 2, label: '★★★ UR装備を2個そろえる', color: 'text-violet-300' },
+        { diff: 3, label: '★★★★ UR装備を3個（最上級・ロマン）', color: 'text-rose-300' }
+      ];
+      // スキル名→代表となるUR装備（前提装備にアイコン表示するため）。
+      const skillEquip = {};
+      GameData.UNIQUE_EQUIP_TEMPLATES.forEach(t => { if (t.skill && t.skill !== 'なし' && !skillEquip[t.skill]) skillEquip[t.skill] = t; });
+      const reqHtml = b => {
+        if (!b.reqSkills || !b.reqSkills.length) return '<span class="text-slate-400">なし（通常装備でOK）</span>';
+        return b.reqSkills.map(sk => {
+          const t = skillEquip[sk];
+          if (!t) return `<span class="text-amber-300">${sk}</span>`;
+          return `<span class="inline-flex items-center gap-1 bg-slate-900/70 border border-slate-700 rounded-lg pl-0.5 pr-1.5 py-0.5 mr-1 mb-1">`
+            + `${_equipIcon(t, 22)}<span class="text-[11px] text-slate-200 font-bold">${t.name}</span><span class="text-[9px] text-amber-300/80">${sk}</span></span>`;
+        }).join('');
+      };
+      const card = b => `<div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+          <div class="flex justify-between items-center gap-2">
+            <span class="font-black text-white text-sm">${b.n}. ${b.name}</span>
+            <span class="text-yellow-400 text-xs shrink-0">${'★'.repeat(b.diff + 1)}</span>
+          </div>
+          <div class="text-[13px] text-slate-200 mt-1.5 leading-relaxed">${b.why}</div>
+          <div class="text-xs text-cyan-200 mt-2">🔧 強化で伸ばす: <span class="text-white font-bold">${b.focus}</span></div>
+          <div class="text-xs text-amber-300/90 mt-1">⭐ 前提のUR装備:</div>
+          <div class="flex flex-wrap mt-1">${reqHtml(b)}</div>
+        </div>`;
+      let html = `<div class="text-[13px] text-slate-300 bg-slate-950/60 border border-slate-800 rounded-xl p-3 mb-3 leading-relaxed">
+        <b class="text-white">読み方</b>：上から順に作りやすい（★が少ないほど簡単）。<b class="text-emerald-300">まずは★のビルド</b>から始めよう。<br>
+        <b class="text-amber-300">⭐ 前提のUR装備</b>は、ラスボスを倒すと解禁される<b>「ケイオスガチャ」</b>（攻撃／耐久／コンボ／特殊の系統別）で手に入ります。狙った系統のガチャを引くと集めやすいです。
+      </div>`;
+      groups.forEach(g => {
+        const items = GameData.BUILD_GUIDE.filter(b => b.diff === g.diff);
+        if (!items.length) return;
+        html += `<div class="text-sm font-black ${g.color} mt-3 mb-1.5">${g.label}</div>`
+          + '<div class="grid grid-cols-1 md:grid-cols-2 gap-2">' + items.map(card).join('') + '</div>';
+      });
       document.getElementById('guide-modal-content').innerHTML = html;
       document.getElementById('guide-modal').classList.remove('hidden');
     }
@@ -1768,25 +1852,25 @@ const GameUI = (function() {
       if (!box) return;
       // 教科セレクタ
       let html = '<div class="flex flex-wrap items-center gap-1.5 mb-1">';
-      html += '<span class="text-[10px] text-slate-400 mr-1">教科:</span>';
+      html += '<span class="text-xs text-slate-400 mr-1 font-bold">教科:</span>';
       GameData.SUBJECTS.forEach(s => {
         const active = _libSubject === s.key;
-        html += `<button onclick="GameUI.setLibSubject('${s.key}')" class="${active ? s.color + ' text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${s.icon} ${s.label}</button>`;
+        html += `<button onclick="GameUI.setLibSubject('${s.key}')" class="${active ? s.color + ' text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">${s.icon} ${s.label}</button>`;
       });
       // ジャンル（選択中教科のもののみ）
       html += '</div><div class="flex flex-wrap items-center gap-1.5 mb-1">';
-      html += '<span class="text-[10px] text-slate-400 mr-1">ジャンル:</span>';
+      html += '<span class="text-xs text-slate-400 mr-1 font-bold">ジャンル:</span>';
       const allActive = _libGenres.length === 0;
-      html += `<button onclick="GameUI.toggleLibGenre('')" class="${allActive ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">すべて</button>`;
+      html += `<button onclick="GameUI.toggleLibGenre('')" class="${allActive ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">すべて</button>`;
       GameData.GENRES.filter(g => g.subject === _libSubject).forEach(g => {
         const active = _libGenres.indexOf(g.key) >= 0;
-        html += `<button onclick="GameUI.toggleLibGenre('${g.key}')" class="${active ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${g.icon} ${g.label}</button>`;
+        html += `<button onclick="GameUI.toggleLibGenre('${g.key}')" class="${active ? 'bg-cyan-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">${g.icon} ${g.label}</button>`;
       });
       html += '</div><div class="flex flex-wrap items-center gap-1.5">';
-      html += '<span class="text-[10px] text-slate-400 mr-1">形式:</span>';
+      html += '<span class="text-xs text-slate-400 mr-1 font-bold">形式:</span>';
       [['','両方'],['typing','⌨️ タイピング'],['choice','🔘 選択式']].forEach(([val, label]) => {
         const active = _libType === val;
-        html += `<button onclick="GameUI.setLibType('${val}')" class="${active ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${label}</button>`;
+        html += `<button onclick="GameUI.setLibType('${val}')" class="${active ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">${label}</button>`;
       });
       html += '</div>';
       box.innerHTML = html;
@@ -1831,16 +1915,18 @@ const GameUI = (function() {
       const genreColor = k => _genreColorMap[k] || 'text-slate-400';
 
       let html = '';
+      // 📊 学習進捗ダッシュボード（教科のジャンル別 正答率＋復習導線）
+      html += _renderProgressDashboard();
       // ヘッダー＋「この範囲で道場に挑戦」ボタン（難易度ロックは廃止＝問題があれば常に挑戦可）
       const canChallenge = questions.length > 0;
       html += `<div class="flex items-center justify-between gap-2 mb-3 flex-wrap">
-        <div class="text-[10px] text-slate-400 flex items-center gap-2">
-          <span class="px-2 py-0.5 rounded ${dInfo.color} text-white font-bold">${dInfo.label}</span>
-          <span>${questions.length}問</span>
+        <div class="text-xs text-slate-300 flex items-center gap-2">
+          <span class="px-2.5 py-1 rounded ${dInfo.color} text-white font-bold text-[13px]">${dInfo.label}</span>
+          <span class="font-bold">${questions.length}問</span>
         </div>
         ${canChallenge
-          ? `<button onclick="GameUI.challengeFromLibrary()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded-xl text-[11px] transition-all active:scale-95">🥋 この範囲で道場に挑戦</button>`
-          : `<span class="text-[10px] text-slate-500">該当する問題がありません</span>`}
+          ? `<button onclick="GameUI.challengeFromLibrary()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-xl text-sm transition-all active:scale-95">🥋 この範囲で道場に挑戦</button>`
+          : `<span class="text-xs text-slate-500">該当する問題がありません</span>`}
       </div>`;
 
       if (questions.length === 0) {
@@ -1851,17 +1937,17 @@ const GameUI = (function() {
 
       html += '<div class="space-y-2">';
       questions.forEach(q => {
-        const gLabel = `<span class="text-[8px] ${genreColor(q.genre)} font-bold">${genreLabel(q.genre)}</span>`;
+        const gLabel = `<span class="text-[11px] ${genreColor(q.genre)} font-bold">${genreLabel(q.genre)}</span>`;
         if (q.type === 'choice') {
           // 選択式: 問題文・選択肢（正解を強調）・解説
           const choicesHtml = q.c.map((c, i) =>
             `<span class="${i === q.a ? 'text-emerald-400 font-bold' : 'text-slate-400'}">${i === q.a ? '✓ ' : ''}${c}</span>`
           ).join('<span class="text-slate-700 mx-1">/</span>');
           html += `<div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-            <div class="flex items-center gap-2 mb-1">🔘 ${gLabel}<span class="text-[8px] text-slate-500">選択式</span></div>
-            <div class="text-xs text-white font-bold mb-1.5 leading-relaxed">${q.q}</div>
-            <div class="text-[10px] mb-1.5">${choicesHtml}</div>
-            ${q.desc ? `<div class="text-[10px] text-slate-400 bg-slate-900/60 rounded-lg p-2 leading-relaxed">💡 ${q.desc}</div>` : ''}
+            <div class="flex items-center gap-2 mb-1">🔘 ${gLabel}<span class="text-[11px] text-slate-500">選択式</span></div>
+            <div class="text-sm text-white font-bold mb-2 leading-relaxed">${q.q}</div>
+            <div class="text-[13px] mb-2">${choicesHtml}</div>
+            ${q.desc ? `<div class="text-[12px] text-slate-300 bg-slate-900/60 rounded-lg p-2.5 leading-relaxed">💡 ${q.desc}</div>` : ''}
           </div>`;
         } else {
           // タイピング: 問題名・式（穴埋めは反応式表示）・解説
@@ -1870,10 +1956,10 @@ const GameUI = (function() {
             : `<span class="text-cyan-400 font-black">${GameData.fmtChem(q.formula)}</span>`;
           html += `<div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
             <div class="flex items-center justify-between gap-2 mb-1">
-              <div class="flex items-center gap-2">⌨️ ${gLabel}<span class="text-[10px] text-slate-300 font-bold">${q.name}</span></div>
+              <div class="flex items-center gap-2">⌨️ ${gLabel}<span class="text-[13px] text-slate-200 font-bold">${q.name}</span></div>
             </div>
-            <div class="font-mono text-sm text-slate-200 leading-relaxed mb-1.5">${displayStr}</div>
-            ${q.desc ? `<div class="text-[10px] text-slate-400 bg-slate-900/60 rounded-lg p-2 leading-relaxed">💡 ${q.desc}</div>` : ''}
+            <div class="font-mono text-base text-slate-100 leading-relaxed mb-2">${displayStr}</div>
+            ${q.desc ? `<div class="text-[12px] text-slate-300 bg-slate-900/60 rounded-lg p-2.5 leading-relaxed">💡 ${q.desc}</div>` : ''}
           </div>`;
         }
       });
@@ -1887,6 +1973,54 @@ const GameUI = (function() {
       // ジャンル未選択（すべて）でも教科の範囲に限定
       const genres = _libGenres.length ? _libGenres.slice() : _genreKeysForSubject(_libSubject);
       GameEngine.startDojo(libraryCurrentTier, genres, _libType || null);
+    }
+
+      // 苦手範囲のワンタップ復習: ダッシュボードの「復習」から、そのジャンル1本で道場へ。
+      function reviewGenre(genreKey) {
+      GameEngine.startDojo(libraryCurrentTier, [genreKey], _libType || null);
+    }
+
+      // ジャンルの正答率を quizStats から集計（難易度をまたいで合算）。{c,t,rate|null} を返す。
+      function _genreAccuracy(genreKey) {
+      const qs = (GameEngine.player && GameEngine.player.quizStats) || {};
+      let c = 0, t = 0;
+      Object.keys(qs).forEach(k => {
+        if (k.slice(0, k.indexOf('|')) === genreKey) { c += qs[k].c || 0; t += qs[k].t || 0; }
+      });
+      return { c, t, rate: t > 0 ? c / t : null };
+    }
+
+      // 正答率→色（弱い所ほど目立つ赤・未挑戦はグレー）。北極星: 苦手を可視化して復習へ導く。
+      function _accuracyColor(rate) {
+      if (rate === null) return '#475569';        // 未挑戦=スレート
+      if (rate < 0.5)  return '#ef4444';           // 50%未満=赤
+      if (rate < 0.8)  return '#f59e0b';           // 80%未満=黄
+      return '#22c55e';                            // 80%以上=緑
+    }
+
+      // 学習進捗ダッシュボード: 選択中教科のジャンルごとに正答率バー＋復習ボタン。
+      function _renderProgressDashboard() {
+      const subjGenres = GameData.GENRES.filter(g => g.subject === _libSubject);
+      let rows = subjGenres.map(g => {
+        const a = _genreAccuracy(g.key);
+        const pct = a.rate === null ? 0 : Math.round(a.rate * 100);
+        const color = _accuracyColor(a.rate);
+        const label = a.rate === null
+          ? '<span class="text-slate-500">未挑戦</span>'
+          : `<span style="color:${color}">${pct}%</span> <span class="text-slate-500">(${a.c}/${a.t})</span>`;
+        return `<div class="flex items-center gap-2 py-1">
+          <span class="text-[13px] font-bold text-slate-200 w-28 shrink-0 truncate">${g.icon} ${g.label}</span>
+          <div class="flex-1 h-3 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
+            <div class="h-full rounded-full transition-all" style="width:${pct}%;background:${color}"></div>
+          </div>
+          <span class="text-[12px] font-mono w-24 text-right shrink-0">${label}</span>
+          <button onclick="GameUI.reviewGenre('${g.key}')" class="bg-cyan-800 hover:bg-cyan-700 text-white font-bold py-1 px-2.5 rounded-lg text-[12px] shrink-0 active:scale-95">復習</button>
+        </div>`;
+      }).join('');
+      return `<div class="bg-slate-950/60 border border-slate-800 rounded-2xl p-3 mb-3">
+        <div class="text-sm font-black text-cyan-300 mb-1.5 flex items-center gap-2">📊 学習進捗 <span class="text-[11px] text-slate-400 font-normal">ジャンル別の正答率（苦手は赤・「復習」でその範囲だけ練習）</span></div>
+        ${rows}
+      </div>`;
     }
 
       function openPvPScreen() {
@@ -2227,12 +2361,12 @@ const GameUI = (function() {
   return {
     // 画面遷移
     showMenu, showBattleScreen,
-    openBossSelection, openBossRangePopup, toggleBossRangeGenre, closeBossRangePopup, startBossFromRange,
+    openBossSelection, openBossRangePopup, toggleBossRangeGenre, setBossRangeType, closeBossRangePopup, startBossFromRange,
     openEndgamePopup, closeEndgamePopup, startEndgameFromList,
     openOmegaPopup, closeOmegaPopup, setOmegaStatLevel, setOmegaAll, startOmega,
     openTitlePopup, closeTitlePopup, equipTitle, openAvatarPopup, closeAvatarPopup, equipAvatar,
     openGachaScreen, openLibraryScreen, renderLibraryTabs, renderLibraryContent,
-    renderLibraryFilters, setLibSubject, toggleLibGenre, setLibType, challengeFromLibrary,
+    renderLibraryFilters, setLibSubject, toggleLibGenre, setLibType, challengeFromLibrary, reviewGenre,
     openPvPScreen,
     // メニューUI
     updateMenuUI,

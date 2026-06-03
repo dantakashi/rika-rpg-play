@@ -1938,8 +1938,8 @@ const GameData = (function() {
       { id: 'nu_combo_h01', type: 'head', name: '触媒メガネ', stat: 'def', baseVal: 8, emoji: '👓', skill: '触媒の祝福', theme: 'combo' },
       { id: 'nu_combo_b01', type: 'body', name: '吸血コート', stat: 'hp', baseVal: 80, emoji: '🥼', skill: '吸血', theme: 'combo' },
       { id: 'nu_combo_f01', type: 'feet', name: '触媒ブーツ改', stat: 'dodge', baseVal: 0.07, emoji: '⚗️', skill: '触媒の祝福', theme: 'combo' },
-      { id: 'nu_combo_f02', type: 'feet', name: '連鎖ぐつ', stat: 'multi', baseVal: 1, emoji: '👟', skill: '連鎖爆発', theme: 'combo' },
-      { id: 'nu_combo_a01', type: 'accessory', name: '連鎖の宝珠', stat: 'critDmg', baseVal: 0.55, emoji: '🔮', skill: '連鎖爆発', theme: 'combo' },
+      { id: 'nu_combo_f02', type: 'feet', name: '連鎖ぐつ', stat: 'multi', baseVal: 1, emoji: '👟', skill: '連鎖共鳴', theme: 'combo' },
+      { id: 'nu_combo_a01', type: 'accessory', name: '連鎖の宝珠', stat: 'critDmg', baseVal: 0.55, emoji: '🔮', skill: '連鎖共鳴', theme: 'combo' },
       { id: 'nu_special_w01', type: 'weapon', name: '血のメス', stat: 'atk', baseVal: 15, emoji: '🔪', skill: '血の契約', theme: 'special' },
       { id: 'nu_special_h01', type: 'head', name: '答案ぼうし', stat: 'hp', baseVal: 70, emoji: '🎓', skill: 'ヒント', theme: 'special' },
       { id: 'nu_special_b01', type: 'body', name: '背水の鎧', stat: 'def', baseVal: 9, emoji: '🩸', skill: '排水の陣', theme: 'special' },
@@ -1970,7 +1970,7 @@ const GameData = (function() {
       'ヒント': '攻撃力が30%下がる代わり、出題にヒントが出る（タイピング＝先頭1文字を開示／選択式＝不正解を1つ暗転）。初心者向け。',
       'コンボ爆撃': '攻撃力が大きく下がる代わり、5コンボ以上でEnterキー／爆撃ボタンを押すとコンボを全消費して特大ダメージ。',
       '触媒の祝福': 'コンボバフの発動が「5回ごと」から「3回ごと」に短縮される。',
-      '連鎖爆発': 'コンボが10に達するとコンボを消費して大ダメージ。コンボは0に戻る。',
+      '連鎖共鳴': 'コンボが続くほど攻撃力アップ（コンボ数×2%・最大+60%）。コンボを消費しないので「コンボ爆撃」と一緒に使うと強い。',
       '血の契約': '攻撃力+50%。ただし受けるダメージが2倍になる。ハイリスク・ハイリターン。',
       '錬金術師の欲望': 'ゴールド獲得+200%。ただし戦闘中はHPが一切回復しない。',
       'ボーナス出現率+4%': '道場でボーナスモンスター（黄金結晶オーラム）が出る確率が+4%。金策向け。',
@@ -1978,22 +1978,24 @@ const GameData = (function() {
     };
 
     // 📖 ビルドガイド（diff = 必要なユニークスキル装備の数。0=誰でも可）
+    //   why = 「どう戦う・なぜ強いか」を初心者にも分かる一言で。focus = 強化で伸ばすステータス。
+    //   req のスキル名は UNIQUE_EQUIP_TEMPLATES / SKILL_DESC と一致させること（整合必須）。
     const BUILD_GUIDE = [
-      { n: 1,  name: '吸血の種',       diff: 0, focus: '吸血率・HP・コンボ回復',            req: 'なし' },
-      { n: 2,  name: '不屈の岩',       diff: 0, focus: 'DEF・HP・シールド・スタン耐性',      req: 'なし' },
-      { n: 3,  name: 'コンボの芽',     diff: 0, focus: 'コンボバフ・コンボ継続・コンボ回復',  req: 'なし' },
-      { n: 4,  name: '連鎖爆弾',       diff: 1, focus: 'コンボバフ・ATK',                   req: '連鎖爆発(アクセ)' },
-      { n: 5,  name: '触媒師',         diff: 1, focus: 'コンボバフ・コンボ継続・コンボ回復',  req: '触媒の祝福(足)' },
-      { n: 6,  name: '背水の将',       diff: 1, focus: 'ATK・クリ率・クリ倍率',             req: '排水の陣(胴)' },
-      { n: 7,  name: '当たり屋',       diff: 1, focus: 'ATK・クリ倍率',                    req: '賭博師の刃(武器)' },
-      { n: 8,  name: '精密射手',       diff: 1, focus: 'ATK・連撃数',                      req: '必中の理(武器)' },
-      { n: 9,  name: '黄金の亡者',     diff: 1, focus: 'ゴールド倍率・HP',                  req: '錬金術師の欲望(アクセ)' },
-      { n: 10, name: '不滅の吸血鬼',   diff: 2, focus: '吸血率・HP',                       req: '血の契約＋不死の誓い' },
-      { n: 11, name: '精密砲台',       diff: 2, focus: 'ATK・連撃数',                      req: '必中の理＋冷静な一撃' },
-      { n: 12, name: '爆発触媒',       diff: 2, focus: 'コンボバフ・ATK',                   req: '触媒の祝福＋連鎖爆発' },
-      { n: 13, name: '黄金の要塞',     diff: 2, focus: 'ゴールド倍率・HP・DEF',             req: '錬金術師の欲望＋必殺封印の盾' },
-      { n: 14, name: '断末魔の賭博師', diff: 3, focus: 'ATK・クリ倍率',                    req: '排水の陣＋賭博師の刃＋連鎖爆発' },
-      { n: 15, name: '永遠機関',       diff: 3, focus: '吸血率・コンボバフ・ATK',           req: '排水の陣＋血の契約＋触媒の祝福' }
+      { n: 1,  name: '吸血の種',       diff: 0, focus: 'HP・コンボ回復・ATK',              req: 'なし', reqSkills: [], why: '通常装備の『吸血』でHPを回復しながら殴り続ける、打たれ強い型。最初の1体めにおすすめ。' },
+      { n: 2,  name: '不屈の岩',       diff: 0, focus: 'DEF・HP',                          req: 'なし', reqSkills: [], why: '防御とHPを固め、通常装備の『シールド付与』『必殺耐性』で粘る。いちばん安全＝タイピングが苦手でも生き残れる。' },
+      { n: 3,  name: 'コンボの芽',     diff: 0, focus: 'コンボバフ・コンボ回復',           req: 'なし', reqSkills: [], why: '正解を続けてコンボを伸ばし、コンボバフで火力を上げる基本型。URなしで作れてゲームの土台を学べる。' },
+      { n: 4,  name: '連鎖の使い手',   diff: 1, focus: 'コンボバフ・ATK',                  req: '連鎖共鳴', reqSkills: ['連鎖共鳴'], why: 'コンボが続くほど攻撃力が上がる『連鎖共鳴』型。コンボを切らさず伸ばし続けるのが強さの鍵。' },
+      { n: 5,  name: '触媒師',         diff: 1, focus: 'コンボバフ・コンボ回復',           req: '触媒の祝福', reqSkills: ['触媒の祝福'], why: 'コンボバフが「5回ごと→3回ごと」に早まり、バフを盛りやすい。コンボ型の強化版。' },
+      { n: 6,  name: '背水の将',       diff: 1, focus: 'ATK・クリ率・クリ倍率',            req: '排水の陣', reqSkills: ['排水の陣'], why: 'HPを20%以下に保つと攻撃力3倍。ギリギリで戦うハイリスクな一発型（HP管理に注意）。' },
+      { n: 7,  name: '当たり屋',       diff: 1, focus: 'ATK・クリ倍率',                    req: '賭博師の刃', reqSkills: ['賭博師の刃'], why: '命中すれば5倍ダメージ（外れやすい）。クリ倍率を盛ってロマンを狙う博打型。' },
+      { n: 8,  name: '精密射手',       diff: 1, focus: 'ATK・連撃数',                      req: '必中の理', reqSkills: ['必中の理'], why: '攻撃が必ず当たる（敵の回避を無視）。連撃数を上げて手数で押す安定型。' },
+      { n: 9,  name: '黄金の亡者',     diff: 1, focus: 'ゴールド倍率・HP',                 req: '錬金術師の欲望', reqSkills: ['錬金術師の欲望'], why: 'ゴールド+200%で稼ぎ特化（戦闘中はHP回復なし）。HPを厚くして金策に回す型。' },
+      { n: 10, name: '不滅の吸血鬼',   diff: 2, focus: 'HP・ATK',                          req: '血の契約＋不死の誓い', reqSkills: ['血の契約','不死の誓い'], why: '攻撃+50%（被ダメ2倍）を吸血で支え、倒れても1戦に1度だけ復活。攻防一体の上級型。' },
+      { n: 11, name: '精密砲台',       diff: 2, focus: 'ATK・連撃数',                      req: '必中の理＋冷静な一撃', reqSkills: ['必中の理','冷静な一撃'], why: '必ず当たる×全攻撃が確定2倍。事故が少なく、安定して高火力を出せる型。' },
+      { n: 12, name: '共鳴触媒',       diff: 2, focus: 'コンボバフ・ATK',                  req: '触媒の祝福＋連鎖共鳴', reqSkills: ['触媒の祝福','連鎖共鳴'], why: 'バフが早くたまり、連鎖共鳴でコンボが伸びるほど火力も上がる。コンボ火力を最大化する型。' },
+      { n: 13, name: '黄金の要塞',     diff: 2, focus: 'ゴールド倍率・HP・DEF',            req: '錬金術師の欲望＋必殺封印の盾', reqSkills: ['錬金術師の欲望','必殺封印の盾'], why: '稼ぎながらボスの必殺技を2回まで無効化。安全に長く回せる金策の完成形。' },
+      { n: 14, name: '断末魔の賭博師', diff: 3, focus: 'ATK・クリ倍率',                    req: '排水の陣＋賭博師の刃＋連鎖共鳴', reqSkills: ['排水の陣','賭博師の刃','連鎖共鳴'], why: '低HP3倍×命中5倍に連鎖共鳴のコンボ火力を重ねる超火力ロマン型。決まれば最強・難易度も最高。' },
+      { n: 15, name: '永遠機関',       diff: 3, focus: 'コンボバフ・ATK・HP',              req: '排水の陣＋血の契約＋触媒の祝福', reqSkills: ['排水の陣','血の契約','触媒の祝福'], why: '吸血で回復し続けながら高火力を維持する、終わりのない戦闘マシン。最上級ビルド。' }
     ];
 
     // ==========================================

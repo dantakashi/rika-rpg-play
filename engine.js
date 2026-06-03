@@ -36,7 +36,8 @@ let player = {
       hasClearedOnce: false,
       stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
       equipped: { weapon:null, head:null, body:null, feet:null, accessory:null },
-      inventory: []
+      inventory: [],
+      quizStats: {}   // 学習進捗: キー "genre|diff" → {c:正解数, t:出題数}
     };
 
     // ==========================================
@@ -735,8 +736,10 @@ let player = {
       const _dojoAv = document.getElementById('enemy-avatar');
       _dojoAv.style.filter = `drop-shadow(${_dojoGlow[battle.difficulty] || '0 0 20px #22d3ee'})`;
 
-      const prob = getWeightedQuestion(battle.diffs || [battle.difficulty], battle.filterGenres, battle.filterType, battle.filterGrades);
+      let prob = getWeightedQuestion(battle.diffs || [battle.difficulty], battle.filterGenres, battle.filterType, battle.filterGrades);
+      prob = _reduceDojoChoices(prob); // 道場の選択式は2択にやさしく
       battle.currentQuestion = prob;
+      battle.qHadMiss = false; // 新しい問題＝ミスフラグをリセット（正答率用）
       battle.typedSoFar = '';
 
       const mult = battle.difficulty === 'junior' ? 1 : (battle.difficulty === 'mid' ? 3 : (battle.difficulty === 'senior' ? 8 : 25));
@@ -810,6 +813,20 @@ let player = {
       return html;
     }
 
+    // 道場の選択式は初心者にやさしく「2択」に絞る（正解＋ダミー1つ・位置はランダム）。
+    //  DBは書き換えず浅いコピーを返す。ボス/図書館や2択以下の問題はそのまま。
+    function _reduceDojoChoices(q) {
+      if (!q || q.type !== 'choice' || !Array.isArray(q.c) || q.c.length <= 2) return q;
+      const correct = q.c[q.a];
+      const wrongs = q.c.filter((_, i) => i !== q.a);
+      const distractor = wrongs[Math.floor(Math.random() * wrongs.length)];
+      const correctFirst = Math.random() < 0.5;
+      return Object.assign({}, q, {
+        c: correctFirst ? [correct, distractor] : [distractor, correct],
+        a: correctFirst ? 0 : 1
+      });
+    }
+
     function renderQuestion(prob, showHint) {
       const typingArea = document.getElementById('typing-area');
       const choiceArea = document.getElementById('choice-area');
@@ -877,12 +894,12 @@ let player = {
 
     //  filterGenres : 出題ジャンル配列（null/空=その難易度の全ジャンル）。
     //   ※ ボス通常攻撃は必ずタイピング。実験操作(選択式専用)はボスでは出ない。
-    function startBossBattle(boss, filterGenres) {
+    function startBossBattle(boss, filterGenres, filterType) {
       battle.active = true;
       battle.mode = 'boss';
       battle.bossId = boss.id;
       battle.filterGenres = (filterGenres && filterGenres.length) ? filterGenres : null;
-      battle.filterType = null;
+      battle.filterType = filterType || null; // 通常攻撃の出題形式（null=両方／'typing'／'choice'）。ボスも選択式可に。
       battle.currentCombo = 0;
       battle.comboBuffs = [];
       battle.isStunned = false;
@@ -1356,6 +1373,7 @@ let player = {
         // 正解演出: 押した選択肢を緑に
         if (buttons[selectedIdx]) buttons[selectedIdx].className =
           'choice-btn bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm text-left border border-emerald-400';
+        recordQuizResult(true);
         processCorrectAnswer();
       } else {
         // 不正解: 押した選択肢を赤に、正解を緑に。ミスカウント加算。
@@ -1364,6 +1382,7 @@ let player = {
         if (buttons[prob.a]) buttons[prob.a].className =
           'choice-btn bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm text-left border border-emerald-400';
         battle.missCount++;
+        recordQuizResult(false);
         playSound('wrong');
         flashPanel('miss');
         if (battle.missCount >= 50 && !battle.isRaged) {
@@ -1442,6 +1461,7 @@ let player = {
         if (ranbu && ranbuStrike()) return;
 
         if (battle.typedSoFar.toUpperCase() === expected.toUpperCase()) {
+          recordQuizResult(!battle.qHadMiss); // タイピングはミス0完成で「正解」
           if (ranbu) {
             // 乱打の型は完成時の追加ダメージなし。問題を進めるだけ。
             isFeedbacking = true;
@@ -1453,6 +1473,7 @@ let player = {
         }
       } else {
         battle.missCount++;
+        battle.qHadMiss = true; // この問題でタイプミスが出た→正答率では「不正解」扱い
         playSound('wrong');
         flashPanel('miss');
 
@@ -1486,6 +1507,19 @@ let player = {
         guideEl.innerHTML = cells;
       }
       document.getElementById('typing-user').textContent = '';
+    }
+
+    // 学習進捗の記録: 現在の問題の genre×diff ごとに 正解数/出題数 を加算。
+    //  選択式=初回正誤 / タイピング=その問題をミス0で完成できたか（battle.qHadMiss）。
+    //  ULTIMATE必殺クイズ(handleQuizAnswer)は対象外（genre/diffを持たないため自然に弾かれる）。
+    function recordQuizResult(correct) {
+      const q = battle.currentQuestion;
+      if (!q || !q.genre || !q.diff) return;
+      const key = q.genre + '|' + q.diff;
+      let s = player.quizStats[key];
+      if (!s) { s = { c: 0, t: 0 }; player.quizStats[key] = s; }
+      s.t++;
+      if (correct) s.c++;
     }
 
     function processCorrectAnswer() {
@@ -1524,6 +1558,9 @@ let player = {
 
       let finalAtk = baseAtk + activeBuffsSum;
 
+      // 連鎖共鳴: コンボが続くほどATKアップ（コンボを消費しない・上限+60%＝30コンボ）。コンボ爆撃と共存可。
+      if (hasSk('連鎖共鳴')) finalAtk = Math.floor(finalAtk * (1 + Math.min(0.6, battle.currentCombo * 0.02)));
+
       // 冷静な一撃: クリ無し・全打撃確定2倍 / 通常はクリ判定
       let isCrit = false;
       if (p.forceDoubleHit) {
@@ -1551,18 +1588,6 @@ let player = {
           battle.enemyHp = Math.max(0, battle.enemyHp - finalAtk);
           landedAny = true;
         }
-      }
-
-      // 連鎖爆発(スキル): コンボ10到達でコンボ消費して大ダメージ。コンボを0に。（ボーナスには無効）
-      if (!battle.isBonus && hasSk('連鎖爆発') && battle.currentCombo >= 10) {
-        const burst = Math.floor(battle.currentCombo * p.atk * 0.05);
-        totalDealt += burst;
-        battle.enemyHp = Math.max(0, battle.enemyHp - burst);
-        battle.currentCombo = 0;
-        battle.comboBuffs = [];
-        GameUI.updateComboBadge();
-        GameUI.showDamagePopup('連鎖爆発!', true, true);
-        playSound('skill');
       }
 
       // 吸血率: 与ダメージ×吸血率を回復。排水の陣はHP20%超のとき自傷に反転。
@@ -1612,6 +1637,8 @@ let player = {
       const base = (drain && lowHp) ? Math.floor(p.atk * 3) : p.atk;
 
       let hit = Math.max(1, Math.floor((base + buffs) / 3)); // ATK÷3
+      // 連鎖共鳴: 乱打の型でもコンボ数に応じてATKアップ（消費なし・上限+60%）。
+      if (sk.indexOf('連鎖共鳴') >= 0) hit = Math.floor(hit * (1 + Math.min(0.6, battle.currentCombo * 0.02)));
       let isCrit = false;
       if (p.forceDoubleHit) { hit = Math.floor(hit * 2); }
       else { isCrit = Math.random() < p.critRate; if (isCrit) hit = Math.floor(hit * p.critMult); }
@@ -1713,7 +1740,7 @@ let player = {
         _type = null;
       } else if (isBoss) {
         _nqTier = GameData.BOSSES_DB.find(b => b.id === battle.bossId).tier;
-        _type = 'typing';
+        _type = battle.filterType; // 出題範囲で選んだ形式（null=両方／typing／choice）。必殺技は別枠で従来通り選択式。
       } else {
         _nqTier = battle.diffs || [battle.difficulty]; // 道場: 選択した難易度集合（最上位偏重）
         _type = battle.filterType;
@@ -1721,6 +1748,8 @@ let player = {
       const _genres = battle.filterGenres;
       const _grades = isBoss || battle.isEndgame ? null : battle.filterGrades; // 学年絞り込みは道場のみ
       battle.currentQuestion = getWeightedQuestion(_nqTier, _genres, _type, _grades);
+      if (battle.mode === 'dojo') battle.currentQuestion = _reduceDojoChoices(battle.currentQuestion); // 道場のみ2択
+      battle.qHadMiss = false; // 新しい問題＝ミスフラグをリセット（正答率用）
       battle.typedSoFar = '';
 
       // ドン！演出
@@ -2066,6 +2095,12 @@ let player = {
       if (typeof player.equippedTitle !== 'string') player.equippedTitle = 'none';
       if (typeof player.equippedAvatar !== 'string') player.equippedAvatar = 'default';
       if (typeof player.autoSellRarity !== 'string') player.autoSellRarity = ''; // ''=自動売却OFF
+      if (!player.quizStats || typeof player.quizStats !== 'object') player.quizStats = {}; // 学習進捗(正答率)
+      // スキル改名の移行: 旧『連鎖爆発』(コンボ消費型・コンボ爆撃と重複)→『連鎖共鳴』(消費しないATK上昇)。
+      //  既存セーブの装備インスタンスはskill文字列を持つため、ここで置換しないと無効スキルになる。
+      const _renameSkill = (it) => { if (it && it.skill === '連鎖爆発') it.skill = '連鎖共鳴'; };
+      if (Array.isArray(player.inventory)) player.inventory.forEach(_renameSkill);
+      if (player.equipped) Object.keys(player.equipped).forEach(s => _renameSkill(player.equipped[s]));
       // stats: 全17ステータスを STAT_META から補完（旧7種セーブにも対応）
       if (!player.stats || typeof player.stats !== 'object') player.stats = {};
       Object.keys(GameData.STAT_META).forEach(k => {
@@ -2123,7 +2158,8 @@ let player = {
         autoSellRarity: '',
         stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
         equipped: { weapon:null, head:null, body:null, feet:null, accessory:null },
-        inventory: []
+        inventory: [],
+        quizStats: {}
       };
       saveUserDataLocal();
       playSound('skill');
