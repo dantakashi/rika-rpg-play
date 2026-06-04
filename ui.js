@@ -210,7 +210,9 @@ const GameUI = (function() {
     // ＝どの画面・モーダルでも確実に描画される（旧プリロード方式はモーダルを再描画できず絵文字のままになった）。
     function _equipIcon(item, px) {
       const fs = Math.round(px * 0.8);
-      return `<img src="assets/equip/${item.id}.png" style="width:${px}px;height:${px}px;object-fit:contain;display:inline-block" `
+      // [TEST最適化] loading=lazy / decoding=async で画面外カードの画像読み込み・デコードを遅延。
+      //  大量インベントリでも「見えているカードだけ」読むので初期表示が軽くなる（非対応ブラウザは従来どおり）。
+      return `<img src="assets/equip/${item.id}.png" loading="lazy" decoding="async" style="width:${px}px;height:${px}px;object-fit:contain;display:inline-block" `
         + `onerror="this.replaceWith(Object.assign(document.createElement('span'),{style:'font-size:${fs}px;line-height:1;display:inline-block',textContent:'${item.emoji}'}))">`;
     }
 
@@ -237,6 +239,8 @@ const GameUI = (function() {
         { type: 'feet', label: '足', emoji: '🥾' },
         { type: 'accessory', label: '装飾', emoji: '💎' }
       ];
+      // [TEST最適化] フラグメントにまとめて1回挿入。
+      const _frag = document.createDocumentFragment();
       slots.forEach(slot => {
         const item = GameEngine.player.equipped[slot.type];
         const btn = document.createElement('button');
@@ -250,8 +254,9 @@ const GameUI = (function() {
           btn.onclick = () => openInventoryPopup();
           btn.innerHTML = `<span class="text-xl opacity-30">${slot.emoji}</span><span class="text-[7px] mt-0.5">${slot.label}</span><span class="text-[6px]">空き</span>`;
         }
-        container.appendChild(btn);
+        _frag.appendChild(btn);
       });
+      container.appendChild(_frag);
     }
 
     let _invSlotFilter = 'all'; // インベントリの部位フィルタ
@@ -302,15 +307,20 @@ const GameUI = (function() {
         grid.innerHTML = '<div class="col-span-5 text-center text-slate-500 text-[10px] py-4">該当する装備がありません。</div>';
         return;
       }
+      // [TEST最適化] 装備中uniqueIdを1回だけ集合化（毎カードでの Object.values(...).some を回避）。
+      const _equippedIds = new Set(Object.values(GameEngine.player.equipped).filter(Boolean).map(e => e.uniqueId));
+      // [TEST最適化] DocumentFragment にまとめてから1回だけ挿入（カードごとのリフローを回避）。
+      const _frag = document.createDocumentFragment();
       list.forEach(item => {
         const btn = document.createElement('button');
         btn.className = `relative rounded-xl p-2 flex flex-col items-center text-center border transition-all hover:scale-105 active:scale-95 ${_equipCardClass(item)}`;
         btn.setAttribute('style', '--glow:' + _equipGlow(item));
         btn.onclick = () => openEquipModal(item);
-        const isEq = Object.values(GameEngine.player.equipped).some(e => e && e.uniqueId === item.uniqueId);
+        const isEq = _equippedIds.has(item.uniqueId);
         btn.innerHTML = `${_equipBadges(item)}${_equipIcon(item, 40)}<span class="text-[8px] font-bold leading-tight truncate w-full mt-0.5">${item.name}</span><span class="text-[8px] ${isEq ? 'text-cyan-400' : 'text-yellow-400'}">${isEq ? '装備中' : '+'+item.level}</span>`;
-        grid.appendChild(btn);
+        _frag.appendChild(btn);
       });
+      grid.appendChild(_frag);
     }
 
     // ✨ おまかせ装備（初心者向け）: 各部位で戦闘力が最大になる装備を自動装備。
@@ -591,8 +601,9 @@ const GameUI = (function() {
       { key: 'senior',  label: '発展', sub: 'むずかしい', color: 'bg-indigo-800 hover:bg-indigo-700', locked_desc: '中級ボス3体全員撃破' },
       { key: 'supreme', label: '受験', sub: '最難関',     color: 'bg-purple-800 hover:bg-purple-700', locked_desc: '上級ボス3体全員撃破' }
     ];
-    // 敵HPの難易度倍率（engine.js spawnNextDojoEnemy と一致）／ゴールドの難易度倍率は緩やか（engine.js 報酬計算と一致）。
-    const _dojoHpMult   = { junior:1, mid:3,   senior:8, supreme:25 };
+    // [TEST修正] 敵HPは難易度非連動（敵レベルのみ）＝ engine-test.js の方針に合わせて全難易度×1。
+    //  ゴールドの難易度倍率は据え置き（難易度→ゴールドのみ反映）。
+    const _dojoHpMult   = { junior:1, mid:1,   senior:1, supreme:1 };
     const _dojoGoldMult = { junior:1, mid:1.5, senior:2, supreme:3 };
     // 敵レベル→報酬カーブ（engine.js と一致：+20%/Lv）
     const _dojoLvScale  = (lv) => 1.0 + (Math.max(1, lv) - 1) * 0.2;

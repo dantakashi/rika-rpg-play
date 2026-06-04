@@ -742,9 +742,10 @@ let player = {
       battle.qHadMiss = false; // 新しい問題＝ミスフラグをリセット（正答率用）
       battle.typedSoFar = '';
 
-      const mult = battle.difficulty === 'junior' ? 1 : (battle.difficulty === 'mid' ? 3 : (battle.difficulty === 'senior' ? 8 : 25));
+      // [TEST修正] 問題難易度は敵の強さに影響させない方針 → 敵HPは「敵レベルのみ」で決める。
+      //  （旧: const mult = 難易度1/3/8/25; enemyMaxHp = 100*mult*lvScale）。ゴールド倍率は据え置き。
       const lvScale = Math.max(1, battle.dojoEnemyLevel || 1);
-      battle.enemyMaxHp = 100 * mult * lvScale;
+      battle.enemyMaxHp = 100 * lvScale;
       battle.enemyHp = battle.enemyMaxHp;
       battle.enemyActionGauge = 0;
       battle.enemyUltGauge = 0;
@@ -1219,9 +1220,9 @@ let player = {
           bossAtk *= 1.5;
         }
       } else {
-        // 道場での難易度攻撃補正
-        const difficultyMult = battle.difficulty === 'junior' ? 1 : (battle.difficulty === 'mid' ? 2 : (battle.difficulty === 'senior' ? 4 : 8));
-        bossAtk = 30 * difficultyMult;
+        // [TEST修正] 問題難易度は敵の強さに影響させない方針 → 敵の攻撃力は難易度非連動の固定値。
+        //  （旧: const difficultyMult = 難易度1/2/4/8; bossAtk = 30 * difficultyMult）
+        bossAtk = 30;
       }
       // 怒り狂暴化時は別途100倍で済み（後続で処理）
 
