@@ -432,6 +432,11 @@
               <span id="dojo-popup-reward">推定報酬: 🪙 ...</span>
               <span id="dojo-popup-hp">敵HP: ...</span>
             </div>
+            <!-- 推奨レベル（初心者ガイド）。今の強さに合ったレベルを提案。 -->
+            <div class="flex items-center justify-between mt-2 bg-emerald-950/40 border border-emerald-800/40 rounded-lg px-2 py-1.5">
+              <span class="text-[10px] text-emerald-300">💡 あなたへの推奨: <b id="dojo-rec-level" class="text-emerald-200">Lv.--</b></span>
+              <button onclick="useDojoRecommendedLevel()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-lg transition-all active:scale-95">推奨Lvにする</button>
+            </div>
           </div>
 
           <!-- 報酬倍率説明 -->
@@ -1129,6 +1134,7 @@
     const closeInventoryPopup = () => GameUI.closeInventoryPopup();
     const updateDojoLevelUI = (val) => GameUI.updateDojoLevelUI(val);
     const updateDojoPopupLevel = (val) => GameUI.updateDojoPopupLevel(val);
+    const useDojoRecommendedLevel = () => GameUI.useDojoRecommendedLevel();
     const openDojoPopup = () => GameUI.openDojoPopup();
     const closeDojoPopup = () => GameUI.closeDojoPopup();
     const enterDojoFromPopup = () => GameUI.enterDojoFromPopup();

@@ -957,8 +957,22 @@ const GameUI = (function() {
       const est = Math.floor(900 * (_dojoGoldMult[_topDiff] || 1) * _dojoLvScale(val));
       document.getElementById('dojo-popup-reward').textContent = `推定報酬: 🪙 ${est.toLocaleString()}/敵`;
       document.getElementById('dojo-popup-hp').textContent = `敵HP: ${(100 * (_dojoHpMult[_topDiff] || 1) * Math.max(1, val)).toLocaleString()}`;
+      // 推奨レベル表示（今の選択が推奨と一致しているか分かるように）
+      const recEl = document.getElementById('dojo-rec-level');
+      if (recEl) {
+        const rec = GameEngine.getRecommendedDojoLevel();
+        recEl.textContent = 'Lv.' + rec + (val === rec ? ' ✓' : '');
+      }
       // メイン画面の表示も同期
       if (document.getElementById('dojo-enemy-level-display')) updateDojoLevelUI(val);
+    }
+
+    // 推奨レベルにスライダーを合わせる（初心者ガイド）
+    function useDojoRecommendedLevel() {
+      const rec = GameEngine.getRecommendedDojoLevel();
+      const slider = document.getElementById('dojo-popup-lv-slider');
+      if (slider) slider.value = rec;
+      updateDojoPopupLevel(rec);
     }
 
     function closeDojoPopup() {
@@ -1306,6 +1320,9 @@ const GameUI = (function() {
           } else {
             btn.className = "w-full bg-slate-950 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-left transition-all flex items-center gap-3 relative";
             btn.onclick = () => openBossRangePopup(boss);
+            // 推奨戦闘力ガイド（初心者向け）。今の戦闘力との比較で色分け。
+            const _rd = GameEngine.getBossReadiness(boss);
+            const _rdStyle = { ready: ['text-emerald-400', '✓ 挑戦OK'], soon: ['text-amber-400', 'あと少し'], early: ['text-rose-400', 'まだ早い'] }[_rd.level] || ['text-slate-400', ''];
             btn.innerHTML = `
               <span class="text-2xl">${boss.avatar}</span>
               <div class="flex-1 overflow-hidden">
@@ -1313,6 +1330,7 @@ const GameUI = (function() {
                   <span>${boss.name}</span>
                   ${isDefeated ? '<span class="text-[8px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-1 py-0.2 rounded font-normal">撃破済</span>' : ''}
                 </div>
+                <div class="text-[9px] ${_rdStyle[0]} font-bold">推奨戦闘力 ${_rd.rec.toLocaleString()} <span class="font-normal">${_rdStyle[1]}</span></div>
                 <div class="text-[9px] text-slate-400 truncate">${boss.desc}</div>
               </div>
             `;
@@ -2479,7 +2497,7 @@ const GameUI = (function() {
     closeGradeWarn, challengeKeepingOverGrade, challengeRemovingOverGrade,
     // ステータスポップアップ
     openStatPopup, closeStatPopup, renderStatList,
-    openRankModal, closeRankModal,
+    openRankModal, closeRankModal, useDojoRecommendedLevel,
     openSaveLoadModal, closeSaveLoadModal, copySaveCode, loadSaveCode,
     // インベントリ
     openInventoryPopup, closeInventoryPopup, renderEquippedSlots, renderInventoryGrid, autoEquipBest,

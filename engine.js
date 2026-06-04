@@ -2278,6 +2278,33 @@ let player = {
     return Math.floor(power);
   }
 
+  // 推奨道場レベル（初心者ガイド）。攻撃力ベース＝敵HP(100×Lv)を妥当な手数で倒せるLv。
+  //  解禁上限でclampするので、進度を超える無理なLvは出ない。
+  function getRecommendedDojoLevel() {
+    const atk = getEffectiveStats().atk;
+    const div = GameData.GUIDE_CONFIG.recLevelAtkDivisor;
+    const cap = getMaxDojoEnemyLevel();
+    return Math.max(1, Math.min(cap, Math.round(atk / div)));
+  }
+
+  // ボスの推奨戦闘力（初心者ガイド）。100単位に丸める。
+  function getBossRecommendedPower(boss) {
+    if (!boss) return 0;
+    const g = GameData.GUIDE_CONFIG;
+    const raw = (boss.hp || 0) * g.bossRecHpCoef + (boss.atk || 0) * g.bossRecAtkCoef;
+    return Math.round(raw / 100) * 100;
+  }
+
+  // 現在の戦闘力でボスに挑めるか。'ready'(緑)/'soon'(あと少し)/'early'(まだ早い)。
+  function getBossReadiness(boss) {
+    const rec = getBossRecommendedPower(boss);
+    if (rec <= 0) return { level: 'ready', rec: rec };
+    const power = getTotalStrength();
+    if (power >= rec) return { level: 'ready', rec: rec };
+    if (power >= rec * GameData.GUIDE_CONFIG.bossReadyRatio) return { level: 'soon', rec: rec };
+    return { level: 'early', rec: rec };
+  }
+
   function updateCharAvatar() {
     const power = getTotalStrength();
     const avatar = document.getElementById('char-avatar');
@@ -2374,6 +2401,7 @@ let player = {
     get player() { return player; }, set player(v) { player = v; },
     get battle() { return battle; },
     getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar, getRankInfo,
+    getRecommendedDojoLevel, getBossRecommendedPower, getBossReadiness,
     startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion,
     processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, quitBattle, endBattle, pauseGame, resumeGame,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,

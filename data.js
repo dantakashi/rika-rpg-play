@@ -2706,8 +2706,18 @@ const GameData = (function() {
     // そのランクが節目（大型報酬）かどうか
     function isRankMilestone(rank) { return !!RANK_CONFIG.milestones[rank]; }
 
+    // 初心者ガイド（推奨道場レベル・ボス推奨戦闘力）。数値は夜間simでキャリブレーション済み・調整可。
+    //  推奨Lv = round(ATK / recLevelAtkDivisor) を解禁上限でclamp（新規ATK10→Lv1, トップATK2000→Lv100）。
+    //  推奨戦闘力 = hp×bossRecHpCoef + atk×bossRecAtkCoef（人格が各ボスに挑む時点の戦闘力に最小二乗フィット）。
+    const GUIDE_CONFIG = {
+      recLevelAtkDivisor: 15,
+      bossRecHpCoef: 0.55,
+      bossRecAtkCoef: 7.3,
+      bossReadyRatio: 0.7, // 戦闘力 >= 推奨×これ で「あと少し」、未満で「まだ早い」
+    };
+
     return {
-      RANK_CONFIG, rankExpNeeded, rankUpGold, isRankMilestone,
+      RANK_CONFIG, rankExpNeeded, rankUpGold, isRankMilestone, GUIDE_CONFIG,
       QUESTION_DB, ULTIMATE_QUIZZES, SUBJECTS, GENRES, DIFFICULTIES, getQuestions, getAvailableGenres,
       GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
       GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,
