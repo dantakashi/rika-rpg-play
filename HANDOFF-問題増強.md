@@ -165,3 +165,36 @@ earth_space (天体)         mid 16 / senior 15
 | 化学 | 61 |
 | 物理 | 52 |
 | **合計** | **348** |
+
+---
+
+## 9. 追記：受験ランク(supreme)を全分野に追加
+
+### 追加した問題案
+- **`proposed-questions-supreme.js`** … 受験ランク（`diff:'supreme'`）を **全15ジャンル**ぶん、**計155問**（選択145・計算10）。**短文**（最長でも問題文32文字）。
+  - 各ジャンル 10〜12問。正解位置は a:0〜3 に均等分散。
+
+### ⚠️ 重要：supreme を全ジャンルで出すための前提
+- 既存 `data.js` の `GENRES` で `supreme` を持つのは **reaction / electricity / motion のみ**。
+- 他ジャンルで supreme を正しく出す（出題形式トグル・学年バッジ・grade絞り込み）には、`data.js` の
+  - **`GENRES`** … 各ジャンルの `diffs` 配列に `'supreme'` を追加、
+  - **`GENRE_GRADES`** … 各ジャンルに `supreme: 3` を追加、
+  が必要（`getQuestions` は diff で直接フィルタするので、grade絞り込みを使わなければ無くても出るが、正式には両方更新する）。
+- **テスト配信版では `test-extra-questions.js` が起動時に上記パッチを自動で当てる**（本番 data.js は無変更）。
+
+### 本番(data.js)へ取り込むときの追加作業
+1. `proposed-questions-supreme.js` の問題を `QUESTION_DB` に貼り付け（生物・地学・化学・物理ぶんと同様）。
+2. `GENRES` の各ジャンル `diffs` に `'supreme'` を追加（reaction/electricity/motion は既にあるので不要）。
+3. `GENRE_GRADES` の各ジャンルに `supreme: 3` を追加（同上）。
+4. `node --check data.js` → 図書館/道場で「受験」を選び、各ジャンルに問題が出るか確認。
+
+### 数のまとめ（テスト配信版の追加合計）
+| 区分 | 数 |
+|---|---|
+| 生物・地学（§2〜） | 235 |
+| 化学・物理（§8） | 113 |
+| 受験ランク 全分野（§9） | 155 |
+| **テスト配信版の追加合計** | **503** |
+
+### 一言プロンプト例（家のPCで・受験ランク取り込み）
+> 「`HANDOFF-問題増強.md` の §9 を読んで。`proposed-questions-supreme.js` の受験ランク問題を data.js に取り込み、合わせて GENRES の各ジャンル diffs に 'supreme' を、GENRE_GRADES に supreme:3 を追加して。node --check して図書館で受験ランクが各分野に出るか確認したい。」
