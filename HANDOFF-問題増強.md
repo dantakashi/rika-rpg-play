@@ -198,3 +198,38 @@ earth_space (天体)         mid 16 / senior 15
 
 ### 一言プロンプト例（家のPCで・受験ランク取り込み）
 > 「`HANDOFF-問題増強.md` の §9 を読んで。`proposed-questions-supreme.js` の受験ランク問題を data.js に取り込み、合わせて GENRES の各ジャンル diffs に 'supreme' を、GENRE_GRADES に supreme:3 を追加して。node --check して図書館で受験ランクが各分野に出るか確認したい。」
+
+---
+
+## 10. 追記：問題難易度を「敵の強さ」に連動させない修正（テスト反映済み）
+
+### 背景
+道場で**問題難易度を上げると敵HP・敵攻撃も上がっていた**。本来の方針は「難易度→**ゴールドのみ**／敵の強さは**敵レベルスライダーだけ**」。これはバグではなく、難易度連動の倍率が意図的に入っていた（コメント付き）。
+
+### 原因（3つの難易度倍率のうち2つが敵の強さに効いていた）
+| 連動先 | 旧倍率(基礎/応用/発展/受験) | 該当 |
+|---|---|---|
+| 敵HP | ×1 / ×3 / ×8 / ×25 | `engine.js:745,747` |
+| 敵攻撃 | ×1 / ×2 / ×4 / ×8 | `engine.js:1223-1224` |
+| ゴールド | ×1 / ×1.5 / ×2 / ×3 | `engine.js:1679`（**維持**） |
+
+### テスト版での修正（`engine-test.js` / `ui-test.js`）
+- `engine-test.js`
+  - 敵HP: `const mult=…` を撤去し **`enemyMaxHp = 100 * lvScale`**（敵レベルのみ）。
+  - 敵攻撃: `difficultyMult` を撤去し **`bossAtk = 30`**（難易度非連動の固定）。
+  - ゴールド報酬（`rewardMult` 1/1.5/2/3）は**そのまま維持**。
+- `ui-test.js`
+  - 道場ポップアップの「敵HP予測表示」用 `_dojoHpMult` を **全難易度×1** に（実挙動と一致）。`_dojoGoldMult` は維持。
+- `test.html` … `engine.js→engine-test.js` / `ui.js→ui-test.js` を参照（本番は無変更）。
+
+### 本番(engine.js / ui.js)への移植（家で）
+`git diff engine.js engine-test.js` と `git diff ui.js ui-test.js`（目印 `[TEST修正]` / `[TEST最適化]`）の差分を本番に当てるだけ。具体的には:
+1. `engine.js:745-747` を `const lvScale=…; enemyMaxHp = 100 * lvScale;` に。
+2. `engine.js:1223-1224` を `bossAtk = 30;` に。
+3. `ui.js:595` の `_dojoHpMult` を全部 `1` に。
+- ゴールド計算（`engine.js:1679`）は触らない。
+- 反映後、テスト用コピー（`engine-test.js`/`ui-test.js`）は不要なら削除可。
+
+### 注意（バランス面）
+- 修正後は全難易度で敵HP=基礎相当（`100×敵レベル`）・攻撃=固定30になる。難易度は**ゴールド倍率（最大×3）だけ**に効く。
+- 「難易度が高いほど旨味（ゴールド）はあるが敵は強くならない」状態。これが望む方針どおりか、テストURLで体感して確認のこと。
