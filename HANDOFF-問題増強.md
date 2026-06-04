@@ -123,3 +123,45 @@ earth_space (天体)         mid 16 / senior 15
 ## 7. 作業を再開するときの一言プロンプト例（家のPCで）
 
 > 「`HANDOFF-問題増強.md` と `proposed-questions-bio-earth.js` を読んで。理科RPGの生物・地学の選択問題を増やす作業の続き。まずは235問をレビューして、問題なければ data.js の QUESTION_DB に取り込んで、ブラウザで表示確認したい。」
+
+---
+
+## 8. 追記：化学・物理の補強＋テスト配信版（その後の作業）
+
+### 追加した問題案
+- **`proposed-questions-chem-physics.js`** … 化学・物理の補強問題 **113問**（化学61・物理52）。
+  - 選択式103問＋**計算タイピング10問**（物理の `type:'typing', plain:true`：オームの法則・電力・速さ・仕事など）。
+  - 選択式の正解位置は a:0〜3 に均等分散済み。
+  - 化学の選択式は `name` フィールドあり（既存の実験問題に合わせた）。物理の選択式は `name` なし。
+
+### テスト配信版（新URLで実機確認できる版）
+本番（`index.html`／`data.js`）は**一切変更せず**、別URLで新問入りを試せるようにした。
+- **`test-extra-questions.js`**（自動生成・直接編集しない）
+  - `proposed-questions-bio-earth.js` と `proposed-questions-chem-physics.js` の全問（**計348問**）を
+    `data.js` 読み込み後に `GameData.QUESTION_DB` へ push するブラウザ用スクリプト。
+- **`test.html`**（`index.html` から自動生成）
+  - `index.html` と同じ中身に、`data.js` の直後で `test-extra-questions.js` を読み込む1行と、
+    上部の「🧪 TEST版」バナーを足しただけ。エンジン・UIは本番と共通ファイルを参照。
+- **テストURL（main にマージ後・Pages反映）**: https://dantakashi.github.io/rika-rpg-play/test.html
+  - 本番URL（`/` ＝ index.html）は無変更のまま。
+
+### 本番へ取り込む（家での作業）
+1. テストURLで新問の表示・出題・解説を確認（図書館で各教科、道場・ボスでも）。
+2. OKなら、`proposed-questions-bio-earth.js` と `proposed-questions-chem-physics.js` の中身を
+   `data.js` の `QUESTION_DB` の末尾 `];` 直前に貼り付け（生物・地学・化学・物理ぶんすべて）。
+3. `node --check data.js` → ブラウザ（本番 index.html）で確認 → main へPR・マージ。
+4. テスト用ファイル（`test.html` / `test-extra-questions.js`）は、本番反映後は不要なら削除してよい。
+
+### 再生成のしかた（問題案を直したとき）
+- `test-extra-questions.js` は proposal 2ファイルから生成している。問題案を直したら作り直す:
+  - Nodeで両 proposal を require → 全問を JSON 化 → `GameData.QUESTION_DB` へ push する IIFE を書き出す。
+  - `test.html` は `index.html` を読み、`data.js` の script タグ直後に `test-extra-questions.js` を挿入＋バナー追加で生成。
+
+### 数のまとめ（新問の合計）
+| 教科 | 新問数 |
+|---|---|
+| 生物 | 129 |
+| 地学 | 106 |
+| 化学 | 61 |
+| 物理 | 52 |
+| **合計** | **348** |
