@@ -32,6 +32,8 @@ let player = {
       name: 'アルケミスト',
       gold: 50000,
       dojoEnemyLevel: 1,
+      rank: 1,          // 学習ランク（問題を解くと上がる・ステ非連動）
+      rankExp: 0,       // 現ランク内のEXP進捗
       defeatedBosses: [],
       hasClearedOnce: false,
       stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
@@ -1521,6 +1523,31 @@ let player = {
       if (!s) { s = { c: 0, t: 0 }; player.quizStats[key] = s; }
       s.t++;
       if (correct) s.c++;
+      gainRankExp(correct); // ★学習保障報酬: 問題を解くたびEXP→ランクUPでゴールド（撃破ゴールドとは別軸）
+    }
+
+    // 学習ランクEXP付与。正解で多く・誤答も少し（努力を報う）。
+    //  ⚠️連打対策: 怒りモード(missCount>=50)中は誤答EXPを0にする＝適当連打でEXP稼ぎ不可。
+    //  ランクUP報酬はゴールド（ステータスには影響しない）。数値は GameData.RANK_CONFIG（simで調整）。
+    function gainRankExp(correct) {
+      const cfg = GameData.RANK_CONFIG;
+      let exp = correct ? cfg.expCorrect : (battle.isRaged ? 0 : cfg.expWrong);
+      if (exp <= 0) return;
+      player.rankExp = (player.rankExp || 0) + exp;
+      let leveled = 0, rewardGold = 0;
+      while (player.rankExp >= GameData.rankExpNeeded(player.rank)) {
+        player.rankExp -= GameData.rankExpNeeded(player.rank);
+        player.rank++;
+        const g = GameData.rankUpGold(player.rank);
+        player.gold += g; rewardGold += g; leveled++;
+      }
+      if (leveled > 0) {
+        if (typeof GameUI !== 'undefined') {
+          GameUI.showDamagePopup('🎉ランクUP! Rank' + player.rank + ' +' + rewardGold + 'G', false, true);
+        }
+        saveUserDataLocal(); // 報酬を即保存（タブを閉じても消えない）
+        updateMenuUI();
+      }
     }
 
     function processCorrectAnswer() {
@@ -2087,6 +2114,9 @@ let player = {
       else player.hasClearedOnce = false;
       // 新フィールド補完
       if (!player.dojoEnemyLevel) player.dojoEnemyLevel = 1;
+      // 学習ランク（旧 level/exp とは別物・ステ非連動）。欠損補完。
+      if (typeof player.rank !== 'number' || player.rank < 1) player.rank = 1;
+      if (typeof player.rankExp !== 'number' || player.rankExp < 0) player.rankExp = 0;
       // 裏ボス・称号・アバター（加算的＝既存セーブ安全）
       if (!Array.isArray(player.defeatedEndgame)) player.defeatedEndgame = [];
       if (!player.endgameLevel) player.endgameLevel = 1;
@@ -2149,6 +2179,8 @@ let player = {
         name: 'アルケミスト',
         gold: 50000,
         dojoEnemyLevel: 1,
+        rank: 1,
+        rankExp: 0,
         defeatedBosses: [],
         hasClearedOnce: false,
         defeatedEndgame: [],

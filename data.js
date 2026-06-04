@@ -2676,7 +2676,23 @@ const GameData = (function() {
     GENRES.forEach(function(g){ if (g.diffs && g.diffs.indexOf('supreme')<0) g.diffs.push('supreme'); });
     GENRES.forEach(function(g){ var gg=GENRE_GRADES[g.key]; if (gg && gg.supreme==null) gg.supreme=3; });
 
+    // ランク制（学習保障報酬・2026-06-05）: 問題を解くとEXP→ランクUP→ゴールド。EXPはステ非連動。
+    //  「撃破=ゴールド / 回答=EXP」の分離で後から調整しやすい。数値は夜間simで調整する。
+    const RANK_CONFIG = {
+      expCorrect: 12,   // 正解1問のEXP
+      expWrong: 4,      // 誤答1問のEXP（努力を少し報う。怒りモード中は0＝連打対策）
+      needBase: 50,     // ランク1→2に必要なEXP（序盤は早く上がって達成感を）
+      needPerRank: 30,  // ランクが上がるごとの必要EXP増分
+      goldBase: 1500,   // ランクUP報酬ゴールドの基準（つまずき層の「解けば報われる」を厚く）
+      goldPerRank: 200, // ランクが上がるごとの報酬増分
+    };
+    // ランクr→r+1 に必要なEXP
+    function rankExpNeeded(rank) { return RANK_CONFIG.needBase + RANK_CONFIG.needPerRank * (Math.max(1, rank) - 1); }
+    // ランクrに上がったときの報酬ゴールド
+    function rankUpGold(newRank) { return RANK_CONFIG.goldBase + RANK_CONFIG.goldPerRank * (Math.max(1, newRank) - 1); }
+
     return {
+      RANK_CONFIG, rankExpNeeded, rankUpGold,
       QUESTION_DB, ULTIMATE_QUIZZES, SUBJECTS, GENRES, DIFFICULTIES, getQuestions, getAvailableGenres,
       GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
       GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,

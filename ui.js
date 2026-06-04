@@ -80,6 +80,8 @@ const GameUI = (function() {
       const power = GameEngine.getTotalStrength();
       document.getElementById('header-gold').textContent = GameEngine.player.gold.toLocaleString();
       document.getElementById('header-level').textContent = power;
+      const _rankEl = document.getElementById('header-rank');
+      if (_rankEl) _rankEl.textContent = GameEngine.player.rank || 1;
       // 名前＋称号フレーム
       const _nameEl = document.getElementById('menu-player-name');
       const _tid = GameEngine.player.equippedTitle || 'none';
