@@ -30,6 +30,24 @@ const GameUI = (function() {
   const _B = () => GameEngine.battle;
   const _D = GameData;
 
+  // ── モバイル判定（ソフトキーボードが立ち上がる端末か）──
+  //  スマホ＝タッチ＋粗いポインタ、またはUAがモバイル。選択問題でのキーボード抑止と推奨注記に使う。
+  const IS_MOBILE = (function() {
+    try {
+      const ua = /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(navigator.userAgent || '');
+      const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+      return ua || (touch && coarse);
+    } catch (e) { return false; }
+  })();
+
+  // 出題形式トグルの下に出す「スマホは選択式推奨」の注記（PCでは空文字＝非表示）。
+  function _mobileChoiceNote() {
+    if (!IS_MOBILE) return '';
+    return '<div class="basis-full w-full text-[10px] text-amber-300/90 mt-1 leading-snug">'
+      + '📱 スマホは「🔘 選択式」がおすすめ（⌨️ タイピングはキーボード入力のためPC向け）</div>';
+  }
+
   // ui.js内のローカル変数（エンジン側に保持するものはGameEngine経由）
   let _dojoPopupDifficulty = 'junior';
   let libraryCurrentTier = 'junior';
@@ -676,6 +694,7 @@ const GameUI = (function() {
         const on = _rwType === val;
         html += `<button onclick="GameUI.setRangeType('${val}')" class="${on ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${label}</button>`;
       });
+      html += _mobileChoiceNote();
       box.innerHTML = html;
     }
 
@@ -846,6 +865,7 @@ const GameUI = (function() {
         const active = _dojoType === val;
         html += `<button onclick="GameUI.setDojoType('${val}')" class="${active ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-[10px]">${label}</button>`;
       });
+      html += _mobileChoiceNote();
       html += '</div>';
       box.innerHTML = html;
     }
@@ -1276,6 +1296,7 @@ const GameUI = (function() {
         const on = _bossRangeType === val;
         html += `<button onclick="GameUI.setBossRangeType('${val}')" class="${on ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1 px-2.5 rounded-lg text-xs">${label}</button>`;
       });
+      html += _mobileChoiceNote();
       box.innerHTML = html;
     }
 
@@ -1872,6 +1893,7 @@ const GameUI = (function() {
         const active = _libType === val;
         html += `<button onclick="GameUI.setLibType('${val}')" class="${active ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-300'} font-bold py-1.5 px-3 rounded-lg text-xs">${label}</button>`;
       });
+      html += _mobileChoiceNote();
       html += '</div>';
       box.innerHTML = html;
     }
@@ -2305,9 +2327,22 @@ const GameUI = (function() {
     }
 
 
+  // 現在の出題が「タップで答える」ものか（選択式 or ボス必殺技クイズ）。
+  //  スマホではこの瞬間に隠し入力欄へフォーカスせず、ソフトキーボードを出さない。
+  function _isTapAnswerMoment() {
+    var b = (typeof GameEngine !== 'undefined') && GameEngine.battle;
+    if (!b) return false;
+    if (b.quizActive) return true; // ボス必殺技クイズ（1〜4タップ）
+    return !!(b.currentQuestion && b.currentQuestion.type === 'choice');
+  }
+
   function focusHiddenInput() {
     var inp = document.getElementById('hidden-input');
-    if (inp) { inp.value = ''; inp.focus(); }
+    if (!inp) return;
+    inp.value = '';
+    // スマホの選択問題ではフォーカスを当てず、ソフトキーボードを抑止（回答はボタンのタップ）。
+    if (IS_MOBILE && _isTapAnswerMoment()) { inp.blur(); return; }
+    inp.focus();
   }
   // engine.js から resumeGame 後に入力欄へフォーカスを戻すためのブリッジ名
   function focusBattleInput() { focusHiddenInput(); }
