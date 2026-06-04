@@ -133,15 +133,26 @@ const GameUI = (function() {
         if (!nb) {
           hintBox.innerHTML = '<span class="text-yellow-400 font-bold">🎉 おめでとう！全ボス撃破達成！</span><br><span class="text-slate-400">超級道場でさらなる高みを目指そう！</span>';
         } else {
-          const tierNames = { junior:'初級', mid:'中級', senior:'上級', supreme:'超級' };
-          const hints = {
-            junior: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！',
-            mid: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！中級道場で化学反応式を練習しよう！',
-            senior: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！図書館でイオン式を確認しておこう！',
-            supreme: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！ガチャで高レアリティ装備を目指そう！'
-          };
-          hintBox.innerHTML = `<span class="text-cyan-400 font-bold">📌 次の目標:</span> <span class="text-white font-bold">${nb.avatar} ${nb.name}を倒す</span><br>
-            <span class="text-slate-400">💡 ヒント: ${hints[nb.tier]}</span>`;
+          // 戦闘力の現在地と次ボスの目安を並べて「戦闘力とは何か・どれだけ足りないか」を伝える。
+          const power = GameEngine.getTotalStrength();
+          const rec = GameEngine.getBossRecommendedPower(nb);
+          const pclass = power >= rec ? 'text-emerald-400' : 'text-amber-400';
+          const powerLine = `<div class="mt-1.5 pt-1.5 border-t border-slate-800/60 text-slate-400">`
+            + `あなたの戦闘力 <b class="${pclass}">${power.toLocaleString()}</b> ／ ${nb.avatar}撃破の目安 <b class="text-rose-300">${rec.toLocaleString()}</b>`
+            + `<br><span class="text-[8px] text-slate-500">※「戦闘力」＝あなたの強さ。道場でコインを稼ぎ、ステータス強化や装備で上げよう。</span></div>`;
+          if ((def2.length) === 0) {
+            // 新規プレイヤーには「まず道場」だけを一点で示す（情報を出しすぎない）。
+            hintBox.innerHTML = `<span class="text-emerald-400 font-bold">📌 まず最初に:</span> <span class="text-white font-bold">🥋 道場で問題を解いてコインを稼ごう！</span>` + powerLine;
+          } else {
+            const hints = {
+              junior: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！',
+              mid: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！中級道場で化学反応式を練習しよう！',
+              senior: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！図書館でイオン式を確認しておこう！',
+              supreme: '道場でコインを集め、ステータス強化やガチャで装備を集めましょう！ガチャで高レアリティ装備を目指そう！'
+            };
+            hintBox.innerHTML = `<span class="text-cyan-400 font-bold">📌 次の目標:</span> <span class="text-white font-bold">${nb.avatar} ${nb.name}を倒す</span><br>`
+              + `<span class="text-slate-400">💡 ヒント: ${hints[nb.tier]}</span>` + powerLine;
+          }
         }
       }
 

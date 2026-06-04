@@ -554,11 +554,12 @@
 
       <!-- SCREEN 2: BOSS SELECTION SCREEN -->
       <div id="screen-boss-select" class="w-full max-w-4xl hidden fade-in">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-2">
           <h2 class="text-lg font-black text-white">👹 ボス実践モード (全12体順次解放)</h2>
           <button onclick="showMenu()" class="bg-slate-800 text-white px-3 py-1 rounded-lg font-bold text-xs">戻る</button>
         </div>
-        
+        <p class="text-[10px] text-slate-400 mb-4">💡 <b class="text-slate-300">推奨戦闘力</b>＝挑戦の目安。あなたの戦闘力（画面右上）がこの数字に届くと勝ちやすくなります。<span class="text-emerald-400">緑=挑戦OK</span> / <span class="text-amber-400">橙=あと少し</span> / <span class="text-rose-400">赤=まだ早い</span>。</p>
+
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="boss-selection-container"></div>
       </div>
 
@@ -931,7 +932,7 @@
             </div>
             <div class="flex items-start gap-3 bg-slate-950 rounded-xl p-3 border border-rose-800/40">
               <span class="text-xl shrink-0">👹</span>
-              <div><div class="text-xs font-bold text-rose-300">③ ボスに挑戦</div><div class="text-[10px] text-slate-400">強くなったらボスに挑戦！「推奨戦闘力」が目安です。</div></div>
+              <div><div class="text-xs font-bold text-rose-300">③ ボスに挑戦</div><div class="text-[10px] text-slate-400">強くなったらボスに挑戦！「推奨戦闘力」（＝あなたの強さの目安）に届くと勝ちやすいよ。</div></div>
             </div>
           </div>
           <div class="flex flex-col gap-2">
