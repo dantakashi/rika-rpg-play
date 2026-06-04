@@ -2683,16 +2683,31 @@ const GameData = (function() {
       expWrong: 4,      // 誤答1問のEXP（努力を少し報う。怒りモード中は0＝連打対策）
       needBase: 50,     // ランク1→2に必要なEXP（序盤は早く上がって達成感を）
       needPerRank: 30,  // ランクが上がるごとの必要EXP増分
-      goldBase: 1500,   // ランクUP報酬ゴールドの基準（つまずき層の「解けば報われる」を厚く）
+      needRampCap: 20,  // ランク21以降は必要EXPの増加が頭打ち（高ランクが無限に遠くならない）
+      goldBase: 1500,   // 通常ランクUP報酬ゴールドの基準（つまずき層の「解けば報われる」を厚く）
       goldPerRank: 200, // ランクが上がるごとの報酬増分
+      goldRampCap: 25,  // 通常報酬の増加上限（late-gameインフレ防止）
+      maxRank: 50,      // 最終目標ランク（節目報酬の頂点。到達後もランクは上がるが通常報酬のみ）
+      // 節目の大型報酬ゴールド（初心者に明確な目標を）。将来は装備選択券/ガチャ券に置換する指標にもなる。
+      milestones: { 5: 3000, 10: 10000, 20: 30000, 30: 80000, 50: 200000 },
     };
-    // ランクr→r+1 に必要なEXP
-    function rankExpNeeded(rank) { return RANK_CONFIG.needBase + RANK_CONFIG.needPerRank * (Math.max(1, rank) - 1); }
-    // ランクrに上がったときの報酬ゴールド
-    function rankUpGold(newRank) { return RANK_CONFIG.goldBase + RANK_CONFIG.goldPerRank * (Math.max(1, newRank) - 1); }
+    // ランクr→r+1 に必要なEXP（needRampCapで増加を頭打ち）
+    function rankExpNeeded(rank) {
+      const steps = Math.min(Math.max(1, rank) - 1, RANK_CONFIG.needRampCap);
+      return RANK_CONFIG.needBase + RANK_CONFIG.needPerRank * steps;
+    }
+    // ランクrに上がったときの報酬ゴールド（通常報酬＋節目ボーナス）
+    function rankUpGold(newRank) {
+      const steps = Math.min(Math.max(1, newRank) - 1, RANK_CONFIG.goldRampCap);
+      let g = RANK_CONFIG.goldBase + RANK_CONFIG.goldPerRank * steps;
+      if (RANK_CONFIG.milestones[newRank]) g += RANK_CONFIG.milestones[newRank];
+      return g;
+    }
+    // そのランクが節目（大型報酬）かどうか
+    function isRankMilestone(rank) { return !!RANK_CONFIG.milestones[rank]; }
 
     return {
-      RANK_CONFIG, rankExpNeeded, rankUpGold,
+      RANK_CONFIG, rankExpNeeded, rankUpGold, isRankMilestone,
       QUESTION_DB, ULTIMATE_QUIZZES, SUBJECTS, GENRES, DIFFICULTIES, getQuestions, getAvailableGenres,
       GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
       GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,

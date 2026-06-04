@@ -391,6 +391,45 @@ const GameUI = (function() {
       updateMenuUI(); // ステータスを閉じた後にヘッダーの戦闘力・ゴールドを同期
     }
 
+    // ── 学習ランク報酬ビューア ──
+    function openRankModal() {
+      renderRankModal();
+      document.getElementById('rank-modal').classList.remove('hidden');
+    }
+    function closeRankModal() {
+      document.getElementById('rank-modal').classList.add('hidden');
+    }
+    function renderRankModal() {
+      const body = document.getElementById('rank-modal-body');
+      if (!body) return;
+      const info = GameEngine.getRankInfo();
+      const pct = Math.max(0, Math.min(100, Math.round(info.rankExp / info.need * 100)));
+      let html = '';
+      // 現在ランク＋次ランクまでの進捗バー
+      html += '<div class="bg-slate-950 rounded-xl p-3 border border-amber-700/40">';
+      html += '<div class="flex items-end justify-between mb-1">';
+      html += '<div><span class="text-[10px] text-amber-400 font-bold">現在のランク</span><div class="text-2xl font-black text-amber-300 leading-none">' + info.rank + '</div></div>';
+      html += '<div class="text-right text-[9px] text-slate-400">次のランクで<br><b class="text-amber-300">+' + info.nextRankGold.toLocaleString() + 'G</b></div>';
+      html += '</div>';
+      html += '<div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden"><div class="bg-amber-500 h-2.5 rounded-full" style="width:' + pct + '%"></div></div>';
+      html += '<div class="text-[9px] text-slate-500 mt-1 text-right">次のランクまで ' + info.rankExp + ' / ' + info.need + ' EXP</div>';
+      html += '</div>';
+      // 節目報酬リスト
+      html += '<div><div class="text-[10px] text-amber-400 font-bold mb-1.5">🏆 節目の大型報酬</div><div class="space-y-1">';
+      info.milestones.forEach(function(m) {
+        const reached = m.reached;
+        html += '<div class="flex items-center justify-between rounded-lg px-3 py-1.5 border ' +
+          (reached ? 'bg-amber-900/30 border-amber-600/50' : 'bg-slate-950 border-slate-800') + '">';
+        html += '<span class="text-xs font-bold ' + (reached ? 'text-amber-300' : 'text-slate-300') + '">' +
+          (reached ? '✅ ' : '🔒 ') + 'ランク ' + m.rank + '</span>';
+        html += '<span class="text-xs font-black ' + (reached ? 'text-amber-300' : 'text-slate-400') + '">+' + m.gold.toLocaleString() + 'G</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+      html += '<p class="text-[9px] text-slate-500">最終目標は<b class="text-amber-400">ランク' + info.maxRank + '</b>。到達後もランクは上がり続けます。</p>';
+      body.innerHTML = html;
+    }
+
     // ── セーブ/ロード モーダル ──
     function openSaveLoadModal() {
       const ta = document.getElementById('save-load-textarea');
@@ -2440,6 +2479,7 @@ const GameUI = (function() {
     closeGradeWarn, challengeKeepingOverGrade, challengeRemovingOverGrade,
     // ステータスポップアップ
     openStatPopup, closeStatPopup, renderStatList,
+    openRankModal, closeRankModal,
     openSaveLoadModal, closeSaveLoadModal, copySaveCode, loadSaveCode,
     // インベントリ
     openInventoryPopup, closeInventoryPopup, renderEquippedSlots, renderInventoryGrid, autoEquipBest,

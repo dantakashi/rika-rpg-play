@@ -1534,20 +1534,45 @@ let player = {
       let exp = correct ? cfg.expCorrect : (battle.isRaged ? 0 : cfg.expWrong);
       if (exp <= 0) return;
       player.rankExp = (player.rankExp || 0) + exp;
-      let leveled = 0, rewardGold = 0;
+      let leveled = 0, rewardGold = 0, hitMilestone = 0;
       while (player.rankExp >= GameData.rankExpNeeded(player.rank)) {
         player.rankExp -= GameData.rankExpNeeded(player.rank);
         player.rank++;
         const g = GameData.rankUpGold(player.rank);
         player.gold += g; rewardGold += g; leveled++;
+        if (GameData.isRankMilestone(player.rank)) hitMilestone = player.rank;
       }
       if (leveled > 0) {
         if (typeof GameUI !== 'undefined') {
-          GameUI.showDamagePopup('🎉ランクUP! Rank' + player.rank + ' +' + rewardGold + 'G', false, true);
+          if (hitMilestone) {
+            // 節目ランク到達＝大型報酬。生徒に強く達成感を出す。
+            GameUI.showDamagePopup('🏆 ランク' + hitMilestone + '到達！ +' + rewardGold + 'G', false, true);
+          } else {
+            GameUI.showDamagePopup('🎉ランクUP! Rank' + player.rank + ' +' + rewardGold + 'G', false, true);
+          }
         }
         saveUserDataLocal(); // 報酬を即保存（タブを閉じても消えない）
         updateMenuUI();
       }
+    }
+
+    // 学習ランクの表示用情報（UIのランク報酬ビューア用）。
+    function getRankInfo() {
+      const cfg = GameData.RANK_CONFIG;
+      const rank = player.rank || 1;
+      const need = GameData.rankExpNeeded(rank);
+      const milestones = Object.keys(cfg.milestones)
+        .map(function(k) { return parseInt(k, 10); })
+        .sort(function(a, b) { return a - b; })
+        .map(function(r) { return { rank: r, gold: cfg.milestones[r], reached: rank >= r }; });
+      return {
+        rank: rank,
+        rankExp: player.rankExp || 0,
+        need: need,
+        nextRankGold: GameData.rankUpGold(rank + 1),
+        maxRank: cfg.maxRank,
+        milestones: milestones,
+      };
     }
 
     function processCorrectAnswer() {
@@ -2348,7 +2373,7 @@ let player = {
   return {
     get player() { return player; }, set player(v) { player = v; },
     get battle() { return battle; },
-    getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar,
+    getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar, getRankInfo,
     startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion,
     processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, quitBattle, endBattle, pauseGame, resumeGame,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,

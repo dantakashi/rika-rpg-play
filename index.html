@@ -240,7 +240,7 @@
   <header class="relative bg-slate-900/90 border-b border-slate-800 px-4 py-1.5 flex items-center justify-end z-20 shrink-0">
       <!-- ステータス概要（右上） -->
       <div class="flex items-center gap-3 text-xs font-mono">
-        <div class="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-amber-700/60" title="問題を解くと上がる学習ランク">
+        <div onclick="openRankModal()" class="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-amber-700/60 cursor-pointer hover:border-amber-500 transition-all active:scale-95" title="クリックでランク報酬を確認">
           <span class="text-amber-400 font-bold text-[9px]">ランク</span>
           <span id="header-rank" class="text-amber-300 font-bold">1</span>
         </div>
@@ -894,6 +894,18 @@
         </div>
       </div>
 
+      <!-- 学習ランク報酬ビューア -->
+      <div id="rank-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-amber-700/60 rounded-2xl p-5 w-full max-w-md max-h-[88vh] overflow-y-auto shadow-2xl">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-black text-base text-white">🏅 学習ランク</h3>
+            <button onclick="closeRankModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-relaxed mb-3">問題を<b class="text-amber-300">解くたびに経験値</b>がたまり、ランクが上がると<b class="text-amber-300">ゴールド</b>がもらえます（強さには直接影響しません）。<b class="text-amber-300">節目のランク</b>では大きな報酬！</p>
+          <div id="rank-modal-body" class="space-y-3"></div>
+        </div>
+      </div>
+
       <!-- セーブ/ロード モーダル -->
       <div id="save-load-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
         <div class="bg-slate-900 border border-cyan-700/60 rounded-2xl p-5 w-full max-w-md shadow-2xl">
@@ -1110,6 +1122,8 @@
     // GameUIの関数をグローバルスコープに公開
     const openStatPopup = () => GameUI.openStatPopup();
     const closeStatPopup = () => GameUI.closeStatPopup();
+    const openRankModal = () => GameUI.openRankModal();
+    const closeRankModal = () => GameUI.closeRankModal();
     const resetStatPointsAction = () => GameEngine.resetStatPointsAction();
     const openInventoryPopup = () => GameUI.openInventoryPopup();
     const closeInventoryPopup = () => GameUI.closeInventoryPopup();
