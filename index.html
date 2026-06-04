@@ -305,8 +305,11 @@
             <!-- セーブ・データ -->
             <div class="border-t border-slate-800/50 pt-2 flex flex-col gap-1">
               <button onclick="openSaveLoadModal()" class="w-full bg-cyan-800 hover:bg-cyan-700 border border-cyan-600/50 text-white font-bold py-1.5 rounded-lg text-[10px] transition-all active:scale-95">💾 セーブ / ロード</button>
-              <!-- 🛠️ デバッグボタン（開発用・公開配布時は撤去すること） -->
+              <!-- 🛠️ デバッグボタン（開発用・公開配布時は非表示）
+                   ※開発時に使う場合は下のコメントを外す
               <button onclick="activateDebugMode()" class="w-full bg-violet-950/50 hover:bg-violet-900/50 border border-violet-700/50 text-violet-300 font-bold py-1.5 rounded-lg text-[10px] transition-all active:scale-95">🛠️ デバッグモード（全解放・理想装備）</button>
+              -->
+
               <button onclick="resetAllData()" class="w-full bg-red-950/50 hover:bg-red-900/50 border border-red-900/50 text-red-400 font-bold py-1 rounded-lg text-[9px] transition-all">🗑️ 全データ初期化</button>
             </div>
           </div>
