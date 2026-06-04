@@ -34,6 +34,7 @@ let player = {
       dojoEnemyLevel: 1,
       rank: 1,          // 学習ランク（問題を解くと上がる・ステ非連動）
       rankExp: 0,       // 現ランク内のEXP進捗
+      seenWelcome: false, // 初回ようこそ画面を見たか（新規プレイヤーのみ表示）
       defeatedBosses: [],
       hasClearedOnce: false,
       stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
@@ -2142,6 +2143,8 @@ let player = {
       // 学習ランク（旧 level/exp とは別物・ステ非連動）。欠損補完。
       if (typeof player.rank !== 'number' || player.rank < 1) player.rank = 1;
       if (typeof player.rankExp !== 'number' || player.rankExp < 0) player.rankExp = 0;
+      // ようこそ画面: 既存セーブ(=セーブが存在するプレイヤー)は表示済み扱い＝新規だけに出す。
+      if (typeof player.seenWelcome !== 'boolean') player.seenWelcome = true;
       // 裏ボス・称号・アバター（加算的＝既存セーブ安全）
       if (!Array.isArray(player.defeatedEndgame)) player.defeatedEndgame = [];
       if (!player.endgameLevel) player.endgameLevel = 1;
@@ -2206,6 +2209,7 @@ let player = {
         dojoEnemyLevel: 1,
         rank: 1,
         rankExp: 0,
+        seenWelcome: false,
         defeatedBosses: [],
         hasClearedOnce: false,
         defeatedEndgame: [],

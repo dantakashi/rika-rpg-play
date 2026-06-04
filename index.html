@@ -369,19 +369,19 @@
             <button onclick="openLibraryScreen()" style="background-image:url('assets/ui/btn_library.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-indigo-800 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
               <span class="text-2xl">📚</span> 図書館（問題一覧）
             </button>
-            <button onclick="openPvPScreen()" style="background-image:url('assets/ui/btn_pvp.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-cyan-800 hover:bg-cyan-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
+            <button data-gate="boss4" onclick="openPvPScreen()" style="background-image:url('assets/ui/btn_pvp.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-cyan-800 hover:bg-cyan-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
               <span class="text-2xl">⚔️</span> 対戦シミュレーター
             </button>
-            <button onclick="openBuildGuide()" style="background-image:url('assets/ui/btn_guide.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-fuchsia-800 hover:bg-fuchsia-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
+            <button data-gate="boss1" onclick="openBuildGuide()" style="background-image:url('assets/ui/btn_guide.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-fuchsia-800 hover:bg-fuchsia-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
               <span class="text-2xl">📖</span> ビルドガイド
             </button>
-            <button onclick="openEndgamePopup()" style="background-image:url('assets/ui/btn_endgame.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-gradient-to-r from-purple-800 to-pink-800 hover:from-purple-700 hover:to-pink-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-purple-950/40">
+            <button data-gate="cleared" onclick="openEndgamePopup()" style="background-image:url('assets/ui/btn_endgame.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-gradient-to-r from-purple-800 to-pink-800 hover:from-purple-700 hover:to-pink-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-purple-950/40">
               <span class="text-2xl">⚔️</span> 専科の試練（裏ボス）
             </button>
-            <button onclick="GameUI.openOmegaPopup()" class="bg-gradient-to-r from-fuchsia-700 to-indigo-700 hover:from-fuchsia-600 hover:to-indigo-600 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-fuchsia-950/40">
+            <button data-gate="cleared" onclick="GameUI.openOmegaPopup()" class="bg-gradient-to-r from-fuchsia-700 to-indigo-700 hover:from-fuchsia-600 hover:to-indigo-600 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-fuchsia-950/40">
               <span class="text-2xl">🌌</span> 最強の試練（エンド）
             </button>
-            <div class="grid grid-cols-2 gap-2">
+            <div data-gate="boss1" class="grid grid-cols-2 gap-2">
               <button onclick="openTitlePopup()" style="background-image:url('assets/ui/btn_title.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-amber-800/80 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-[11px] flex items-center justify-center gap-1 transition-all active:scale-95">🎖️ 称号</button>
               <button onclick="openAvatarPopup()" style="background-image:url('assets/ui/btn_avatar.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-sky-800/80 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-[11px] flex items-center justify-center gap-1 transition-all active:scale-95">🧑‍🎤 アバター</button>
             </div>
@@ -911,6 +911,36 @@
         </div>
       </div>
 
+      <!-- 初回ようこそ（チュートリアル導入） -->
+      <div id="welcome-modal" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center z-[60] p-4">
+        <div class="bg-slate-900 border border-emerald-600/60 rounded-2xl p-6 w-full max-w-md shadow-2xl shadow-emerald-950/40">
+          <div class="text-center mb-4">
+            <div class="text-4xl mb-1">⚗️</div>
+            <h3 class="font-black text-lg text-white">ようこそ！</h3>
+            <p class="text-[11px] text-emerald-300 mt-1">化学反応式RPGへ。問題を解いて、強くなろう！</p>
+          </div>
+          <p class="text-[11px] text-slate-300 leading-relaxed mb-3 text-center">まずはこの<b class="text-emerald-300">3ステップ</b>だけ覚えればOK！</p>
+          <div class="space-y-2 mb-5">
+            <div class="flex items-start gap-3 bg-slate-950 rounded-xl p-3 border border-emerald-800/40">
+              <span class="text-xl shrink-0">🥋</span>
+              <div><div class="text-xs font-bold text-emerald-300">① 道場で問題を解く</div><div class="text-[10px] text-slate-400">答えを見ながらでOK。解くとコインと経験値がもらえます。</div></div>
+            </div>
+            <div class="flex items-start gap-3 bg-slate-950 rounded-xl p-3 border border-amber-800/40">
+              <span class="text-xl shrink-0">💪</span>
+              <div><div class="text-xs font-bold text-amber-300">② コインで強くなる</div><div class="text-[10px] text-slate-400">ステータス強化やガチャの装備で、攻撃力をアップ。</div></div>
+            </div>
+            <div class="flex items-start gap-3 bg-slate-950 rounded-xl p-3 border border-rose-800/40">
+              <span class="text-xl shrink-0">👹</span>
+              <div><div class="text-xs font-bold text-rose-300">③ ボスに挑戦</div><div class="text-[10px] text-slate-400">強くなったらボスに挑戦！「推奨戦闘力」が目安です。</div></div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-2">
+            <button onclick="startTutorialDojo()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-sm transition-all active:scale-95">🥋 さっそく道場へ行く</button>
+            <button onclick="closeWelcomeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-[11px] transition-all">あとで自分で見てみる</button>
+          </div>
+        </div>
+      </div>
+
       <!-- セーブ/ロード モーダル -->
       <div id="save-load-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
         <div class="bg-slate-900 border border-cyan-700/60 rounded-2xl p-5 w-full max-w-md shadow-2xl">
@@ -1129,6 +1159,8 @@
     const closeStatPopup = () => GameUI.closeStatPopup();
     const openRankModal = () => GameUI.openRankModal();
     const closeRankModal = () => GameUI.closeRankModal();
+    const closeWelcomeModal = () => GameUI.closeWelcomeModal();
+    const startTutorialDojo = () => GameUI.startTutorialDojo();
     const resetStatPointsAction = () => GameEngine.resetStatPointsAction();
     const openInventoryPopup = () => GameUI.openInventoryPopup();
     const closeInventoryPopup = () => GameUI.closeInventoryPopup();

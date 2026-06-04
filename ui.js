@@ -182,6 +182,51 @@ const GameUI = (function() {
       if (!document.getElementById('stat-popup').classList.contains('hidden')) {
         renderStatList();
       }
+
+      // 進度に応じて上級コンテンツを表示/非表示（新規プレイヤーに情報を出しすぎない）
+      applyProgressiveDisclosure();
+      // 新規プレイヤーには初回ようこそ画面を一度だけ
+      maybeShowWelcome();
+    }
+
+    // 進度ゲート: data-gate 属性を持つボタンを進度に応じて表示。
+    //  boss1=ボス1体撃破で解放 / boss4=中級解禁(4体)で解放 / cleared=ラスボス撃破で解放。
+    function applyProgressiveDisclosure() {
+      const p = GameEngine.player;
+      const bossCount = (p.defeatedBosses || []).length;
+      const cleared = !!p.hasClearedOnce;
+      const ok = { boss1: bossCount >= 1, boss4: bossCount >= 4, cleared: cleared };
+      document.querySelectorAll('[data-gate]').forEach(function(el) {
+        const need = el.getAttribute('data-gate');
+        const show = (need in ok) ? ok[need] : true;
+        el.classList.toggle('hidden', !show);
+      });
+    }
+
+    // ── 初回ようこそ（チュートリアル導入） ──
+    function maybeShowWelcome() {
+      if (GameEngine.player.seenWelcome) return;
+      // メニュー以外を開いている最中は出さない（戦闘復帰時など）
+      const menu = document.getElementById('screen-menu');
+      if (menu && menu.classList.contains('hidden')) return;
+      openWelcomeModal();
+    }
+    function openWelcomeModal() {
+      const m = document.getElementById('welcome-modal');
+      if (m) m.classList.remove('hidden');
+    }
+    function _dismissWelcome() {
+      GameEngine.player.seenWelcome = true;
+      try { GameEngine.saveUserDataLocal(); } catch (e) {}
+    }
+    function closeWelcomeModal() {
+      _dismissWelcome();
+      const m = document.getElementById('welcome-modal');
+      if (m) m.classList.add('hidden');
+    }
+    function startTutorialDojo() {
+      closeWelcomeModal();
+      openDojoPopup();
     }
 
     // 部位アイコン（装備カード右下に表示）と部位ラベル
@@ -2498,6 +2543,7 @@ const GameUI = (function() {
     // ステータスポップアップ
     openStatPopup, closeStatPopup, renderStatList,
     openRankModal, closeRankModal, useDojoRecommendedLevel,
+    openWelcomeModal, closeWelcomeModal, startTutorialDojo, applyProgressiveDisclosure,
     openSaveLoadModal, closeSaveLoadModal, copySaveCode, loadSaveCode,
     // インベントリ
     openInventoryPopup, closeInventoryPopup, renderEquippedSlots, renderInventoryGrid, autoEquipBest,
