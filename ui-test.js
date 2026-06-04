@@ -601,8 +601,9 @@ const GameUI = (function() {
       { key: 'senior',  label: '発展', sub: 'むずかしい', color: 'bg-indigo-800 hover:bg-indigo-700', locked_desc: '中級ボス3体全員撃破' },
       { key: 'supreme', label: '受験', sub: '最難関',     color: 'bg-purple-800 hover:bg-purple-700', locked_desc: '上級ボス3体全員撃破' }
     ];
-    // 敵HPの難易度倍率（engine.js spawnNextDojoEnemy と一致）／ゴールドの難易度倍率は緩やか（engine.js 報酬計算と一致）。
-    const _dojoHpMult   = { junior:1, mid:3,   senior:8, supreme:25 };
+    // [TEST修正] 敵HPは難易度非連動（敵レベルのみ）＝ engine-test.js の方針に合わせて全難易度×1。
+    //  ゴールドの難易度倍率は据え置き（難易度→ゴールドのみ反映）。
+    const _dojoHpMult   = { junior:1, mid:1,   senior:1, supreme:1 };
     const _dojoGoldMult = { junior:1, mid:1.5, senior:2, supreme:3 };
     // 敵レベル→報酬カーブ（engine.js と一致：+20%/Lv）
     const _dojoLvScale  = (lv) => 1.0 + (Math.max(1, lv) - 1) * 0.2;
