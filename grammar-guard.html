@@ -261,6 +261,10 @@
           <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
           <div class="stage-grid" id="stageGrid"></div>
         </div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-weight:800; margin-bottom:8px">⭐ 特殊ステージ</div>
+          <div id="towerBody"></div>
+        </div>
       </div>
       <div class="homeview" data-view="grow">
         <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">ゴールドで味方を入手</span></button>
@@ -1956,6 +1960,8 @@ const Game = (()=>{
   let enMaxLv = 0;         // エネルギー上限Lv
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
   let homeView = 'menu';   // ホームの表示(menu/play/grow/settings)
+  let towerBest = 0;       // 修練の塔の最高階
+  let lastDaily = '';      // デイリー受取日(YYYY-M-D)
   let curStage = null;
 
   let soundOn = true;
@@ -1965,12 +1971,13 @@ const Game = (()=>{
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
+      towerBest=s.towerBest||0; lastDaily=s.lastDaily||'';
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -2224,7 +2231,7 @@ const Game = (()=>{
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
     const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
     const __parent={play:'menu', grow:'menu', settings:'menu', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
@@ -2424,11 +2431,11 @@ const Game = (()=>{
     // 自動召喚（苦手な子向け・操作を問題に集中）
     if(autoSummon && B.queue.length && B.energy>=B.queue[0].cost) summon();
     // ウェーブ
-    while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){
-      spawnEnemy(B.stage.waves[B.spawnIdx].type); B.spawnIdx++;
-    }
+    if(B.stage.endless){ towerStep(); }
+    else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ spawnEnemy(B.stage.waves[B.spawnIdx].type); B.spawnIdx++; } }
     stepUnits(dt);
     syncHUD(); renderQueue();
+    if(B.stage.endless){ var __he=$('hpEtxt'); if(__he) __he.textContent='🗼'+(B.floor||1)+'階'; }
     checkEnd();
     if(B.running) B.raf=requestAnimationFrame(loop);
   }
@@ -2524,12 +2531,52 @@ const Game = (()=>{
   }
 
   /* ---- 勝敗 ---- */
+  /* ---- 修練の塔（エンドレス）＆デイリー ---- */
+  function enterTower(){
+    enterBattle({ id:'tower', area:0, boss:false, endless:true, name:'修練の塔', sprite:'castleE', world:9, enemyHpMul:1, enemyAtkMul:1, castleEHp:1e9, waves:[] });
+  }
+  function towerStep(){
+    B.floor = 1 + Math.floor(B.t/12);
+    if(B.t*1000 >= (B.nextSpawn||0)){
+      var f=B.floor;
+      var types = f<3?['slime','hare'] : f<6?['slime','hare','totem','slinger'] : f<10?['hare','totem','torii','slinger','bat'] : ['totem','torii','slinger','bat','golem','bombSlime','splitMush'];
+      var n = 1 + Math.floor(f/3);
+      B.stage.enemyHpMul = Math.pow(1.15, f-1);
+      B.stage.enemyAtkMul = Math.pow(1.10, f-1);
+      for(var i=0;i<n;i++){ spawnEnemy(types[Math.floor(Math.random()*types.length)]); }
+      B.nextSpawn = B.t*1000 + Math.max(800, 2200 - f*70);
+    }
+  }
+  function endTower(){
+    B.ended=true; B.running=false; cancelAnimationFrame(B.raf); Sound.play('lose');
+    var floor=B.floor||1, reward=floor*40; gold+=reward;
+    var isBest=floor>(towerBest||0); if(isBest) towerBest=floor; save();
+    $('firstBadge').classList.remove('show');
+    $('resTitle').textContent='🗼 '+floor+'階 到達！'; $('resTitle').style.color='var(--ally)';
+    $('resMedals').innerHTML='<span class="medal">到達 '+floor+'階</span>'+(isBest?'<span class="medal">🏆 自己ベスト！</span>':'<span class="medal">最高 '+towerBest+'階</span>')+'<span class="medal">💰 +'+reward+'</span><span class="medal">最大コンボ '+B.bestCombo+'</span>';
+    $('resLearn').textContent='修練の塔は無限。問題を解いて編成を強化し、より上の階へ！';
+    var nd=$('resNudge'); if(nd) nd.innerHTML='';
+    var retry=$('resRetry'); retry.textContent='もう一度 🗼'; retry.onclick=function(){ enterTower(); };
+    show('result');
+  }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function dailyClaimable(){ return lastDaily!==todayStr(); }
+  function claimDaily(){ if(!dailyClaimable()) return; gold+=500; lastDaily=todayStr(); Sound.play('correct'); save(); renderHome(); }
+  function renderTower(){
+    var body=$('towerBody'); if(!body) return; body.innerHTML='';
+    var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
+    body.appendChild(t);
+    var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
+    var claim=dailyClaimable();
+    var db=document.createElement('button'); db.className=claim?'btn':'btn ghost'; db.style.cssText='width:100%'; db.textContent=claim?'🎁 デイリーボーナス（+500G）':'🎁 デイリー：受取済み（また明日）'; db.disabled=!claim; db.addEventListener('click',claimDaily); body.appendChild(db);
+  }
   function checkEnd(){
     if(B.ended) return;
     if(B.castleE<=0){ endBattle(true); }
     else if(B.castleA<=0){ endBattle(false); }
   }
   function endBattle(win){
+    if(B.stage.endless){ endTower(); return; }
     B.ended=true; B.running=false; cancelAnimationFrame(B.raf);
     Sound.play(win?'win':'lose');
     const acc = B.answered? Math.round(B.correct/B.answered*100):0;
