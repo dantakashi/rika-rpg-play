@@ -33,11 +33,12 @@ const GameData = (function() {
     // ==========================================
     // 難易度4段階（内部キーは旧来のものを維持。label が新しい呼び名）
     //  boss = この難易度を解禁するために倒すボスの帯（getDojoUnlockStatus と対応）
+    // 難易度ラベル刷新（2026-06-05・ユーザー方針）: 全体を1段やさしい呼び名に。中1が「入門」から気軽に入れる。
     const DIFFICULTIES = [
-      { key: 'junior',  label: '基礎', color: 'bg-cyan-700',   boss: '初級' },
-      { key: 'mid',     label: '応用', color: 'bg-orange-700', boss: '中級' },
-      { key: 'senior',  label: '発展', color: 'bg-purple-700', boss: '上級' },
-      { key: 'supreme', label: '受験', color: 'bg-rose-700',   boss: '超級' }
+      { key: 'junior',  label: '入門', color: 'bg-cyan-700',   boss: '初級' },
+      { key: 'mid',     label: '基礎', color: 'bg-orange-700', boss: '中級' },
+      { key: 'senior',  label: '応用', color: 'bg-purple-700', boss: '上級' },
+      { key: 'supreme', label: '受験・定期試験', color: 'bg-rose-700',   boss: '超級' }
     ];
 
     // 教科（subject）= ジャンルの上位の束ね。理科RPG化の最上位軸。
@@ -52,6 +53,7 @@ const GameData = (function() {
     // ジャンル定義（subject = 所属教科, diffs = そのジャンルが持つ難易度の範囲）
     const GENRES = [
       // 化学
+      { key: 'matter',      subject: 'chemistry', label: '物質のすがた', icon: '🧊', diffs: ['junior', 'mid'] },
       { key: 'formula',     subject: 'chemistry', label: '化学式',   icon: '⚗️', diffs: ['junior', 'mid'] },
       { key: 'reaction',    subject: 'chemistry', label: '反応式',   icon: '🔥', diffs: ['junior', 'mid', 'senior', 'supreme'] },
       { key: 'ion',         subject: 'chemistry', label: 'イオン',   icon: '⚡', diffs: ['junior', 'mid'] },
@@ -76,6 +78,7 @@ const GameData = (function() {
     //  同じジャンルでも難易度が上がると上の学年内容になる（例: 反応式 基礎=中2 → 受験=中3）。
     //  ※先生が調整しやすいよう一覧化。存在しない難易度は省略（getQuestions が空を返す）。
     const GENRE_GRADES = {
+      matter:       { junior:1, mid:1 },
       formula:      { junior:2, mid:2 },
       reaction:     { junior:2, mid:2, senior:3, supreme:3 },
       ion:          { junior:3, mid:3 },
@@ -95,6 +98,7 @@ const GameData = (function() {
 
     // 範囲選択画面に出す「具体例」（表示ヒント・各3個まで）。先生が差し替え可。
     const GENRE_EXAMPLES = {
+      matter:       ['状態変化', '水溶液の濃度', '密度'],
       formula:      ['H₂O 水', 'CO₂ 二酸化炭素', '酸化銀'],
       reaction:     ['水の電気分解', '銅の酸化', '中和反応'],
       ion:          ['水素イオン H⁺', 'ナトリウムイオン'],
@@ -1988,6 +1992,49 @@ const GameData = (function() {
     {"subject": "earth", "genre": "earth_space", "diff": "supreme", "type": "choice", "q": "太陽が月にかくされる現象は。", "c": ["南中", "満月", "日食", "月食"], "a": 2, "desc": "新月のときに起こる。"},
     {"subject": "earth", "genre": "earth_space", "diff": "supreme", "type": "choice", "q": "気体が主で大きく密度が小さい惑星は。", "c": ["地球", "火星", "水星", "木星"], "a": 3, "desc": "木星型惑星。"},
     {"subject": "earth", "genre": "earth_space", "diff": "supreme", "type": "choice", "q": "太陽系をふくむ数千億の恒星の集団は。", "c": ["銀河系", "太陽系", "星座", "星団"], "a": 0, "desc": "天の川銀河。"},
+
+    // ── 物質のすがた（中1・身のまわりの物質）選択式 2026-06-05 Codex生成→Claude QA。状態変化/水溶液/密度/物質の区別。
+    //   ※matterは概念中心のためタイピング無し（実験操作と同様。Japanese語のタイピングは戦闘入力(ASCII/char単位)に不適）。計算は選択式で扱う。
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'固体の形', q:'固体の説明として正しいものはどれ？', c:['形も体積もほぼ決まっている','形は決まらず体積も決まらない','入れ物いっぱいに広がる','必ず透明である'], a:0, desc:'固体は形と体積がほぼ決まっている状態です。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'液体の形', q:'水のような液体の説明として正しいものはどれ？', c:['形も体積も決まっている','入れ物に合わせて形が変わる','必ず空気中に広がる','つかんでも形がくずれない'], a:1, desc:'液体は体積はほぼ決まっていますが、形は入れ物に合わせて変わります。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'気体の広がり', q:'気体の説明として正しいものはどれ？', c:['形だけ決まっている','体積だけ決まっている','入れ物いっぱいに広がる','必ず目で見える'], a:2, desc:'気体は形も体積も決まらず、入れ物いっぱいに広がります。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'融解', q:'氷が水になる変化を何という？', c:['凝固','蒸発','凝縮','融解'], a:3, desc:'固体が液体になる変化を融解といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'凝固', q:'水が氷になる変化を何という？', c:['凝固','融解','蒸発','昇華'], a:0, desc:'液体が固体になる変化を凝固といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'蒸発', q:'水たまりの水が少しずつ水蒸気になる変化を何という？', c:['凝縮','蒸発','凝固','融解'], a:1, desc:'液体が気体になる変化を蒸発といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'凝縮', q:'冷たいコップの外側に水滴がつくのは、空気中の水蒸気が何になったから？', c:['氷','水蒸気','水','金属'], a:2, desc:'気体の水蒸気が液体の水になる変化を凝縮といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'昇華', q:'ドライアイスが液体にならず気体になる変化を何という？', c:['蒸発','凝固','融解','昇華'], a:3, desc:'固体が直接気体になる変化を昇華といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'溶質', q:'食塩水で、水に溶けている食塩を何という？', c:['溶質','溶媒','溶液','沈殿'], a:0, desc:'液体に溶けている物質を溶質といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'溶媒', q:'食塩水で、食塩を溶かしている水を何という？', c:['溶質','溶媒','結晶','気体'], a:1, desc:'溶質を溶かしている液体を溶媒といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'溶液', q:'食塩が水に溶けた食塩水全体を何という？', c:['溶質','溶媒','溶液','結晶'], a:2, desc:'溶質が溶媒に溶けた全体を溶液といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'濃い水溶液', q:'同じ量の水に、砂糖を多く溶かした水溶液はどうなる？', c:['うすくなる','必ず凍る','金属になる','濃くなる'], a:3, desc:'同じ量の水なら、溶けている砂糖が多いほど濃い水溶液になります。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'密度の意味', q:'密度は、同じ体積あたりの何を表す量？', c:['質量','色','温度','におい'], a:0, desc:'密度は同じ体積あたりの質量を表す量です。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'密度で沈む', q:'水より密度が大きい物体を水に入れると、ふつうどうなる？', c:['浮く','沈む','消える','必ず溶ける'], a:1, desc:'水より密度が大きい物体は、水に沈みやすいです。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'密度で浮く', q:'水より密度が小さい物体を水に入れると、ふつうどうなる？', c:['沈む','固まる','浮く','燃える'], a:2, desc:'水より密度が小さい物体は、水に浮きやすいです。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'有機物', q:'砂糖や紙のように、燃やすと二酸化炭素を出す物質のなかまはどれ？', c:['金属','無機物','水溶液','有機物'], a:3, desc:'多くの有機物は炭素を含み、燃やすと二酸化炭素を出します。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'無機物', q:'食塩や水のように、有機物でない物質のなかまはどれ？', c:['無機物','有機物','溶媒だけ','気体だけ'], a:0, desc:'有機物でない物質を無機物といいます。食塩や水は無機物です。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'金属の性質', q:'金属に共通する性質として正しいものはどれ？', c:['必ず水に浮く','電気を通しやすい','燃やすと必ず黒くなる','必ず白い粉である'], a:1, desc:'金属は電気や熱を通しやすい性質があります。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'非金属', q:'次のうち、金属ではないものはどれ？', c:['鉄','銅','炭素','アルミニウム'], a:2, desc:'炭素は金属ではなく、非金属の物質です。' },
+    { subject:'chemistry', genre:'matter', diff:'junior', type:'choice', name:'白い粉', q:'白い粉を区別するとき、最初に安全でない調べ方はどれ？', c:['見た目を見る','水に溶けるか調べる','加熱したときの変化を見る','なめて味を調べる'], a:3, desc:'実験で物質をなめるのは危険です。安全な方法で調べます。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'融点', q:'物質が固体から液体に変わり始める温度を何という？', c:['融点','沸点','密度','濃度'], a:0, desc:'固体がとけ始める温度を融点といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'沸点', q:'液体が沸騰して気体に変わる温度を何という？', c:['融点','沸点','溶解度','密度'], a:1, desc:'液体が沸騰する温度を沸点といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'純物質の温度', q:'純粋な物質が融解している間、温度はどうなりやすい？', c:['急に下がり続ける','必ず0℃になる','ほぼ一定になる','物質に関係なく100℃になる'], a:2, desc:'純粋な物質は融解中や沸騰中、温度がほぼ一定になります。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'混合物', q:'食塩水のように、いくつかの物質が混ざったものを何という？', c:['単体','元素','純物質','混合物'], a:3, desc:'食塩水は水と食塩が混ざった混合物です。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'濃度計算1', q:'水90gに食塩10gを溶かした。質量パーセント濃度は何％？', c:['10%','11%','20%','90%'], a:0, desc:'溶液は100gなので、10g÷100g×100=10%です。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'濃度計算2', q:'水80gに砂糖20gを溶かした。質量パーセント濃度は何％？', c:['16%','20%','25%','80%'], a:1, desc:'溶液は100gなので、20g÷100g×100=20%です。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'濃度計算3', q:'5%の食塩水100gに含まれる食塩は何g？', c:['2g','10g','5g','20g'], a:2, desc:'100gの5%なので、食塩は5gです。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'濃度計算4', q:'水45gに食塩5gを溶かした。質量パーセント濃度は何％？', c:['5%','9%','45%','10%'], a:3, desc:'溶液は50gなので、5g÷50g×100=10%です。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'溶解度', q:'一定量の水に溶ける物質の限度の量を何という？', c:['溶解度','密度','沸点','体積'], a:0, desc:'一定量の水に溶ける限度の量を溶解度といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'飽和水溶液', q:'もうそれ以上溶質が溶けきれない水溶液を何という？', c:['うすい水溶液','飽和水溶液','純物質','気体'], a:1, desc:'限度まで溶けている水溶液を飽和水溶液といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'再結晶', q:'温かい水溶液を冷やして、溶けていた物質を結晶として取り出す方法を何という？', c:['蒸発','昇華','再結晶','燃焼'], a:2, desc:'温度による溶解度の差を利用して結晶を取り出す方法を再結晶といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'結晶', q:'規則正しい形をした固体の粒を何という？', c:['溶媒','濃度','気体','結晶'], a:3, desc:'物質の粒子が規則正しく並んだ固体を結晶といいます。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'密度計算1', q:'質量20g、体積10cm3の物質の密度は何g/cm3？', c:['2','0.5','10','30'], a:0, desc:'密度=質量÷体積なので、20÷10=2g/cm3です。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'密度計算2', q:'質量15g、体積5cm3の物質の密度は何g/cm3？', c:['0.3','3','10','75'], a:1, desc:'密度=15÷5=3g/cm3です。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'質量計算', q:'密度2g/cm3、体積4cm3の物質の質量は何g？', c:['2g','4g','8g','16g'], a:2, desc:'質量=密度×体積なので、2×4=8gです。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'体積計算', q:'質量12g、密度3g/cm3の物質の体積は何cm3？', c:['3cm3','9cm3','15cm3','4cm3'], a:3, desc:'体積=質量÷密度なので、12÷3=4cm3です。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'金属光沢', q:'金属の表面をみがくと見られやすい性質はどれ？', c:['金属光沢','甘いにおい','水に必ず溶ける','必ず磁石につく'], a:0, desc:'金属はみがくと特有の光沢を示すことがあります。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'金属でない性質', q:'金属でない物質に多い性質として正しいものはどれ？', c:['電気をよく通す','電気を通しにくい','たたくと必ず広がる','すべて磁石につく'], a:1, desc:'非金属は、金属に比べて電気を通しにくいものが多いです。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'白い粉の加熱', q:'砂糖を加熱したときに起こりやすい変化はどれ？', c:['すぐ金属になる','必ず食塩になる','こげて黒くなる','水に戻る'], a:2, desc:'砂糖は有機物なので、加熱するとこげて黒くなりやすいです。' },
+    { subject:'chemistry', genre:'matter', diff:'mid', type:'choice', name:'デンプン確認', q:'デンプンを調べる薬品として適切なものはどれ？', c:['BTB溶液','石灰水','塩酸','ヨウ素液'], a:3, desc:'デンプンはヨウ素液で青紫色に変化します。' },
     ];
 
     // ==========================================
