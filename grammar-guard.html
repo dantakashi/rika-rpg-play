@@ -208,6 +208,17 @@
   .homeview{display:none}
   .homeview.on{display:block}
   #homeBack{cursor:pointer}
+  /* ガチャ演出 */
+  .gcapsule{width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--rc,#bbb));border:3px solid var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.25);animation:gshake .26s ease-in-out infinite}
+  .gcapsule.hi{animation:gshake .14s ease-in-out infinite}
+  @keyframes gshake{0%,100%{transform:translateX(-5px) rotate(-7deg)}50%{transform:translateX(5px) rotate(7deg)}}
+  .greveal{position:relative;display:flex;flex-direction:column;align-items:center;animation:gpop .42s cubic-bezier(.2,1.4,.5,1)}
+  @keyframes gpop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+  .greveal .gunit{width:92px;height:92px}
+  .greveal .grarbig{font-size:20px;font-weight:900;letter-spacing:1px}
+  .greveal .gname{font-weight:800;margin-top:2px}
+  .greveal .gburst{position:absolute;top:24px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,var(--rc,#fff),transparent 70%);opacity:.45;pointer-events:none;animation:gburst .7s ease-out}
+  @keyframes gburst{0%{transform:scale(.2);opacity:.7}100%{transform:scale(1.7);opacity:0}}
 </style>
 </head>
 <body>
@@ -231,7 +242,6 @@
         <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
         <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
         <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
-        <button class="menubtn" id="btnMeasure">📊 英語ランク測定<span class="sub">自分の英検レベルを診断</span></button>
       </div>
       <div class="homeview" data-view="play">
         <div class="card" style="margin-bottom:12px">
@@ -252,15 +262,32 @@
         </div>
       </div>
       <div class="homeview" data-view="grow">
-        <div class="card" style="margin-bottom:12px">
+        <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">ゴールドで味方を入手</span></button>
+        <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする</span></button>
+        <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
+        <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
+      </div>
+      <div class="homeview" data-view="gacha">
+        <div class="card">
           <div style="font-weight:800; margin-bottom:8px">🎰 ガチャ <span class="muted" id="gachaCost"></span></div>
+          <div id="gachaStage" style="min-height:172px; display:flex; align-items:center; justify-content:center; margin-bottom:10px"></div>
           <div id="gachaBody"></div>
         </div>
-        <div class="card" style="margin-bottom:12px">
+      </div>
+      <div class="homeview" data-view="charup">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">💪 キャラ強化 <span class="muted">ゴールドで味方を強化（ATK/HP）</span></div>
+          <div id="charupBody"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="deckedit">
+        <div class="card">
           <div style="font-weight:800; margin-bottom:8px">🧩 編成（最大5体・召喚はここからランダム）</div>
           <div id="deckBody"></div>
         </div>
-        <div class="card" style="margin-bottom:12px">
+      </div>
+      <div class="homeview" data-view="castle">
+        <div class="card">
           <div style="font-weight:800; margin-bottom:8px">🏯 城強化</div>
           <div id="castleBody"></div>
         </div>
@@ -317,22 +344,10 @@
     <div class="muted" id="resLearn" style="max-width:420px"></div>
     <div style="height:10px"></div>
     <div id="firstBadge">🏅 はじめて守れた！</div>
-    <div id="resNudge" style="width:100%; max-width:440px"></div>
     <div style="height:8px"></div>
     <div class="row" style="display:flex; gap:10px">
       <button class="btn ghost" onclick="Game.toHome()">ホームへ</button>
       <button class="btn" id="resRetry"></button>
-    </div>
-  </section>
-
-  <!-- ===== 英語ランク測定 ===== -->
-  <section id="measure" class="screen col" style="align-items:center; justify-content:center; text-align:center">
-    <div class="pad" style="max-width:520px; width:100%">
-      <div style="font-size:24px; font-weight:900; margin-bottom:4px">📊 英語ランク測定</div>
-      <div class="muted" id="mzProg" style="margin-bottom:14px"></div>
-      <div id="mzQ" style="font-size:20px; font-weight:800; min-height:30px; margin-bottom:16px"></div>
-      <div id="mzChoices" style="display:grid; grid-template-columns:1fr 1fr; gap:10px"></div>
-      <div id="mzResult" style="margin-top:18px"></div>
     </div>
   </section>
 </div>
@@ -1638,7 +1653,6 @@ const QuizEngine = (()=>{
 
   function pool(){ return DB.filter(q=> selLevels.has(q.level) && selTiers.has(q.tier) && selGenres.has(q.genre)); }
   function poolCount(){ return pool().length; }
-  function pick(level, cc){ const p=DB.filter(q=>q.level===level); if(!p.length) return null; const q=rnd(p); return q.genre==="grammar" ? buildGrammar(q,cc) : buildWord(q,cc); }
 
   const rnd = a=>a[Math.floor(Math.random()*a.length)];
 
@@ -1713,7 +1727,7 @@ const QuizEngine = (()=>{
 
   return { next, comboGain, pushReview, reviewCount, size:()=>DB.length,
     EIKEN, TIERS, GENRES, LV_LABEL, LV_ORDER,
-    getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount, pick,
+    getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount,
     has:(t,k)=>(t==='level'?selLevels:t==='tier'?selTiers:selGenres).has(k) };
 })();
 
@@ -1802,7 +1816,10 @@ const Game = (()=>{
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
   let owned = {};          // 入手済み {key:count}
   let deck = [];           // 編成(最大5)
-  let castleLv = 0;        // 城強化Lv
+  let castleLv = 0;        // 城強化Lv(HP)
+  let unitLv = {};         // キャラ強化 {key:lv}
+  let regenLv = 0;         // エネルギー増加速度Lv
+  let enMaxLv = 0;         // エネルギー上限Lv
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
   let homeView = 'menu';   // ホームの表示(menu/play/grow/settings)
   let curStage = null;
@@ -1813,12 +1830,13 @@ const Game = (()=>{
       gold=s.gold||0; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
+      unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -1836,7 +1854,8 @@ const Game = (()=>{
   function castleMaxHp(){ return 1000 + castleLv*250; }
   function castleUpCost(){ return 250*(castleLv+1); }
   function doGacha(){
-    if(gold < GACHA_COST){ lastGacha={msg:'ゴールドが足りません（'+GACHA_COST+'G必要）'}; renderHome(); return; }
+    if(gachaAnimating) return;
+    if(gold < GACHA_COST){ lastGacha={msg:'ゴールドが足りません（'+GACHA_COST+'G必要）'}; renderGacha(); return; }
     gold -= GACHA_COST;
     let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
     let x=Math.random()*tot, rar='N';
@@ -1846,8 +1865,8 @@ const Game = (()=>{
     const isNew=!owned[key];
     owned[key]=(owned[key]||0)+1;
     if(isNew && deck.length<5) deck.push(key);
-    lastGacha={key:key, isNew:isNew};
-    Sound.play('correct'); save(); renderHome();
+    lastGacha={key:key, isNew:isNew, rar:rar};
+    save(); playGachaAnim(key, isNew, rar);
   }
   function toggleDeck(key){
     if(!owned[key]) return;
@@ -1865,17 +1884,70 @@ const Game = (()=>{
     b.addEventListener('click',function(){toggleDeck(key);});
     return b;
   }
+  /* ---- ガチャ演出 ---- */
+  let gachaAnimating=false;
+  function gachaRevealHTML(key,isNew){
+    const r=ROSTER[key];
+    return '<div class="greveal" style="--rc:'+r.rarColor+'"><div class="gburst"></div>'+
+      '<div class="grarbig" style="color:'+r.rarColor+'">'+r.rar+'</div>'+
+      '<div class="gunit">'+SVG.get(r.sprite)+'</div>'+
+      '<div class="gname">'+r.name+(isNew?' <span style="color:var(--good)">NEW!</span>':' <span class="muted">（ダブり）</span>')+'</div></div>';
+  }
+  function playGachaAnim(key,isNew,rar){
+    const stage=$('gachaStage'); const gp=$('goldPill'); if(gp) gp.textContent='💰 '+gold;
+    if(!stage){ renderHome(); return; }
+    const r=ROSTER[key]; const hi=(rar==='SR'||rar==='SSR');
+    gachaAnimating=true; renderGacha();
+    stage.innerHTML='<div class="gcapsule'+(hi?' hi':'')+'" style="--rc:'+r.rarColor+'"></div>';
+    Sound.play('summon');
+    setTimeout(function(){
+      gachaAnimating=false;
+      stage.innerHTML=gachaRevealHTML(key,isNew);
+      Sound.play(hi?'win':'correct');
+      renderGacha();
+    },1150);
+  }
+
+  /* ---- キャラ強化 ---- */
+  function unitLevel(key){ return unitLv[key]||0; }
+  function unitUpCost(key){ return 100*(unitLevel(key)+1); }
+  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key); return {atk:Math.round(r.atk*(1+0.12*lv)), hp:Math.round(r.hp*(1+0.10*lv))}; }
+  function upgradeUnit(key){ if(!owned[key]) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
+  function renderCharup(){
+    const body=$('charupBody'); if(!body) return; body.innerHTML='';
+    const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
+    Object.keys(owned).forEach(function(key){
+      const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key);
+      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff';
+      row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span></div>'+
+        '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'</div></div>';
+      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)';
+      btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',function(){upgradeUnit(key);});
+      row.appendChild(btn); list.appendChild(row);
+    });
+    body.appendChild(list);
+  }
+
+  /* ---- 城強化(拡張) ---- */
+  function regenVal(){ return 8 + regenLv*1; }
+  function regenCost(){ return 300*(regenLv+1); }
+  function enMaxVal(){ return 200 + enMaxLv*30; }
+  function enMaxCost(){ return 250*(enMaxLv+1); }
+  function upgradeRegen(){ const c=regenCost(); if(gold<c) return; gold-=c; regenLv++; Sound.play('correct'); save(); renderHome(); }
+  function upgradeEnMax(){ const c=enMaxCost(); if(gold<c) return; gold-=c; enMaxLv++; Sound.play('correct'); save(); renderHome(); }
+
   function renderGacha(){
     const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'G）';
-    const body=$('gachaBody'); if(!body) return; body.innerHTML='';
-    const btn=document.createElement('button'); btn.className='btn'; btn.textContent='🎰 ガチャを引く（'+GACHA_COST+'G）';
-    btn.disabled = gold<GACHA_COST; btn.addEventListener('click',doGacha); body.appendChild(btn);
-    const res=document.createElement('div'); res.style.cssText='margin-top:8px;font-weight:700';
-    if(lastGacha){
-      if(lastGacha.msg){ res.style.color='var(--bad)'; res.textContent=lastGacha.msg; }
-      else { const r=ROSTER[lastGacha.key]; res.innerHTML='<span style="display:inline-block;width:34px;height:34px;vertical-align:middle">'+SVG.get(r.sprite)+'</span> <span style="color:'+r.rarColor+'">'+r.rar+'</span> '+r.name+(lastGacha.isNew?' <span style="color:var(--good)">NEW!</span>':'（ダブり）'); }
+    const stage=$('gachaStage');
+    if(stage && !gachaAnimating){
+      if(lastGacha && lastGacha.key) stage.innerHTML=gachaRevealHTML(lastGacha.key, lastGacha.isNew);
+      else stage.innerHTML='<div class="muted" style="text-align:center">カプセルを回して<br>味方をGETしよう！</div>';
     }
-    body.appendChild(res);
+    const body=$('gachaBody'); if(!body) return; body.innerHTML='';
+    const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='width:100%'; btn.textContent= gachaAnimating?'…':'🎰 ガチャを引く（'+GACHA_COST+'G）';
+    btn.disabled = gachaAnimating || gold<GACHA_COST; btn.addEventListener('click',doGacha); body.appendChild(btn);
+    if(!gachaAnimating && gold<GACHA_COST){ const m=document.createElement('div'); m.className='muted'; m.style.cssText='margin-top:6px;text-align:center'; m.textContent='ゴールドが足りません（ステージで稼ごう）'; body.appendChild(m); }
   }
   function renderDeck(){
     const body=$('deckBody'); if(!body) return; body.innerHTML='';
@@ -1894,10 +1966,14 @@ const Game = (()=>{
   }
   function renderCastle(){
     const body=$('castleBody'); if(!body) return; body.innerHTML='';
-    const info=document.createElement('div'); info.style.marginBottom='8px'; info.innerHTML='現在の自城HP：<b>'+castleMaxHp()+'</b>（Lv'+castleLv+'）';
-    body.appendChild(info);
-    const btn=document.createElement('button'); btn.className='btn'; btn.textContent='🏯 城を強化（+250HP / '+castleUpCost()+'G）';
-    btn.disabled=gold<castleUpCost(); btn.addEventListener('click',upgradeCastle); body.appendChild(btn);
+    function urow(icon,label,cur,deltaTxt,cost,onClick){
+      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
+      row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:800">'+icon+' '+label+'</div><div class="muted" style="font-size:12px">現在 '+cur+'　→　'+deltaTxt+'</div></div>';
+      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)'; btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',onClick); row.appendChild(btn); body.appendChild(row);
+    }
+    urow('🏰','自城HP', castleMaxHp(), '+250', castleUpCost(), upgradeCastle);
+    urow('⚡','エネルギー増加速度', regenVal()+'/秒', '+1/秒', regenCost(), upgradeRegen);
+    urow('🔋','エネルギー上限', enMaxVal(), '+30', enMaxCost(), upgradeEnMax);
   }
 
 
@@ -1959,7 +2035,7 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:30, energyMax:200, baseRegen:8, softcap:12, maxMult:4,
+      energy:30, energyMax:enMaxVal(), baseRegen:regenVal(), softcap:12, maxMult:4,
       combo:0, bestCombo:0,
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
@@ -1986,15 +2062,15 @@ const Game = (()=>{
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
-    renderGacha(); renderDeck(); renderCastle();
-    // トップメニュー⇄サブ画面の表示切替
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい'};
+    renderGacha(); renderDeck(); renderCastle(); renderCharup();
+    // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', gacha:'🎰 ガチャ', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', gacha:'grow', charup:'grow', deckedit:'grow', castle:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
-    const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none';
-      __menu.querySelectorAll('button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; }); }
+    const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
+    document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
     document.querySelectorAll('#home .homeview').forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-view')===homeView); });
-    const __mz=$('btnMeasure'); if(__mz) __mz.onclick=function(){ startMeasure(); };
-    const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ homeView='menu'; renderHome(); }; }
+    const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ homeView=__parent[homeView]||'menu'; renderHome(); }; }
     // 出題設定（ジャンル/英検級/ティア＝複数選択・混在OK、選択肢=固定）
     function __seg(id, items, isOn, onToggle){
       const seg=$(id); if(!seg) return; seg.innerHTML='';
@@ -2092,7 +2168,8 @@ const Game = (()=>{
     el.innerHTML = `<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(r.sprite);
     $('field').appendChild(el);
     fxGate(84); Sound.play('summon');
-    B.allies.push({ key, el, x:84, hp:r.hp, hpMax:r.hp, atk:r.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal });
+    const __st=unitStats(key);
+    B.allies.push({ key, el, x:84, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal });
   }
   function spawnEnemy(type){
     if(type==="BOSS"){ spawnBoss(); return; }
@@ -2285,68 +2362,12 @@ const Game = (()=>{
     $('resLearn').textContent = win
       ? '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。'
       : 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎';
-    // 難易度アップ提案：高正答率の勝利で、上の級が未選択なら追加をすすめる
-    const nd=$('resNudge'); if(nd){ nd.innerHTML='';
-      if(win && B.answered>=8 && acc>=85){
-        const sel=QuizEngine.getSel(), order=QuizEngine.LV_ORDER; let mi=-1;
-        sel.levels.forEach(function(l){ var ix=order.indexOf(l); if(ix>mi)mi=ix; });
-        const up=(mi>=0 && mi<order.length-1)?order[mi+1]:null;
-        if(up){ const lab=QuizEngine.LV_LABEL[up];
-          const wrap=document.createElement('div'); wrap.className='card'; wrap.style.cssText='margin:6px auto; max-width:440px';
-          wrap.innerHTML='<div style="font-weight:800; margin-bottom:8px">🔥 正答率'+acc+'%！ つぎは <span style="color:var(--ally)">'+lab+'</span> に挑戦してみる？</div>';
-          const ab=document.createElement('button'); ab.className='btn'; ab.textContent=lab+'を追加する';
-          ab.onclick=function(){ QuizEngine.toggleLevel(up); save(); ab.textContent='追加しました！ ホームの出題設定で確認できます'; ab.disabled=true; };
-          wrap.appendChild(ab); nd.appendChild(wrap);
-        }
-      }
-    }
     const retry=$('resRetry'); retry.textContent = win?'次へ ▶':'もう一度';
     retry.onclick=()=>{
       if(win){ const ni=STAGES.findIndex(s=>s.id===B.stage.id)+1; if(ni<STAGES.length){ enterBattle(STAGES[ni]); return; } }
       enterBattle(B.stage);
     };
     show('result');
-  }
-
-  /* ---- 英語ランク測定（チュートリアル診断） ---- */
-  let mz=null;
-  function startMeasure(){
-    const plan=["e4","e4","e3","e3","ep2","ep2","e2","ep1"];
-    const qs=plan.map(function(L){ return QuizEngine.pick(L,4); }).filter(Boolean);
-    if(!qs.length){ return; }
-    mz={qs:qs, i:0, correct:0, locked:false};
-    $('mzResult').innerHTML='';
-    show('measure'); renderMeasureQ();
-  }
-  function renderMeasureQ(){
-    if(!mz) return; const q=mz.qs[mz.i];
-    $('mzProg').textContent='第'+(mz.i+1)+'問 / '+mz.qs.length+'問';
-    $('mzQ').innerHTML=q.qtext;
-    const box=$('mzChoices'); box.innerHTML='';
-    q.choices.forEach(function(c,idx){ const b=document.createElement('button'); b.className='choice'; b.textContent=c; b.onclick=function(){ answerMeasure(idx,b,q); }; box.appendChild(b); });
-  }
-  function answerMeasure(idx, btn, q){
-    if(!mz||mz.locked) return; mz.locked=true;
-    const right=(idx===q.answerIndex);
-    if(right){ btn.classList.add('ok'); mz.correct++; Sound.play('correct'); }
-    else { btn.classList.add('ng'); const bs=$('mzChoices').children; if(bs[q.answerIndex]) bs[q.answerIndex].classList.add('ok'); Sound.play('wrong'); }
-    setTimeout(function(){ if(!mz) return; mz.locked=false; mz.i++; if(mz.i>=mz.qs.length) finishMeasure(); else renderMeasureQ(); }, right?480:820);
-  }
-  function finishMeasure(){
-    const c=mz.correct, n=mz.qs.length, order=QuizEngine.LV_ORDER;
-    let idx; if(c<=1)idx=0; else if(c<=3)idx=1; else if(c<=5)idx=2; else if(c<=7)idx=3; else idx=4;
-    const rec=order[idx], label=QuizEngine.LV_LABEL[rec];
-    $('mzProg').textContent='測定かんりょう！';
-    $('mzQ').innerHTML='正解 <b>'+c+'</b> / '+n;
-    $('mzChoices').innerHTML='';
-    const r=$('mzResult');
-    r.innerHTML='<div class="card"><div style="font-weight:800; font-size:18px; margin-bottom:6px">あなたのおすすめ</div><div style="font-size:28px; font-weight:900; color:var(--ally); margin-bottom:8px">'+label+'</div><div class="muted">この級を出題設定にセットします。あとからホームでいつでも変えられます。</div></div>';
-    const row=document.createElement('div'); row.style.cssText='display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap';
-    const apply=document.createElement('button'); apply.className='btn'; apply.textContent=label+'で あそぶ';
-    apply.onclick=function(){ QuizEngine.setSel({levels:[rec],tiers:["must","basic","adv"],genres:["word","idiom","grammar"]}); save(); homeView='play'; renderHome(); show('home'); };
-    const skip=document.createElement('button'); skip.className='btn ghost'; skip.textContent='ホームへ';
-    skip.onclick=function(){ homeView='menu'; renderHome(); show('home'); };
-    row.appendChild(apply); row.appendChild(skip); r.appendChild(row);
   }
 
   // スペースキー召喚
