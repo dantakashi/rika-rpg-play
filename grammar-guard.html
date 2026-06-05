@@ -202,6 +202,12 @@
   .soundbtn{position:absolute; top:8px; right:10px; z-index:30; border:2px solid var(--line); background:#fff;
     border-radius:999px; width:34px; height:34px; font-size:16px; padding:0}
   .homebtn{position:absolute; top:8px; left:10px; z-index:30; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink)}
+  .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
+  .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
+  .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
+  .homeview{display:none}
+  .homeview.on{display:block}
+  #homeBack{cursor:pointer}
 </style>
 </head>
 <body>
@@ -219,40 +225,51 @@
 
   <!-- ===== ホーム ===== -->
   <section id="home" class="screen col">
-    <div class="topbar"><span class="pill">🏠 ホーム</span><span class="grow"></span><span class="pill" id="goldPill">💰 0</span></div>
+    <div class="topbar"><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><span class="pill" id="goldPill">💰 0</span></div>
     <div class="pad scroll grow">
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（ジャンル・難易度を選択。混ぜてもOK）</span></div>
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル</div>
-        <div class="seg" id="genreSeg"></div>
-        <div style="font-size:13px;font-weight:700;margin:8px 0 4px">英検級</div>
-        <div class="seg" id="levelSeg"></div>
-        <div style="font-size:13px;font-weight:700;margin:8px 0 4px">レベル（必須／基礎／発展）</div>
-        <div class="seg" id="tierSeg"></div>
-        <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
-        <div class="seg" id="choiceSeg"></div>
-        <div class="muted" id="poolCount" style="margin-top:8px"></div>
+      <div id="homeMenu">
+        <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
+        <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
+        <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
       </div>
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
-        <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button><button class="toggle" id="tgSlow">ゆっくり</button></div>
-        <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚は操作を問題だけに集中できる。ゆっくりでも報酬は同じ。</div>
+      <div class="homeview" data-view="play">
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（ジャンル・難易度を選択。混ぜてもOK）</span></div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル</div>
+          <div class="seg" id="genreSeg"></div>
+          <div style="font-size:13px;font-weight:700;margin:8px 0 4px">英検級</div>
+          <div class="seg" id="levelSeg"></div>
+          <div style="font-size:13px;font-weight:700;margin:8px 0 4px">レベル（必須／基礎／発展）</div>
+          <div class="seg" id="tierSeg"></div>
+          <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
+          <div class="seg" id="choiceSeg"></div>
+          <div class="muted" id="poolCount" style="margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
+          <div class="stage-grid" id="stageGrid"></div>
+        </div>
       </div>
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:8px">🎰 ガチャ <span class="muted" id="gachaCost"></span></div>
-        <div id="gachaBody"></div>
+      <div class="homeview" data-view="grow">
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:8px">🎰 ガチャ <span class="muted" id="gachaCost"></span></div>
+          <div id="gachaBody"></div>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:8px">🧩 編成（最大5体・召喚はここからランダム）</div>
+          <div id="deckBody"></div>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:8px">🏯 城強化</div>
+          <div id="castleBody"></div>
+        </div>
       </div>
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:8px">🧩 編成（最大5体・召喚はここからランダム）</div>
-        <div id="deckBody"></div>
-      </div>
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:8px">🏯 城強化</div>
-        <div id="castleBody"></div>
-      </div>
-      <div class="card">
-        <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
-        <div class="stage-grid" id="stageGrid"></div>
+      <div class="homeview" data-view="settings">
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
+          <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button><button class="toggle" id="tgSlow">ゆっくり</button></div>
+          <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚は操作を問題だけに集中できる。ゆっくりでも報酬は同じ。</div>
+        </div>
       </div>
     </div>
   </section>
@@ -1773,6 +1790,7 @@ const Game = (()=>{
   let deck = [];           // 編成(最大5)
   let castleLv = 0;        // 城強化Lv
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
+  let homeView = 'menu';   // ホームの表示(menu/play/grow/settings)
   let curStage = null;
 
   let soundOn = true;
@@ -1943,7 +1961,7 @@ const Game = (()=>{
   function toHome(){
     stopBattle();
     Sound.ensure(); $('soundBtn').textContent = Sound.isOn()?'🔊':'🔇';
-    renderHome(); show('home');
+    homeView='menu'; renderHome(); show('home');
   }
   function start(){
     load();
@@ -1955,6 +1973,13 @@ const Game = (()=>{
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
     renderGacha(); renderDeck(); renderCastle();
+    // トップメニュー⇄サブ画面の表示切替
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい'};
+    const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
+    const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none';
+      __menu.querySelectorAll('button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; }); }
+    document.querySelectorAll('#home .homeview').forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-view')===homeView); });
+    const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ homeView='menu'; renderHome(); }; }
     // 出題設定（ジャンル/英検級/ティア＝複数選択・混在OK、選択肢=固定）
     function __seg(id, items, isOn, onToggle){
       const seg=$(id); if(!seg) return; seg.innerHTML='';
