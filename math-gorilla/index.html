@@ -6,18 +6,20 @@
 <title>ゴリラ大砲 🦍🍌💥</title>
 <style>
   /* ============================================================
-     ゴリラ大砲 — 数学バカゲー第1弾（MVP）
-     30秒/20問の2択ラッシュで大砲エネルギーを貯め、ゴリラを吹き飛ばす。
-     出題は mathbank.js（A大小ジャンル）。ミスは減点なし・テンポロスのみ。
+     ゴリラ大砲 — 数学バカゲー第1弾
+     チャージ中は「大砲にチャージしろ！」画面（ゴリラは出さない）。
+     2択（大きい方を選べ）を当てるほどエネルギーが貯まり、
+     発射でゴリラが最大9999体まで派手に吹き飛ぶ。
+     強化要素なし＝暗黙知のスキルがそのままスコアになる。
+     出題は mathbank.js（A大小）。ミスは減点なし・コンボ切れのみ。
      ============================================================ */
   :root{
     --ink:#241c12; --paper:#fff7e6; --line:#e6d3a8;
-    --green:#27a35a; --red:#e0533d; --blue:#2f7de1;
-    --gold:#e3a32a; --sky:#bfe9ff; --grass:#8fd16a;
+    --green:#27a35a; --red:#e0533d; --gold:#e3a32a; --sky:#bfe9ff;
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; min-height:100vh; color:var(--ink);
+    margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
     font-family:"Yu Gothic","Meiryo",system-ui,sans-serif;
     background:linear-gradient(180deg,var(--sky) 0%,#eaf7ff 45%,#f6ecd0 100%);
     user-select:none; -webkit-user-select:none;
@@ -25,8 +27,6 @@
   .wrap{width:min(680px,100%); margin:0 auto; padding:12px;}
   h1{margin:.2em 0; font-size:clamp(26px,6vw,40px); text-align:center; letter-spacing:1px;}
   .sub{text-align:center; color:#7a6a4a; margin:0 0 12px; font-size:14px;}
-
-  /* ---- パネル共通 ---- */
   .panel{background:var(--paper); border:3px solid var(--line); border-radius:18px;
     padding:18px; box-shadow:0 6px 0 rgba(0,0,0,.08);}
   button{font:inherit; color:inherit; cursor:pointer;}
@@ -46,32 +46,43 @@
   .topbar{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-weight:700;}
   .timer{font-size:26px; min-width:64px;}
   .gaugeWrap{flex:1; height:22px; background:#eadfc0; border-radius:12px; overflow:hidden; border:2px solid var(--line);}
-  .gauge{height:100%; width:0%; background:linear-gradient(90deg,#ffd34d,#ff7a3c);
-    transition:width .15s ease;}
-  .combo{min-width:70px; text-align:right; color:var(--red);}
+  .gauge{height:100%; width:0%; background:linear-gradient(90deg,#ffd34d,#ff7a3c); transition:width .15s ease;}
+  .combo{min-width:80px; text-align:right; color:var(--red);}
 
-  /* ---- 演出ゾーン（ゴリラ整列） ---- */
-  .stage{position:relative; height:96px; margin-bottom:10px; overflow:hidden;
-    background:linear-gradient(180deg,transparent 60%,var(--grass) 60%); border-radius:12px;}
-  .cannon{position:absolute; left:6px; bottom:8px; font-size:34px; transform:rotate(-12deg);}
-  .gorillas{position:absolute; right:6px; bottom:8px; display:flex; gap:2px; font-size:30px;}
-  .gorillas .g{transition:transform .8s cubic-bezier(.2,-0.4,.5,1), opacity .8s;}
-  .banana{position:absolute; left:44px; bottom:40px; font-size:26px; opacity:0;}
+  /* ---- チャージ画面（ゴリラは出さない） ---- */
+  .charge{position:relative; height:130px; margin-bottom:8px; border-radius:14px; overflow:hidden;
+    background:radial-gradient(circle at 22% 80%, #fff0c2, #ffe08a 35%, #f6c651 75%);
+    display:flex; align-items:center; justify-content:center;}
+  .chargeMsg{font-size:clamp(18px,5vw,26px); font-weight:900; color:#b5651d; text-shadow:0 2px 0 #fff;}
+  .cannon{position:absolute; left:14px; bottom:8px; font-size:46px; transform-origin:bottom left;
+    transition:transform .15s ease, filter .15s ease;}
+  .energyTxt{position:absolute; right:12px; top:8px; font-weight:900; color:#b5651d; font-size:18px;}
 
-  /* ---- 問題 ---- */
-  .q{font-size:clamp(26px,7vw,40px); font-weight:800; text-align:center; margin:18px 0 16px; min-height:1.4em;}
+  /* ---- 問題（固定見出し＋2択） ---- */
+  .prompt{font-size:clamp(22px,6vw,34px); font-weight:900; text-align:center; margin:14px 0 14px; color:var(--ink);}
   .choices{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
-  .choice{padding:24px 10px; font-size:clamp(22px,6vw,32px); font-weight:800;
+  .choice{padding:30px 10px; font-size:clamp(26px,8vw,44px); font-weight:900;
     border:4px solid var(--line); border-radius:18px; background:#fffdf5; transition:transform .06s;}
-  .choice:active{transform:scale(.97);}
+  .choice:active{transform:scale(.96);}
   .choice.good{background:#d7f5e1; border-color:var(--green);}
   .choice.bad{background:#fbdcd5; border-color:var(--red); animation:shake .3s;}
-  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
   .lock{pointer-events:none; opacity:.85;}
 
+  /* ---- 発射フルスクリーン演出 ---- */
+  .blast{position:fixed; inset:0; z-index:50; overflow:hidden; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 10% 90%, #fff7d6, #ffd34d 30%, #ff7a3c 72%, #e0533d 100%);}
+  .blast.shake{animation:bshake .5s ease;}
+  @keyframes bshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,6px)}40%{transform:translate(7px,-7px)}60%{transform:translate(-6px,-4px)}80%{transform:translate(5px,5px)}}
+  .blastNum{font-size:clamp(46px,15vw,130px); font-weight:900; color:#b3261e;
+    text-shadow:0 4px 0 #fff,0 0 32px #fff; z-index:60; text-align:center; line-height:1.1;}
+  .blastNum small{display:block; font-size:clamp(16px,5vw,26px); color:#7a2d12; text-shadow:none;}
+  .fly{position:absolute; left:6%; bottom:8%; font-size:34px; will-change:transform; z-index:55;}
+  .flash{position:fixed; inset:0; background:#fff; z-index:70; opacity:0; pointer-events:none;}
+
   /* ---- リザルト ---- */
-  .result h2{text-align:center; font-size:30px; margin:.2em 0;}
-  .result .big{text-align:center; font-size:40px; margin:.1em 0; color:var(--red);}
+  .result h2{text-align:center; font-size:28px; margin:.2em 0;}
+  .result .big{text-align:center; font-size:clamp(34px,10vw,54px); margin:.1em 0; color:var(--red); font-weight:900;}
   .stat{display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px dashed var(--line); font-size:16px;}
   .newrec{text-align:center; color:var(--gold); font-weight:800; font-size:20px; margin:8px 0;}
   .againBtns{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
@@ -83,9 +94,9 @@
 <body>
 <div class="wrap">
   <h1>ゴリラ大砲 🦍🍌💥</h1>
-  <p class="sub">2択をすばやく当てて大砲をチャージ！ ゴリラをぶっ飛ばせ！</p>
+  <p class="sub">大きい方をすばやく当てて大砲をチャージ！ ゴリラを9999体ぶっ飛ばせ！</p>
 
-  <!-- タイトル画面 -->
+  <!-- タイトル -->
   <div id="title" class="panel">
     <p style="text-align:center;font-weight:700;margin:.2em 0 0;">モードをえらぶ</p>
     <div class="modeBtns">
@@ -96,34 +107,33 @@
     <p class="hiscore" id="titleHi"></p>
   </div>
 
-  <!-- プレイ画面 -->
+  <!-- プレイ（チャージ） -->
   <div id="play" class="panel hidden">
     <div class="topbar">
       <span class="timer" id="timer">30</span>
       <div class="gaugeWrap"><div class="gauge" id="gauge"></div></div>
       <span class="combo" id="combo">&nbsp;</span>
     </div>
-    <div class="stage">
-      <span class="cannon">💥</span>
-      <span class="banana" id="banana">🍌</span>
-      <span class="gorillas" id="gorillas"></span>
+    <div class="charge">
+      <span class="cannon" id="cannon">💥</span>
+      <span class="chargeMsg">大砲にチャージしろ！</span>
+      <span class="energyTxt" id="energyTxt">🔥 0</span>
     </div>
-    <div class="q" id="question">…</div>
+    <div class="prompt">大きい方を選べ！</div>
     <div class="choices" id="choices">
       <button class="choice" id="c0" onclick="answer(0)"></button>
       <button class="choice" id="c1" onclick="answer(1)"></button>
     </div>
   </div>
 
-  <!-- リザルト画面 -->
+  <!-- リザルト -->
   <div id="result" class="panel result hidden">
     <h2>発射ーっ！</h2>
     <div class="big" id="knockText">🦍 0体 撃破！</div>
     <div id="newrec" class="newrec hidden">🏆 ハイスコア更新！</div>
     <div class="stat"><span>正解数</span><span id="rCorrect">0</span></div>
     <div class="stat"><span>最大コンボ</span><span id="rCombo">0</span></div>
-    <div class="stat"><span>エネルギー</span><span id="rEnergy">0</span></div>
-    <div class="stat"><span>スコア</span><span id="rScore">0</span></div>
+    <div class="stat"><span>吹き飛ばし（スコア）</span><span id="rScore">0</span></div>
     <div class="againBtns">
       <button class="primary" onclick="startGame()">もう1回！</button>
       <button onclick="toTitle()">タイトルへ</button>
@@ -131,18 +141,24 @@
   </div>
 </div>
 
+<!-- 発射演出オーバーレイ -->
+<div id="blast" class="blast hidden"><div class="blastNum" id="blastNum">🦍 0<small>体 ふっとばし！</small></div></div>
+<div id="flash" class="flash"></div>
+
 <script src="mathbank.js"></script>
 <script>
-/* ===== ゴリラ大砲 ロジック ===================================== */
-const GORILLA_ROW = 14;        // 整列するゴリラの数
-const ENERGY_PER_GORILLA = 22; // ゴリラ1体を倒すのに必要なエネルギー
-const COUNT_GOAL = 20;         // 20問モードの目標数
-const TIME_SEC = 30;           // タイムモードの秒数
+/* ===== 定数 ===== */
+const MAX_KNOCK = 9999;   // 吹き飛ばし上限（派手さの天井）
+const ENERGY_PER = 1;     // エネルギー1 = ゴリラ1体
+const COMBO_GAIN = 15;    // 正解時 energy += combo * COMBO_GAIN（連鎖でスコア跳ね上がり）
+const VISUAL_FULL = 3000; // チャージ画面の見た目が満タンに見える基準
+const COUNT_GOAL = 20;
+const TIME_SEC = 30;
 
 let mode = 'time';
-let st = null;                 // 進行中の状態
+let st = null;
 let tickTimer = null;
-
+let cur = null;
 const $ = (id) => document.getElementById(id);
 
 function selectMode(m){
@@ -151,14 +167,12 @@ function selectMode(m){
   $('modeCount').classList.toggle('sel', m==='count');
   showTitleHi();
 }
-
 function hiKey(){ return 'gorilla_hi_' + mode; }
 function getHi(){ return parseInt(localStorage.getItem(hiKey())||'0',10); }
 function showTitleHi(){
   const label = mode==='time' ? 'タイム30秒' : '20問';
-  $('titleHi').textContent = `🏆 ${label}モードのハイスコア: ${getHi()}`;
+  $('titleHi').textContent = `🏆 ${label}モードのハイスコア: ${getHi()}体`;
 }
-
 function toTitle(){
   clearInterval(tickTimer);
   $('result').classList.add('hidden');
@@ -171,14 +185,15 @@ function startGame(){
   st = { energy:0, combo:0, maxCombo:0, correct:0, asked:0, timeLeft:TIME_SEC, level:1, locked:false };
   $('title').classList.add('hidden');
   $('result').classList.add('hidden');
+  $('blast').classList.add('hidden');
   $('play').classList.remove('hidden');
-  buildGorillas();
+  $('timer').style.color='';
   updateTop();
   nextQuestion();
 
   clearInterval(tickTimer);
   if(mode==='time'){
-    $('timer').style.display='';
+    $('timer').textContent = TIME_SEC;
     tickTimer = setInterval(()=>{
       st.timeLeft--;
       $('timer').textContent = st.timeLeft;
@@ -190,26 +205,21 @@ function startGame(){
   }
 }
 
-function buildGorillas(){
-  let html='';
-  for(let i=0;i<GORILLA_ROW;i++) html += '<span class="g">🦍</span>';
-  $('gorillas').innerHTML = html;
-}
-
 function updateTop(){
-  // エネルギーゲージは「あと何体ぶっ飛ぶか」が見える上限スケール
-  const max = GORILLA_ROW * ENERGY_PER_GORILLA;
-  $('gauge').style.width = Math.min(100, st.energy/max*100) + '%';
+  $('gauge').style.width = Math.min(100, st.energy/VISUAL_FULL*100) + '%';
   $('combo').innerHTML = st.combo>=2 ? ('🔥x'+st.combo) : '&nbsp;';
+  $('energyTxt').textContent = '🔥 ' + st.energy;
   if(mode==='count') $('timer').textContent = st.asked+'/'+COUNT_GOAL;
+  // チャージが進むほど大砲が大きく光る
+  const f = Math.min(1, st.energy/VISUAL_FULL);
+  $('cannon').style.transform = `scale(${1+f*0.9}) rotate(${-12-f*6}deg)`;
+  $('cannon').style.filter = `drop-shadow(0 0 ${4+f*22}px #ff5a2c) brightness(${1+f*0.4})`;
 }
 
-let cur = null;
 function nextQuestion(){
-  // 正解が続くほどレベルが上がる＝難しい問題ほどエネルギー大
+  // 正解が続くほど難しくなる（数感覚を伸ばす）
   st.level = Math.min(4, 1 + Math.floor(st.correct/4));
   cur = MathBank.next({ genres:['compare'], level: st.level });
-  $('question').textContent = cur.q;
   $('c0').textContent = cur.choices[0];
   $('c1').textContent = cur.choices[1];
   $('c0').className = 'choice';
@@ -222,25 +232,21 @@ function answer(i){
   if(!st || st.locked) return;
   st.asked++;
   if(i === cur.answer){
-    // 正解: コンボ倍率でエネルギー加算。難しいレベルほど多い。
     st.combo++;
     st.maxCombo = Math.max(st.maxCombo, st.combo);
     st.correct++;
-    const comboMult = 1 + Math.floor((st.combo-1)/3)*0.5;   // 3連ごとに+0.5
-    const gain = Math.round((6 + st.level*2) * comboMult);
-    st.energy += gain;
+    st.energy += st.combo * COMBO_GAIN * ENERGY_PER;  // 連鎖で加速度的に増える
     $('c'+i).classList.add('good');
-    beep(660,0.06);
+    beep(620 + Math.min(st.combo,12)*30, 0.05);
     updateTop();
-    proceed(120);
+    proceed(110);
   } else {
-    // 不正解: 減点なし。コンボ切れ＋一瞬の入力ロック（テンポロスのみ）。
-    st.combo = 0;
+    st.combo = 0;                                     // 減点なし・コンボ切れのみ
     $('c'+i).classList.add('bad');
     $('c'+cur.answer).classList.add('good');
-    beep(180,0.12);
+    beep(170,0.12);
     updateTop();
-    proceed(650);
+    proceed(600);
   }
 }
 
@@ -249,84 +255,100 @@ function proceed(delay){
   $('choices').classList.add('lock');
   setTimeout(()=>{
     if(mode==='count' && st.asked>=COUNT_GOAL){ fire(); return; }
-    if(mode==='time' && st.timeLeft<=0){ return; }   // タイマー側で発射済み
+    if(mode==='time' && st.timeLeft<=0){ return; }
     nextQuestion();
   }, delay);
 }
 
-/* ===== 発射 → 吹き飛び → リザルト ===== */
+/* ===== 発射 → 9999体 派手に吹き飛ばし ===== */
 function fire(){
   clearInterval(tickTimer);
   st.locked = true;
-  $('choices').classList.add('lock');
+  const knocked = Math.min(MAX_KNOCK, Math.floor(st.energy / ENERGY_PER));
 
-  const knocked = Math.min(GORILLA_ROW, Math.floor(st.energy / ENERGY_PER_GORILLA));
+  $('play').classList.add('hidden');
+  const blast = $('blast');
+  blast.classList.remove('hidden');
+  blast.classList.remove('shake'); void blast.offsetWidth; blast.classList.add('shake');
+  flashScreen();
+  boom();
 
-  // バナナを放物線で飛ばす簡易演出
-  const banana = $('banana');
-  banana.style.transition='none'; banana.style.opacity='1';
-  banana.style.left='44px'; banana.style.bottom='40px';
+  // ゴリラの大群を飛ばす（描画は最大120体に抑え、数字は本物を見せる）
+  const flies = Math.min(120, Math.max(10, Math.floor(knocked/30)+10));
+  for(let k=0;k<flies;k++) setTimeout(spawnFly, k*14);
+
+  // 数字を0→knockedへ一気にカウントアップ
+  countUp(knocked, 1300);
+
+  setTimeout(()=>showResult(knocked), Math.max(2000, flies*14 + 900));
+}
+
+function spawnFly(){
+  const f = document.createElement('span');
+  f.className = 'fly'; f.textContent = '🦍';
+  f.style.fontSize = (24 + Math.random()*30) + 'px';
+  $('blast').appendChild(f);
+  const dx = (Math.random()*1.4 - 0.2) * window.innerWidth;     // ほぼ右上へ飛散
+  const dy = -(0.4 + Math.random()*1.1) * window.innerHeight;
+  const rot = 360 + Math.random()*1080;
   requestAnimationFrame(()=>{
-    banana.style.transition='left 0.6s linear, bottom 0.6s ease-out';
-    banana.style.left='80%'; banana.style.bottom='52px';
+    f.style.transition = `transform ${1.0+Math.random()*0.8}s cubic-bezier(.2,-0.3,.6,1), opacity 1.4s`;
+    f.style.transform = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+    f.style.opacity = '0';
   });
-  beep(120,0.18);
+  setTimeout(()=>f.remove(), 2400);
+}
 
-  setTimeout(()=>{
-    banana.style.opacity='0';
-    // 右からknocked体が吹っ飛ぶ（ドミノ風に時間差）
-    const gs = $('gorillas').querySelectorAll('.g');
-    for(let k=0;k<knocked;k++){
-      const idx = gs.length-1-k;
-      const el = gs[idx];
-      setTimeout(()=>{
-        const dist = 40 + (knocked-k)*8 + st.energy*0.2;
-        el.style.transform = `translate(-${dist}px,-${60+Math.random()*40}px) rotate(${360+Math.random()*360}deg)`;
-        el.style.opacity = '0';
-        beep(300+k*20,0.05);
-      }, k*70);
-    }
-    setTimeout(()=>showResult(knocked), knocked*70 + 700);
-  }, 600);
+function countUp(target, ms){
+  const el = $('blastNum'); const t0 = performance.now();
+  function step(t){
+    const p = Math.min(1, (t-t0)/ms);
+    const val = Math.floor((1-Math.pow(1-p,2)) * target);  // ease-out
+    el.innerHTML = '🦍 ' + val + '<small>体 ふっとばし！</small>';
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function flashScreen(){
+  const fl = $('flash');
+  fl.style.transition='none'; fl.style.opacity='0.85';
+  requestAnimationFrame(()=>{ fl.style.transition='opacity .5s ease'; fl.style.opacity='0'; });
 }
 
 function showResult(knocked){
-  const score = st.correct*10 + st.maxCombo*15 + knocked*40
-              + (mode==='time'?0:Math.max(0, st.timeLeft)*0);
-  $('play').classList.add('hidden');
+  $('blast').classList.add('hidden');
   $('result').classList.remove('hidden');
-  $('knockText').textContent = `🦍 ${knocked}体 撃破！` + (knocked>=GORILLA_ROW ? ' 全滅ウホー！' : '');
+  $('knockText').textContent = `🦍 ${knocked}体 撃破！` + (knocked>=MAX_KNOCK ? ' カンスト！！' : '');
   $('rCorrect').textContent = st.correct;
   $('rCombo').textContent = st.maxCombo;
-  $('rEnergy').textContent = st.energy;
-  $('rScore').textContent = score;
-
+  $('rScore').textContent = knocked;
   const prev = getHi();
-  if(score>prev){ localStorage.setItem(hiKey(), score); $('newrec').classList.remove('hidden'); }
+  if(knocked>prev){ localStorage.setItem(hiKey(), knocked); $('newrec').classList.remove('hidden'); }
   else $('newrec').classList.add('hidden');
 }
 
 /* ===== かんたん効果音（WebAudio・外部ファイル不要） ===== */
 let actx = null;
-function beep(freq, dur){
+function tone(freq, dur, type){
   try{
     if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
     const o = actx.createOscillator(), g = actx.createGain();
-    o.frequency.value = freq; o.type='square';
-    g.gain.value = 0.06;
-    o.connect(g); g.connect(actx.destination);
+    o.frequency.value = freq; o.type = type||'square';
+    g.gain.value = 0.06; o.connect(g); g.connect(actx.destination);
     o.start(); o.stop(actx.currentTime + dur);
-  }catch(e){/* 無音でも進行に支障なし */}
+  }catch(e){}
 }
+function beep(f,d){ tone(f,d,'square'); }
+function boom(){ tone(90,0.4,'sawtooth'); setTimeout(()=>tone(60,0.5,'sawtooth'),60); }
 
-/* ===== キーボード操作（1=左, 2=右） ===== */
+/* ===== キーボード（1=左, 2=右） ===== */
 document.addEventListener('keydown', (e)=>{
   if($('play').classList.contains('hidden')) return;
   if(e.key==='1') answer(0);
   if(e.key==='2') answer(1);
 });
 
-// 初期表示
 showTitleHi();
 </script>
 </body>
