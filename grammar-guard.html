@@ -219,6 +219,18 @@
         <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button><button class="toggle" id="tgSlow">ゆっくり</button></div>
         <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚は操作を問題だけに集中できる。ゆっくりでも報酬は同じ。</div>
       </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-weight:800; margin-bottom:8px">🎰 ガチャ <span class="muted" id="gachaCost"></span></div>
+        <div id="gachaBody"></div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-weight:800; margin-bottom:8px">🧩 編成（最大5体・召喚はここからランダム）</div>
+        <div id="deckBody"></div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-weight:800; margin-bottom:8px">🏯 城強化</div>
+        <div id="castleBody"></div>
+      </div>
       <div class="card">
         <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
         <div class="stage-grid" id="stageGrid"></div>
@@ -1651,6 +1663,9 @@ const Game = (()=>{
   let cleared = {};        // {area:true}
   let autoSummon = false;  // 苦手な子向け（操作を問題に集中）
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
+  let owned = {};          // 入手済み {key:count}
+  let deck = [];           // 編成(最大5)
+  let castleLv = 0;        // 城強化Lv
   let curStage = null;
 
   let soundOn = true;
@@ -1659,12 +1674,93 @@ const Game = (()=>{
       gold=s.gold||0; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       if(s.range) QuizEngine.setRange(s.range);
+      owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
     }}catch(e){}
+    ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), range:QuizEngine.getRange()})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), range:QuizEngine.getRange(), owned, deck, castleLv})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
+
+  /* ============ 入手(ガチャ)・編成・城強化 ============ */
+  const GACHA_COST = 300;
+  const RARITY_W = {N:58, R:28, SR:11, SSR:3};
+  let lastGacha = null;
+  function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
+  function ensureStarter(){
+    if(Object.keys(owned).length===0){ owned={guardTurtle:1, arrowBird:1, dashFox:1}; }
+    deck = deck.filter(function(k){return owned[k];});
+    if(deck.length===0){ deck = Object.keys(owned).slice(0,5); }
+    if(deck.length>5) deck = deck.slice(0,5);
+  }
+  function castleMaxHp(){ return 1000 + castleLv*250; }
+  function castleUpCost(){ return 250*(castleLv+1); }
+  function doGacha(){
+    if(gold < GACHA_COST){ lastGacha={msg:'ゴールドが足りません（'+GACHA_COST+'G必要）'}; renderHome(); return; }
+    gold -= GACHA_COST;
+    let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
+    let x=Math.random()*tot, rar='N';
+    for(const r in RARITY_W){ x-=RARITY_W[r]; if(x<=0){ rar=r; break; } }
+    let pool=unitsByRarity(rar); if(!pool.length) pool=ROSTER_KEYS;
+    const key=pool[Math.floor(Math.random()*pool.length)];
+    const isNew=!owned[key];
+    owned[key]=(owned[key]||0)+1;
+    if(isNew && deck.length<5) deck.push(key);
+    lastGacha={key:key, isNew:isNew};
+    Sound.play('correct'); save(); renderHome();
+  }
+  function toggleDeck(key){
+    if(!owned[key]) return;
+    const i=deck.indexOf(key);
+    if(i>=0){ if(deck.length<=1) return; deck.splice(i,1); }
+    else { if(deck.length>=5) return; deck.push(key); }
+    save(); renderHome();
+  }
+  function upgradeCastle(){ const c=castleUpCost(); if(gold<c) return; gold-=c; castleLv++; Sound.play('correct'); save(); renderHome(); }
+  function unitChip(key, selected){
+    const r=ROSTER[key];
+    const b=document.createElement('button');
+    b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid '+(selected?'var(--good)':'var(--line)')+';background:'+(selected?'#eafaef':'#fff')+';border-radius:12px;padding:6px 8px;min-width:62px;position:relative';
+    b.innerHTML='<span style="position:absolute;top:-8px;left:-4px;font-size:10px;font-weight:800;color:#fff;background:'+r.rarColor+';padding:0 4px;border-radius:6px">'+r.rar+'</span><span style="width:40px;height:40px;display:block">'+SVG.get(r.sprite)+'</span><span style="font-size:11px;font-weight:700">'+r.name+'</span>'+(owned[key]>1?'<span style="font-size:10px;color:#9a8f7c">×'+owned[key]+'</span>':'');
+    b.addEventListener('click',function(){toggleDeck(key);});
+    return b;
+  }
+  function renderGacha(){
+    const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'G）';
+    const body=$('gachaBody'); if(!body) return; body.innerHTML='';
+    const btn=document.createElement('button'); btn.className='btn'; btn.textContent='🎰 ガチャを引く（'+GACHA_COST+'G）';
+    btn.disabled = gold<GACHA_COST; btn.addEventListener('click',doGacha); body.appendChild(btn);
+    const res=document.createElement('div'); res.style.cssText='margin-top:8px;font-weight:700';
+    if(lastGacha){
+      if(lastGacha.msg){ res.style.color='var(--bad)'; res.textContent=lastGacha.msg; }
+      else { const r=ROSTER[lastGacha.key]; res.innerHTML='<span style="display:inline-block;width:34px;height:34px;vertical-align:middle">'+SVG.get(r.sprite)+'</span> <span style="color:'+r.rarColor+'">'+r.rar+'</span> '+r.name+(lastGacha.isNew?' <span style="color:var(--good)">NEW!</span>':'（ダブり）'); }
+    }
+    body.appendChild(res);
+  }
+  function renderDeck(){
+    const body=$('deckBody'); if(!body) return; body.innerHTML='';
+    const row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
+    for(let i=0;i<5;i++){
+      const slot=document.createElement('div'); slot.style.cssText='width:54px;height:54px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px '+(deck[i]?'solid var(--ally)':'dashed var(--line)');
+      if(deck[i]) slot.innerHTML='<span style="width:42px;height:42px;display:block">'+SVG.get(ROSTER[deck[i]].sprite)+'</span>'; else slot.textContent='＋';
+      row.appendChild(slot);
+    }
+    body.appendChild(row);
+    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='手持ちをタップで編成（最大5体）。戦闘の召喚はこの編成からランダムに出ます。';
+    body.appendChild(note);
+    const list=document.createElement('div'); list.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    Object.keys(owned).forEach(function(key){ list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
+    body.appendChild(list);
+  }
+  function renderCastle(){
+    const body=$('castleBody'); if(!body) return; body.innerHTML='';
+    const info=document.createElement('div'); info.style.marginBottom='8px'; info.innerHTML='現在の自城HP：<b>'+castleMaxHp()+'</b>（Lv'+castleLv+'）';
+    body.appendChild(info);
+    const btn=document.createElement('button'); btn.className='btn'; btn.textContent='🏯 城を強化（+250HP / '+castleUpCost()+'G）';
+    btn.disabled=gold<castleUpCost(); btn.addEventListener('click',upgradeCastle); body.appendChild(btn);
+  }
+
 
   /* ============ 演出（FX）＆サウンド ============ */
   const CRACK_SVG = '<svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="none" style="display:block">'
@@ -1726,7 +1822,7 @@ const Game = (()=>{
       t:0, raf:0, last:0, running:false, ended:false,
       energy:30, energyMax:200, baseRegen:8, softcap:12, maxMult:4,
       combo:0, bestCombo:0,
-      castleA:1000, castleAMax:1000,
+      castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
       allies:[], enemies:[], spawnIdx:0, bossAlive:false, bossPhase:false,
       queue:[], answered:0, correct:0, missStreak:0, reviewWins:0,
@@ -1751,6 +1847,7 @@ const Game = (()=>{
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
+    renderGacha(); renderDeck(); renderCastle();
     // 学習レンジ
     const seg = $('rangeSeg'); seg.innerHTML='';
     QuizEngine.ranges().forEach(r=>{
@@ -1805,13 +1902,11 @@ const Game = (()=>{
 
   /* ---- 召喚キュー（ランダム＋たまにコスパ枠） ---- */
   function drawUnit(){
-    // 重み付き抽選
-    let total=0; ROSTER_KEYS.forEach(k=>total+=ROSTER[k].weight);
-    let r=Math.random()*total, key=ROSTER_KEYS[0];
-    for(const k of ROSTER_KEYS){ r-=ROSTER[k].weight; if(r<=0){key=k;break;} }
-    const base=ROSTER[key];
+    // 編成(deck)からランダムに出撃
+    const keys=(deck&&deck.length)?deck:ROSTER_KEYS;
+    const key=keys[Math.floor(Math.random()*keys.length)];
+    const base=ROSTER[key]||ROSTER[ROSTER_KEYS[0]];
     let cost=base.cost, bargain=false;
-    // コスパ枠：高レア(SR/SSR)が8%で割安に
     if((base.rar==="SR"||base.rar==="SSR") && Math.random()<0.18){ cost=Math.round(base.cost*0.6); bargain=true; }
     return { key, cost, bargain };
   }
