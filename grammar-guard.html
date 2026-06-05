@@ -1420,6 +1420,29 @@ const SVG = (()=>{
       <path d="M40 46 L60 46" stroke="${S}" stroke-width="3.5"/>
       <circle cx="43" cy="60" r="4" fill="${S}"/><circle cx="57" cy="60" r="4" fill="${S}"/>
       <path d="M40 72 Q50 80 60 72" stroke="${S}" stroke-width="3.5" fill="none"/>`,
+    dashFox:`<ellipse cx="50" cy="86" rx="20" ry="4" fill="#0002"/>
+      <path d="M30 40 L40 26 L44 40Z M70 40 L60 26 L56 40Z" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>
+      <path d="M30 58 Q50 40 70 58 Q70 76 50 78 Q30 76 30 58Z" fill="#5ec4bd" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="58" r="3" fill="${S}"/><circle cx="57" cy="58" r="3" fill="${S}"/>
+      <path d="M48 66 L52 66 L50 70Z" fill="${S}"/>
+      <path d="M70 70 Q86 64 80 80" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>`,
+    bombFrog:`<ellipse cx="50" cy="86" rx="24" ry="5" fill="#0002"/>
+      <circle cx="50" cy="58" r="26" fill="#5566c4" stroke="${S}" stroke-width="3"/>
+      <circle cx="40" cy="46" r="9" fill="#cfd6f5" stroke="${S}" stroke-width="3"/><circle cx="60" cy="46" r="9" fill="#cfd6f5" stroke="${S}" stroke-width="3"/>
+      <circle cx="40" cy="47" r="3" fill="${S}"/><circle cx="60" cy="47" r="3" fill="${S}"/>
+      <path d="M40 66 Q50 74 60 66" fill="none" stroke="${S}" stroke-width="3"/>
+      <path d="M50 32 Q54 24 60 22" fill="none" stroke="#e0683b" stroke-width="3"/><circle cx="61" cy="21" r="3.5" fill="#e0a93b"/>`,
+    healSprite:`<ellipse cx="50" cy="88" rx="18" ry="4" fill="#0002"/>
+      <circle cx="50" cy="56" r="22" fill="#aee0b8" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="54" r="3" fill="${S}"/><circle cx="57" cy="54" r="3" fill="${S}"/>
+      <path d="M45 64 Q50 68 55 64" fill="none" stroke="${S}" stroke-width="2.5"/>
+      <rect x="46" y="14" width="8" height="20" rx="2" fill="#3a9d57" stroke="${S}" stroke-width="2"/>
+      <rect x="40" y="20" width="20" height="8" rx="2" fill="#3a9d57" stroke="${S}" stroke-width="2"/>`,
+    slinger:`<ellipse cx="50" cy="86" rx="20" ry="4" fill="#0002"/>
+      <path d="M30 56 Q30 34 50 34 Q70 34 70 56 L66 78 Q50 84 34 78Z" fill="#d98a4a" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="52" r="3.4" fill="${S}"/><circle cx="57" cy="52" r="3.4" fill="${S}"/>
+      <path d="M42 62 Q50 58 58 62" fill="none" stroke="${S}" stroke-width="2.5"/>
+      <path d="M68 44 L84 38" stroke="${S}" stroke-width="3"/><circle cx="86" cy="37" r="5" fill="#7a6a5a" stroke="${S}" stroke-width="2"/>`,
     // --- 城 ---
     castleA:`<rect x="14" y="40" width="36" height="74" fill="#8fb98f" stroke="${S}" stroke-width="3"/>
       <path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="#6fa06f" stroke="${S}" stroke-width="3"/>
@@ -1552,7 +1575,10 @@ const ROSTER = {
   guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:120, atk:14, speed:34, range:42, weight:46},
   arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, weight:26},
   moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, weight:14},
-  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8}
+  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8},
+  dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, weight:34},
+  bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:16, speed:36, range:74, splash:true, weight:16},
+  healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:130, atk:5, speed:30, range:64, heal:10, weight:9}
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
@@ -1581,6 +1607,7 @@ function buildEnemyWaves(area, boss){
   push(t(13),tank, Math.max(1,Math.round(1.4*area*0.4)), 1400); // 硬めで停滞回避＝ためる山
   push(t(18),"slime", Math.round(3*dens), 600);              // 急々ラッシュ
   push(t(18.3),"hare",Math.round(2*dens), 600);
+  if(area>=3) push(t(10),"slinger", Math.max(1,Math.round(area*0.35)), 1300); // 遠距離で揺さぶり
   if(area>=8) push(t(19),tank, 2, 900);
   return W;
 }
@@ -1608,7 +1635,8 @@ const ENEMY_TYPES = {
   slime:{name:"スライム",sprite:"slime",hp:60, atk:9, speed:26, range:40},
   hare: {name:"はやウサ",sprite:"hare", hp:42, atk:7, speed:46, range:40},
   totem:{name:"トーテム",sprite:"totem",hp:160,atk:13,speed:18, range:44},
-  torii:{name:"トリイ",  sprite:"torii",hp:240,atk:15,speed:16, range:44}
+  torii:{name:"トリイ",  sprite:"torii",hp:240,atk:15,speed:16, range:44},
+  slinger:{name:"つぶて鬼", sprite:"slinger", hp:75, atk:12, speed:20, range:115}
 };
 const BOSS_BASE = {atk:26, speed:13, range:70, hp:1000};
 
@@ -1817,7 +1845,7 @@ const Game = (()=>{
     el.innerHTML = `<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(r.sprite);
     $('field').appendChild(el);
     fxGate(84); Sound.play('summon');
-    B.allies.push({ key, el, x:84, hp:r.hp, hpMax:r.hp, atk:r.atk, speed:r.speed, range:r.range, cd:0 });
+    B.allies.push({ key, el, x:84, hp:r.hp, hpMax:r.hp, atk:r.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal });
   }
   function spawnEnemy(type){
     if(type==="BOSS"){ spawnBoss(); return; }
@@ -1914,10 +1942,11 @@ const Game = (()=>{
     // 味方：右へ。敵 or 敵城と戦う
     B.allies.forEach(a=>{
       a.cd-=dt;
+      if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.speed*dt; place(a.el,a.x); return; }
       const target = nearestEnemy(a);
       const enemyCastleX = W-70;
       if(target && Math.abs(target.x-a.x) <= a.range){
-        if(a.cd<=0){ damage(target, a.atk); a.cd=0.7; flash(a.el); hitFx(target); }
+        if(a.cd<=0){ if(a.splash){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range) damage(e,a.atk); }); floatText(a.x,26,'💥','var(--ally)'); } else { damage(target, a.atk); } a.cd=0.7; flash(a.el); hitFx(target); }
       }else if(!target && a.x >= enemyCastleX-a.range){
         if(a.cd<=0){ B.castleE-=a.atk; a.cd=0.7; flash(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(a.atk), 'var(--good)'); }
       }else{
