@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>グラマー・ガード v2（試作）</title>
+<title>グラマー・ガード v2（試作） build0605b</title>
+<script>window.addEventListener('error',function(e){try{var d=document.getElementById('__err')||document.createElement('div');d.id='__err';d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font:12px/1.4 monospace;padding:6px;white-space:pre-wrap';d.textContent='ERR: '+(e.message||(e.error&&e.error.stack)||e.type)+' @'+((e.filename||'').split('/').pop())+':'+(e.lineno||'');if(!d.parentNode)(document.body||document.documentElement).appendChild(d);}catch(_){}}, false);</script>
 <!--
   グラマー・ガード v2 試作版
   計画書: PLAN_GG_V2_AREA_COST_REDESIGN.md
@@ -113,6 +114,18 @@
   #choices{display:grid; grid-template-columns:1fr 1fr; gap:8px}
   #choices.c2{grid-template-columns:1fr 1fr}
   .choice{padding:13px; font-size:17px; font-weight:800; border-radius:12px; border:2px solid var(--line); background:#fff; color:var(--ink); text-align:center}
+  @media (max-height:480px){
+    #hud{padding:3px 10px; gap:6px}
+    .bar{height:9px}
+    .meter .lab{font-size:10px; margin-bottom:1px}
+    #combo-big{font-size:12px; min-width:64px} #combo-big b{font-size:16px}
+    #queue{padding:3px 10px; gap:6px}
+    .qslot{padding:2px 5px; min-width:54px} .qslot svg{width:30px; height:30px} .qslot .cost{font-size:11px}
+    #quiz{padding:4px 10px 6px}
+    #qtext{font-size:15px; min-height:14px; margin-bottom:4px}
+    #choices{gap:6px}
+    .choice{padding:7px; font-size:14px}
+  }
   .choice.spot{box-shadow:0 0 0 3px var(--gold); animation:pulse 1s infinite}
   @keyframes pulse{50%{box-shadow:0 0 0 6px #e0a93b66}}
   .choice.ok{background:var(--good); color:#fff; border-color:var(--good)}
@@ -189,6 +202,23 @@
   .soundbtn{position:absolute; top:8px; right:10px; z-index:30; border:2px solid var(--line); background:#fff;
     border-radius:999px; width:34px; height:34px; font-size:16px; padding:0}
   .homebtn{position:absolute; top:8px; left:10px; z-index:30; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink)}
+  .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
+  .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
+  .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
+  .homeview{display:none}
+  .homeview.on{display:block}
+  #homeBack{cursor:pointer}
+  /* ガチャ演出 */
+  .gcapsule{width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--rc,#bbb));border:3px solid var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.25);animation:gshake .26s ease-in-out infinite}
+  .gcapsule.hi{animation:gshake .14s ease-in-out infinite}
+  @keyframes gshake{0%,100%{transform:translateX(-5px) rotate(-7deg)}50%{transform:translateX(5px) rotate(7deg)}}
+  .greveal{position:relative;display:flex;flex-direction:column;align-items:center;animation:gpop .42s cubic-bezier(.2,1.4,.5,1)}
+  @keyframes gpop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+  .greveal .gunit{width:92px;height:92px}
+  .greveal .grarbig{font-size:20px;font-weight:900;letter-spacing:1px}
+  .greveal .gname{font-weight:800;margin-top:2px}
+  .greveal .gburst{position:absolute;top:24px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,var(--rc,#fff),transparent 70%);opacity:.45;pointer-events:none;animation:gburst .7s ease-out}
+  @keyframes gburst{0%{transform:scale(.2);opacity:.7}100%{transform:scale(1.7);opacity:0}}
 </style>
 </head>
 <body>
@@ -199,27 +229,82 @@
     <div class="crest" id="titleCrest"></div>
     <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
     <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
+    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-05c（このタイトルが見えていれば最新版です）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
   </section>
 
   <!-- ===== ホーム ===== -->
   <section id="home" class="screen col">
-    <div class="topbar"><span class="pill">🏠 ホーム</span><span class="grow"></span><span class="pill" id="goldPill">💰 0</span></div>
+    <div class="topbar"><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><span class="pill" id="goldPill">💰 0</span></div>
     <div class="pad scroll grow">
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:6px">📚 学習レンジ <span class="muted">（どのステージでも、ここで選んだ範囲が出ます）</span></div>
-        <div class="seg" id="rangeSeg"></div>
-        <div class="muted" style="margin-top:6px">★ ステージと問題は分離。苦手な範囲が楽しくないステージに紐づく、をなくす設計です。</div>
+      <div id="homeMenu">
+        <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
+        <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
+        <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
       </div>
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
-        <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button><button class="toggle" id="tgSlow">ゆっくり</button></div>
-        <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚は操作を問題だけに集中できる。ゆっくりでも報酬は同じ。</div>
+      <div class="homeview" data-view="play">
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（ジャンル・難易度を選択。混ぜてもOK）</span></div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル</div>
+          <div class="seg" id="genreSeg"></div>
+          <div style="font-size:13px;font-weight:700;margin:8px 0 4px">英検級</div>
+          <div class="seg" id="levelSeg"></div>
+          <div style="font-size:13px;font-weight:700;margin:8px 0 4px">レベル（必須／基礎／発展）</div>
+          <div class="seg" id="tierSeg"></div>
+          <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
+          <div class="seg" id="choiceSeg"></div>
+          <div class="muted" id="poolCount" style="margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
+          <div class="stage-grid" id="stageGrid"></div>
+        </div>
       </div>
-      <div class="card">
-        <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
-        <div class="stage-grid" id="stageGrid"></div>
+      <div class="homeview" data-view="grow">
+        <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">ゴールドで味方を入手</span></button>
+        <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする</span></button>
+        <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
+        <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
+      </div>
+      <div class="homeview" data-view="gacha">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">🎰 ガチャ <span class="muted" id="gachaCost"></span></div>
+          <div id="gachaStage" style="min-height:172px; display:flex; align-items:center; justify-content:center; margin-bottom:10px"></div>
+          <div id="gachaBody"></div>
+          <button class="btn ghost" data-go="gachalist" style="width:100%; margin-top:10px">📜 排出キャラ一覧・確率</button>
+        </div>
+      </div>
+      <div class="homeview" data-view="gachalist">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">📜 排出キャラ一覧・確率 <span class="muted">（★＝凸数）</span></div>
+          <div id="gachaListBody"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="charup">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">💪 キャラ強化 <span class="muted">ゴールドで味方を強化（ATK/HP）</span></div>
+          <div id="charupBody"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="deckedit">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">🧩 編成（最大5体・召喚はここからランダム）</div>
+          <div id="deckBody"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="castle">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">🏯 城強化</div>
+          <div id="castleBody"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="settings">
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
+          <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button><button class="toggle" id="tgSlow">ゆっくり</button></div>
+          <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚は操作を問題だけに集中できる。ゆっくりでも報酬は同じ。</div>
+        </div>
       </div>
     </div>
   </section>
@@ -1346,7 +1431,54 @@ const ENGLISH_QUESTION_DB_BATCH2 = [
 ];
 
 if (typeof module !== 'undefined') module.exports = { ENGLISH_QUESTION_DB_BATCH2 };
-
+</script>
+<script>
+/* =========================================================================
+   英熟語データ（基本セット・英検級つき）— genre:"idiom"
+   ========================================================================= */
+const ENGLISH_IDIOM_DB = [
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"起きる",answer:"get up",desc:"get up = 起きる（ベッドから出る）。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"寝る・床につく",answer:"go to bed",desc:"go to bed = 寝る。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"〜を見る",answer:"look at",desc:"look at = 〜を(じっと)見る。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"〜を聞く",answer:"listen to",desc:"listen to = 〜を(意識して)聞く。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"(乗り物に)乗る",answer:"get on",desc:"get on = (バス・電車に)乗る。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"(乗り物を)降りる",answer:"get off",desc:"get off = (バス・電車を)降りる。"},
+  {genre:"idiom",level:"e4",tier:"adv",type:"choice",name:"立ち上がる",answer:"stand up",desc:"stand up = 立ち上がる。"},
+  {genre:"idiom",level:"e4",tier:"adv",type:"choice",name:"座る",answer:"sit down",desc:"sit down = 座る。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜を探す",answer:"look for",desc:"look for = 〜を探す。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜の世話をする",answer:"take care of",desc:"take care of = 〜の世話をする。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜が得意だ",answer:"be good at",desc:"be good at = 〜が得意だ。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜に興味がある",answer:"be interested in",desc:"be interested in = 〜に興味がある。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜を待つ",answer:"wait for",desc:"wait for = 〜を待つ。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜に到着する",answer:"arrive at",desc:"arrive at = (場所)に到着する。"},
+  {genre:"idiom",level:"e3",tier:"adv",type:"choice",name:"〜に遅れる",answer:"be late for",desc:"be late for = 〜に遅刻する。"},
+  {genre:"idiom",level:"e3",tier:"adv",type:"choice",name:"成長する・大人になる",answer:"grow up",desc:"grow up = 成長する。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"あきらめる",answer:"give up",desc:"give up = あきらめる。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"〜を楽しみに待つ",answer:"look forward to",desc:"look forward to = 〜を楽しみにする。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"〜と仲良くやる",answer:"get along with",desc:"get along with = 〜とうまくやる。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"拾う・(車で)迎えに行く",answer:"pick up",desc:"pick up = 拾う／車で迎えに行く。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"延期する",answer:"put off",desc:"put off = 延期する。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"〜するために",answer:"in order to",desc:"in order to do = 〜するために。"},
+  {genre:"idiom",level:"ep2",tier:"adv",type:"choice",name:"決心する",answer:"make up one's mind",desc:"make up one's mind = 決心する。"},
+  {genre:"idiom",level:"ep2",tier:"adv",type:"choice",name:"〜を恐れる",answer:"be afraid of",desc:"be afraid of = 〜を恐れる。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"思いつく",answer:"come up with",desc:"come up with = (考えなどを)思いつく。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"我慢する",answer:"put up with",desc:"put up with = 我慢する。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"尊敬する",answer:"look up to",desc:"look up to = 尊敬する。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"故障する",answer:"break down",desc:"break down = 故障する／(交渉が)決裂する。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"実行する",answer:"carry out",desc:"carry out = (計画を)実行する。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"〜に参加する",answer:"take part in",desc:"take part in = 〜に参加する。"},
+  {genre:"idiom",level:"e2",tier:"adv",type:"choice",name:"理解する・解決する",answer:"figure out",desc:"figure out = 理解する／解明する。"},
+  {genre:"idiom",level:"e2",tier:"adv",type:"choice",name:"〜だと判明する",answer:"turn out",desc:"turn out (to be) = 〜だと判明する。"},
+  {genre:"idiom",level:"ep1",tier:"must",type:"choice",name:"引き起こす",answer:"bring about",desc:"bring about = (変化などを)引き起こす。"},
+  {genre:"idiom",level:"ep1",tier:"must",type:"choice",name:"説明する・(割合を)占める",answer:"account for",desc:"account for = 説明する／(割合を)占める。"},
+  {genre:"idiom",level:"ep1",tier:"must",type:"choice",name:"(規則に)従う",answer:"abide by",desc:"abide by = (規則・決定に)従う。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"対処する",answer:"cope with",desc:"cope with = (困難に)対処する。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"克服する",answer:"get over",desc:"get over = (困難・病気を)克服する。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"使い果たす",answer:"run out of",desc:"run out of = 〜を使い果たす。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"〜を表す・象徴する",answer:"stand for",desc:"stand for = (略語などが)〜を表す。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"中止する",answer:"call off",desc:"call off = (予定を)中止する。"}
+];
+if (typeof module !== 'undefined') module.exports = { ENGLISH_IDIOM_DB };
 </script>
 <script>
 /* =========================================================================
@@ -1357,28 +1489,39 @@ const SVG = (()=>{
   const S = '#2b2620'; // 共通の輪郭色（教科書の線）
   const lib = {
     // --- 味方（寒色） ---
-    guardTurtle:`<ellipse cx="50" cy="84" rx="30" ry="6" fill="#0002"/>
-      <circle cx="50" cy="55" r="26" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>
-      <path d="M50 31 L62 48 L50 60 L38 48Z" fill="#2f7dd1" stroke="${S}" stroke-width="3"/>
-      <path d="M50 31 L50 79 M28 55 L72 55" stroke="${S}" stroke-width="2.5"/>
-      <circle cx="30" cy="42" r="8" fill="#7ed0c9" stroke="${S}" stroke-width="3"/>
-      <circle cx="28" cy="40" r="2" fill="${S}"/>`,
-    arrowBird:`<ellipse cx="50" cy="86" rx="22" ry="5" fill="#0002"/>
-      <path d="M28 60 Q50 30 78 52 Q60 60 50 74 Q40 64 28 60Z" fill="#2f7dd1" stroke="${S}" stroke-width="3"/>
-      <circle cx="68" cy="48" r="9" fill="#bfe0f5" stroke="${S}" stroke-width="3"/>
-      <circle cx="70" cy="47" r="2.4" fill="${S}"/>
-      <path d="M77 49 L90 47 L78 54Z" fill="#e0a93b" stroke="${S}" stroke-width="2"/>`,
+    guardTurtle:`<ellipse cx="50" cy="88" rx="30" ry="5" fill="#0002"/>
+      <ellipse cx="36" cy="80" rx="7" ry="6" fill="#7ed0c9" stroke="${S}" stroke-width="2.5"/>
+      <ellipse cx="62" cy="80" rx="7" ry="6" fill="#7ed0c9" stroke="${S}" stroke-width="2.5"/>
+      <path d="M22 64 L12 60 L22 70Z" fill="#7ed0c9" stroke="${S}" stroke-width="2"/>
+      <path d="M22 72 Q18 44 50 44 Q82 44 78 72 Q50 84 22 72Z" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>
+      <path d="M50 45 L50 78 M32 50 L36 75 M68 50 L64 75 M24 60 L76 60" stroke="#2b7a74" stroke-width="2.5" fill="none"/>
+      <circle cx="84" cy="64" r="11" fill="#7ed0c9" stroke="${S}" stroke-width="3"/>
+      <circle cx="88" cy="61" r="2.6" fill="${S}"/>
+      <path d="M80 70 Q84 73 88 70" stroke="${S}" stroke-width="2" fill="none"/>`,
+    arrowBird:`<ellipse cx="50" cy="88" rx="20" ry="4" fill="#0002"/>
+      <path d="M16 50 L34 60 L26 44Z" fill="#2f4f8f" stroke="${S}" stroke-width="2.5"/>
+      <ellipse cx="52" cy="60" rx="22" ry="20" fill="#2f7dd1" stroke="${S}" stroke-width="3"/>
+      <path d="M44 80 L42 88 M60 80 L62 88" stroke="${S}" stroke-width="3"/>
+      <circle cx="64" cy="40" r="14" fill="#2f7dd1" stroke="${S}" stroke-width="3"/>
+      <path d="M76 40 L92 44 L76 50Z" fill="#e0a93b" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="67" cy="38" r="6" fill="#fff" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="69" cy="38" r="2.4" fill="${S}"/>
+      <path d="M40 54 Q54 52 56 68 Q44 72 38 62Z" fill="#bfe0f5" stroke="${S}" stroke-width="2.5"/>`,
     moaiAlly:`<ellipse cx="50" cy="88" rx="26" ry="5" fill="#0002"/>
       <path d="M34 30 Q34 18 50 18 Q66 18 66 30 L68 78 Q50 86 32 78Z" fill="#8aa0a8" stroke="${S}" stroke-width="3"/>
       <rect x="38" y="44" width="9" height="6" fill="${S}"/><rect x="53" y="44" width="9" height="6" fill="${S}"/>
       <path d="M40 62 Q50 68 60 62" fill="none" stroke="${S}" stroke-width="3"/>
       <path d="M34 30 Q50 26 66 30" fill="none" stroke="${S}" stroke-width="2.5"/>`,
     dragonTurtle:`<ellipse cx="50" cy="88" rx="30" ry="5" fill="#0002"/>
-      <circle cx="50" cy="56" r="27" fill="#3f6fae" stroke="${S}" stroke-width="3"/>
-      <path d="M50 30 L70 40 L62 58 L38 58 L30 40Z" fill="#2f4f8f" stroke="${S}" stroke-width="3"/>
-      <path d="M24 34 Q12 22 16 40 M76 34 Q88 22 84 40" fill="none" stroke="${S}" stroke-width="3"/>
-      <circle cx="26" cy="50" r="9" fill="#c9d8f0" stroke="${S}" stroke-width="3"/><circle cx="24" cy="49" r="2.4" fill="${S}"/>
-      <path d="M50 18 L54 28 L46 28Z" fill="#e0683b" stroke="${S}" stroke-width="2"/>`,
+      <ellipse cx="34" cy="80" rx="7" ry="6" fill="#5a7fc0" stroke="${S}" stroke-width="2.5"/>
+      <ellipse cx="64" cy="80" rx="7" ry="6" fill="#5a7fc0" stroke="${S}" stroke-width="2.5"/>
+      <path d="M16 58 L7 52 L14 63Z" fill="#e0683b" stroke="${S}" stroke-width="2"/>
+      <path d="M22 72 Q18 44 50 44 Q82 44 78 72 Q50 84 22 72Z" fill="#3f6fae" stroke="${S}" stroke-width="3"/>
+      <path d="M50 45 L50 78 M32 50 L36 75 M68 50 L64 75 M24 60 L76 60" stroke="#2a4f86" stroke-width="2.5" fill="none"/>
+      <path d="M82 50 L93 41 L88 55Z" fill="#e0683b" stroke="${S}" stroke-width="2"/>
+      <circle cx="84" cy="64" r="12" fill="#5a7fc0" stroke="${S}" stroke-width="3"/>
+      <circle cx="88" cy="61" r="2.8" fill="${S}"/>
+      <path d="M79 70 L91 70" stroke="${S}" stroke-width="2"/>`,
     hint:`<ellipse cx="50" cy="86" rx="18" ry="4" fill="#0002"/>
       <circle cx="50" cy="50" r="22" fill="#e9d27a" stroke="${S}" stroke-width="3"/>
       <text x="50" y="60" font-size="26" text-anchor="middle" fill="${S}" font-weight="900">?</text>`,
@@ -1387,11 +1530,14 @@ const SVG = (()=>{
       <path d="M26 74 Q22 44 50 42 Q78 44 74 74 Q60 80 50 74 Q40 80 26 74Z" fill="#e0683b" stroke="${S}" stroke-width="3"/>
       <circle cx="42" cy="58" r="4" fill="#fff"/><circle cx="58" cy="58" r="4" fill="#fff"/>
       <circle cx="42" cy="59" r="2" fill="${S}"/><circle cx="58" cy="59" r="2" fill="${S}"/>`,
-    hare:`<ellipse cx="50" cy="86" rx="20" ry="4" fill="#0002"/>
-      <path d="M40 34 Q38 14 44 32 M60 34 Q62 14 56 32" fill="#f0a06a" stroke="${S}" stroke-width="3"/>
-      <circle cx="50" cy="56" r="22" fill="#f0a06a" stroke="${S}" stroke-width="3"/>
-      <circle cx="43" cy="54" r="3" fill="${S}"/><circle cx="57" cy="54" r="3" fill="${S}"/>
-      <path d="M46 64 Q50 68 54 64" fill="none" stroke="${S}" stroke-width="2.5"/>`,
+    hare:`<ellipse cx="50" cy="88" rx="20" ry="4" fill="#0002"/>
+      <g transform="rotate(-12 40 24)"><ellipse cx="40" cy="24" rx="6" ry="17" fill="#f0a06a" stroke="${S}" stroke-width="3"/><ellipse cx="40" cy="24" rx="2.4" ry="11" fill="#d97b4a"/></g>
+      <g transform="rotate(12 60 24)"><ellipse cx="60" cy="24" rx="6" ry="17" fill="#f0a06a" stroke="${S}" stroke-width="3"/><ellipse cx="60" cy="24" rx="2.4" ry="11" fill="#d97b4a"/></g>
+      <circle cx="50" cy="58" r="22" fill="#f0a06a" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="55" r="3" fill="${S}"/>
+      <circle cx="57" cy="55" r="3" fill="${S}"/>
+      <path d="M50 60 L47 64 L53 64Z" fill="#c0563a"/>
+      <path d="M50 64 Q45 70 40 67 M50 64 Q55 70 60 67" stroke="${S}" stroke-width="2" fill="none"/>`,
     totem:`<ellipse cx="50" cy="90" rx="22" ry="4" fill="#0002"/>
       <rect x="34" y="22" width="32" height="64" rx="6" fill="#c8743a" stroke="${S}" stroke-width="3"/>
       <path d="M20 36 L34 44 L34 30Z M80 36 L66 44 L66 30Z" fill="#e0a93b" stroke="${S}" stroke-width="2.5"/>
@@ -1418,6 +1564,73 @@ const SVG = (()=>{
       <path d="M40 46 L60 46" stroke="${S}" stroke-width="3.5"/>
       <circle cx="43" cy="60" r="4" fill="${S}"/><circle cx="57" cy="60" r="4" fill="${S}"/>
       <path d="M40 72 Q50 80 60 72" stroke="${S}" stroke-width="3.5" fill="none"/>`,
+    dashFox:`<ellipse cx="50" cy="86" rx="22" ry="4" fill="#0002"/>
+      <path d="M74 78 Q92 70 84 48 Q80 62 68 64Z" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>
+      <path d="M85 50 Q90 60 80 62" fill="#e7f6f4" stroke="${S}" stroke-width="2"/>
+      <path d="M24 32 L18 8 L44 28Z" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>
+      <path d="M76 32 L82 8 L56 28Z" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>
+      <path d="M28 28 L24 15 L38 26Z" fill="#1d6b65"/>
+      <path d="M72 28 L76 15 L62 26Z" fill="#1d6b65"/>
+      <path d="M24 36 Q24 24 50 24 Q76 24 76 36 L62 58 Q50 68 38 58Z" fill="#5ec4bd" stroke="${S}" stroke-width="3"/>
+      <path d="M40 52 Q50 66 60 52 Q50 56 40 52Z" fill="#eafaf8" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="40" cy="42" r="3.2" fill="${S}"/>
+      <circle cx="60" cy="42" r="3.2" fill="${S}"/>
+      <path d="M50 56 L46 51 L54 51Z" fill="${S}"/>`,
+    bombFrog:`<ellipse cx="50" cy="88" rx="26" ry="5" fill="#0002"/>
+      <path d="M20 78 Q16 50 50 50 Q84 50 80 78 Q50 88 20 78Z" fill="#3aa6a0" stroke="${S}" stroke-width="3"/>
+      <path d="M28 78 Q20 84 26 88 Q32 86 34 82Z" fill="#3aa6a0" stroke="${S}" stroke-width="2.5"/>
+      <path d="M72 78 Q80 84 74 88 Q68 86 66 82Z" fill="#3aa6a0" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="34" cy="44" r="12" fill="#5ec4bd" stroke="${S}" stroke-width="3"/>
+      <circle cx="66" cy="44" r="12" fill="#5ec4bd" stroke="${S}" stroke-width="3"/>
+      <circle cx="34" cy="44" r="4.6" fill="#fff" stroke="${S}" stroke-width="1.5"/>
+      <circle cx="35" cy="45" r="2.4" fill="${S}"/>
+      <circle cx="66" cy="44" r="4.6" fill="#fff" stroke="${S}" stroke-width="1.5"/>
+      <circle cx="67" cy="45" r="2.4" fill="${S}"/>
+      <path d="M32 66 Q50 78 68 66" stroke="${S}" stroke-width="3" fill="none"/>
+      <path d="M52 50 Q56 40 62 38" stroke="#8a6a3a" stroke-width="2.5" fill="none"/>
+      <circle cx="63" cy="37" r="3.2" fill="#e0a93b"/>`,
+    healSprite:`<ellipse cx="50" cy="88" rx="18" ry="4" fill="#0002"/>
+      <circle cx="50" cy="56" r="22" fill="#aee0b8" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="54" r="3" fill="${S}"/><circle cx="57" cy="54" r="3" fill="${S}"/>
+      <path d="M45 64 Q50 68 55 64" fill="none" stroke="${S}" stroke-width="2.5"/>
+      <rect x="46" y="14" width="8" height="20" rx="2" fill="#3a9d57" stroke="${S}" stroke-width="2"/>
+      <rect x="40" y="20" width="20" height="8" rx="2" fill="#3a9d57" stroke="${S}" stroke-width="2"/>`,
+    slinger:`<ellipse cx="50" cy="86" rx="20" ry="4" fill="#0002"/>
+      <path d="M30 56 Q30 34 50 34 Q70 34 70 56 L66 78 Q50 84 34 78Z" fill="#d98a4a" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="52" r="3.4" fill="${S}"/><circle cx="57" cy="52" r="3.4" fill="${S}"/>
+      <path d="M42 62 Q50 58 58 62" fill="none" stroke="${S}" stroke-width="2.5"/>
+      <path d="M68 44 L84 38" stroke="${S}" stroke-width="3"/><circle cx="86" cy="37" r="5" fill="#7a6a5a" stroke="${S}" stroke-width="2"/>`,
+    shieldBear:`<ellipse cx="50" cy="90" rx="24" ry="5" fill="#0002"/>
+      <circle cx="28" cy="28" r="11" fill="#5a7fc0" stroke="${S}" stroke-width="3"/>
+      <circle cx="72" cy="28" r="11" fill="#5a7fc0" stroke="${S}" stroke-width="3"/>
+      <circle cx="28" cy="28" r="5" fill="#85a4d8"/><circle cx="72" cy="28" r="5" fill="#85a4d8"/>
+      <circle cx="50" cy="46" r="27" fill="#5a7fc0" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="54" rx="13" ry="10" fill="#d4e2f5" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="40" cy="42" r="3" fill="${S}"/><circle cx="60" cy="42" r="3" fill="${S}"/>
+      <path d="M50 50 L46 54 L54 54Z" fill="${S}"/>
+      <path d="M50 56 Q46 60 43 58 M50 56 Q54 60 57 58" stroke="${S}" stroke-width="2" fill="none"/>
+      <path d="M66 62 L92 62 L92 77 Q79 90 66 77Z" fill="#e0a93b" stroke="${S}" stroke-width="3"/>
+      <path d="M79 62 L79 84 M66 70 L92 70" stroke="#b3863a" stroke-width="2.5"/>`,
+    owlSage:`<ellipse cx="50" cy="88" rx="22" ry="4" fill="#0002"/>
+      <path d="M30 24 L24 5 L41 21Z" fill="#3a6ea5" stroke="${S}" stroke-width="3"/>
+      <path d="M70 24 L76 5 L59 21Z" fill="#3a6ea5" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="54" rx="26" ry="30" fill="#3a6ea5" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="62" rx="15" ry="19" fill="#bcd2ec"/>
+      <circle cx="38" cy="42" r="12" fill="#fff" stroke="${S}" stroke-width="3"/>
+      <circle cx="62" cy="42" r="12" fill="#fff" stroke="${S}" stroke-width="3"/>
+      <circle cx="38" cy="43" r="5" fill="${S}"/><circle cx="62" cy="43" r="5" fill="${S}"/>
+      <path d="M50 50 L44 58 L56 58Z" fill="#e0a93b" stroke="${S}" stroke-width="2.5"/>
+      <path d="M42 82 L42 88 M58 82 L58 88" stroke="${S}" stroke-width="3"/>
+      <path d="M25 52 Q19 64 29 74 M75 52 Q81 64 71 74" stroke="${S}" stroke-width="3" fill="none"/>`,
+    orcaKnight:`<ellipse cx="50" cy="88" rx="24" ry="4" fill="#0002"/>
+      <path d="M14 72 Q22 42 50 40 Q80 42 88 58 Q72 62 60 57 Q40 74 14 72Z" fill="#2f3b52" stroke="${S}" stroke-width="3"/>
+      <path d="M26 68 Q40 58 56 60 Q47 68 30 70Z" fill="#eef2f8"/>
+      <ellipse cx="35" cy="52" rx="6" ry="4" fill="#fff" stroke="${S}" stroke-width="1.5"/>
+      <circle cx="33" cy="52" r="2.6" fill="${S}"/>
+      <path d="M52 40 L58 16 L67 42Z" fill="#2f3b52" stroke="${S}" stroke-width="3"/>
+      <path d="M58 16 L60 8 L65 16Z" fill="#e0a93b" stroke="${S}" stroke-width="2"/>
+      <path d="M85 56 L97 47 L93 61 L99 66 L85 66Z" fill="#2f3b52" stroke="${S}" stroke-width="3"/>
+      <path d="M16 66 Q12 68 16 72" stroke="${S}" stroke-width="2" fill="none"/>`,
     // --- 城 ---
     castleA:`<rect x="14" y="40" width="36" height="74" fill="#8fb98f" stroke="${S}" stroke-width="3"/>
       <path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="#6fa06f" stroke="${S}" stroke-width="3"/>
@@ -1442,6 +1655,7 @@ const QuizEngine = (()=>{
   let DB = [];
   try{ if(typeof ENGLISH_QUESTION_DB!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB); }catch(e){}
   try{ if(typeof ENGLISH_QUESTION_DB_BATCH2!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB_BATCH2); }catch(e){}
+  try{ if(typeof ENGLISH_IDIOM_DB!=='undefined') DB = DB.concat(ENGLISH_IDIOM_DB); }catch(e){}
   if(DB.length===0){
     DB = [
       {genre:"grammar",diff:"junior",type:"choice",question:"I ( ) a student.",choices:["am","is","are","be"],answer:0,desc:"主語が I のとき be動詞は am。"},
@@ -1454,35 +1668,66 @@ const QuizEngine = (()=>{
       {genre:"word",diff:"mid",type:"typing",name:"科学",answer:"science",desc:"science = 科学。"}
     ];
   }
-  // 学習レンジ → 許可する難易度
-  const RANGES = {
-    "はじめて": ["junior"],
-    "中1":     ["junior"],
-    "中2":     ["junior","mid"],
-    "中3":     ["junior","mid","senior"],
-    "入試":     ["junior","mid","senior","supreme"],
-    "全部":     ["junior","mid","senior","supreme"]
-  };
-  let range = "はじめて";
-  const wordsByDiff = {};
-  DB.forEach(q=>{ if(q.genre==="word"){ (wordsByDiff[q.diff]=wordsByDiff[q.diff]||[]).push(q); }});
+  // ===== 難易度＝英検級(4級〜準1級)×ティア(必須/基礎/発展)・ジャンル(単語/熟語/文法) =====
+  const EIKEN = [
+    {key:"e4",  label:"4級"},
+    {key:"e3",  label:"3級"},
+    {key:"ep2", label:"準2級"},
+    {key:"e2",  label:"2級"},
+    {key:"ep1", label:"準1級"}
+  ];
+  const TIERS = [
+    {key:"must",  label:"必須"},
+    {key:"basic", label:"基礎"},
+    {key:"adv",   label:"発展"}
+  ];
+  const GENRES = [
+    {key:"word",    label:"単語"},
+    {key:"idiom",   label:"熟語"},
+    {key:"grammar", label:"文法"}
+  ];
+  const LV_ORDER = EIKEN.map(e=>e.key);
+  const TIER_ORDER = TIERS.map(t=>t.key);
+  const LV_LABEL = {}; EIKEN.forEach(e=>LV_LABEL[e.key]="英検"+e.label);
 
-  function pool(){ const ok = RANGES[range]; return DB.filter(q=> ok.includes(q.diff)); }
-  function setRange(r){ range=r; }
-  function getRange(){ return range; }
-  function ranges(){ return Object.keys(RANGES); }
+  // 既存4段階(junior/mid/senior/supreme)→英検級へ自動再マッピング。
+  // level/tier が既にあれば尊重（Codex/Gemini で精緻化したデータを将来差し込めるように）。
+  (function normalize(){
+    let i=0;
+    DB.forEach(q=>{
+      if(!q.level){
+        if(q.diff==="junior") q.level="e4";
+        else if(q.diff==="mid") q.level="e3";
+        else if(q.diff==="senior") q.level="ep2";
+        else if(q.diff==="supreme") q.level=(i%2? "ep1":"e2");
+        else q.level="e4";
+      }
+      if(!q.tier) q.tier = TIER_ORDER[i%3];
+      i++;
+    });
+  })();
+
+  // 同種(単語/熟語)・同レベルのダミー語プール
+  const distractPool = {};
+  DB.forEach(q=>{ if(q.genre==="word"||q.genre==="idiom"){ const k=q.genre+"|"+q.level; (distractPool[k]=distractPool[k]||[]).push(q); }});
+
+  // 選択状態（複数選択：ジャンル/難易度を混ぜてもOK・単一も可）
+  let selLevels = new Set(["e4"]);
+  let selTiers  = new Set(["must","basic","adv"]);
+  let selGenres = new Set(["word","idiom","grammar"]);
+
+  function pool(){ return DB.filter(q=> selLevels.has(q.level) && selTiers.has(q.tier) && selGenres.has(q.genre)); }
+  function poolCount(){ return pool().length; }
 
   const rnd = a=>a[Math.floor(Math.random()*a.length)];
 
-  // word を 4択/2択に変換（EN→意味 / 意味→EN をランダム）
   function buildWord(q, choiceCount){
-    const sameDiff = (wordsByDiff[q.diff]||[]).filter(w=>w.answer!==q.answer);
+    const same = (distractPool[q.genre+"|"+q.level]||[]).filter(w=>w.answer!==q.answer);
     const dirEnToJp = Math.random()<0.5;
-    const distract = [];
-    const used = new Set([q.answer]);
-    while(distract.length < choiceCount-1 && sameDiff.length){
-      const w = rnd(sameDiff);
-      if(used.has(w.answer)) { if(used.size>20) break; else continue; }
+    const distract = []; const used = new Set([q.answer]);
+    while(distract.length < choiceCount-1 && same.length){
+      const w = rnd(same);
+      if(used.has(w.answer)) { if(used.size>30) break; else continue; }
       used.add(w.answer); distract.push(w);
     }
     let labels, qtext;
@@ -1493,54 +1738,62 @@ const QuizEngine = (()=>{
       qtext = `「${q.name}」は英語で？`;
       labels = [q.answer, ...distract.map(w=>w.answer)];
     }
-    // 正解を混ぜる
     const correct = labels[0];
     const shuffled = labels.slice().sort(()=>Math.random()-0.5);
-    return { genre:"word", diff:q.diff, qtext, choices:shuffled,
+    return { genre:q.genre, level:q.level, qtext, choices:shuffled,
       answerIndex:shuffled.indexOf(correct), desc:q.desc, choiceCount };
   }
   function buildGrammar(q, choiceCount){
     let choices = q.choices.slice();
     let correct = choices[q.answer];
     if(choiceCount===2){
-      // 正解＋ダミー1（元の選択肢から）
       const wrong = choices.filter((c,i)=>i!==q.answer);
       choices = [correct, rnd(wrong)].sort(()=>Math.random()-0.5);
     }
     const qtext = q.question.replace("( )", '<span class="blank">(&nbsp;&nbsp;)</span>');
-    return { genre:"grammar", diff:q.diff, qtext, choices,
+    return { genre:"grammar", level:q.level, qtext, choices,
       answerIndex:choices.indexOf(correct), desc:q.desc, choiceCount };
   }
 
-  // 復習キュー（ステージ非依存・学習レイヤー側に持つ）
   let reviewQ=[];
-  function pushReview(built){
-    if(!built) return;
-    reviewQ.push(Object.assign({}, built, {review:true, locked:false}));
-    if(reviewQ.length>20) reviewQ.shift();
-  }
+  function pushReview(built){ if(!built) return; reviewQ.push(Object.assign({}, built, {review:true, locked:false})); if(reviewQ.length>20) reviewQ.shift(); }
   function reviewCount(){ return reviewQ.length; }
 
-  // 次の1問。choiceCount は呼び出し側（やさしさ/連続ミス）で指定。
   function next(choiceCount){
-    // 35%で復習を差し込む（少し間を置いて再挑戦＝「さっき見たやつだ」体験）
     if(reviewQ.length && Math.random()<0.35){
-      return Object.assign({}, reviewQ.shift(), {review:true, locked:false});
+      const __i=reviewQ.findIndex(r=>selGenres.has(r.genre));
+      if(__i>=0){ return Object.assign({}, reviewQ.splice(__i,1)[0], {review:true, locked:false}); }
     }
     const p = pool(); if(!p.length) return null;
     const q = rnd(p);
-    return q.genre==="word" ? buildWord(q, choiceCount) : buildGrammar(q, choiceCount);
+    return q.genre==="grammar" ? buildGrammar(q, choiceCount) : buildWord(q, choiceCount);
   }
 
-  // §5 コンボ増加量：形式正規化×難易度×端数確率
+  // コンボ増加：単語/熟語=2択+1・4択+2／文法=2択+2・4択+4。さらに上の級ほど倍率UP（上の難易度を選びたくなる）。
   function comboGain(q){
     const base = q.genre==="grammar" ? (q.choiceCount===4?4:2) : (q.choiceCount===4?2:1);
-    const dm = {junior:1.0, mid:1.25, senior:1.5, supreme:2.0}[q.diff]||1;
-    const x = base*dm;
+    const lm = {e4:1.0, e3:1.25, ep2:1.5, e2:1.75, ep1:2.2}[q.level]||1;
+    const x = base*lm;
     let g = Math.floor(x); if(Math.random() < (x-g)) g++;
     return Math.max(1,g);
   }
-  return { next, comboGain, setRange, getRange, ranges, pushReview, reviewCount, size:()=>DB.length };
+
+  // 選択UI・保存用API
+  function getSel(){ return {levels:[...selLevels], tiers:[...selTiers], genres:[...selGenres]}; }
+  function setSel(s){ if(!s) return;
+    if(Array.isArray(s.levels)&&s.levels.length) selLevels=new Set(s.levels.filter(k=>LV_ORDER.includes(k)));
+    if(Array.isArray(s.tiers)&&s.tiers.length)  selTiers =new Set(s.tiers.filter(k=>TIER_ORDER.includes(k)));
+    if(Array.isArray(s.genres)&&s.genres.length) selGenres=new Set(s.genres.filter(k=>["word","idiom","grammar"].includes(k)));
+  }
+  function toggleIn(set, key){ if(set.has(key)){ if(set.size>1) set.delete(key); } else { set.add(key); } }
+  function toggleLevel(k){ toggleIn(selLevels,k); }
+  function toggleTier(k){ toggleIn(selTiers,k); }
+  function toggleGenre(k){ toggleIn(selGenres,k); }
+
+  return { next, comboGain, pushReview, reviewCount, size:()=>DB.length,
+    EIKEN, TIERS, GENRES, LV_LABEL, LV_ORDER,
+    getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount,
+    has:(t,k)=>(t==='level'?selLevels:t==='tier'?selTiers:selGenres).has(k) };
 })();
 
 /* =========================================================================
@@ -1550,7 +1803,13 @@ const ROSTER = {
   guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:120, atk:14, speed:34, range:42, weight:46},
   arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, weight:26},
   moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, weight:14},
-  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8}
+  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8},
+  dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, weight:34},
+  bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:16, speed:36, range:74, splash:true, weight:16},
+  healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:130, atk:5, speed:30, range:64, heal:10, weight:9},
+  shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, weight:20},
+  owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, weight:11},
+  orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7}
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
@@ -1579,6 +1838,7 @@ function buildEnemyWaves(area, boss){
   push(t(13),tank, Math.max(1,Math.round(1.4*area*0.4)), 1400); // 硬めで停滞回避＝ためる山
   push(t(18),"slime", Math.round(3*dens), 600);              // 急々ラッシュ
   push(t(18.3),"hare",Math.round(2*dens), 600);
+  if(area>=3) push(t(10),"slinger", Math.max(1,Math.round(area*0.35)), 1300); // 遠距離で揺さぶり
   if(area>=8) push(t(19),tank, 2, 900);
   return W;
 }
@@ -1606,7 +1866,8 @@ const ENEMY_TYPES = {
   slime:{name:"スライム",sprite:"slime",hp:60, atk:9, speed:26, range:40},
   hare: {name:"はやウサ",sprite:"hare", hp:42, atk:7, speed:46, range:40},
   totem:{name:"トーテム",sprite:"totem",hp:160,atk:13,speed:18, range:44},
-  torii:{name:"トリイ",  sprite:"torii",hp:240,atk:15,speed:16, range:44}
+  torii:{name:"トリイ",  sprite:"torii",hp:240,atk:15,speed:16, range:44},
+  slinger:{name:"つぶて鬼", sprite:"slinger", hp:75, atk:12, speed:20, range:115}
 };
 const BOSS_BASE = {atk:26, speed:13, range:70, hp:1000};
 
@@ -1621,6 +1882,14 @@ const Game = (()=>{
   let cleared = {};        // {area:true}
   let autoSummon = false;  // 苦手な子向け（操作を問題に集中）
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
+  let owned = {};          // 入手済み {key:count}
+  let deck = [];           // 編成(最大5)
+  let castleLv = 0;        // 城強化Lv(HP)
+  let unitLv = {};         // キャラ強化 {key:lv}
+  let regenLv = 0;         // エネルギー増加速度Lv
+  let enMaxLv = 0;         // エネルギー上限Lv
+  let choiceMode = 4;      // 2択/4択を固定(混ぜない)
+  let homeView = 'menu';   // ホームの表示(menu/play/grow/settings)
   let curStage = null;
 
   let soundOn = true;
@@ -1628,13 +1897,181 @@ const Game = (()=>{
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
       gold=s.gold||0; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
-      if(s.range) QuizEngine.setRange(s.range);
+      owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
+      unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
+      if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
+    ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), range:QuizEngine.getRange()})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
+
+  /* ============ 入手(ガチャ)・編成・城強化 ============ */
+  const GACHA_COST = 300;
+  const RARITY_W = {N:58, R:28, SR:11, SSR:3};
+  let lastGacha = null;
+  function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
+  function ensureStarter(){
+    if(Object.keys(owned).length===0){ owned={guardTurtle:1, arrowBird:1, dashFox:1}; }
+    deck = deck.filter(function(k){return owned[k];});
+    if(deck.length===0){ deck = Object.keys(owned).slice(0,5); }
+    if(deck.length>5) deck = deck.slice(0,5);
+  }
+  function castleMaxHp(){ return 1000 + castleLv*250; }
+  function castleUpCost(){ return 250*(castleLv+1); }
+  function doGacha(){
+    if(gachaAnimating) return;
+    if(gold < GACHA_COST){ lastGacha={msg:'ゴールドが足りません（'+GACHA_COST+'G必要）'}; renderGacha(); return; }
+    gold -= GACHA_COST;
+    let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
+    let x=Math.random()*tot, rar='N';
+    for(const r in RARITY_W){ x-=RARITY_W[r]; if(x<=0){ rar=r; break; } }
+    let pool=unitsByRarity(rar); if(!pool.length) pool=ROSTER_KEYS;
+    const key=pool[Math.floor(Math.random()*pool.length)];
+    const isNew=!owned[key];
+    const wasStars=Math.min(4, Math.max(0, (owned[key]||0)-1));
+    owned[key]=(owned[key]||0)+1;
+    if(isNew && deck.length<5) deck.push(key);
+    const stars=Math.min(4, owned[key]-1);
+    let refunded=0;
+    if(!isNew && wasStars>=4){ refunded=80; gold+=80; }
+    lastGacha={key:key, isNew:isNew, rar:rar, stars:stars, refunded:refunded};
+    save(); playGachaAnim(lastGacha);
+  }
+  function toggleDeck(key){
+    if(!owned[key]) return;
+    const i=deck.indexOf(key);
+    if(i>=0){ if(deck.length<=1) return; deck.splice(i,1); }
+    else { if(deck.length>=5) return; deck.push(key); }
+    save(); renderHome();
+  }
+  function upgradeCastle(){ const c=castleUpCost(); if(gold<c) return; gold-=c; castleLv++; Sound.play('correct'); save(); renderHome(); }
+  function unitChip(key, selected){
+    const r=ROSTER[key];
+    const b=document.createElement('button');
+    b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid '+(selected?'var(--good)':'var(--line)')+';background:'+(selected?'#eafaef':'#fff')+';border-radius:12px;padding:6px 8px;min-width:62px;position:relative';
+    b.innerHTML='<span style="position:absolute;top:-8px;left:-4px;font-size:10px;font-weight:800;color:#fff;background:'+r.rarColor+';padding:0 4px;border-radius:6px">'+r.rar+'</span><span style="width:40px;height:40px;display:block">'+SVG.get(r.sprite)+'</span><span style="font-size:11px;font-weight:700">'+r.name+'</span>'+(unitStars(key)?'<span style="font-size:10px;color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'');
+    b.addEventListener('click',function(){toggleDeck(key);});
+    return b;
+  }
+  /* ---- ガチャ演出 ---- */
+  let gachaAnimating=false;
+  function gachaRevealHTML(info){
+    const r=ROSTER[info.key];
+    let tag;
+    if(info.isNew) tag='<span style="color:var(--good)">NEW!</span>';
+    else if(info.refunded) tag='<span class="muted">★MAX（+'+info.refunded+'G）</span>';
+    else if(info.stars>0) tag='<span style="color:var(--gold)">'+'★'.repeat(info.stars)+'にUP！</span>';
+    else tag='<span class="muted">（ダブり）</span>';
+    return '<div class="greveal" style="--rc:'+r.rarColor+'"><div class="gburst"></div>'+
+      '<div class="grarbig" style="color:'+r.rarColor+'">'+r.rar+'</div>'+
+      '<div class="gunit">'+SVG.get(r.sprite)+'</div>'+
+      '<div class="gname">'+r.name+' '+tag+'</div></div>';
+  }
+  function playGachaAnim(info){
+    const stage=$('gachaStage'); const gp=$('goldPill'); if(gp) gp.textContent='💰 '+gold;
+    if(!stage){ renderHome(); return; }
+    const r=ROSTER[info.key]; const hi=(info.rar==='SR'||info.rar==='SSR');
+    gachaAnimating=true; renderGacha();
+    stage.innerHTML='<div class="gcapsule'+(hi?' hi':'')+'" style="--rc:'+r.rarColor+'"></div>';
+    Sound.play('summon');
+    setTimeout(function(){
+      gachaAnimating=false;
+      stage.innerHTML=gachaRevealHTML(info);
+      Sound.play(hi?'win':'correct');
+      renderGacha();
+    },1150);
+  }
+
+  /* ---- キャラ強化 ---- */
+  function unitLevel(key){ return unitLv[key]||0; }
+  function unitUpCost(key){ return 100*(unitLevel(key)+1); }
+  function unitStars(key){ return Math.min(4, Math.max(0, (owned[key]||0)-1)); }
+  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
+  function upgradeUnit(key){ if(!owned[key]) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
+  function renderGachaList(){
+    const body=$('gachaListBody'); if(!body) return; body.innerHTML='';
+    let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
+    ['SSR','SR','R','N'].forEach(function(rar){
+      const us=unitsByRarity(rar); if(!us.length) return;
+      const rate=RARITY_W[rar]/tot*100, per=rate/us.length;
+      const head=document.createElement('div'); head.style.cssText='font-weight:800;margin:10px 0 4px;color:'+ROSTER[us[0]].rarColor; head.textContent=rar+'　計'+rate.toFixed(0)+'%（各 '+per.toFixed(1)+'%）';
+      body.appendChild(head);
+      us.forEach(function(key){
+        const r=ROSTER[key], st=unitStars(key), have=(owned[key]||0)>0;
+        const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:10px;padding:6px 8px;margin-bottom:6px;background:'+(have?'#fff':'#f1ece0')+';opacity:'+(have?'1':'.6');
+        row.innerHTML='<span style="width:38px;height:38px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
+          '<div style="flex:1;min-width:0"><div style="font-weight:700">'+r.name+(have?' <span style="color:var(--gold)">'+'★'.repeat(st)+'</span>':' <span class="muted">未所持</span>')+'</div>'+
+          '<div class="muted" style="font-size:12px">排出 '+per.toFixed(1)+'%</div></div>';
+        body.appendChild(row);
+      });
+    });
+  }
+  function renderCharup(){
+    const body=$('charupBody'); if(!body) return; body.innerHTML='';
+    const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
+    Object.keys(owned).forEach(function(key){
+      const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key);
+      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff';
+      row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span> '+(unitStars(key)?'<span style="color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'')+'</div>'+
+        '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'</div></div>';
+      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)';
+      btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',function(){upgradeUnit(key);});
+      row.appendChild(btn); list.appendChild(row);
+    });
+    body.appendChild(list);
+  }
+
+  /* ---- 城強化(拡張) ---- */
+  function regenVal(){ return 8 + regenLv*1; }
+  function regenCost(){ return 300*(regenLv+1); }
+  function enMaxVal(){ return 200 + enMaxLv*30; }
+  function enMaxCost(){ return 250*(enMaxLv+1); }
+  function upgradeRegen(){ const c=regenCost(); if(gold<c) return; gold-=c; regenLv++; Sound.play('correct'); save(); renderHome(); }
+  function upgradeEnMax(){ const c=enMaxCost(); if(gold<c) return; gold-=c; enMaxLv++; Sound.play('correct'); save(); renderHome(); }
+
+  function renderGacha(){
+    const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'G）';
+    const stage=$('gachaStage');
+    if(stage && !gachaAnimating){
+      if(lastGacha && lastGacha.key) stage.innerHTML=gachaRevealHTML(lastGacha);
+      else stage.innerHTML='<div class="muted" style="text-align:center">カプセルを回して<br>味方をGETしよう！</div>';
+    }
+    const body=$('gachaBody'); if(!body) return; body.innerHTML='';
+    const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='width:100%'; btn.textContent= gachaAnimating?'…':'🎰 ガチャを引く（'+GACHA_COST+'G）';
+    btn.disabled = gachaAnimating || gold<GACHA_COST; btn.addEventListener('click',doGacha); body.appendChild(btn);
+    if(!gachaAnimating && gold<GACHA_COST){ const m=document.createElement('div'); m.className='muted'; m.style.cssText='margin-top:6px;text-align:center'; m.textContent='ゴールドが足りません（ステージで稼ごう）'; body.appendChild(m); }
+  }
+  function renderDeck(){
+    const body=$('deckBody'); if(!body) return; body.innerHTML='';
+    const row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
+    for(let i=0;i<5;i++){
+      const slot=document.createElement('div'); slot.style.cssText='width:54px;height:54px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px '+(deck[i]?'solid var(--ally)':'dashed var(--line)');
+      if(deck[i]) slot.innerHTML='<span style="width:42px;height:42px;display:block">'+SVG.get(ROSTER[deck[i]].sprite)+'</span>'; else slot.textContent='＋';
+      row.appendChild(slot);
+    }
+    body.appendChild(row);
+    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='手持ちをタップで編成（最大5体）。戦闘の召喚はこの編成からランダムに出ます。';
+    body.appendChild(note);
+    const list=document.createElement('div'); list.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    Object.keys(owned).forEach(function(key){ list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
+    body.appendChild(list);
+  }
+  function renderCastle(){
+    const body=$('castleBody'); if(!body) return; body.innerHTML='';
+    function urow(icon,label,cur,deltaTxt,cost,onClick){
+      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
+      row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:800">'+icon+' '+label+'</div><div class="muted" style="font-size:12px">現在 '+cur+'　→　'+deltaTxt+'</div></div>';
+      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)'; btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',onClick); row.appendChild(btn); body.appendChild(row);
+    }
+    urow('🏰','自城HP', castleMaxHp(), '+250', castleUpCost(), upgradeCastle);
+    urow('⚡','エネルギー増加速度', regenVal()+'/秒', '+1/秒', regenCost(), upgradeRegen);
+    urow('🔋','エネルギー上限', enMaxVal(), '+30', enMaxCost(), upgradeEnMax);
+  }
+
 
   /* ============ 演出（FX）＆サウンド ============ */
   const CRACK_SVG = '<svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="none" style="display:block">'
@@ -1694,9 +2131,9 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:30, energyMax:200, baseRegen:8, softcap:12, maxMult:4,
+      energy:30, energyMax:enMaxVal(), baseRegen:regenVal(), softcap:12, maxMult:4,
       combo:0, bestCombo:0,
-      castleA:1000, castleAMax:1000,
+      castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
       allies:[], enemies:[], spawnIdx:0, bossAlive:false, bossPhase:false,
       queue:[], answered:0, correct:0, missStreak:0, reviewWins:0,
@@ -1706,28 +2143,43 @@ const Game = (()=>{
   }
 
   /* ---- 画面遷移 ---- */
-  function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); $(id).classList.add('on'); }
+  function show(id){ document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('on'); s.style.display='none'; }); var __e=$(id); if(__e){ __e.classList.add('on'); __e.style.display='flex'; } }
   function toHome(){
     stopBattle();
     Sound.ensure(); $('soundBtn').textContent = Sound.isOn()?'🔊':'🔇';
-    renderHome(); show('home');
+    homeView='menu'; renderHome(); show('home');
   }
   function start(){
     load();
     $('titleCrest').innerHTML = SVG.get('crest');
+    show('title');
   }
 
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
-    // 学習レンジ
-    const seg = $('rangeSeg'); seg.innerHTML='';
-    QuizEngine.ranges().forEach(r=>{
-      const b=document.createElement('button'); b.textContent=r;
-      if(r===QuizEngine.getRange()) b.classList.add('sel');
-      b.onclick=()=>{ QuizEngine.setRange(r); save(); renderHome(); };
-      seg.appendChild(b);
-    });
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList();
+    // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
+    const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
+    const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
+    document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
+    document.querySelectorAll('#home .homeview').forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-view')===homeView); });
+    const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ homeView=__parent[homeView]||'menu'; renderHome(); }; }
+    // 出題設定（ジャンル/英検級/ティア＝複数選択・混在OK、選択肢=固定）
+    function __seg(id, items, isOn, onToggle){
+      const seg=$(id); if(!seg) return; seg.innerHTML='';
+      items.forEach(function(it){ const b=document.createElement('button'); b.textContent=it.label;
+        if(isOn(it.key)) b.classList.add('sel');
+        b.onclick=function(){ onToggle(it.key); save(); renderHome(); };
+        seg.appendChild(b); });
+    }
+    __seg('genreSeg', QuizEngine.GENRES, function(k){return QuizEngine.has('genre',k);}, function(k){QuizEngine.toggleGenre(k);});
+    __seg('levelSeg', QuizEngine.EIKEN,  function(k){return QuizEngine.has('level',k);}, function(k){QuizEngine.toggleLevel(k);});
+    __seg('tierSeg',  QuizEngine.TIERS,  function(k){return QuizEngine.has('tier',k);},  function(k){QuizEngine.toggleTier(k);});
+    __seg('choiceSeg', [{key:2,label:'2択'},{key:4,label:'4択'}], function(k){return k===choiceMode;}, function(k){choiceMode=k;});
+    const __pc=$('poolCount'); if(__pc) __pc.textContent='今の出題範囲：'+QuizEngine.poolCount()+'問';
     // あそびやすさトグル
     const ta=$('tgAuto'), ts=$('tgSlow');
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
@@ -1774,13 +2226,11 @@ const Game = (()=>{
 
   /* ---- 召喚キュー（ランダム＋たまにコスパ枠） ---- */
   function drawUnit(){
-    // 重み付き抽選
-    let total=0; ROSTER_KEYS.forEach(k=>total+=ROSTER[k].weight);
-    let r=Math.random()*total, key=ROSTER_KEYS[0];
-    for(const k of ROSTER_KEYS){ r-=ROSTER[k].weight; if(r<=0){key=k;break;} }
-    const base=ROSTER[key];
+    // 編成(deck)からランダムに出撃
+    const keys=(deck&&deck.length)?deck:ROSTER_KEYS;
+    const key=keys[Math.floor(Math.random()*keys.length)];
+    const base=ROSTER[key]||ROSTER[ROSTER_KEYS[0]];
     let cost=base.cost, bargain=false;
-    // コスパ枠：高レア(SR/SSR)が8%で割安に
     if((base.rar==="SR"||base.rar==="SSR") && Math.random()<0.18){ cost=Math.round(base.cost*0.6); bargain=true; }
     return { key, cost, bargain };
   }
@@ -1814,7 +2264,8 @@ const Game = (()=>{
     el.innerHTML = `<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(r.sprite);
     $('field').appendChild(el);
     fxGate(84); Sound.play('summon');
-    B.allies.push({ key, el, x:84, hp:r.hp, hpMax:r.hp, atk:r.atk, speed:r.speed, range:r.range, cd:0 });
+    const __st=unitStats(key);
+    B.allies.push({ key, el, x:84, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal });
   }
   function spawnEnemy(type){
     if(type==="BOSS"){ spawnBoss(); return; }
@@ -1840,8 +2291,8 @@ const Game = (()=>{
   /* ---- 問題 ---- */
   let curQ=null;
   function nextQuestion(){
-    // 連続ミスで2択に救済、やさしいモードも2択寄り
-    const cc = (B.missStreak>=2) ? 2 : (Math.random()<0.5?2:4);
+    // 2択/4択は設定で固定（混ぜない）
+    const cc = choiceMode;
     curQ = QuizEngine.next(cc);
     if(!curQ){ $('qtext').textContent='問題データが読めませんでした'; return; }
     $('qtext').innerHTML = (curQ.review?'<span style="color:var(--gold)">🔁 </span>':'') + curQ.qtext;
@@ -1911,10 +2362,11 @@ const Game = (()=>{
     // 味方：右へ。敵 or 敵城と戦う
     B.allies.forEach(a=>{
       a.cd-=dt;
+      if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.speed*dt; place(a.el,a.x); return; }
       const target = nearestEnemy(a);
       const enemyCastleX = W-70;
       if(target && Math.abs(target.x-a.x) <= a.range){
-        if(a.cd<=0){ damage(target, a.atk); a.cd=0.7; flash(a.el); hitFx(target); }
+        if(a.cd<=0){ if(a.splash){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range) damage(e,a.atk); }); floatText(a.x,26,'💥','var(--ally)'); } else { damage(target, a.atk); } a.cd=0.7; flash(a.el); hitFx(target); }
       }else if(!target && a.x >= enemyCastleX-a.range){
         if(a.cd<=0){ B.castleE-=a.atk; a.cd=0.7; flash(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(a.atk), 'var(--good)'); }
       }else{
@@ -2025,5 +2477,7 @@ const Game = (()=>{
 Game.start();
 window.addEventListener('DOMContentLoaded', Game.start);
 </script>
+<div id="__buildbadge" style="position:fixed;left:6px;bottom:6px;right:6px;z-index:99998;background:#3aa6a0;color:#fff;font:bold 11px/1.3 monospace;padding:4px 8px;border-radius:8px;opacity:.95;box-shadow:0 2px 6px rgba(0,0,0,.3);word-break:break-all">build 0605e</div>
+<script>(function(){var errs=[];window.addEventListener("error",function(e){errs.push((e.message||"err").toString().slice(0,70))});window.addEventListener("unhandledrejection",function(e){errs.push("rej:"+((e.reason&&e.reason.message)||e.reason||"").toString().slice(0,60))});setInterval(function(){var b=document.getElementById("__buildbadge");if(!b)return;var on=[].slice.call(document.querySelectorAll(".screen.on")).map(function(s){return s.id}).join(",")||"none";var cA=((document.getElementById("castleAsvg")||{}).innerHTML||"").length>10?"城Y":"城N";var qt=((document.getElementById("qtext")||{}).textContent||"").trim()?"問Y":"問N";var ch=((document.getElementById("choices")||{}).children||[]).length;var db=(window.getComputedStyle&&document.getElementById("battle"))?getComputedStyle(document.getElementById("battle")).display:"?";var cv=(navigator.userAgent.match(/Chrome\/(\d+)/)||[])[1]||"?";b.textContent="0605e 画面:"+on+" dispB:"+db+" "+cA+" "+qt+" 選"+ch+" Cr"+cv+(errs.length?(" ERR:"+errs[errs.length-1]):" err無");},400);})();</script>
 </body>
 </html>

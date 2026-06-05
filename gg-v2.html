@@ -27,7 +27,7 @@
     background:var(--bg); color:var(--ink); overflow:hidden;
     display:flex; align-items:center; justify-content:center;
   }
-  #app{width:min(960px,100vw); height:min(640px,100vh); position:relative; background:var(--panel);
+  #app{width:min(960px,100vw); height:min(640px,100dvh); position:relative; background:var(--panel);
     box-shadow:0 8px 30px rgba(0,0,0,.18); overflow:hidden}
   .screen{position:absolute; inset:0; display:none; flex-direction:column}
   .screen.on{display:flex}
@@ -72,7 +72,7 @@
   #combo-big{font-weight:800; font-size:15px; color:var(--gold); min-width:78px; text-align:right}
   #combo-big b{font-size:22px}
 
-  #field{position:relative; flex:1; overflow:hidden; transition:background .4s;
+  #field{position:relative; flex:1 1 0; min-height:0; overflow:hidden; transition:background .4s;
     background:linear-gradient(#cfe3f2 0 58%, #d8c79a 58% 100%)}
   #field.warm{background:linear-gradient(#ecdcb6 0 58%, #d8c79a 58% 100%)}
   #field.hot{background:linear-gradient(#f4d2bc 0 58%, #d8c79a 58% 100%)}
@@ -107,7 +107,7 @@
   #summonBtn:disabled{filter:grayscale(.7) brightness(.95); opacity:.6}
 
   /* 問題エリア */
-  #quiz{padding:8px 12px 12px; background:var(--panel); border-top:2px solid var(--line)}
+  #quiz{flex:0 0 auto; padding:8px 12px 12px; background:var(--panel); border-top:2px solid var(--line)}
   #qtext{font-size:18px; font-weight:800; min-height:26px; margin-bottom:8px; text-align:center}
   #qtext .blank{color:var(--ally)}
   #choices{display:grid; grid-template-columns:1fr 1fr; gap:8px}
@@ -188,6 +188,7 @@
   @keyframes badgePop{from{transform:rotate(-4deg) scale(.3); opacity:0} to{transform:rotate(-4deg) scale(1); opacity:1}}
   .soundbtn{position:absolute; top:8px; right:10px; z-index:30; border:2px solid var(--line); background:#fff;
     border-radius:999px; width:34px; height:34px; font-size:16px; padding:0}
+  .homebtn{position:absolute; top:8px; left:10px; z-index:30; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink)}
 </style>
 </head>
 <body>
@@ -238,6 +239,7 @@
       <div class="tierflash" id="tierflash"></div>
       <div id="fxBanner"></div>
       <button class="soundbtn" id="soundBtn" onclick="Game.toggleSound()" title="音">🔊</button>
+      <button class="homebtn" id="homeBtn" onclick="Game.toHome()" title="ホームへ">🏠 ホーム</button>
       <div class="castle" id="castleA"><div class="csvg" id="castleAsvg"></div><span class="warn"></span><span class="crack" id="crackA"></span></div>
       <div class="castle" id="castleE"><div class="csvg" id="castleEsvg"></div><span class="warn"></span><span class="crack" id="crackE"></span></div>
     </div>
@@ -2014,6 +2016,8 @@ const Game = (()=>{
 
   // スペースキー召喚
   window.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); summon(); } });
+  // 凍結タブ復元時は戦闘の途中状態で固まらないようホームへ戻す
+  window.addEventListener('pageshow', e=>{ if(e.persisted){ try{ toHome(); }catch(_){} } });
 
   return { start, toHome, summon, toggleSound, _stages:STAGES };
 })();
