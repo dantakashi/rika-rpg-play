@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>割れる数ラン 🦍🏃💥</title>
+<style>
+  /* ============================================================
+     割れる数ラン — 数学バカゲー第2弾
+     章＝99までの素数。迫る2つの壁(数字)のうち「その素数で割り切れる方」へ
+     ゴリラを左右レーン移動で走り込ませて壁をブチ破る。間違うと即ゲームオーバー。
+     正解するほど加速。出題は mathbank.js の divisible(p, level)。
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#cfe9ff 0%,#eaf7ff 40%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px; }
+  h1{ margin:.2em 0; font-size:clamp(22px,6vw,34px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 8px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+
+  /* ---- 章選択 ---- */
+  .chapInfo{ text-align:center; font-size:13px; color:#6b6250; margin:0 0 10px; }
+  .chapGrid{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .chap{ position:relative; padding:12px 0; border:3px solid var(--line); border-radius:12px;
+    background:#fffdf5; font-size:20px; font-weight:800; text-align:center; }
+  .chap small{ display:block; font-weight:400; color:#9a8a64; font-size:10px; margin-top:2px; min-height:12px; }
+  .chap:active{ transform:scale(.96); }
+
+  /* ---- プレイ ---- */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:8px; font-size:14px; }
+  .hud .big{ font-size:20px; color:var(--blue); }
+  .hud .sp{ margin-left:auto; color:var(--red); }
+  .track{ position:relative; width:100%; height:62vh; min-height:340px; border-radius:14px; overflow:hidden;
+    background:linear-gradient(180deg,#bfe3ff 0%,#9fd0f5 60%,#7bbe6e 60%,#69b25e 100%);
+    border:3px solid var(--line); touch-action:none; }
+  /* レーン分割線 */
+  .laneLine{ position:absolute; top:0; bottom:0; left:50%; width:0; border-left:4px dashed rgba(255,255,255,.6); }
+  /* 壁（青/赤） */
+  .wall{ position:absolute; width:44%; height:15%; display:flex; align-items:center; justify-content:center;
+    font-size:clamp(26px,8vw,44px); font-weight:900; color:#fff; border-radius:10px;
+    text-shadow:0 2px 4px rgba(0,0,0,.35); box-shadow:inset 0 -6px 0 rgba(0,0,0,.18); will-change:top; }
+  #wallL{ left:3%; background:linear-gradient(180deg,#5aa0ff,#2f7de1); }
+  #wallR{ right:3%; background:linear-gradient(180deg,#ff7a6a,#e0533d); }
+  .wall.broken{ animation:shatter .35s forwards; }
+  @keyframes shatter{ to{ transform:scale(1.3) rotate(8deg); opacity:0; } }
+  /* ゴリラ（走者） */
+  .runner{ position:absolute; bottom:6%; width:44%; text-align:center; font-size:clamp(30px,10vw,52px);
+    transition:left .12s ease; will-change:left, transform; }
+  .runner.burst{ animation:burst .4s forwards; }
+  @keyframes burst{ to{ transform:translateY(-30px) scale(1.6) rotate(20deg); opacity:0; } }
+  .callout{ position:absolute; left:0; right:0; bottom:1%; text-align:center; font-weight:900;
+    font-size:clamp(15px,4.5vw,22px); color:#1f2430; text-shadow:0 1px 0 #fff; pointer-events:none; }
+  .tapHint{ position:absolute; left:0; right:0; top:8px; text-align:center; color:#fff; font-weight:700;
+    font-size:13px; text-shadow:0 1px 2px rgba(0,0,0,.4); pointer-events:none; }
+
+  /* ---- 結果 ---- */
+  .result h2{ text-align:center; font-size:26px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(30px,9vw,46px); color:var(--red); font-weight:900; margin:.1em 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:17px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>割れる数ラン 🦍🏃💥</h1>
+  <p class="sub">迫る2つの壁の「割り切れる方」へ走れ！ 間違うと弾け飛ぶ！</p>
+
+  <!-- 章選択 -->
+  <div id="chapSel" class="panel">
+    <p class="chapInfo">章を選ぶ（章の数字で<b>割り切れる</b>方の壁を破る）</p>
+    <div class="chapGrid" id="chapGrid"></div>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span>章 <span class="big" id="chapNum">2</span> で割れる方へ</span>
+      <span class="sp" id="speed">SPEED ▲1</span>
+    </div>
+    <div class="track" id="track">
+      <div class="laneLine"></div>
+      <div class="wall" id="wallL">0</div>
+      <div class="wall" id="wallR">0</div>
+      <div class="runner" id="runner">🦍</div>
+      <div class="tapHint">← → / A・D / 画面の左右タップ</div>
+      <div class="callout" id="callout"></div>
+    </div>
+    <p style="text-align:center;margin:8px 0 0;font-weight:800;">突破数 <span id="score">0</span></p>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2>ドカーン💥</h2>
+    <div class="big" id="overText">突破 0 まい！</div>
+    <div id="newrec" class="newrec hidden">🏆 章ベスト更新！</div>
+    <div class="stat"><span>この章で割った数</span><span id="rScore">0</span></div>
+    <div class="stat"><span>最高スピード</span><span id="rSpeed">▲1</span></div>
+    <div class="stat"><span>章ベスト</span><span id="rBest">0</span></div>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button onclick="toChapters()">章をえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script src="mathbank.js"></script>
+<script>
+/* ===== 章選択 ===== */
+function bestKey(p){ return 'run_best_' + p; }
+function getBest(p){ return parseInt(localStorage.getItem(bestKey(p))||'0',10); }
+
+function buildChapters(){
+  const grid = document.getElementById('chapGrid');
+  grid.innerHTML = '';
+  MathBank.PRIMES.forEach(p=>{
+    const b = document.createElement('button');
+    b.className = 'chap';
+    const best = getBest(p);
+    b.innerHTML = p + '<small>' + (best? '★'+best : '') + '</small>';
+    b.onclick = ()=> startRun(p);
+    grid.appendChild(b);
+  });
+}
+function toChapters(){
+  running = false;
+  document.getElementById('result').classList.add('hidden');
+  document.getElementById('play').classList.add('hidden');
+  document.getElementById('chapSel').classList.remove('hidden');
+  buildChapters();
+}
+
+/* ===== ゲーム状態 ===== */
+const $ = (id)=>document.getElementById(id);
+let chapter = 2;          // 章＝割る素数
+let lane = 0;             // 0=左,1=右
+let score = 0;            // 突破数
+let progress = 0;         // 0→1 で壁が走者に到達
+let speedFrac = 0;        // 1秒あたりの progress 増分
+let maxSpeedStep = 1;
+let correctLane = 0;      // 割り切れる壁のレーン
+let phase = 'idle';       // idle / run / resolve / over
+let running = false;
+let lastT = 0;
+
+function startRun(p){
+  chapter = p; lane = 0; score = 0; maxSpeedStep = 1;
+  $('chapSel').classList.add('hidden');
+  $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('chapNum').textContent = p;
+  $('score').textContent = '0';
+  $('callout').textContent = p + ' で割れる方へ！';
+  positionRunner();
+  spawnPair();
+  running = true; phase = 'run'; lastT = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function level(){ return 1 + Math.floor(score/4); }    // 進むほど大きい倍数
+
+function spawnPair(){
+  const q = MathBank.divisible(chapter, level());
+  correctLane = q.answer;
+  $('wallL').textContent = q.choices[0];
+  $('wallR').textContent = q.choices[1];
+  $('wallL').className = 'wall'; $('wallR').className = 'wall';
+  progress = 0;
+  // 速度：突破数が増えるほど速い（上限あり）
+  speedFrac = Math.min(1.7, 0.58 + score * 0.05);
+  maxSpeedStep = Math.max(maxSpeedStep, Math.round((speedFrac-0.58)/0.05)+1);
+  $('speed').textContent = 'SPEED ▲' + maxSpeedStep;
+  placeWalls();
+}
+
+function placeWalls(){
+  // progress 0→1 を 壁top -16% → 走者の頭(約 64%) にマッピング
+  const top = -16 + progress * (64 - (-16));
+  $('wallL').style.top = top + '%';
+  $('wallR').style.top = top + '%';
+}
+
+function positionRunner(){
+  // レーン中央へ。トラック幅44%幅の要素を左右に。
+  $('runner').style.left = (lane===0 ? 3 : 53) + '%';
+}
+function setLane(l){
+  if(phase!=='run' || lane===l) return;
+  lane = l; positionRunner();
+}
+
+function loop(t){
+  if(!running) return;
+  const dt = Math.min(0.05, (t - lastT)/1000); lastT = t;
+  if(phase === 'run'){
+    progress += speedFrac * dt;
+    if(progress >= 1){ progress = 1; placeWalls(); resolve(); }
+    else placeWalls();
+  }
+  requestAnimationFrame(loop);
+}
+
+function resolve(){
+  phase = 'resolve';
+  // 割り切れる壁（correctLane）は必ず割れる演出
+  const brokenWall = correctLane===0 ? $('wallL') : $('wallR');
+  if(lane === correctLane){
+    brokenWall.classList.add('broken');
+    beep(680,0.05);
+    score++; $('score').textContent = score;
+    setTimeout(()=>{ phase='run'; spawnPair(); }, 240);
+  } else {
+    // 間違ったレーン＝固い壁に激突 → 即ゲームオーバー
+    $('runner').classList.add('burst');
+    boom();
+    setTimeout(gameOver, 450);
+  }
+}
+
+function gameOver(){
+  running = false; phase = 'over';
+  $('runner').classList.remove('burst');
+  $('play').classList.add('hidden');
+  $('result').classList.remove('hidden');
+  $('overText').textContent = '突破 ' + score + ' まい！';
+  $('rScore').textContent = score;
+  $('rSpeed').textContent = '▲' + maxSpeedStep;
+  const prev = getBest(chapter);
+  if(score > prev){ localStorage.setItem(bestKey(chapter), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent = Math.max(prev, score);
+}
+
+/* ===== 入力 ===== */
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') setLane(0);
+  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') setLane(1);
+});
+const track = $('track');
+track.addEventListener('pointerdown', (e)=>{
+  const r = track.getBoundingClientRect();
+  setLane((e.clientX - r.left) < r.width/2 ? 0 : 1);
+});
+$('retryBtn').onclick = ()=> startRun(chapter);
+
+/* ===== 効果音 ===== */
+let actx=null;
+function tone(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'square';
+  g.gain.value=0.06; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+d);}catch(e){} }
+function beep(f,d){ tone(f,d,'square'); }
+function boom(){ tone(90,0.4,'sawtooth'); setTimeout(()=>tone(60,0.5,'sawtooth'),60); }
+
+buildChapters();
+</script>
+</body>
+</html>
