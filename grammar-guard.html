@@ -114,6 +114,18 @@
   #choices{display:grid; grid-template-columns:1fr 1fr; gap:8px}
   #choices.c2{grid-template-columns:1fr 1fr}
   .choice{padding:13px; font-size:17px; font-weight:800; border-radius:12px; border:2px solid var(--line); background:#fff; color:var(--ink); text-align:center}
+  @media (max-height:480px){
+    #hud{padding:3px 10px; gap:6px}
+    .bar{height:9px}
+    .meter .lab{font-size:10px; margin-bottom:1px}
+    #combo-big{font-size:12px; min-width:64px} #combo-big b{font-size:16px}
+    #queue{padding:3px 10px; gap:6px}
+    .qslot{padding:2px 5px; min-width:54px} .qslot svg{width:30px; height:30px} .qslot .cost{font-size:11px}
+    #quiz{padding:4px 10px 6px}
+    #qtext{font-size:15px; min-height:14px; margin-bottom:4px}
+    #choices{gap:6px}
+    .choice{padding:7px; font-size:14px}
+  }
   .choice.spot{box-shadow:0 0 0 3px var(--gold); animation:pulse 1s infinite}
   @keyframes pulse{50%{box-shadow:0 0 0 6px #e0a93b66}}
   .choice.ok{background:var(--good); color:#fff; border-color:var(--good)}
@@ -213,6 +225,13 @@
         <div style="font-weight:800; margin-bottom:6px">📚 学習レンジ <span class="muted">（どのステージでも、ここで選んだ範囲が出ます）</span></div>
         <div class="seg" id="rangeSeg"></div>
         <div class="muted" style="margin-top:6px">★ ステージと問題は分離。苦手な範囲が楽しくないステージに紐づく、をなくす設計です。</div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-weight:800; margin-bottom:6px">📝 出題 <span class="muted">（単語と文法・選択肢を固定）</span></div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル</div>
+        <div class="seg" id="genreSeg"></div>
+        <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
+        <div class="seg" id="choiceSeg"></div>
       </div>
       <div class="card" style="margin-bottom:12px">
         <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
@@ -1501,10 +1520,11 @@ const QuizEngine = (()=>{
     "全部":     ["junior","mid","senior","supreme"]
   };
   let range = "はじめて";
+  let genre = "grammar";
   const wordsByDiff = {};
   DB.forEach(q=>{ if(q.genre==="word"){ (wordsByDiff[q.diff]=wordsByDiff[q.diff]||[]).push(q); }});
 
-  function pool(){ const ok = RANGES[range]; return DB.filter(q=> ok.includes(q.diff)); }
+  function pool(){ const ok = RANGES[range]; return DB.filter(q=> ok.includes(q.diff) && q.genre===genre); }
   function setRange(r){ range=r; }
   function getRange(){ return range; }
   function ranges(){ return Object.keys(RANGES); }
@@ -1562,7 +1582,8 @@ const QuizEngine = (()=>{
   function next(choiceCount){
     // 35%で復習を差し込む（少し間を置いて再挑戦＝「さっき見たやつだ」体験）
     if(reviewQ.length && Math.random()<0.35){
-      return Object.assign({}, reviewQ.shift(), {review:true, locked:false});
+      const __i=reviewQ.findIndex(r=>r.genre===genre);
+      if(__i>=0){ return Object.assign({}, reviewQ.splice(__i,1)[0], {review:true, locked:false}); }
     }
     const p = pool(); if(!p.length) return null;
     const q = rnd(p);
@@ -1577,7 +1598,7 @@ const QuizEngine = (()=>{
     let g = Math.floor(x); if(Math.random() < (x-g)) g++;
     return Math.max(1,g);
   }
-  return { next, comboGain, setRange, getRange, ranges, pushReview, reviewCount, size:()=>DB.length };
+  return { next, comboGain, setRange, getRange, ranges, setGenre:(g)=>{genre=g;}, getGenre:()=>genre, pushReview, reviewCount, size:()=>DB.length };
 })();
 
 /* =========================================================================
@@ -1666,6 +1687,7 @@ const Game = (()=>{
   let owned = {};          // 入手済み {key:count}
   let deck = [];           // 編成(最大5)
   let castleLv = 0;        // 城強化Lv
+  let choiceMode = 4;      // 2択/4択を固定(混ぜない)
   let curStage = null;
 
   let soundOn = true;
@@ -1675,11 +1697,12 @@ const Game = (()=>{
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       if(s.range) QuizEngine.setRange(s.range);
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
+      if(s.genre) QuizEngine.setGenre(s.genre); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), range:QuizEngine.getRange(), owned, deck, castleLv})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), range:QuizEngine.getRange(), genre:QuizEngine.getGenre(), choiceMode, owned, deck, castleLv})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -1856,6 +1879,15 @@ const Game = (()=>{
       b.onclick=()=>{ QuizEngine.setRange(r); save(); renderHome(); };
       seg.appendChild(b);
     });
+    // 出題ジャンル（単語/文法を混ぜない）
+    const __gmap={grammar:"文法", word:"単語"};
+    const gseg=$('genreSeg');
+    if(gseg){ gseg.innerHTML='';
+      ["grammar","word"].forEach(function(g){ const b=document.createElement('button'); b.textContent=__gmap[g]; if(g===QuizEngine.getGenre()) b.classList.add('sel'); b.onclick=function(){ QuizEngine.setGenre(g); save(); renderHome(); }; gseg.appendChild(b); }); }
+    // 選択肢の数（2択/4択を混ぜない）
+    const cseg=$('choiceSeg');
+    if(cseg){ cseg.innerHTML='';
+      [2,4].forEach(function(n){ const b=document.createElement('button'); b.textContent=n+'択'; if(n===choiceMode) b.classList.add('sel'); b.onclick=function(){ choiceMode=n; save(); renderHome(); }; cseg.appendChild(b); }); }
     // あそびやすさトグル
     const ta=$('tgAuto'), ts=$('tgSlow');
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
@@ -1966,8 +1998,8 @@ const Game = (()=>{
   /* ---- 問題 ---- */
   let curQ=null;
   function nextQuestion(){
-    // 連続ミスで2択に救済、やさしいモードも2択寄り
-    const cc = (B.missStreak>=2) ? 2 : (Math.random()<0.5?2:4);
+    // 2択/4択は設定で固定（混ぜない）
+    const cc = choiceMode;
     curQ = QuizEngine.next(cc);
     if(!curQ){ $('qtext').textContent='問題データが読めませんでした'; return; }
     $('qtext').innerHTML = (curQ.review?'<span style="color:var(--gold)">🔁 </span>':'') + curQ.qtext;
