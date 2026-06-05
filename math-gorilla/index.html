@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゴリラ大砲 🦍🍌💥</title>
+<style>
+  /* ============================================================
+     ゴリラ大砲 — 数学バカゲー第1弾
+     チャージ中は「大砲にチャージしろ！」画面（ゴリラは出さない）。
+     2択（大きい方を選べ）を当てるほどエネルギーが貯まり、
+     発射でゴリラが最大9999体まで派手に吹き飛ぶ。
+     強化要素なし＝暗黙知のスキルがそのままスコアになる。
+     出題は mathbank.js（A大小）。ミスは減点なし・コンボ切れのみ。
+     ============================================================ */
+  :root{
+    --ink:#241c12; --paper:#fff7e6; --line:#e6d3a8;
+    --green:#27a35a; --red:#e0533d; --gold:#e3a32a; --sky:#bfe9ff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif;
+    background:linear-gradient(180deg,var(--sky) 0%,#eaf7ff 45%,#f6ecd0 100%);
+    user-select:none; -webkit-user-select:none;
+  }
+  .wrap{width:min(680px,100%); margin:0 auto; padding:12px;}
+  h1{margin:.2em 0; font-size:clamp(26px,6vw,40px); text-align:center; letter-spacing:1px;}
+  .sub{text-align:center; color:#7a6a4a; margin:0 0 12px; font-size:14px;}
+  .panel{background:var(--paper); border:3px solid var(--line); border-radius:18px;
+    padding:18px; box-shadow:0 6px 0 rgba(0,0,0,.08);}
+  button{font:inherit; color:inherit; cursor:pointer;}
+
+  /* ---- タイトル ---- */
+  .modeBtns{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0;}
+  .modeBtn{padding:18px 10px; border:3px solid var(--line); border-radius:16px;
+    background:#fffdf5; font-size:18px; font-weight:700; transition:transform .08s;}
+  .modeBtn.sel{border-color:var(--gold); background:#fff4d6; transform:translateY(-2px);}
+  .modeBtn small{display:block; font-weight:400; color:#8a7a58; font-size:12px; margin-top:4px;}
+  .bigStart{width:100%; padding:18px; font-size:22px; font-weight:800; color:#fff;
+    background:var(--green); border:none; border-radius:16px; box-shadow:0 5px 0 #1d7a42;}
+  .bigStart:active{transform:translateY(3px); box-shadow:0 2px 0 #1d7a42;}
+  .hiscore{text-align:center; margin-top:14px; color:#8a7a58; font-size:14px;}
+
+  /* ---- 上バー ---- */
+  .topbar{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-weight:700;}
+  .timer{font-size:26px; min-width:64px;}
+  .gaugeWrap{flex:1; height:22px; background:#eadfc0; border-radius:12px; overflow:hidden; border:2px solid var(--line);}
+  .gauge{height:100%; width:0%; background:linear-gradient(90deg,#ffd34d,#ff7a3c); transition:width .15s ease;}
+  .combo{min-width:80px; text-align:right; color:var(--red);}
+
+  /* ---- チャージ画面（ゴリラは出さない） ---- */
+  .charge{position:relative; height:130px; margin-bottom:8px; border-radius:14px; overflow:hidden;
+    background:radial-gradient(circle at 22% 80%, #fff0c2, #ffe08a 35%, #f6c651 75%);
+    display:flex; align-items:center; justify-content:center;}
+  .chargeMsg{font-size:clamp(18px,5vw,26px); font-weight:900; color:#b5651d; text-shadow:0 2px 0 #fff;}
+  .cannon{position:absolute; left:14px; bottom:8px; font-size:46px; transform-origin:bottom left;
+    transition:transform .15s ease, filter .15s ease;}
+  .energyTxt{position:absolute; right:12px; top:8px; font-weight:900; color:#b5651d; font-size:18px;}
+
+  /* ---- 問題（固定見出し＋2択） ---- */
+  .prompt{font-size:clamp(22px,6vw,34px); font-weight:900; text-align:center; margin:14px 0 14px; color:var(--ink);}
+  .choices{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .choice{padding:30px 10px; font-size:clamp(26px,8vw,44px); font-weight:900;
+    border:4px solid var(--line); border-radius:18px; background:#fffdf5; transition:transform .06s;}
+  .choice:active{transform:scale(.96);}
+  .choice.good{background:#d7f5e1; border-color:var(--green);}
+  .choice.bad{background:#fbdcd5; border-color:var(--red); animation:shake .3s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  .lock{pointer-events:none; opacity:.85;}
+
+  /* ---- 発射フルスクリーン演出 ---- */
+  .blast{position:fixed; inset:0; z-index:50; overflow:hidden;
+    background:radial-gradient(circle at 10% 92%, #fff7d6, #ffd34d 30%, #ff7a3c 72%, #e0533d 100%);}
+  .blast.shake{animation:bshake .5s ease;}
+  @keyframes bshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,6px)}40%{transform:translate(7px,-7px)}60%{transform:translate(-6px,-4px)}80%{transform:translate(5px,5px)}}
+  .blastNum{position:absolute; top:6%; left:0; right:0; z-index:60; text-align:center; line-height:1.05;
+    font-size:clamp(40px,13vw,110px); font-weight:900; color:#b3261e; text-shadow:0 4px 0 #fff,0 0 32px #fff;}
+  .blastNum small{display:block; font-size:clamp(15px,4.5vw,24px); color:#7a2d12; text-shadow:none;}
+  /* ゴリラの列（数が増えると下から積み重なって壁になる） */
+  .field{position:absolute; left:0; right:0; bottom:8%; top:30%; z-index:55;
+    display:flex; flex-wrap:wrap-reverse; justify-content:center; align-content:flex-start;
+    padding:0 4%; overflow:hidden;}
+  .g2{line-height:1; will-change:transform, opacity;}
+  /* 飛んでくるバナナ */
+  .banana2{position:absolute; left:-8%; bottom:14%; z-index:58; font-size:clamp(34px,9vw,60px); will-change:transform; opacity:0;}
+  .flash{position:fixed; inset:0; background:#fff; z-index:70; opacity:0; pointer-events:none;}
+
+  /* ---- リザルト ---- */
+  .result h2{text-align:center; font-size:28px; margin:.2em 0;}
+  .result .big{text-align:center; font-size:clamp(34px,10vw,54px); margin:.1em 0; color:var(--red); font-weight:900;}
+  .stat{display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px dashed var(--line); font-size:16px;}
+  .newrec{text-align:center; color:var(--gold); font-weight:800; font-size:20px; margin:8px 0;}
+  .againBtns{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  .againBtns button{padding:16px; font-size:18px; font-weight:700; border-radius:14px; border:3px solid var(--line); background:#fffdf5;}
+  .againBtns .primary{color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ゴリラ大砲 🦍🍌💥</h1>
+  <p class="sub">大きい方をすばやく当てて大砲をチャージ！ ゴリラを9999体ぶっ飛ばせ！</p>
+
+  <!-- タイトル -->
+  <div id="title" class="panel">
+    <p style="text-align:center;font-weight:700;margin:.2em 0 0;">モードをえらぶ</p>
+    <div class="modeBtns">
+      <button class="modeBtn sel" id="modeTime" onclick="selectMode('time')">⏱ タイム<br>30秒<small>時間内に解きまくる</small></button>
+      <button class="modeBtn" id="modeCount" onclick="selectMode('count')">🔢 20問<br>チャレンジ<small>20問を解ききる</small></button>
+    </div>
+    <button class="bigStart" onclick="startGame()">スタート！</button>
+    <p class="hiscore" id="titleHi"></p>
+  </div>
+
+  <!-- プレイ（チャージ） -->
+  <div id="play" class="panel hidden">
+    <div class="topbar">
+      <span class="timer" id="timer">30</span>
+      <div class="gaugeWrap"><div class="gauge" id="gauge"></div></div>
+      <span class="combo" id="combo">&nbsp;</span>
+    </div>
+    <div class="charge">
+      <span class="cannon" id="cannon">💥</span>
+      <span class="chargeMsg">大砲にチャージしろ！</span>
+      <span class="energyTxt" id="energyTxt">🔥 0</span>
+    </div>
+    <div class="prompt">大きい方を選べ！</div>
+    <div class="choices" id="choices">
+      <button class="choice" id="c0" onclick="answer(0)"></button>
+      <button class="choice" id="c1" onclick="answer(1)"></button>
+    </div>
+  </div>
+
+  <!-- リザルト -->
+  <div id="result" class="panel result hidden">
+    <h2>発射ーっ！</h2>
+    <div class="big" id="knockText">🦍 0体 撃破！</div>
+    <div id="newrec" class="newrec hidden">🏆 ハイスコア更新！</div>
+    <div class="stat"><span>正解数</span><span id="rCorrect">0</span></div>
+    <div class="stat"><span>最大コンボ</span><span id="rCombo">0</span></div>
+    <div class="stat"><span>吹き飛ばし（スコア）</span><span id="rScore">0</span></div>
+    <div class="againBtns">
+      <button class="primary" onclick="startGame()">もう1回！</button>
+      <button onclick="toTitle()">タイトルへ</button>
+    </div>
+  </div>
+</div>
+
+<!-- 発射演出オーバーレイ：ゴリラの列 → バナナで吹き飛ばし -->
+<div id="blast" class="blast hidden">
+  <div class="blastNum" id="blastNum">🦍 0<small>体 ふっとばし！</small></div>
+  <div class="field" id="field"></div>
+  <span class="banana2" id="banana2">🍌</span>
+</div>
+<div id="flash" class="flash"></div>
+
+<script src="mathbank.js"></script>
+<script>
+/* ===== 定数 ===== */
+const MAX_KNOCK = 9999;   // 吹き飛ばし上限（派手さの天井）
+const ENERGY_PER = 1;     // エネルギー1 = ゴリラ1体
+const COMBO_GAIN = 15;    // 正解時 energy += combo * COMBO_GAIN（連鎖でスコア跳ね上がり）
+const VISUAL_FULL = 3000; // チャージ画面の見た目が満タンに見える基準
+const COUNT_GOAL = 20;
+const TIME_SEC = 30;
+
+let mode = 'time';
+let st = null;
+let tickTimer = null;
+let cur = null;
+const $ = (id) => document.getElementById(id);
+
+function selectMode(m){
+  mode = m;
+  $('modeTime').classList.toggle('sel', m==='time');
+  $('modeCount').classList.toggle('sel', m==='count');
+  showTitleHi();
+}
+function hiKey(){ return 'gorilla_hi_' + mode; }
+function getHi(){ return parseInt(localStorage.getItem(hiKey())||'0',10); }
+function showTitleHi(){
+  const label = mode==='time' ? 'タイム30秒' : '20問';
+  $('titleHi').textContent = `🏆 ${label}モードのハイスコア: ${getHi()}体`;
+}
+function toTitle(){
+  clearInterval(tickTimer);
+  $('result').classList.add('hidden');
+  $('play').classList.add('hidden');
+  $('title').classList.remove('hidden');
+  showTitleHi();
+}
+
+function startGame(){
+  st = { energy:0, combo:0, maxCombo:0, correct:0, asked:0, timeLeft:TIME_SEC, level:1, locked:false };
+  $('title').classList.add('hidden');
+  $('result').classList.add('hidden');
+  $('blast').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('timer').style.color='';
+  updateTop();
+  nextQuestion();
+
+  clearInterval(tickTimer);
+  if(mode==='time'){
+    $('timer').textContent = TIME_SEC;
+    tickTimer = setInterval(()=>{
+      st.timeLeft--;
+      $('timer').textContent = st.timeLeft;
+      if(st.timeLeft<=5) $('timer').style.color = '#e0533d';
+      if(st.timeLeft<=0) fire();
+    },1000);
+  } else {
+    $('timer').textContent = '0/'+COUNT_GOAL;
+  }
+}
+
+function updateTop(){
+  $('gauge').style.width = Math.min(100, st.energy/VISUAL_FULL*100) + '%';
+  $('combo').innerHTML = st.combo>=2 ? ('🔥x'+st.combo) : '&nbsp;';
+  $('energyTxt').textContent = '🔥 ' + st.energy;
+  if(mode==='count') $('timer').textContent = st.asked+'/'+COUNT_GOAL;
+  // チャージが進むほど大砲が大きく光る
+  const f = Math.min(1, st.energy/VISUAL_FULL);
+  $('cannon').style.transform = `scale(${1+f*0.9}) rotate(${-12-f*6}deg)`;
+  $('cannon').style.filter = `drop-shadow(0 0 ${4+f*22}px #ff5a2c) brightness(${1+f*0.4})`;
+}
+
+function nextQuestion(){
+  // 正解が続くほど難しくなる（数感覚を伸ばす）
+  st.level = Math.min(4, 1 + Math.floor(st.correct/4));
+  cur = MathBank.next({ genres:['compare'], level: st.level });
+  $('c0').textContent = cur.choices[0];
+  $('c1').textContent = cur.choices[1];
+  $('c0').className = 'choice';
+  $('c1').className = 'choice';
+  $('choices').classList.remove('lock');
+  st.locked = false;
+}
+
+function answer(i){
+  if(!st || st.locked) return;
+  st.asked++;
+  if(i === cur.answer){
+    st.combo++;
+    st.maxCombo = Math.max(st.maxCombo, st.combo);
+    st.correct++;
+    st.energy += st.combo * COMBO_GAIN * ENERGY_PER;  // 連鎖で加速度的に増える
+    $('c'+i).classList.add('good');
+    beep(620 + Math.min(st.combo,12)*30, 0.05);
+    updateTop();
+    proceed(110);
+  } else {
+    st.combo = 0;                                     // 減点なし・コンボ切れのみ
+    $('c'+i).classList.add('bad');
+    $('c'+cur.answer).classList.add('good');
+    beep(170,0.12);
+    updateTop();
+    proceed(600);
+  }
+}
+
+function proceed(delay){
+  st.locked = true;
+  $('choices').classList.add('lock');
+  setTimeout(()=>{
+    if(mode==='count' && st.asked>=COUNT_GOAL){ fire(); return; }
+    if(mode==='time' && st.timeLeft<=0){ return; }
+    nextQuestion();
+  }, delay);
+}
+
+/* ===== 発射 → ゴリラの列をバナナで吹き飛ばし ===== */
+const RENDER_CAP = 320;   // 実際に描画するゴリラの上限（性能対策・数字は本物を見せる）
+
+function fire(){
+  clearInterval(tickTimer);
+  st.locked = true;
+  const knocked = Math.min(MAX_KNOCK, Math.floor(st.energy / ENERGY_PER));
+
+  $('play').classList.add('hidden');
+  $('blast').classList.remove('hidden');
+  $('blastNum').innerHTML = '🦍 0<small>体 ふっとばし！</small>';
+
+  buildPile(knocked);                       // ① 列に積み重なって整列
+  setTimeout(()=>flyBanana(()=>{            // ② バナナが飛んでくる
+    const blast = $('blast');
+    blast.classList.remove('shake'); void blast.offsetWidth; blast.classList.add('shake');
+    flashScreen(); boom();
+    burstPile();                            // ③ 一斉に吹き飛ぶ
+    countUp(knocked, 1300);                 // ④ 数字がカウントアップ
+  }), 520);
+
+  setTimeout(()=>showResult(knocked), 3000);
+}
+
+// 数が大きいほどゴリラが下から積み重なって壁になる（タイルも小さくなり密度UP）
+function buildPile(knocked){
+  const field = $('field');
+  field.innerHTML = '';
+  const n = Math.min(RENDER_CAP, Math.max(6, knocked));
+  const size = knocked<40 ? 38 : knocked<150 ? 28 : knocked<600 ? 20 : 15;
+  field.style.fontSize = size + 'px';
+  for(let i=0;i<n;i++){
+    const g = document.createElement('span');
+    g.className = 'g2'; g.textContent = '🦍';
+    g.style.opacity = '0';
+    g.style.transform = 'translateY(14px)';
+    field.appendChild(g);
+    setTimeout(()=>{ g.style.transition='opacity .18s, transform .18s'; g.style.opacity='1'; g.style.transform='translateY(0)'; }, i*2);
+  }
+}
+
+function flyBanana(cb){
+  const b = $('banana2');
+  b.style.transition='none'; b.style.opacity='1';
+  b.style.transform='translate(0,0) rotate(0deg)';
+  requestAnimationFrame(()=>{
+    b.style.transition='transform .5s ease-in';
+    b.style.transform=`translate(${window.innerWidth*0.55}px, -${window.innerHeight*0.22}px) rotate(720deg)`;
+  });
+  setTimeout(()=>{ b.style.opacity='0'; if(cb) cb(); }, 520);
+}
+
+function burstPile(){
+  const tiles = $('field').querySelectorAll('.g2');
+  tiles.forEach((g,i)=>{
+    setTimeout(()=>{
+      const dx = (Math.random()*1.7 - 0.6) * window.innerWidth;   // 四方へ飛散
+      const dy = -(0.3 + Math.random()*1.1) * window.innerHeight;
+      const rot = 360 + Math.random()*1080;
+      g.style.transition = `transform ${0.9+Math.random()*0.7}s cubic-bezier(.2,-0.3,.6,1), opacity 1.2s`;
+      g.style.transform = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+      g.style.opacity = '0';
+      if(i%18===0) beep(300+Math.random()*200,0.04);
+    }, i*2);
+  });
+}
+
+function countUp(target, ms){
+  const el = $('blastNum'); const t0 = performance.now();
+  function step(t){
+    const p = Math.min(1, (t-t0)/ms);
+    const val = Math.floor((1-Math.pow(1-p,2)) * target);  // ease-out
+    el.innerHTML = '🦍 ' + val + '<small>体 ふっとばし！</small>';
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function flashScreen(){
+  const fl = $('flash');
+  fl.style.transition='none'; fl.style.opacity='0.85';
+  requestAnimationFrame(()=>{ fl.style.transition='opacity .5s ease'; fl.style.opacity='0'; });
+}
+
+function showResult(knocked){
+  $('blast').classList.add('hidden');
+  $('result').classList.remove('hidden');
+  $('knockText').textContent = `🦍 ${knocked}体 撃破！` + (knocked>=MAX_KNOCK ? ' カンスト！！' : '');
+  $('rCorrect').textContent = st.correct;
+  $('rCombo').textContent = st.maxCombo;
+  $('rScore').textContent = knocked;
+  const prev = getHi();
+  if(knocked>prev){ localStorage.setItem(hiKey(), knocked); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+}
+
+/* ===== かんたん効果音（WebAudio・外部ファイル不要） ===== */
+let actx = null;
+function tone(freq, dur, type){
+  try{
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = freq; o.type = type||'square';
+    g.gain.value = 0.06; o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }catch(e){}
+}
+function beep(f,d){ tone(f,d,'square'); }
+function boom(){ tone(90,0.4,'sawtooth'); setTimeout(()=>tone(60,0.5,'sawtooth'),60); }
+
+/* ===== キーボード（1=左, 2=右） ===== */
+document.addEventListener('keydown', (e)=>{
+  if($('play').classList.contains('hidden')) return;
+  if(e.key==='1') answer(0);
+  if(e.key==='2') answer(1);
+});
+
+showTitleHi();
+</script>
+</body>
+</html>
