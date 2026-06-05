@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>グラマー・ガード v2（試作）</title>
+<title>グラマー・ガード v2（試作） build0605b</title>
+<script>window.addEventListener('error',function(e){try{var d=document.getElementById('__err')||document.createElement('div');d.id='__err';d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font:12px/1.4 monospace;padding:6px;white-space:pre-wrap';d.textContent='ERR: '+(e.message||(e.error&&e.error.stack)||e.type)+' @'+((e.filename||'').split('/').pop())+':'+(e.lineno||'');if(!d.parentNode)(document.body||document.documentElement).appendChild(d);}catch(_){}}, false);</script>
 <!--
   グラマー・ガード v2 試作版
   計画書: PLAN_GG_V2_AREA_COST_REDESIGN.md
@@ -199,6 +200,7 @@
     <div class="crest" id="titleCrest"></div>
     <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
     <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
+    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-05b（このタイトルが見えていれば最新版です）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
   </section>
@@ -1715,6 +1717,7 @@ const Game = (()=>{
   function start(){
     load();
     $('titleCrest').innerHTML = SVG.get('crest');
+    show('title');
   }
 
   /* ---- ホーム描画 ---- */
