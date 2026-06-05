@@ -231,6 +231,7 @@
         <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
         <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
         <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
+        <button class="menubtn" id="btnMeasure">📊 英語ランク測定<span class="sub">自分の英検レベルを診断</span></button>
       </div>
       <div class="homeview" data-view="play">
         <div class="card" style="margin-bottom:12px">
@@ -316,10 +317,22 @@
     <div class="muted" id="resLearn" style="max-width:420px"></div>
     <div style="height:10px"></div>
     <div id="firstBadge">🏅 はじめて守れた！</div>
+    <div id="resNudge" style="width:100%; max-width:440px"></div>
     <div style="height:8px"></div>
     <div class="row" style="display:flex; gap:10px">
       <button class="btn ghost" onclick="Game.toHome()">ホームへ</button>
       <button class="btn" id="resRetry"></button>
+    </div>
+  </section>
+
+  <!-- ===== 英語ランク測定 ===== -->
+  <section id="measure" class="screen col" style="align-items:center; justify-content:center; text-align:center">
+    <div class="pad" style="max-width:520px; width:100%">
+      <div style="font-size:24px; font-weight:900; margin-bottom:4px">📊 英語ランク測定</div>
+      <div class="muted" id="mzProg" style="margin-bottom:14px"></div>
+      <div id="mzQ" style="font-size:20px; font-weight:800; min-height:30px; margin-bottom:16px"></div>
+      <div id="mzChoices" style="display:grid; grid-template-columns:1fr 1fr; gap:10px"></div>
+      <div id="mzResult" style="margin-top:18px"></div>
     </div>
   </section>
 </div>
@@ -1625,6 +1638,7 @@ const QuizEngine = (()=>{
 
   function pool(){ return DB.filter(q=> selLevels.has(q.level) && selTiers.has(q.tier) && selGenres.has(q.genre)); }
   function poolCount(){ return pool().length; }
+  function pick(level, cc){ const p=DB.filter(q=>q.level===level); if(!p.length) return null; const q=rnd(p); return q.genre==="grammar" ? buildGrammar(q,cc) : buildWord(q,cc); }
 
   const rnd = a=>a[Math.floor(Math.random()*a.length)];
 
@@ -1699,7 +1713,7 @@ const QuizEngine = (()=>{
 
   return { next, comboGain, pushReview, reviewCount, size:()=>DB.length,
     EIKEN, TIERS, GENRES, LV_LABEL, LV_ORDER,
-    getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount,
+    getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount, pick,
     has:(t,k)=>(t==='level'?selLevels:t==='tier'?selTiers:selGenres).has(k) };
 })();
 
@@ -1979,6 +1993,7 @@ const Game = (()=>{
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none';
       __menu.querySelectorAll('button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; }); }
     document.querySelectorAll('#home .homeview').forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-view')===homeView); });
+    const __mz=$('btnMeasure'); if(__mz) __mz.onclick=function(){ startMeasure(); };
     const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ homeView='menu'; renderHome(); }; }
     // 出題設定（ジャンル/英検級/ティア＝複数選択・混在OK、選択肢=固定）
     function __seg(id, items, isOn, onToggle){
@@ -2270,12 +2285,68 @@ const Game = (()=>{
     $('resLearn').textContent = win
       ? '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。'
       : 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎';
+    // 難易度アップ提案：高正答率の勝利で、上の級が未選択なら追加をすすめる
+    const nd=$('resNudge'); if(nd){ nd.innerHTML='';
+      if(win && B.answered>=8 && acc>=85){
+        const sel=QuizEngine.getSel(), order=QuizEngine.LV_ORDER; let mi=-1;
+        sel.levels.forEach(function(l){ var ix=order.indexOf(l); if(ix>mi)mi=ix; });
+        const up=(mi>=0 && mi<order.length-1)?order[mi+1]:null;
+        if(up){ const lab=QuizEngine.LV_LABEL[up];
+          const wrap=document.createElement('div'); wrap.className='card'; wrap.style.cssText='margin:6px auto; max-width:440px';
+          wrap.innerHTML='<div style="font-weight:800; margin-bottom:8px">🔥 正答率'+acc+'%！ つぎは <span style="color:var(--ally)">'+lab+'</span> に挑戦してみる？</div>';
+          const ab=document.createElement('button'); ab.className='btn'; ab.textContent=lab+'を追加する';
+          ab.onclick=function(){ QuizEngine.toggleLevel(up); save(); ab.textContent='追加しました！ ホームの出題設定で確認できます'; ab.disabled=true; };
+          wrap.appendChild(ab); nd.appendChild(wrap);
+        }
+      }
+    }
     const retry=$('resRetry'); retry.textContent = win?'次へ ▶':'もう一度';
     retry.onclick=()=>{
       if(win){ const ni=STAGES.findIndex(s=>s.id===B.stage.id)+1; if(ni<STAGES.length){ enterBattle(STAGES[ni]); return; } }
       enterBattle(B.stage);
     };
     show('result');
+  }
+
+  /* ---- 英語ランク測定（チュートリアル診断） ---- */
+  let mz=null;
+  function startMeasure(){
+    const plan=["e4","e4","e3","e3","ep2","ep2","e2","ep1"];
+    const qs=plan.map(function(L){ return QuizEngine.pick(L,4); }).filter(Boolean);
+    if(!qs.length){ return; }
+    mz={qs:qs, i:0, correct:0, locked:false};
+    $('mzResult').innerHTML='';
+    show('measure'); renderMeasureQ();
+  }
+  function renderMeasureQ(){
+    if(!mz) return; const q=mz.qs[mz.i];
+    $('mzProg').textContent='第'+(mz.i+1)+'問 / '+mz.qs.length+'問';
+    $('mzQ').innerHTML=q.qtext;
+    const box=$('mzChoices'); box.innerHTML='';
+    q.choices.forEach(function(c,idx){ const b=document.createElement('button'); b.className='choice'; b.textContent=c; b.onclick=function(){ answerMeasure(idx,b,q); }; box.appendChild(b); });
+  }
+  function answerMeasure(idx, btn, q){
+    if(!mz||mz.locked) return; mz.locked=true;
+    const right=(idx===q.answerIndex);
+    if(right){ btn.classList.add('ok'); mz.correct++; Sound.play('correct'); }
+    else { btn.classList.add('ng'); const bs=$('mzChoices').children; if(bs[q.answerIndex]) bs[q.answerIndex].classList.add('ok'); Sound.play('wrong'); }
+    setTimeout(function(){ if(!mz) return; mz.locked=false; mz.i++; if(mz.i>=mz.qs.length) finishMeasure(); else renderMeasureQ(); }, right?480:820);
+  }
+  function finishMeasure(){
+    const c=mz.correct, n=mz.qs.length, order=QuizEngine.LV_ORDER;
+    let idx; if(c<=1)idx=0; else if(c<=3)idx=1; else if(c<=5)idx=2; else if(c<=7)idx=3; else idx=4;
+    const rec=order[idx], label=QuizEngine.LV_LABEL[rec];
+    $('mzProg').textContent='測定かんりょう！';
+    $('mzQ').innerHTML='正解 <b>'+c+'</b> / '+n;
+    $('mzChoices').innerHTML='';
+    const r=$('mzResult');
+    r.innerHTML='<div class="card"><div style="font-weight:800; font-size:18px; margin-bottom:6px">あなたのおすすめ</div><div style="font-size:28px; font-weight:900; color:var(--ally); margin-bottom:8px">'+label+'</div><div class="muted">この級を出題設定にセットします。あとからホームでいつでも変えられます。</div></div>';
+    const row=document.createElement('div'); row.style.cssText='display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap';
+    const apply=document.createElement('button'); apply.className='btn'; apply.textContent=label+'で あそぶ';
+    apply.onclick=function(){ QuizEngine.setSel({levels:[rec],tiers:["must","basic","adv"],genres:["word","idiom","grammar"]}); save(); homeView='play'; renderHome(); show('home'); };
+    const skip=document.createElement('button'); skip.className='btn ghost'; skip.textContent='ホームへ';
+    skip.onclick=function(){ homeView='menu'; renderHome(); show('home'); };
+    row.appendChild(apply); row.appendChild(skip); r.appendChild(row);
   }
 
   // スペースキー召喚
