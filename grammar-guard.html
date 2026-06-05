@@ -1631,6 +1631,50 @@ const SVG = (()=>{
       <path d="M58 16 L60 8 L65 16Z" fill="#e0a93b" stroke="${S}" stroke-width="2"/>
       <path d="M85 56 L97 47 L93 61 L99 66 L85 66Z" fill="#2f3b52" stroke="${S}" stroke-width="3"/>
       <path d="M16 66 Q12 68 16 72" stroke="${S}" stroke-width="2" fill="none"/>`,
+    bat:`<ellipse cx="50" cy="86" rx="18" ry="4" fill="#0002"/>
+      <path d="M48 44 Q14 32 5 52 Q19 49 16 62 Q29 53 32 62 Q40 53 48 60Z" fill="#8a5a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M52 44 Q86 32 95 52 Q81 49 84 62 Q71 53 68 62 Q60 53 52 60Z" fill="#8a5a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M40 32 L37 16 L48 30Z" fill="#8a5a6a" stroke="${S}" stroke-width="2.5"/>
+      <path d="M60 32 L63 16 L52 30Z" fill="#8a5a6a" stroke="${S}" stroke-width="2.5"/>
+      <ellipse cx="50" cy="48" rx="13" ry="15" fill="#a86f80" stroke="${S}" stroke-width="3"/>
+      <circle cx="45" cy="46" r="2.6" fill="${S}"/><circle cx="55" cy="46" r="2.6" fill="${S}"/>
+      <path d="M45 54 L47 58 L50 54 L53 58 L55 54" stroke="#fff" stroke-width="2" fill="none"/>`,
+    golem:`<ellipse cx="50" cy="90" rx="24" ry="5" fill="#0002"/>
+      <rect x="18" y="42" width="12" height="26" rx="5" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="70" y="42" width="12" height="26" rx="5" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="30" y="28" width="40" height="50" rx="9" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="36" y="78" width="11" height="10" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="53" y="78" width="11" height="10" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="38" y="40" width="9" height="7" rx="2" fill="#e0a93b" stroke="${S}" stroke-width="2"/>
+      <rect x="53" y="40" width="9" height="7" rx="2" fill="#e0a93b" stroke="${S}" stroke-width="2"/>
+      <path d="M40 60 L60 60" stroke="${S}" stroke-width="3"/>
+      <path d="M34 33 L40 39 M66 33 L60 39" stroke="#76583d" stroke-width="2.5"/>`,
+    bombSlime:`<ellipse cx="50" cy="84" rx="24" ry="5" fill="#0002"/>
+      <path d="M26 74 Q22 42 50 42 Q78 42 74 74 Q60 80 50 74 Q40 80 26 74Z" fill="#e0683b" stroke="${S}" stroke-width="3"/>
+      <circle cx="42" cy="58" r="4" fill="#fff"/><circle cx="58" cy="58" r="4" fill="#fff"/>
+      <circle cx="42" cy="59" r="2" fill="${S}"/><circle cx="58" cy="59" r="2" fill="${S}"/>
+      <path d="M44 66 Q50 70 56 66" stroke="${S}" stroke-width="2" fill="none"/>
+      <path d="M50 42 Q54 32 60 30" stroke="#8a6a3a" stroke-width="2.5" fill="none"/>
+      <circle cx="61" cy="29" r="6" fill="#e0a93b" opacity="0.4"/>
+      <circle cx="61" cy="29" r="3.2" fill="#ffd24a"/>`,
+    splitMush:`<ellipse cx="50" cy="88" rx="20" ry="4" fill="#0002"/>
+      <rect x="40" y="56" width="20" height="28" rx="7" fill="#f0e0c0" stroke="${S}" stroke-width="3"/>
+      <path d="M16 58 Q16 28 50 28 Q84 28 84 58 Q50 70 16 58Z" fill="#d24a3a" stroke="${S}" stroke-width="3"/>
+      <circle cx="34" cy="44" r="5" fill="#ffe3c0"/><circle cx="64" cy="46" r="6" fill="#ffe3c0"/><circle cx="50" cy="37" r="4" fill="#ffe3c0"/>
+      <circle cx="44" cy="70" r="2.6" fill="${S}"/><circle cx="56" cy="70" r="2.6" fill="${S}"/>
+      <path d="M45 76 Q50 79 55 76" stroke="${S}" stroke-width="2" fill="none"/>`,
+    bossThunder:`<ellipse cx="50" cy="92" rx="34" ry="5" fill="#0003"/>
+      <path d="M44 52 Q9 34 3 58 Q20 55 15 70 Q30 59 40 66Z" fill="#5a4a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M56 52 Q91 34 97 58 Q80 55 85 70 Q70 59 60 66Z" fill="#5a4a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M50 30 Q33 34 35 60 Q39 82 50 82 Q61 82 65 60 Q67 34 50 30Z" fill="#6b5a7e" stroke="${S}" stroke-width="3.5"/>
+      <path d="M50 10 L43 30 L57 30Z" fill="#6b5a7e" stroke="${S}" stroke-width="3"/>
+      <path d="M50 13 L46 25 L54 25Z" fill="#e0a93b"/>
+      <path d="M39 41 L48 45 M61 41 L52 45" stroke="${S}" stroke-width="3" fill="none"/>
+      <circle cx="44" cy="47" r="3.2" fill="#e0a93b"/><circle cx="56" cy="47" r="3.2" fill="#e0a93b"/>
+      <path d="M50 51 L43 62 L57 62Z" fill="#e0a93b" stroke="${S}" stroke-width="2.5"/>
+      <path d="M22 62 L17 71 L24 68 L19 79" stroke="#ffd24a" stroke-width="2.5" fill="none"/>
+      <path d="M78 62 L83 71 L76 68 L81 79" stroke="#ffd24a" stroke-width="2.5" fill="none"/>
+      <path d="M44 82 L44 89 M56 82 L56 89" stroke="${S}" stroke-width="3"/>`,
     // --- 城 ---
     castleA:`<rect x="14" y="40" width="36" height="74" fill="#8fb98f" stroke="${S}" stroke-width="3"/>
       <path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="#6fa06f" stroke="${S}" stroke-width="3"/>
@@ -1827,10 +1871,11 @@ function buildEnemyWaves(area, boss){
     W.push({at:t(8.0), type:"BOSS"});
     push(t(14),"slime",3,1200); // ボスの取り巻き
     if(area>=6) push(t(20),"torii",2,1500);
+    if(area>=11){ push(t(14),"bat",3,700); push(t(20),"golem",2,1600); }
     return W;
   }
   const dens = 1 + area*0.12;
-  const tank = area>=6 ? "torii" : "totem"; // 後半は硬い鳥居
+  const tank = area>=11 ? "golem" : area>=6 ? "torii" : "totem"; // 後半ほど硬い
   push(t(1.0),"slime", Math.round(2*dens), 1100);            // 緩
   push(t(6.0),"hare",  Math.round(2*dens), 700);             // 急
   push(t(6.4),"slime", Math.round(2*dens), 900);
@@ -1839,21 +1884,23 @@ function buildEnemyWaves(area, boss){
   push(t(18),"slime", Math.round(3*dens), 600);              // 急々ラッシュ
   push(t(18.3),"hare",Math.round(2*dens), 600);
   if(area>=3) push(t(10),"slinger", Math.max(1,Math.round(area*0.35)), 1300); // 遠距離で揺さぶり
+  if(area>=11){ push(t(8),"bat", Math.round(2*dens), 600); push(t(15),"bombSlime", Math.max(1,Math.round(area*0.2)), 1100); push(t(17),"splitMush", 1, 0); push(t(20),"bat", 2, 500); }
   if(area>=8) push(t(19),tank, 2, 900);
   return W;
 }
 const WORLD_NAMES = ["やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
-                     "霧の森","氷river","砂漠の遺構","雷鳴の谷","鳥居の社"];
-const NORMAL_SPRITE = ["slime","hare","totem","slime","slime","hare","totem","torii","slime","torii"];
+                     "霧の森","氷river","砂漠の遺構","雷鳴の谷","鳥居の社",
+                     "嵐の入口","雷雲の道","紫電の谷","暴風の砦","雷鳴の玉座"];
+const NORMAL_SPRITE = ["slime","hare","totem","slime","slime","hare","totem","torii","slime","torii","bat","golem","bombSlime","splitMush","bat"];
 function makeStages(){
   const arr=[];
-  for(let a=1;a<=10;a++){
+  for(let a=1;a<=15;a++){
     const boss = (a%5===0);
     arr.push({
       id:a, area:a, boss,
-      name: boss ? (a===5?"巨石の王・モアイ":"黄金のトーテム大王") : WORLD_NAMES[a-1],
-      sprite: boss ? (a===5?"bossMoai":"bossTotem") : NORMAL_SPRITE[a-1],
-      world: a<=5?1:2,
+      name: boss ? (a===5?"巨石の王・モアイ": a===10?"黄金のトーテム大王":"雷鳴の覇者・雷鳥大王") : WORLD_NAMES[a-1],
+      sprite: boss ? (a===5?"bossMoai": a===10?"bossTotem":"bossThunder") : NORMAL_SPRITE[a-1],
+      world: a<=5?1:(a<=10?2:3),
       enemyHpMul: Math.pow(1.18, a-1),
       enemyAtkMul: Math.pow(1.12, a-1),
       castleEHp: boss? Math.round(1300*Math.pow(1.15,(a/5)-1)) : Math.round(420*Math.pow(1.2,a-1)),
@@ -1867,7 +1914,11 @@ const ENEMY_TYPES = {
   hare: {name:"はやウサ",sprite:"hare", hp:42, atk:7, speed:46, range:40},
   totem:{name:"トーテム",sprite:"totem",hp:160,atk:13,speed:18, range:44},
   torii:{name:"トリイ",  sprite:"torii",hp:240,atk:15,speed:16, range:44},
-  slinger:{name:"つぶて鬼", sprite:"slinger", hp:75, atk:12, speed:20, range:115}
+  slinger:{name:"つぶて鬼", sprite:"slinger", hp:75, atk:12, speed:20, range:115},
+  bat:{name:"コウモリ", sprite:"bat", hp:50, atk:8, speed:58, range:40},
+  golem:{name:"盾ゴーレム", sprite:"golem", hp:230, atk:15, speed:14, range:44, def:6},
+  bombSlime:{name:"ボムスライム", sprite:"bombSlime", hp:70, atk:6, speed:30, range:40, bomb:35},
+  splitMush:{name:"分裂キノコ", sprite:"splitMush", hp:120, atk:11, speed:20, range:42, split:"slime"}
 };
 const BOSS_BASE = {atk:26, speed:13, range:70, hp:1000};
 
@@ -2275,7 +2326,7 @@ const Game = (()=>{
     el.innerHTML=`<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(t.sprite);
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul);
-    B.enemies.push({ type, el, x:fieldW()-84, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false });
+    B.enemies.push({ type, el, x:fieldW()-84, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null });
   }
   function spawnBoss(){
     const s=B.stage;
@@ -2285,7 +2336,17 @@ const Game = (()=>{
     $('field').appendChild(el);
     B.bossAlive=true;
     const hp=Math.round(BOSS_BASE.hp*s.enemyHpMul);
-    B.enemies.push({ type:"BOSS", el, x:fieldW()-110, hp, hpMax:hp, atk:BOSS_BASE.atk*s.enemyAtkMul, speed:BOSS_BASE.speed, range:BOSS_BASE.range, cd:0, boss:true });
+    B.enemies.push({ type:"BOSS", el, x:fieldW()-110, hp, hpMax:hp, atk:BOSS_BASE.atk*s.enemyAtkMul, speed:BOSS_BASE.speed, range:BOSS_BASE.range, cd:0, boss:true, wind:(s.sprite==='bossThunder'), windCd:3.2 });
+  }
+
+  function spawnSplitChild(type, x){
+    const t=ENEMY_TYPES[type]; const s=B.stage;
+    const el=document.createElement('div'); el.className='unit'; el.style.transform='scaleX(-1) scale(0.72)';
+    el.innerHTML=`<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(t.sprite);
+    $('field').appendChild(el);
+    const hp=Math.round(t.hp*s.enemyHpMul*0.45);
+    const en={ type, el, x:Math.min(fieldW()-70,Math.max(92,x)), hp, hpMax:hp, atk:t.atk*s.enemyAtkMul*0.7, speed:t.speed*1.2, range:t.range, cd:0.4, boss:false, def:0, bomb:0, split:null };
+    B.enemies.push(en); place(el, en.x);
   }
 
   /* ---- 問題 ---- */
@@ -2388,18 +2449,25 @@ const Game = (()=>{
       }
       // ボスのフェーズ移行（HP30%で攻撃強化）
       if(e.boss && !B.bossPhase && e.hp<=e.hpMax*0.3){ B.bossPhase=true; e.atk*=1.6; e.el.style.filter='drop-shadow(0 0 8px #e0683b)'; floatText(e.x,20,'PHASE2!','var(--enemy)'); fxBanner('⚡ ボス覚醒!','#e0683b'); fxTierFlash(); Sound.play('boss'); }
+      if(e.boss && e.wind){ e.windCd-=dt; if(e.windCd<=0){ e.windCd=B.bossPhase?2.0:3.4; let any=false; B.allies.forEach(function(a){ if(a.x>92){ a.x=Math.max(92,a.x-34); any=true; } }); if(any){ fxBanner('🌪️ 暴風！','#5a7fc0'); fxTierFlash(); Sound.play('hit'); } } }
       place(e.el, e.x);
     });
     cleanup();
   }
   function nearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(e=>{ if(e.x>=a.x-4){ const d=e.x-a.x; if(d<bd){bd=d;best=e;} }}); return best; }
   function nearestAlly(e){ let best=null,bd=1e9; B.allies.forEach(a=>{ if(a.x<=e.x+4){ const d=e.x-a.x; if(d<bd){bd=d;best=a;} }}); return best; }
-  function damage(u,amt){ u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
+  function damage(u,amt){ amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
   function flash(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),90); }
   function place(el,x){ el.style.left=(x-27)+'px'; }
   function cleanup(){
     B.allies=B.allies.filter(a=>{ if(a.hp<=0){ fxFrag(a.x, fieldFloorY(), '#9cc5d6'); a.el.remove(); return false;} return true; });
-    B.enemies=B.enemies.filter(e=>{ if(e.hp<=0){ fxFrag(e.x, fieldFloorY(), e.boss?'#e0a93b':'#e0683b'); if(e.boss){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } e.el.remove(); if(e.boss) B.bossAlive=false; gold+=e.boss?200:5; return false;} return true; });
+    const born=[];
+    B.enemies=B.enemies.filter(e=>{ if(e.hp<=0){
+      if(e.bomb){ fxSparks(e.x, fieldFloorY(), 16, '#e0683b'); B.allies.forEach(function(a){ if(Math.abs(a.x-e.x)<=72){ a.hp-=e.bomb; const i=a.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,a.hp/a.hpMax*100)+'%'; } }); floatText(e.x,28,'💥-'+e.bomb,'var(--enemy)'); }
+      if(e.split){ born.push({x:e.x-16,t:e.split}); born.push({x:e.x+16,t:e.split}); }
+      fxFrag(e.x, fieldFloorY(), e.boss?'#e0a93b':'#e0683b'); if(e.boss){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } e.el.remove(); if(e.boss) B.bossAlive=false; gold+=e.boss?200:5; return false;
+    } return true; });
+    born.forEach(function(n){ spawnSplitChild(n.t, n.x); });
   }
   function floatText(x,y,txt,color){
     const f=document.createElement('div'); f.className='float'; f.style.left=x+'px'; f.style.top=y+'px'; f.style.color=color||'#000'; f.textContent=txt;
