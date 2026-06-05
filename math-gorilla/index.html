@@ -70,14 +70,20 @@
   .lock{pointer-events:none; opacity:.85;}
 
   /* ---- 発射フルスクリーン演出 ---- */
-  .blast{position:fixed; inset:0; z-index:50; overflow:hidden; display:flex; align-items:center; justify-content:center;
-    background:radial-gradient(circle at 10% 90%, #fff7d6, #ffd34d 30%, #ff7a3c 72%, #e0533d 100%);}
+  .blast{position:fixed; inset:0; z-index:50; overflow:hidden;
+    background:radial-gradient(circle at 10% 92%, #fff7d6, #ffd34d 30%, #ff7a3c 72%, #e0533d 100%);}
   .blast.shake{animation:bshake .5s ease;}
   @keyframes bshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,6px)}40%{transform:translate(7px,-7px)}60%{transform:translate(-6px,-4px)}80%{transform:translate(5px,5px)}}
-  .blastNum{font-size:clamp(46px,15vw,130px); font-weight:900; color:#b3261e;
-    text-shadow:0 4px 0 #fff,0 0 32px #fff; z-index:60; text-align:center; line-height:1.1;}
-  .blastNum small{display:block; font-size:clamp(16px,5vw,26px); color:#7a2d12; text-shadow:none;}
-  .fly{position:absolute; left:6%; bottom:8%; font-size:34px; will-change:transform; z-index:55;}
+  .blastNum{position:absolute; top:6%; left:0; right:0; z-index:60; text-align:center; line-height:1.05;
+    font-size:clamp(40px,13vw,110px); font-weight:900; color:#b3261e; text-shadow:0 4px 0 #fff,0 0 32px #fff;}
+  .blastNum small{display:block; font-size:clamp(15px,4.5vw,24px); color:#7a2d12; text-shadow:none;}
+  /* ゴリラの列（数が増えると下から積み重なって壁になる） */
+  .field{position:absolute; left:0; right:0; bottom:8%; top:30%; z-index:55;
+    display:flex; flex-wrap:wrap-reverse; justify-content:center; align-content:flex-start;
+    padding:0 4%; overflow:hidden;}
+  .g2{line-height:1; will-change:transform, opacity;}
+  /* 飛んでくるバナナ */
+  .banana2{position:absolute; left:-8%; bottom:14%; z-index:58; font-size:clamp(34px,9vw,60px); will-change:transform; opacity:0;}
   .flash{position:fixed; inset:0; background:#fff; z-index:70; opacity:0; pointer-events:none;}
 
   /* ---- リザルト ---- */
@@ -141,8 +147,12 @@
   </div>
 </div>
 
-<!-- 発射演出オーバーレイ -->
-<div id="blast" class="blast hidden"><div class="blastNum" id="blastNum">🦍 0<small>体 ふっとばし！</small></div></div>
+<!-- 発射演出オーバーレイ：ゴリラの列 → バナナで吹き飛ばし -->
+<div id="blast" class="blast hidden">
+  <div class="blastNum" id="blastNum">🦍 0<small>体 ふっとばし！</small></div>
+  <div class="field" id="field"></div>
+  <span class="banana2" id="banana2">🍌</span>
+</div>
 <div id="flash" class="flash"></div>
 
 <script src="mathbank.js"></script>
@@ -260,43 +270,71 @@ function proceed(delay){
   }, delay);
 }
 
-/* ===== 発射 → 9999体 派手に吹き飛ばし ===== */
+/* ===== 発射 → ゴリラの列をバナナで吹き飛ばし ===== */
+const RENDER_CAP = 320;   // 実際に描画するゴリラの上限（性能対策・数字は本物を見せる）
+
 function fire(){
   clearInterval(tickTimer);
   st.locked = true;
   const knocked = Math.min(MAX_KNOCK, Math.floor(st.energy / ENERGY_PER));
 
   $('play').classList.add('hidden');
-  const blast = $('blast');
-  blast.classList.remove('hidden');
-  blast.classList.remove('shake'); void blast.offsetWidth; blast.classList.add('shake');
-  flashScreen();
-  boom();
+  $('blast').classList.remove('hidden');
+  $('blastNum').innerHTML = '🦍 0<small>体 ふっとばし！</small>';
 
-  // ゴリラの大群を飛ばす（描画は最大120体に抑え、数字は本物を見せる）
-  const flies = Math.min(120, Math.max(10, Math.floor(knocked/30)+10));
-  for(let k=0;k<flies;k++) setTimeout(spawnFly, k*14);
+  buildPile(knocked);                       // ① 列に積み重なって整列
+  setTimeout(()=>flyBanana(()=>{            // ② バナナが飛んでくる
+    const blast = $('blast');
+    blast.classList.remove('shake'); void blast.offsetWidth; blast.classList.add('shake');
+    flashScreen(); boom();
+    burstPile();                            // ③ 一斉に吹き飛ぶ
+    countUp(knocked, 1300);                 // ④ 数字がカウントアップ
+  }), 520);
 
-  // 数字を0→knockedへ一気にカウントアップ
-  countUp(knocked, 1300);
-
-  setTimeout(()=>showResult(knocked), Math.max(2000, flies*14 + 900));
+  setTimeout(()=>showResult(knocked), 3000);
 }
 
-function spawnFly(){
-  const f = document.createElement('span');
-  f.className = 'fly'; f.textContent = '🦍';
-  f.style.fontSize = (24 + Math.random()*30) + 'px';
-  $('blast').appendChild(f);
-  const dx = (Math.random()*1.4 - 0.2) * window.innerWidth;     // ほぼ右上へ飛散
-  const dy = -(0.4 + Math.random()*1.1) * window.innerHeight;
-  const rot = 360 + Math.random()*1080;
+// 数が大きいほどゴリラが下から積み重なって壁になる（タイルも小さくなり密度UP）
+function buildPile(knocked){
+  const field = $('field');
+  field.innerHTML = '';
+  const n = Math.min(RENDER_CAP, Math.max(6, knocked));
+  const size = knocked<40 ? 38 : knocked<150 ? 28 : knocked<600 ? 20 : 15;
+  field.style.fontSize = size + 'px';
+  for(let i=0;i<n;i++){
+    const g = document.createElement('span');
+    g.className = 'g2'; g.textContent = '🦍';
+    g.style.opacity = '0';
+    g.style.transform = 'translateY(14px)';
+    field.appendChild(g);
+    setTimeout(()=>{ g.style.transition='opacity .18s, transform .18s'; g.style.opacity='1'; g.style.transform='translateY(0)'; }, i*2);
+  }
+}
+
+function flyBanana(cb){
+  const b = $('banana2');
+  b.style.transition='none'; b.style.opacity='1';
+  b.style.transform='translate(0,0) rotate(0deg)';
   requestAnimationFrame(()=>{
-    f.style.transition = `transform ${1.0+Math.random()*0.8}s cubic-bezier(.2,-0.3,.6,1), opacity 1.4s`;
-    f.style.transform = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
-    f.style.opacity = '0';
+    b.style.transition='transform .5s ease-in';
+    b.style.transform=`translate(${window.innerWidth*0.55}px, -${window.innerHeight*0.22}px) rotate(720deg)`;
   });
-  setTimeout(()=>f.remove(), 2400);
+  setTimeout(()=>{ b.style.opacity='0'; if(cb) cb(); }, 520);
+}
+
+function burstPile(){
+  const tiles = $('field').querySelectorAll('.g2');
+  tiles.forEach((g,i)=>{
+    setTimeout(()=>{
+      const dx = (Math.random()*1.7 - 0.6) * window.innerWidth;   // 四方へ飛散
+      const dy = -(0.3 + Math.random()*1.1) * window.innerHeight;
+      const rot = 360 + Math.random()*1080;
+      g.style.transition = `transform ${0.9+Math.random()*0.7}s cubic-bezier(.2,-0.3,.6,1), opacity 1.2s`;
+      g.style.transform = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
+      g.style.opacity = '0';
+      if(i%18===0) beep(300+Math.random()*200,0.04);
+    }, i*2);
+  });
 }
 
 function countUp(target, ms){
