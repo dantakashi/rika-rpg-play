@@ -756,7 +756,17 @@ const GameUI = (function() {
       const total = GameData.getQuestions({ diffs: diffs, genres: _rangeGenres.length ? _rangeGenres : null, type: _rangeType || null, grades: _rangeGrades }).length;
       const gtxt = _rangeGenres.length ? _rangeGenres.map(k => (GameData.GENRES.find(g => g.key === k) || {}).label).join('・') : '全ジャンル';
       const gradeTxt = _rangeGrades.length ? '・' + _rangeGrades.slice().sort().map(g => '中' + g).join('/') : '';
-      el.textContent = `${dLabels}${gradeTxt}・${gtxt}（${total}問）`;
+      // 🛡️ 問題数が足りない範囲は赤＋準備中表示（挑戦不可・範囲を広げれば解消）
+      const _ready = total >= GameData.MIN_QUESTIONS;
+      el.innerHTML = `${dLabels}${gradeTxt}・${gtxt}（<span class="${_ready ? 'text-white' : 'text-rose-400'}">${total}問</span>）`
+        + (_ready ? '' : ` <span class="text-rose-400 text-[9px] font-bold">⚠️準備中(${total}/${GameData.MIN_QUESTIONS})・範囲を広げてね</span>`);
+      // 準備中の範囲は入場ボタンを無効化（保護装置の見える化）
+      const _enterBtn = document.getElementById('dojo-popup-enter-btn');
+      if (_enterBtn) {
+        _enterBtn.disabled = !_ready;
+        _enterBtn.classList.toggle('opacity-40', !_ready);
+        _enterBtn.classList.toggle('cursor-not-allowed', !_ready);
+      }
     }
 
     // ── 出題範囲フルウィンドウ ── 作業用state（確定前）

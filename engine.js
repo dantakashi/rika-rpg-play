@@ -745,6 +745,19 @@ let player = {
       diffs.sort((a, b) => order.indexOf(a) - order.indexOf(b));
       const topDiff = diffs[diffs.length - 1]; // 最上位＝報酬・敵の強さ・速度の基準
 
+      // 🛡️ 学習保護: 選んだ範囲の実プールが MIN_QUESTIONS 未満なら挑戦不可（丸暗記での荒稼ぎ防止）。
+      //  範囲を広げれば（難易度・ジャンルを足せば）合算で満たせるので、通常の広い範囲は影響なし。
+      const _poolCount = GameData.getQuestions({
+        diffs: diffs,
+        genres: (filterGenres && filterGenres.length) ? filterGenres : null,
+        type: filterType || null,
+        grades: (filterGrades && filterGrades.length) ? filterGrades : null
+      }).length;
+      if (_poolCount < GameData.MIN_QUESTIONS) {
+        alert('⚠️ この範囲はまだ問題が準備中です（' + _poolCount + '/' + GameData.MIN_QUESTIONS + '問）。\n難易度やジャンルを増やして範囲を広げると挑戦できます。');
+        return false;
+      }
+
       battle.active = true;
       battle.mode = 'dojo';
       battle.diffs = diffs;

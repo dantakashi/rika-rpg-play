@@ -2745,6 +2745,11 @@ const GameData = (function() {
     // そのランクが節目（大型報酬）かどうか
     function isRankMilestone(rank) { return !!RANK_CONFIG.milestones[rank]; }
 
+    // 🛡️ 学習保護: 1つの出題範囲(選んだ難易度×ジャンル×形式の実プール)に必要な最低問題数。
+    //  これ未満の範囲は道場で挑戦不可＝「答えを覚えて荒稼ぎ」を防ぐ保護装置。先生は各範囲20問を目標に増やす。
+    //  ※「20問あればOK」＝count < MIN_QUESTIONS でロック（20はOK）。21問必須にするなら 21 に。
+    const MIN_QUESTIONS = 20;
+
     // 初心者ガイド（推奨道場レベル・ボス推奨戦闘力）。数値は夜間simでキャリブレーション済み・調整可。
     //  推奨Lv = round(ATK / recLevelAtkDivisor) を解禁上限でclamp（新規ATK10→Lv1, トップATK2000→Lv100）。
     //  推奨戦闘力 = hp×bossRecHpCoef + atk×bossRecAtkCoef（人格が各ボスに挑む時点の戦闘力に最小二乗フィット）。
@@ -2756,7 +2761,7 @@ const GameData = (function() {
     };
 
     return {
-      RANK_CONFIG, rankExpNeeded, rankUpGold, rankUpTickets, rankMilestoneReward, isRankMilestone, GUIDE_CONFIG,
+      RANK_CONFIG, rankExpNeeded, rankUpGold, rankUpTickets, rankMilestoneReward, isRankMilestone, GUIDE_CONFIG, MIN_QUESTIONS,
       QUESTION_DB, ULTIMATE_QUIZZES, SUBJECTS, GENRES, DIFFICULTIES, getQuestions, getAvailableGenres,
       GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
       GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,
