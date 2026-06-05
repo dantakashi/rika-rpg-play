@@ -163,19 +163,18 @@ const GameUI = (function() {
         const power = GameEngine.getTotalStrength();
         statDisplay.style.cursor = 'pointer';
         statDisplay.onclick = () => openStatPopup();
+        const _row = ([label, val]) => `<div class="flex justify-between"><span class="text-slate-400">${label}</span><span class="text-white font-bold">${val}</span></div>`;
+        // 初級ステータス(攻防HP)は常に表示。上級(クリ/連撃/回避)はボス1体撃破後に表示＝新規はシンプルに。
+        const _basic = [['❤️ HP', s.hp], ['🗡️ ATK', s.atk], ['🛡️ DEF', s.def]].map(_row).join('');
+        const _showAdvanced = (GameEngine.player.defeatedBosses || []).length >= 1 || GameEngine.player.hasClearedOnce;
+        const _advanced = _showAdvanced
+          ? `<div class="text-[8px] text-purple-300 font-bold mt-1 mb-0.5 border-t border-slate-800/60 pt-1">上級ステータス</div>`
+            + [['💥 クリティカル率', Math.round(s.critRate*100)+'%'], ['🔁 連撃数', s.atkCount+'回'], ['💨 回避率', Math.round(s.dodge*100)+'%']].map(_row).join('')
+          : '';
         statDisplay.innerHTML =
           `<div class="flex justify-between items-center pb-1 mb-1 border-b border-slate-700/50"><span class="text-slate-300 font-bold">💪 総戦力</span><span class="text-yellow-400 font-black text-sm">${power.toLocaleString()}</span></div>`
-          + [
-              ['❤️ HP', s.hp],
-              ['🗡️ ATK', s.atk],
-              ['🛡️ DEF', s.def],
-              ['💥 クリティカル率', Math.round(s.critRate*100)+'%'],
-              ['🔁 連撃数', s.atkCount+'回'],
-              ['💨 回避率', Math.round(s.dodge*100)+'%'],
-            ].map(([label, val]) =>
-              `<div class="flex justify-between"><span class="text-slate-400">${label}</span><span class="text-white font-bold">${val}</span></div>`
-            ).join('')
-          + `<div class="text-center text-[8px] text-cyan-400 mt-1 font-bold">▶ タップで上級ステータス・スキルも表示</div>`;
+          + _basic + _advanced
+          + `<div class="text-center text-[8px] text-cyan-400 mt-1 font-bold">▶ タップで${_showAdvanced ? '全ステータス' : '上級ステータス'}・スキルも表示</div>`;
       }
 
       // 装備スロット (ホーム画面)
@@ -201,12 +200,17 @@ const GameUI = (function() {
     }
 
     // 進度ゲート: data-gate 属性を持つボタンを進度に応じて表示。
-    //  boss1=ボス1体撃破で解放 / boss4=中級解禁(4体)で解放 / cleared=ラスボス撃破で解放。
+    //  played=道場で数問解いた等で解放 / boss1=ボス1体撃破 / boss4=中級解禁(4体) / cleared=ラスボス撃破。
     function applyProgressiveDisclosure() {
       const p = GameEngine.player;
       const bossCount = (p.defeatedBosses || []).length;
       const cleared = !!p.hasClearedOnce;
-      const ok = { boss1: bossCount >= 1, boss4: bossCount >= 4, cleared: cleared };
+      // 「少し遊んだ」= 道場で5問以上 / ランク2以上 / ボス撃破済。ガチャ・図書館はこの後に出す。
+      let answered = 0;
+      const qs = p.quizStats || {};
+      Object.keys(qs).forEach(function(k) { answered += (qs[k] && qs[k].t) ? qs[k].t : 0; });
+      const played = answered >= 5 || (p.rank || 1) >= 2 || bossCount >= 1;
+      const ok = { played: played, boss1: bossCount >= 1, boss4: bossCount >= 4, cleared: cleared };
       document.querySelectorAll('[data-gate]').forEach(function(el) {
         const need = el.getAttribute('data-gate');
         const show = (need in ok) ? ok[need] : true;

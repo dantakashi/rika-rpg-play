@@ -232,6 +232,21 @@
       background-size:auto, 400% 400%; animation:rgb-gaming 3s ease infinite;
       text-shadow:0 0 8px rgba(255,255,255,.6); box-shadow:0 0 18px rgba(168,85,247,.6); }
     .frame-omega::before{content:'🌌';} .frame-omega::after{content:'🌌';}
+
+    /* 📱 スマホ向け: タップしやすさ＆最小級フォントの底上げ（生徒レビュー反映・desktop非影響） */
+    @media (max-width: 640px) {
+      /* 戦闘の選択式＝中核操作。指で押しやすく・読みやすく */
+      #choice-buttons button, #choice-area button { min-height: 48px; font-size: 15px !important; }
+      /* 最小級の文字を少し大きく（8px→10/9px→10） */
+      .text-\[8px\] { font-size: 10px !important; }
+      .text-\[9px\] { font-size: 10px !important; }
+      /* 小さな操作ボタンに最小タップ高さ */
+      #reroll-modal-body button { min-height: 44px; }
+      #ur-picker-body button { min-height: 60px; }
+      #rank-modal-body button { min-height: 34px; padding-left: 10px; padding-right: 10px; }
+      /* 道場「推奨Lvにする」など小ボタンの余白確保 */
+      .dojo-mobile-tap { min-height: 36px; }
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-200 h-full flex flex-col">
@@ -363,10 +378,10 @@
 
           <!-- ========== RIGHT: ナビ & その他 ========== -->
           <div class="flex flex-col gap-3">
-            <button onclick="openGachaScreen()" style="background-image:url('assets/ui/btn_gacha.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-gradient-to-r from-yellow-700 to-orange-700 hover:from-yellow-600 hover:to-orange-600 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-yellow-950/30 active:scale-95">
+            <button data-gate="played" onclick="openGachaScreen()" style="background-image:url('assets/ui/btn_gacha.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-gradient-to-r from-yellow-700 to-orange-700 hover:from-yellow-600 hover:to-orange-600 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-yellow-950/30 active:scale-95">
               <span class="text-2xl">🎰</span> ガチャ（装備入手）
             </button>
-            <button onclick="openLibraryScreen()" style="background-image:url('assets/ui/btn_library.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-indigo-800 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
+            <button data-gate="played" onclick="openLibraryScreen()" style="background-image:url('assets/ui/btn_library.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-indigo-800 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
               <span class="text-2xl">📚</span> 図書館（問題一覧）
             </button>
             <button data-gate="boss4" onclick="openPvPScreen()" style="background-image:url('assets/ui/btn_pvp.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-cyan-800 hover:bg-cyan-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
