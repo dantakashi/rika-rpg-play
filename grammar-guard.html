@@ -52,7 +52,7 @@
   .seg{display:flex; gap:6px; flex-wrap:wrap}
   .seg button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:7px 13px; font-size:13px; font-weight:700; color:var(--ink)}
   .seg button.sel{background:var(--ally); color:#fff; border-color:var(--ally)}
-  .stage-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px}
+  .stage-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
   .stage{position:relative; aspect-ratio:1; border-radius:14px; border:2px solid var(--line); background:#fff;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-weight:700; font-size:12px; padding:4px}
   .stage.boss{border-color:var(--enemy); background:#fff4ee}
@@ -220,6 +220,8 @@
   .greveal .gburst{position:absolute;top:24px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,var(--rc,#fff),transparent 70%);opacity:.45;pointer-events:none;animation:gburst .7s ease-out}
   @keyframes gburst{0%{transform:scale(.2);opacity:.7}100%{transform:scale(1.7);opacity:0}}
   .unit.slowed{filter:drop-shadow(0 0 4px #5aa0d6) saturate(.6) brightness(1.05)}
+  .quizbar{display:block; width:100%; text-align:left; background:#fff; border:2px solid var(--line); border-radius:14px; padding:12px 14px; font-size:14px; font-weight:700; color:var(--ink); box-shadow:0 2px 0 var(--line)}
+  .quizbar:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
@@ -245,7 +247,19 @@
         <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
       </div>
       <div class="homeview" data-view="play">
-        <div class="card" style="margin-bottom:12px">
+        <button class="quizbar" id="quizSummaryBtn" data-go="quiz"></button>
+        <div class="seg" id="chapTabs" style="margin:10px 0 4px"></div>
+        <div class="card" id="stageCard">
+          <div style="font-weight:800; margin-bottom:8px" id="chapTitle"></div>
+          <div class="stage-grid" id="stageGrid"></div>
+        </div>
+        <div class="card" id="specialCard" style="display:none">
+          <div style="font-weight:800; margin-bottom:8px">⭐ 特殊ステージ</div>
+          <div id="towerBody"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="quiz">
+        <div class="card">
           <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（ジャンル・難易度を選択。混ぜてもOK）</span></div>
           <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル</div>
           <div class="seg" id="genreSeg"></div>
@@ -256,14 +270,6 @@
           <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
           <div class="seg" id="choiceSeg"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
-        </div>
-        <div class="card">
-          <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
-          <div class="stage-grid" id="stageGrid"></div>
-        </div>
-        <div class="card" style="margin-top:12px">
-          <div style="font-weight:800; margin-bottom:8px">⭐ 特殊ステージ</div>
-          <div id="towerBody"></div>
         </div>
       </div>
       <div class="homeview" data-view="grow">
@@ -2012,7 +2018,8 @@ const Game = (()=>{
   let regenLv = 0;         // エネルギー増加速度Lv
   let enMaxLv = 0;         // エネルギー上限Lv
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
-  let homeView = 'menu';   // ホームの表示(menu/play/grow/settings)
+  let homeView = 'menu';   // ホームの表示(menu/play/grow/settings/quiz)
+  let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
   let towerBest = 0;       // 修練の塔の最高階
   let lastDaily = '';      // デイリー受取日(YYYY-M-D)
   let curStage = null;
@@ -2286,8 +2293,8 @@ const Game = (()=>{
     $('goldPill').textContent = '💰 '+gold;
     renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
@@ -2313,17 +2320,32 @@ const Game = (()=>{
     ts.onclick=()=>{ slowMode=!slowMode; save(); renderHome(); };
     // ステージ（クリアで次が解放）
     const unlocked=maxUnlocked();
-    const grid=$('stageGrid'); grid.innerHTML='';
-    STAGES.forEach(s=>{
-      const lock = s.area>unlocked;
-      const d=document.createElement('button');
-      d.className='stage'+(s.boss?' boss':'')+(lock?' lock':'');
-      d.innerHTML=`<span class="no">エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
-        +(cleared[s.area]?`<span class="flag">🚩</span>`:'')
-        +(lock?`<span class="lockmark">🔒</span>`:'');
-      if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(s); }
-      grid.appendChild(d);
-    });
+    if(!playTab){ var __cur=Math.min(15,unlocked); playTab = __cur<=5?1:(__cur<=10?2:3); }
+    var __sb=$('quizSummaryBtn');
+    if(__sb){ var __sel=QuizEngine.getSel(), __gm={word:'単語',idiom:'熟語',grammar:'文法'};
+      var __g=__sel.genres.map(function(x){return __gm[x];}).join('/');
+      var __lv=__sel.levels.map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join(',');
+      __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__lv+'｜'+choiceMode+'択　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）変更▸</span>'; }
+    var __ct=$('chapTabs');
+    if(__ct){ __ct.innerHTML='';
+      [[1,'1章'],[2,'2章'],[3,'3章'],['special','⭐特殊']].forEach(function(t){ var bb=document.createElement('button'); bb.textContent=t[1]; if(playTab===t[0]) bb.classList.add('sel'); bb.onclick=function(){ playTab=t[0]; renderHome(); }; __ct.appendChild(bb); }); }
+    var __sc=$('stageCard'), __spc=$('specialCard');
+    if(playTab==='special'){ if(__sc)__sc.style.display='none'; if(__spc)__spc.style.display='block'; }
+    else {
+      if(__sc)__sc.style.display='block'; if(__spc)__spc.style.display='none';
+      var __title=$('chapTitle'); if(__title) __title.innerHTML='🗺️ '+playTab+'章 <span class="muted">（'+(playTab===3?'嵐の章・':'')+'5/10/15はボス）</span>';
+      const grid=$('stageGrid'); grid.innerHTML='';
+      STAGES.filter(function(s){return s.world===playTab;}).forEach(s=>{
+        const lock = s.area>unlocked;
+        const d=document.createElement('button');
+        d.className='stage'+(s.boss?' boss':'')+(lock?' lock':'');
+        d.innerHTML=`<span class="no">エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
+          +(cleared[s.area]?`<span class="flag">🚩</span>`:'')
+          +(lock?`<span class="lockmark">🔒</span>`:'');
+        if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(s); }
+        grid.appendChild(d);
+      });
+    }
   }
 
   /* ---- バトル開始 ---- */
