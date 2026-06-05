@@ -272,6 +272,13 @@
           <div style="font-weight:800; margin-bottom:8px">🎰 ガチャ <span class="muted" id="gachaCost"></span></div>
           <div id="gachaStage" style="min-height:172px; display:flex; align-items:center; justify-content:center; margin-bottom:10px"></div>
           <div id="gachaBody"></div>
+          <button class="btn ghost" data-go="gachalist" style="width:100%; margin-top:10px">📜 排出キャラ一覧・確率</button>
+        </div>
+      </div>
+      <div class="homeview" data-view="gachalist">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">📜 排出キャラ一覧・確率 <span class="muted">（★＝凸数）</span></div>
+          <div id="gachaListBody"></div>
         </div>
       </div>
       <div class="homeview" data-view="charup">
@@ -1863,10 +1870,14 @@ const Game = (()=>{
     let pool=unitsByRarity(rar); if(!pool.length) pool=ROSTER_KEYS;
     const key=pool[Math.floor(Math.random()*pool.length)];
     const isNew=!owned[key];
+    const wasStars=Math.min(4, Math.max(0, (owned[key]||0)-1));
     owned[key]=(owned[key]||0)+1;
     if(isNew && deck.length<5) deck.push(key);
-    lastGacha={key:key, isNew:isNew, rar:rar};
-    save(); playGachaAnim(key, isNew, rar);
+    const stars=Math.min(4, owned[key]-1);
+    let refunded=0;
+    if(!isNew && wasStars>=4){ refunded=80; gold+=80; }
+    lastGacha={key:key, isNew:isNew, rar:rar, stars:stars, refunded:refunded};
+    save(); playGachaAnim(lastGacha);
   }
   function toggleDeck(key){
     if(!owned[key]) return;
@@ -1880,29 +1891,34 @@ const Game = (()=>{
     const r=ROSTER[key];
     const b=document.createElement('button');
     b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid '+(selected?'var(--good)':'var(--line)')+';background:'+(selected?'#eafaef':'#fff')+';border-radius:12px;padding:6px 8px;min-width:62px;position:relative';
-    b.innerHTML='<span style="position:absolute;top:-8px;left:-4px;font-size:10px;font-weight:800;color:#fff;background:'+r.rarColor+';padding:0 4px;border-radius:6px">'+r.rar+'</span><span style="width:40px;height:40px;display:block">'+SVG.get(r.sprite)+'</span><span style="font-size:11px;font-weight:700">'+r.name+'</span>'+(owned[key]>1?'<span style="font-size:10px;color:#9a8f7c">×'+owned[key]+'</span>':'');
+    b.innerHTML='<span style="position:absolute;top:-8px;left:-4px;font-size:10px;font-weight:800;color:#fff;background:'+r.rarColor+';padding:0 4px;border-radius:6px">'+r.rar+'</span><span style="width:40px;height:40px;display:block">'+SVG.get(r.sprite)+'</span><span style="font-size:11px;font-weight:700">'+r.name+'</span>'+(unitStars(key)?'<span style="font-size:10px;color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'');
     b.addEventListener('click',function(){toggleDeck(key);});
     return b;
   }
   /* ---- ガチャ演出 ---- */
   let gachaAnimating=false;
-  function gachaRevealHTML(key,isNew){
-    const r=ROSTER[key];
+  function gachaRevealHTML(info){
+    const r=ROSTER[info.key];
+    let tag;
+    if(info.isNew) tag='<span style="color:var(--good)">NEW!</span>';
+    else if(info.refunded) tag='<span class="muted">★MAX（+'+info.refunded+'G）</span>';
+    else if(info.stars>0) tag='<span style="color:var(--gold)">'+'★'.repeat(info.stars)+'にUP！</span>';
+    else tag='<span class="muted">（ダブり）</span>';
     return '<div class="greveal" style="--rc:'+r.rarColor+'"><div class="gburst"></div>'+
       '<div class="grarbig" style="color:'+r.rarColor+'">'+r.rar+'</div>'+
       '<div class="gunit">'+SVG.get(r.sprite)+'</div>'+
-      '<div class="gname">'+r.name+(isNew?' <span style="color:var(--good)">NEW!</span>':' <span class="muted">（ダブり）</span>')+'</div></div>';
+      '<div class="gname">'+r.name+' '+tag+'</div></div>';
   }
-  function playGachaAnim(key,isNew,rar){
+  function playGachaAnim(info){
     const stage=$('gachaStage'); const gp=$('goldPill'); if(gp) gp.textContent='💰 '+gold;
     if(!stage){ renderHome(); return; }
-    const r=ROSTER[key]; const hi=(rar==='SR'||rar==='SSR');
+    const r=ROSTER[info.key]; const hi=(info.rar==='SR'||info.rar==='SSR');
     gachaAnimating=true; renderGacha();
     stage.innerHTML='<div class="gcapsule'+(hi?' hi':'')+'" style="--rc:'+r.rarColor+'"></div>';
     Sound.play('summon');
     setTimeout(function(){
       gachaAnimating=false;
-      stage.innerHTML=gachaRevealHTML(key,isNew);
+      stage.innerHTML=gachaRevealHTML(info);
       Sound.play(hi?'win':'correct');
       renderGacha();
     },1150);
@@ -1911,8 +1927,27 @@ const Game = (()=>{
   /* ---- キャラ強化 ---- */
   function unitLevel(key){ return unitLv[key]||0; }
   function unitUpCost(key){ return 100*(unitLevel(key)+1); }
-  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key); return {atk:Math.round(r.atk*(1+0.12*lv)), hp:Math.round(r.hp*(1+0.10*lv))}; }
+  function unitStars(key){ return Math.min(4, Math.max(0, (owned[key]||0)-1)); }
+  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
   function upgradeUnit(key){ if(!owned[key]) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
+  function renderGachaList(){
+    const body=$('gachaListBody'); if(!body) return; body.innerHTML='';
+    let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
+    ['SSR','SR','R','N'].forEach(function(rar){
+      const us=unitsByRarity(rar); if(!us.length) return;
+      const rate=RARITY_W[rar]/tot*100, per=rate/us.length;
+      const head=document.createElement('div'); head.style.cssText='font-weight:800;margin:10px 0 4px;color:'+ROSTER[us[0]].rarColor; head.textContent=rar+'　計'+rate.toFixed(0)+'%（各 '+per.toFixed(1)+'%）';
+      body.appendChild(head);
+      us.forEach(function(key){
+        const r=ROSTER[key], st=unitStars(key), have=(owned[key]||0)>0;
+        const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:10px;padding:6px 8px;margin-bottom:6px;background:'+(have?'#fff':'#f1ece0')+';opacity:'+(have?'1':'.6');
+        row.innerHTML='<span style="width:38px;height:38px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
+          '<div style="flex:1;min-width:0"><div style="font-weight:700">'+r.name+(have?' <span style="color:var(--gold)">'+'★'.repeat(st)+'</span>':' <span class="muted">未所持</span>')+'</div>'+
+          '<div class="muted" style="font-size:12px">排出 '+per.toFixed(1)+'%</div></div>';
+        body.appendChild(row);
+      });
+    });
+  }
   function renderCharup(){
     const body=$('charupBody'); if(!body) return; body.innerHTML='';
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
@@ -1920,7 +1955,7 @@ const Game = (()=>{
       const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key);
       const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff';
       row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
-        '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span></div>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span> '+(unitStars(key)?'<span style="color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'')+'</div>'+
         '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'</div></div>';
       const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)';
       btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',function(){upgradeUnit(key);});
@@ -1941,7 +1976,7 @@ const Game = (()=>{
     const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'G）';
     const stage=$('gachaStage');
     if(stage && !gachaAnimating){
-      if(lastGacha && lastGacha.key) stage.innerHTML=gachaRevealHTML(lastGacha.key, lastGacha.isNew);
+      if(lastGacha && lastGacha.key) stage.innerHTML=gachaRevealHTML(lastGacha);
       else stage.innerHTML='<div class="muted" style="text-align:center">カプセルを回して<br>味方をGETしよう！</div>';
     }
     const body=$('gachaBody'); if(!body) return; body.innerHTML='';
@@ -2062,10 +2097,10 @@ const Game = (()=>{
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
-    renderGacha(); renderDeck(); renderCastle(); renderCharup();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', gacha:'🎰 ガチャ', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', gacha:'grow', charup:'grow', deckedit:'grow', castle:'grow'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
