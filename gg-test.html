@@ -2016,6 +2016,8 @@ const Game = (()=>{
 
   // スペースキー召喚
   window.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); summon(); } });
+  // 凍結タブ復元時は戦闘の途中状態で固まらないようホームへ戻す
+  window.addEventListener('pageshow', e=>{ if(e.persisted){ try{ toHome(); }catch(_){} } });
 
   return { start, toHome, summon, toggleSound, _stages:STAGES };
 })();
