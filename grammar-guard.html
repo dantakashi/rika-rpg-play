@@ -219,6 +219,7 @@
   .greveal .gname{font-weight:800;margin-top:2px}
   .greveal .gburst{position:absolute;top:24px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,var(--rc,#fff),transparent 70%);opacity:.45;pointer-events:none;animation:gburst .7s ease-out}
   @keyframes gburst{0%{transform:scale(.2);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+  .unit.slowed{filter:drop-shadow(0 0 4px #5aa0d6) saturate(.6) brightness(1.05)}
 </style>
 </head>
 <body>
@@ -1675,6 +1676,19 @@ const SVG = (()=>{
       <path d="M22 62 L17 71 L24 68 L19 79" stroke="#ffd24a" stroke-width="2.5" fill="none"/>
       <path d="M78 62 L83 71 L76 68 L81 79" stroke="#ffd24a" stroke-width="2.5" fill="none"/>
       <path d="M44 82 L44 89 M56 82 L56 89" stroke="${S}" stroke-width="3"/>`,
+    cheerTanuki:`<ellipse cx="50" cy="88" rx="22" ry="4" fill="#0002"/>
+      <circle cx="30" cy="28" r="9" fill="#5a6a8a" stroke="${S}" stroke-width="3"/>
+      <circle cx="70" cy="28" r="9" fill="#5a6a8a" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="56" rx="26" ry="28" fill="#5a6a8a" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="64" rx="16" ry="17" fill="#cdd6e6"/>
+      <ellipse cx="40" cy="48" rx="7.5" ry="6.5" fill="#36405a"/>
+      <ellipse cx="60" cy="48" rx="7.5" ry="6.5" fill="#36405a"/>
+      <circle cx="40" cy="48" r="2.6" fill="#fff"/><circle cx="60" cy="48" r="2.6" fill="#fff"/>
+      <circle cx="40" cy="48" r="1.4" fill="${S}"/><circle cx="60" cy="48" r="1.4" fill="${S}"/>
+      <path d="M50 54 L46 58 L54 58Z" fill="${S}"/>
+      <path d="M48 60 Q50 63 52 60" stroke="${S}" stroke-width="2" fill="none"/>
+      <path d="M52 18 Q60 9 65 17 Q58 22 52 18Z" fill="#3a9d57" stroke="${S}" stroke-width="2"/>
+      <path d="M58 13 L52 18" stroke="${S}" stroke-width="2"/>`,
     // --- 城 ---
     castleA:`<rect x="14" y="40" width="36" height="74" fill="#8fb98f" stroke="${S}" stroke-width="3"/>
       <path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="#6fa06f" stroke="${S}" stroke-width="3"/>
@@ -1845,15 +1859,16 @@ const QuizEngine = (()=>{
    ========================================================================= */
 const ROSTER = {
   guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:120, atk:14, speed:34, range:42, weight:46},
-  arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, weight:26},
-  moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, weight:14},
+  arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, pierce:true, weight:26},
+  moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, knockback:16, weight:14},
   dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8},
   dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, weight:34},
   bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:16, speed:36, range:74, splash:true, weight:16},
   healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:130, atk:5, speed:30, range:64, heal:10, weight:9},
-  shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, weight:20},
-  owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, weight:11},
-  orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7}
+  shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, def:8, weight:20},
+  owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, slow:true, weight:11},
+  orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7},
+  cheerTanuki:{name:"応援タヌキ", sprite:"cheerTanuki", rar:"SR", rarColor:"#8e44ad", cost:78, hp:150, atk:12, speed:30, range:120, buff:0.3, weight:10}
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
@@ -2316,7 +2331,7 @@ const Game = (()=>{
     $('field').appendChild(el);
     fxGate(84); Sound.play('summon');
     const __st=unitStats(key);
-    B.allies.push({ key, el, x:84, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal });
+    B.allies.push({ key, el, x:84, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0 });
   }
   function spawnEnemy(type){
     if(type==="BOSS"){ spawnBoss(); return; }
@@ -2426,10 +2441,15 @@ const Game = (()=>{
       if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.speed*dt; place(a.el,a.x); return; }
       const target = nearestEnemy(a);
       const enemyCastleX = W-70;
+      var __atk = a.atk * allyAtkMul(a);
       if(target && Math.abs(target.x-a.x) <= a.range){
-        if(a.cd<=0){ if(a.splash){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range) damage(e,a.atk); }); floatText(a.x,26,'💥','var(--ally)'); } else { damage(target, a.atk); } a.cd=0.7; flash(a.el); hitFx(target); }
+        if(a.cd<=0){
+          if(a.splash||a.pierce){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range){ damage(e,__atk); if(a.slow)e.slowT=2.0; if(a.knockback)e.x=Math.min(W-60,e.x+a.knockback); } }); floatText(a.x,26, a.pierce?'⇶':'💥','var(--ally)'); }
+          else { damage(target,__atk); if(a.slow){ target.slowT=2.0; floatText(target.x,22,'❄','#5aa0d6'); } if(a.knockback) target.x=Math.min(W-60, target.x+a.knockback); }
+          a.cd=0.7; flash(a.el); hitFx(target);
+        }
       }else if(!target && a.x >= enemyCastleX-a.range){
-        if(a.cd<=0){ B.castleE-=a.atk; a.cd=0.7; flash(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(a.atk), 'var(--good)'); }
+        if(a.cd<=0){ B.castleE-=__atk; a.cd=0.7; flash(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); }
       }else{
         a.x += a.speed*dt;
       }
@@ -2438,6 +2458,7 @@ const Game = (()=>{
     // 敵：左へ。味方 or 自城と戦う
     B.enemies.forEach(e=>{
       e.cd-=dt;
+      if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
       const target=nearestAlly(e);
       const myCastleX=70;
       if(target && Math.abs(target.x-e.x) <= e.range){
@@ -2445,7 +2466,7 @@ const Game = (()=>{
       }else if(!target && e.x <= myCastleX+e.range){
         if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); castleHit('castleA'); floatText(70, 30, '-'+Math.round(e.atk), 'var(--bad)'); }
       }else{
-        e.x -= e.speed*dt;
+        e.x -= e.speed*(e.slowT>0?0.45:1)*dt;
       }
       // ボスのフェーズ移行（HP30%で攻撃強化）
       if(e.boss && !B.bossPhase && e.hp<=e.hpMax*0.3){ B.bossPhase=true; e.atk*=1.6; e.el.style.filter='drop-shadow(0 0 8px #e0683b)'; floatText(e.x,20,'PHASE2!','var(--enemy)'); fxBanner('⚡ ボス覚醒!','#e0683b'); fxTierFlash(); Sound.play('boss'); }
@@ -2454,6 +2475,7 @@ const Game = (()=>{
     });
     cleanup();
   }
+  function allyAtkMul(a){ var m=1; B.allies.forEach(function(o){ if(o.buff && o!==a && Math.abs(o.x-a.x)<=o.range) m+=o.buff; }); return m; }
   function nearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(e=>{ if(e.x>=a.x-4){ const d=e.x-a.x; if(d<bd){bd=d;best=e;} }}); return best; }
   function nearestAlly(e){ let best=null,bd=1e9; B.allies.forEach(a=>{ if(a.x<=e.x+4){ const d=e.x-a.x; if(d<bd){bd=d;best=a;} }}); return best; }
   function damage(u,amt){ amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
