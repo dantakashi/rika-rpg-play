@@ -222,16 +222,16 @@
     <div class="topbar"><span class="pill">🏠 ホーム</span><span class="grow"></span><span class="pill" id="goldPill">💰 0</span></div>
     <div class="pad scroll grow">
       <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:6px">📚 学習レンジ <span class="muted">（どのステージでも、ここで選んだ範囲が出ます）</span></div>
-        <div class="seg" id="rangeSeg"></div>
-        <div class="muted" style="margin-top:6px">★ ステージと問題は分離。苦手な範囲が楽しくないステージに紐づく、をなくす設計です。</div>
-      </div>
-      <div class="card" style="margin-bottom:12px">
-        <div style="font-weight:800; margin-bottom:6px">📝 出題 <span class="muted">（単語と文法・選択肢を固定）</span></div>
+        <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（ジャンル・難易度を選択。混ぜてもOK）</span></div>
         <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル</div>
         <div class="seg" id="genreSeg"></div>
+        <div style="font-size:13px;font-weight:700;margin:8px 0 4px">英検級</div>
+        <div class="seg" id="levelSeg"></div>
+        <div style="font-size:13px;font-weight:700;margin:8px 0 4px">レベル（必須／基礎／発展）</div>
+        <div class="seg" id="tierSeg"></div>
         <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
         <div class="seg" id="choiceSeg"></div>
+        <div class="muted" id="poolCount" style="margin-top:8px"></div>
       </div>
       <div class="card" style="margin-bottom:12px">
         <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
@@ -1379,7 +1379,54 @@ const ENGLISH_QUESTION_DB_BATCH2 = [
 ];
 
 if (typeof module !== 'undefined') module.exports = { ENGLISH_QUESTION_DB_BATCH2 };
-
+</script>
+<script>
+/* =========================================================================
+   英熟語データ（基本セット・英検級つき）— genre:"idiom"
+   ========================================================================= */
+const ENGLISH_IDIOM_DB = [
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"起きる",answer:"get up",desc:"get up = 起きる（ベッドから出る）。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"寝る・床につく",answer:"go to bed",desc:"go to bed = 寝る。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"〜を見る",answer:"look at",desc:"look at = 〜を(じっと)見る。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"〜を聞く",answer:"listen to",desc:"listen to = 〜を(意識して)聞く。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"(乗り物に)乗る",answer:"get on",desc:"get on = (バス・電車に)乗る。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"(乗り物を)降りる",answer:"get off",desc:"get off = (バス・電車を)降りる。"},
+  {genre:"idiom",level:"e4",tier:"adv",type:"choice",name:"立ち上がる",answer:"stand up",desc:"stand up = 立ち上がる。"},
+  {genre:"idiom",level:"e4",tier:"adv",type:"choice",name:"座る",answer:"sit down",desc:"sit down = 座る。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜を探す",answer:"look for",desc:"look for = 〜を探す。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜の世話をする",answer:"take care of",desc:"take care of = 〜の世話をする。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜が得意だ",answer:"be good at",desc:"be good at = 〜が得意だ。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜に興味がある",answer:"be interested in",desc:"be interested in = 〜に興味がある。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜を待つ",answer:"wait for",desc:"wait for = 〜を待つ。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜に到着する",answer:"arrive at",desc:"arrive at = (場所)に到着する。"},
+  {genre:"idiom",level:"e3",tier:"adv",type:"choice",name:"〜に遅れる",answer:"be late for",desc:"be late for = 〜に遅刻する。"},
+  {genre:"idiom",level:"e3",tier:"adv",type:"choice",name:"成長する・大人になる",answer:"grow up",desc:"grow up = 成長する。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"あきらめる",answer:"give up",desc:"give up = あきらめる。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"〜を楽しみに待つ",answer:"look forward to",desc:"look forward to = 〜を楽しみにする。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"〜と仲良くやる",answer:"get along with",desc:"get along with = 〜とうまくやる。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"拾う・(車で)迎えに行く",answer:"pick up",desc:"pick up = 拾う／車で迎えに行く。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"延期する",answer:"put off",desc:"put off = 延期する。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"〜するために",answer:"in order to",desc:"in order to do = 〜するために。"},
+  {genre:"idiom",level:"ep2",tier:"adv",type:"choice",name:"決心する",answer:"make up one's mind",desc:"make up one's mind = 決心する。"},
+  {genre:"idiom",level:"ep2",tier:"adv",type:"choice",name:"〜を恐れる",answer:"be afraid of",desc:"be afraid of = 〜を恐れる。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"思いつく",answer:"come up with",desc:"come up with = (考えなどを)思いつく。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"我慢する",answer:"put up with",desc:"put up with = 我慢する。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"尊敬する",answer:"look up to",desc:"look up to = 尊敬する。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"故障する",answer:"break down",desc:"break down = 故障する／(交渉が)決裂する。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"実行する",answer:"carry out",desc:"carry out = (計画を)実行する。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"〜に参加する",answer:"take part in",desc:"take part in = 〜に参加する。"},
+  {genre:"idiom",level:"e2",tier:"adv",type:"choice",name:"理解する・解決する",answer:"figure out",desc:"figure out = 理解する／解明する。"},
+  {genre:"idiom",level:"e2",tier:"adv",type:"choice",name:"〜だと判明する",answer:"turn out",desc:"turn out (to be) = 〜だと判明する。"},
+  {genre:"idiom",level:"ep1",tier:"must",type:"choice",name:"引き起こす",answer:"bring about",desc:"bring about = (変化などを)引き起こす。"},
+  {genre:"idiom",level:"ep1",tier:"must",type:"choice",name:"説明する・(割合を)占める",answer:"account for",desc:"account for = 説明する／(割合を)占める。"},
+  {genre:"idiom",level:"ep1",tier:"must",type:"choice",name:"(規則に)従う",answer:"abide by",desc:"abide by = (規則・決定に)従う。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"対処する",answer:"cope with",desc:"cope with = (困難に)対処する。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"克服する",answer:"get over",desc:"get over = (困難・病気を)克服する。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"使い果たす",answer:"run out of",desc:"run out of = 〜を使い果たす。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"〜を表す・象徴する",answer:"stand for",desc:"stand for = (略語などが)〜を表す。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"中止する",answer:"call off",desc:"call off = (予定を)中止する。"}
+];
+if (typeof module !== 'undefined') module.exports = { ENGLISH_IDIOM_DB };
 </script>
 <script>
 /* =========================================================================
@@ -1498,6 +1545,7 @@ const QuizEngine = (()=>{
   let DB = [];
   try{ if(typeof ENGLISH_QUESTION_DB!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB); }catch(e){}
   try{ if(typeof ENGLISH_QUESTION_DB_BATCH2!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB_BATCH2); }catch(e){}
+  try{ if(typeof ENGLISH_IDIOM_DB!=='undefined') DB = DB.concat(ENGLISH_IDIOM_DB); }catch(e){}
   if(DB.length===0){
     DB = [
       {genre:"grammar",diff:"junior",type:"choice",question:"I ( ) a student.",choices:["am","is","are","be"],answer:0,desc:"主語が I のとき be動詞は am。"},
@@ -1510,36 +1558,66 @@ const QuizEngine = (()=>{
       {genre:"word",diff:"mid",type:"typing",name:"科学",answer:"science",desc:"science = 科学。"}
     ];
   }
-  // 学習レンジ → 許可する難易度
-  const RANGES = {
-    "はじめて": ["junior"],
-    "中1":     ["junior"],
-    "中2":     ["junior","mid"],
-    "中3":     ["junior","mid","senior"],
-    "入試":     ["junior","mid","senior","supreme"],
-    "全部":     ["junior","mid","senior","supreme"]
-  };
-  let range = "はじめて";
-  let genre = "grammar";
-  const wordsByDiff = {};
-  DB.forEach(q=>{ if(q.genre==="word"){ (wordsByDiff[q.diff]=wordsByDiff[q.diff]||[]).push(q); }});
+  // ===== 難易度＝英検級(4級〜準1級)×ティア(必須/基礎/発展)・ジャンル(単語/熟語/文法) =====
+  const EIKEN = [
+    {key:"e4",  label:"4級"},
+    {key:"e3",  label:"3級"},
+    {key:"ep2", label:"準2級"},
+    {key:"e2",  label:"2級"},
+    {key:"ep1", label:"準1級"}
+  ];
+  const TIERS = [
+    {key:"must",  label:"必須"},
+    {key:"basic", label:"基礎"},
+    {key:"adv",   label:"発展"}
+  ];
+  const GENRES = [
+    {key:"word",    label:"単語"},
+    {key:"idiom",   label:"熟語"},
+    {key:"grammar", label:"文法"}
+  ];
+  const LV_ORDER = EIKEN.map(e=>e.key);
+  const TIER_ORDER = TIERS.map(t=>t.key);
+  const LV_LABEL = {}; EIKEN.forEach(e=>LV_LABEL[e.key]="英検"+e.label);
 
-  function pool(){ const ok = RANGES[range]; return DB.filter(q=> ok.includes(q.diff) && q.genre===genre); }
-  function setRange(r){ range=r; }
-  function getRange(){ return range; }
-  function ranges(){ return Object.keys(RANGES); }
+  // 既存4段階(junior/mid/senior/supreme)→英検級へ自動再マッピング。
+  // level/tier が既にあれば尊重（Codex/Gemini で精緻化したデータを将来差し込めるように）。
+  (function normalize(){
+    let i=0;
+    DB.forEach(q=>{
+      if(!q.level){
+        if(q.diff==="junior") q.level="e4";
+        else if(q.diff==="mid") q.level="e3";
+        else if(q.diff==="senior") q.level="ep2";
+        else if(q.diff==="supreme") q.level=(i%2? "ep1":"e2");
+        else q.level="e4";
+      }
+      if(!q.tier) q.tier = TIER_ORDER[i%3];
+      i++;
+    });
+  })();
+
+  // 同種(単語/熟語)・同レベルのダミー語プール
+  const distractPool = {};
+  DB.forEach(q=>{ if(q.genre==="word"||q.genre==="idiom"){ const k=q.genre+"|"+q.level; (distractPool[k]=distractPool[k]||[]).push(q); }});
+
+  // 選択状態（複数選択：ジャンル/難易度を混ぜてもOK・単一も可）
+  let selLevels = new Set(["e4"]);
+  let selTiers  = new Set(["must","basic","adv"]);
+  let selGenres = new Set(["word","idiom","grammar"]);
+
+  function pool(){ return DB.filter(q=> selLevels.has(q.level) && selTiers.has(q.tier) && selGenres.has(q.genre)); }
+  function poolCount(){ return pool().length; }
 
   const rnd = a=>a[Math.floor(Math.random()*a.length)];
 
-  // word を 4択/2択に変換（EN→意味 / 意味→EN をランダム）
   function buildWord(q, choiceCount){
-    const sameDiff = (wordsByDiff[q.diff]||[]).filter(w=>w.answer!==q.answer);
+    const same = (distractPool[q.genre+"|"+q.level]||[]).filter(w=>w.answer!==q.answer);
     const dirEnToJp = Math.random()<0.5;
-    const distract = [];
-    const used = new Set([q.answer]);
-    while(distract.length < choiceCount-1 && sameDiff.length){
-      const w = rnd(sameDiff);
-      if(used.has(w.answer)) { if(used.size>20) break; else continue; }
+    const distract = []; const used = new Set([q.answer]);
+    while(distract.length < choiceCount-1 && same.length){
+      const w = rnd(same);
+      if(used.has(w.answer)) { if(used.size>30) break; else continue; }
       used.add(w.answer); distract.push(w);
     }
     let labels, qtext;
@@ -1550,55 +1628,62 @@ const QuizEngine = (()=>{
       qtext = `「${q.name}」は英語で？`;
       labels = [q.answer, ...distract.map(w=>w.answer)];
     }
-    // 正解を混ぜる
     const correct = labels[0];
     const shuffled = labels.slice().sort(()=>Math.random()-0.5);
-    return { genre:"word", diff:q.diff, qtext, choices:shuffled,
+    return { genre:q.genre, level:q.level, qtext, choices:shuffled,
       answerIndex:shuffled.indexOf(correct), desc:q.desc, choiceCount };
   }
   function buildGrammar(q, choiceCount){
     let choices = q.choices.slice();
     let correct = choices[q.answer];
     if(choiceCount===2){
-      // 正解＋ダミー1（元の選択肢から）
       const wrong = choices.filter((c,i)=>i!==q.answer);
       choices = [correct, rnd(wrong)].sort(()=>Math.random()-0.5);
     }
     const qtext = q.question.replace("( )", '<span class="blank">(&nbsp;&nbsp;)</span>');
-    return { genre:"grammar", diff:q.diff, qtext, choices,
+    return { genre:"grammar", level:q.level, qtext, choices,
       answerIndex:choices.indexOf(correct), desc:q.desc, choiceCount };
   }
 
-  // 復習キュー（ステージ非依存・学習レイヤー側に持つ）
   let reviewQ=[];
-  function pushReview(built){
-    if(!built) return;
-    reviewQ.push(Object.assign({}, built, {review:true, locked:false}));
-    if(reviewQ.length>20) reviewQ.shift();
-  }
+  function pushReview(built){ if(!built) return; reviewQ.push(Object.assign({}, built, {review:true, locked:false})); if(reviewQ.length>20) reviewQ.shift(); }
   function reviewCount(){ return reviewQ.length; }
 
-  // 次の1問。choiceCount は呼び出し側（やさしさ/連続ミス）で指定。
   function next(choiceCount){
-    // 35%で復習を差し込む（少し間を置いて再挑戦＝「さっき見たやつだ」体験）
     if(reviewQ.length && Math.random()<0.35){
-      const __i=reviewQ.findIndex(r=>r.genre===genre);
+      const __i=reviewQ.findIndex(r=>selGenres.has(r.genre));
       if(__i>=0){ return Object.assign({}, reviewQ.splice(__i,1)[0], {review:true, locked:false}); }
     }
     const p = pool(); if(!p.length) return null;
     const q = rnd(p);
-    return q.genre==="word" ? buildWord(q, choiceCount) : buildGrammar(q, choiceCount);
+    return q.genre==="grammar" ? buildGrammar(q, choiceCount) : buildWord(q, choiceCount);
   }
 
-  // §5 コンボ増加量：形式正規化×難易度×端数確率
+  // コンボ増加：単語/熟語=2択+1・4択+2／文法=2択+2・4択+4。さらに上の級ほど倍率UP（上の難易度を選びたくなる）。
   function comboGain(q){
     const base = q.genre==="grammar" ? (q.choiceCount===4?4:2) : (q.choiceCount===4?2:1);
-    const dm = {junior:1.0, mid:1.25, senior:1.5, supreme:2.0}[q.diff]||1;
-    const x = base*dm;
+    const lm = {e4:1.0, e3:1.25, ep2:1.5, e2:1.75, ep1:2.2}[q.level]||1;
+    const x = base*lm;
     let g = Math.floor(x); if(Math.random() < (x-g)) g++;
     return Math.max(1,g);
   }
-  return { next, comboGain, setRange, getRange, ranges, setGenre:(g)=>{genre=g;}, getGenre:()=>genre, pushReview, reviewCount, size:()=>DB.length };
+
+  // 選択UI・保存用API
+  function getSel(){ return {levels:[...selLevels], tiers:[...selTiers], genres:[...selGenres]}; }
+  function setSel(s){ if(!s) return;
+    if(Array.isArray(s.levels)&&s.levels.length) selLevels=new Set(s.levels.filter(k=>LV_ORDER.includes(k)));
+    if(Array.isArray(s.tiers)&&s.tiers.length)  selTiers =new Set(s.tiers.filter(k=>TIER_ORDER.includes(k)));
+    if(Array.isArray(s.genres)&&s.genres.length) selGenres=new Set(s.genres.filter(k=>["word","idiom","grammar"].includes(k)));
+  }
+  function toggleIn(set, key){ if(set.has(key)){ if(set.size>1) set.delete(key); } else { set.add(key); } }
+  function toggleLevel(k){ toggleIn(selLevels,k); }
+  function toggleTier(k){ toggleIn(selTiers,k); }
+  function toggleGenre(k){ toggleIn(selGenres,k); }
+
+  return { next, comboGain, pushReview, reviewCount, size:()=>DB.length,
+    EIKEN, TIERS, GENRES, LV_LABEL, LV_ORDER,
+    getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount,
+    has:(t,k)=>(t==='level'?selLevels:t==='tier'?selTiers:selGenres).has(k) };
 })();
 
 /* =========================================================================
@@ -1695,14 +1780,13 @@ const Game = (()=>{
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
       gold=s.gold||0; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
-      if(s.range) QuizEngine.setRange(s.range);
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
-      if(s.genre) QuizEngine.setGenre(s.genre); if(s.choiceMode) choiceMode=s.choiceMode;
+      if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), range:QuizEngine.getRange(), genre:QuizEngine.getGenre(), choiceMode, owned, deck, castleLv})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -1871,23 +1955,19 @@ const Game = (()=>{
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
     renderGacha(); renderDeck(); renderCastle();
-    // 学習レンジ
-    const seg = $('rangeSeg'); seg.innerHTML='';
-    QuizEngine.ranges().forEach(r=>{
-      const b=document.createElement('button'); b.textContent=r;
-      if(r===QuizEngine.getRange()) b.classList.add('sel');
-      b.onclick=()=>{ QuizEngine.setRange(r); save(); renderHome(); };
-      seg.appendChild(b);
-    });
-    // 出題ジャンル（単語/文法を混ぜない）
-    const __gmap={grammar:"文法", word:"単語"};
-    const gseg=$('genreSeg');
-    if(gseg){ gseg.innerHTML='';
-      ["grammar","word"].forEach(function(g){ const b=document.createElement('button'); b.textContent=__gmap[g]; if(g===QuizEngine.getGenre()) b.classList.add('sel'); b.onclick=function(){ QuizEngine.setGenre(g); save(); renderHome(); }; gseg.appendChild(b); }); }
-    // 選択肢の数（2択/4択を混ぜない）
-    const cseg=$('choiceSeg');
-    if(cseg){ cseg.innerHTML='';
-      [2,4].forEach(function(n){ const b=document.createElement('button'); b.textContent=n+'択'; if(n===choiceMode) b.classList.add('sel'); b.onclick=function(){ choiceMode=n; save(); renderHome(); }; cseg.appendChild(b); }); }
+    // 出題設定（ジャンル/英検級/ティア＝複数選択・混在OK、選択肢=固定）
+    function __seg(id, items, isOn, onToggle){
+      const seg=$(id); if(!seg) return; seg.innerHTML='';
+      items.forEach(function(it){ const b=document.createElement('button'); b.textContent=it.label;
+        if(isOn(it.key)) b.classList.add('sel');
+        b.onclick=function(){ onToggle(it.key); save(); renderHome(); };
+        seg.appendChild(b); });
+    }
+    __seg('genreSeg', QuizEngine.GENRES, function(k){return QuizEngine.has('genre',k);}, function(k){QuizEngine.toggleGenre(k);});
+    __seg('levelSeg', QuizEngine.EIKEN,  function(k){return QuizEngine.has('level',k);}, function(k){QuizEngine.toggleLevel(k);});
+    __seg('tierSeg',  QuizEngine.TIERS,  function(k){return QuizEngine.has('tier',k);},  function(k){QuizEngine.toggleTier(k);});
+    __seg('choiceSeg', [{key:2,label:'2択'},{key:4,label:'4択'}], function(k){return k===choiceMode;}, function(k){choiceMode=k;});
+    const __pc=$('poolCount'); if(__pc) __pc.textContent='今の出題範囲：'+QuizEngine.poolCount()+'問';
     // あそびやすさトグル
     const ta=$('tgAuto'), ts=$('tgSlow');
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
