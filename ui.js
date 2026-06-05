@@ -455,34 +455,55 @@ const GameUI = (function() {
     function closeRankModal() {
       document.getElementById('rank-modal').classList.add('hidden');
     }
+    // ランク報酬オブジェクトを表示用ラベルに（gold/ゴールドガチャ10連券/選択UR券）。
+    function _rankRewardLabel(reward) {
+      if (!reward) return '';
+      const parts = [];
+      if (reward.gold) parts.push('+' + reward.gold.toLocaleString() + 'G');
+      if (reward.gachaGold10) parts.push('🎟️ゴールドガチャ10連券×' + reward.gachaGold10);
+      if (reward.selectUR) parts.push('🎫選択UR券×' + reward.selectUR);
+      return parts.join(' / ');
+    }
     function renderRankModal() {
       const body = document.getElementById('rank-modal-body');
       if (!body) return;
       const info = GameEngine.getRankInfo();
       const pct = Math.max(0, Math.min(100, Math.round(info.rankExp / info.need * 100)));
+      const nextReward = info.nextRankTickets > 0
+        ? ('🔧ステ更新券×' + info.nextRankTickets)
+        : ('+' + info.nextRankGold.toLocaleString() + 'G');
       let html = '';
       // 現在ランク＋次ランクまでの進捗バー
       html += '<div class="bg-slate-950 rounded-xl p-3 border border-amber-700/40">';
       html += '<div class="flex items-end justify-between mb-1">';
       html += '<div><span class="text-[10px] text-amber-400 font-bold">現在のランク</span><div class="text-2xl font-black text-amber-300 leading-none">' + info.rank + '</div></div>';
-      html += '<div class="text-right text-[9px] text-slate-400">次のランクで<br><b class="text-amber-300">+' + info.nextRankGold.toLocaleString() + 'G</b></div>';
+      html += '<div class="text-right text-[9px] text-slate-400">次のランクで<br><b class="text-amber-300">' + nextReward + '</b></div>';
       html += '</div>';
       html += '<div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden"><div class="bg-amber-500 h-2.5 rounded-full" style="width:' + pct + '%"></div></div>';
       html += '<div class="text-[9px] text-slate-500 mt-1 text-right">次のランクまで ' + info.rankExp + ' / ' + info.need + ' EXP</div>';
       html += '</div>';
+      // 所持している券（使えるものは使用ボタン）
+      const tk = info.tickets || {};
+      html += '<div><div class="text-[10px] text-cyan-400 font-bold mb-1.5">🎟️ 所持している券</div><div class="space-y-1.5">';
+      html += '<div class="flex items-center justify-between bg-slate-950 rounded-lg px-3 py-1.5 border border-slate-800"><span class="text-[11px] text-slate-300">🔧 ステ更新券 <b class="text-cyan-300">' + (tk.statReroll || 0) + '</b></span><span class="text-[8px] text-slate-500">装備の🎒変更・管理 →装備→更新</span></div>';
+      html += '<div class="flex items-center justify-between bg-slate-950 rounded-lg px-3 py-1.5 border border-slate-800"><span class="text-[11px] text-slate-300">🎟️ ゴールドガチャ10連券 <b class="text-yellow-300">' + (tk.gachaGold10 || 0) + '</b></span>'
+        + ((tk.gachaGold10 || 0) > 0 ? '<button onclick="useGachaGold10()" class="bg-yellow-700 hover:bg-yellow-600 text-white text-[9px] font-bold px-2 py-1 rounded-lg active:scale-95">回す</button>' : '<span class="text-[8px] text-slate-600">なし</span>') + '</div>';
+      html += '<div class="flex items-center justify-between bg-slate-950 rounded-lg px-3 py-1.5 border border-slate-800"><span class="text-[11px] text-slate-300">🎫 選択UR券 <b class="text-fuchsia-300">' + (tk.selectUR || 0) + '</b></span>'
+        + ((tk.selectUR || 0) > 0 ? '<button onclick="openURPicker()" class="bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-[9px] font-bold px-2 py-1 rounded-lg active:scale-95">選ぶ</button>' : '<span class="text-[8px] text-slate-600">なし</span>') + '</div>';
+      html += '</div></div>';
       // 節目報酬リスト
       html += '<div><div class="text-[10px] text-amber-400 font-bold mb-1.5">🏆 節目の大型報酬</div><div class="space-y-1">';
       info.milestones.forEach(function(m) {
         const reached = m.reached;
         html += '<div class="flex items-center justify-between rounded-lg px-3 py-1.5 border ' +
           (reached ? 'bg-amber-900/30 border-amber-600/50' : 'bg-slate-950 border-slate-800') + '">';
-        html += '<span class="text-xs font-bold ' + (reached ? 'text-amber-300' : 'text-slate-300') + '">' +
+        html += '<span class="text-xs font-bold shrink-0 ' + (reached ? 'text-amber-300' : 'text-slate-300') + '">' +
           (reached ? '✅ ' : '🔒 ') + 'ランク ' + m.rank + '</span>';
-        html += '<span class="text-xs font-black ' + (reached ? 'text-amber-300' : 'text-slate-400') + '">+' + m.gold.toLocaleString() + 'G</span>';
+        html += '<span class="text-[11px] font-black text-right ' + (reached ? 'text-amber-300' : 'text-slate-400') + '">' + _rankRewardLabel(m.reward) + '</span>';
         html += '</div>';
       });
       html += '</div></div>';
-      html += '<p class="text-[9px] text-slate-500">最終目標は<b class="text-amber-400">ランク' + info.maxRank + '</b>。到達後もランクは上がり続けます。</p>';
+      html += '<p class="text-[9px] text-slate-500">ランク' + info.maxRank + 'まではゴールド、<b class="text-cyan-300">それ以降は1ランクごとに🔧ステ更新券</b>（5の倍数で5枚／10の倍数で10枚／50で50枚／100で100枚）。ステ更新券は装備のボーナスステータスを引き直せます。</p>';
       body.innerHTML = html;
     }
 
@@ -1165,6 +1186,111 @@ const GameUI = (function() {
         _eqToggle.textContent = _isEq ? 'この装備をはずす' : 'この装備をつける';
         _eqToggle.className = 'w-full font-bold py-2.5 rounded-xl text-xs mt-3 transition-all active:scale-95 '
           + (_isEq ? 'bg-slate-600 hover:bg-slate-500 text-white' : 'bg-cyan-600 hover:bg-cyan-500 text-white');
+      }
+      // 🔧 ボーナス更新ボタン（ボーナスステータスを持つ装備だけ表示）
+      const _rrBtn = document.getElementById('modal-reroll-btn');
+      if (_rrBtn) {
+        const _hasBonus = Array.isArray(item.bonusStats) && item.bonusStats.length > 0;
+        _rrBtn.classList.toggle('hidden', !_hasBonus);
+        _rrBtn.querySelector('.rr-have').textContent = '所持 ' + ((GameEngine.player.tickets || {}).statReroll || 0);
+      }
+    }
+
+    // ── ボーナスステータス更新（リロール）モーダル ──
+    let _rerollLocks = []; // ロック中のstatキー（最大2）
+    function openRerollModal() {
+      const item = GameEngine.selectedModalItem;
+      if (!item || !(item.bonusStats || []).length) return;
+      _rerollLocks = [];
+      renderRerollModal();
+      document.getElementById('reroll-modal').classList.remove('hidden');
+    }
+    function closeRerollModal() { document.getElementById('reroll-modal').classList.add('hidden'); }
+    function toggleRerollLock(key) {
+      const i = _rerollLocks.indexOf(key);
+      if (i >= 0) _rerollLocks.splice(i, 1);
+      else { if (_rerollLocks.length >= 2) { alert('ロックは最大2つまでです。'); return; } _rerollLocks.push(key); }
+      renderRerollModal();
+    }
+    function renderRerollModal() {
+      const item = GameEngine.selectedModalItem;
+      const body = document.getElementById('reroll-modal-body');
+      if (!item || !body) return;
+      const have = (GameEngine.player.tickets || {}).statReroll || 0;
+      const cost = GameData.rerollTicketCost(_rerollLocks.length);
+      let html = '<div class="text-center mb-2"><div class="text-xs font-bold text-white">' + item.emoji + ' ' + item.name + '</div>'
+        + '<div class="text-[9px] text-slate-400">ロックした枠は残し、残りを引き直します。鍵🔒で固定（最大2つ）。</div></div>';
+      html += '<div class="space-y-1.5 mb-3">';
+      (item.bonusStats || []).forEach(function(b) {
+        const locked = _rerollLocks.indexOf(b.key) >= 0;
+        const name = GameData.STAT_NAMES_JP[b.key] || b.key;
+        html += '<button onclick="toggleRerollLock(\'' + b.key + '\')" class="w-full flex items-center justify-between rounded-lg px-3 py-2 border transition-all '
+          + (locked ? 'bg-amber-900/40 border-amber-500' : 'bg-slate-950 border-slate-700 hover:border-slate-500') + '">'
+          + '<span class="text-xs font-bold ' + (locked ? 'text-amber-300' : 'text-emerald-300') + '">' + (locked ? '🔒 ' : '🔓 ') + name + '</span>'
+          + '<span class="text-[10px] ' + (locked ? 'text-amber-200' : 'text-slate-400') + '">Lv+' + b.lv + '</span></button>';
+      });
+      html += '</div>';
+      const enough = have >= cost;
+      html += '<div class="flex items-center justify-between text-[10px] mb-2 px-1">'
+        + '<span class="text-slate-400">消費: <b class="' + (enough ? 'text-cyan-300' : 'text-rose-400') + '">🔧' + cost + '枚</b>（ロック' + _rerollLocks.length + '）</span>'
+        + '<span class="text-slate-400">所持: <b class="text-cyan-300">' + have + '枚</b></span></div>';
+      html += '<button onclick="confirmReroll()" ' + (enough ? '' : 'disabled')
+        + ' class="w-full font-black py-2.5 rounded-xl text-xs transition-all active:scale-95 '
+        + (enough ? 'bg-cyan-600 hover:bg-cyan-500 text-white' : 'bg-slate-800 text-slate-500 cursor-not-allowed') + '">🔧 更新する（🔧' + cost + '枚）</button>';
+      body.innerHTML = html;
+    }
+    function confirmReroll() {
+      const item = GameEngine.selectedModalItem;
+      if (!item) return;
+      const res = GameEngine.rerollEquipBonus(item.uniqueId, _rerollLocks.slice());
+      if (!res.ok) { alert(res.msg || '更新できませんでした。'); return; }
+      playSound('skill');
+      _rerollLocks = [];
+      renderRerollModal();
+      openEquipModal(item); // 装備モーダルの表示を更新
+      // インベントリ表示中なら同期
+      if (!document.getElementById('inventory-popup').classList.contains('hidden')) {
+        renderEquippedSlots(document.getElementById('inv-popup-equipped'));
+        renderInventoryGrid();
+      }
+    }
+
+    // ── ランク報酬の券を使う ──
+    function useGachaGold10() {
+      GameEngine.redeemGachaGold10();
+      if (!document.getElementById('rank-modal').classList.contains('hidden')) renderRankModal();
+    }
+    // 選択UR券: UR装備カタログから1つ選んで確定入手
+    function openURPicker() {
+      const body = document.getElementById('ur-picker-body');
+      if (!body) return;
+      const themeLabel = { attack: '⚔️ 攻撃', durability: '🛡️ 耐久', combo: '🔁 コンボ', special: '✨ 特殊' };
+      const byTheme = {};
+      GameData.UNIQUE_EQUIP_TEMPLATES.forEach(function(t) { (byTheme[t.theme] = byTheme[t.theme] || []).push(t); });
+      let html = '';
+      Object.keys(byTheme).forEach(function(theme) {
+        html += '<div class="text-[10px] font-bold text-fuchsia-300 mt-2 mb-1">' + (themeLabel[theme] || theme) + '</div><div class="grid grid-cols-2 gap-1.5">';
+        byTheme[theme].forEach(function(t) {
+          const sName = GameData.STAT_NAMES_JP[t.stat] || t.stat;
+          html += '<button onclick="pickUR(\'' + t.id + '\')" class="bg-slate-950 hover:bg-slate-800 border border-indigo-800/60 hover:border-indigo-500 rounded-lg p-2 text-left transition-all active:scale-95">'
+            + '<div class="text-base">' + t.emoji + '</div>'
+            + '<div class="text-[10px] font-bold text-indigo-200 leading-tight truncate">' + t.name + '</div>'
+            + '<div class="text-[8px] text-amber-300 truncate">★' + t.skill + '</div>'
+            + '<div class="text-[8px] text-slate-500">主' + sName + '</div></button>';
+        });
+        html += '</div>';
+      });
+      body.innerHTML = html;
+      document.getElementById('ur-picker-modal').classList.remove('hidden');
+    }
+    function closeURPicker() { document.getElementById('ur-picker-modal').classList.add('hidden'); }
+    function pickUR(templateId) {
+      const tmpl = GameData.UNIQUE_EQUIP_TEMPLATES.find(function(t) { return t.id === templateId; });
+      if (!tmpl) return;
+      if (!confirm('🎫 選択UR券で「' + tmpl.name + '」を入手しますか？（券を1枚使います）')) return;
+      if (GameEngine.redeemSelectUR(templateId)) {
+        closeURPicker();
+        if (!document.getElementById('rank-modal').classList.contains('hidden')) renderRankModal();
       }
     }
 
@@ -2554,6 +2680,8 @@ const GameUI = (function() {
     // ステータスポップアップ
     openStatPopup, closeStatPopup, renderStatList,
     openRankModal, closeRankModal, useDojoRecommendedLevel,
+    openRerollModal, closeRerollModal, toggleRerollLock, confirmReroll,
+    useGachaGold10, openURPicker, closeURPicker, pickUR,
     openWelcomeModal, closeWelcomeModal, startTutorialDojo, applyProgressiveDisclosure,
     openSaveLoadModal, closeSaveLoadModal, copySaveCode, loadSaveCode,
     // インベントリ

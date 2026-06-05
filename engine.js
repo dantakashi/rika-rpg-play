@@ -34,6 +34,7 @@ let player = {
       dojoEnemyLevel: 1,
       rank: 1,          // 学習ランク（問題を解くと上がる・ステ非連動）
       rankExp: 0,       // 現ランク内のEXP進捗
+      tickets: { statReroll: 0, gachaGold10: 0, selectUR: 0 }, // ランク報酬の各種「券」
       seenWelcome: false, // 初回ようこそ画面を見たか（新規プレイヤーのみ表示）
       defeatedBosses: [],
       hasClearedOnce: false,
@@ -556,6 +557,71 @@ let player = {
       saveUserDataLocal();
       showGachaResults([newEquip], false); // 抽選演出付きで表示
       updateMenuUI();
+    }
+
+    // ── ランク報酬の券を使う ──
+
+    // uniqueId から装備instanceを探す（装備中＋インベントリ）。
+    function _findEquipByUniqueId(uniqueId) {
+      const eqd = player.equipped || {};
+      for (const slot in eqd) { if (eqd[slot] && eqd[slot].uniqueId === uniqueId) return eqd[slot]; }
+      return (player.inventory || []).find(function(it) { return it.uniqueId === uniqueId; }) || null;
+    }
+
+    // ボーナスステータス更新（ステ更新券を消費）。lockedKeys=保持するstatキー（最大2）。
+    //  消費: 全更新1 / 1ロック3 / 2ロック10。
+    function rerollEquipBonus(uniqueId, lockedKeys) {
+      if (!player.tickets) player.tickets = { statReroll: 0, gachaGold10: 0, selectUR: 0 };
+      const item = _findEquipByUniqueId(uniqueId);
+      if (!item) return { ok: false, msg: '装備が見つかりません。' };
+      const bs = item.bonusStats || [];
+      if (!bs.length) return { ok: false, msg: 'この装備にはボーナスステータスがありません。' };
+      let locks = (lockedKeys || []).filter(function(k) { return bs.some(function(b) { return b.key === k; }); });
+      locks = locks.slice(0, 2); // 最大2ロック
+      const cost = GameData.rerollTicketCost(locks.length);
+      if ((player.tickets.statReroll || 0) < cost) return { ok: false, msg: 'ステ更新券が足りません（必要 ' + cost + ' 枚）。', cost: cost };
+      const lockedStats = bs.filter(function(b) { return locks.indexOf(b.key) >= 0; });
+      item.bonusStats = GameData.rerollBonusStats(item.rarity, lockedStats);
+      player.tickets.statReroll -= cost;
+      saveUserDataLocal();
+      updateMenuUI();
+      return { ok: true, cost: cost, bonusStats: item.bonusStats };
+    }
+
+    // ゴールドガチャ10連券を使う（ゴールドガチャの10+1連を無料で回す）。
+    function redeemGachaGold10() {
+      if (!player.tickets || (player.tickets.gachaGold10 || 0) <= 0) { alert('ゴールドガチャ10連券がありません。'); return; }
+      if (player.inventory.length + 11 > 200) { alert('インベントリの空きが足りません！（11枠必要）'); return; }
+      const db = GameData.GACHA_DB['gold'];
+      playSound('skill');
+      const results = [];
+      for (let i = 0; i < 10; i++) { const eq = _createEquip(_rollRarity(db), db.theme); _maybeAutoSell(eq); results.push(eq); }
+      const last = _createEquip(_topRarity(db), db.theme); _maybeAutoSell(last); results.push(last);
+      player.tickets.gachaGold10--;
+      saveUserDataLocal();
+      showGachaResults(results, true);
+      updateMenuUI();
+    }
+
+    // 選択UR券で、指定したUR装備(UNIQUE_EQUIP_TEMPLATES の id)を確定入手。
+    function redeemSelectUR(templateId) {
+      if (!player.tickets || (player.tickets.selectUR || 0) <= 0) { alert('選択UR券がありません。'); return false; }
+      if (player.inventory.length >= 200) { alert('インベントリがいっぱいです！'); return false; }
+      const tmpl = GameData.UNIQUE_EQUIP_TEMPLATES.find(function(t) { return t.id === templateId; });
+      if (!tmpl) { alert('その装備が見つかりません。'); return false; }
+      const item = {
+        uniqueId: 'eq_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+        id: tmpl.id, type: tmpl.type, name: tmpl.name, stat: tmpl.stat,
+        baseVal: tmpl.baseVal * GameData.RARITY_DB['Relic'].mult,
+        bonusStats: GameData.rollBonusStats('Relic'),
+        emoji: tmpl.emoji, skill: tmpl.skill, rarity: 'Relic', level: 0, trans: 0
+      };
+      player.inventory.push(item);
+      player.tickets.selectUR--;
+      saveUserDataLocal();
+      showGachaResults([item], false);
+      updateMenuUI();
+      return true;
     }
 
     function upgradeEquip(item) {
@@ -1534,23 +1600,37 @@ let player = {
       const cfg = GameData.RANK_CONFIG;
       let exp = correct ? cfg.expCorrect : (battle.isRaged ? 0 : cfg.expWrong);
       if (exp <= 0) return;
+      if (!player.tickets) player.tickets = { statReroll: 0, gachaGold10: 0, selectUR: 0 };
       player.rankExp = (player.rankExp || 0) + exp;
-      let leveled = 0, rewardGold = 0, hitMilestone = 0;
+      let leveled = 0, rewardGold = 0, ticketsGained = 0, hitMilestone = 0;
+      const extras = []; // 節目の特殊報酬（券）のメッセージ
       while (player.rankExp >= GameData.rankExpNeeded(player.rank)) {
         player.rankExp -= GameData.rankExpNeeded(player.rank);
         player.rank++;
+        leveled++;
+        // 通常ゴールド（ランク50まで・51超は0）
         const g = GameData.rankUpGold(player.rank);
-        player.gold += g; rewardGold += g; leveled++;
-        if (GameData.isRankMilestone(player.rank)) hitMilestone = player.rank;
+        if (g > 0) { player.gold += g; rewardGold += g; }
+        // 節目報酬（gold / ゴールドガチャ10連券 / 選択UR券）
+        const ms = GameData.rankMilestoneReward(player.rank);
+        if (ms) {
+          hitMilestone = player.rank;
+          if (ms.gold) { player.gold += ms.gold; rewardGold += ms.gold; }
+          if (ms.gachaGold10) { player.tickets.gachaGold10 += ms.gachaGold10; extras.push('🎟️ゴールドガチャ10連券×' + ms.gachaGold10); }
+          if (ms.selectUR) { player.tickets.selectUR += ms.selectUR; extras.push('🎫選択UR券×' + ms.selectUR); }
+        }
+        // ランク50超: ボーナスステータス更新チケット
+        const t = GameData.rankUpTickets(player.rank);
+        if (t > 0) { player.tickets.statReroll += t; ticketsGained += t; }
       }
       if (leveled > 0) {
         if (typeof GameUI !== 'undefined') {
-          if (hitMilestone) {
-            // 節目ランク到達＝大型報酬。生徒に強く達成感を出す。
-            GameUI.showDamagePopup('🏆 ランク' + hitMilestone + '到達！ +' + rewardGold + 'G', false, true);
-          } else {
-            GameUI.showDamagePopup('🎉ランクUP! Rank' + player.rank + ' +' + rewardGold + 'G', false, true);
-          }
+          const bits = [];
+          if (rewardGold > 0) bits.push('+' + rewardGold.toLocaleString() + 'G');
+          if (ticketsGained > 0) bits.push('🔧ステ更新券+' + ticketsGained);
+          extras.forEach(function(m) { bits.push(m); });
+          const head = hitMilestone ? ('🏆 ランク' + hitMilestone + '到達！') : ('🎉ランクUP! Rank' + player.rank);
+          GameUI.showDamagePopup(head + (bits.length ? ' ' + bits.join(' / ') : ''), false, true);
         }
         saveUserDataLocal(); // 報酬を即保存（タブを閉じても消えない）
         updateMenuUI();
@@ -1565,14 +1645,16 @@ let player = {
       const milestones = Object.keys(cfg.milestones)
         .map(function(k) { return parseInt(k, 10); })
         .sort(function(a, b) { return a - b; })
-        .map(function(r) { return { rank: r, gold: cfg.milestones[r], reached: rank >= r }; });
+        .map(function(r) { return { rank: r, reward: cfg.milestones[r], reached: rank >= r }; });
       return {
         rank: rank,
         rankExp: player.rankExp || 0,
         need: need,
         nextRankGold: GameData.rankUpGold(rank + 1),
+        nextRankTickets: GameData.rankUpTickets(rank + 1),
         maxRank: cfg.maxRank,
         milestones: milestones,
+        tickets: player.tickets || { statReroll: 0, gachaGold10: 0, selectUR: 0 },
       };
     }
 
@@ -2145,6 +2227,11 @@ let player = {
       if (typeof player.rankExp !== 'number' || player.rankExp < 0) player.rankExp = 0;
       // ようこそ画面: 既存セーブ(=セーブが存在するプレイヤー)は表示済み扱い＝新規だけに出す。
       if (typeof player.seenWelcome !== 'boolean') player.seenWelcome = true;
+      // ランク報酬の各種券（欠損補完・加算的＝既存セーブ安全）
+      if (!player.tickets || typeof player.tickets !== 'object') player.tickets = { statReroll: 0, gachaGold10: 0, selectUR: 0 };
+      if (typeof player.tickets.statReroll !== 'number') player.tickets.statReroll = 0;
+      if (typeof player.tickets.gachaGold10 !== 'number') player.tickets.gachaGold10 = 0;
+      if (typeof player.tickets.selectUR !== 'number') player.tickets.selectUR = 0;
       // 裏ボス・称号・アバター（加算的＝既存セーブ安全）
       if (!Array.isArray(player.defeatedEndgame)) player.defeatedEndgame = [];
       if (!player.endgameLevel) player.endgameLevel = 1;
@@ -2209,6 +2296,7 @@ let player = {
         dojoEnemyLevel: 1,
         rank: 1,
         rankExp: 0,
+        tickets: { statReroll: 0, gachaGold10: 0, selectUR: 0 },
         seenWelcome: false,
         defeatedBosses: [],
         hasClearedOnce: false,
@@ -2410,7 +2498,7 @@ let player = {
     processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, quitBattle, endBattle, pauseGame, resumeGame,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,
     autoSortInventory, saveUserDataLocal, loadUserData, resetAllData,
-    pullGacha, pullGachaMulti, pullUntilStat, gachaPrice, exportSave, importSave, getSaveCode, applySaveCode, changePlayerName, closeNameEditModal, savePlayerName, setPlayerGrade,
+    pullGacha, pullGachaMulti, pullUntilStat, gachaPrice, rerollEquipBonus, redeemGachaGold10, redeemSelectUR, exportSave, importSave, getSaveCode, applySaveCode, changePlayerName, closeNameEditModal, savePlayerName, setPlayerGrade,
     upgradeStatWithGold, resetStatPointsAction, fillCurrentPvpCode, startPvPBattle,
     fillSampleTournamentCSV, buildTournament, activateDebugMode,
     get isFeedbacking() { return isFeedbacking; }, set isFeedbacking(v) { isFeedbacking = v; },

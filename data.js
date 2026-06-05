@@ -2488,6 +2488,28 @@ const GameData = (function() {
       return out;
     }
 
+    // ボーナスステータス再ロール（更新券で使用）。ロックした枠は保持し、残りだけ引き直す。
+    //  lockedStats=保持する {key,lv} 配列。スロット数は元装備のboNusSlotsを維持。ロック済キーは重複させない。
+    function rerollBonusStats(rarity, lockedStats) {
+      const rd = RARITY_DB[rarity];
+      if (!rd) return (lockedStats || []).slice();
+      const slots = rd.bonusSlots || 0;
+      const locked = (lockedStats || []).slice(0, slots);
+      const used = locked.map(function(b) { return b.key; });
+      const pool = BONUS_POOL.filter(function(k) { return used.indexOf(k) < 0; });
+      const out = locked.slice();
+      const need = slots - locked.length;
+      for (let i = 0; i < need && pool.length > 0; i++) {
+        const pick = Math.floor(Math.random() * pool.length);
+        const key = pool.splice(pick, 1)[0];
+        const lv = rd.rollMin + Math.floor(Math.random() * (rd.rollMax - rd.rollMin + 1));
+        out.push({ key, lv });
+      }
+      return out;
+    }
+    // ロック枚数→消費するステ更新券枚数（ユーザー確定: 全更新1 / 1ロック3 / 2ロック10）。
+    function rerollTicketCost(lockCount) { return lockCount >= 2 ? 10 : lockCount === 1 ? 3 : 1; }
+
     // ==========================================
     //   §9  EQUIPMENT_TEMPLATES
     // ==========================================
@@ -2687,22 +2709,39 @@ const GameData = (function() {
       goldBase: 1500,   // 通常ランクUP報酬ゴールドの基準（つまずき層の「解けば報われる」を厚く）
       goldPerRank: 200, // ランクが上がるごとの報酬増分
       goldRampCap: 25,  // 通常報酬の増加上限（late-gameインフレ防止）
-      maxRank: 50,      // 最終目標ランク（節目報酬の頂点。到達後もランクは上がるが通常報酬のみ）
-      // 節目の大型報酬ゴールド（初心者に明確な目標を）。将来は装備選択券/ガチャ券に置換する指標にもなる。
-      milestones: { 5: 3000, 10: 10000, 20: 30000, 30: 80000, 50: 200000 },
+      maxRank: 50,      // ゴールド報酬の最終ランク。51以降はゴールド廃止→ステ更新チケット制。
+      // 節目の大型報酬（ユーザー確定 2026-06-05）。type別: gold / gachaGold10(ゴールドガチャ10連券) / selectUR(選択UR券)。
+      milestones: {
+        5:  { gold: 50000 },
+        10: { gachaGold10: 1 },
+        20: { gold: 500000 },
+        30: { gold: 1000000 },
+        40: { gold: 500000 },
+        50: { selectUR: 1 },
+      },
     };
     // ランクr→r+1 に必要なEXP（needRampCapで増加を頭打ち）
     function rankExpNeeded(rank) {
       const steps = Math.min(Math.max(1, rank) - 1, RANK_CONFIG.needRampCap);
       return RANK_CONFIG.needBase + RANK_CONFIG.needPerRank * steps;
     }
-    // ランクrに上がったときの報酬ゴールド（通常報酬＋節目ボーナス）
+    // ランクrに上がったときの通常ゴールド。ランク50超はゴールド廃止（チケット制）。
     function rankUpGold(newRank) {
+      if (newRank > RANK_CONFIG.maxRank) return 0;
       const steps = Math.min(Math.max(1, newRank) - 1, RANK_CONFIG.goldRampCap);
-      let g = RANK_CONFIG.goldBase + RANK_CONFIG.goldPerRank * steps;
-      if (RANK_CONFIG.milestones[newRank]) g += RANK_CONFIG.milestones[newRank];
-      return g;
+      return RANK_CONFIG.goldBase + RANK_CONFIG.goldPerRank * steps;
     }
+    // ランク50超で1ランクごとに配るステ更新チケット枚数。倍数で増量・加算しない（高いほう優先）。
+    function rankUpTickets(newRank) {
+      if (newRank <= RANK_CONFIG.maxRank) return 0;
+      if (newRank % 100 === 0) return 100;
+      if (newRank % 50 === 0) return 50;
+      if (newRank % 10 === 0) return 10;
+      if (newRank % 5 === 0) return 5;
+      return 1;
+    }
+    // ランクrの節目報酬オブジェクト（無ければnull）。
+    function rankMilestoneReward(rank) { return RANK_CONFIG.milestones[rank] || null; }
     // そのランクが節目（大型報酬）かどうか
     function isRankMilestone(rank) { return !!RANK_CONFIG.milestones[rank]; }
 
@@ -2717,7 +2756,7 @@ const GameData = (function() {
     };
 
     return {
-      RANK_CONFIG, rankExpNeeded, rankUpGold, isRankMilestone, GUIDE_CONFIG,
+      RANK_CONFIG, rankExpNeeded, rankUpGold, rankUpTickets, rankMilestoneReward, isRankMilestone, GUIDE_CONFIG,
       QUESTION_DB, ULTIMATE_QUIZZES, SUBJECTS, GENRES, DIFFICULTIES, getQuestions, getAvailableGenres,
       GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
       GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,
@@ -2725,7 +2764,7 @@ const GameData = (function() {
       TITLES_DB, isTitleUnlocked, AVATARS_DB,
       GACHA_DB, GACHA_MILESTONE_BOSSES, getGachaPrice, gachaDiscountPct, RARITY_DB, CYAN_GLOW_CLASS,
       BASE_EQUIP_TEMPLATES, UNIQUE_EQUIP_TEMPLATES, SKILL_DESC, BUILD_GUIDE, STAT_CAPS, STAT_NAMES_JP, STAT_META,
-      ALLOCATABLE_STATS, BONUS_POOL, rollBonusStats,
+      ALLOCATABLE_STATS, BONUS_POOL, rollBonusStats, rerollBonusStats, rerollTicketCost,
       getStatUpgradeCost, getTotalStatLevels, getStatGainAtLevel, getStatGainTotal, fmtChem,
     };
 })();

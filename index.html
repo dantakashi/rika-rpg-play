@@ -1091,9 +1091,35 @@
           </button>
         </div>
 
+        <button id="modal-reroll-btn" onclick="openRerollModal()" class="hidden w-full bg-cyan-800 hover:bg-cyan-700 text-white font-bold py-2 rounded-xl text-[11px] mt-2 transition-all active:scale-95 flex items-center justify-center gap-2">
+          🔧 ボーナスステータス更新 <span class="rr-have text-[9px] bg-cyan-950/70 px-1.5 py-0.5 rounded">所持 0</span>
+        </button>
         <button id="modal-equip-toggle-btn" onclick="toggleEquipStateFromModal()" class="w-full text-white font-bold py-2.5 rounded-xl text-xs mt-3 transition-all active:scale-95">
           装備する
         </button>
+      </div>
+    </div>
+
+    <!-- ボーナスステータス更新（リロール）モーダル -->
+    <div id="reroll-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
+      <div class="bg-slate-900 border border-cyan-700/60 rounded-2xl p-5 w-full max-w-xs shadow-2xl">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="font-black text-sm text-white">🔧 ボーナス更新</h3>
+          <button onclick="closeRerollModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+        <div id="reroll-modal-body"></div>
+      </div>
+    </div>
+
+    <!-- 選択UR券: UR装備ピッカー -->
+    <div id="ur-picker-modal" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center z-[61] p-4">
+      <div class="bg-slate-900 border border-fuchsia-700/60 rounded-2xl p-5 w-full max-w-md max-h-[88vh] overflow-y-auto shadow-2xl">
+        <div class="flex justify-between items-center mb-1">
+          <h3 class="font-black text-sm text-white">🎫 選択UR券 — 好きなUR装備を選ぶ</h3>
+          <button onclick="closeURPicker()" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+        <p class="text-[9px] text-slate-400 mb-2">選んだUR装備を1つ確定で入手します（券を1枚消費）。</p>
+        <div id="ur-picker-body"></div>
       </div>
     </div>
 
@@ -1162,6 +1188,14 @@
     const closeRankModal = () => GameUI.closeRankModal();
     const closeWelcomeModal = () => GameUI.closeWelcomeModal();
     const startTutorialDojo = () => GameUI.startTutorialDojo();
+    const openRerollModal = () => GameUI.openRerollModal();
+    const closeRerollModal = () => GameUI.closeRerollModal();
+    const toggleRerollLock = (k) => GameUI.toggleRerollLock(k);
+    const confirmReroll = () => GameUI.confirmReroll();
+    const useGachaGold10 = () => GameUI.useGachaGold10();
+    const openURPicker = () => GameUI.openURPicker();
+    const closeURPicker = () => GameUI.closeURPicker();
+    const pickUR = (id) => GameUI.pickUR(id);
     const resetStatPointsAction = () => GameEngine.resetStatPointsAction();
     const openInventoryPopup = () => GameUI.openInventoryPopup();
     const closeInventoryPopup = () => GameUI.closeInventoryPopup();
