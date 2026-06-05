@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゴリラ大砲 🦍🍌💥</title>
+<style>
+  /* ============================================================
+     ゴリラ大砲 — 数学バカゲー第1弾（MVP）
+     30秒/20問の2択ラッシュで大砲エネルギーを貯め、ゴリラを吹き飛ばす。
+     出題は mathbank.js（A大小ジャンル）。ミスは減点なし・テンポロスのみ。
+     ============================================================ */
+  :root{
+    --ink:#241c12; --paper:#fff7e6; --line:#e6d3a8;
+    --green:#27a35a; --red:#e0533d; --blue:#2f7de1;
+    --gold:#e3a32a; --sky:#bfe9ff; --grass:#8fd16a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; color:var(--ink);
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif;
+    background:linear-gradient(180deg,var(--sky) 0%,#eaf7ff 45%,#f6ecd0 100%);
+    user-select:none; -webkit-user-select:none;
+  }
+  .wrap{width:min(680px,100%); margin:0 auto; padding:12px;}
+  h1{margin:.2em 0; font-size:clamp(26px,6vw,40px); text-align:center; letter-spacing:1px;}
+  .sub{text-align:center; color:#7a6a4a; margin:0 0 12px; font-size:14px;}
+
+  /* ---- パネル共通 ---- */
+  .panel{background:var(--paper); border:3px solid var(--line); border-radius:18px;
+    padding:18px; box-shadow:0 6px 0 rgba(0,0,0,.08);}
+  button{font:inherit; color:inherit; cursor:pointer;}
+
+  /* ---- タイトル ---- */
+  .modeBtns{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0;}
+  .modeBtn{padding:18px 10px; border:3px solid var(--line); border-radius:16px;
+    background:#fffdf5; font-size:18px; font-weight:700; transition:transform .08s;}
+  .modeBtn.sel{border-color:var(--gold); background:#fff4d6; transform:translateY(-2px);}
+  .modeBtn small{display:block; font-weight:400; color:#8a7a58; font-size:12px; margin-top:4px;}
+  .bigStart{width:100%; padding:18px; font-size:22px; font-weight:800; color:#fff;
+    background:var(--green); border:none; border-radius:16px; box-shadow:0 5px 0 #1d7a42;}
+  .bigStart:active{transform:translateY(3px); box-shadow:0 2px 0 #1d7a42;}
+  .hiscore{text-align:center; margin-top:14px; color:#8a7a58; font-size:14px;}
+
+  /* ---- 上バー ---- */
+  .topbar{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-weight:700;}
+  .timer{font-size:26px; min-width:64px;}
+  .gaugeWrap{flex:1; height:22px; background:#eadfc0; border-radius:12px; overflow:hidden; border:2px solid var(--line);}
+  .gauge{height:100%; width:0%; background:linear-gradient(90deg,#ffd34d,#ff7a3c);
+    transition:width .15s ease;}
+  .combo{min-width:70px; text-align:right; color:var(--red);}
+
+  /* ---- 演出ゾーン（ゴリラ整列） ---- */
+  .stage{position:relative; height:96px; margin-bottom:10px; overflow:hidden;
+    background:linear-gradient(180deg,transparent 60%,var(--grass) 60%); border-radius:12px;}
+  .cannon{position:absolute; left:6px; bottom:8px; font-size:34px; transform:rotate(-12deg);}
+  .gorillas{position:absolute; right:6px; bottom:8px; display:flex; gap:2px; font-size:30px;}
+  .gorillas .g{transition:transform .8s cubic-bezier(.2,-0.4,.5,1), opacity .8s;}
+  .banana{position:absolute; left:44px; bottom:40px; font-size:26px; opacity:0;}
+
+  /* ---- 問題 ---- */
+  .q{font-size:clamp(26px,7vw,40px); font-weight:800; text-align:center; margin:18px 0 16px; min-height:1.4em;}
+  .choices{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .choice{padding:24px 10px; font-size:clamp(22px,6vw,32px); font-weight:800;
+    border:4px solid var(--line); border-radius:18px; background:#fffdf5; transition:transform .06s;}
+  .choice:active{transform:scale(.97);}
+  .choice.good{background:#d7f5e1; border-color:var(--green);}
+  .choice.bad{background:#fbdcd5; border-color:var(--red); animation:shake .3s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .lock{pointer-events:none; opacity:.85;}
+
+  /* ---- リザルト ---- */
+  .result h2{text-align:center; font-size:30px; margin:.2em 0;}
+  .result .big{text-align:center; font-size:40px; margin:.1em 0; color:var(--red);}
+  .stat{display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px dashed var(--line); font-size:16px;}
+  .newrec{text-align:center; color:var(--gold); font-weight:800; font-size:20px; margin:8px 0;}
+  .againBtns{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  .againBtns button{padding:16px; font-size:18px; font-weight:700; border-radius:14px; border:3px solid var(--line); background:#fffdf5;}
+  .againBtns .primary{color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ゴリラ大砲 🦍🍌💥</h1>
+  <p class="sub">2択をすばやく当てて大砲をチャージ！ ゴリラをぶっ飛ばせ！</p>
+
+  <!-- タイトル画面 -->
+  <div id="title" class="panel">
+    <p style="text-align:center;font-weight:700;margin:.2em 0 0;">モードをえらぶ</p>
+    <div class="modeBtns">
+      <button class="modeBtn sel" id="modeTime" onclick="selectMode('time')">⏱ タイム<br>30秒<small>時間内に解きまくる</small></button>
+      <button class="modeBtn" id="modeCount" onclick="selectMode('count')">🔢 20問<br>チャレンジ<small>20問を解ききる</small></button>
+    </div>
+    <button class="bigStart" onclick="startGame()">スタート！</button>
+    <p class="hiscore" id="titleHi"></p>
+  </div>
+
+  <!-- プレイ画面 -->
+  <div id="play" class="panel hidden">
+    <div class="topbar">
+      <span class="timer" id="timer">30</span>
+      <div class="gaugeWrap"><div class="gauge" id="gauge"></div></div>
+      <span class="combo" id="combo">&nbsp;</span>
+    </div>
+    <div class="stage">
+      <span class="cannon">💥</span>
+      <span class="banana" id="banana">🍌</span>
+      <span class="gorillas" id="gorillas"></span>
+    </div>
+    <div class="q" id="question">…</div>
+    <div class="choices" id="choices">
+      <button class="choice" id="c0" onclick="answer(0)"></button>
+      <button class="choice" id="c1" onclick="answer(1)"></button>
+    </div>
+  </div>
+
+  <!-- リザルト画面 -->
+  <div id="result" class="panel result hidden">
+    <h2>発射ーっ！</h2>
+    <div class="big" id="knockText">🦍 0体 撃破！</div>
+    <div id="newrec" class="newrec hidden">🏆 ハイスコア更新！</div>
+    <div class="stat"><span>正解数</span><span id="rCorrect">0</span></div>
+    <div class="stat"><span>最大コンボ</span><span id="rCombo">0</span></div>
+    <div class="stat"><span>エネルギー</span><span id="rEnergy">0</span></div>
+    <div class="stat"><span>スコア</span><span id="rScore">0</span></div>
+    <div class="againBtns">
+      <button class="primary" onclick="startGame()">もう1回！</button>
+      <button onclick="toTitle()">タイトルへ</button>
+    </div>
+  </div>
+</div>
+
+<script src="mathbank.js"></script>
+<script>
+/* ===== ゴリラ大砲 ロジック ===================================== */
+const GORILLA_ROW = 14;        // 整列するゴリラの数
+const ENERGY_PER_GORILLA = 22; // ゴリラ1体を倒すのに必要なエネルギー
+const COUNT_GOAL = 20;         // 20問モードの目標数
+const TIME_SEC = 30;           // タイムモードの秒数
+
+let mode = 'time';
+let st = null;                 // 進行中の状態
+let tickTimer = null;
+
+const $ = (id) => document.getElementById(id);
+
+function selectMode(m){
+  mode = m;
+  $('modeTime').classList.toggle('sel', m==='time');
+  $('modeCount').classList.toggle('sel', m==='count');
+  showTitleHi();
+}
+
+function hiKey(){ return 'gorilla_hi_' + mode; }
+function getHi(){ return parseInt(localStorage.getItem(hiKey())||'0',10); }
+function showTitleHi(){
+  const label = mode==='time' ? 'タイム30秒' : '20問';
+  $('titleHi').textContent = `🏆 ${label}モードのハイスコア: ${getHi()}`;
+}
+
+function toTitle(){
+  clearInterval(tickTimer);
+  $('result').classList.add('hidden');
+  $('play').classList.add('hidden');
+  $('title').classList.remove('hidden');
+  showTitleHi();
+}
+
+function startGame(){
+  st = { energy:0, combo:0, maxCombo:0, correct:0, asked:0, timeLeft:TIME_SEC, level:1, locked:false };
+  $('title').classList.add('hidden');
+  $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  buildGorillas();
+  updateTop();
+  nextQuestion();
+
+  clearInterval(tickTimer);
+  if(mode==='time'){
+    $('timer').style.display='';
+    tickTimer = setInterval(()=>{
+      st.timeLeft--;
+      $('timer').textContent = st.timeLeft;
+      if(st.timeLeft<=5) $('timer').style.color = '#e0533d';
+      if(st.timeLeft<=0) fire();
+    },1000);
+  } else {
+    $('timer').textContent = '0/'+COUNT_GOAL;
+  }
+}
+
+function buildGorillas(){
+  let html='';
+  for(let i=0;i<GORILLA_ROW;i++) html += '<span class="g">🦍</span>';
+  $('gorillas').innerHTML = html;
+}
+
+function updateTop(){
+  // エネルギーゲージは「あと何体ぶっ飛ぶか」が見える上限スケール
+  const max = GORILLA_ROW * ENERGY_PER_GORILLA;
+  $('gauge').style.width = Math.min(100, st.energy/max*100) + '%';
+  $('combo').innerHTML = st.combo>=2 ? ('🔥x'+st.combo) : '&nbsp;';
+  if(mode==='count') $('timer').textContent = st.asked+'/'+COUNT_GOAL;
+}
+
+let cur = null;
+function nextQuestion(){
+  // 正解が続くほどレベルが上がる＝難しい問題ほどエネルギー大
+  st.level = Math.min(4, 1 + Math.floor(st.correct/4));
+  cur = MathBank.next({ genres:['compare'], level: st.level });
+  $('question').textContent = cur.q;
+  $('c0').textContent = cur.choices[0];
+  $('c1').textContent = cur.choices[1];
+  $('c0').className = 'choice';
+  $('c1').className = 'choice';
+  $('choices').classList.remove('lock');
+  st.locked = false;
+}
+
+function answer(i){
+  if(!st || st.locked) return;
+  st.asked++;
+  if(i === cur.answer){
+    // 正解: コンボ倍率でエネルギー加算。難しいレベルほど多い。
+    st.combo++;
+    st.maxCombo = Math.max(st.maxCombo, st.combo);
+    st.correct++;
+    const comboMult = 1 + Math.floor((st.combo-1)/3)*0.5;   // 3連ごとに+0.5
+    const gain = Math.round((6 + st.level*2) * comboMult);
+    st.energy += gain;
+    $('c'+i).classList.add('good');
+    beep(660,0.06);
+    updateTop();
+    proceed(120);
+  } else {
+    // 不正解: 減点なし。コンボ切れ＋一瞬の入力ロック（テンポロスのみ）。
+    st.combo = 0;
+    $('c'+i).classList.add('bad');
+    $('c'+cur.answer).classList.add('good');
+    beep(180,0.12);
+    updateTop();
+    proceed(650);
+  }
+}
+
+function proceed(delay){
+  st.locked = true;
+  $('choices').classList.add('lock');
+  setTimeout(()=>{
+    if(mode==='count' && st.asked>=COUNT_GOAL){ fire(); return; }
+    if(mode==='time' && st.timeLeft<=0){ return; }   // タイマー側で発射済み
+    nextQuestion();
+  }, delay);
+}
+
+/* ===== 発射 → 吹き飛び → リザルト ===== */
+function fire(){
+  clearInterval(tickTimer);
+  st.locked = true;
+  $('choices').classList.add('lock');
+
+  const knocked = Math.min(GORILLA_ROW, Math.floor(st.energy / ENERGY_PER_GORILLA));
+
+  // バナナを放物線で飛ばす簡易演出
+  const banana = $('banana');
+  banana.style.transition='none'; banana.style.opacity='1';
+  banana.style.left='44px'; banana.style.bottom='40px';
+  requestAnimationFrame(()=>{
+    banana.style.transition='left 0.6s linear, bottom 0.6s ease-out';
+    banana.style.left='80%'; banana.style.bottom='52px';
+  });
+  beep(120,0.18);
+
+  setTimeout(()=>{
+    banana.style.opacity='0';
+    // 右からknocked体が吹っ飛ぶ（ドミノ風に時間差）
+    const gs = $('gorillas').querySelectorAll('.g');
+    for(let k=0;k<knocked;k++){
+      const idx = gs.length-1-k;
+      const el = gs[idx];
+      setTimeout(()=>{
+        const dist = 40 + (knocked-k)*8 + st.energy*0.2;
+        el.style.transform = `translate(-${dist}px,-${60+Math.random()*40}px) rotate(${360+Math.random()*360}deg)`;
+        el.style.opacity = '0';
+        beep(300+k*20,0.05);
+      }, k*70);
+    }
+    setTimeout(()=>showResult(knocked), knocked*70 + 700);
+  }, 600);
+}
+
+function showResult(knocked){
+  const score = st.correct*10 + st.maxCombo*15 + knocked*40
+              + (mode==='time'?0:Math.max(0, st.timeLeft)*0);
+  $('play').classList.add('hidden');
+  $('result').classList.remove('hidden');
+  $('knockText').textContent = `🦍 ${knocked}体 撃破！` + (knocked>=GORILLA_ROW ? ' 全滅ウホー！' : '');
+  $('rCorrect').textContent = st.correct;
+  $('rCombo').textContent = st.maxCombo;
+  $('rEnergy').textContent = st.energy;
+  $('rScore').textContent = score;
+
+  const prev = getHi();
+  if(score>prev){ localStorage.setItem(hiKey(), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+}
+
+/* ===== かんたん効果音（WebAudio・外部ファイル不要） ===== */
+let actx = null;
+function beep(freq, dur){
+  try{
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = freq; o.type='square';
+    g.gain.value = 0.06;
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }catch(e){/* 無音でも進行に支障なし */}
+}
+
+/* ===== キーボード操作（1=左, 2=右） ===== */
+document.addEventListener('keydown', (e)=>{
+  if($('play').classList.contains('hidden')) return;
+  if(e.key==='1') answer(0);
+  if(e.key==='2') answer(1);
+});
+
+// 初期表示
+showTitleHi();
+</script>
+</body>
+</html>
