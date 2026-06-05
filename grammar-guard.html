@@ -277,6 +277,11 @@
         <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする</span></button>
         <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
         <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
+        <button class="menubtn" data-go="dex">📖 ずかん<span class="sub">仲間と敵のコレクション</span></button>
+      </div>
+      <div class="homeview" data-view="dex">
+        <div class="seg" id="dexTabs" style="margin-bottom:10px"></div>
+        <div class="card"><div id="dexBody"></div></div>
       </div>
       <div class="homeview" data-view="gacha">
         <div class="card">
@@ -2020,6 +2025,7 @@ const Game = (()=>{
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
   let homeView = 'menu';   // ホームの表示(menu/play/grow/settings/quiz)
   let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
+  let dexTab = 'ally';     // 図鑑タブ(ally/enemy)
   let towerBest = 0;       // 修練の塔の最高階
   let lastDaily = '';      // デイリー受取日(YYYY-M-D)
   let curStage = null;
@@ -2288,13 +2294,56 @@ const Game = (()=>{
     show('title');
   }
 
+  const DEX_ENEMY_DESC={slime:'いちばん基本の敵',hare:'とても速い',totem:'HPが高め',torii:'とてもかたい',slinger:'遠くから攻撃してくる',bat:'すばやく動く',golem:'かたくて攻撃が効きにくい',bombSlime:'たおすと爆発してまわりにダメージ',splitMush:'たおすと小さい敵に分裂する'};
+  const DEX_ALLY_FLAVOR={guardTurtle:'安く出せる かべ役',dashFox:'いちばん速い 先がけ役',dragonTurtle:'高HP×高火力のエース'};
+  const DEX_BOSSES=[{sprite:'bossMoai',name:'巨石の王・モアイ',area:5,desc:'エリア5の番人'},{sprite:'bossTotem',name:'黄金のトーテム大王',area:10,desc:'エリア10の番人'},{sprite:'bossThunder',name:'雷鳴の覇者・雷鳥大王',area:15,desc:'最終エリアの王。暴風で味方を後退させる'}];
+  function dexAbilities(r){var t=[];if(r.pierce)t.push('つらぬく');if(r.splash)t.push('はんい攻撃');if(r.knockback)t.push('押し返す');if(r.heal)t.push('みかた回復');if(r.def)t.push('防御がかたい');if(r.slow)t.push('敵を鈍足化');if(r.buff)t.push('まわりの攻撃UP');return t;}
+  function renderDex(){
+    const tabs=$('dexTabs'); if(!tabs) return; tabs.innerHTML='';
+    [['ally','🐾 なかま'],['enemy','👾 てき']].forEach(function(t){var b=document.createElement('button');b.textContent=t[1];if(dexTab===t[0])b.classList.add('sel');b.onclick=function(){dexTab=t[0];renderDex();};tabs.appendChild(b);});
+    const body=$('dexBody'); if(!body) return; body.innerHTML='';
+    if(dexTab==='ally'){
+      var got=ROSTER_KEYS.filter(function(k){return (owned[k]||0)>0;}).length;
+      var h=document.createElement('div'); h.className='muted'; h.style.cssText='margin-bottom:8px'; h.textContent='なかま　'+got+' / '+ROSTER_KEYS.length+' 体 集めた'; body.appendChild(h);
+      var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(2,1fr);gap:8px';
+      ROSTER_KEYS.forEach(function(key){
+        var r=ROSTER[key], have=(owned[key]||0)>0;
+        var c=document.createElement('div'); c.style.cssText='border:2px solid var(--line);border-radius:12px;padding:8px;background:'+(have?'#fff':'#f1ece0')+';text-align:center';
+        var art=have?SVG.get(r.sprite):'<span style="filter:brightness(0);opacity:.18;display:block">'+SVG.get(r.sprite)+'</span>';
+        var ab=dexAbilities(r); var abText=ab.length?ab.join('・'):(DEX_ALLY_FLAVOR[key]||'バランス型');
+        c.innerHTML='<span style="display:block;width:62px;height:62px;margin:0 auto">'+art+'</span>'+
+          '<div style="font-weight:800;margin-top:4px">'+(have?r.name:'？？？')+'</div>'+
+          '<div style="font-size:11px;font-weight:800;color:'+r.rarColor+'">'+r.rar+(have&&unitStars(key)?' <span style="color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'')+'</div>'+
+          (have?('<div class="muted" style="font-size:11px;margin-top:2px">'+abText+'</div><div class="muted" style="font-size:11px">⚔'+unitStats(key).atk+' ♥'+unitStats(key).hp+'</div>')
+               :'<div class="muted" style="font-size:11px;margin-top:2px">ガチャで仲間にしよう</div>');
+        grid.appendChild(c);
+      });
+      body.appendChild(grid);
+    } else {
+      var list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
+      Object.keys(ENEMY_TYPES).forEach(function(k){
+        var e=ENEMY_TYPES[k];
+        var row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff';
+        row.innerHTML='<span style="width:46px;height:46px;display:block;flex:0 0 auto">'+SVG.get(e.sprite)+'</span><div style="flex:1;min-width:0"><div style="font-weight:800">'+e.name+'</div><div class="muted" style="font-size:12px">'+(DEX_ENEMY_DESC[k]||'')+'</div></div>';
+        list.appendChild(row);
+      });
+      var bh=document.createElement('div'); bh.style.cssText='font-weight:800;margin:10px 0 2px;color:var(--enemy)'; bh.textContent='👑 ボス'; list.appendChild(bh);
+      DEX_BOSSES.forEach(function(bx){
+        var row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--enemy);border-radius:12px;padding:8px;background:#fff4ee';
+        row.innerHTML='<span style="width:52px;height:52px;display:block;flex:0 0 auto">'+SVG.get(bx.sprite)+'</span><div style="flex:1;min-width:0"><div style="font-weight:800">'+bx.name+' <span class="muted" style="font-size:11px">エリア'+bx.area+'</span></div><div class="muted" style="font-size:12px">'+bx.desc+'</div></div>';
+        list.appendChild(row);
+      });
+      body.appendChild(list);
+    }
+  }
+
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderDex();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', dex:'📖 ずかん'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', dex:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
