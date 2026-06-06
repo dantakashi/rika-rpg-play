@@ -95,7 +95,7 @@
   @keyframes floatUp{from{transform:translateY(0); opacity:1} to{transform:translateY(-34px); opacity:0}}
 
   /* 召喚キュー */
-  #queue{display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--panel); border-top:2px solid var(--line)}
+  #queue{display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--panel); border-top:2px solid var(--line); min-height:64px; box-sizing:border-box}
   .qslot{display:flex; flex-direction:column; align-items:center; border:2px solid var(--line); border-radius:12px; padding:4px 6px; min-width:62px; background:#fff; position:relative}
   .qslot.now{border-color:var(--ally); box-shadow:0 0 0 3px #2f7dd133}
   .qslot.ready{border-color:var(--good); box-shadow:0 0 0 3px #3a9d5733}
@@ -104,7 +104,7 @@
   .qslot .rar{position:absolute; top:-8px; left:-4px; font-size:10px; font-weight:800; padding:0 4px; border-radius:6px; color:#fff}
   .qslot .bargain{position:absolute; top:-9px; right:-6px; font-size:9px; font-weight:800; background:var(--gold); color:#fff; padding:1px 4px; border-radius:6px; transform:rotate(8deg)}
   .qnext{opacity:.85; transform:scale(.86)}
-  #summonBtn{margin-left:auto; background:var(--good); min-width:120px}
+  #summonBtn{margin-left:auto; background:var(--good); min-width:128px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #summonBtn:disabled{filter:grayscale(.7) brightness(.95); opacity:.6}
 
   /* 問題エリア */
@@ -119,10 +119,11 @@
     .bar{height:9px}
     .meter .lab{font-size:10px; margin-bottom:1px}
     #combo-big{font-size:12px; min-width:64px} #combo-big b{font-size:16px}
-    #queue{padding:3px 10px; gap:6px}
+    #queue{padding:3px 10px; gap:6px; min-height:52px}
     .qslot{padding:2px 5px; min-width:54px} .qslot svg{width:30px; height:30px} .qslot .cost{font-size:11px}
     #quiz{padding:4px 10px 6px}
     #qtext{font-size:19px; min-height:22px; margin-bottom:6px}
+    #qfeedback{height:36px}
     #choices{gap:6px}
     .choice{padding:7px; font-size:14px}
   }
@@ -137,7 +138,7 @@
   #assessProg{font-weight:800; color:var(--ally)}
   .assbar{height:10px; width:100%; max-width:460px; background:#0001; border-radius:6px; overflow:hidden}
   .assbar>i{display:block; height:100%; background:var(--ally); width:0; transition:width .25s}
-  #qfeedback{font-size:15px; min-height:20px; margin-top:6px; text-align:center; font-weight:700; line-height:1.35}
+  #qfeedback{font-size:15px; height:46px; margin-top:6px; text-align:center; font-weight:700; line-height:1.35; overflow-y:auto}
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:13px; font-weight:700}
   .pill{background:#fff; border:2px solid var(--line); border-radius:999px; padding:3px 10px; font-size:12px}
 
@@ -2275,11 +2276,20 @@ const Game = (()=>{
   const RARITY_W = {N:58, R:28, SR:11, SSR:3};
   let lastGacha = null;
   function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
+  const STARTERS=['guardTurtle','dashFox','arrowBird','ninjaFrog','shieldBear'];
   function ensureStarter(){
-    if(Object.keys(owned).length===0){ owned={guardTurtle:1, arrowBird:1, dashFox:1}; }
-    deck = deck.filter(function(k){return owned[k];});
-    if(deck.length===0){ deck = Object.keys(owned).slice(0,5); }
+    // 初期キャラ5体は必ず所持（編成5枠固定の前提・既存セーブにも不足分を付与）
+    STARTERS.forEach(function(k){ if(!owned[k]) owned[k]=1; });
+    deck = deck.filter(function(k){return owned[k] && ROSTER[k];});
+    // 5枠固定：足りなければ手持ちから補充、多ければ5体に切り詰め
+    var pool=Object.keys(owned).filter(function(k){return ROSTER[k];});
+    for(var i=0;i<pool.length && deck.length<5;i++){ if(deck.indexOf(pool[i])<0) deck.push(pool[i]); }
     if(deck.length>5) deck = deck.slice(0,5);
+  }
+  function swapDeck(outKey, inKey){
+    if(!owned[inKey]||!ROSTER[inKey]) return;
+    var i=deck.indexOf(outKey); if(i<0||deck.indexOf(inKey)>=0) return;
+    deck[i]=inKey; save(); renderHome();
   }
   function castleMaxHp(){ return 1000 + castleLv*250; }
   function castleUpCost(){ return 250*(castleLv+1); }
@@ -2377,10 +2387,23 @@ const Game = (()=>{
     const acts=document.createElement('div'); acts.style.cssText='display:flex;flex-direction:column;gap:8px';
     if(mode==='deck'){
       const inDeck=deck.indexOf(key)>=0;
-      const ba=document.createElement('button'); ba.className='btn'; ba.style.width='100%';
-      if(inDeck){ if(deck.length<=1){ ba.disabled=true; ba.textContent='編成から外す（最低1体必要）'; } else { ba.style.background='var(--bad)'; ba.textContent='編成から外す'; ba.onclick=function(){ toggleDeck(key); closeUnitPop(); }; } }
-      else { const full=deck.length>=5; ba.disabled=full; ba.textContent=full?'編成にいれる（満員5体）':'編成にいれる'; if(!full) ba.onclick=function(){ toggleDeck(key); closeUnitPop(); }; }
-      acts.appendChild(ba);
+      if(inDeck){
+        const ba=document.createElement('button'); ba.className='btn ghost'; ba.style.width='100%'; ba.disabled=true;
+        ba.textContent='✓ 編成中（5体固定・入れ替えで変更）'; acts.appendChild(ba);
+      } else if(deck.length<5){
+        const ba=document.createElement('button'); ba.className='btn'; ba.style.width='100%'; ba.textContent='編成にいれる';
+        ba.onclick=function(){ toggleDeck(key); closeUnitPop(); }; acts.appendChild(ba);
+      } else {
+        const lbl=document.createElement('div'); lbl.className='muted'; lbl.style.cssText='font-size:13px;text-align:center'; lbl.textContent='どのキャラと入れ替える？';
+        acts.appendChild(lbl);
+        const grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px';
+        deck.forEach(function(dk){ const rb=ROSTER[dk]; if(!rb) return;
+          const sb=document.createElement('button'); sb.className='btn ghost'; sb.style.cssText='display:flex;align-items:center;gap:6px;justify-content:flex-start;padding:6px;font-size:12px';
+          sb.innerHTML='<span style="width:28px;height:28px;display:block;flex:0 0 auto">'+SVG.get(rb.sprite)+'</span><span style="font-weight:700">'+rb.name+'</span>';
+          sb.onclick=function(){ swapDeck(dk, key); closeUnitPop(); };
+          grid.appendChild(sb); });
+        acts.appendChild(grid);
+      }
     } else {
       const c=unitUpCost(key), nx=statsAtLv(key, lv+1);
       const pv=document.createElement('div'); pv.className='muted'; pv.style.cssText='font-size:12px;text-align:center';
@@ -2459,7 +2482,7 @@ const Game = (()=>{
       row.appendChild(slot);
     }
     body.appendChild(row);
-    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='手持ちをタップで編成（最大5体）。戦闘の召喚はこの編成からランダムに出ます。';
+    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='編成は5体で固定。手持ちをタップ→入れ替えで変更できます。戦闘の召喚はこの5体から出ます。';
     body.appendChild(note);
     const list=document.createElement('div'); list.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
     Object.keys(owned).forEach(function(key){ if(ROSTER[key]) list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
