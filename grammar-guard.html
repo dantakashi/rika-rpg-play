@@ -109,7 +109,7 @@
 
   /* 問題エリア */
   #quiz{flex:0 0 auto; padding:8px 12px 12px; background:var(--panel); border-top:2px solid var(--line)}
-  #qtext{font-size:18px; font-weight:800; min-height:26px; margin-bottom:8px; text-align:center}
+  #qtext{font-size:22px; font-weight:800; min-height:30px; margin-bottom:8px; text-align:center; line-height:1.3}
   #qtext .blank{color:var(--ally)}
   #choices{display:grid; grid-template-columns:1fr 1fr; gap:8px}
   #choices.c2{grid-template-columns:1fr 1fr}
@@ -122,7 +122,7 @@
     #queue{padding:3px 10px; gap:6px}
     .qslot{padding:2px 5px; min-width:54px} .qslot svg{width:30px; height:30px} .qslot .cost{font-size:11px}
     #quiz{padding:4px 10px 6px}
-    #qtext{font-size:15px; min-height:14px; margin-bottom:4px}
+    #qtext{font-size:19px; min-height:22px; margin-bottom:6px}
     #choices{gap:6px}
     .choice{padding:7px; font-size:14px}
   }
@@ -130,7 +130,7 @@
   @keyframes pulse{50%{box-shadow:0 0 0 6px #e0a93b66}}
   .choice.ok{background:var(--good); color:#fff; border-color:var(--good)}
   .choice.ng{background:var(--bad); color:#fff; border-color:var(--bad)}
-  #qfeedback{font-size:13px; min-height:18px; margin-top:6px; text-align:center; font-weight:700}
+  #qfeedback{font-size:15px; min-height:20px; margin-top:6px; text-align:center; font-weight:700; line-height:1.35}
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:13px; font-weight:700}
   .pill{background:#fff; border:2px solid var(--line); border-radius:999px; padding:3px 10px; font-size:12px}
 
@@ -277,11 +277,6 @@
         <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする</span></button>
         <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
         <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
-        <button class="menubtn" data-go="dex">📖 ずかん<span class="sub">仲間と敵のコレクション</span></button>
-      </div>
-      <div class="homeview" data-view="dex">
-        <div class="seg" id="dexTabs" style="margin-bottom:10px"></div>
-        <div class="card"><div id="dexBody"></div></div>
       </div>
       <div class="homeview" data-view="gacha">
         <div class="card">
@@ -365,6 +360,7 @@
     <div class="big" id="resTitle"></div>
     <div id="resMedals"></div>
     <div class="muted" id="resLearn" style="max-width:420px"></div>
+    <div id="resMistakes" style="max-width:440px;width:100%"></div>
     <div style="height:10px"></div>
     <div id="firstBadge">🏅 はじめて守れた！</div>
     <div style="height:8px"></div>
@@ -1773,11 +1769,96 @@ const SVG = (()=>{
 /* =========================================================================
    §1  問題エンジン（学習レイヤー＝燃料）— ステージから独立
    ========================================================================= */
+
+const ENGLISH_QUESTION_DB_BATCH3 = [
+  {"genre":"word","diff":"junior","type":"typing","name":"跳ぶ","answer":"jump","hint":"j__p / 跳ぶ","desc":"jump = 跳ぶ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"歌う","answer":"sing","hint":"s__g / 歌う","desc":"sing = 歌う。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"洗う","answer":"wash","hint":"w__h / 洗う","desc":"wash = 洗う。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"飛ぶ","answer":"fly","hint":"f_y / 飛ぶ","desc":"fly = 飛ぶ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"押す","answer":"push","hint":"p__h / 押す","desc":"push = 押す。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"引く","answer":"pull","hint":"p__l / 引く","desc":"pull = 引く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"登る","answer":"climb","hint":"c___b / 登る","desc":"climb = 登る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"乗る","answer":"ride","hint":"r__e / 乗る","desc":"ride = 乗る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"運転する","answer":"drive","hint":"d___e / 運転する","desc":"drive = 運転する。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"笑う","answer":"laugh","hint":"l___h / 笑う","desc":"laugh = 笑う。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"泣く","answer":"cry","hint":"c_y / 泣く","desc":"cry = 泣く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"眠る","answer":"sleep","hint":"s___p / 眠る","desc":"sleep = 眠る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"立つ","answer":"stand","hint":"s___d / 立つ","desc":"stand = 立つ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"座る","answer":"sit","hint":"s_t / 座る","desc":"sit = 座る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"切る","answer":"cut","hint":"c_t / 切る","desc":"cut = 切る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"動く","answer":"move","hint":"m__e / 動く","desc":"move = 動く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"働く","answer":"work","hint":"w__k / 働く","desc":"work = 働く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"住む","answer":"live","hint":"l__e / 住む","desc":"live = 住む。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"育つ","answer":"grow","hint":"g__w / 育つ","desc":"grow = 育つ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"見せる","answer":"show","hint":"s__w / 見せる","desc":"show = 見せる。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"首","answer":"neck","hint":"n__k / 首","desc":"neck = 首。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"帽子","answer":"hat","hint":"h_t / 帽子","desc":"hat = 帽子。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"くつ","answer":"shoes","hint":"s___s / くつ","desc":"shoes = くつ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"シャツ","answer":"shirt","hint":"s___t / シャツ","desc":"shirt = シャツ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"服","answer":"clothes","hint":"c_____s / 服","desc":"clothes = 服。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"贈り物","answer":"gift","hint":"g__t / 贈り物","desc":"gift = 贈り物。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"物語","answer":"story","hint":"s___y / 物語","desc":"story = 物語。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"飛行機","answer":"airplane","hint":"a______e / 飛行機","desc":"airplane = 飛行機。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"空","answer":"sky","hint":"s_y / 空","desc":"sky = 空。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"あたたかい","answer":"warm","hint":"w__m / あたたかい","desc":"warm = あたたかい。中学英語の基本単語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"場所","answer":"place","hint":"p___e / 場所","desc":"place = 場所。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"世界","answer":"world","hint":"w___d / 世界","desc":"world = 世界。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"都市","answer":"city","hint":"c__y / 都市","desc":"city = 都市。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"店","answer":"store","hint":"s___e / 店","desc":"store = 店。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"工場","answer":"factory","hint":"f_____y / 工場","desc":"factory = 工場。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"会社","answer":"company","hint":"c_____y / 会社","desc":"company = 会社。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"事務所","answer":"office","hint":"o____e / 事務所","desc":"office = 事務所。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"医者","answer":"doctor","hint":"d____r / 医者","desc":"doctor = 医者。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"看護師","answer":"nurse","hint":"n___e / 看護師","desc":"nurse = 看護師。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"警察","answer":"police","hint":"p____e / 警察","desc":"police = 警察。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"農家","answer":"farmer","hint":"f____r / 農家","desc":"farmer = 農家。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"歌手","answer":"singer","hint":"s____r / 歌手","desc":"singer = 歌手。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"俳優","answer":"actor","hint":"a___r / 俳優","desc":"actor = 俳優。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"芸術家","answer":"artist","hint":"a____t / 芸術家","desc":"artist = 芸術家。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"科学者","answer":"scientist","hint":"s_______t / 科学者","desc":"scientist = 科学者。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"選手","answer":"player","hint":"p____r / 選手","desc":"player = 選手。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"隣人","answer":"neighbor","hint":"n______r / 隣人","desc":"neighbor = 隣人。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"大人","answer":"adult","hint":"a___t / 大人","desc":"adult = 大人。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"子ども","answer":"child","hint":"c___d / 子ども","desc":"child = 子ども。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"赤ちゃん","answer":"baby","hint":"b__y / 赤ちゃん","desc":"baby = 赤ちゃん。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"数える","answer":"count","hint":"c___t / 数える","desc":"count = 数える。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"健康な","answer":"healthy","hint":"h_____y / 健康な","desc":"healthy = 健康な。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"病気の","answer":"sick","hint":"s__k / 病気の","desc":"sick = 病気の。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"正しい","answer":"correct","hint":"c_____t / 正しい","desc":"correct = 正しい。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"本当の","answer":"true","hint":"t__e / 本当の","desc":"true = 本当の。高校受験でよく出る語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"状況","answer":"situation","hint":"s_______n / 状況","desc":"situation = 状況。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"事実","answer":"fact","hint":"f__t / 事実","desc":"fact = 事実。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"原因","answer":"cause","hint":"c___e / 原因","desc":"cause = 原因。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"解決","answer":"solution","hint":"s______n / 解決","desc":"solution = 解決。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"減る","answer":"decrease","hint":"d______e / 減る","desc":"decrease = 減る。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"議論する","answer":"discuss","hint":"d_____s / 議論する","desc":"discuss = 議論する。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"複雑な","answer":"complex","hint":"c_____x / 複雑な","desc":"complex = 複雑な。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"単純な","answer":"simple","hint":"s____e / 単純な","desc":"simple = 単純な。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"効果的な","answer":"effective","hint":"e_______e / 効果的な","desc":"effective = 効果的な。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"価値","answer":"value","hint":"v___e / 価値","desc":"value = 価値。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"方向","answer":"direction","hint":"d_______n / 方向","desc":"direction = 方向。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"速度","answer":"speed","hint":"s___d / 速度","desc":"speed = 速度。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"距離","answer":"distance","hint":"d______e / 距離","desc":"distance = 距離。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"量","answer":"amount","hint":"a____t / 量","desc":"amount = 量。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"材料","answer":"material","hint":"m______l / 材料","desc":"material = 材料。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"重要性","answer":"importance","hint":"i________e / 重要性","desc":"importance = 重要性。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"多様性","answer":"diversity","hint":"d_______y / 多様性","desc":"diversity = 多様性。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"意識","answer":"awareness","hint":"a_______s / 意識","desc":"awareness = 意識。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"態度","answer":"attitude","hint":"a______e / 態度","desc":"attitude = 態度。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"行動","answer":"behavior","hint":"b______r / 行動","desc":"behavior = 行動。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"進歩","answer":"progress","hint":"p______s / 進歩","desc":"progress = 進歩。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"達成","answer":"achievement","hint":"a_________t / 達成","desc":"achievement = 達成。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"効率","answer":"efficiency","hint":"e________y / 効率","desc":"efficiency = 効率。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"独立","answer":"independence","hint":"i__________e / 独立","desc":"independence = 独立。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"民主主義","answer":"democracy","hint":"d_______y / 民主主義","desc":"democracy = 民主主義。難関校レベルの語彙。"}
+];
+
 const QuizEngine = (()=>{
   // データ統合（本物が読めなければフォールバック）
   let DB = [];
   try{ if(typeof ENGLISH_QUESTION_DB!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB); }catch(e){}
   try{ if(typeof ENGLISH_QUESTION_DB_BATCH2!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB_BATCH2); }catch(e){}
+  try{ if(typeof ENGLISH_QUESTION_DB_BATCH3!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB_BATCH3); }catch(e){}
   try{ if(typeof ENGLISH_IDIOM_DB!=='undefined') DB = DB.concat(ENGLISH_IDIOM_DB); }catch(e){}
   if(DB.length===0){
     DB = [
@@ -1861,7 +1942,7 @@ const QuizEngine = (()=>{
       qtext = `<span class="blank">${q.answer}</span> = ?`;
       labels = [q.name, ...distract.map(w=>w.name)];
     }else{
-      qtext = `「${q.name}」は英語で？`;
+      qtext = `${q.name} = ?`;
       labels = [q.answer, ...distract.map(w=>w.answer)];
     }
     const correct = labels[0];
@@ -2025,7 +2106,6 @@ const Game = (()=>{
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
   let homeView = 'menu';   // ホームの表示(menu/play/grow/settings/quiz)
   let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
-  let dexTab = 'ally';     // 図鑑タブ(ally/enemy)
   let towerBest = 0;       // 修練の塔の最高階
   let lastDaily = '';      // デイリー受取日(YYYY-M-D)
   let curStage = null;
@@ -2275,7 +2355,7 @@ const Game = (()=>{
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
       allies:[], enemies:[], spawnIdx:0, bossAlive:false, bossPhase:false,
-      queue:[], answered:0, correct:0, missStreak:0, reviewWins:0,
+      queue:[], answered:0, correct:0, missStreak:0, reviewWins:0, mistakes:[],
       tier:0, wasCleared:false,
       slow:slowMode
     };
@@ -2294,56 +2374,13 @@ const Game = (()=>{
     show('title');
   }
 
-  const DEX_ENEMY_DESC={slime:'いちばん基本の敵',hare:'とても速い',totem:'HPが高め',torii:'とてもかたい',slinger:'遠くから攻撃してくる',bat:'すばやく動く',golem:'かたくて攻撃が効きにくい',bombSlime:'たおすと爆発してまわりにダメージ',splitMush:'たおすと小さい敵に分裂する'};
-  const DEX_ALLY_FLAVOR={guardTurtle:'安く出せる かべ役',dashFox:'いちばん速い 先がけ役',dragonTurtle:'高HP×高火力のエース'};
-  const DEX_BOSSES=[{sprite:'bossMoai',name:'巨石の王・モアイ',area:5,desc:'エリア5の番人'},{sprite:'bossTotem',name:'黄金のトーテム大王',area:10,desc:'エリア10の番人'},{sprite:'bossThunder',name:'雷鳴の覇者・雷鳥大王',area:15,desc:'最終エリアの王。暴風で味方を後退させる'}];
-  function dexAbilities(r){var t=[];if(r.pierce)t.push('つらぬく');if(r.splash)t.push('はんい攻撃');if(r.knockback)t.push('押し返す');if(r.heal)t.push('みかた回復');if(r.def)t.push('防御がかたい');if(r.slow)t.push('敵を鈍足化');if(r.buff)t.push('まわりの攻撃UP');return t;}
-  function renderDex(){
-    const tabs=$('dexTabs'); if(!tabs) return; tabs.innerHTML='';
-    [['ally','🐾 なかま'],['enemy','👾 てき']].forEach(function(t){var b=document.createElement('button');b.textContent=t[1];if(dexTab===t[0])b.classList.add('sel');b.onclick=function(){dexTab=t[0];renderDex();};tabs.appendChild(b);});
-    const body=$('dexBody'); if(!body) return; body.innerHTML='';
-    if(dexTab==='ally'){
-      var got=ROSTER_KEYS.filter(function(k){return (owned[k]||0)>0;}).length;
-      var h=document.createElement('div'); h.className='muted'; h.style.cssText='margin-bottom:8px'; h.textContent='なかま　'+got+' / '+ROSTER_KEYS.length+' 体 集めた'; body.appendChild(h);
-      var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(2,1fr);gap:8px';
-      ROSTER_KEYS.forEach(function(key){
-        var r=ROSTER[key], have=(owned[key]||0)>0;
-        var c=document.createElement('div'); c.style.cssText='border:2px solid var(--line);border-radius:12px;padding:8px;background:'+(have?'#fff':'#f1ece0')+';text-align:center';
-        var art=have?SVG.get(r.sprite):'<span style="filter:brightness(0);opacity:.18;display:block">'+SVG.get(r.sprite)+'</span>';
-        var ab=dexAbilities(r); var abText=ab.length?ab.join('・'):(DEX_ALLY_FLAVOR[key]||'バランス型');
-        c.innerHTML='<span style="display:block;width:62px;height:62px;margin:0 auto">'+art+'</span>'+
-          '<div style="font-weight:800;margin-top:4px">'+(have?r.name:'？？？')+'</div>'+
-          '<div style="font-size:11px;font-weight:800;color:'+r.rarColor+'">'+r.rar+(have&&unitStars(key)?' <span style="color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'')+'</div>'+
-          (have?('<div class="muted" style="font-size:11px;margin-top:2px">'+abText+'</div><div class="muted" style="font-size:11px">⚔'+unitStats(key).atk+' ♥'+unitStats(key).hp+'</div>')
-               :'<div class="muted" style="font-size:11px;margin-top:2px">ガチャで仲間にしよう</div>');
-        grid.appendChild(c);
-      });
-      body.appendChild(grid);
-    } else {
-      var list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
-      Object.keys(ENEMY_TYPES).forEach(function(k){
-        var e=ENEMY_TYPES[k];
-        var row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff';
-        row.innerHTML='<span style="width:46px;height:46px;display:block;flex:0 0 auto">'+SVG.get(e.sprite)+'</span><div style="flex:1;min-width:0"><div style="font-weight:800">'+e.name+'</div><div class="muted" style="font-size:12px">'+(DEX_ENEMY_DESC[k]||'')+'</div></div>';
-        list.appendChild(row);
-      });
-      var bh=document.createElement('div'); bh.style.cssText='font-weight:800;margin:10px 0 2px;color:var(--enemy)'; bh.textContent='👑 ボス'; list.appendChild(bh);
-      DEX_BOSSES.forEach(function(bx){
-        var row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--enemy);border-radius:12px;padding:8px;background:#fff4ee';
-        row.innerHTML='<span style="width:52px;height:52px;display:block;flex:0 0 auto">'+SVG.get(bx.sprite)+'</span><div style="flex:1;min-width:0"><div style="font-weight:800">'+bx.name+' <span class="muted" style="font-size:11px">エリア'+bx.area+'</span></div><div class="muted" style="font-size:12px">'+bx.desc+'</div></div>';
-        list.appendChild(row);
-      });
-      body.appendChild(list);
-    }
-  }
-
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderDex();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', dex:'📖 ずかん'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', dex:'grow'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
@@ -2539,10 +2576,11 @@ const Game = (()=>{
       B.missStreak++;
       B.combo = Math.floor(B.combo * (B.slow?0.75:0.5)); // 途切れ→加速ダウン（ゼロにしない）
       QuizEngine.pushReview(curQ); // 間違えた問題は近いうち再出題
+      try{ var __mp=(curQ.qtext||'').replace(/<[^>]+>/g,''); var __mc=curQ.choices?curQ.choices[curQ.answerIndex]:''; if(B.mistakes && !B.mistakes.some(function(m){return m.prompt===__mp&&m.correct===__mc;})) B.mistakes.push({prompt:__mp, correct:__mc, desc:curQ.desc||''}); }catch(_){}
       $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
     }
     syncHUD();
-    setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, right?520:1100);
+    setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, right?800:2000);
   }
 
   /* ---- ループ ---- */
@@ -2680,6 +2718,7 @@ const Game = (()=>{
     $('resMedals').innerHTML='<span class="medal">到達 '+floor+'階</span>'+(isBest?'<span class="medal">🏆 自己ベスト！</span>':'<span class="medal">最高 '+towerBest+'階</span>')+'<span class="medal">💰 +'+reward+'</span><span class="medal">最大コンボ '+B.bestCombo+'</span>';
     $('resLearn').textContent='修練の塔は無限。問題を解いて編成を強化し、より上の階へ！';
     var nd=$('resNudge'); if(nd) nd.innerHTML='';
+    renderResultMistakes();
     var retry=$('resRetry'); retry.textContent='もう一度 🗼'; retry.onclick=function(){ enterTower(); };
     show('result');
   }
@@ -2698,6 +2737,16 @@ const Game = (()=>{
     if(B.ended) return;
     if(B.castleE<=0){ endBattle(true); }
     else if(B.castleA<=0){ endBattle(false); }
+  }
+  function renderResultMistakes(){
+    var el=$('resMistakes'); if(!el) return; el.innerHTML='';
+    var ms=(B&&B.mistakes)||[];
+    if(!ms.length){ el.innerHTML='<div style="margin-top:8px;color:var(--good);font-weight:800">🎉 ぜんぶ正解！</div>'; return; }
+    var h='<div style="margin-top:10px;font-weight:800;text-align:left">📝 まちがえた問題（復習）</div>';
+    ms.slice(0,12).forEach(function(m){
+      h+='<div style="text-align:left;border:2px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:6px;background:#fff"><div style="font-weight:700">'+m.prompt+' → <span style="color:var(--good)">'+m.correct+'</span></div>'+(m.desc?'<div class="muted" style="font-size:12px">'+m.desc+'</div>':'')+'</div>';
+    });
+    el.innerHTML=h;
   }
   function endBattle(win){
     if(B.stage.endless){ endTower(); return; }
@@ -2719,6 +2768,7 @@ const Game = (()=>{
     $('resLearn').textContent = win
       ? '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。'
       : 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎';
+    renderResultMistakes();
     const retry=$('resRetry'); retry.textContent = win?'次へ ▶':'もう一度';
     retry.onclick=()=>{
       if(win){ const ni=STAGES.findIndex(s=>s.id===B.stage.id)+1; if(ni<STAGES.length){ enterBattle(STAGES[ni]); return; } }
