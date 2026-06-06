@@ -85,7 +85,7 @@
   .csvg{position:absolute; inset:0}
   #castleA{left:6px} #castleE{right:6px}
   .ground-line{position:absolute; left:0; right:0; top:58%; height:2px; background:rgba(0,0,0,.08)}
-  .unit{position:absolute; bottom:14px; width:54px; height:54px; will-change:transform; transition:none}
+  .unit{position:absolute; bottom:14px; width:54px; height:54px; will-change:transform; transition:none; transform-origin:50% 100%}
   .unit .hpb{position:absolute; top:-7px; left:6px; right:6px; height:4px; background:#0003; border-radius:2px; overflow:hidden}
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
@@ -152,6 +152,11 @@
   /* 召喚: 城門フラッシュ＋ポップ */
   .unit.spawning{animation:spawnPop .45s cubic-bezier(.2,1.4,.4,1)}
   @keyframes spawnPop{0%{transform:translateY(8px) scale(.2); opacity:0} 60%{transform:translateY(-3px) scale(1.12); opacity:1} 100%{transform:translateY(0) scale(1)}}
+  /* 歩行・攻撃アニメ（spriteは .body に内包し、向き/拡大は .unit 側に分離） */
+  .unit .body{position:absolute; inset:0; transform-origin:50% 92%; animation:uwalk .52s ease-in-out infinite}
+  @keyframes uwalk{0%,100%{transform:translateY(0) rotate(-2.5deg)} 50%{transform:translateY(-2.6px) rotate(2.5deg)}}
+  .unit.atk .body{animation:ulunge .26s ease-out}
+  @keyframes ulunge{0%{transform:translateX(0)} 30%{transform:translateX(13px) translateY(-2px) scale(1.07)} 100%{transform:translateX(0)}}
   .gateflash{position:absolute; bottom:8px; width:70px; height:120px; border-radius:8px; pointer-events:none;
     background:radial-gradient(circle, #fff 0%, #bfe0f5aa 40%, transparent 70%); animation:gateGlow .5s ease-out forwards}
   @keyframes gateGlow{from{opacity:.95; transform:scaleY(.6)} to{opacity:0; transform:scaleY(1.15)}}
@@ -1751,6 +1756,76 @@ const SVG = (()=>{
       <path d="M52 18 Q60 9 65 17 Q58 22 52 18Z" fill="#3a9d57" stroke="${S}" stroke-width="2"/>
       <path d="M58 13 L52 18" stroke="${S}" stroke-width="2"/>`,
     // --- 城 ---
+    // --- 追加味方 ---
+    ninjaFrog:`<ellipse cx="50" cy="88" rx="26" ry="5" fill="#0002"/>
+      <ellipse cx="50" cy="62" rx="29" ry="25" fill="#5bbf57" stroke="${S}" stroke-width="3"/>
+      <circle cx="37" cy="40" r="11" fill="#7ed06f" stroke="${S}" stroke-width="3"/>
+      <circle cx="63" cy="40" r="11" fill="#7ed06f" stroke="${S}" stroke-width="3"/>
+      <circle cx="37" cy="41" r="3.6" fill="${S}"/><circle cx="63" cy="41" r="3.6" fill="${S}"/>
+      <rect x="20" y="46" width="60" height="9" fill="#d23a3a" stroke="${S}" stroke-width="2"/>
+      <path d="M80 50 l17 -6 l-15 11Z" fill="#d23a3a" stroke="${S}" stroke-width="2"/>
+      <path d="M36 70 q14 11 28 0" fill="none" stroke="${S}" stroke-width="3"/>
+      <rect x="30" y="80" width="11" height="9" rx="3" fill="#5bbf57" stroke="${S}" stroke-width="2"/>
+      <rect x="59" y="80" width="11" height="9" rx="3" fill="#5bbf57" stroke="${S}" stroke-width="2"/>`,
+    steelBull:`<ellipse cx="50" cy="89" rx="30" ry="5" fill="#0002"/>
+      <rect x="26" y="48" width="48" height="34" rx="8" fill="#8a93a8" stroke="${S}" stroke-width="3"/>
+      <rect x="30" y="38" width="40" height="24" rx="9" fill="#aab3c6" stroke="${S}" stroke-width="3"/>
+      <path d="M30 44 q-15 -11 -19 2 q11 2 19 9Z" fill="#e9e2cf" stroke="${S}" stroke-width="2.5"/>
+      <path d="M70 44 q15 -11 19 2 q-11 2 -19 9Z" fill="#e9e2cf" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="42" cy="50" r="3.6" fill="#d23a3a"/><circle cx="58" cy="50" r="3.6" fill="#d23a3a"/>
+      <rect x="45" y="56" width="10" height="5" rx="2" fill="#3a4150"/>
+      <rect x="32" y="80" width="10" height="9" fill="#6a7080" stroke="${S}" stroke-width="2"/>
+      <rect x="58" y="80" width="10" height="9" fill="#6a7080" stroke="${S}" stroke-width="2"/>`,
+    crystalGolem:`<ellipse cx="50" cy="90" rx="34" ry="5" fill="#0002"/>
+      <rect x="28" y="44" width="44" height="42" rx="6" fill="#6fa8d6" stroke="${S}" stroke-width="3.5"/>
+      <path d="M50 16 l11 20 l-22 0Z" fill="#a9d2f0" stroke="${S}" stroke-width="3"/>
+      <path d="M28 50 l-15 9 l15 11Z" fill="#6fa8d6" stroke="${S}" stroke-width="3"/>
+      <path d="M72 50 l15 9 l-15 11Z" fill="#6fa8d6" stroke="${S}" stroke-width="3"/>
+      <circle cx="41" cy="60" r="4.6" fill="#fff"/><circle cx="59" cy="60" r="4.6" fill="#fff"/>
+      <circle cx="41" cy="60" r="2.2" fill="${S}"/><circle cx="59" cy="60" r="2.2" fill="${S}"/>
+      <path d="M40 74 h20" stroke="${S}" stroke-width="3"/>
+      <path d="M45 49 l7 9 l-11 4Z" fill="#a9d2f0" stroke="${S}" stroke-width="2"/>
+      <rect x="34" y="83" width="12" height="8" fill="#4f7fae" stroke="${S}" stroke-width="2.5"/>
+      <rect x="54" y="83" width="12" height="8" fill="#4f7fae" stroke="${S}" stroke-width="2.5"/>`,
+    thunderDragon:`<ellipse cx="50" cy="90" rx="32" ry="5" fill="#0002"/>
+      <path d="M30 78 q-19 -6 -23 -27 q17 8 23 15Z" fill="#c9a23a" stroke="${S}" stroke-width="3"/>
+      <path d="M70 78 q19 -6 23 -27 q-17 8 -23 15Z" fill="#c9a23a" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="62" rx="24" ry="22" fill="#e0c14a" stroke="${S}" stroke-width="3.5"/>
+      <path d="M50 22 q15 4 17 21 q-17 -7 -34 0 q2 -17 17 -21Z" fill="#f0d56a" stroke="${S}" stroke-width="3"/>
+      <circle cx="42" cy="41" r="3.8" fill="${S}"/><circle cx="58" cy="41" r="3.8" fill="${S}"/>
+      <path d="M40 30 l-7 -13 l11 9Z" fill="#f0d56a" stroke="${S}" stroke-width="2"/>
+      <path d="M60 30 l7 -13 l-11 9Z" fill="#f0d56a" stroke="${S}" stroke-width="2"/>
+      <path d="M44 50 q6 5 12 0" fill="none" stroke="${S}" stroke-width="2.5"/>
+      <path d="M51 56 l-8 16 l8 -4 l8 4Z" fill="#fff36a" stroke="${S}" stroke-width="2"/>`,
+    // --- 追加敵 ---
+    ghost:`<ellipse cx="50" cy="91" rx="19" ry="4" fill="#0002"/>
+      <path d="M28 56 q0 -34 22 -34 q22 0 22 34 l0 23 q-5 -7 -9 0 q-4 7 -9 0 q-4 -7 -8 0 q-4 7 -9 0Z" fill="#dfe6ef" stroke="${S}" stroke-width="3"/>
+      <circle cx="42" cy="48" r="4.6" fill="${S}"/><circle cx="58" cy="48" r="4.6" fill="${S}"/>
+      <ellipse cx="50" cy="61" rx="5" ry="7" fill="${S}"/>`,
+    mummy:`<ellipse cx="50" cy="89" rx="24" ry="5" fill="#0002"/>
+      <rect x="34" y="32" width="32" height="52" rx="14" fill="#cdbf9a" stroke="${S}" stroke-width="3"/>
+      <path d="M34 44 l32 6 M66 56 l-32 6 M34 68 l32 6" stroke="${S}" stroke-width="2" fill="none"/>
+      <rect x="39" y="47" width="9" height="5" fill="#d23a3a"/>
+      <rect x="52" y="47" width="9" height="5" fill="#d23a3a"/>
+      <path d="M32 52 l-12 13 l9 -1" fill="#cdbf9a" stroke="${S}" stroke-width="2.5"/>
+      <rect x="38" y="80" width="10" height="8" fill="#b6a781" stroke="${S}" stroke-width="2"/>
+      <rect x="52" y="80" width="10" height="8" fill="#b6a781" stroke="${S}" stroke-width="2"/>`,
+    darkMage:`<ellipse cx="50" cy="90" rx="22" ry="4" fill="#0002"/>
+      <path d="M50 22 q-22 4 -22 40 l0 22 l44 0 l0 -22 q0 -36 -22 -40Z" fill="#5a4a8a" stroke="${S}" stroke-width="3"/>
+      <path d="M50 22 q-15 3 -17 23 q17 -8 34 0 q-2 -20 -17 -23Z" fill="#3a2f5c" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="43" cy="45" r="3" fill="#d23a3a"/><circle cx="57" cy="45" r="3" fill="#d23a3a"/>
+      <rect x="71" y="48" width="6" height="38" fill="#7a5a3a" stroke="${S}" stroke-width="2"/>
+      <circle cx="74" cy="46" r="7" fill="#b86bd6" stroke="${S}" stroke-width="2.5"/>`,
+    stoneGiant:`<ellipse cx="50" cy="91" rx="34" ry="5" fill="#0002"/>
+      <rect x="14" y="46" width="14" height="30" rx="5" fill="#8f8576" stroke="${S}" stroke-width="3"/>
+      <rect x="72" y="46" width="14" height="30" rx="5" fill="#8f8576" stroke="${S}" stroke-width="3"/>
+      <rect x="26" y="40" width="48" height="46" rx="8" fill="#9a907f" stroke="${S}" stroke-width="3.5"/>
+      <rect x="34" y="26" width="32" height="24" rx="6" fill="#a89d88" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="37" r="4" fill="#e0a93b"/><circle cx="57" cy="37" r="4" fill="#e0a93b"/>
+      <path d="M40 46 h20" stroke="${S}" stroke-width="3"/>
+      <path d="M30 60 l11 4 M59 66 l11 -4" stroke="${S}" stroke-width="2" fill="none"/>
+      <rect x="34" y="82" width="13" height="8" fill="#6f675b" stroke="${S}" stroke-width="2.5"/>
+      <rect x="53" y="82" width="13" height="8" fill="#6f675b" stroke="${S}" stroke-width="2.5"/>`,
     castleA:`<rect x="14" y="40" width="36" height="74" fill="#8fb98f" stroke="${S}" stroke-width="3"/>
       <path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="#6fa06f" stroke="${S}" stroke-width="3"/>
       <rect x="26" y="64" width="14" height="50" fill="#3a5f3a"/>
@@ -2017,7 +2092,11 @@ const ROSTER = {
   shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, def:8, weight:20},
   owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, slow:true, weight:11},
   orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7},
-  cheerTanuki:{name:"応援タヌキ", sprite:"cheerTanuki", rar:"SR", rarColor:"#8e44ad", cost:78, hp:150, atk:12, speed:30, range:120, buff:0.3, weight:10}
+  cheerTanuki:{name:"応援タヌキ", sprite:"cheerTanuki", rar:"SR", rarColor:"#8e44ad", cost:78, hp:150, atk:12, speed:30, range:120, buff:0.3, weight:10},
+  ninjaFrog:{name:"忍びガエル", sprite:"ninjaFrog", rar:"R", rarColor:"#2f7dd1", cost:48, hp:90, atk:30, speed:58, range:42, weight:18},
+  steelBull:{name:"鋼の猛牛", sprite:"steelBull", rar:"SR", rarColor:"#8e44ad", cost:96, hp:340, atk:34, speed:26, range:46, knockback:18, weight:10},
+  crystalGolem:{name:"水晶ゴーレム", sprite:"crystalGolem", rar:"SSR", rarColor:"#e0683b", cost:155, hp:760, atk:34, speed:18, range:50, def:14, scale:1.5, weight:6},
+  thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:24, range:150, splash:true, scale:1.5, weight:5}
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
@@ -2051,6 +2130,10 @@ function buildEnemyWaves(area, boss){
   push(t(18.3),"hare",Math.round(2*dens), 600);
   if(area>=3) push(t(10),"slinger", Math.max(1,Math.round(area*0.35)), 1300); // 遠距離で揺さぶり
   if(area>=11){ push(t(8),"bat", Math.round(2*dens), 600); push(t(15),"bombSlime", Math.max(1,Math.round(area*0.2)), 1100); push(t(17),"splitMush", 1, 0); push(t(20),"bat", 2, 500); }
+  if(area>=4) push(t(9),"ghost", Math.max(1,Math.round(1+area*0.3)), 650);
+  if(area>=6) push(t(15),"mummy", Math.max(1,Math.round(area*0.3)), 1100);
+  if(area>=7) push(t(12),"darkMage", Math.max(1,Math.round(1+area*0.25)), 1100);
+  if(area>=12){ push(t(16),"stoneGiant", 1, 0); push(t(22),"stoneGiant", 1, 0); }
   if(area>=8) push(t(19),tank, 2, 900);
   // 持続フェーズ：中盤以降も切れ目なく前線を維持（戦闘を2〜3分の歯ごたえに）
   for(let k=0;k<19;k++){
@@ -2060,6 +2143,9 @@ function buildEnemyWaves(area, boss){
     push(t(base+3.5), tank, Math.max(1,Math.round(1+area*0.5)), 900);
     if(area>=3) push(t(base+1.5),"slinger", Math.max(1,Math.round(1+area*0.3)), 800);
     if(area>=11 && k%2===0) push(t(base+5),"bombSlime", Math.max(1,Math.round(area*0.3)), 800);
+    if(area>=4 && k%3===1) push(t(base+5.5),"ghost", 2, 500);
+    if(area>=7 && k%3===2) push(t(base+6),"mummy", 1, 0);
+    if(area>=12 && k%4===3) push(t(base+6.5),"stoneGiant", 1, 0);
   }
   return W;
 }
@@ -2093,7 +2179,11 @@ const ENEMY_TYPES = {
   bat:{name:"コウモリ", sprite:"bat", hp:50, atk:8, speed:58, range:40},
   golem:{name:"盾ゴーレム", sprite:"golem", hp:230, atk:15, speed:14, range:44, def:6},
   bombSlime:{name:"ボムスライム", sprite:"bombSlime", hp:70, atk:6, speed:30, range:40, bomb:35},
-  splitMush:{name:"分裂キノコ", sprite:"splitMush", hp:120, atk:11, speed:20, range:42, split:"slime"}
+  splitMush:{name:"分裂キノコ", sprite:"splitMush", hp:120, atk:11, speed:20, range:42, split:"slime"},
+  ghost:{name:"おばけ", sprite:"ghost", hp:95, atk:16, speed:60, range:40},
+  mummy:{name:"ミイラ兵", sprite:"mummy", hp:320, atk:18, speed:15, range:44},
+  darkMage:{name:"くらやみ術師", sprite:"darkMage", hp:120, atk:21, speed:17, range:120},
+  stoneGiant:{name:"岩の巨人", sprite:"stoneGiant", hp:560, atk:26, speed:12, range:50, scale:1.5}
 };
 const BOSS_BASE = {atk:26, speed:13, range:70, hp:1000};
 
@@ -2503,10 +2593,12 @@ const Game = (()=>{
     renderQueue(); syncHUD();
   }
 
+  function unitBody(sprite){ return '<div class="hpb"><i style="width:100%"></i></div><div class="body">'+SVG.get(sprite)+'</div>'; }
+  function lunge(el){ if(el){ el.classList.add('atk'); setTimeout(function(){ if(el) el.classList.remove('atk'); },260); } }
   function spawnAlly(key){
     const r=ROSTER[key];
     const el=document.createElement('div'); el.className='unit spawning';
-    el.innerHTML = `<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(r.sprite);
+    el.innerHTML = unitBody(r.sprite); if(r.scale) el.style.transform='scale('+r.scale+')';
     $('field').appendChild(el);
     fxGate(84); Sound.play('summon');
     const __st=unitStats(key);
@@ -2516,8 +2608,8 @@ const Game = (()=>{
     if(type==="BOSS"){ spawnBoss(); return; }
     const t=ENEMY_TYPES[type]; const s=B.stage;
     const el=document.createElement('div'); el.className='unit';
-    el.style.transform='scaleX(-1)';
-    el.innerHTML=`<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(t.sprite);
+    el.style.transform='scaleX(-1)'+(t.scale?(' scale('+t.scale+')'):'');
+    el.innerHTML=unitBody(t.sprite);
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul);
     B.enemies.push({ type, el, x:fieldW()-84, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null });
@@ -2526,7 +2618,7 @@ const Game = (()=>{
     const s=B.stage;
     const el=document.createElement('div'); el.className='unit boss-unit';
     el.style.transform='scaleX(-1)';
-    el.innerHTML=`<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(s.sprite);
+    el.innerHTML=unitBody(s.sprite);
     $('field').appendChild(el);
     B.bossAlive=true;
     const hp=Math.round(BOSS_BASE.hp*s.enemyHpMul);
@@ -2536,7 +2628,7 @@ const Game = (()=>{
   function spawnSplitChild(type, x){
     const t=ENEMY_TYPES[type]; const s=B.stage;
     const el=document.createElement('div'); el.className='unit'; el.style.transform='scaleX(-1) scale(0.72)';
-    el.innerHTML=`<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(t.sprite);
+    el.innerHTML=unitBody(t.sprite);
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul*0.45);
     const en={ type, el, x:Math.min(fieldW()-70,Math.max(92,x)), hp, hpMax:hp, atk:t.atk*s.enemyAtkMul*0.7, speed:t.speed*1.2, range:t.range, cd:0.4, boss:false, def:0, bomb:0, split:null };
@@ -2626,10 +2718,10 @@ const Game = (()=>{
         if(a.cd<=0){
           if(a.splash||a.pierce){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range){ damage(e,__atk); if(a.slow)e.slowT=2.0; if(a.knockback)e.x=Math.min(W-60,e.x+a.knockback); } }); floatText(a.x,26, a.pierce?'⇶':'💥','var(--ally)'); }
           else { damage(target,__atk); if(a.slow){ target.slowT=2.0; floatText(target.x,22,'❄','#5aa0d6'); } if(a.knockback) target.x=Math.min(W-60, target.x+a.knockback); }
-          a.cd=0.7; flash(a.el); hitFx(target);
+          a.cd=0.7; flash(a.el); lunge(a.el); hitFx(target);
         }
       }else if(!target && a.x >= enemyCastleX-a.range){
-        if(a.cd<=0){ B.castleE-=__atk; a.cd=0.7; flash(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); }
+        if(a.cd<=0){ B.castleE-=__atk; a.cd=0.7; flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); }
       }else{
         a.x += a.speed*dt;
       }
@@ -2642,9 +2734,9 @@ const Game = (()=>{
       const target=nearestAlly(e);
       const myCastleX=70;
       if(target && Math.abs(target.x-e.x) <= e.range){
-        if(e.cd<=0){ damage(target, e.atk); e.cd=0.8; flash(e.el); hitFx(target); }
+        if(e.cd<=0){ damage(target, e.atk); e.cd=0.8; flash(e.el); lunge(e.el); hitFx(target); }
       }else if(!target && e.x <= myCastleX+e.range){
-        if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); castleHit('castleA'); floatText(70, 30, '-'+Math.round(e.atk), 'var(--bad)'); }
+        if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); lunge(e.el); castleHit('castleA'); floatText(70, 30, '-'+Math.round(e.atk), 'var(--bad)'); }
       }else{
         e.x -= e.speed*(e.slowT>0?0.45:1)*dt;
       }
