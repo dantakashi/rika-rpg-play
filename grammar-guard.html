@@ -2236,6 +2236,9 @@ const Game = (()=>{
   let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
   let towerBest = 0;       // 修練の塔の最高階
   let lastDaily = '';      // デイリー受取日(YYYY-M-D)
+  let clockTs = 0;         // 観測した最大の実時刻(ms)。カレンダー巻き戻し対策（単調増加）
+  let goldDay = '';        // クリア報酬上限の集計日(YYYY-M-D)
+  let dailyStageGold = 0;  // 本日ステージクリアで得たゴールド
   let curStage = null;
 
   let soundOn = true;
@@ -2246,13 +2249,15 @@ const Game = (()=>{
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
       towerBest=s.towerBest||0; lastDaily=s.lastDaily||'';
+      clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, placement})); }catch(e){}
+    guardedNow();
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -2857,7 +2862,15 @@ const Game = (()=>{
     var retry=$('resRetry'); retry.textContent='もう一度 🗼'; retry.onclick=function(){ enterTower(); };
     show('result');
   }
-  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  // カレンダー巻き戻し対策：観測した最大時刻を保持し、過去に戻しても「今日」は戻らない
+  function guardedNow(){ clockTs=Math.max(clockTs||0, Date.now()); return clockTs; }
+  function todayStr(){ var d=new Date(guardedNow()); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  // ステージ報酬：進むほど増加（初期ステージ=200G、ボスは1.6倍）
+  function stageReward(stage){ var n=stage.area||1; var base=150+50*n; return stage.boss? Math.round(base*1.6) : base; }
+  function clearedCount(){ var n=0; for(var k in cleared){ if(cleared[k]) n++; } return n; }
+  // 1日のクリア報酬上限：ステージを進める（クリア数増）ほど解放されて増える
+  function dailyGoldCap(){ return 600 + clearedCount()*200; }
+  function ensureGoldDay(){ var t=todayStr(); if(goldDay!==t){ goldDay=t; dailyStageGold=0; } }
   function dailyClaimable(){ return lastDaily!==todayStr(); }
   function claimDaily(){ if(!dailyClaimable()) return; gold+=500; lastDaily=todayStr(); Sound.play('correct'); save(); renderHome(); }
   function renderTower(){
@@ -2867,6 +2880,10 @@ const Game = (()=>{
     var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
     var claim=dailyClaimable();
     var db=document.createElement('button'); db.className=claim?'btn':'btn ghost'; db.style.cssText='width:100%'; db.textContent=claim?'🎁 デイリーボーナス（+500G）':'🎁 デイリー：受取済み（また明日）'; db.disabled=!claim; db.addEventListener('click',claimDaily); body.appendChild(db);
+    ensureGoldDay();
+    var ci=document.createElement('div'); ci.className='muted'; ci.style.cssText='margin-top:10px;font-size:12px;line-height:1.5';
+    ci.innerHTML='💰 本日のクリア報酬：<b>'+dailyStageGold+' / '+dailyGoldCap()+'G</b><br>毎日コツコツが英語上達のコツ。上限はステージを進める（クリア数を増やす）ほど解放され、<b>新ステージの初クリアは上限を超えてもフルでもらえます</b>。';
+    body.appendChild(ci);
   }
   function checkEnd(){
     if(B.ended) return;
@@ -2892,17 +2909,27 @@ const Game = (()=>{
     if(win) confetti();
     $('resTitle').textContent = win? '🏯 まもり切った！' : '🛡️ 作戦変更だ';
     $('resTitle').style.color = win? 'var(--good)':'var(--enemy)';
-    const reward = win? (B.stage.boss?300:200):10; gold+=reward;
-    if(win){ cleared[B.stage.area]=true; }
+    ensureGoldDay();
+    const newClear = win && !B.wasCleared;     // 初クリアは上限を超えても満額（＝達成報酬・上限解放）
+    const full = win ? stageReward(B.stage) : 0;
+    let reward, capped=false;
+    if(!win){ reward=10; }
+    else if(newClear){ reward=full; }
+    else { const room=Math.max(0, dailyGoldCap()-dailyStageGold); reward=Math.min(full, room); capped=(reward<full); }
+    gold+=reward;
+    if(win){ dailyStageGold+=reward; cleared[B.stage.area]=true; }
     save();
     $('resMedals').innerHTML =
       `<span class="medal">最大コンボ ${B.bestCombo}</span>`+
       `<span class="medal">正答率 ${acc}%</span>`+
       (B.reviewWins?`<span class="medal">🔁 復習成功 ${B.reviewWins}</span>`:'')+
-      `<span class="medal">💰 +${reward}</span>`;
-    $('resLearn').textContent = win
-      ? '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。'
-      : 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎';
+      `<span class="medal">💰 +${reward}${capped?'（上限到達）':''}</span>`+
+      (win?`<span class="medal">本日のクリア報酬 ${dailyStageGold}/${dailyGoldCap()}G</span>`:'');
+    $('resLearn').textContent = !win
+      ? 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎'
+      : capped
+        ? '本日のクリア報酬は上限に達しました。英語は毎日コツコツが効きます — また明日プレイすると満タンに回復！新しいステージを初クリアすると上限を超えてもフルでもらえ、上限自体も増えます。'
+        : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
     renderResultMistakes();
     const retry=$('resRetry'); retry.textContent = win?'次へ ▶':'もう一度';
     retry.onclick=()=>{
