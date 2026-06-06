@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>グラマー・ガード v2（試作） build0605b</title>
-<script>window.addEventListener('error',function(e){try{var d=document.getElementById('__err')||document.createElement('div');d.id='__err';d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font:12px/1.4 monospace;padding:6px;white-space:pre-wrap';d.textContent='ERR: '+(e.message||(e.error&&e.error.stack)||e.type)+' @'+((e.filename||'').split('/').pop())+':'+(e.lineno||'');if(!d.parentNode)(document.body||document.documentElement).appendChild(d);}catch(_){}}, false);</script>
+<title>グラマー・ガード</title>
+<script>window.__GGDEBUG=/[?&]debug=1/.test(location.search||'');window.addEventListener('error',function(e){if(!window.__GGDEBUG)return;try{var d=document.getElementById('__err')||document.createElement('div');d.id='__err';d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font:12px/1.4 monospace;padding:6px;white-space:pre-wrap';d.textContent='ERR: '+(e.message||(e.error&&e.error.stack)||e.type)+' @'+((e.filename||'').split('/').pop())+':'+(e.lineno||'');if(!d.parentNode)(document.body||document.documentElement).appendChild(d);}catch(_){}}, false);</script>
 <!--
   グラマー・ガード v2 試作版
   計画書: PLAN_GG_V2_AREA_COST_REDESIGN.md
@@ -52,7 +52,7 @@
   .seg{display:flex; gap:6px; flex-wrap:wrap}
   .seg button{border:2px solid var(--line); background:#fff; border-radius:999px; padding:7px 13px; font-size:13px; font-weight:700; color:var(--ink)}
   .seg button.sel{background:var(--ally); color:#fff; border-color:var(--ally)}
-  .stage-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px}
+  .stage-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
   .stage{position:relative; aspect-ratio:1; border-radius:14px; border:2px solid var(--line); background:#fff;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-weight:700; font-size:12px; padding:4px}
   .stage.boss{border-color:var(--enemy); background:#fff4ee}
@@ -85,7 +85,7 @@
   .csvg{position:absolute; inset:0}
   #castleA{left:6px} #castleE{right:6px}
   .ground-line{position:absolute; left:0; right:0; top:58%; height:2px; background:rgba(0,0,0,.08)}
-  .unit{position:absolute; bottom:14px; width:54px; height:54px; will-change:transform; transition:none}
+  .unit{position:absolute; bottom:14px; width:54px; height:54px; will-change:transform; transition:none; transform-origin:50% 100%}
   .unit .hpb{position:absolute; top:-7px; left:6px; right:6px; height:4px; background:#0003; border-radius:2px; overflow:hidden}
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
@@ -95,7 +95,7 @@
   @keyframes floatUp{from{transform:translateY(0); opacity:1} to{transform:translateY(-34px); opacity:0}}
 
   /* 召喚キュー */
-  #queue{display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--panel); border-top:2px solid var(--line)}
+  #queue{display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--panel); border-top:2px solid var(--line); min-height:64px; box-sizing:border-box}
   .qslot{display:flex; flex-direction:column; align-items:center; border:2px solid var(--line); border-radius:12px; padding:4px 6px; min-width:62px; background:#fff; position:relative}
   .qslot.now{border-color:var(--ally); box-shadow:0 0 0 3px #2f7dd133}
   .qslot.ready{border-color:var(--good); box-shadow:0 0 0 3px #3a9d5733}
@@ -104,12 +104,12 @@
   .qslot .rar{position:absolute; top:-8px; left:-4px; font-size:10px; font-weight:800; padding:0 4px; border-radius:6px; color:#fff}
   .qslot .bargain{position:absolute; top:-9px; right:-6px; font-size:9px; font-weight:800; background:var(--gold); color:#fff; padding:1px 4px; border-radius:6px; transform:rotate(8deg)}
   .qnext{opacity:.85; transform:scale(.86)}
-  #summonBtn{margin-left:auto; background:var(--good); min-width:120px}
+  #summonBtn{margin-left:auto; background:var(--good); min-width:128px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #summonBtn:disabled{filter:grayscale(.7) brightness(.95); opacity:.6}
 
   /* 問題エリア */
   #quiz{flex:0 0 auto; padding:8px 12px 12px; background:var(--panel); border-top:2px solid var(--line)}
-  #qtext{font-size:18px; font-weight:800; min-height:26px; margin-bottom:8px; text-align:center}
+  #qtext{font-size:22px; font-weight:800; min-height:30px; margin-bottom:8px; text-align:center; line-height:1.3}
   #qtext .blank{color:var(--ally)}
   #choices{display:grid; grid-template-columns:1fr 1fr; gap:8px}
   #choices.c2{grid-template-columns:1fr 1fr}
@@ -119,10 +119,11 @@
     .bar{height:9px}
     .meter .lab{font-size:10px; margin-bottom:1px}
     #combo-big{font-size:12px; min-width:64px} #combo-big b{font-size:16px}
-    #queue{padding:3px 10px; gap:6px}
+    #queue{padding:3px 10px; gap:6px; min-height:52px}
     .qslot{padding:2px 5px; min-width:54px} .qslot svg{width:30px; height:30px} .qslot .cost{font-size:11px}
     #quiz{padding:4px 10px 6px}
-    #qtext{font-size:15px; min-height:14px; margin-bottom:4px}
+    #qtext{font-size:19px; min-height:22px; margin-bottom:6px}
+    #qfeedback{height:36px}
     #choices{gap:6px}
     .choice{padding:7px; font-size:14px}
   }
@@ -130,7 +131,14 @@
   @keyframes pulse{50%{box-shadow:0 0 0 6px #e0a93b66}}
   .choice.ok{background:var(--good); color:#fff; border-color:var(--good)}
   .choice.ng{background:var(--bad); color:#fff; border-color:var(--bad)}
-  #qfeedback{font-size:13px; min-height:18px; margin-top:6px; text-align:center; font-weight:700}
+  #assess{align-items:center; gap:10px; padding-top:18px; overflow-y:auto}
+  #assessChoices{display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:460px}
+  #assessQ{font-size:22px; font-weight:800; text-align:center; min-height:30px; line-height:1.3; margin:4px 0}
+  #assessQ .blank{color:var(--ally)}
+  #assessProg{font-weight:800; color:var(--ally)}
+  .assbar{height:10px; width:100%; max-width:460px; background:#0001; border-radius:6px; overflow:hidden}
+  .assbar>i{display:block; height:100%; background:var(--ally); width:0; transition:width .25s}
+  #qfeedback{font-size:15px; height:46px; margin-top:6px; text-align:center; font-weight:700; line-height:1.35; overflow-y:auto}
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:13px; font-weight:700}
   .pill{background:#fff; border:2px solid var(--line); border-radius:999px; padding:3px 10px; font-size:12px}
 
@@ -152,6 +160,11 @@
   /* 召喚: 城門フラッシュ＋ポップ */
   .unit.spawning{animation:spawnPop .45s cubic-bezier(.2,1.4,.4,1)}
   @keyframes spawnPop{0%{transform:translateY(8px) scale(.2); opacity:0} 60%{transform:translateY(-3px) scale(1.12); opacity:1} 100%{transform:translateY(0) scale(1)}}
+  /* 歩行・攻撃アニメ（spriteは .body に内包し、向き/拡大は .unit 側に分離） */
+  .unit .body{position:absolute; inset:0; transform-origin:50% 92%; animation:uwalk .52s ease-in-out infinite}
+  @keyframes uwalk{0%,100%{transform:translateY(0) rotate(-2.5deg)} 50%{transform:translateY(-2.6px) rotate(2.5deg)}}
+  .unit.atk .body{animation:ulunge .26s ease-out}
+  @keyframes ulunge{0%{transform:translateX(0)} 30%{transform:translateX(13px) translateY(-2px) scale(1.07)} 100%{transform:translateX(0)}}
   .gateflash{position:absolute; bottom:8px; width:70px; height:120px; border-radius:8px; pointer-events:none;
     background:radial-gradient(circle, #fff 0%, #bfe0f5aa 40%, transparent 70%); animation:gateGlow .5s ease-out forwards}
   @keyframes gateGlow{from{opacity:.95; transform:scaleY(.6)} to{opacity:0; transform:scaleY(1.15)}}
@@ -202,6 +215,15 @@
   .soundbtn{position:absolute; top:8px; right:10px; z-index:30; border:2px solid var(--line); background:#fff;
     border-radius:999px; width:34px; height:34px; font-size:16px; padding:0}
   .homebtn{position:absolute; top:8px; left:10px; z-index:30; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink)}
+  #dailyPop{position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:24px}
+  #dailyPop.on{display:flex}
+  #dailyPop .card{background:var(--panel); border:3px solid var(--gold); border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.4); animation:badgePop .6s cubic-bezier(.2,1.5,.4,1)}
+  #unitPop{position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:20px}
+  #unitPop.on{display:flex}
+  #unitPop .card{background:var(--panel); border:3px solid var(--ally); border-radius:18px; padding:18px; max-width:360px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,.4); animation:badgePop .5s cubic-bezier(.2,1.5,.4,1)}
+  .qslot .cd{position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:800; background:#9a8f7c; color:#fff; padding:0 4px; border-radius:6px; white-space:nowrap}
+  .qslot.cooling{filter:grayscale(1); opacity:.5; border-style:dashed}
+  .qslot.cooling .rar{opacity:.7}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -219,6 +241,9 @@
   .greveal .gname{font-weight:800;margin-top:2px}
   .greveal .gburst{position:absolute;top:24px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,var(--rc,#fff),transparent 70%);opacity:.45;pointer-events:none;animation:gburst .7s ease-out}
   @keyframes gburst{0%{transform:scale(.2);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+  .unit.slowed{filter:drop-shadow(0 0 4px #5aa0d6) saturate(.6) brightness(1.05)}
+  .quizbar{display:block; width:100%; text-align:left; background:#fff; border:2px solid var(--line); border-radius:14px; padding:12px 14px; font-size:14px; font-weight:700; color:var(--ink); box-shadow:0 2px 0 var(--line)}
+  .quizbar:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
@@ -242,9 +267,22 @@
         <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
         <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
         <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
+        <button class="menubtn" onclick="Game.startAssessment()">📊 実力測定<span class="sub">単語・文法のレベルを判定（推奨級＆コイン報酬）</span></button>
       </div>
       <div class="homeview" data-view="play">
-        <div class="card" style="margin-bottom:12px">
+        <button class="quizbar" id="quizSummaryBtn" data-go="quiz"></button>
+        <div class="seg" id="chapTabs" style="margin:10px 0 4px"></div>
+        <div class="card" id="stageCard">
+          <div style="font-weight:800; margin-bottom:8px" id="chapTitle"></div>
+          <div class="stage-grid" id="stageGrid"></div>
+        </div>
+        <div class="card" id="specialCard" style="display:none">
+          <div style="font-weight:800; margin-bottom:8px">⭐ 特殊ステージ</div>
+          <div id="towerBody"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="quiz">
+        <div class="card">
           <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（ジャンル・難易度を選択。混ぜてもOK）</span></div>
           <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル</div>
           <div class="seg" id="genreSeg"></div>
@@ -255,10 +293,7 @@
           <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
           <div class="seg" id="choiceSeg"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
-        </div>
-        <div class="card">
-          <div style="font-weight:800; margin-bottom:8px">🗺️ ステージ（挑戦）<span class="muted"> ／ 5・10番目はボスエリア・クリアで次が解放</span></div>
-          <div class="stage-grid" id="stageGrid"></div>
+          <div id="assessReco" class="muted" style="margin-top:8px;line-height:1.45"></div>
         </div>
       </div>
       <div class="homeview" data-view="grow">
@@ -344,11 +379,24 @@
     </div>
   </section>
 
+  <!-- ===== 実力測定 ===== -->
+  <section id="assess" class="screen col pad">
+    <div id="assessProg" style="margin-top:4px"></div>
+    <div class="assbar" id="assessBarWrap"><i id="assessBar"></i></div>
+    <div id="assessTicks" style="display:flex; gap:4px; width:100%; max-width:460px"></div>
+    <div id="assessQ"></div>
+    <div id="assessChoices"></div>
+    <div id="assessResult" style="display:none; flex-direction:column; align-items:center; width:100%"></div>
+    <div style="flex:1; min-height:8px"></div>
+    <button class="btn ghost" id="assessSkipBtn" onclick="Game.assessSkip()" style="max-width:240px;opacity:.8">やめる</button>
+  </section>
+
   <!-- ===== リザルト ===== -->
   <section id="result" class="screen pad">
     <div class="big" id="resTitle"></div>
     <div id="resMedals"></div>
     <div class="muted" id="resLearn" style="max-width:420px"></div>
+    <div id="resMistakes" style="max-width:440px;width:100%"></div>
     <div style="height:10px"></div>
     <div id="firstBadge">🏅 はじめて守れた！</div>
     <div style="height:8px"></div>
@@ -1476,7 +1524,57 @@ const ENGLISH_IDIOM_DB = [
   {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"克服する",answer:"get over",desc:"get over = (困難・病気を)克服する。"},
   {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"使い果たす",answer:"run out of",desc:"run out of = 〜を使い果たす。"},
   {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"〜を表す・象徴する",answer:"stand for",desc:"stand for = (略語などが)〜を表す。"},
-  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"中止する",answer:"call off",desc:"call off = (予定を)中止する。"}
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"中止する",answer:"call off",desc:"call off = (予定を)中止する。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"(電源を)つける",answer:"turn on",desc:"turn on = (電気・水道を)つける。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"(電源を)消す",answer:"turn off",desc:"turn off = 消す・止める。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"身につける・着る",answer:"put on",desc:"put on = (服などを)身につける。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"脱ぐ・離陸する",answer:"take off",desc:"take off = 脱ぐ／(飛行機が)離陸する。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"〜出身だ",answer:"come from",desc:"come from = 〜の出身である。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"外出する",answer:"go out",desc:"go out = 外出する。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"〜に着く",answer:"get to",desc:"get to = 〜に到着する。"},
+  {genre:"idiom",level:"e4",tier:"must",type:"choice",name:"たくさんの",answer:"a lot of",desc:"a lot of = たくさんの。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"〜したい",answer:"would like to",desc:"would like to do = 〜したい(丁寧)。"},
+  {genre:"idiom",level:"e4",tier:"basic",type:"choice",name:"〜はどう?",answer:"how about",desc:"How about 〜? = 〜はどうですか。"},
+  {genre:"idiom",level:"e4",tier:"adv",type:"choice",name:"放課後",answer:"after school",desc:"after school = 放課後。"},
+  {genre:"idiom",level:"e4",tier:"adv",type:"choice",name:"散歩する",answer:"take a walk",desc:"take a walk = 散歩する。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜できる",answer:"be able to",desc:"be able to do = 〜できる。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"〜と違う",answer:"be different from",desc:"be different from = 〜と異なる。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜で有名だ",answer:"be famous for",desc:"be famous for = 〜で有名だ。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"写真を撮る",answer:"take a picture",desc:"take a picture = 写真を撮る。"},
+  {genre:"idiom",level:"e3",tier:"must",type:"choice",name:"徒歩で",answer:"on foot",desc:"on foot = 徒歩で。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"お互い",answer:"each other",desc:"each other = お互い。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"例えば",answer:"for example",desc:"for example = 例えば。"},
+  {genre:"idiom",level:"e3",tier:"basic",type:"choice",name:"〜のように見える",answer:"look like",desc:"look like = 〜のように見える。"},
+  {genre:"idiom",level:"e3",tier:"adv",type:"choice",name:"〜を誇りに思う",answer:"be proud of",desc:"be proud of = 〜を誇りに思う。"},
+  {genre:"idiom",level:"e3",tier:"adv",type:"choice",name:"〜でいっぱいだ",answer:"be full of",desc:"be full of = 〜で満ちている。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"〜次第だ・頼る",answer:"depend on",desc:"depend on = 〜に依存する／〜次第だ。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"〜に対処する",answer:"deal with",desc:"deal with = 〜を扱う・対処する。"},
+  {genre:"idiom",level:"ep2",tier:"must",type:"choice",name:"〜に集中する",answer:"focus on",desc:"focus on = 〜に集中する。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"〜に属する",answer:"belong to",desc:"belong to = 〜に所属する。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"〜に似ている",answer:"be similar to",desc:"be similar to = 〜に似ている。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"指摘する",answer:"point out",desc:"point out = (事実を)指摘する。"},
+  {genre:"idiom",level:"ep2",tier:"basic",type:"choice",name:"設立する・準備する",answer:"set up",desc:"set up = 設立する／準備する。"},
+  {genre:"idiom",level:"ep2",tier:"adv",type:"choice",name:"提出する",answer:"hand in",desc:"hand in = (書類を)提出する。"},
+  {genre:"idiom",level:"ep2",tier:"adv",type:"choice",name:"行われる・起こる",answer:"take place",desc:"take place = 行われる・開催される。"},
+  {genre:"idiom",level:"ep2",tier:"adv",type:"choice",name:"〜の代わりに",answer:"instead of",desc:"instead of = 〜の代わりに。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"〜に言及する",answer:"refer to",desc:"refer to = 〜に言及する／参照する。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"〜という結果になる",answer:"result in",desc:"result in = (結果として)〜になる。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"〜から成る",answer:"consist of",desc:"consist of = 〜から構成される。"},
+  {genre:"idiom",level:"e2",tier:"adv",type:"choice",name:"〜を利用する",answer:"take advantage of",desc:"take advantage of = 〜を利用する。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"意味をなす・理解できる",answer:"make sense",desc:"make sense = 意味をなす・道理にかなう。"},
+  {genre:"idiom",level:"e2",tier:"adv",type:"choice",name:"〜に遅れずついていく",answer:"keep up with",desc:"keep up with = 〜に遅れずについていく。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"調査する",answer:"look into",desc:"look into = 〜を調査する。"},
+  {genre:"idiom",level:"e2",tier:"adv",type:"choice",name:"〜しそうだ",answer:"be likely to",desc:"be likely to do = 〜しそうだ。"},
+  {genre:"idiom",level:"e2",tier:"basic",type:"choice",name:"〜と同様に",answer:"as well as",desc:"A as well as B = Bと同様にAも。"},
+  {genre:"idiom",level:"e2",tier:"must",type:"choice",name:"〜が原因で",answer:"due to",desc:"due to = 〜が原因で。"},
+  {genre:"idiom",level:"ep1",tier:"must",type:"choice",name:"(規則に)従う",answer:"comply with",desc:"comply with = (規則・要求に)従う。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"〜を控える",answer:"refrain from",desc:"refrain from = 〜を差し控える。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"(手段に)訴える",answer:"resort to",desc:"resort to = (やむを得ず)〜に訴える。"},
+  {genre:"idiom",level:"ep1",tier:"basic",type:"choice",name:"除外する",answer:"rule out",desc:"rule out = 〜を除外する・排除する。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"選び出す",answer:"single out",desc:"single out = (一つを)選び出す。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"〜を学び直す",answer:"brush up on",desc:"brush up on = (知識を)磨き直す。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"〜を受け入れる",answer:"come to terms with",desc:"come to terms with = (現実)を受け入れる。"},
+  {genre:"idiom",level:"ep1",tier:"adv",type:"choice",name:"〜を考慮して",answer:"in light of",desc:"in light of = 〜を考慮して。"}
 ];
 if (typeof module !== 'undefined') module.exports = { ENGLISH_IDIOM_DB };
 </script>
@@ -1631,7 +1729,134 @@ const SVG = (()=>{
       <path d="M58 16 L60 8 L65 16Z" fill="#e0a93b" stroke="${S}" stroke-width="2"/>
       <path d="M85 56 L97 47 L93 61 L99 66 L85 66Z" fill="#2f3b52" stroke="${S}" stroke-width="3"/>
       <path d="M16 66 Q12 68 16 72" stroke="${S}" stroke-width="2" fill="none"/>`,
+    bat:`<ellipse cx="50" cy="86" rx="18" ry="4" fill="#0002"/>
+      <path d="M48 44 Q14 32 5 52 Q19 49 16 62 Q29 53 32 62 Q40 53 48 60Z" fill="#8a5a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M52 44 Q86 32 95 52 Q81 49 84 62 Q71 53 68 62 Q60 53 52 60Z" fill="#8a5a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M40 32 L37 16 L48 30Z" fill="#8a5a6a" stroke="${S}" stroke-width="2.5"/>
+      <path d="M60 32 L63 16 L52 30Z" fill="#8a5a6a" stroke="${S}" stroke-width="2.5"/>
+      <ellipse cx="50" cy="48" rx="13" ry="15" fill="#a86f80" stroke="${S}" stroke-width="3"/>
+      <circle cx="45" cy="46" r="2.6" fill="${S}"/><circle cx="55" cy="46" r="2.6" fill="${S}"/>
+      <path d="M45 54 L47 58 L50 54 L53 58 L55 54" stroke="#fff" stroke-width="2" fill="none"/>`,
+    golem:`<ellipse cx="50" cy="90" rx="24" ry="5" fill="#0002"/>
+      <rect x="18" y="42" width="12" height="26" rx="5" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="70" y="42" width="12" height="26" rx="5" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="30" y="28" width="40" height="50" rx="9" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="36" y="78" width="11" height="10" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="53" y="78" width="11" height="10" fill="#9a7b5a" stroke="${S}" stroke-width="3"/>
+      <rect x="38" y="40" width="9" height="7" rx="2" fill="#e0a93b" stroke="${S}" stroke-width="2"/>
+      <rect x="53" y="40" width="9" height="7" rx="2" fill="#e0a93b" stroke="${S}" stroke-width="2"/>
+      <path d="M40 60 L60 60" stroke="${S}" stroke-width="3"/>
+      <path d="M34 33 L40 39 M66 33 L60 39" stroke="#76583d" stroke-width="2.5"/>`,
+    bombSlime:`<ellipse cx="50" cy="84" rx="24" ry="5" fill="#0002"/>
+      <path d="M26 74 Q22 42 50 42 Q78 42 74 74 Q60 80 50 74 Q40 80 26 74Z" fill="#e0683b" stroke="${S}" stroke-width="3"/>
+      <circle cx="42" cy="58" r="4" fill="#fff"/><circle cx="58" cy="58" r="4" fill="#fff"/>
+      <circle cx="42" cy="59" r="2" fill="${S}"/><circle cx="58" cy="59" r="2" fill="${S}"/>
+      <path d="M44 66 Q50 70 56 66" stroke="${S}" stroke-width="2" fill="none"/>
+      <path d="M50 42 Q54 32 60 30" stroke="#8a6a3a" stroke-width="2.5" fill="none"/>
+      <circle cx="61" cy="29" r="6" fill="#e0a93b" opacity="0.4"/>
+      <circle cx="61" cy="29" r="3.2" fill="#ffd24a"/>`,
+    splitMush:`<ellipse cx="50" cy="88" rx="20" ry="4" fill="#0002"/>
+      <rect x="40" y="56" width="20" height="28" rx="7" fill="#f0e0c0" stroke="${S}" stroke-width="3"/>
+      <path d="M16 58 Q16 28 50 28 Q84 28 84 58 Q50 70 16 58Z" fill="#d24a3a" stroke="${S}" stroke-width="3"/>
+      <circle cx="34" cy="44" r="5" fill="#ffe3c0"/><circle cx="64" cy="46" r="6" fill="#ffe3c0"/><circle cx="50" cy="37" r="4" fill="#ffe3c0"/>
+      <circle cx="44" cy="70" r="2.6" fill="${S}"/><circle cx="56" cy="70" r="2.6" fill="${S}"/>
+      <path d="M45 76 Q50 79 55 76" stroke="${S}" stroke-width="2" fill="none"/>`,
+    bossThunder:`<ellipse cx="50" cy="92" rx="34" ry="5" fill="#0003"/>
+      <path d="M44 52 Q9 34 3 58 Q20 55 15 70 Q30 59 40 66Z" fill="#5a4a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M56 52 Q91 34 97 58 Q80 55 85 70 Q70 59 60 66Z" fill="#5a4a6a" stroke="${S}" stroke-width="3"/>
+      <path d="M50 30 Q33 34 35 60 Q39 82 50 82 Q61 82 65 60 Q67 34 50 30Z" fill="#6b5a7e" stroke="${S}" stroke-width="3.5"/>
+      <path d="M50 10 L43 30 L57 30Z" fill="#6b5a7e" stroke="${S}" stroke-width="3"/>
+      <path d="M50 13 L46 25 L54 25Z" fill="#e0a93b"/>
+      <path d="M39 41 L48 45 M61 41 L52 45" stroke="${S}" stroke-width="3" fill="none"/>
+      <circle cx="44" cy="47" r="3.2" fill="#e0a93b"/><circle cx="56" cy="47" r="3.2" fill="#e0a93b"/>
+      <path d="M50 51 L43 62 L57 62Z" fill="#e0a93b" stroke="${S}" stroke-width="2.5"/>
+      <path d="M22 62 L17 71 L24 68 L19 79" stroke="#ffd24a" stroke-width="2.5" fill="none"/>
+      <path d="M78 62 L83 71 L76 68 L81 79" stroke="#ffd24a" stroke-width="2.5" fill="none"/>
+      <path d="M44 82 L44 89 M56 82 L56 89" stroke="${S}" stroke-width="3"/>`,
+    cheerTanuki:`<ellipse cx="50" cy="88" rx="22" ry="4" fill="#0002"/>
+      <circle cx="30" cy="28" r="9" fill="#5a6a8a" stroke="${S}" stroke-width="3"/>
+      <circle cx="70" cy="28" r="9" fill="#5a6a8a" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="56" rx="26" ry="28" fill="#5a6a8a" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="64" rx="16" ry="17" fill="#cdd6e6"/>
+      <ellipse cx="40" cy="48" rx="7.5" ry="6.5" fill="#36405a"/>
+      <ellipse cx="60" cy="48" rx="7.5" ry="6.5" fill="#36405a"/>
+      <circle cx="40" cy="48" r="2.6" fill="#fff"/><circle cx="60" cy="48" r="2.6" fill="#fff"/>
+      <circle cx="40" cy="48" r="1.4" fill="${S}"/><circle cx="60" cy="48" r="1.4" fill="${S}"/>
+      <path d="M50 54 L46 58 L54 58Z" fill="${S}"/>
+      <path d="M48 60 Q50 63 52 60" stroke="${S}" stroke-width="2" fill="none"/>
+      <path d="M52 18 Q60 9 65 17 Q58 22 52 18Z" fill="#3a9d57" stroke="${S}" stroke-width="2"/>
+      <path d="M58 13 L52 18" stroke="${S}" stroke-width="2"/>`,
     // --- 城 ---
+    // --- 追加味方 ---
+    ninjaFrog:`<ellipse cx="50" cy="88" rx="26" ry="5" fill="#0002"/>
+      <ellipse cx="50" cy="62" rx="29" ry="25" fill="#5bbf57" stroke="${S}" stroke-width="3"/>
+      <circle cx="37" cy="40" r="11" fill="#7ed06f" stroke="${S}" stroke-width="3"/>
+      <circle cx="63" cy="40" r="11" fill="#7ed06f" stroke="${S}" stroke-width="3"/>
+      <circle cx="37" cy="41" r="3.6" fill="${S}"/><circle cx="63" cy="41" r="3.6" fill="${S}"/>
+      <rect x="20" y="46" width="60" height="9" fill="#d23a3a" stroke="${S}" stroke-width="2"/>
+      <path d="M80 50 l17 -6 l-15 11Z" fill="#d23a3a" stroke="${S}" stroke-width="2"/>
+      <path d="M36 70 q14 11 28 0" fill="none" stroke="${S}" stroke-width="3"/>
+      <rect x="30" y="80" width="11" height="9" rx="3" fill="#5bbf57" stroke="${S}" stroke-width="2"/>
+      <rect x="59" y="80" width="11" height="9" rx="3" fill="#5bbf57" stroke="${S}" stroke-width="2"/>`,
+    steelBull:`<ellipse cx="50" cy="89" rx="30" ry="5" fill="#0002"/>
+      <rect x="26" y="48" width="48" height="34" rx="8" fill="#8a93a8" stroke="${S}" stroke-width="3"/>
+      <rect x="30" y="38" width="40" height="24" rx="9" fill="#aab3c6" stroke="${S}" stroke-width="3"/>
+      <path d="M30 44 q-15 -11 -19 2 q11 2 19 9Z" fill="#e9e2cf" stroke="${S}" stroke-width="2.5"/>
+      <path d="M70 44 q15 -11 19 2 q-11 2 -19 9Z" fill="#e9e2cf" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="42" cy="50" r="3.6" fill="#d23a3a"/><circle cx="58" cy="50" r="3.6" fill="#d23a3a"/>
+      <rect x="45" y="56" width="10" height="5" rx="2" fill="#3a4150"/>
+      <rect x="32" y="80" width="10" height="9" fill="#6a7080" stroke="${S}" stroke-width="2"/>
+      <rect x="58" y="80" width="10" height="9" fill="#6a7080" stroke="${S}" stroke-width="2"/>`,
+    crystalGolem:`<ellipse cx="50" cy="90" rx="34" ry="5" fill="#0002"/>
+      <rect x="28" y="44" width="44" height="42" rx="6" fill="#6fa8d6" stroke="${S}" stroke-width="3.5"/>
+      <path d="M50 16 l11 20 l-22 0Z" fill="#a9d2f0" stroke="${S}" stroke-width="3"/>
+      <path d="M28 50 l-15 9 l15 11Z" fill="#6fa8d6" stroke="${S}" stroke-width="3"/>
+      <path d="M72 50 l15 9 l-15 11Z" fill="#6fa8d6" stroke="${S}" stroke-width="3"/>
+      <circle cx="41" cy="60" r="4.6" fill="#fff"/><circle cx="59" cy="60" r="4.6" fill="#fff"/>
+      <circle cx="41" cy="60" r="2.2" fill="${S}"/><circle cx="59" cy="60" r="2.2" fill="${S}"/>
+      <path d="M40 74 h20" stroke="${S}" stroke-width="3"/>
+      <path d="M45 49 l7 9 l-11 4Z" fill="#a9d2f0" stroke="${S}" stroke-width="2"/>
+      <rect x="34" y="83" width="12" height="8" fill="#4f7fae" stroke="${S}" stroke-width="2.5"/>
+      <rect x="54" y="83" width="12" height="8" fill="#4f7fae" stroke="${S}" stroke-width="2.5"/>`,
+    thunderDragon:`<ellipse cx="50" cy="90" rx="32" ry="5" fill="#0002"/>
+      <path d="M30 78 q-19 -6 -23 -27 q17 8 23 15Z" fill="#c9a23a" stroke="${S}" stroke-width="3"/>
+      <path d="M70 78 q19 -6 23 -27 q-17 8 -23 15Z" fill="#c9a23a" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="50" cy="62" rx="24" ry="22" fill="#e0c14a" stroke="${S}" stroke-width="3.5"/>
+      <path d="M50 22 q15 4 17 21 q-17 -7 -34 0 q2 -17 17 -21Z" fill="#f0d56a" stroke="${S}" stroke-width="3"/>
+      <circle cx="42" cy="41" r="3.8" fill="${S}"/><circle cx="58" cy="41" r="3.8" fill="${S}"/>
+      <path d="M40 30 l-7 -13 l11 9Z" fill="#f0d56a" stroke="${S}" stroke-width="2"/>
+      <path d="M60 30 l7 -13 l-11 9Z" fill="#f0d56a" stroke="${S}" stroke-width="2"/>
+      <path d="M44 50 q6 5 12 0" fill="none" stroke="${S}" stroke-width="2.5"/>
+      <path d="M51 56 l-8 16 l8 -4 l8 4Z" fill="#fff36a" stroke="${S}" stroke-width="2"/>`,
+    // --- 追加敵 ---
+    ghost:`<ellipse cx="50" cy="91" rx="19" ry="4" fill="#0002"/>
+      <path d="M28 56 q0 -34 22 -34 q22 0 22 34 l0 23 q-5 -7 -9 0 q-4 7 -9 0 q-4 -7 -8 0 q-4 7 -9 0Z" fill="#dfe6ef" stroke="${S}" stroke-width="3"/>
+      <circle cx="42" cy="48" r="4.6" fill="${S}"/><circle cx="58" cy="48" r="4.6" fill="${S}"/>
+      <ellipse cx="50" cy="61" rx="5" ry="7" fill="${S}"/>`,
+    mummy:`<ellipse cx="50" cy="89" rx="24" ry="5" fill="#0002"/>
+      <rect x="34" y="32" width="32" height="52" rx="14" fill="#cdbf9a" stroke="${S}" stroke-width="3"/>
+      <path d="M34 44 l32 6 M66 56 l-32 6 M34 68 l32 6" stroke="${S}" stroke-width="2" fill="none"/>
+      <rect x="39" y="47" width="9" height="5" fill="#d23a3a"/>
+      <rect x="52" y="47" width="9" height="5" fill="#d23a3a"/>
+      <path d="M32 52 l-12 13 l9 -1" fill="#cdbf9a" stroke="${S}" stroke-width="2.5"/>
+      <rect x="38" y="80" width="10" height="8" fill="#b6a781" stroke="${S}" stroke-width="2"/>
+      <rect x="52" y="80" width="10" height="8" fill="#b6a781" stroke="${S}" stroke-width="2"/>`,
+    darkMage:`<ellipse cx="50" cy="90" rx="22" ry="4" fill="#0002"/>
+      <path d="M50 22 q-22 4 -22 40 l0 22 l44 0 l0 -22 q0 -36 -22 -40Z" fill="#5a4a8a" stroke="${S}" stroke-width="3"/>
+      <path d="M50 22 q-15 3 -17 23 q17 -8 34 0 q-2 -20 -17 -23Z" fill="#3a2f5c" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="43" cy="45" r="3" fill="#d23a3a"/><circle cx="57" cy="45" r="3" fill="#d23a3a"/>
+      <rect x="71" y="48" width="6" height="38" fill="#7a5a3a" stroke="${S}" stroke-width="2"/>
+      <circle cx="74" cy="46" r="7" fill="#b86bd6" stroke="${S}" stroke-width="2.5"/>`,
+    stoneGiant:`<ellipse cx="50" cy="91" rx="34" ry="5" fill="#0002"/>
+      <rect x="14" y="46" width="14" height="30" rx="5" fill="#8f8576" stroke="${S}" stroke-width="3"/>
+      <rect x="72" y="46" width="14" height="30" rx="5" fill="#8f8576" stroke="${S}" stroke-width="3"/>
+      <rect x="26" y="40" width="48" height="46" rx="8" fill="#9a907f" stroke="${S}" stroke-width="3.5"/>
+      <rect x="34" y="26" width="32" height="24" rx="6" fill="#a89d88" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="37" r="4" fill="#e0a93b"/><circle cx="57" cy="37" r="4" fill="#e0a93b"/>
+      <path d="M40 46 h20" stroke="${S}" stroke-width="3"/>
+      <path d="M30 60 l11 4 M59 66 l11 -4" stroke="${S}" stroke-width="2" fill="none"/>
+      <rect x="34" y="82" width="13" height="8" fill="#6f675b" stroke="${S}" stroke-width="2.5"/>
+      <rect x="53" y="82" width="13" height="8" fill="#6f675b" stroke="${S}" stroke-width="2.5"/>`,
     castleA:`<rect x="14" y="40" width="36" height="74" fill="#8fb98f" stroke="${S}" stroke-width="3"/>
       <path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="#6fa06f" stroke="${S}" stroke-width="3"/>
       <rect x="26" y="64" width="14" height="50" fill="#3a5f3a"/>
@@ -1650,11 +1875,96 @@ const SVG = (()=>{
 /* =========================================================================
    §1  問題エンジン（学習レイヤー＝燃料）— ステージから独立
    ========================================================================= */
+
+const ENGLISH_QUESTION_DB_BATCH3 = [
+  {"genre":"word","diff":"junior","type":"typing","name":"跳ぶ","answer":"jump","hint":"j__p / 跳ぶ","desc":"jump = 跳ぶ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"歌う","answer":"sing","hint":"s__g / 歌う","desc":"sing = 歌う。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"洗う","answer":"wash","hint":"w__h / 洗う","desc":"wash = 洗う。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"飛ぶ","answer":"fly","hint":"f_y / 飛ぶ","desc":"fly = 飛ぶ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"押す","answer":"push","hint":"p__h / 押す","desc":"push = 押す。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"引く","answer":"pull","hint":"p__l / 引く","desc":"pull = 引く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"登る","answer":"climb","hint":"c___b / 登る","desc":"climb = 登る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"乗る","answer":"ride","hint":"r__e / 乗る","desc":"ride = 乗る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"運転する","answer":"drive","hint":"d___e / 運転する","desc":"drive = 運転する。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"笑う","answer":"laugh","hint":"l___h / 笑う","desc":"laugh = 笑う。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"泣く","answer":"cry","hint":"c_y / 泣く","desc":"cry = 泣く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"眠る","answer":"sleep","hint":"s___p / 眠る","desc":"sleep = 眠る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"立つ","answer":"stand","hint":"s___d / 立つ","desc":"stand = 立つ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"座る","answer":"sit","hint":"s_t / 座る","desc":"sit = 座る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"切る","answer":"cut","hint":"c_t / 切る","desc":"cut = 切る。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"動く","answer":"move","hint":"m__e / 動く","desc":"move = 動く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"働く","answer":"work","hint":"w__k / 働く","desc":"work = 働く。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"住む","answer":"live","hint":"l__e / 住む","desc":"live = 住む。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"育つ","answer":"grow","hint":"g__w / 育つ","desc":"grow = 育つ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"見せる","answer":"show","hint":"s__w / 見せる","desc":"show = 見せる。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"首","answer":"neck","hint":"n__k / 首","desc":"neck = 首。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"帽子","answer":"hat","hint":"h_t / 帽子","desc":"hat = 帽子。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"くつ","answer":"shoes","hint":"s___s / くつ","desc":"shoes = くつ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"シャツ","answer":"shirt","hint":"s___t / シャツ","desc":"shirt = シャツ。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"服","answer":"clothes","hint":"c_____s / 服","desc":"clothes = 服。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"贈り物","answer":"gift","hint":"g__t / 贈り物","desc":"gift = 贈り物。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"物語","answer":"story","hint":"s___y / 物語","desc":"story = 物語。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"飛行機","answer":"airplane","hint":"a______e / 飛行機","desc":"airplane = 飛行機。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"空","answer":"sky","hint":"s_y / 空","desc":"sky = 空。中学英語の基本単語。"},
+  {"genre":"word","diff":"junior","type":"typing","name":"あたたかい","answer":"warm","hint":"w__m / あたたかい","desc":"warm = あたたかい。中学英語の基本単語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"場所","answer":"place","hint":"p___e / 場所","desc":"place = 場所。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"世界","answer":"world","hint":"w___d / 世界","desc":"world = 世界。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"都市","answer":"city","hint":"c__y / 都市","desc":"city = 都市。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"店","answer":"store","hint":"s___e / 店","desc":"store = 店。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"工場","answer":"factory","hint":"f_____y / 工場","desc":"factory = 工場。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"会社","answer":"company","hint":"c_____y / 会社","desc":"company = 会社。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"事務所","answer":"office","hint":"o____e / 事務所","desc":"office = 事務所。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"医者","answer":"doctor","hint":"d____r / 医者","desc":"doctor = 医者。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"看護師","answer":"nurse","hint":"n___e / 看護師","desc":"nurse = 看護師。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"警察","answer":"police","hint":"p____e / 警察","desc":"police = 警察。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"農家","answer":"farmer","hint":"f____r / 農家","desc":"farmer = 農家。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"歌手","answer":"singer","hint":"s____r / 歌手","desc":"singer = 歌手。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"俳優","answer":"actor","hint":"a___r / 俳優","desc":"actor = 俳優。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"芸術家","answer":"artist","hint":"a____t / 芸術家","desc":"artist = 芸術家。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"科学者","answer":"scientist","hint":"s_______t / 科学者","desc":"scientist = 科学者。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"選手","answer":"player","hint":"p____r / 選手","desc":"player = 選手。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"隣人","answer":"neighbor","hint":"n______r / 隣人","desc":"neighbor = 隣人。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"大人","answer":"adult","hint":"a___t / 大人","desc":"adult = 大人。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"子ども","answer":"child","hint":"c___d / 子ども","desc":"child = 子ども。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"赤ちゃん","answer":"baby","hint":"b__y / 赤ちゃん","desc":"baby = 赤ちゃん。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"数える","answer":"count","hint":"c___t / 数える","desc":"count = 数える。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"健康な","answer":"healthy","hint":"h_____y / 健康な","desc":"healthy = 健康な。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"病気の","answer":"sick","hint":"s__k / 病気の","desc":"sick = 病気の。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"正しい","answer":"correct","hint":"c_____t / 正しい","desc":"correct = 正しい。高校受験でよく出る語。"},
+  {"genre":"word","diff":"mid","type":"typing","name":"本当の","answer":"true","hint":"t__e / 本当の","desc":"true = 本当の。高校受験でよく出る語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"状況","answer":"situation","hint":"s_______n / 状況","desc":"situation = 状況。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"事実","answer":"fact","hint":"f__t / 事実","desc":"fact = 事実。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"原因","answer":"cause","hint":"c___e / 原因","desc":"cause = 原因。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"解決","answer":"solution","hint":"s______n / 解決","desc":"solution = 解決。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"減る","answer":"decrease","hint":"d______e / 減る","desc":"decrease = 減る。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"議論する","answer":"discuss","hint":"d_____s / 議論する","desc":"discuss = 議論する。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"複雑な","answer":"complex","hint":"c_____x / 複雑な","desc":"complex = 複雑な。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"単純な","answer":"simple","hint":"s____e / 単純な","desc":"simple = 単純な。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"効果的な","answer":"effective","hint":"e_______e / 効果的な","desc":"effective = 効果的な。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"価値","answer":"value","hint":"v___e / 価値","desc":"value = 価値。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"方向","answer":"direction","hint":"d_______n / 方向","desc":"direction = 方向。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"速度","answer":"speed","hint":"s___d / 速度","desc":"speed = 速度。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"距離","answer":"distance","hint":"d______e / 距離","desc":"distance = 距離。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"量","answer":"amount","hint":"a____t / 量","desc":"amount = 量。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"senior","type":"typing","name":"材料","answer":"material","hint":"m______l / 材料","desc":"material = 材料。入試の長文で役立つ語。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"重要性","answer":"importance","hint":"i________e / 重要性","desc":"importance = 重要性。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"多様性","answer":"diversity","hint":"d_______y / 多様性","desc":"diversity = 多様性。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"意識","answer":"awareness","hint":"a_______s / 意識","desc":"awareness = 意識。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"態度","answer":"attitude","hint":"a______e / 態度","desc":"attitude = 態度。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"行動","answer":"behavior","hint":"b______r / 行動","desc":"behavior = 行動。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"進歩","answer":"progress","hint":"p______s / 進歩","desc":"progress = 進歩。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"達成","answer":"achievement","hint":"a_________t / 達成","desc":"achievement = 達成。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"効率","answer":"efficiency","hint":"e________y / 効率","desc":"efficiency = 効率。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"独立","answer":"independence","hint":"i__________e / 独立","desc":"independence = 独立。難関校レベルの語彙。"},
+  {"genre":"word","diff":"supreme","type":"typing","name":"民主主義","answer":"democracy","hint":"d_______y / 民主主義","desc":"democracy = 民主主義。難関校レベルの語彙。"}
+];
+
 const QuizEngine = (()=>{
   // データ統合（本物が読めなければフォールバック）
   let DB = [];
   try{ if(typeof ENGLISH_QUESTION_DB!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB); }catch(e){}
   try{ if(typeof ENGLISH_QUESTION_DB_BATCH2!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB_BATCH2); }catch(e){}
+  try{ if(typeof ENGLISH_QUESTION_DB_BATCH3!=='undefined') DB = DB.concat(ENGLISH_QUESTION_DB_BATCH3); }catch(e){}
   try{ if(typeof ENGLISH_IDIOM_DB!=='undefined') DB = DB.concat(ENGLISH_IDIOM_DB); }catch(e){}
   if(DB.length===0){
     DB = [
@@ -1702,7 +2012,10 @@ const QuizEngine = (()=>{
         else if(q.diff==="supreme") q.level=(i%2? "ep1":"e2");
         else q.level="e4";
       }
-      if(!q.tier) q.tier = TIER_ORDER[i%3];
+      if(!q.tier){
+        if(q.genre==="grammar"){ var __L=(q.question||"").length; q.tier = __L<20?"must":(__L<32?"basic":"adv"); }
+        else { var __a=(q.answer||"").length; q.tier = __a<=4?"must":(__a<=7?"basic":"adv"); }
+      }
       i++;
     });
   })();
@@ -1735,7 +2048,7 @@ const QuizEngine = (()=>{
       qtext = `<span class="blank">${q.answer}</span> = ?`;
       labels = [q.name, ...distract.map(w=>w.name)];
     }else{
-      qtext = `「${q.name}」は英語で？`;
+      qtext = `${q.name} = ?`;
       labels = [q.answer, ...distract.map(w=>w.answer)];
     }
     const correct = labels[0];
@@ -1759,6 +2072,12 @@ const QuizEngine = (()=>{
   function pushReview(built){ if(!built) return; reviewQ.push(Object.assign({}, built, {review:true, locked:false})); if(reviewQ.length>20) reviewQ.shift(); }
   function reviewCount(){ return reviewQ.length; }
 
+  function drawFor(genre, level, choiceCount){
+    var p=DB.filter(function(q){ return q.genre===genre && q.level===level; });
+    if(!p.length) return null;
+    var q=rnd(p);
+    return q.genre==="grammar" ? buildGrammar(q, choiceCount) : buildWord(q, choiceCount);
+  }
   function next(choiceCount){
     if(reviewQ.length && Math.random()<0.35){
       const __i=reviewQ.findIndex(r=>selGenres.has(r.genre));
@@ -1790,7 +2109,7 @@ const QuizEngine = (()=>{
   function toggleTier(k){ toggleIn(selTiers,k); }
   function toggleGenre(k){ toggleIn(selGenres,k); }
 
-  return { next, comboGain, pushReview, reviewCount, size:()=>DB.length,
+  return { next, drawFor, comboGain, pushReview, reviewCount, size:()=>DB.length,
     EIKEN, TIERS, GENRES, LV_LABEL, LV_ORDER,
     getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount,
     has:(t,k)=>(t==='level'?selLevels:t==='tier'?selTiers:selGenres).has(k) };
@@ -1800,16 +2119,21 @@ const QuizEngine = (()=>{
    §2  味方ロスター / レアリティ / コスト（召喚キューの元）
    ========================================================================= */
 const ROSTER = {
-  guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:120, atk:14, speed:34, range:42, weight:46},
-  arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, weight:26},
-  moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, weight:14},
-  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8},
-  dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, weight:34},
-  bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:16, speed:36, range:74, splash:true, weight:16},
-  healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:130, atk:5, speed:30, range:64, heal:10, weight:9},
-  shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, weight:20},
-  owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, weight:11},
-  orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7}
+  guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:120, atk:14, speed:34, range:42, weight:46, scd:1.5},
+  arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, pierce:true, weight:26, scd:2.0},
+  moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, knockback:16, weight:14, scd:5.0},
+  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8, scd:7.0},
+  dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, weight:34, scd:1.0},
+  bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:16, speed:36, range:74, splash:true, weight:16, scd:3.0},
+  healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:130, atk:5, speed:30, range:64, heal:10, weight:9, scd:4.5},
+  shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, def:8, weight:20, scd:3.5},
+  owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, slow:true, weight:11, scd:4.5},
+  orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7, scd:6.5},
+  cheerTanuki:{name:"応援タヌキ", sprite:"cheerTanuki", rar:"SR", rarColor:"#8e44ad", cost:78, hp:150, atk:12, speed:30, range:120, buff:0.3, weight:10, scd:4.0},
+  ninjaFrog:{name:"忍びガエル", sprite:"ninjaFrog", rar:"R", rarColor:"#2f7dd1", cost:48, hp:90, atk:30, speed:58, range:42, weight:18, scd:2.5},
+  steelBull:{name:"鋼の猛牛", sprite:"steelBull", rar:"SR", rarColor:"#8e44ad", cost:96, hp:340, atk:34, speed:26, range:46, knockback:18, weight:10, scd:5.0},
+  crystalGolem:{name:"水晶ゴーレム", sprite:"crystalGolem", rar:"SSR", rarColor:"#e0683b", cost:155, hp:760, atk:34, speed:18, range:50, def:14, scale:1.5, weight:6, scd:8.0},
+  thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:24, range:150, splash:true, scale:1.5, weight:5, scd:9.0}
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
@@ -1827,10 +2151,13 @@ function buildEnemyWaves(area, boss){
     W.push({at:t(8.0), type:"BOSS"});
     push(t(14),"slime",3,1200); // ボスの取り巻き
     if(area>=6) push(t(20),"torii",2,1500);
+    if(area>=11){ push(t(14),"bat",3,700); push(t(20),"golem",2,1600); }
+    // ボス戦の持続取り巻き
+    for(let k=0;k<7;k++){ const base=24+k*8; push(t(base),"slime",4,500); push(t(base+3),area>=6?"torii":"totem",2,800); if(area>=11) push(t(base+5),"bat",3,500); }
     return W;
   }
   const dens = 1 + area*0.12;
-  const tank = area>=6 ? "torii" : "totem"; // 後半は硬い鳥居
+  const tank = area>=11 ? "golem" : area>=6 ? "torii" : "totem"; // 後半ほど硬い
   push(t(1.0),"slime", Math.round(2*dens), 1100);            // 緩
   push(t(6.0),"hare",  Math.round(2*dens), 700);             // 急
   push(t(6.4),"slime", Math.round(2*dens), 900);
@@ -1839,24 +2166,42 @@ function buildEnemyWaves(area, boss){
   push(t(18),"slime", Math.round(3*dens), 600);              // 急々ラッシュ
   push(t(18.3),"hare",Math.round(2*dens), 600);
   if(area>=3) push(t(10),"slinger", Math.max(1,Math.round(area*0.35)), 1300); // 遠距離で揺さぶり
+  if(area>=11){ push(t(8),"bat", Math.round(2*dens), 600); push(t(15),"bombSlime", Math.max(1,Math.round(area*0.2)), 1100); push(t(17),"splitMush", 1, 0); push(t(20),"bat", 2, 500); }
+  if(area>=4) push(t(9),"ghost", Math.max(1,Math.round(1+area*0.3)), 650);
+  if(area>=6) push(t(15),"mummy", Math.max(1,Math.round(area*0.3)), 1100);
+  if(area>=7) push(t(12),"darkMage", Math.max(1,Math.round(1+area*0.25)), 1100);
+  if(area>=12){ push(t(16),"stoneGiant", 1, 0); push(t(22),"stoneGiant", 1, 0); }
   if(area>=8) push(t(19),tank, 2, 900);
+  // 持続フェーズ：中盤以降も切れ目なく前線を維持（戦闘を2〜3分の歯ごたえに）
+  for(let k=0;k<7;k++){
+    const base=24+k*7;
+    push(t(base),"slime", Math.round(3*dens), 450);
+    push(t(base+2),"hare", Math.max(1,Math.round(2.5*dens)), 450);
+    push(t(base+3.5), tank, Math.max(1,Math.round(1+area*0.5)), 900);
+    if(area>=3) push(t(base+1.5),"slinger", Math.max(1,Math.round(1+area*0.3)), 800);
+    if(area>=11 && k%2===0) push(t(base+5),"bombSlime", Math.max(1,Math.round(area*0.3)), 800);
+    if(area>=4 && k%3===1) push(t(base+5.5),"ghost", 2, 500);
+    if(area>=7 && k%3===2) push(t(base+6),"mummy", 1, 0);
+    if(area>=12 && k%4===3) push(t(base+6.5),"stoneGiant", 1, 0);
+  }
   return W;
 }
 const WORLD_NAMES = ["やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
-                     "霧の森","氷river","砂漠の遺構","雷鳴の谷","鳥居の社"];
-const NORMAL_SPRITE = ["slime","hare","totem","slime","slime","hare","totem","torii","slime","torii"];
+                     "霧の森","氷river","砂漠の遺構","雷鳴の谷","鳥居の社",
+                     "嵐の入口","雷雲の道","紫電の谷","暴風の砦","雷鳴の玉座"];
+const NORMAL_SPRITE = ["slime","hare","totem","slime","slime","hare","totem","torii","slime","torii","bat","golem","bombSlime","splitMush","bat"];
 function makeStages(){
   const arr=[];
-  for(let a=1;a<=10;a++){
+  for(let a=1;a<=15;a++){
     const boss = (a%5===0);
     arr.push({
       id:a, area:a, boss,
-      name: boss ? (a===5?"巨石の王・モアイ":"黄金のトーテム大王") : WORLD_NAMES[a-1],
-      sprite: boss ? (a===5?"bossMoai":"bossTotem") : NORMAL_SPRITE[a-1],
-      world: a<=5?1:2,
-      enemyHpMul: Math.pow(1.18, a-1),
-      enemyAtkMul: Math.pow(1.12, a-1),
-      castleEHp: boss? Math.round(1300*Math.pow(1.15,(a/5)-1)) : Math.round(420*Math.pow(1.2,a-1)),
+      name: boss ? (a===5?"巨石の王・モアイ": a===10?"黄金のトーテム大王":"雷鳴の覇者・雷鳥大王") : WORLD_NAMES[a-1],
+      sprite: boss ? (a===5?"bossMoai": a===10?"bossTotem":"bossThunder") : NORMAL_SPRITE[a-1],
+      world: a<=5?1:(a<=10?2:3),
+      enemyHpMul: 1.3*Math.pow(1.18, a-1),
+      enemyAtkMul: 1.2*Math.pow(1.12, a-1),
+      castleEHp: boss? Math.round(4000*Math.pow(1.15,(a/5)-1)) : Math.round(7000*Math.pow(1.06,a-1)),
       waves: buildEnemyWaves(a, boss)
     });
   }
@@ -1867,7 +2212,15 @@ const ENEMY_TYPES = {
   hare: {name:"はやウサ",sprite:"hare", hp:42, atk:7, speed:46, range:40},
   totem:{name:"トーテム",sprite:"totem",hp:160,atk:13,speed:18, range:44},
   torii:{name:"トリイ",  sprite:"torii",hp:240,atk:15,speed:16, range:44},
-  slinger:{name:"つぶて鬼", sprite:"slinger", hp:75, atk:12, speed:20, range:115}
+  slinger:{name:"つぶて鬼", sprite:"slinger", hp:75, atk:12, speed:20, range:115},
+  bat:{name:"コウモリ", sprite:"bat", hp:50, atk:8, speed:58, range:40},
+  golem:{name:"盾ゴーレム", sprite:"golem", hp:230, atk:15, speed:14, range:44, def:6},
+  bombSlime:{name:"ボムスライム", sprite:"bombSlime", hp:70, atk:6, speed:30, range:40, bomb:35},
+  splitMush:{name:"分裂キノコ", sprite:"splitMush", hp:120, atk:11, speed:20, range:42, split:"slime"},
+  ghost:{name:"おばけ", sprite:"ghost", hp:95, atk:16, speed:60, range:40},
+  mummy:{name:"ミイラ兵", sprite:"mummy", hp:320, atk:18, speed:15, range:44},
+  darkMage:{name:"くらやみ術師", sprite:"darkMage", hp:120, atk:21, speed:17, range:120},
+  stoneGiant:{name:"岩の巨人", sprite:"stoneGiant", hp:560, atk:26, speed:12, range:50, scale:1.5}
 };
 const BOSS_BASE = {atk:26, speed:13, range:70, hp:1000};
 
@@ -1889,7 +2242,13 @@ const Game = (()=>{
   let regenLv = 0;         // エネルギー増加速度Lv
   let enMaxLv = 0;         // エネルギー上限Lv
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
-  let homeView = 'menu';   // ホームの表示(menu/play/grow/settings)
+  let homeView = 'menu';   // ホームの表示(menu/play/grow/settings/quiz)
+  let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
+  let towerBest = 0;       // 修練の塔の最高階
+  let lastDaily = '';      // デイリー受取日(YYYY-M-D)
+  let clockTs = 0;         // 観測した最大の実時刻(ms)。カレンダー巻き戻し対策（単調増加）
+  let goldDay = '';        // クリア報酬上限の集計日(YYYY-M-D)
+  let dailyStageGold = 0;  // 本日ステージクリアで得たゴールド
   let curStage = null;
 
   let soundOn = true;
@@ -1899,12 +2258,16 @@ const Game = (()=>{
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
+      towerBest=s.towerBest||0; lastDaily=s.lastDaily||'';
+      clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
+      if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv})); }catch(e){}
+    guardedNow();
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -1913,11 +2276,20 @@ const Game = (()=>{
   const RARITY_W = {N:58, R:28, SR:11, SSR:3};
   let lastGacha = null;
   function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
+  const STARTERS=['guardTurtle','dashFox','arrowBird','ninjaFrog','shieldBear'];
   function ensureStarter(){
-    if(Object.keys(owned).length===0){ owned={guardTurtle:1, arrowBird:1, dashFox:1}; }
-    deck = deck.filter(function(k){return owned[k];});
-    if(deck.length===0){ deck = Object.keys(owned).slice(0,5); }
+    // 初期キャラ5体は必ず所持（編成5枠固定の前提・既存セーブにも不足分を付与）
+    STARTERS.forEach(function(k){ if(!owned[k]) owned[k]=1; });
+    deck = deck.filter(function(k){return owned[k] && ROSTER[k];});
+    // 5枠固定：足りなければ手持ちから補充、多ければ5体に切り詰め
+    var pool=Object.keys(owned).filter(function(k){return ROSTER[k];});
+    for(var i=0;i<pool.length && deck.length<5;i++){ if(deck.indexOf(pool[i])<0) deck.push(pool[i]); }
     if(deck.length>5) deck = deck.slice(0,5);
+  }
+  function swapDeck(outKey, inKey){
+    if(!owned[inKey]||!ROSTER[inKey]) return;
+    var i=deck.indexOf(outKey); if(i<0||deck.indexOf(inKey)>=0) return;
+    deck[i]=inKey; save(); renderHome();
   }
   function castleMaxHp(){ return 1000 + castleLv*250; }
   function castleUpCost(){ return 250*(castleLv+1); }
@@ -1953,7 +2325,7 @@ const Game = (()=>{
     const b=document.createElement('button');
     b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid '+(selected?'var(--good)':'var(--line)')+';background:'+(selected?'#eafaef':'#fff')+';border-radius:12px;padding:6px 8px;min-width:62px;position:relative';
     b.innerHTML='<span style="position:absolute;top:-8px;left:-4px;font-size:10px;font-weight:800;color:#fff;background:'+r.rarColor+';padding:0 4px;border-radius:6px">'+r.rar+'</span><span style="width:40px;height:40px;display:block">'+SVG.get(r.sprite)+'</span><span style="font-size:11px;font-weight:700">'+r.name+'</span>'+(unitStars(key)?'<span style="font-size:10px;color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'');
-    b.addEventListener('click',function(){toggleDeck(key);});
+    b.addEventListener('click',function(){openUnitPop(key,'deck');});
     return b;
   }
   /* ---- ガチャ演出 ---- */
@@ -1991,6 +2363,61 @@ const Game = (()=>{
   function unitStars(key){ return Math.min(4, Math.max(0, (owned[key]||0)-1)); }
   function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
   function upgradeUnit(key){ if(!owned[key]) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
+  function statsAtLv(key, lv){ const r=ROSTER[key], st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
+  function traitText(r){ var t=[];
+    if(r.range>=110) t.push('遠距離'); if(r.splash) t.push('範囲攻撃'); if(r.pierce) t.push('貫通');
+    if(r.knockback) t.push('ノックバック'); if(r.heal) t.push('味方を回復'); if(r.slow) t.push('敵を遅くする');
+    if(r.def) t.push('防御'+r.def); if(r.buff) t.push('味方強化+'+Math.round(r.buff*100)+'%'); if(r.scale) t.push('巨体');
+    return t.length?t.join('・'):'バランス型'; }
+  // クリック→詳細ポップアップ（mode: 'deck'=編成 / 'charup'=強化）
+  function openUnitPop(key, mode){
+    if(!ROSTER[key]) return;
+    const r=ROSTER[key], lv=unitLevel(key), star=unitStars(key), cur=unitStats(key);
+    const card=$('unitPopCard'); if(!card) return;
+    function stat(lbl,val){ return '<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:6px;text-align:center"><div class="muted" style="font-size:11px">'+lbl+'</div><div style="font-weight:800;font-size:15px">'+val+'</div></div>'; }
+    let h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+    h+='<span style="width:54px;height:54px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>';
+    h+='<div style="flex:1;min-width:0;text-align:left"><div style="font-weight:800;font-size:18px">'+r.name+' <span style="font-size:12px;color:#fff;background:'+r.rarColor+';padding:1px 6px;border-radius:6px">'+r.rar+'</span></div>';
+    h+='<div class="muted" style="font-size:12px">Lv'+lv+(star?'　<span style="color:var(--gold)">'+'★'.repeat(star)+'</span>':'')+'</div></div></div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
+    h+=stat('コスト','⚡'+r.cost)+stat('クールダウン',summonCd(key)+'秒')+stat('攻撃力','⚔'+cur.atk);
+    h+=stat('HP','♥'+cur.hp)+stat('射程',r.range)+stat('速さ',r.speed)+'</div>';
+    h+='<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:7px;margin-bottom:10px;font-size:13px"><span class="muted">とくせい：</span><b>'+traitText(r)+'</b></div>';
+    card.innerHTML=h;
+    const acts=document.createElement('div'); acts.style.cssText='display:flex;flex-direction:column;gap:8px';
+    if(mode==='deck'){
+      const inDeck=deck.indexOf(key)>=0;
+      if(inDeck){
+        const ba=document.createElement('button'); ba.className='btn ghost'; ba.style.width='100%'; ba.disabled=true;
+        ba.textContent='✓ 編成中（5体固定・入れ替えで変更）'; acts.appendChild(ba);
+      } else if(deck.length<5){
+        const ba=document.createElement('button'); ba.className='btn'; ba.style.width='100%'; ba.textContent='編成にいれる';
+        ba.onclick=function(){ toggleDeck(key); closeUnitPop(); }; acts.appendChild(ba);
+      } else {
+        const lbl=document.createElement('div'); lbl.className='muted'; lbl.style.cssText='font-size:13px;text-align:center'; lbl.textContent='どのキャラと入れ替える？';
+        acts.appendChild(lbl);
+        const grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px';
+        deck.forEach(function(dk){ const rb=ROSTER[dk]; if(!rb) return;
+          const sb=document.createElement('button'); sb.className='btn ghost'; sb.style.cssText='display:flex;align-items:center;gap:6px;justify-content:flex-start;padding:6px;font-size:12px';
+          sb.innerHTML='<span style="width:28px;height:28px;display:block;flex:0 0 auto">'+SVG.get(rb.sprite)+'</span><span style="font-weight:700">'+rb.name+'</span>';
+          sb.onclick=function(){ swapDeck(dk, key); closeUnitPop(); };
+          grid.appendChild(sb); });
+        acts.appendChild(grid);
+      }
+    } else {
+      const c=unitUpCost(key), nx=statsAtLv(key, lv+1);
+      const pv=document.createElement('div'); pv.className='muted'; pv.style.cssText='font-size:12px;text-align:center';
+      pv.innerHTML='強化すると ⚔'+cur.atk+'→<b style="color:var(--good)">'+nx.atk+'</b>　♥'+cur.hp+'→<b style="color:var(--good)">'+nx.hp+'</b>';
+      acts.appendChild(pv);
+      const bu=document.createElement('button'); bu.className='btn'; bu.style.width='100%'; bu.textContent='強化する（'+c+'G）'; bu.disabled=gold<c;
+      bu.onclick=function(){ upgradeUnit(key); openUnitPop(key,'charup'); };
+      acts.appendChild(bu);
+    }
+    const bc=document.createElement('button'); bc.className='btn ghost'; bc.style.width='100%'; bc.textContent='キャンセル'; bc.onclick=closeUnitPop;
+    acts.appendChild(bc); card.appendChild(acts);
+    $('unitPop').classList.add('on');
+  }
+  function closeUnitPop(){ var p=$('unitPop'); if(p) p.classList.remove('on'); }
   function renderGachaList(){
     const body=$('gachaListBody'); if(!body) return; body.innerHTML='';
     let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
@@ -2013,14 +2440,15 @@ const Game = (()=>{
     const body=$('charupBody'); if(!body) return; body.innerHTML='';
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
     Object.keys(owned).forEach(function(key){
+      if(!ROSTER[key]) return;
       const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key);
-      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff';
+      const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;width:100%;text-align:left;cursor:pointer';
       row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
         '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span> '+(unitStars(key)?'<span style="color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'')+'</div>'+
-        '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'</div></div>';
-      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)';
-      btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',function(){upgradeUnit(key);});
-      row.appendChild(btn); list.appendChild(row);
+        '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'　CD'+summonCd(key)+'秒</div></div>'+
+        '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:'+(gold>=cost?'var(--ally)':'var(--muted)')+'">強化 '+cost+'G ▸</span>';
+      row.addEventListener('click',function(){openUnitPop(key,'charup');});
+      list.appendChild(row);
     });
     body.appendChild(list);
   }
@@ -2050,14 +2478,14 @@ const Game = (()=>{
     const row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
     for(let i=0;i<5;i++){
       const slot=document.createElement('div'); slot.style.cssText='width:54px;height:54px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px '+(deck[i]?'solid var(--ally)':'dashed var(--line)');
-      if(deck[i]) slot.innerHTML='<span style="width:42px;height:42px;display:block">'+SVG.get(ROSTER[deck[i]].sprite)+'</span>'; else slot.textContent='＋';
+      if(deck[i]){ const dk=deck[i]; slot.style.cursor='pointer'; slot.innerHTML='<span style="width:42px;height:42px;display:block">'+SVG.get(ROSTER[dk].sprite)+'</span>'; slot.addEventListener('click',function(){openUnitPop(dk,'deck');}); } else slot.textContent='＋';
       row.appendChild(slot);
     }
     body.appendChild(row);
-    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='手持ちをタップで編成（最大5体）。戦闘の召喚はこの編成からランダムに出ます。';
+    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='編成は5体で固定。手持ちをタップ→入れ替えで変更できます。戦闘の召喚はこの5体から出ます。';
     body.appendChild(note);
     const list=document.createElement('div'); list.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
-    Object.keys(owned).forEach(function(key){ list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
+    Object.keys(owned).forEach(function(key){ if(ROSTER[key]) list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
     body.appendChild(list);
   }
   function renderCastle(){
@@ -2131,12 +2559,12 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:30, energyMax:enMaxVal(), baseRegen:regenVal(), softcap:12, maxMult:4,
+      energy:30, energyMax:enMaxVal(), baseRegen:regenVal()*(recoBonusActive()?1.3:1), recoBonus:recoBonusActive(), softcap:12, maxMult:4,
       combo:0, bestCombo:0,
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
       allies:[], enemies:[], spawnIdx:0, bossAlive:false, bossPhase:false,
-      queue:[], answered:0, correct:0, missStreak:0, reviewWins:0,
+      queue:[], cd:{}, answered:0, correct:0, missStreak:0, reviewWins:0, mistakes:[],
       tier:0, wasCleared:false,
       slow:slowMode
     };
@@ -2147,7 +2575,9 @@ const Game = (()=>{
   function toHome(){
     stopBattle();
     Sound.ensure(); $('soundBtn').textContent = Sound.isOn()?'🔊':'🔇';
+    if(!placement.doneAt && !AS){ startAssessment(); return; }
     homeView='menu'; renderHome(); show('home');
+    maybeDaily();
   }
   function start(){
     load();
@@ -2158,10 +2588,10 @@ const Game = (()=>{
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
@@ -2180,6 +2610,8 @@ const Game = (()=>{
     __seg('tierSeg',  QuizEngine.TIERS,  function(k){return QuizEngine.has('tier',k);},  function(k){QuizEngine.toggleTier(k);});
     __seg('choiceSeg', [{key:2,label:'2択'},{key:4,label:'4択'}], function(k){return k===choiceMode;}, function(k){choiceMode=k;});
     const __pc=$('poolCount'); if(__pc) __pc.textContent='今の出題範囲：'+QuizEngine.poolCount()+'問';
+    var __ar=$('assessReco');
+    if(__ar){ if(placement.doneAt && placement.word){ __ar.innerHTML='📊 あなたの推奨級 — 単語: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</b> ／ 文法: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</b>'+(recoBonusActive()?' <span style="color:#3aa6a0;font-weight:800">⚡加速中!</span>':' <span style="font-size:11px">←この級を選ぶと⚡加速UP</span>'); } else { __ar.innerHTML='📊 実力測定がまだです。ホームの「実力測定」で単語・文法のレベルを判定できます。'; } }
     // あそびやすさトグル
     const ta=$('tgAuto'), ts=$('tgSlow');
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
@@ -2187,17 +2619,32 @@ const Game = (()=>{
     ts.onclick=()=>{ slowMode=!slowMode; save(); renderHome(); };
     // ステージ（クリアで次が解放）
     const unlocked=maxUnlocked();
-    const grid=$('stageGrid'); grid.innerHTML='';
-    STAGES.forEach(s=>{
-      const lock = s.area>unlocked;
-      const d=document.createElement('button');
-      d.className='stage'+(s.boss?' boss':'')+(lock?' lock':'');
-      d.innerHTML=`<span class="no">エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
-        +(cleared[s.area]?`<span class="flag">🚩</span>`:'')
-        +(lock?`<span class="lockmark">🔒</span>`:'');
-      if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(s); }
-      grid.appendChild(d);
-    });
+    if(!playTab){ var __cur=Math.min(15,unlocked); playTab = __cur<=5?1:(__cur<=10?2:3); }
+    var __sb=$('quizSummaryBtn');
+    if(__sb){ var __sel=QuizEngine.getSel(), __gm={word:'単語',idiom:'熟語',grammar:'文法'};
+      var __g=__sel.genres.map(function(x){return __gm[x];}).join('/');
+      var __lv=__sel.levels.map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join(',');
+      __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__lv+'｜'+choiceMode+'択　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）変更▸</span>'; }
+    var __ct=$('chapTabs');
+    if(__ct){ __ct.innerHTML='';
+      [[1,'1章'],[2,'2章'],[3,'3章'],['special','⭐特殊']].forEach(function(t){ var bb=document.createElement('button'); bb.textContent=t[1]; if(playTab===t[0]) bb.classList.add('sel'); bb.onclick=function(){ playTab=t[0]; renderHome(); }; __ct.appendChild(bb); }); }
+    var __sc=$('stageCard'), __spc=$('specialCard');
+    if(playTab==='special'){ if(__sc)__sc.style.display='none'; if(__spc)__spc.style.display='block'; }
+    else {
+      if(__sc)__sc.style.display='block'; if(__spc)__spc.style.display='none';
+      var __title=$('chapTitle'); if(__title) __title.innerHTML='🗺️ '+playTab+'章 <span class="muted">（'+(playTab===3?'嵐の章・':'')+'5/10/15はボス）</span>';
+      const grid=$('stageGrid'); grid.innerHTML='';
+      STAGES.filter(function(s){return s.world===playTab;}).forEach(s=>{
+        const lock = s.area>unlocked;
+        const d=document.createElement('button');
+        d.className='stage'+(s.boss?' boss':'')+(lock?' lock':'');
+        d.innerHTML=`<span class="no">エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
+          +(cleared[s.area]?`<span class="flag">🚩</span>`:'')
+          +(lock?`<span class="lockmark">🔒</span>`:'');
+        if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(s); }
+        grid.appendChild(d);
+      });
+    }
   }
 
   /* ---- バトル開始 ---- */
@@ -2215,8 +2662,9 @@ const Game = (()=>{
     $('field').querySelectorAll('.unit,.float,.ring,.spark,.frag,.gateflash').forEach(n=>n.remove());
     $('field').classList.remove('warm','hot');
     // 召喚キュー初期化（次2体プレビュー）
-    B.queue = [drawUnit(), drawUnit(), drawUnit(), drawUnit()];
+    B.cd={}; rebuildQueue();
     show('battle');
+    if(B.recoBonus){ try{ fxBanner('📊 推奨級チャレンジ! ⚡加速+30%','#3aa6a0'); }catch(e){} }
     renderQueue(); nextQuestion();
     syncHUD();
     B.running=true; B.last=performance.now();
@@ -2224,68 +2672,114 @@ const Game = (()=>{
   }
   function stopBattle(){ if(B&&B.raf) cancelAnimationFrame(B.raf); if(B) B.running=false; }
 
-  /* ---- 召喚キュー（ランダム＋たまにコスパ枠） ---- */
-  function drawUnit(){
-    // 編成(deck)からランダムに出撃
-    const keys=(deck&&deck.length)?deck:ROSTER_KEYS;
-    const key=keys[Math.floor(Math.random()*keys.length)];
-    const base=ROSTER[key]||ROSTER[ROSTER_KEYS[0]];
-    let cost=base.cost, bargain=false;
+  /* ---- 召喚キュー（クールダウン制） ----
+     ・一度出すとそのキャラはクールダウン中は再出撃不可。
+     ・予想枠の表示ルール：q1(次)=CD2秒以内のみ／q2(次の次)=CD5秒未満のみ。
+       SSRはCDが長く予想に出ない＝高コストが連続して詰まらない。 */
+  function summonCd(key){ return ROSTER[key].scd||1.5; }
+  function deckKeys(){ var d=((deck&&deck.length)?deck:ROSTER_KEYS).filter(function(k){return ROSTER[k];}); return d.length?d:ROSTER_KEYS.slice(); }
+  function cdLeft(key){ return (B&&B.cd&&B.cd[key])||0; }
+  function unitWeight(key){ return ROSTER[key].weight||10; }
+  function weightedPick(keys){
+    if(!keys.length) return null;
+    var tot=0; keys.forEach(function(k){ tot+=unitWeight(k); });
+    var r=Math.random()*tot;
+    for(var i=0;i<keys.length;i++){ r-=unitWeight(keys[i]); if(r<=0) return keys[i]; }
+    return keys[keys.length-1];
+  }
+  function makeUnit(key){
+    const base=ROSTER[key]; let cost=base.cost, bargain=false;
     if((base.rar==="SR"||base.rar==="SSR") && Math.random()<0.18){ cost=Math.round(base.cost*0.6); bargain=true; }
     return { key, cost, bargain };
   }
+  // そのスロットに出しうるキャラ（しきい値内）。短CDが編成に居なければ全員にフォールバック
+  function deckByThreshold(maxScd){
+    var pool=deckKeys().filter(function(k){ return summonCd(k)<=maxScd; });
+    return pool.length?pool:deckKeys();
+  }
+  // 出せるキャラを優先抽選。全員CD中なら「一番早く明けるキャラ」を灰色予約として返す
+  function pickSlot(maxScd){
+    var cand=deckByThreshold(maxScd); if(!cand.length) return null;
+    var ready=cand.filter(function(k){ return cdLeft(k)<=0; });
+    var key = ready.length ? weightedPick(ready)
+                           : cand.slice().sort(function(a,b){ return cdLeft(a)-cdLeft(b); })[0];
+    return key?makeUnit(key):null;
+  }
+  function rebuildQueue(){ B.queue=[ pickSlot(999), pickSlot(2), pickSlot(4.99) ]; }
   function renderQueue(){
     const slots=['q0','q1','q2'];
     slots.forEach((id,i)=>{
-      const u=B.queue[i]; const el=$(id);
+      const u=B.queue[i]; const el=$(id); if(!el) return;
+      if(!u||!ROSTER[u.key]){ el.className='qslot '+(i===0?'now':'qnext'); el.innerHTML='<span class="muted" style="font-size:11px">…</span>'; return; }
       const r=ROSTER[u.key];
-      const ready = (i===0 && B.energy>=u.cost);
-      el.className='qslot'+(i===0?' now':' qnext')+(ready?' ready':'');
+      const cd=cdLeft(u.key), pending=cd>0;
+      const ready = (i===0 && !pending && B.energy>=u.cost);
+      el.className='qslot'+(i===0?' now':' qnext')+(ready?' ready':'')+(pending?' cooling':'');
       el.innerHTML = `<span class="rar" style="background:${r.rarColor}">${r.rar}</span>`+
-        (u.bargain?`<span class="bargain">お得</span>`:'')+
-        SVG.get(r.sprite)+`<span class="cost">⚡${u.cost}</span>`;
+        (u.bargain&&!pending?`<span class="bargain">お得</span>`:'')+
+        SVG.get(r.sprite)+`<span class="cost">⚡${u.cost}</span>`+
+        (pending?`<span class="cd">⏳${cd.toFixed(1)}</span>`:'');
     });
-    const front=B.queue[0], canPay=B.energy>=front.cost;
+    const front=B.queue[0];
+    if(!front||!ROSTER[front.key]){ $('summonBtn').disabled=true; $('summonBtn').textContent='⏳ じゅんび中…'; return; }
+    const fcd=cdLeft(front.key);
+    if(fcd>0){ $('summonBtn').disabled=true; $('summonBtn').textContent=`⏳ クールダウン ${fcd.toFixed(1)}秒`; return; }
+    const canPay=B.energy>=front.cost;
     $('summonBtn').disabled = !canPay;
     $('summonBtn').textContent = canPay ? `召喚 ⎵ (${ROSTER[front.key].name})` : `あと⚡${Math.ceil(front.cost-B.energy)}`;
   }
   function summon(){
     if(!B||!B.running) return;
-    const u=B.queue[0]; if(B.energy < u.cost) return;
+    const u=B.queue[0]; if(!u||!ROSTER[u.key]) return;
+    if(cdLeft(u.key)>0) return;        // クールダウン中は出せない（灰色予約）
+    if(B.energy < u.cost) return;
     B.energy -= u.cost;
     spawnAlly(u.key);
-    B.queue.shift(); B.queue.push(drawUnit());
+    B.cd[u.key]=summonCd(u.key);       // 出したキャラはクールダウン中、再出撃しない
+    rebuildQueue();
     renderQueue(); syncHUD();
   }
 
+  function unitBody(sprite){ return '<div class="hpb"><i style="width:100%"></i></div><div class="body">'+SVG.get(sprite)+'</div>'; }
+  function lunge(el){ if(el){ el.classList.add('atk'); setTimeout(function(){ if(el) el.classList.remove('atk'); },260); } }
   function spawnAlly(key){
     const r=ROSTER[key];
     const el=document.createElement('div'); el.className='unit spawning';
-    el.innerHTML = `<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(r.sprite);
+    el.innerHTML = unitBody(r.sprite); if(r.scale) el.style.transform='scale('+r.scale+')';
     $('field').appendChild(el);
     fxGate(84); Sound.play('summon');
     const __st=unitStats(key);
-    B.allies.push({ key, el, x:84, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal });
+    B.allies.push({ key, el, x:84, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0 });
   }
   function spawnEnemy(type){
     if(type==="BOSS"){ spawnBoss(); return; }
     const t=ENEMY_TYPES[type]; const s=B.stage;
     const el=document.createElement('div'); el.className='unit';
-    el.style.transform='scaleX(-1)';
-    el.innerHTML=`<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(t.sprite);
+    el.style.transform='scaleX(-1)'+(t.scale?(' scale('+t.scale+')'):'');
+    el.innerHTML=unitBody(t.sprite);
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul);
-    B.enemies.push({ type, el, x:fieldW()-84, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false });
+    B.enemies.push({ type, el, x:fieldW()-84, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null });
   }
   function spawnBoss(){
     const s=B.stage;
     const el=document.createElement('div'); el.className='unit boss-unit';
     el.style.transform='scaleX(-1)';
-    el.innerHTML=`<div class="hpb"><i style="width:100%"></i></div>`+SVG.get(s.sprite);
+    el.innerHTML=unitBody(s.sprite);
     $('field').appendChild(el);
     B.bossAlive=true;
     const hp=Math.round(BOSS_BASE.hp*s.enemyHpMul);
-    B.enemies.push({ type:"BOSS", el, x:fieldW()-110, hp, hpMax:hp, atk:BOSS_BASE.atk*s.enemyAtkMul, speed:BOSS_BASE.speed, range:BOSS_BASE.range, cd:0, boss:true });
+    B.enemies.push({ type:"BOSS", el, x:fieldW()-110, hp, hpMax:hp, atk:BOSS_BASE.atk*s.enemyAtkMul, speed:BOSS_BASE.speed, range:BOSS_BASE.range, cd:0, boss:true, wind:(s.sprite==='bossThunder'), windCd:3.2 });
+  }
+
+  function spawnSplitChild(type, x){
+    const t=ENEMY_TYPES[type]; const s=B.stage;
+    const el=document.createElement('div'); el.className='unit'; el.style.transform='scaleX(-1) scale(0.72)';
+    el.innerHTML=unitBody(t.sprite);
+    $('field').appendChild(el);
+    const hp=Math.round(t.hp*s.enemyHpMul*0.45);
+    const en={ type, el, x:Math.min(fieldW()-70,Math.max(92,x)), hp, hpMax:hp, atk:t.atk*s.enemyAtkMul*0.7, speed:t.speed*1.2, range:t.range, cd:0.4, boss:false, def:0, bomb:0, split:null };
+    B.enemies.push(en); place(el, en.x);
   }
 
   /* ---- 問題 ---- */
@@ -2332,10 +2826,11 @@ const Game = (()=>{
       B.missStreak++;
       B.combo = Math.floor(B.combo * (B.slow?0.75:0.5)); // 途切れ→加速ダウン（ゼロにしない）
       QuizEngine.pushReview(curQ); // 間違えた問題は近いうち再出題
+      try{ var __mp=(curQ.qtext||'').replace(/<[^>]+>/g,''); var __mc=curQ.choices?curQ.choices[curQ.answerIndex]:''; if(B.mistakes && !B.mistakes.some(function(m){return m.prompt===__mp&&m.correct===__mc;})) B.mistakes.push({prompt:__mp, correct:__mc, desc:curQ.desc||''}); }catch(_){}
       $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
     }
     syncHUD();
-    setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, right?520:1100);
+    setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, right?800:2000);
   }
 
   /* ---- ループ ---- */
@@ -2345,14 +2840,17 @@ const Game = (()=>{
     // エネルギー加速：regen = base × (1 + combo/softcap) クランプ
     const mult=Math.min(B.maxMult, 1 + B.combo/B.softcap);
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
-    // 自動召喚（苦手な子向け・操作を問題に集中）
-    if(autoSummon && B.queue.length && B.energy>=B.queue[0].cost) summon();
+    // クールダウン消化。CDが明けて出せる枠が空いていれば補充
+    for(var __k in B.cd){ if(B.cd[__k]>0){ B.cd[__k]-=dt; if(B.cd[__k]<0) B.cd[__k]=0; } }
+    if(!B.queue||B.queue.length<3||!B.queue[0]) rebuildQueue();
+    // 自動召喚（苦手な子向け・操作を問題に集中）。クールダウン中は出さない
+    if(autoSummon && B.queue[0] && cdLeft(B.queue[0].key)<=0 && B.energy>=B.queue[0].cost) summon();
     // ウェーブ
-    while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){
-      spawnEnemy(B.stage.waves[B.spawnIdx].type); B.spawnIdx++;
-    }
+    if(B.stage.endless){ towerStep(); }
+    else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ spawnEnemy(B.stage.waves[B.spawnIdx].type); B.spawnIdx++; } }
     stepUnits(dt);
     syncHUD(); renderQueue();
+    if(B.stage.endless){ var __he=$('hpEtxt'); if(__he) __he.textContent='🗼'+(B.floor||1)+'階'; }
     checkEnd();
     if(B.running) B.raf=requestAnimationFrame(loop);
   }
@@ -2365,10 +2863,15 @@ const Game = (()=>{
       if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.speed*dt; place(a.el,a.x); return; }
       const target = nearestEnemy(a);
       const enemyCastleX = W-70;
+      var __atk = a.atk * allyAtkMul(a);
       if(target && Math.abs(target.x-a.x) <= a.range){
-        if(a.cd<=0){ if(a.splash){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range) damage(e,a.atk); }); floatText(a.x,26,'💥','var(--ally)'); } else { damage(target, a.atk); } a.cd=0.7; flash(a.el); hitFx(target); }
+        if(a.cd<=0){
+          if(a.splash||a.pierce){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range){ damage(e,__atk); if(a.slow)e.slowT=2.0; if(a.knockback)e.x=Math.min(W-60,e.x+a.knockback); } }); floatText(a.x,26, a.pierce?'⇶':'💥','var(--ally)'); }
+          else { damage(target,__atk); if(a.slow){ target.slowT=2.0; floatText(target.x,22,'❄','#5aa0d6'); } if(a.knockback) target.x=Math.min(W-60, target.x+a.knockback); }
+          a.cd=0.7; flash(a.el); lunge(a.el); hitFx(target);
+        }
       }else if(!target && a.x >= enemyCastleX-a.range){
-        if(a.cd<=0){ B.castleE-=a.atk; a.cd=0.7; flash(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(a.atk), 'var(--good)'); }
+        if(a.cd<=0){ B.castleE-=__atk; a.cd=0.7; flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); }
       }else{
         a.x += a.speed*dt;
       }
@@ -2377,29 +2880,38 @@ const Game = (()=>{
     // 敵：左へ。味方 or 自城と戦う
     B.enemies.forEach(e=>{
       e.cd-=dt;
+      if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
       const target=nearestAlly(e);
       const myCastleX=70;
       if(target && Math.abs(target.x-e.x) <= e.range){
-        if(e.cd<=0){ damage(target, e.atk); e.cd=0.8; flash(e.el); hitFx(target); }
+        if(e.cd<=0){ damage(target, e.atk); e.cd=0.8; flash(e.el); lunge(e.el); hitFx(target); }
       }else if(!target && e.x <= myCastleX+e.range){
-        if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); castleHit('castleA'); floatText(70, 30, '-'+Math.round(e.atk), 'var(--bad)'); }
+        if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); lunge(e.el); castleHit('castleA'); floatText(70, 30, '-'+Math.round(e.atk), 'var(--bad)'); }
       }else{
-        e.x -= e.speed*dt;
+        e.x -= e.speed*(e.slowT>0?0.45:1)*dt;
       }
       // ボスのフェーズ移行（HP30%で攻撃強化）
       if(e.boss && !B.bossPhase && e.hp<=e.hpMax*0.3){ B.bossPhase=true; e.atk*=1.6; e.el.style.filter='drop-shadow(0 0 8px #e0683b)'; floatText(e.x,20,'PHASE2!','var(--enemy)'); fxBanner('⚡ ボス覚醒!','#e0683b'); fxTierFlash(); Sound.play('boss'); }
+      if(e.boss && e.wind){ e.windCd-=dt; if(e.windCd<=0){ e.windCd=B.bossPhase?2.0:3.4; let any=false; B.allies.forEach(function(a){ if(a.x>92){ a.x=Math.max(92,a.x-34); any=true; } }); if(any){ fxBanner('🌪️ 暴風！','#5a7fc0'); fxTierFlash(); Sound.play('hit'); } } }
       place(e.el, e.x);
     });
     cleanup();
   }
+  function allyAtkMul(a){ var m=1; B.allies.forEach(function(o){ if(o.buff && o!==a && Math.abs(o.x-a.x)<=o.range) m+=o.buff; }); return m; }
   function nearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(e=>{ if(e.x>=a.x-4){ const d=e.x-a.x; if(d<bd){bd=d;best=e;} }}); return best; }
   function nearestAlly(e){ let best=null,bd=1e9; B.allies.forEach(a=>{ if(a.x<=e.x+4){ const d=e.x-a.x; if(d<bd){bd=d;best=a;} }}); return best; }
-  function damage(u,amt){ u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
+  function damage(u,amt){ amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
   function flash(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),90); }
   function place(el,x){ el.style.left=(x-27)+'px'; }
   function cleanup(){
     B.allies=B.allies.filter(a=>{ if(a.hp<=0){ fxFrag(a.x, fieldFloorY(), '#9cc5d6'); a.el.remove(); return false;} return true; });
-    B.enemies=B.enemies.filter(e=>{ if(e.hp<=0){ fxFrag(e.x, fieldFloorY(), e.boss?'#e0a93b':'#e0683b'); if(e.boss){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } e.el.remove(); if(e.boss) B.bossAlive=false; gold+=e.boss?200:5; return false;} return true; });
+    const born=[];
+    B.enemies=B.enemies.filter(e=>{ if(e.hp<=0){
+      if(e.bomb){ fxSparks(e.x, fieldFloorY(), 16, '#e0683b'); B.allies.forEach(function(a){ if(Math.abs(a.x-e.x)<=72){ a.hp-=e.bomb; const i=a.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,a.hp/a.hpMax*100)+'%'; } }); floatText(e.x,28,'💥-'+e.bomb,'var(--enemy)'); }
+      if(e.split){ born.push({x:e.x-16,t:e.split}); born.push({x:e.x+16,t:e.split}); }
+      fxFrag(e.x, fieldFloorY(), e.boss?'#e0a93b':'#e0683b'); if(e.boss){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } e.el.remove(); if(e.boss) B.bossAlive=false; gold+=e.boss?200:5; return false;
+    } return true; });
+    born.forEach(function(n){ spawnSplitChild(n.t, n.x); });
   }
   function floatText(x,y,txt,color){
     const f=document.createElement('div'); f.className='float'; f.style.left=x+'px'; f.style.top=y+'px'; f.style.color=color||'#000'; f.textContent=txt;
@@ -2434,12 +2946,90 @@ const Game = (()=>{
   }
 
   /* ---- 勝敗 ---- */
+  /* ---- 修練の塔（エンドレス）＆デイリー ---- */
+  function enterTower(){
+    enterBattle({ id:'tower', area:0, boss:false, endless:true, name:'修練の塔', sprite:'castleE', world:9, enemyHpMul:1, enemyAtkMul:1, castleEHp:1e9, waves:[] });
+  }
+  function towerStep(){
+    B.floor = 1 + Math.floor(B.t/12);
+    if(B.t*1000 >= (B.nextSpawn||0)){
+      var f=B.floor;
+      var types = f<3?['slime','hare'] : f<6?['slime','hare','totem','slinger'] : f<10?['hare','totem','torii','slinger','bat'] : ['totem','torii','slinger','bat','golem','bombSlime','splitMush'];
+      var n = 1 + Math.floor(f/3);
+      B.stage.enemyHpMul = Math.pow(1.15, f-1);
+      B.stage.enemyAtkMul = Math.pow(1.10, f-1);
+      for(var i=0;i<n;i++){ spawnEnemy(types[Math.floor(Math.random()*types.length)]); }
+      B.nextSpawn = B.t*1000 + Math.max(800, 2200 - f*70);
+    }
+  }
+  function endTower(){
+    B.ended=true; B.running=false; cancelAnimationFrame(B.raf); Sound.play('lose');
+    var floor=B.floor||1, reward=floor*40; gold+=reward;
+    var isBest=floor>(towerBest||0); if(isBest) towerBest=floor; save();
+    $('firstBadge').classList.remove('show');
+    $('resTitle').textContent='🗼 '+floor+'階 到達！'; $('resTitle').style.color='var(--ally)';
+    $('resMedals').innerHTML='<span class="medal">到達 '+floor+'階</span>'+(isBest?'<span class="medal">🏆 自己ベスト！</span>':'<span class="medal">最高 '+towerBest+'階</span>')+'<span class="medal">💰 +'+reward+'</span><span class="medal">最大コンボ '+B.bestCombo+'</span>';
+    $('resLearn').textContent='修練の塔は無限。問題を解いて編成を強化し、より上の階へ！';
+    var nd=$('resNudge'); if(nd) nd.innerHTML='';
+    renderResultMistakes();
+    var retry=$('resRetry'); retry.textContent='もう一度 🗼'; retry.onclick=function(){ enterTower(); };
+    show('result');
+  }
+  // カレンダー巻き戻し対策：観測した最大時刻を保持し、過去に戻しても「今日」は戻らない
+  function guardedNow(){ clockTs=Math.max(clockTs||0, Date.now()); return clockTs; }
+  function todayStr(){ var d=new Date(guardedNow()); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  // ステージ報酬：進むほど増加（初期ステージ=200G、ボスは1.6倍）
+  function stageReward(stage){ var n=stage.area||1; var base=150+50*n; return stage.boss? Math.round(base*1.6) : base; }
+  function clearedCount(){ var n=0; for(var k in cleared){ if(cleared[k]) n++; } return n; }
+  // 1日のクリア報酬上限：ステージを進める（クリア数増）ほど解放されて増える
+  function dailyGoldCap(){ return 600 + clearedCount()*200; }
+  function ensureGoldDay(){ var t=todayStr(); if(goldDay!==t){ goldDay=t; dailyStageGold=0; } }
+  function dailyClaimable(){ return lastDaily!==todayStr(); }
+  function claimDaily(){ if(!dailyClaimable()) return; gold+=500; lastDaily=todayStr(); Sound.play('correct'); save(); renderHome(); }
+  // ログインボーナス：スタート時に自動付与してポップアップ表示（ボタン操作は不要）
+  function showDailyPopup(amount){
+    var amt=$('dailyPopAmt'); if(amt) amt.textContent=amount;
+    var body=$('dailyPopBody'); if(body) body.textContent='今日も来てくれてありがとう！毎日コツコツがいちばんの近道です。';
+    var pop=$('dailyPop'); if(pop) pop.classList.add('on');
+    try{ Sound.play('win'); }catch(e){}
+  }
+  function closeDaily(){ var pop=$('dailyPop'); if(pop) pop.classList.remove('on'); }
+  function maybeDaily(){
+    if(!dailyClaimable()) return;
+    gold+=500; lastDaily=todayStr(); save(); renderHome();
+    showDailyPopup(500);
+  }
+  function renderTower(){
+    var body=$('towerBody'); if(!body) return; body.innerHTML='';
+    var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
+    body.appendChild(t);
+    var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
+    var claim=dailyClaimable();
+    var ds2=document.createElement('div'); ds2.className='muted'; ds2.style.cssText='width:100%;text-align:center;font-size:13px;padding:8px 0;border:2px dashed var(--line);border-radius:12px';
+    ds2.innerHTML = claim ? '🎁 ログインボーナスは<b>スタート時に自動</b>でもらえます' : '🎁 本日のログインボーナス：<b>受取済み</b>（また明日！）';
+    body.appendChild(ds2);
+    ensureGoldDay();
+    var ci=document.createElement('div'); ci.className='muted'; ci.style.cssText='margin-top:10px;font-size:12px;line-height:1.5';
+    ci.innerHTML='💰 本日のクリア報酬：<b>'+dailyStageGold+' / '+dailyGoldCap()+'G</b><br>毎日コツコツが英語上達のコツ。上限はステージを進める（クリア数を増やす）ほど解放され、<b>新ステージの初クリアは上限を超えてもフルでもらえます</b>。';
+    body.appendChild(ci);
+  }
   function checkEnd(){
     if(B.ended) return;
     if(B.castleE<=0){ endBattle(true); }
     else if(B.castleA<=0){ endBattle(false); }
   }
+  function renderResultMistakes(){
+    var el=$('resMistakes'); if(!el) return; el.innerHTML='';
+    var ms=(B&&B.mistakes)||[];
+    if(!ms.length){ el.innerHTML='<div style="margin-top:8px;color:var(--good);font-weight:800">🎉 ぜんぶ正解！</div>'; return; }
+    var h='<div style="margin-top:10px;font-weight:800;text-align:left">📝 まちがえた問題（復習）</div>';
+    ms.slice(0,12).forEach(function(m){
+      h+='<div style="text-align:left;border:2px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:6px;background:#fff"><div style="font-weight:700">'+m.prompt+' → <span style="color:var(--good)">'+m.correct+'</span></div>'+(m.desc?'<div class="muted" style="font-size:12px">'+m.desc+'</div>':'')+'</div>';
+    });
+    el.innerHTML=h;
+  }
   function endBattle(win){
+    if(B.stage.endless){ endTower(); return; }
     B.ended=true; B.running=false; cancelAnimationFrame(B.raf);
     Sound.play(win?'win':'lose');
     const acc = B.answered? Math.round(B.correct/B.answered*100):0;
@@ -2447,17 +3037,28 @@ const Game = (()=>{
     if(win) confetti();
     $('resTitle').textContent = win? '🏯 まもり切った！' : '🛡️ 作戦変更だ';
     $('resTitle').style.color = win? 'var(--good)':'var(--enemy)';
-    const reward = win? (B.stage.boss?300:60):10; gold+=reward;
-    if(win){ cleared[B.stage.area]=true; }
+    ensureGoldDay();
+    const newClear = win && !B.wasCleared;     // 初クリアは上限を超えても満額（＝達成報酬・上限解放）
+    const full = win ? stageReward(B.stage) : 0;
+    let reward, capped=false;
+    if(!win){ reward=10; }
+    else if(newClear){ reward=full; }
+    else { const room=Math.max(0, dailyGoldCap()-dailyStageGold); reward=Math.min(full, room); capped=(reward<full); }
+    gold+=reward;
+    if(win){ dailyStageGold+=reward; cleared[B.stage.area]=true; }
     save();
     $('resMedals').innerHTML =
       `<span class="medal">最大コンボ ${B.bestCombo}</span>`+
       `<span class="medal">正答率 ${acc}%</span>`+
       (B.reviewWins?`<span class="medal">🔁 復習成功 ${B.reviewWins}</span>`:'')+
-      `<span class="medal">💰 +${reward}</span>`;
-    $('resLearn').textContent = win
-      ? '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。'
-      : 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎';
+      `<span class="medal">💰 +${reward}${capped?'（上限到達）':''}</span>`+
+      (win?`<span class="medal">本日のクリア報酬 ${dailyStageGold}/${dailyGoldCap()}G</span>`:'');
+    $('resLearn').textContent = !win
+      ? 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎'
+      : capped
+        ? '本日のクリア報酬は上限に達しました。英語は毎日コツコツが効きます — また明日プレイすると満タンに回復！新しいステージを初クリアすると上限を超えてもフルでもらえ、上限自体も増えます。'
+        : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
+    renderResultMistakes();
     const retry=$('resRetry'); retry.textContent = win?'次へ ▶':'もう一度';
     retry.onclick=()=>{
       if(win){ const ni=STAGES.findIndex(s=>s.id===B.stage.id)+1; if(ni<STAGES.length){ enterBattle(STAGES[ni]); return; } }
@@ -2471,13 +3072,155 @@ const Game = (()=>{
   // 凍結タブ復元時は戦闘の途中状態で固まらないようホームへ戻す
   window.addEventListener('pageshow', e=>{ if(e.persisted){ try{ toHome(); }catch(_){} } });
 
-  return { start, toHome, summon, toggleSound, _stages:STAGES };
+  /* ============ 実力測定（ラダー式・単語/文法を別判定） ============ */
+  let placement = {word:null, grammar:null, bestScore:0, doneAt:''};
+  let AS = null;
+  const LV5 = QuizEngine.LV_ORDER; // e4..ep1
+  function recIdx(g){ return placement[g]?LV5.indexOf(placement[g]):-1; }
+  function recoBonusActive(){
+    const sel=QuizEngine.getSel(); let need=-1;
+    sel.genres.forEach(function(g){ const r=recIdx(g); if(r>=0) need=Math.max(need,r); });
+    if(need<0) return false;
+    const selMax=Math.max.apply(null, sel.levels.map(function(l){return LV5.indexOf(l);}));
+    return selMax>=need;
+  }
+  function assessView(mode){ // 'intro' | 'quiz' | 'result'
+    var q=mode==='quiz';
+    ['assessProg','assessBarWrap','assessTicks','assessQ','assessChoices'].forEach(function(id){ var e=$(id); if(e) e.style.display=q?'':'none'; });
+    var rb=$('assessResult'); if(rb) rb.style.display=q?'none':'flex';
+    var sk=$('assessSkipBtn'); if(sk) sk.style.display=q?'':'none';
+  }
+  // 入口：ゲーム説明＋「測定する / あとで」を選ばせる
+  function startAssessment(){
+    AS=null; show('assess'); assessView('intro');
+    var html='<div style="font-size:25px;font-weight:800;margin-bottom:8px">📊 実力測定</div>';
+    html+='<div style="max-width:440px;line-height:1.7;text-align:left;margin:0 auto 14px">';
+    html+='<b>グラマー・ガード</b>は、英単語・文法のクイズに答えて味方を呼び出し、敵のお城をせめる<b>タワーディフェンス型の英語ゲーム</b>です。<br><br>';
+    html+='まずは<b>実力測定</b>で、あなたの英検レベル（<b>単語</b>と<b>文法</b>）を調べましょう。やさしい問題から1段ずつ上がっていき、どこまで登れるかでランクが決まります。<br><br>';
+    html+='測定すると…<br>・ぴったりの難易度で遊べる（推奨級を表示）<br>・推奨級で挑戦すると⚡エネルギー加速＋30%<br>・ランクが上がるほど大きなコイン報酬💰';
+    html+='</div>';
+    html+='<button class="btn" id="assessBegin" style="max-width:300px">📊 実力測定をする</button>';
+    html+='<button class="btn ghost" id="assessLater" style="max-width:300px;margin-top:8px">あとで（ホームへ）</button>';
+    var rb=$('assessResult'); rb.innerHTML=html;
+    $('assessBegin').onclick=function(){ beginMeasure(); };
+    $('assessLater').onclick=function(){ assessSkip(); };
+  }
+  function beginMeasure(){
+    AS={ genre:'word', idx:0, cleared:-1, misses:0, seen:{word:{},grammar:{}}, ranks:{}, locked:false, cur:null, asked:0 };
+    assessView('quiz'); assessNext();
+  }
+  function drawUnseen(genre, level){
+    var seen=AS.seen[genre], q=null;
+    for(var t=0;t<10;t++){ var c=QuizEngine.drawFor(genre, level, 4); if(!c) break; q=c; if(!seen[c.qtext]) break; }
+    if(!q) q=QuizEngine.drawFor(genre, LV5[0], 4);
+    if(q) seen[q.qtext]=1;
+    return q;
+  }
+  function gaugePct(){ return Math.max(0,(AS.cleared+1))/LV5.length*100; }
+  function renderTicks(){
+    var t=$('assessTicks'); if(!t) return; t.innerHTML='';
+    LV5.forEach(function(k,i){ var s=document.createElement('span');
+      s.textContent=QuizEngine.LV_LABEL[k].replace('英検','');
+      var on=i<=AS.cleared, cur=i===AS.idx;
+      s.style.cssText='flex:1;text-align:center;font-size:11px;font-weight:800;padding:2px 0;border-radius:6px;'+(cur?'background:var(--ally);color:#fff;':on?'color:var(--ally);':'color:#bbb;');
+      t.appendChild(s); });
+  }
+  function assessNext(){
+    if(!AS) return;
+    var genre=AS.genre, level=LV5[AS.idx];
+    var q=drawUnseen(genre, level); AS.cur=q; AS.locked=false; AS.asked++;
+    var gname=genre==='word'?'単語':'文法';
+    var pr=$('assessProg'); if(pr) pr.innerHTML='📊 <b>'+gname+'</b>の実力をチェック中　— いま <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[level]+'</b> に挑戦！'+(AS.misses>0?'　<span style="color:var(--gold)">（あと1問！）</span>':'');
+    var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
+    renderTicks();
+    if(!q){ $('assessQ').textContent='問題が読めませんでした'; return; }
+    $('assessQ').innerHTML=q.qtext;
+    var box=$('assessChoices'); box.className=''; box.innerHTML='';
+    q.choices.forEach(function(c,i){ var b=document.createElement('button'); b.className='choice'; b.textContent=c; b.onclick=function(){ assessAnswer(i,b); }; box.appendChild(b); });
+  }
+  function assessAnswer(i, btn){
+    if(!AS||AS.locked) return; AS.locked=true;
+    var q=AS.cur, right=(i===q.answerIndex);
+    var btns=[].slice.call($('assessChoices').children);
+    btns.forEach(function(b){ b.style.pointerEvents='none'; });
+    btn.classList.add(right?'ok':'ng');
+    if(!right && btns[q.answerIndex]) btns[q.answerIndex].classList.add('ok');
+    try{ Sound.play(right?'correct':'wrong'); }catch(e){}
+    if(right){
+      AS.cleared=AS.idx; AS.misses=0; AS.idx++;
+      var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
+      if(AS.idx>=LV5.length){ setTimeout(function(){ genreDone(LV5[LV5.length-1]); },700); return; }
+    } else {
+      AS.misses++;
+      if(AS.misses>=2){ setTimeout(function(){ genreDone(AS.cleared>=0?LV5[AS.cleared]:LV5[0]); },700); return; }
+    }
+    setTimeout(assessNext, 800);
+  }
+  function genreDone(rankKey){
+    AS.ranks[AS.genre]=rankKey;
+    if(AS.genre==='word'){ placement.word=rankKey; showWordResult(rankKey); }
+    else { placement.grammar=rankKey; finalizeAssess(); }
+  }
+  function showWordResult(rankKey){
+    assessView('result');
+    var bw=$('assessBarWrap'); if(bw) bw.style.display='';
+    var bar=$('assessBar'); if(bar){ bar.style.width='0%'; setTimeout(function(){ bar.style.width='100%'; },60); }
+    var pr=$('assessProg'); if(pr){ pr.style.display=''; pr.innerHTML='📊 <b>単語</b>の測定かんりょう！'; }
+    var html='<div class="muted" style="font-size:18px;font-weight:800">単語の実力は…</div>';
+    html+='<div style="font-size:34px;font-weight:800;color:var(--ally);margin:6px 0 12px">'+QuizEngine.LV_LABEL[rankKey]+' 🎉</div>';
+    html+='<div class="muted" style="margin-bottom:14px">つづけて<b>文法</b>も測定しますか？（おすすめ）</div>';
+    html+='<button class="btn" id="assessGoGrammar" style="max-width:300px">▶ 文法も測定する</button>';
+    html+='<button class="btn ghost" id="assessStopHere" style="max-width:300px;margin-top:8px">ここで終わる</button>';
+    var rb=$('assessResult'); rb.innerHTML=html;
+    $('assessGoGrammar').onclick=function(){ AS.genre='grammar'; AS.idx=0; AS.cleared=-1; AS.misses=0; assessView('quiz'); assessNext(); };
+    $('assessStopHere').onclick=function(){ finalizeAssess(); };
+    try{ Sound.play('correct'); }catch(e){}
+  }
+  function rankNum(g){ return placement[g]?LV5.indexOf(placement[g])+1:0; }
+  function finalizeAssess(){
+    var d=new Date(); placement.doneAt=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    var total=rankNum('word')+rankNum('grammar');
+    var prev=placement.bestScore||0;
+    var gain=Math.max(0,total-prev), reward=gain*1500, up=gain>0;
+    if(up) placement.bestScore=total;
+    gold+=reward; save();
+    assessView('result');
+    var wlab=placement.word?QuizEngine.LV_LABEL[placement.word]:'未測定';
+    var glab=placement.grammar?QuizEngine.LV_LABEL[placement.grammar]:'未測定';
+    var html='<div style="font-size:26px;font-weight:800;margin-bottom:6px">📊 実力測定けっか</div>';
+    html+='<div style="display:flex;gap:10px;justify-content:center;margin:8px 0">';
+    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+wlab+'</div></div>';
+    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+glab+'</div></div>';
+    html+='</div>';
+    if(reward>0) html+='<div style="font-weight:800;color:var(--gold);font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💰 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+(gain*5)+'連ぶん！）</div></div>';
+    else html+='<div class="muted" style="margin:8px 0">今回はランクアップなし（次はもっと上をめざそう！）</div>';
+    html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%。より高い級に挑むほどコンボ倍率も上がります。</div>';
+    html+='<button class="btn" id="assessToReco" style="max-width:300px">出題設定をひらく ▶</button>';
+    html+='<button class="btn ghost" id="assessHome" style="max-width:300px;margin-top:8px">ホームへ</button>';
+    html+='<button class="btn ghost" id="assessAgain" style="max-width:300px;margin-top:8px">もう一度測定</button>';
+    var rb=$('assessResult'); rb.innerHTML=html;
+    $('assessHome').onclick=function(){ AS=null; toHome(); };
+    $('assessAgain').onclick=function(){ startAssessment(); };
+    $('assessToReco').onclick=function(){ AS=null; homeView='quiz'; renderHome(); show('home'); };
+    try{ Sound.play('correct'); }catch(e){}
+  }
+  function assessSkip(){ if(!placement.doneAt) placement.doneAt='skipped'; AS=null; save(); homeView='menu'; renderHome(); show('home'); }
+
+  return { start, toHome, summon, toggleSound, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES };
 })();
 
 Game.start();
 window.addEventListener('DOMContentLoaded', Game.start);
 </script>
-<div id="__buildbadge" style="position:fixed;left:6px;bottom:6px;right:6px;z-index:99998;background:#3aa6a0;color:#fff;font:bold 11px/1.3 monospace;padding:4px 8px;border-radius:8px;opacity:.95;box-shadow:0 2px 6px rgba(0,0,0,.3);word-break:break-all">build 0605e</div>
-<script>(function(){var errs=[];window.addEventListener("error",function(e){errs.push((e.message||"err").toString().slice(0,70))});window.addEventListener("unhandledrejection",function(e){errs.push("rej:"+((e.reason&&e.reason.message)||e.reason||"").toString().slice(0,60))});setInterval(function(){var b=document.getElementById("__buildbadge");if(!b)return;var on=[].slice.call(document.querySelectorAll(".screen.on")).map(function(s){return s.id}).join(",")||"none";var cA=((document.getElementById("castleAsvg")||{}).innerHTML||"").length>10?"城Y":"城N";var qt=((document.getElementById("qtext")||{}).textContent||"").trim()?"問Y":"問N";var ch=((document.getElementById("choices")||{}).children||[]).length;var db=(window.getComputedStyle&&document.getElementById("battle"))?getComputedStyle(document.getElementById("battle")).display:"?";var cv=(navigator.userAgent.match(/Chrome\/(\d+)/)||[])[1]||"?";b.textContent="0605e 画面:"+on+" dispB:"+db+" "+cA+" "+qt+" 選"+ch+" Cr"+cv+(errs.length?(" ERR:"+errs[errs.length-1]):" err無");},400);})();</script>
+<div id="unitPop" onclick="if(event.target===this)Game.closeUnitPop()"><div class="card" id="unitPopCard"></div></div>
+<div id="dailyPop"><div class="card">
+  <div style="font-size:46px;line-height:1">🎁</div>
+  <div style="font-size:22px;font-weight:800;margin:6px 0">ログインボーナス！</div>
+  <div id="dailyPopBody" class="muted" style="margin-bottom:6px;line-height:1.5"></div>
+  <div style="font-size:30px;font-weight:800;color:var(--gold);margin:8px 0">💰 +<span id="dailyPopAmt">500</span>G</div>
+  <button class="btn" style="width:100%" onclick="Game.closeDaily()">受け取る</button>
+</div></div>
+<div id="__buildbadge" style="position:fixed;left:6px;bottom:6px;right:6px;z-index:99998;background:#3aa6a0;color:#fff;font:bold 11px/1.3 monospace;padding:4px 8px;border-radius:8px;opacity:.95;box-shadow:0 2px 6px rgba(0,0,0,.3);word-break:break-all;display:none">build 0605f</div>
+<script>(function(){if(!window.__GGDEBUG)return;var bb0=document.getElementById("__buildbadge");if(bb0)bb0.style.display="block";var errs=[];window.addEventListener("error",function(e){errs.push((e.message||"err").toString().slice(0,70))});window.addEventListener("unhandledrejection",function(e){errs.push("rej:"+((e.reason&&e.reason.message)||e.reason||"").toString().slice(0,60))});setInterval(function(){var b=document.getElementById("__buildbadge");if(!b)return;var on=[].slice.call(document.querySelectorAll(".screen.on")).map(function(s){return s.id}).join(",")||"none";var cA=((document.getElementById("castleAsvg")||{}).innerHTML||"").length>10?"城Y":"城N";var qt=((document.getElementById("qtext")||{}).textContent||"").trim()?"問Y":"問N";var ch=((document.getElementById("choices")||{}).children||[]).length;var db=(window.getComputedStyle&&document.getElementById("battle"))?getComputedStyle(document.getElementById("battle")).display:"?";var cv=(navigator.userAgent.match(/Chrome\/(\d+)/)||[])[1]||"?";b.textContent="0605f 画面:"+on+" dispB:"+db+" "+cA+" "+qt+" 選"+ch+" Cr"+cv+(errs.length?(" ERR:"+errs[errs.length-1]):" err無");},400);})();</script>
 </body>
 </html>
