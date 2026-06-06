@@ -2036,6 +2036,8 @@ function buildEnemyWaves(area, boss){
     push(t(14),"slime",3,1200); // ボスの取り巻き
     if(area>=6) push(t(20),"torii",2,1500);
     if(area>=11){ push(t(14),"bat",3,700); push(t(20),"golem",2,1600); }
+    // ボス戦の持続取り巻き
+    for(let k=0;k<17;k++){ const base=24+k*8; push(t(base),"slime",4,500); push(t(base+3),area>=6?"torii":"totem",2,800); if(area>=11) push(t(base+5),"bat",3,500); }
     return W;
   }
   const dens = 1 + area*0.12;
@@ -2050,6 +2052,15 @@ function buildEnemyWaves(area, boss){
   if(area>=3) push(t(10),"slinger", Math.max(1,Math.round(area*0.35)), 1300); // 遠距離で揺さぶり
   if(area>=11){ push(t(8),"bat", Math.round(2*dens), 600); push(t(15),"bombSlime", Math.max(1,Math.round(area*0.2)), 1100); push(t(17),"splitMush", 1, 0); push(t(20),"bat", 2, 500); }
   if(area>=8) push(t(19),tank, 2, 900);
+  // 持続フェーズ：中盤以降も切れ目なく前線を維持（戦闘を2〜3分の歯ごたえに）
+  for(let k=0;k<19;k++){
+    const base=24+k*7;
+    push(t(base),"slime", Math.round(3*dens), 450);
+    push(t(base+2),"hare", Math.max(1,Math.round(2.5*dens)), 450);
+    push(t(base+3.5), tank, Math.max(1,Math.round(1+area*0.5)), 900);
+    if(area>=3) push(t(base+1.5),"slinger", Math.max(1,Math.round(1+area*0.3)), 800);
+    if(area>=11 && k%2===0) push(t(base+5),"bombSlime", Math.max(1,Math.round(area*0.3)), 800);
+  }
   return W;
 }
 const WORLD_NAMES = ["やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
@@ -2065,9 +2076,9 @@ function makeStages(){
       name: boss ? (a===5?"巨石の王・モアイ": a===10?"黄金のトーテム大王":"雷鳴の覇者・雷鳥大王") : WORLD_NAMES[a-1],
       sprite: boss ? (a===5?"bossMoai": a===10?"bossTotem":"bossThunder") : NORMAL_SPRITE[a-1],
       world: a<=5?1:(a<=10?2:3),
-      enemyHpMul: Math.pow(1.18, a-1),
-      enemyAtkMul: Math.pow(1.12, a-1),
-      castleEHp: boss? Math.round(1300*Math.pow(1.15,(a/5)-1)) : Math.round(420*Math.pow(1.2,a-1)),
+      enemyHpMul: 1.3*Math.pow(1.18, a-1),
+      enemyAtkMul: 1.2*Math.pow(1.12, a-1),
+      castleEHp: boss? Math.round(14000*Math.pow(1.15,(a/5)-1)) : Math.round(30000*Math.pow(1.15,a-1)),
       waves: buildEnemyWaves(a, boss)
     });
   }
