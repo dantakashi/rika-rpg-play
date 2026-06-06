@@ -214,6 +214,9 @@
   .soundbtn{position:absolute; top:8px; right:10px; z-index:30; border:2px solid var(--line); background:#fff;
     border-radius:999px; width:34px; height:34px; font-size:16px; padding:0}
   .homebtn{position:absolute; top:8px; left:10px; z-index:30; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink)}
+  #dailyPop{position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:24px}
+  #dailyPop.on{display:flex}
+  #dailyPop .card{background:var(--panel); border:3px solid var(--gold); border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.4); animation:badgePop .6s cubic-bezier(.2,1.5,.4,1)}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -2502,6 +2505,7 @@ const Game = (()=>{
     Sound.ensure(); $('soundBtn').textContent = Sound.isOn()?'🔊':'🔇';
     if(!placement.doneAt && !AS){ startAssessment(); return; }
     homeView='menu'; renderHome(); show('home');
+    maybeDaily();
   }
   function start(){
     load();
@@ -2873,13 +2877,28 @@ const Game = (()=>{
   function ensureGoldDay(){ var t=todayStr(); if(goldDay!==t){ goldDay=t; dailyStageGold=0; } }
   function dailyClaimable(){ return lastDaily!==todayStr(); }
   function claimDaily(){ if(!dailyClaimable()) return; gold+=500; lastDaily=todayStr(); Sound.play('correct'); save(); renderHome(); }
+  // ログインボーナス：スタート時に自動付与してポップアップ表示（ボタン操作は不要）
+  function showDailyPopup(amount){
+    var amt=$('dailyPopAmt'); if(amt) amt.textContent=amount;
+    var body=$('dailyPopBody'); if(body) body.textContent='今日も来てくれてありがとう！毎日コツコツがいちばんの近道です。';
+    var pop=$('dailyPop'); if(pop) pop.classList.add('on');
+    try{ Sound.play('win'); }catch(e){}
+  }
+  function closeDaily(){ var pop=$('dailyPop'); if(pop) pop.classList.remove('on'); }
+  function maybeDaily(){
+    if(!dailyClaimable()) return;
+    gold+=500; lastDaily=todayStr(); save(); renderHome();
+    showDailyPopup(500);
+  }
   function renderTower(){
     var body=$('towerBody'); if(!body) return; body.innerHTML='';
     var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
     body.appendChild(t);
     var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
     var claim=dailyClaimable();
-    var db=document.createElement('button'); db.className=claim?'btn':'btn ghost'; db.style.cssText='width:100%'; db.textContent=claim?'🎁 デイリーボーナス（+500G）':'🎁 デイリー：受取済み（また明日）'; db.disabled=!claim; db.addEventListener('click',claimDaily); body.appendChild(db);
+    var ds2=document.createElement('div'); ds2.className='muted'; ds2.style.cssText='width:100%;text-align:center;font-size:13px;padding:8px 0;border:2px dashed var(--line);border-radius:12px';
+    ds2.innerHTML = claim ? '🎁 ログインボーナスは<b>スタート時に自動</b>でもらえます' : '🎁 本日のログインボーナス：<b>受取済み</b>（また明日！）';
+    body.appendChild(ds2);
     ensureGoldDay();
     var ci=document.createElement('div'); ci.className='muted'; ci.style.cssText='margin-top:10px;font-size:12px;line-height:1.5';
     ci.innerHTML='💰 本日のクリア報酬：<b>'+dailyStageGold+' / '+dailyGoldCap()+'G</b><br>毎日コツコツが英語上達のコツ。上限はステージを進める（クリア数を増やす）ほど解放され、<b>新ステージの初クリアは上限を超えてもフルでもらえます</b>。';
@@ -3078,12 +3097,19 @@ const Game = (()=>{
   }
   function assessSkip(){ if(!placement.doneAt) placement.doneAt='skipped'; AS=null; save(); homeView='menu'; renderHome(); show('home'); }
 
-  return { start, toHome, summon, toggleSound, startAssessment, assessSkip, _stages:STAGES };
+  return { start, toHome, summon, toggleSound, startAssessment, assessSkip, closeDaily, _stages:STAGES };
 })();
 
 Game.start();
 window.addEventListener('DOMContentLoaded', Game.start);
 </script>
+<div id="dailyPop"><div class="card">
+  <div style="font-size:46px;line-height:1">🎁</div>
+  <div style="font-size:22px;font-weight:800;margin:6px 0">ログインボーナス！</div>
+  <div id="dailyPopBody" class="muted" style="margin-bottom:6px;line-height:1.5"></div>
+  <div style="font-size:30px;font-weight:800;color:var(--gold);margin:8px 0">💰 +<span id="dailyPopAmt">500</span>G</div>
+  <button class="btn" style="width:100%" onclick="Game.closeDaily()">受け取る</button>
+</div></div>
 <div id="__buildbadge" style="position:fixed;left:6px;bottom:6px;right:6px;z-index:99998;background:#3aa6a0;color:#fff;font:bold 11px/1.3 monospace;padding:4px 8px;border-radius:8px;opacity:.95;box-shadow:0 2px 6px rgba(0,0,0,.3);word-break:break-all;display:none">build 0605f</div>
 <script>(function(){if(!window.__GGDEBUG)return;var bb0=document.getElementById("__buildbadge");if(bb0)bb0.style.display="block";var errs=[];window.addEventListener("error",function(e){errs.push((e.message||"err").toString().slice(0,70))});window.addEventListener("unhandledrejection",function(e){errs.push("rej:"+((e.reason&&e.reason.message)||e.reason||"").toString().slice(0,60))});setInterval(function(){var b=document.getElementById("__buildbadge");if(!b)return;var on=[].slice.call(document.querySelectorAll(".screen.on")).map(function(s){return s.id}).join(",")||"none";var cA=((document.getElementById("castleAsvg")||{}).innerHTML||"").length>10?"城Y":"城N";var qt=((document.getElementById("qtext")||{}).textContent||"").trim()?"問Y":"問N";var ch=((document.getElementById("choices")||{}).children||[]).length;var db=(window.getComputedStyle&&document.getElementById("battle"))?getComputedStyle(document.getElementById("battle")).display:"?";var cv=(navigator.userAgent.match(/Chrome\/(\d+)/)||[])[1]||"?";b.textContent="0605f 画面:"+on+" dispB:"+db+" "+cA+" "+qt+" 選"+ch+" Cr"+cv+(errs.length?(" ERR:"+errs[errs.length-1]):" err無");},400);})();</script>
 </body>
