@@ -2892,7 +2892,7 @@ const Game = (()=>{
     if(win) confetti();
     $('resTitle').textContent = win? '🏯 まもり切った！' : '🛡️ 作戦変更だ';
     $('resTitle').style.color = win? 'var(--good)':'var(--enemy)';
-    const reward = win? (B.stage.boss?300:60):10; gold+=reward;
+    const reward = win? (B.stage.boss?300:200):10; gold+=reward;
     if(win){ cleared[B.stage.area]=true; }
     save();
     $('resMedals').innerHTML =
@@ -3026,7 +3026,7 @@ const Game = (()=>{
     var d=new Date(); placement.doneAt=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
     var total=rankNum('word')+rankNum('grammar');
     var prev=placement.bestScore||0;
-    var gain=Math.max(0,total-prev), reward=gain*3000, up=gain>0;
+    var gain=Math.max(0,total-prev), reward=gain*1500, up=gain>0;
     if(up) placement.bestScore=total;
     gold+=reward; save();
     assessView('result');
@@ -3037,7 +3037,7 @@ const Game = (()=>{
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+wlab+'</div></div>';
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+glab+'</div></div>';
     html+='</div>';
-    if(reward>0) html+='<div style="font-weight:800;color:var(--gold);font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💰 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+(gain*10)+'連ぶん！）</div></div>';
+    if(reward>0) html+='<div style="font-weight:800;color:var(--gold);font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💰 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+(gain*5)+'連ぶん！）</div></div>';
     else html+='<div class="muted" style="margin:8px 0">今回はランクアップなし（次はもっと上をめざそう！）</div>';
     html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%。より高い級に挑むほどコンボ倍率も上がります。</div>';
     html+='<button class="btn" id="assessToReco" style="max-width:300px">出題設定をひらく ▶</button>';
