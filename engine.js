@@ -263,7 +263,7 @@ let player = {
     //  単一の文字列(tier)が渡された場合は従来挙動（ボス等）に委譲する。
     function getWeightedQuestion(tier, genres, type, grades) {
       if (Array.isArray(tier)) return _weightedFromDiffSet(tier, genres, type, grades);
-      const tiers = ['junior', 'mid', 'senior', 'supreme'];
+      const tiers = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       const idx = tiers.indexOf(tier);
       const r = Math.random();
       let selectedTier = tier;
@@ -286,7 +286,7 @@ let player = {
 
     // 複数難易度（道場の範囲選択）から最上位偏重で1問選ぶ。grades=学年の絞り込み（任意）。
     function _weightedFromDiffSet(diffs, genres, type, grades) {
-      const order = ['junior', 'mid', 'senior', 'supreme'];
+      const order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       // 実際に問題が存在する難易度だけ残し、低→高に並べる
       let avail = (diffs || [])
         .filter(d => order.indexOf(d) >= 0)
@@ -325,6 +325,7 @@ let player = {
       const seniorCleared = ['b3_1', 'b3_2', 'b3_3'].every(id => def.includes(id));
 
       return {
+        elementary: true,
         junior: true,
         mid: juniorCleared,
         senior: midCleared,
@@ -736,7 +737,7 @@ let player = {
     //  filterGenres : 出題ジャンル配列（null/空=全ジャンル）
     //  filterType   : 'typing'/'choice'/null（出題形式）
     function startDojo(difficulty, filterGenres, filterType, filterGrades) {
-      const order = ['junior', 'mid', 'senior', 'supreme'];
+      const order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       // difficulty は配列（範囲選択）または文字列（図書館など旧経路）。配列に正規化。
       // 難易度のハードロックは廃止：全難易度を最初から選べる（案内は学年警告に一本化）。
       let diffs = (Array.isArray(difficulty) ? difficulty.slice() : [difficulty])
@@ -789,7 +790,7 @@ let player = {
       battle.playerHp = stats.hp;
       initBattleSkillState(stats);
 
-      const _dLbl = { junior:'基礎', mid:'応用', senior:'発展', supreme:'受験' };
+      const _dLbl = { elementary:'小学校の復習', junior:'基礎', mid:'応用', senior:'発展', supreme:'受験' };
       const _diffTitle = diffs.length > 1 ? `${_dLbl[topDiff]}まで` : _dLbl[topDiff];
       document.getElementById('battle-mode-title').textContent = `道場特訓: ${_diffTitle} (敵Lv.${player.dojoEnemyLevel})`;
       try {
@@ -814,7 +815,7 @@ let player = {
       var _blp = document.getElementById('battle-left-panel'); if(_blp) _blp.classList.remove('rage-active');
       document.getElementById('enemy-avatar').classList.remove('scale-150', 'text-red-500');
       // 道場: 難易度ごとのグロー色
-      const _dojoGlow = { junior:'0 0 20px #22d3ee', mid:'0 0 20px #f97316', senior:'0 0 22px #a78bfa', supreme:'0 0 25px #f43f5e' };
+      const _dojoGlow = { elementary:'0 0 18px #84cc16', junior:'0 0 20px #22d3ee', mid:'0 0 20px #f97316', senior:'0 0 22px #a78bfa', supreme:'0 0 25px #f43f5e' };
       const _dojoAv = document.getElementById('enemy-avatar');
       _dojoAv.style.filter = `drop-shadow(${_dojoGlow[battle.difficulty] || '0 0 20px #22d3ee'})`;
 
@@ -1189,7 +1190,7 @@ let player = {
             }
           } else {
             // 道場: 難易度別攻撃速度（初級1.0, 中級1.5, 上級2.0, 超級2.5）
-            const _dojoSpeeds = { junior:1.0, mid:1.5, senior:2.0, supreme:2.5 };
+            const _dojoSpeeds = { elementary:1.0, junior:1.0, mid:1.5, senior:2.0, supreme:2.5 };
             speedFactor = _dojoSpeeds[battle.difficulty] || 1.0;
           }
           // ❄️ スロー中は速度0.2倍
@@ -1825,7 +1826,7 @@ let player = {
         setTimeout(() => {
           if (battle.mode === 'dojo') {
             // 難易度倍率は緩やか(1/1.5/2/3)＝範囲は自由に選べるので難易度での荒稼ぎを抑える。敵HP倍率(spawn時の1/3/8/25)とは別物。
-            const rewardMult = battle.difficulty === 'junior' ? 1 : (battle.difficulty === 'mid' ? 1.5 : (battle.difficulty === 'senior' ? 2 : 3));
+            const rewardMult = (battle.difficulty === 'elementary' || battle.difficulty === 'junior') ? 1 : (battle.difficulty === 'mid' ? 1.5 : (battle.difficulty === 'senior' ? 2 : 3));
             // 報酬: 基本900コイン × 難易度倍率 × 敵レベルスケール
             const baseGold = 900 * rewardMult;
             // 稼ぎの主役は敵レベル(=ボス撃破で上限解禁)。カーブを急に＝+20%/Lv。Lv.1=1.0/Lv.10=2.8/Lv.100=20.8倍。

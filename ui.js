@@ -718,6 +718,7 @@ const GameUI = (function() {
     // ── 道場入場ポップアップ ──
 
     const _dojoList = [
+      { key: 'elementary', label: '小学校の復習', sub: 'いちばんやさしい', color: 'bg-lime-800 hover:bg-lime-700', locked_desc: '最初から解放' },
       { key: 'junior',  label: '基礎', sub: 'やさしい',   color: 'bg-emerald-800 hover:bg-emerald-700', locked_desc: '最初から解放' },
       { key: 'mid',     label: '応用', sub: 'ふつう',     color: 'bg-teal-800 hover:bg-teal-700',     locked_desc: '初級ボス3体全員撃破' },
       { key: 'senior',  label: '発展', sub: 'むずかしい', color: 'bg-indigo-800 hover:bg-indigo-700', locked_desc: '中級ボス3体全員撃破' },
@@ -725,8 +726,8 @@ const GameUI = (function() {
     ];
     // [TEST修正] 敵HPは難易度非連動（敵レベルのみ）＝ engine-test.js の方針に合わせて全難易度×1。
     //  ゴールドの難易度倍率は据え置き（難易度→ゴールドのみ反映）。
-    const _dojoHpMult   = { junior:1, mid:1,   senior:1, supreme:1 };
-    const _dojoGoldMult = { junior:1, mid:1.5, senior:2, supreme:3 };
+    const _dojoHpMult   = { elementary:1, junior:1, mid:1,   senior:1, supreme:1 };
+    const _dojoGoldMult = { elementary:1, junior:1, mid:1.5, senior:2, supreme:3 };
     // 敵レベル→報酬カーブ（engine.js と一致：+20%/Lv）
     const _dojoLvScale  = (lv) => 1.0 + (Math.max(1, lv) - 1) * 0.2;
 
@@ -750,7 +751,7 @@ const GameUI = (function() {
     function renderDojoRangeSummary() {
       const el = document.getElementById('dojo-range-summary');
       if (!el) return;
-      const order = ['junior', 'mid', 'senior', 'supreme'];
+      const order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       const diffs = _rangeDiffs.slice().sort((a, b) => order.indexOf(a) - order.indexOf(b));
       const dLabels = GameData.DIFFICULTIES.filter(d => diffs.indexOf(d.key) >= 0).map(d => d.label).join('・');
       const total = GameData.getQuestions({ diffs: diffs, genres: _rangeGenres.length ? _rangeGenres : null, type: _rangeType || null, grades: _rangeGrades }).length;
@@ -772,7 +773,7 @@ const GameUI = (function() {
     // ── 出題範囲フルウィンドウ ── 作業用state（確定前）
     let _rwDiffs = new Set(), _rwGenres = new Set(), _rwType = '', _rwGrades = new Set();
     const _RANGE_SUBJ_TEXT = { chemistry:'text-teal-300', physics:'text-indigo-300', biology:'text-green-300', earth:'text-amber-300' };
-    const _RANGE_DIFF_DESC = { junior:'習いたての基本。まずはここから。', mid:'基礎の次。少しひねった問題。', senior:'発展的な内容。応用が解けたら。', supreme:'入試レベル。最難関。' };
+    const _RANGE_DIFF_DESC = { elementary:'小学校で習った内容のおさらい。いちばんやさしい。', junior:'習いたての基本。まずはここから。', mid:'基礎の次。少しひねった問題。', senior:'発展的な内容。応用が解けたら。', supreme:'入試レベル。最難関。' };
 
     function openRangeWindow() {
       _rwDiffs = new Set(_rangeDiffs);
@@ -786,7 +787,7 @@ const GameUI = (function() {
 
     function closeRangeWindow(confirm) {
       if (confirm) {
-        const order = ['junior', 'mid', 'senior', 'supreme'];
+        const order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
         _rangeDiffs = [..._rwDiffs].sort((a, b) => order.indexOf(a) - order.indexOf(b));
         if (!_rangeDiffs.length) _rangeDiffs = ['junior'];
         _rangeGenres = [..._rwGenres];
@@ -800,7 +801,7 @@ const GameUI = (function() {
     }
 
     function _rangeTopDiff() {
-      const order = ['junior', 'mid', 'senior', 'supreme'];
+      const order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       return [..._rwDiffs].sort((a, b) => order.indexOf(a) - order.indexOf(b)).pop() || 'junior';
     }
 
@@ -1043,7 +1044,7 @@ const GameUI = (function() {
       GameEngine.player.dojoEnemyLevel = val;
       document.getElementById('dojo-popup-lv-display').textContent = 'Lv.' + val;
       // 報酬・敵HPは選択した中で最上位の難易度を基準にする
-      const _order = ['junior', 'mid', 'senior', 'supreme'];
+      const _order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       const _topDiff = _rangeDiffs.slice().sort((a, b) => _order.indexOf(a) - _order.indexOf(b)).pop() || 'junior';
       const est = Math.floor(900 * (_dojoGoldMult[_topDiff] || 1) * _dojoLvScale(val));
       document.getElementById('dojo-popup-reward').textContent = `推定報酬: 🪙 ${est.toLocaleString()}/敵`;
