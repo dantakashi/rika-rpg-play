@@ -221,6 +221,8 @@
   #unitPop.on{display:flex}
   #unitPop .card{background:var(--panel); border:3px solid var(--ally); border-radius:18px; padding:18px; max-width:360px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,.4); animation:badgePop .5s cubic-bezier(.2,1.5,.4,1)}
   .qslot .cd{position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:800; background:#9a8f7c; color:#fff; padding:0 4px; border-radius:6px; white-space:nowrap}
+  .qslot.cooling{filter:grayscale(1); opacity:.5; border-style:dashed}
+  .qslot.cooling .rar{opacity:.7}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -2359,6 +2361,7 @@ const Game = (()=>{
     return t.length?t.join('・'):'バランス型'; }
   // クリック→詳細ポップアップ（mode: 'deck'=編成 / 'charup'=強化）
   function openUnitPop(key, mode){
+    if(!ROSTER[key]) return;
     const r=ROSTER[key], lv=unitLevel(key), star=unitStars(key), cur=unitStats(key);
     const card=$('unitPopCard'); if(!card) return;
     function stat(lbl,val){ return '<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:6px;text-align:center"><div class="muted" style="font-size:11px">'+lbl+'</div><div style="font-weight:800;font-size:15px">'+val+'</div></div>'; }
@@ -2414,6 +2417,7 @@ const Game = (()=>{
     const body=$('charupBody'); if(!body) return; body.innerHTML='';
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
     Object.keys(owned).forEach(function(key){
+      if(!ROSTER[key]) return;
       const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key);
       const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;width:100%;text-align:left;cursor:pointer';
       row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
@@ -2458,7 +2462,7 @@ const Game = (()=>{
     const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='手持ちをタップで編成（最大5体）。戦闘の召喚はこの編成からランダムに出ます。';
     body.appendChild(note);
     const list=document.createElement('div'); list.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
-    Object.keys(owned).forEach(function(key){ list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
+    Object.keys(owned).forEach(function(key){ if(ROSTER[key]) list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
     body.appendChild(list);
   }
   function renderCastle(){
@@ -2650,7 +2654,7 @@ const Game = (()=>{
      ・予想枠の表示ルール：q1(次)=CD2秒以内のみ／q2(次の次)=CD5秒未満のみ。
        SSRはCDが長く予想に出ない＝高コストが連続して詰まらない。 */
   function summonCd(key){ return ROSTER[key].scd||1.5; }
-  function deckKeys(){ return (deck&&deck.length)?deck.slice():ROSTER_KEYS.slice(); }
+  function deckKeys(){ var d=((deck&&deck.length)?deck:ROSTER_KEYS).filter(function(k){return ROSTER[k];}); return d.length?d:ROSTER_KEYS.slice(); }
   function cdLeft(key){ return (B&&B.cd&&B.cd[key])||0; }
   function unitWeight(key){ return ROSTER[key].weight||10; }
   function weightedPick(keys){
@@ -2665,37 +2669,50 @@ const Game = (()=>{
     if((base.rar==="SR"||base.rar==="SSR") && Math.random()<0.18){ cost=Math.round(base.cost*0.6); bargain=true; }
     return { key, cost, bargain };
   }
-  // maxScd: そのスロットに出せる最大クールダウン（q0=999/q1=2/q2=4.99）
-  function drawSlot(maxScd){
-    var pool=deckKeys().filter(function(k){ return cdLeft(k)<=0 && summonCd(k)<=maxScd; });
-    var key=weightedPick(pool);
+  // そのスロットに出しうるキャラ（しきい値内）。短CDが編成に居なければ全員にフォールバック
+  function deckByThreshold(maxScd){
+    var pool=deckKeys().filter(function(k){ return summonCd(k)<=maxScd; });
+    return pool.length?pool:deckKeys();
+  }
+  // 出せるキャラを優先抽選。全員CD中なら「一番早く明けるキャラ」を灰色予約として返す
+  function pickSlot(maxScd){
+    var cand=deckByThreshold(maxScd); if(!cand.length) return null;
+    var ready=cand.filter(function(k){ return cdLeft(k)<=0; });
+    var key = ready.length ? weightedPick(ready)
+                           : cand.slice().sort(function(a,b){ return cdLeft(a)-cdLeft(b); })[0];
     return key?makeUnit(key):null;
   }
-  function rebuildQueue(){ B.queue=[ drawSlot(999), drawSlot(2), drawSlot(4.99) ]; }
+  function rebuildQueue(){ B.queue=[ pickSlot(999), pickSlot(2), pickSlot(4.99) ]; }
   function renderQueue(){
     const slots=['q0','q1','q2'];
     slots.forEach((id,i)=>{
       const u=B.queue[i]; const el=$(id); if(!el) return;
-      if(!u){ el.className='qslot '+(i===0?'now':'qnext'); el.innerHTML='<span class="muted" style="font-size:11px">…</span>'; return; }
+      if(!u||!ROSTER[u.key]){ el.className='qslot '+(i===0?'now':'qnext'); el.innerHTML='<span class="muted" style="font-size:11px">…</span>'; return; }
       const r=ROSTER[u.key];
-      const ready = (i===0 && B.energy>=u.cost);
-      el.className='qslot'+(i===0?' now':' qnext')+(ready?' ready':'');
+      const cd=cdLeft(u.key), pending=cd>0;
+      const ready = (i===0 && !pending && B.energy>=u.cost);
+      el.className='qslot'+(i===0?' now':' qnext')+(ready?' ready':'')+(pending?' cooling':'');
       el.innerHTML = `<span class="rar" style="background:${r.rarColor}">${r.rar}</span>`+
-        (u.bargain?`<span class="bargain">お得</span>`:'')+
-        SVG.get(r.sprite)+`<span class="cost">⚡${u.cost}</span>`;
+        (u.bargain&&!pending?`<span class="bargain">お得</span>`:'')+
+        SVG.get(r.sprite)+`<span class="cost">⚡${u.cost}</span>`+
+        (pending?`<span class="cd">⏳${cd.toFixed(1)}</span>`:'');
     });
     const front=B.queue[0];
-    if(!front){ $('summonBtn').disabled=true; $('summonBtn').textContent='⏳ じゅんび中…'; return; }
+    if(!front||!ROSTER[front.key]){ $('summonBtn').disabled=true; $('summonBtn').textContent='⏳ じゅんび中…'; return; }
+    const fcd=cdLeft(front.key);
+    if(fcd>0){ $('summonBtn').disabled=true; $('summonBtn').textContent=`⏳ クールダウン ${fcd.toFixed(1)}秒`; return; }
     const canPay=B.energy>=front.cost;
     $('summonBtn').disabled = !canPay;
     $('summonBtn').textContent = canPay ? `召喚 ⎵ (${ROSTER[front.key].name})` : `あと⚡${Math.ceil(front.cost-B.energy)}`;
   }
   function summon(){
     if(!B||!B.running) return;
-    const u=B.queue[0]; if(!u) return; if(B.energy < u.cost) return;
+    const u=B.queue[0]; if(!u||!ROSTER[u.key]) return;
+    if(cdLeft(u.key)>0) return;        // クールダウン中は出せない（灰色予約）
+    if(B.energy < u.cost) return;
     B.energy -= u.cost;
     spawnAlly(u.key);
-    B.cd[u.key]=summonCd(u.key);   // 出したキャラはクールダウン中、再出撃しない
+    B.cd[u.key]=summonCd(u.key);       // 出したキャラはクールダウン中、再出撃しない
     rebuildQueue();
     renderQueue(); syncHUD();
   }
@@ -2802,9 +2819,9 @@ const Game = (()=>{
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
     // クールダウン消化。CDが明けて出せる枠が空いていれば補充
     for(var __k in B.cd){ if(B.cd[__k]>0){ B.cd[__k]-=dt; if(B.cd[__k]<0) B.cd[__k]=0; } }
-    if(!B.queue[0]){ var __q0=drawSlot(999); if(__q0) B.queue[0]=__q0; }
-    // 自動召喚（苦手な子向け・操作を問題に集中）
-    if(autoSummon && B.queue[0] && B.energy>=B.queue[0].cost) summon();
+    if(!B.queue||B.queue.length<3||!B.queue[0]) rebuildQueue();
+    // 自動召喚（苦手な子向け・操作を問題に集中）。クールダウン中は出さない
+    if(autoSummon && B.queue[0] && cdLeft(B.queue[0].key)<=0 && B.energy>=B.queue[0].cost) summon();
     // ウェーブ
     if(B.stage.endless){ towerStep(); }
     else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ spawnEnemy(B.stage.waves[B.spawnIdx].type); B.spawnIdx++; } }
