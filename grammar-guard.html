@@ -373,11 +373,12 @@
   <section id="assess" class="screen col pad">
     <div id="assessProg" style="margin-top:4px"></div>
     <div class="assbar" id="assessBarWrap"><i id="assessBar"></i></div>
+    <div id="assessTicks" style="display:flex; gap:4px; width:100%; max-width:460px"></div>
     <div id="assessQ"></div>
     <div id="assessChoices"></div>
     <div id="assessResult" style="display:none; flex-direction:column; align-items:center; width:100%"></div>
     <div style="flex:1; min-height:8px"></div>
-    <button class="btn ghost" onclick="Game.assessSkip()" style="max-width:280px;opacity:.85">あとで（スキップ）</button>
+    <button class="btn ghost" id="assessSkipBtn" onclick="Game.assessSkip()" style="max-width:240px;opacity:.8">やめる</button>
   </section>
 
   <!-- ===== リザルト ===== -->
@@ -2916,35 +2917,67 @@ const Game = (()=>{
   // 凍結タブ復元時は戦闘の途中状態で固まらないようホームへ戻す
   window.addEventListener('pageshow', e=>{ if(e.persisted){ try{ toHome(); }catch(_){} } });
 
-  /* ============ 実力測定（適応式・単語/文法を別判定） ============ */
+  /* ============ 実力測定（ラダー式・単語/文法を別判定） ============ */
   let placement = {word:null, grammar:null, bestScore:0, doneAt:''};
   let AS = null;
-  const ASSESS_PER = 12;
-  function recIdx(g){ return placement[g]?QuizEngine.LV_ORDER.indexOf(placement[g]):-1; }
+  const LV5 = QuizEngine.LV_ORDER; // e4..ep1
+  function recIdx(g){ return placement[g]?LV5.indexOf(placement[g]):-1; }
   function recoBonusActive(){
     const sel=QuizEngine.getSel(); let need=-1;
     sel.genres.forEach(function(g){ const r=recIdx(g); if(r>=0) need=Math.max(need,r); });
     if(need<0) return false;
-    const selMax=Math.max.apply(null, sel.levels.map(function(l){return QuizEngine.LV_ORDER.indexOf(l);}));
+    const selMax=Math.max.apply(null, sel.levels.map(function(l){return LV5.indexOf(l);}));
     return selMax>=need;
   }
+  function assessView(mode){ // 'intro' | 'quiz' | 'result'
+    var q=mode==='quiz';
+    ['assessProg','assessBarWrap','assessTicks','assessQ','assessChoices'].forEach(function(id){ var e=$(id); if(e) e.style.display=q?'':'none'; });
+    var rb=$('assessResult'); if(rb) rb.style.display=q?'none':'flex';
+    var sk=$('assessSkipBtn'); if(sk) sk.style.display=q?'':'none';
+  }
+  // 入口：ゲーム説明＋「測定する / あとで」を選ばせる
   function startAssessment(){
-    AS={ order:['word','grammar'], gi:0, qn:0, idx:1, attempts:{word:{},grammar:{}}, recs:{}, locked:false, cur:null };
-    var rb=$('assessResult'); if(rb){ rb.style.display='none'; rb.innerHTML=''; }
-    ['assessQ','assessChoices','assessProg','assessBarWrap'].forEach(function(id){ var e=$(id); if(e) e.style.display=''; });
-    show('assess'); assessNext();
+    AS=null; show('assess'); assessView('intro');
+    var html='<div style="font-size:25px;font-weight:800;margin-bottom:8px">📊 実力測定</div>';
+    html+='<div style="max-width:440px;line-height:1.7;text-align:left;margin:0 auto 14px">';
+    html+='<b>グラマー・ガード</b>は、英単語・文法のクイズに答えて味方を呼び出し、敵のお城をせめる<b>タワーディフェンス型の英語ゲーム</b>です。<br><br>';
+    html+='まずは<b>実力測定</b>で、あなたの英検レベル（<b>単語</b>と<b>文法</b>）を調べましょう。やさしい問題から1段ずつ上がっていき、どこまで登れるかでランクが決まります。<br><br>';
+    html+='測定すると…<br>・ぴったりの難易度で遊べる（推奨級を表示）<br>・推奨級で挑戦すると⚡エネルギー加速＋30%<br>・ランクが上がるほど大きなコイン報酬💰';
+    html+='</div>';
+    html+='<button class="btn" id="assessBegin" style="max-width:300px">📊 実力測定をする</button>';
+    html+='<button class="btn ghost" id="assessLater" style="max-width:300px;margin-top:8px">あとで（ホームへ）</button>';
+    var rb=$('assessResult'); rb.innerHTML=html;
+    $('assessBegin').onclick=function(){ beginMeasure(); };
+    $('assessLater').onclick=function(){ assessSkip(); };
+  }
+  function beginMeasure(){
+    AS={ genre:'word', idx:0, cleared:-1, misses:0, seen:{word:{},grammar:{}}, ranks:{}, locked:false, cur:null, asked:0 };
+    assessView('quiz'); assessNext();
+  }
+  function drawUnseen(genre, level){
+    var seen=AS.seen[genre], q=null;
+    for(var t=0;t<10;t++){ var c=QuizEngine.drawFor(genre, level, 4); if(!c) break; q=c; if(!seen[c.qtext]) break; }
+    if(!q) q=QuizEngine.drawFor(genre, LV5[0], 4);
+    if(q) seen[q.qtext]=1;
+    return q;
+  }
+  function gaugePct(){ return Math.max(0,(AS.cleared+1))/LV5.length*100; }
+  function renderTicks(){
+    var t=$('assessTicks'); if(!t) return; t.innerHTML='';
+    LV5.forEach(function(k,i){ var s=document.createElement('span');
+      s.textContent=QuizEngine.LV_LABEL[k].replace('英検','');
+      var on=i<=AS.cleared, cur=i===AS.idx;
+      s.style.cssText='flex:1;text-align:center;font-size:11px;font-weight:800;padding:2px 0;border-radius:6px;'+(cur?'background:var(--ally);color:#fff;':on?'color:var(--ally);':'color:#bbb;');
+      t.appendChild(s); });
   }
   function assessNext(){
     if(!AS) return;
-    if(AS.gi>=AS.order.length){ assessFinish(); return; }
-    var genre=AS.order[AS.gi];
-    var level=QuizEngine.LV_ORDER[AS.idx];
-    var q=QuizEngine.drawFor(genre, level, 4) || QuizEngine.drawFor(genre, QuizEngine.LV_ORDER[1], 4) || QuizEngine.drawFor(genre, QuizEngine.LV_ORDER[0], 4);
-    AS.cur=q; AS.locked=false;
+    var genre=AS.genre, level=LV5[AS.idx];
+    var q=drawUnseen(genre, level); AS.cur=q; AS.locked=false; AS.asked++;
     var gname=genre==='word'?'単語':'文法';
-    var done=AS.gi*ASSESS_PER+AS.qn;
-    var pr=$('assessProg'); if(pr) pr.textContent='📊 '+gname+'　'+(AS.qn+1)+' / '+ASSESS_PER+'　（'+QuizEngine.LV_LABEL[level]+'）';
-    var bar=$('assessBar'); if(bar) bar.style.width=(done/(ASSESS_PER*2)*100)+'%';
+    var pr=$('assessProg'); if(pr) pr.innerHTML='📊 <b>'+gname+'</b>の実力をチェック中　— いま <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[level]+'</b> に挑戦！'+(AS.misses>0?'　<span style="color:var(--gold)">（あと1問！）</span>':'');
+    var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
+    renderTicks();
     if(!q){ $('assessQ').textContent='問題が読めませんでした'; return; }
     $('assessQ').innerHTML=q.qtext;
     var box=$('assessChoices'); box.className=''; box.innerHTML='';
@@ -2952,46 +2985,65 @@ const Game = (()=>{
   }
   function assessAnswer(i, btn){
     if(!AS||AS.locked) return; AS.locked=true;
-    var q=AS.cur, genre=AS.order[AS.gi];
-    var right=(i===q.answerIndex);
+    var q=AS.cur, right=(i===q.answerIndex);
     var btns=[].slice.call($('assessChoices').children);
     btns.forEach(function(b){ b.style.pointerEvents='none'; });
     btn.classList.add(right?'ok':'ng');
     if(!right && btns[q.answerIndex]) btns[q.answerIndex].classList.add('ok');
     try{ Sound.play(right?'correct':'wrong'); }catch(e){}
-    (AS.attempts[genre][AS.idx]=AS.attempts[genre][AS.idx]||[]).push(right);
-    if(right) AS.idx=Math.min(QuizEngine.LV_ORDER.length-1, AS.idx+1);
-    else AS.idx=Math.max(0, AS.idx-1);
-    AS.qn++;
-    if(AS.qn>=ASSESS_PER){ AS.recs[genre]=estimateLevel(AS.attempts[genre]); AS.gi++; AS.qn=0; AS.idx=1; }
-    setTimeout(assessNext, 750);
+    if(right){
+      AS.cleared=AS.idx; AS.misses=0; AS.idx++;
+      var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
+      if(AS.idx>=LV5.length){ setTimeout(function(){ genreDone(LV5[LV5.length-1]); },700); return; }
+    } else {
+      AS.misses++;
+      if(AS.misses>=2){ setTimeout(function(){ genreDone(AS.cleared>=0?LV5[AS.cleared]:LV5[0]); },700); return; }
+    }
+    setTimeout(assessNext, 800);
   }
-  function estimateLevel(att){
-    var rec=0;
-    for(var L=0;L<QuizEngine.LV_ORDER.length;L++){ var a=att[L]; if(a&&a.length){ var rate=a.filter(Boolean).length/a.length; if(rate>=0.5) rec=L; } }
-    return QuizEngine.LV_ORDER[rec];
+  function genreDone(rankKey){
+    AS.ranks[AS.genre]=rankKey;
+    if(AS.genre==='word'){ placement.word=rankKey; showWordResult(rankKey); }
+    else { placement.grammar=rankKey; finalizeAssess(); }
   }
-  function assessFinish(){
-    placement.word=AS.recs.word||QuizEngine.LV_ORDER[0]; placement.grammar=AS.recs.grammar||QuizEngine.LV_ORDER[0];
+  function showWordResult(rankKey){
+    assessView('result');
+    var bw=$('assessBarWrap'); if(bw) bw.style.display='';
+    var bar=$('assessBar'); if(bar){ bar.style.width='0%'; setTimeout(function(){ bar.style.width='100%'; },60); }
+    var pr=$('assessProg'); if(pr){ pr.style.display=''; pr.innerHTML='📊 <b>単語</b>の測定かんりょう！'; }
+    var html='<div class="muted" style="font-size:18px;font-weight:800">単語の実力は…</div>';
+    html+='<div style="font-size:34px;font-weight:800;color:var(--ally);margin:6px 0 12px">'+QuizEngine.LV_LABEL[rankKey]+' 🎉</div>';
+    html+='<div class="muted" style="margin-bottom:14px">つづけて<b>文法</b>も測定しますか？（おすすめ）</div>';
+    html+='<button class="btn" id="assessGoGrammar" style="max-width:300px">▶ 文法も測定する</button>';
+    html+='<button class="btn ghost" id="assessStopHere" style="max-width:300px;margin-top:8px">ここで終わる</button>';
+    var rb=$('assessResult'); rb.innerHTML=html;
+    $('assessGoGrammar').onclick=function(){ AS.genre='grammar'; AS.idx=0; AS.cleared=-1; AS.misses=0; assessView('quiz'); assessNext(); };
+    $('assessStopHere').onclick=function(){ finalizeAssess(); };
+    try{ Sound.play('correct'); }catch(e){}
+  }
+  function rankNum(g){ return placement[g]?LV5.indexOf(placement[g])+1:0; }
+  function finalizeAssess(){
     var d=new Date(); placement.doneAt=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-    var wi=QuizEngine.LV_ORDER.indexOf(placement.word), gi2=QuizEngine.LV_ORDER.indexOf(placement.grammar);
-    var score=wi+gi2;
-    var prev=placement.bestScore||0, reward, rec=false;
-    if(score>prev){ reward=300+(score-prev)*500; placement.bestScore=score; rec=true; }
-    else { reward=80; }
+    var total=rankNum('word')+rankNum('grammar');
+    var prev=placement.bestScore||0;
+    var gain=Math.max(0,total-prev), reward=gain*3000, up=gain>0;
+    if(up) placement.bestScore=total;
     gold+=reward; save();
-    ['assessQ','assessChoices','assessProg','assessBarWrap'].forEach(function(id){ var e=$(id); if(e) e.style.display='none'; });
+    assessView('result');
+    var wlab=placement.word?QuizEngine.LV_LABEL[placement.word]:'未測定';
+    var glab=placement.grammar?QuizEngine.LV_LABEL[placement.grammar]:'未測定';
     var html='<div style="font-size:26px;font-weight:800;margin-bottom:6px">📊 実力測定けっか</div>';
     html+='<div style="display:flex;gap:10px;justify-content:center;margin:8px 0">';
-    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</div></div>';
-    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</div></div>';
+    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+wlab+'</div></div>';
+    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+glab+'</div></div>';
     html+='</div>';
-    html+='<div style="font-weight:800;color:var(--gold);font-size:20px;margin:6px 0">'+(rec?'🏅 自己ベスト更新！ ':'')+'💰 +'+reward+'</div>';
-    html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%。さらに上の級に挑むほどコンボ倍率も上がり、次の測定で高スコアを出すほど大きなコイン報酬がもらえます。</div>';
+    if(reward>0) html+='<div style="font-weight:800;color:var(--gold);font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💰 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+(gain*10)+'連ぶん！）</div></div>';
+    else html+='<div class="muted" style="margin:8px 0">今回はランクアップなし（次はもっと上をめざそう！）</div>';
+    html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%。より高い級に挑むほどコンボ倍率も上がります。</div>';
     html+='<button class="btn" id="assessToReco" style="max-width:300px">出題設定をひらく ▶</button>';
     html+='<button class="btn ghost" id="assessHome" style="max-width:300px;margin-top:8px">ホームへ</button>';
     html+='<button class="btn ghost" id="assessAgain" style="max-width:300px;margin-top:8px">もう一度測定</button>';
-    var rb=$('assessResult'); rb.style.display='flex'; rb.innerHTML=html;
+    var rb=$('assessResult'); rb.innerHTML=html;
     $('assessHome').onclick=function(){ AS=null; toHome(); };
     $('assessAgain').onclick=function(){ startAssessment(); };
     $('assessToReco').onclick=function(){ AS=null; homeView='quiz'; renderHome(); show('home'); };
