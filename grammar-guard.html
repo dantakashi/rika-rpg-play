@@ -130,6 +130,13 @@
   @keyframes pulse{50%{box-shadow:0 0 0 6px #e0a93b66}}
   .choice.ok{background:var(--good); color:#fff; border-color:var(--good)}
   .choice.ng{background:var(--bad); color:#fff; border-color:var(--bad)}
+  #assess{align-items:center; gap:10px; padding-top:18px; overflow-y:auto}
+  #assessChoices{display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:460px}
+  #assessQ{font-size:22px; font-weight:800; text-align:center; min-height:30px; line-height:1.3; margin:4px 0}
+  #assessQ .blank{color:var(--ally)}
+  #assessProg{font-weight:800; color:var(--ally)}
+  .assbar{height:10px; width:100%; max-width:460px; background:#0001; border-radius:6px; overflow:hidden}
+  .assbar>i{display:block; height:100%; background:var(--ally); width:0; transition:width .25s}
   #qfeedback{font-size:15px; min-height:20px; margin-top:6px; text-align:center; font-weight:700; line-height:1.35}
   .topbar{display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:13px; font-weight:700}
   .pill{background:#fff; border:2px solid var(--line); border-radius:999px; padding:3px 10px; font-size:12px}
@@ -250,6 +257,7 @@
         <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
         <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
         <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
+        <button class="menubtn" onclick="Game.startAssessment()">📊 実力測定<span class="sub">単語・文法のレベルを判定（推奨級＆コイン報酬）</span></button>
       </div>
       <div class="homeview" data-view="play">
         <button class="quizbar" id="quizSummaryBtn" data-go="quiz"></button>
@@ -275,6 +283,7 @@
           <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
           <div class="seg" id="choiceSeg"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
+          <div id="assessReco" class="muted" style="margin-top:8px;line-height:1.45"></div>
         </div>
       </div>
       <div class="homeview" data-view="grow">
@@ -358,6 +367,17 @@
       <div id="choices"></div>
       <div id="qfeedback"></div>
     </div>
+  </section>
+
+  <!-- ===== 実力測定 ===== -->
+  <section id="assess" class="screen col pad">
+    <div id="assessProg" style="margin-top:4px"></div>
+    <div class="assbar" id="assessBarWrap"><i id="assessBar"></i></div>
+    <div id="assessQ"></div>
+    <div id="assessChoices"></div>
+    <div id="assessResult" style="display:none; flex-direction:column; align-items:center; width:100%"></div>
+    <div style="flex:1; min-height:8px"></div>
+    <button class="btn ghost" onclick="Game.assessSkip()" style="max-width:280px;opacity:.85">あとで（スキップ）</button>
   </section>
 
   <!-- ===== リザルト ===== -->
@@ -2041,6 +2061,12 @@ const QuizEngine = (()=>{
   function pushReview(built){ if(!built) return; reviewQ.push(Object.assign({}, built, {review:true, locked:false})); if(reviewQ.length>20) reviewQ.shift(); }
   function reviewCount(){ return reviewQ.length; }
 
+  function drawFor(genre, level, choiceCount){
+    var p=DB.filter(function(q){ return q.genre===genre && q.level===level; });
+    if(!p.length) return null;
+    var q=rnd(p);
+    return q.genre==="grammar" ? buildGrammar(q, choiceCount) : buildWord(q, choiceCount);
+  }
   function next(choiceCount){
     if(reviewQ.length && Math.random()<0.35){
       const __i=reviewQ.findIndex(r=>selGenres.has(r.genre));
@@ -2072,7 +2098,7 @@ const QuizEngine = (()=>{
   function toggleTier(k){ toggleIn(selTiers,k); }
   function toggleGenre(k){ toggleIn(selGenres,k); }
 
-  return { next, comboGain, pushReview, reviewCount, size:()=>DB.length,
+  return { next, drawFor, comboGain, pushReview, reviewCount, size:()=>DB.length,
     EIKEN, TIERS, GENRES, LV_LABEL, LV_ORDER,
     getSel, setSel, toggleLevel, toggleTier, toggleGenre, poolCount,
     has:(t,k)=>(t==='level'?selLevels:t==='tier'?selTiers:selGenres).has(k) };
@@ -2219,12 +2245,13 @@ const Game = (()=>{
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
       towerBest=s.towerBest||0; lastDaily=s.lastDaily||'';
+      if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     ensureStarter();
   }
   function save(){
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, placement})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -2451,7 +2478,7 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:30, energyMax:enMaxVal(), baseRegen:regenVal(), softcap:12, maxMult:4,
+      energy:30, energyMax:enMaxVal(), baseRegen:regenVal()*(recoBonusActive()?1.3:1), recoBonus:recoBonusActive(), softcap:12, maxMult:4,
       combo:0, bestCombo:0,
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
@@ -2467,6 +2494,7 @@ const Game = (()=>{
   function toHome(){
     stopBattle();
     Sound.ensure(); $('soundBtn').textContent = Sound.isOn()?'🔊':'🔇';
+    if(!placement.doneAt && !AS){ startAssessment(); return; }
     homeView='menu'; renderHome(); show('home');
   }
   function start(){
@@ -2500,6 +2528,8 @@ const Game = (()=>{
     __seg('tierSeg',  QuizEngine.TIERS,  function(k){return QuizEngine.has('tier',k);},  function(k){QuizEngine.toggleTier(k);});
     __seg('choiceSeg', [{key:2,label:'2択'},{key:4,label:'4択'}], function(k){return k===choiceMode;}, function(k){choiceMode=k;});
     const __pc=$('poolCount'); if(__pc) __pc.textContent='今の出題範囲：'+QuizEngine.poolCount()+'問';
+    var __ar=$('assessReco');
+    if(__ar){ if(placement.doneAt && placement.word){ __ar.innerHTML='📊 あなたの推奨級 — 単語: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</b> ／ 文法: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</b>'+(recoBonusActive()?' <span style="color:#3aa6a0;font-weight:800">⚡加速中!</span>':' <span style="font-size:11px">←この級を選ぶと⚡加速UP</span>'); } else { __ar.innerHTML='📊 実力測定がまだです。ホームの「実力測定」で単語・文法のレベルを判定できます。'; } }
     // あそびやすさトグル
     const ta=$('tgAuto'), ts=$('tgSlow');
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
@@ -2552,6 +2582,7 @@ const Game = (()=>{
     // 召喚キュー初期化（次2体プレビュー）
     B.queue = [drawUnit(), drawUnit(), drawUnit(), drawUnit()];
     show('battle');
+    if(B.recoBonus){ try{ fxBanner('📊 推奨級チャレンジ! ⚡加速+30%','#3aa6a0'); }catch(e){} }
     renderQueue(); nextQuestion();
     syncHUD();
     B.running=true; B.last=performance.now();
@@ -2885,7 +2916,90 @@ const Game = (()=>{
   // 凍結タブ復元時は戦闘の途中状態で固まらないようホームへ戻す
   window.addEventListener('pageshow', e=>{ if(e.persisted){ try{ toHome(); }catch(_){} } });
 
-  return { start, toHome, summon, toggleSound, _stages:STAGES };
+  /* ============ 実力測定（適応式・単語/文法を別判定） ============ */
+  let placement = {word:null, grammar:null, bestScore:0, doneAt:''};
+  let AS = null;
+  const ASSESS_PER = 12;
+  function recIdx(g){ return placement[g]?QuizEngine.LV_ORDER.indexOf(placement[g]):-1; }
+  function recoBonusActive(){
+    const sel=QuizEngine.getSel(); let need=-1;
+    sel.genres.forEach(function(g){ const r=recIdx(g); if(r>=0) need=Math.max(need,r); });
+    if(need<0) return false;
+    const selMax=Math.max.apply(null, sel.levels.map(function(l){return QuizEngine.LV_ORDER.indexOf(l);}));
+    return selMax>=need;
+  }
+  function startAssessment(){
+    AS={ order:['word','grammar'], gi:0, qn:0, idx:1, attempts:{word:{},grammar:{}}, recs:{}, locked:false, cur:null };
+    var rb=$('assessResult'); if(rb){ rb.style.display='none'; rb.innerHTML=''; }
+    ['assessQ','assessChoices','assessProg','assessBarWrap'].forEach(function(id){ var e=$(id); if(e) e.style.display=''; });
+    show('assess'); assessNext();
+  }
+  function assessNext(){
+    if(!AS) return;
+    if(AS.gi>=AS.order.length){ assessFinish(); return; }
+    var genre=AS.order[AS.gi];
+    var level=QuizEngine.LV_ORDER[AS.idx];
+    var q=QuizEngine.drawFor(genre, level, 4) || QuizEngine.drawFor(genre, QuizEngine.LV_ORDER[1], 4) || QuizEngine.drawFor(genre, QuizEngine.LV_ORDER[0], 4);
+    AS.cur=q; AS.locked=false;
+    var gname=genre==='word'?'単語':'文法';
+    var done=AS.gi*ASSESS_PER+AS.qn;
+    var pr=$('assessProg'); if(pr) pr.textContent='📊 '+gname+'　'+(AS.qn+1)+' / '+ASSESS_PER+'　（'+QuizEngine.LV_LABEL[level]+'）';
+    var bar=$('assessBar'); if(bar) bar.style.width=(done/(ASSESS_PER*2)*100)+'%';
+    if(!q){ $('assessQ').textContent='問題が読めませんでした'; return; }
+    $('assessQ').innerHTML=q.qtext;
+    var box=$('assessChoices'); box.className=''; box.innerHTML='';
+    q.choices.forEach(function(c,i){ var b=document.createElement('button'); b.className='choice'; b.textContent=c; b.onclick=function(){ assessAnswer(i,b); }; box.appendChild(b); });
+  }
+  function assessAnswer(i, btn){
+    if(!AS||AS.locked) return; AS.locked=true;
+    var q=AS.cur, genre=AS.order[AS.gi];
+    var right=(i===q.answerIndex);
+    var btns=[].slice.call($('assessChoices').children);
+    btns.forEach(function(b){ b.style.pointerEvents='none'; });
+    btn.classList.add(right?'ok':'ng');
+    if(!right && btns[q.answerIndex]) btns[q.answerIndex].classList.add('ok');
+    try{ Sound.play(right?'correct':'wrong'); }catch(e){}
+    (AS.attempts[genre][AS.idx]=AS.attempts[genre][AS.idx]||[]).push(right);
+    if(right) AS.idx=Math.min(QuizEngine.LV_ORDER.length-1, AS.idx+1);
+    else AS.idx=Math.max(0, AS.idx-1);
+    AS.qn++;
+    if(AS.qn>=ASSESS_PER){ AS.recs[genre]=estimateLevel(AS.attempts[genre]); AS.gi++; AS.qn=0; AS.idx=1; }
+    setTimeout(assessNext, 750);
+  }
+  function estimateLevel(att){
+    var rec=0;
+    for(var L=0;L<QuizEngine.LV_ORDER.length;L++){ var a=att[L]; if(a&&a.length){ var rate=a.filter(Boolean).length/a.length; if(rate>=0.5) rec=L; } }
+    return QuizEngine.LV_ORDER[rec];
+  }
+  function assessFinish(){
+    placement.word=AS.recs.word||QuizEngine.LV_ORDER[0]; placement.grammar=AS.recs.grammar||QuizEngine.LV_ORDER[0];
+    var d=new Date(); placement.doneAt=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    var wi=QuizEngine.LV_ORDER.indexOf(placement.word), gi2=QuizEngine.LV_ORDER.indexOf(placement.grammar);
+    var score=wi+gi2;
+    var prev=placement.bestScore||0, reward, rec=false;
+    if(score>prev){ reward=300+(score-prev)*500; placement.bestScore=score; rec=true; }
+    else { reward=80; }
+    gold+=reward; save();
+    ['assessQ','assessChoices','assessProg','assessBarWrap'].forEach(function(id){ var e=$(id); if(e) e.style.display='none'; });
+    var html='<div style="font-size:26px;font-weight:800;margin-bottom:6px">📊 実力測定けっか</div>';
+    html+='<div style="display:flex;gap:10px;justify-content:center;margin:8px 0">';
+    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</div></div>';
+    html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</div></div>';
+    html+='</div>';
+    html+='<div style="font-weight:800;color:var(--gold);font-size:20px;margin:6px 0">'+(rec?'🏅 自己ベスト更新！ ':'')+'💰 +'+reward+'</div>';
+    html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%。さらに上の級に挑むほどコンボ倍率も上がり、次の測定で高スコアを出すほど大きなコイン報酬がもらえます。</div>';
+    html+='<button class="btn" id="assessToReco" style="max-width:300px">出題設定をひらく ▶</button>';
+    html+='<button class="btn ghost" id="assessHome" style="max-width:300px;margin-top:8px">ホームへ</button>';
+    html+='<button class="btn ghost" id="assessAgain" style="max-width:300px;margin-top:8px">もう一度測定</button>';
+    var rb=$('assessResult'); rb.style.display='flex'; rb.innerHTML=html;
+    $('assessHome').onclick=function(){ AS=null; toHome(); };
+    $('assessAgain').onclick=function(){ startAssessment(); };
+    $('assessToReco').onclick=function(){ AS=null; homeView='quiz'; renderHome(); show('home'); };
+    try{ Sound.play('correct'); }catch(e){}
+  }
+  function assessSkip(){ if(!placement.doneAt) placement.doneAt='skipped'; AS=null; save(); homeView='menu'; renderHome(); show('home'); }
+
+  return { start, toHome, summon, toggleSound, startAssessment, assessSkip, _stages:STAGES };
 })();
 
 Game.start();
