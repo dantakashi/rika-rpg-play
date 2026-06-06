@@ -217,6 +217,10 @@
   #dailyPop{position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:24px}
   #dailyPop.on{display:flex}
   #dailyPop .card{background:var(--panel); border:3px solid var(--gold); border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.4); animation:badgePop .6s cubic-bezier(.2,1.5,.4,1)}
+  #unitPop{position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:20px}
+  #unitPop.on{display:flex}
+  #unitPop .card{background:var(--panel); border:3px solid var(--ally); border-radius:18px; padding:18px; max-width:360px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,.4); animation:badgePop .5s cubic-bezier(.2,1.5,.4,1)}
+  .qslot .cd{position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:800; background:#9a8f7c; color:#fff; padding:0 4px; border-radius:6px; white-space:nowrap}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -2112,21 +2116,21 @@ const QuizEngine = (()=>{
    §2  味方ロスター / レアリティ / コスト（召喚キューの元）
    ========================================================================= */
 const ROSTER = {
-  guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:120, atk:14, speed:34, range:42, weight:46},
-  arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, pierce:true, weight:26},
-  moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, knockback:16, weight:14},
-  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8},
-  dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, weight:34},
-  bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:16, speed:36, range:74, splash:true, weight:16},
-  healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:130, atk:5, speed:30, range:64, heal:10, weight:9},
-  shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, def:8, weight:20},
-  owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, slow:true, weight:11},
-  orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7},
-  cheerTanuki:{name:"応援タヌキ", sprite:"cheerTanuki", rar:"SR", rarColor:"#8e44ad", cost:78, hp:150, atk:12, speed:30, range:120, buff:0.3, weight:10},
-  ninjaFrog:{name:"忍びガエル", sprite:"ninjaFrog", rar:"R", rarColor:"#2f7dd1", cost:48, hp:90, atk:30, speed:58, range:42, weight:18},
-  steelBull:{name:"鋼の猛牛", sprite:"steelBull", rar:"SR", rarColor:"#8e44ad", cost:96, hp:340, atk:34, speed:26, range:46, knockback:18, weight:10},
-  crystalGolem:{name:"水晶ゴーレム", sprite:"crystalGolem", rar:"SSR", rarColor:"#e0683b", cost:155, hp:760, atk:34, speed:18, range:50, def:14, scale:1.5, weight:6},
-  thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:24, range:150, splash:true, scale:1.5, weight:5}
+  guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:120, atk:14, speed:34, range:42, weight:46, scd:1.5},
+  arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:22, speed:48, range:120, pierce:true, weight:26, scd:2.0},
+  moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:300, atk:30, speed:24, range:48, knockback:16, weight:14, scd:5.0},
+  dragonTurtle:{name:"竜ガメ",     sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:140, hp:260, atk:46, speed:30, range:96, weight:8, scd:7.0},
+  dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, weight:34, scd:1.0},
+  bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:16, speed:36, range:74, splash:true, weight:16, scd:3.0},
+  healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:130, atk:5, speed:30, range:64, heal:10, weight:9, scd:4.5},
+  shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:260, atk:18, speed:26, range:46, def:8, weight:20, scd:3.5},
+  owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:30, speed:30, range:140, slow:true, weight:11, scd:4.5},
+  orcaKnight:{name:"しゃちほこ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:240, atk:40, speed:30, range:80, splash:true, weight:7, scd:6.5},
+  cheerTanuki:{name:"応援タヌキ", sprite:"cheerTanuki", rar:"SR", rarColor:"#8e44ad", cost:78, hp:150, atk:12, speed:30, range:120, buff:0.3, weight:10, scd:4.0},
+  ninjaFrog:{name:"忍びガエル", sprite:"ninjaFrog", rar:"R", rarColor:"#2f7dd1", cost:48, hp:90, atk:30, speed:58, range:42, weight:18, scd:2.5},
+  steelBull:{name:"鋼の猛牛", sprite:"steelBull", rar:"SR", rarColor:"#8e44ad", cost:96, hp:340, atk:34, speed:26, range:46, knockback:18, weight:10, scd:5.0},
+  crystalGolem:{name:"水晶ゴーレム", sprite:"crystalGolem", rar:"SSR", rarColor:"#e0683b", cost:155, hp:760, atk:34, speed:18, range:50, def:14, scale:1.5, weight:6, scd:8.0},
+  thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:24, range:150, splash:true, scale:1.5, weight:5, scd:9.0}
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
@@ -2309,7 +2313,7 @@ const Game = (()=>{
     const b=document.createElement('button');
     b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid '+(selected?'var(--good)':'var(--line)')+';background:'+(selected?'#eafaef':'#fff')+';border-radius:12px;padding:6px 8px;min-width:62px;position:relative';
     b.innerHTML='<span style="position:absolute;top:-8px;left:-4px;font-size:10px;font-weight:800;color:#fff;background:'+r.rarColor+';padding:0 4px;border-radius:6px">'+r.rar+'</span><span style="width:40px;height:40px;display:block">'+SVG.get(r.sprite)+'</span><span style="font-size:11px;font-weight:700">'+r.name+'</span>'+(unitStars(key)?'<span style="font-size:10px;color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'');
-    b.addEventListener('click',function(){toggleDeck(key);});
+    b.addEventListener('click',function(){openUnitPop(key,'deck');});
     return b;
   }
   /* ---- ガチャ演出 ---- */
@@ -2347,6 +2351,47 @@ const Game = (()=>{
   function unitStars(key){ return Math.min(4, Math.max(0, (owned[key]||0)-1)); }
   function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
   function upgradeUnit(key){ if(!owned[key]) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
+  function statsAtLv(key, lv){ const r=ROSTER[key], st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
+  function traitText(r){ var t=[];
+    if(r.range>=110) t.push('遠距離'); if(r.splash) t.push('範囲攻撃'); if(r.pierce) t.push('貫通');
+    if(r.knockback) t.push('ノックバック'); if(r.heal) t.push('味方を回復'); if(r.slow) t.push('敵を遅くする');
+    if(r.def) t.push('防御'+r.def); if(r.buff) t.push('味方強化+'+Math.round(r.buff*100)+'%'); if(r.scale) t.push('巨体');
+    return t.length?t.join('・'):'バランス型'; }
+  // クリック→詳細ポップアップ（mode: 'deck'=編成 / 'charup'=強化）
+  function openUnitPop(key, mode){
+    const r=ROSTER[key], lv=unitLevel(key), star=unitStars(key), cur=unitStats(key);
+    const card=$('unitPopCard'); if(!card) return;
+    function stat(lbl,val){ return '<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:6px;text-align:center"><div class="muted" style="font-size:11px">'+lbl+'</div><div style="font-weight:800;font-size:15px">'+val+'</div></div>'; }
+    let h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+    h+='<span style="width:54px;height:54px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>';
+    h+='<div style="flex:1;min-width:0;text-align:left"><div style="font-weight:800;font-size:18px">'+r.name+' <span style="font-size:12px;color:#fff;background:'+r.rarColor+';padding:1px 6px;border-radius:6px">'+r.rar+'</span></div>';
+    h+='<div class="muted" style="font-size:12px">Lv'+lv+(star?'　<span style="color:var(--gold)">'+'★'.repeat(star)+'</span>':'')+'</div></div></div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
+    h+=stat('コスト','⚡'+r.cost)+stat('クールダウン',summonCd(key)+'秒')+stat('攻撃力','⚔'+cur.atk);
+    h+=stat('HP','♥'+cur.hp)+stat('射程',r.range)+stat('速さ',r.speed)+'</div>';
+    h+='<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:7px;margin-bottom:10px;font-size:13px"><span class="muted">とくせい：</span><b>'+traitText(r)+'</b></div>';
+    card.innerHTML=h;
+    const acts=document.createElement('div'); acts.style.cssText='display:flex;flex-direction:column;gap:8px';
+    if(mode==='deck'){
+      const inDeck=deck.indexOf(key)>=0;
+      const ba=document.createElement('button'); ba.className='btn'; ba.style.width='100%';
+      if(inDeck){ if(deck.length<=1){ ba.disabled=true; ba.textContent='編成から外す（最低1体必要）'; } else { ba.style.background='var(--bad)'; ba.textContent='編成から外す'; ba.onclick=function(){ toggleDeck(key); closeUnitPop(); }; } }
+      else { const full=deck.length>=5; ba.disabled=full; ba.textContent=full?'編成にいれる（満員5体）':'編成にいれる'; if(!full) ba.onclick=function(){ toggleDeck(key); closeUnitPop(); }; }
+      acts.appendChild(ba);
+    } else {
+      const c=unitUpCost(key), nx=statsAtLv(key, lv+1);
+      const pv=document.createElement('div'); pv.className='muted'; pv.style.cssText='font-size:12px;text-align:center';
+      pv.innerHTML='強化すると ⚔'+cur.atk+'→<b style="color:var(--good)">'+nx.atk+'</b>　♥'+cur.hp+'→<b style="color:var(--good)">'+nx.hp+'</b>';
+      acts.appendChild(pv);
+      const bu=document.createElement('button'); bu.className='btn'; bu.style.width='100%'; bu.textContent='強化する（'+c+'G）'; bu.disabled=gold<c;
+      bu.onclick=function(){ upgradeUnit(key); openUnitPop(key,'charup'); };
+      acts.appendChild(bu);
+    }
+    const bc=document.createElement('button'); bc.className='btn ghost'; bc.style.width='100%'; bc.textContent='キャンセル'; bc.onclick=closeUnitPop;
+    acts.appendChild(bc); card.appendChild(acts);
+    $('unitPop').classList.add('on');
+  }
+  function closeUnitPop(){ var p=$('unitPop'); if(p) p.classList.remove('on'); }
   function renderGachaList(){
     const body=$('gachaListBody'); if(!body) return; body.innerHTML='';
     let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
@@ -2370,13 +2415,13 @@ const Game = (()=>{
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
     Object.keys(owned).forEach(function(key){
       const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key);
-      const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff';
+      const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;width:100%;text-align:left;cursor:pointer';
       row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
         '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span> '+(unitStars(key)?'<span style="color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'')+'</div>'+
-        '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'</div></div>';
-      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)';
-      btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',function(){upgradeUnit(key);});
-      row.appendChild(btn); list.appendChild(row);
+        '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'　CD'+summonCd(key)+'秒</div></div>'+
+        '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:'+(gold>=cost?'var(--ally)':'var(--muted)')+'">強化 '+cost+'G ▸</span>';
+      row.addEventListener('click',function(){openUnitPop(key,'charup');});
+      list.appendChild(row);
     });
     body.appendChild(list);
   }
@@ -2406,7 +2451,7 @@ const Game = (()=>{
     const row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
     for(let i=0;i<5;i++){
       const slot=document.createElement('div'); slot.style.cssText='width:54px;height:54px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px '+(deck[i]?'solid var(--ally)':'dashed var(--line)');
-      if(deck[i]) slot.innerHTML='<span style="width:42px;height:42px;display:block">'+SVG.get(ROSTER[deck[i]].sprite)+'</span>'; else slot.textContent='＋';
+      if(deck[i]){ const dk=deck[i]; slot.style.cursor='pointer'; slot.innerHTML='<span style="width:42px;height:42px;display:block">'+SVG.get(ROSTER[dk].sprite)+'</span>'; slot.addEventListener('click',function(){openUnitPop(dk,'deck');}); } else slot.textContent='＋';
       row.appendChild(slot);
     }
     body.appendChild(row);
@@ -2492,7 +2537,7 @@ const Game = (()=>{
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
       allies:[], enemies:[], spawnIdx:0, bossAlive:false, bossPhase:false,
-      queue:[], answered:0, correct:0, missStreak:0, reviewWins:0, mistakes:[],
+      queue:[], cd:{}, answered:0, correct:0, missStreak:0, reviewWins:0, mistakes:[],
       tier:0, wasCleared:false,
       slow:slowMode
     };
@@ -2590,7 +2635,7 @@ const Game = (()=>{
     $('field').querySelectorAll('.unit,.float,.ring,.spark,.frag,.gateflash').forEach(n=>n.remove());
     $('field').classList.remove('warm','hot');
     // 召喚キュー初期化（次2体プレビュー）
-    B.queue = [drawUnit(), drawUnit(), drawUnit(), drawUnit()];
+    B.cd={}; rebuildQueue();
     show('battle');
     if(B.recoBonus){ try{ fxBanner('📊 推奨級チャレンジ! ⚡加速+30%','#3aa6a0'); }catch(e){} }
     renderQueue(); nextQuestion();
@@ -2600,20 +2645,38 @@ const Game = (()=>{
   }
   function stopBattle(){ if(B&&B.raf) cancelAnimationFrame(B.raf); if(B) B.running=false; }
 
-  /* ---- 召喚キュー（ランダム＋たまにコスパ枠） ---- */
-  function drawUnit(){
-    // 編成(deck)からランダムに出撃
-    const keys=(deck&&deck.length)?deck:ROSTER_KEYS;
-    const key=keys[Math.floor(Math.random()*keys.length)];
-    const base=ROSTER[key]||ROSTER[ROSTER_KEYS[0]];
-    let cost=base.cost, bargain=false;
+  /* ---- 召喚キュー（クールダウン制） ----
+     ・一度出すとそのキャラはクールダウン中は再出撃不可。
+     ・予想枠の表示ルール：q1(次)=CD2秒以内のみ／q2(次の次)=CD5秒未満のみ。
+       SSRはCDが長く予想に出ない＝高コストが連続して詰まらない。 */
+  function summonCd(key){ return ROSTER[key].scd||1.5; }
+  function deckKeys(){ return (deck&&deck.length)?deck.slice():ROSTER_KEYS.slice(); }
+  function cdLeft(key){ return (B&&B.cd&&B.cd[key])||0; }
+  function unitWeight(key){ return ROSTER[key].weight||10; }
+  function weightedPick(keys){
+    if(!keys.length) return null;
+    var tot=0; keys.forEach(function(k){ tot+=unitWeight(k); });
+    var r=Math.random()*tot;
+    for(var i=0;i<keys.length;i++){ r-=unitWeight(keys[i]); if(r<=0) return keys[i]; }
+    return keys[keys.length-1];
+  }
+  function makeUnit(key){
+    const base=ROSTER[key]; let cost=base.cost, bargain=false;
     if((base.rar==="SR"||base.rar==="SSR") && Math.random()<0.18){ cost=Math.round(base.cost*0.6); bargain=true; }
     return { key, cost, bargain };
   }
+  // maxScd: そのスロットに出せる最大クールダウン（q0=999/q1=2/q2=4.99）
+  function drawSlot(maxScd){
+    var pool=deckKeys().filter(function(k){ return cdLeft(k)<=0 && summonCd(k)<=maxScd; });
+    var key=weightedPick(pool);
+    return key?makeUnit(key):null;
+  }
+  function rebuildQueue(){ B.queue=[ drawSlot(999), drawSlot(2), drawSlot(4.99) ]; }
   function renderQueue(){
     const slots=['q0','q1','q2'];
     slots.forEach((id,i)=>{
-      const u=B.queue[i]; const el=$(id);
+      const u=B.queue[i]; const el=$(id); if(!el) return;
+      if(!u){ el.className='qslot '+(i===0?'now':'qnext'); el.innerHTML='<span class="muted" style="font-size:11px">…</span>'; return; }
       const r=ROSTER[u.key];
       const ready = (i===0 && B.energy>=u.cost);
       el.className='qslot'+(i===0?' now':' qnext')+(ready?' ready':'');
@@ -2621,16 +2684,19 @@ const Game = (()=>{
         (u.bargain?`<span class="bargain">お得</span>`:'')+
         SVG.get(r.sprite)+`<span class="cost">⚡${u.cost}</span>`;
     });
-    const front=B.queue[0], canPay=B.energy>=front.cost;
+    const front=B.queue[0];
+    if(!front){ $('summonBtn').disabled=true; $('summonBtn').textContent='⏳ じゅんび中…'; return; }
+    const canPay=B.energy>=front.cost;
     $('summonBtn').disabled = !canPay;
     $('summonBtn').textContent = canPay ? `召喚 ⎵ (${ROSTER[front.key].name})` : `あと⚡${Math.ceil(front.cost-B.energy)}`;
   }
   function summon(){
     if(!B||!B.running) return;
-    const u=B.queue[0]; if(B.energy < u.cost) return;
+    const u=B.queue[0]; if(!u) return; if(B.energy < u.cost) return;
     B.energy -= u.cost;
     spawnAlly(u.key);
-    B.queue.shift(); B.queue.push(drawUnit());
+    B.cd[u.key]=summonCd(u.key);   // 出したキャラはクールダウン中、再出撃しない
+    rebuildQueue();
     renderQueue(); syncHUD();
   }
 
@@ -2734,8 +2800,11 @@ const Game = (()=>{
     // エネルギー加速：regen = base × (1 + combo/softcap) クランプ
     const mult=Math.min(B.maxMult, 1 + B.combo/B.softcap);
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
+    // クールダウン消化。CDが明けて出せる枠が空いていれば補充
+    for(var __k in B.cd){ if(B.cd[__k]>0){ B.cd[__k]-=dt; if(B.cd[__k]<0) B.cd[__k]=0; } }
+    if(!B.queue[0]){ var __q0=drawSlot(999); if(__q0) B.queue[0]=__q0; }
     // 自動召喚（苦手な子向け・操作を問題に集中）
-    if(autoSummon && B.queue.length && B.energy>=B.queue[0].cost) summon();
+    if(autoSummon && B.queue[0] && B.energy>=B.queue[0].cost) summon();
     // ウェーブ
     if(B.stage.endless){ towerStep(); }
     else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ spawnEnemy(B.stage.waves[B.spawnIdx].type); B.spawnIdx++; } }
@@ -3097,12 +3166,13 @@ const Game = (()=>{
   }
   function assessSkip(){ if(!placement.doneAt) placement.doneAt='skipped'; AS=null; save(); homeView='menu'; renderHome(); show('home'); }
 
-  return { start, toHome, summon, toggleSound, startAssessment, assessSkip, closeDaily, _stages:STAGES };
+  return { start, toHome, summon, toggleSound, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES };
 })();
 
 Game.start();
 window.addEventListener('DOMContentLoaded', Game.start);
 </script>
+<div id="unitPop" onclick="if(event.target===this)Game.closeUnitPop()"><div class="card" id="unitPopCard"></div></div>
 <div id="dailyPop"><div class="card">
   <div style="font-size:46px;line-height:1">🎁</div>
   <div style="font-size:22px;font-weight:800;margin:6px 0">ログインボーナス！</div>
