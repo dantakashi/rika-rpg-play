@@ -84,6 +84,9 @@
   .castle{position:absolute; bottom:6px; width:64px; height:120px}
   .csvg{position:absolute; inset:0}
   #castleA{left:6px} #castleE{right:6px}
+  /* ④survive：自城を中央へ・敵城は無し（左右両端から攻めてくる） */
+  #field.survive #castleA{left:50%; transform:translateX(-50%)}
+  #field.survive #castleE{display:none}
   .ground-line{position:absolute; left:0; right:0; top:58%; height:2px; background:rgba(0,0,0,.08)}
   .unit{position:absolute; bottom:14px; width:54px; height:54px; will-change:transform; transition:none; transform-origin:50% 100%}
   .unit .hpb{position:absolute; top:-7px; left:6px; right:6px; height:4px; background:#0003; border-radius:2px; overflow:hidden}
@@ -203,6 +206,42 @@
   .castle.dmg3 .warn{opacity:1; animation:blink .6s steps(1) infinite}
   @keyframes blink{50%{opacity:.2}}
   #castleA.low{filter:drop-shadow(0 0 6px #3a9d57)}
+  /* ボスのためチャージ・ゲージ（ギミック①） */
+  .chargebar{position:absolute; top:6px; left:50%; transform:translateX(-50%); display:none; align-items:center; gap:8px; background:#2b2620dd; color:#fff; padding:4px 12px; border-radius:999px; font-weight:800; font-size:12px; z-index:20; pointer-events:none; white-space:nowrap}
+  .chargebar .cbtrack{width:150px; height:9px; background:#ffffff33; border-radius:5px; overflow:hidden}
+  .chargebar .cbtrack i{display:block; height:100%; width:0; background:#ffcf4a; transition:width .1s linear}
+  .chargebar.danger{background:#c0392bee; animation:cbblink .4s steps(1) infinite}
+  .chargebar.danger .cbtrack i{background:#fff}
+  .herobar{background:#1e3a6bdd}
+  .herobar .cbtrack i{background:#7fb0ff}
+  .herobar.danger{background:#3a55c0ee}
+  /* 勇者ユニット：自城の上に立ち、チャージ進行(--p:0..1)でオーラと震えを強める */
+  #heroUnit{position:absolute; left:8px; bottom:114px; width:54px; height:54px; z-index:16; pointer-events:none; transform-origin:50% 100%}
+  #heroUnit .hero-body{position:absolute; inset:0; animation:heroBob .9s ease-in-out infinite; filter:drop-shadow(0 0 calc(2px + var(--p,0)*10px) #7fb0ff)}
+  #heroUnit .hero-aura{position:absolute; left:50%; top:50%; width:60px; height:60px; transform:translate(-50%,-50%) scale(calc(0.4 + var(--p,0)*1.1)); border-radius:50%; background:radial-gradient(circle, #cfe0ff00 35%, #7fb0ffaa 60%, transparent 75%); opacity:calc(0.25 + var(--p,0)*0.7); animation:heroAura 1.1s ease-in-out infinite}
+  #heroUnit.near{animation:heroShake .12s steps(2) infinite}
+  #heroUnit.fire .hero-body{animation:heroFire .3s ease-out}
+  @keyframes heroBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  @keyframes heroAura{0%,100%{opacity:calc(0.2 + var(--p,0)*0.6)}50%{opacity:calc(0.45 + var(--p,0)*0.55)}}
+  @keyframes heroShake{0%{transform:translateX(-2px)}100%{transform:translateX(2px)}}
+  @keyframes heroFire{0%{transform:translateX(0) scale(1)}30%{transform:translateX(-8px) scale(1.15)}100%{transform:translateX(0) scale(1)}}
+  /* 勇者の大ビーム：自城上(左)から右へ走る太い光線 */
+  .herobeam{position:absolute; left:54px; right:0; top:30%; height:54px; z-index:30; pointer-events:none; transform-origin:left center;
+    background:linear-gradient(90deg, #ffffff 0%, #dCEBff 30%, #7fb0ffcc 65%, #7fb0ff22 100%); box-shadow:0 0 26px 12px #7fb0ff88; border-radius:30px; animation:herobeamfx .8s ease-out forwards}
+  @keyframes herobeamfx{0%{opacity:0; transform:scaleX(0.02) scaleY(0.4)} 18%{opacity:1; transform:scaleX(1) scaleY(0.6)} 45%{opacity:1; transform:scaleX(1) scaleY(2.4)} 100%{opacity:0; transform:scaleX(1) scaleY(2.8)}}
+  /* ボス消滅演出：白く飛んで縮みながら消える */
+  .unit.vanish{animation:bossVanish .6s ease-in forwards}
+  @keyframes bossVanish{0%{filter:brightness(2) drop-shadow(0 0 8px #fff); opacity:1} 40%{filter:brightness(3) drop-shadow(0 0 18px #ffd24a); transform:scaleX(-1) scale(1.3); opacity:.9} 100%{filter:brightness(5); transform:scaleX(-1) scale(0.05) translateY(-20px); opacity:0}}
+  /* 壁2：攻撃バッファー中ボスの赤オーラ／壁3：敵ヒーラーの緑オーラ */
+  .unit.buffaura .body{filter:drop-shadow(0 0 7px #ff5a3a) drop-shadow(0 0 12px #c0392b)}
+  .unit.healaura .body{filter:drop-shadow(0 0 6px #e07ba0)}
+  /* ボスの薙ぎ払い衝撃波（直径=--r） */
+  .shockwave{position:absolute; bottom:14px; transform:translateX(-50%); width:10px; height:10px; border-radius:50%; z-index:12; pointer-events:none; border:4px solid #ff6b5acc; box-shadow:0 0 16px #ff6b5a99; animation:shockwaveExp .5s ease-out forwards}
+  @keyframes shockwaveExp{from{width:10px; height:10px; opacity:.95} to{width:var(--r,120px); height:var(--r,120px); opacity:0}}
+  /* 城の爆発四散（約2秒）：激しく揺れて傾き・砕けながらフェード */
+  .castle.blast{animation:castleBlast 2s ease-in forwards; transform-origin:50% 100%}
+  @keyframes castleBlast{0%{transform:translateX(0) rotate(0); filter:brightness(1)} 8%{transform:translateX(-4px) rotate(-3deg); filter:brightness(2)} 16%{transform:translateX(4px) rotate(3deg)} 24%{transform:translateX(-5px) rotate(-4deg); filter:brightness(2.4)} 34%{transform:translateX(5px) rotate(4deg)} 50%{transform:translateX(-3px) rotate(-6deg) scale(1.04); filter:brightness(1.6)} 70%{transform:translateY(6px) rotate(10deg) scale(.92); opacity:.85} 100%{transform:translateY(40px) rotate(24deg) scale(.6); opacity:0; filter:brightness(.6)}}
+  @keyframes cbblink{50%{filter:brightness(1.6)}}
   #castleA.low::after{content:""; position:absolute; inset:-6px; border-radius:12px; border:2px solid #3a9d57aa; animation:barrier 1.1s ease-in-out infinite}
   @keyframes barrier{50%{box-shadow:0 0 12px #3a9d5766}}
   /* リザルト: 紙吹雪＆初クリアバッジ */
@@ -600,7 +639,7 @@
       <div class="meter"><div class="lab"><span>🏰 自城</span><span id="hpAtxt">100%</span></div><div class="bar"><div id="hpA" class="fill castleA"></div></div></div>
       <div class="meter"><div class="lab"><span>⚡ エネルギー</span><span id="enTxt">0</span></div><div class="bar"><div id="enBar" class="fill energy"></div></div></div>
       <div id="combo-big">COMBO<br><b id="comboTxt">0</b></div>
-      <div class="meter"><div class="lab"><span>敵城 🏯</span><span id="hpEtxt">100%</span></div><div class="bar"><div id="hpE" class="fill castleE"></div></div></div>
+      <div class="meter" id="meterE"><div class="lab"><span id="hpElab">敵城 🏯</span><span id="hpEtxt">100%</span></div><div class="bar"><div id="hpE" class="fill castleE"></div></div></div>
     </div>
 
     <div id="field">
@@ -2108,6 +2147,38 @@ const SVG = (()=>{
       <path d="M30 60 l11 4 M59 66 l11 -4" stroke="${S}" stroke-width="2" fill="none"/>
       <rect x="34" y="82" width="13" height="8" fill="#6f675b" stroke="${S}" stroke-width="2.5"/>
       <rect x="53" y="82" width="13" height="8" fill="#6f675b" stroke="${S}" stroke-width="2.5"/>`,
+    // 壁1：砲台（超長射程の大砲。左＝プレイヤー方向へ砲口）
+    cannon:`<ellipse cx="50" cy="88" rx="27" ry="4.5" fill="#0002"/>
+      <circle cx="38" cy="78" r="10" fill="#4a4038" stroke="${S}" stroke-width="3"/><circle cx="38" cy="78" r="3.4" fill="#8a7a6a"/>
+      <circle cx="64" cy="78" r="10" fill="#4a4038" stroke="${S}" stroke-width="3"/><circle cx="64" cy="78" r="3.4" fill="#8a7a6a"/>
+      <path d="M28 60 L76 60 L70 79 L34 79Z" fill="#7a4a3a" stroke="${S}" stroke-width="3"/>
+      <rect x="22" y="42" width="52" height="21" rx="10" fill="#5a5550" stroke="${S}" stroke-width="3"/>
+      <rect x="12" y="40" width="13" height="25" rx="4" fill="#3a3530" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="15" cy="52.5" rx="4.5" ry="8" fill="#1f1b18"/><circle cx="15" cy="52.5" r="3.2" fill="#e0683b"/>
+      <path d="M62 42 q5 -13 11 -11" stroke="${S}" stroke-width="2.5" fill="none"/><circle cx="74" cy="30" r="3.4" fill="#e0a93b"/>
+      <circle cx="56" cy="52" r="3.2" fill="#d23a3a"/>`,
+    // 壁2：攻撃バッファー中ボス（鼓舞の巨像。鉄赤・赤く光る核・拳を上げた威圧姿）
+    buffer:`<ellipse cx="50" cy="92" rx="35" ry="5" fill="#0002"/>
+      <rect x="11" y="34" width="16" height="22" rx="6" fill="#5a3a34" stroke="${S}" stroke-width="3"/>
+      <rect x="73" y="34" width="16" height="22" rx="6" fill="#5a3a34" stroke="${S}" stroke-width="3"/>
+      <path d="M19 56 L26 44 M81 56 L74 44" stroke="${S}" stroke-width="3" fill="none"/>
+      <rect x="24" y="44" width="52" height="46" rx="10" fill="#6a3f3a" stroke="${S}" stroke-width="3.5"/>
+      <circle cx="50" cy="66" r="11" fill="#e0683b" stroke="${S}" stroke-width="2.5"/>
+      <path d="M50 59 v14 M43 66 h14" stroke="#ffd24a" stroke-width="2.5"/>
+      <rect x="32" y="22" width="36" height="26" rx="7" fill="#7a4a44" stroke="${S}" stroke-width="3"/>
+      <circle cx="42" cy="34" r="4.2" fill="#ff5a3a"/><circle cx="58" cy="34" r="4.2" fill="#ff5a3a"/>
+      <path d="M40 44 h20" stroke="${S}" stroke-width="3"/>
+      <rect x="33" y="86" width="14" height="7" fill="#4a302c" stroke="${S}" stroke-width="2.5"/>
+      <rect x="53" y="86" width="14" height="7" fill="#4a302c" stroke="${S}" stroke-width="2.5"/>`,
+    // 壁3：敵ヒーラー（癒し手。緑のローブ・フード・回復の杖＝白十字の緑オーブ）
+    healer:`<ellipse cx="50" cy="90" rx="22" ry="4" fill="#0002"/>
+      <path d="M50 22 q-20 4 -20 38 l0 24 l40 0 l0 -24 q0 -34 -20 -38Z" fill="#2f6e4a" stroke="${S}" stroke-width="3"/>
+      <path d="M50 22 q-14 3 -16 22 q16 -7 32 0 q-2 -19 -16 -22Z" fill="#1f4a32" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="43" cy="46" r="3.2" fill="#9be8b0"/><circle cx="57" cy="46" r="3.2" fill="#9be8b0"/>
+      <path d="M34 72 q16 6 32 0" stroke="#9be8b0" stroke-width="2" fill="none" opacity="0.6"/>
+      <rect x="70" y="40" width="5" height="46" fill="#6a5a3a" stroke="${S}" stroke-width="2"/>
+      <circle cx="72.5" cy="37" r="8" fill="#3a9d57" stroke="${S}" stroke-width="2.5"/>
+      <path d="M72.5 32 v10 M67.5 37 h10" stroke="#ffffff" stroke-width="2.5"/>`,
     castleA:`<rect x="14" y="40" width="36" height="74" fill="#8fb98f" stroke="${S}" stroke-width="3"/>
       <path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="#6fa06f" stroke="${S}" stroke-width="3"/>
       <rect x="26" y="64" width="14" height="50" fill="#3a5f3a"/>
@@ -8391,17 +8462,21 @@ function buildEnemyWaves(area, boss){
   const W=[];
   const push=(at,type,n,gap)=>{ for(let i=0;i<n;i++) W.push({at:at+i*gap, type}); };
   if(boss){
+    const rngd = area>=31 ? "darkMage" : "slinger"; // ボス戦の遠距離取り巻き（章で強化）
     push(t(1.0),"slime",2,900);
     push(t(5.0),"hare",2,800);
     W.push({at:t(8.0), type:"BOSS"});
     push(t(14),"slime",3,1200); // ボスの取り巻き
+    if(area>=5) push(t(12),rngd,1,0); // エリア5以降は必ず遠距離取り巻きを出す（近接だけの壁ハメ対策）
     if(area>=6) push(t(20),"torii",2,1500);
     if(area>=11){ push(t(14),"bat",3,700); push(t(20),"golem",2,1600); }
+    if(area>=16) push(t(18),"cannon",1,0); // 壁1：砲台取り巻き
+    if(area>=66) push(t(22),"healer",1,0); // 壁3：敵ヒーラー取り巻き
     // ボス戦の持続取り巻き
-    for(let k=0;k<7;k++){ const base=24+k*8; push(t(base),"slime",4,500); push(t(base+3),area>=6?"torii":"totem",2,800); if(area>=11) push(t(base+5),"bat",3,500); }
+    for(let k=0;k<7;k++){ const base=24+k*8; push(t(base),"slime",4,500); push(t(base+3),area>=6?"torii":"totem",2,800); if(area>=11) push(t(base+5),"bat",3,500); if(area>=5) push(t(base+6),rngd,1+Math.floor(area/25),700); if(area>=16 && k%2===0) push(t(base+4),"cannon",1,0); if(area>=66 && k%3===0) push(t(base+7),"healer",1,0); }
     return W;
   }
-  const dens = 1 + area*0.12;
+  const dens = 1 + Math.min(area,22)*0.12; // 密度は頭打ち（数を増やしすぎない）。難度はHP/ATKインフレで担保
   const tank = area>=11 ? "golem" : area>=6 ? "torii" : "totem"; // 後半ほど硬い
   push(t(1.0),"slime", Math.round(2*dens), 1100);            // 緩
   push(t(6.0),"hare",  Math.round(2*dens), 700);             // 急
@@ -8416,6 +8491,8 @@ function buildEnemyWaves(area, boss){
   if(area>=6) push(t(15),"mummy", Math.max(1,Math.round(area*0.3)), 1100);
   if(area>=7) push(t(12),"darkMage", Math.max(1,Math.round(1+area*0.25)), 1100);
   if(area>=12){ push(t(16),"stoneGiant", 1, 0); push(t(22),"stoneGiant", 1, 0); }
+  if(area>=16){ push(t(11),"cannon", 1, 0); push(t(20),"cannon", 1, 0); } // 壁1：砲台（超長射程）
+  if(area>=66) push(t(18),"healer", 1, 0); // 壁3：敵ヒーラー
   if(area>=8) push(t(19),tank, 2, 900);
   // 持続フェーズ：中盤以降も切れ目なく前線を維持（戦闘を2〜3分の歯ごたえに）
   for(let k=0;k<7;k++){
@@ -8424,6 +8501,8 @@ function buildEnemyWaves(area, boss){
     push(t(base+2),"hare", Math.max(1,Math.round(2.5*dens)), 450);
     push(t(base+3.5), tank, Math.max(1,Math.round(1+area*0.5)), 900);
     if(area>=3) push(t(base+1.5),"slinger", Math.max(1,Math.round(1+area*0.3)), 800);
+    if(area>=16) push(t(base+4),"cannon", 1+Math.floor(area/35), 900); // 壁1：砲台を継続投入
+    if(area>=66 && k%2===0) push(t(base+6),"healer", 1, 0);           // 壁3：敵ヒーラーを継続投入
     if(area>=11 && k%2===0) push(t(base+5),"bombSlime", Math.max(1,Math.round(area*0.3)), 800);
     if(area>=4 && k%3===1) push(t(base+5.5),"ghost", 2, 500);
     if(area>=7 && k%3===2) push(t(base+6),"mummy", 1, 0);
@@ -8431,22 +8510,70 @@ function buildEnemyWaves(area, boss){
   }
   return W;
 }
-const WORLD_NAMES = ["やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
-                     "霧の森","氷river","砂漠の遺構","雷鳴の谷","鳥居の社",
-                     "嵐の入口","雷雲の道","紫電の谷","暴風の砦","雷鳴の玉座"];
-const NORMAL_SPRITE = ["slime","hare","totem","slime","slime","hare","totem","torii","slime","torii","bat","golem","bombSlime","splitMush","bat"];
+/* ===== 15章×5ステージ＝75ステージ。各章5番目(エリア5,10,…,75)が15体のボス ===== */
+const CHAPTER_THEMES = [
+  "やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
+  "霧の樹海","灼熱の砂漠","氷結の谷","雷鳴の高地","黄金の神殿",
+  "嵐の海原","奈落の洞窟","天空回廊","幻影の城","終焉の祭壇"
+];
+// 章ごとの通常敵スプライト（雰囲気づけ。実体ステータスはENEMY_TYPES）
+const CH_NORMAL_SPRITE = ["slime","hare","totem","torii","slime","ghost","mummy","bat","darkMage","golem","bombSlime","splitMush","stoneGiant","ghost","mummy"];
+// 15体ボスのギミック割り当て（ボスエリア → ギミックid）。⓪plain/①charge/②trigger/③godhold/④survive(両側)/⑤rush
+const BOSS_GIMMICK = {5:"charge",10:"trigger",15:"plain",20:"charge",25:"survive",30:"trigger",35:"plain",40:"rush",45:"charge",50:"godhold",55:"survive",60:"trigger",65:"rush",70:"charge",75:"godhold"};
+const GIM_MODE = {plain:"destroy",charge:"destroy",trigger:"trigger",godhold:"finisher",survive:"survive",rush:"destroy"};
+const GIM_LABEL = {plain:"強敵",charge:"ためチャージ即死",trigger:"城トリガー大群",godhold:"神の一撃・耐久",survive:"両側なだれ込み耐久",rush:"ボスラッシュ"};
+// まだ挙動を実装していないギミックはこの集合に入るまで通常ボス(destroy)として遊べる
+const IMPLEMENTED_GIMMICKS = {charge:true, trigger:true, godhold:true, survive:true, rush:true}; // 段階実装：出来たギミックを true にしていく
+const ALLY_CAP = 16;   // 味方の画面上の同時上限（性能対策・Chromebook配慮で24→16＝合計32）
+const ENEMY_CAP = 16;  // 敵の画面上の同時上限（沸き自体は無限。画面上はこの数まで・24→16）
+const ENEMY_MULT = 2;  // 敵の出現量倍率（難度UP：1ウェーブ/1バッチを2倍湧き）
+// 仮アート：3種のボス絵を使い回し（ステータス確定後に専用絵を作る）
+const BOSS_SPRITES = ["bossMoai","bossTotem","bossThunder"];
+function bossNameFor(ch, gim){
+  const base = {plain:"の王", charge:"の蓄雷帝", trigger:"の城主", godhold:"の終焉獣", survive:"の大群王", rush:"の連王"};
+  return CHAPTER_THEMES[ch-1].replace(/の.*/, '') + (base[gim]||"の王");
+}
+/* ===== 敵ステータスの章カーブ（段階インフレ＝壁を作る）=====
+   一定指数をやめ、区間は緩やか・壁の章で前章比およそ2倍ジャンプ。係数はここ1か所で管理。
+   壁＝ch5/ch10/ch14（序盤→中盤→終盤→ラスト2章の関門）。敵を確定→後で味方をこのカーブに合わせて調整する。 */
+const CURVE_WALLS = {5:true, 10:true, 14:true};
+const CURVE_HP_BASE = 1.15, CURVE_HP_WALL = 1.7;   // 章ごとの基本伸び（HP）／壁章での追加ジャンプ
+const CURVE_ATK_BASE = 1.11, CURVE_ATK_WALL = 1.45; // 章ごとの基本伸び（ATK）／壁章での追加ジャンプ
+function chapterMul(ch){
+  let hp=1, atk=1;
+  for(let c=2;c<=ch;c++){
+    hp*=CURVE_HP_BASE; atk*=CURVE_ATK_BASE;
+    if(CURVE_WALLS[c]){ hp*=CURVE_HP_WALL; atk*=CURVE_ATK_WALL; } // 壁の章で一段急に
+  }
+  return {hp, atk};
+}
 function makeStages(){
   const arr=[];
-  for(let a=1;a<=15;a++){
-    const boss = (a%5===0);
+  for(let a=1;a<=75;a++){
+    const boss=(a%5===0);
+    const ch=Math.ceil(a/5);          // 1..15（=world/章）
+    const within=((a-1)%5)+1;         // 1..5
+    const gim = boss ? (BOSS_GIMMICK[a]||"plain") : null;
+    // インフレ：段階カーブ(chapterMul=壁ch5/10/14で急)＋章内で微増。敵を確定→後で味方を合わせる
+    const cm = chapterMul(ch);
+    const hpMul  = cm.hp * (1 + 0.06*(within-1));  // 章インフレ(HP)＝段カーブ×章内微増
+    const atkMul = cm.atk * (1 + 0.05*(within-1)); // 章インフレ(ATK)＝段カーブ×章内微増
     arr.push({
-      id:a, area:a, boss,
-      name: boss ? (a===5?"巨石の王・モアイ": a===10?"黄金のトーテム大王":"雷鳴の覇者・雷鳥大王") : WORLD_NAMES[a-1],
-      sprite: boss ? (a===5?"bossMoai": a===10?"bossTotem":"bossThunder") : NORMAL_SPRITE[a-1],
-      world: a<=5?1:(a<=10?2:3),
-      enemyHpMul: 1.3*Math.pow(1.18, a-1),
-      enemyAtkMul: 1.2*Math.pow(1.12, a-1),
-      castleEHp: boss? Math.round(4000*Math.pow(1.15,(a/5)-1)) : Math.round(7000*Math.pow(1.06,a-1)),
+      id:a, area:a, boss, world:ch, chapter:ch, within,
+      gimmick: gim, mode: boss ? (GIM_MODE[gim]||"destroy") : "destroy",
+      name: boss ? bossNameFor(ch,gim) : (CHAPTER_THEMES[ch-1]+" "+within),
+      sprite: boss ? BOSS_SPRITES[(ch-1)%3] : CH_NORMAL_SPRITE[ch-1],
+      enemyHpMul: hpMul,
+      enemyAtkMul: atkMul,
+      castleEHp: (gim==='rush') ? 1e9 : boss ? Math.round(3000*Math.pow(1.2, ch-1)) : Math.round(4500*Math.pow(1.12, ch-1) * (1+0.08*(within-1))), // ⑤rushは城を壊して勝つのではなく全ボス撃破で勝つので城は実質無敵
+      bossCount: (gim==='rush') ? (ch>=13?3:2) : 0, // ⑤連戦するボスの数（ch8=2体・ch13=3体）
+      bossStats: boss ? {
+        hp: Math.round(1400*cm.hp),          // ボスHPも段カーブに乗せる（spawnBossでそのまま使用）
+        atk: 40,                              // ボスATKは固定ベース。spawnBossでenemyAtkMul(=段カーブ×章内)を掛けて単一カーブ化
+        speed: 13, range: 70,
+        scale: 1.0 + Math.min(0.6, 0.04*ch)
+      } : null,
+      timeLimit: (gim==='godhold') ? Math.round(120 + (ch-10)*4) : (gim==='survive') ? Math.round(90 + (ch-5)*5) : 0, // ③godhold=勇者チャージ(ch10=120→ch15=140)/④survive=耐久(ch5=90→ch11=120)秒
       waves: buildEnemyWaves(a, boss)
     });
   }
@@ -8465,9 +8592,14 @@ const ENEMY_TYPES = {
   ghost:{name:"おばけ", sprite:"ghost", hp:95, atk:16, speed:60, range:40},
   mummy:{name:"ミイラ兵", sprite:"mummy", hp:320, atk:18, speed:15, range:44},
   darkMage:{name:"くらやみ術師", sprite:"darkMage", hp:120, atk:21, speed:17, range:120},
-  stoneGiant:{name:"岩の巨人", sprite:"stoneGiant", hp:560, atk:26, speed:12, range:50, scale:1.5}
+  stoneGiant:{name:"岩の巨人", sprite:"stoneGiant", hp:560, atk:26, speed:12, range:50, scale:1.5},
+  // 壁1(ch4-5)：砲台＝味方の射程を超える超長射程・低速。後方から前衛を撃つ（凍結砲=未実装で対処する想定）
+  cannon:{name:"砲台", sprite:"cannon", hp:120, atk:23, speed:9, range:190},
+  // 壁3(ch14)：ヒーラー＝攻撃せず周囲の敵を回復。範囲＋単体火力で削り切らないと前衛が溶けない（DPSキャップ）
+  healer:{name:"癒し手", sprite:"healer", hp:150, atk:0, speed:13, range:95, heal:16},
+  // 壁2(ch10)：攻撃バッファー中ボス＝高耐久・攻撃しない・最前で殴られ役・周囲の敵の攻撃を強化
+  buffer:{name:"鼓舞の巨像", sprite:"buffer", hp:650, atk:0, speed:19, range:30, scale:1.5, buffAura:0.45, buffRange:130}
 };
-const BOSS_BASE = {atk:26, speed:13, range:70, hp:1000};
 
 /* =========================================================================
    §4  ゲーム本体（画面遷移・バトルループ・召喚・コンボ加速）
@@ -8543,7 +8675,9 @@ const Game = (()=>{
     var i=deck.indexOf(outKey); if(i<0||deck.indexOf(inKey)>=0) return;
     deck[i]=inKey; save(); renderHome();
   }
-  function castleMaxHp(){ return 1000 + castleLv*250; }
+  const CASTLE_MAX_LV = 16; // 自城HP強化の上限（青天井での要塞化＝終盤も負けない問題の対策）。Lv16=最大5000HP
+  function castleMaxHp(){ return 1000 + Math.min(castleLv, CASTLE_MAX_LV)*250; } // 上限Lv16＝最大5000
+  function castleMaxed(){ return castleLv >= CASTLE_MAX_LV; }
   function castleUpCost(){ return 250*(castleLv+1); }
   function doGacha(){
     if(gachaAnimating) return;
@@ -8571,7 +8705,7 @@ const Game = (()=>{
     else { if(deck.length>=5) return; deck.push(key); }
     save(); renderHome();
   }
-  function upgradeCastle(){ const c=castleUpCost(); if(gold<c) return; gold-=c; castleLv++; Sound.play('correct'); save(); renderHome(); }
+  function upgradeCastle(){ if(castleMaxed()) return; const c=castleUpCost(); if(gold<c) return; gold-=c; castleLv++; Sound.play('correct'); save(); renderHome(); }
   function unitChip(key, selected){
     const r=ROSTER[key];
     const b=document.createElement('button');
@@ -8714,11 +8848,13 @@ const Game = (()=>{
   }
 
   /* ---- 城強化(拡張) ---- */
-  function regenVal(){ return 8 + regenLv*1; }
+  const REGEN_MAX_LV = 12; // エネルギー増加速度の強化上限（青天井での召喚スノーボール防止）
+  function regenVal(){ return 8 + Math.min(regenLv, REGEN_MAX_LV)*1; } // 上限Lv12＝最大20/秒
+  function regenMaxed(){ return regenLv >= REGEN_MAX_LV; }
   function regenCost(){ return 300*(regenLv+1); }
   function enMaxVal(){ return 200 + enMaxLv*30; }
   function enMaxCost(){ return 250*(enMaxLv+1); }
-  function upgradeRegen(){ const c=regenCost(); if(gold<c) return; gold-=c; regenLv++; Sound.play('correct'); save(); renderHome(); }
+  function upgradeRegen(){ if(regenMaxed()) return; const c=regenCost(); if(gold<c) return; gold-=c; regenLv++; Sound.play('correct'); save(); renderHome(); }
   function upgradeEnMax(){ const c=enMaxCost(); if(gold<c) return; gold-=c; enMaxLv++; Sound.play('correct'); save(); renderHome(); }
 
   function renderGacha(){
@@ -8751,13 +8887,13 @@ const Game = (()=>{
   }
   function renderCastle(){
     const body=$('castleBody'); if(!body) return; body.innerHTML='';
-    function urow(icon,label,cur,deltaTxt,cost,onClick){
+    function urow(icon,label,cur,deltaTxt,cost,onClick,maxed){
       const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
-      row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:800">'+icon+' '+label+'</div><div class="muted" style="font-size:12px">現在 '+cur+'　→　'+deltaTxt+'</div></div>';
-      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)'; btn.textContent='強化 '+cost+'G'; btn.disabled=gold<cost; btn.addEventListener('click',onClick); row.appendChild(btn); body.appendChild(row);
+      row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:800">'+icon+' '+label+'</div><div class="muted" style="font-size:12px">現在 '+cur+(maxed?'　<span style="color:var(--gold);font-weight:800">★MAX</span>':'　→　'+deltaTxt)+'</div></div>';
+      const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.15)'; btn.textContent=maxed?'最大':'強化 '+cost+'G'; btn.disabled=maxed||gold<cost; if(!maxed) btn.addEventListener('click',onClick); row.appendChild(btn); body.appendChild(row);
     }
-    urow('🏰','自城HP', castleMaxHp(), '+250', castleUpCost(), upgradeCastle);
-    urow('⚡','エネルギー増加速度', regenVal()+'/秒', '+1/秒', regenCost(), upgradeRegen);
+    urow('🏰','自城HP', castleMaxHp(), '+250', castleUpCost(), upgradeCastle, castleMaxed());
+    urow('⚡','エネルギー増加速度', regenVal()+'/秒', '+1/秒', regenCost(), upgradeRegen, regenMaxed());
     urow('🔋','エネルギー上限', enMaxVal(), '+30', enMaxCost(), upgradeEnMax);
   }
 
@@ -8827,9 +8963,14 @@ const Game = (()=>{
     return { speak, supported, hasEnglishVoice, toggle:()=>{ on=!on; if(!on&&supported){ try{synth.cancel();}catch(e){} } return on; }, setOn:v=>{ on=!!v&&supported; }, isOn:()=>on, _score:score };
   })();
   function fieldFloorY(){ return ($('field').clientHeight||300)-40; }
-  function fxRing(x,y,color){ const r=document.createElement('div'); r.className='ring'; r.style.left=x+'px'; r.style.top=y+'px'; if(color)r.style.borderColor=color; $('field').appendChild(r); setTimeout(()=>r.remove(),360); }
-  function fxSparks(x,y,n,color){ for(let i=0;i<n;i++){ const s=document.createElement('div'); s.className='spark'; s.style.left=x+'px'; s.style.top=y+'px'; s.style.background=color||'#ffd24a'; const a=Math.random()*6.28,d=14+Math.random()*22; s.style.setProperty('--dx',Math.cos(a)*d+'px'); s.style.setProperty('--dy',Math.sin(a)*d+'px'); $('field').appendChild(s); setTimeout(()=>s.remove(),440); } }
-  function fxFrag(x,y,color){ for(let i=0;i<7;i++){ const f=document.createElement('div'); f.className='frag'; f.style.left=x+'px'; f.style.top=y+'px'; f.style.background=color||'#fff'; const a=Math.random()*6.28,d=20+Math.random()*30; f.style.setProperty('--dx',Math.cos(a)*d+'px'); f.style.setProperty('--dy',(Math.sin(a)*d-10)+'px'); $('field').appendChild(f); setTimeout(()=>f.remove(),560); } }
+  // 性能対策：盤面が混み合っているか（fx間引き・弾数制限の判定）。lod=多数描画モード
+  function unitCount(){ return B ? (B.allies.length + B.enemies.length) : 0; }
+  function lod(){ return unitCount() >= 22; }            // 22体以上で軽量化（上限32の7割）
+  let activeProj = 0;                                     // 同時に飛んでいるフィールド弾の数（上限管理）
+  const PROJ_CAP = 12;                                    // 同時フィールド弾の上限
+  function fxRing(x,y,color){ if(lod()) return; const r=document.createElement('div'); r.className='ring'; r.style.left=x+'px'; r.style.top=y+'px'; if(color)r.style.borderColor=color; $('field').appendChild(r); setTimeout(()=>r.remove(),360); }
+  function fxSparks(x,y,n,color){ if(lod()) n=Math.ceil(n*0.5); for(let i=0;i<n;i++){ const s=document.createElement('div'); s.className='spark'; s.style.left=x+'px'; s.style.top=y+'px'; s.style.background=color||'#ffd24a'; const a=Math.random()*6.28,d=14+Math.random()*22; s.style.setProperty('--dx',Math.cos(a)*d+'px'); s.style.setProperty('--dy',Math.sin(a)*d+'px'); $('field').appendChild(s); setTimeout(()=>s.remove(),440); } }
+  function fxFrag(x,y,color){ const N=lod()?3:7; for(let i=0;i<N;i++){ const f=document.createElement('div'); f.className='frag'; f.style.left=x+'px'; f.style.top=y+'px'; f.style.background=color||'#fff'; const a=Math.random()*6.28,d=20+Math.random()*30; f.style.setProperty('--dx',Math.cos(a)*d+'px'); f.style.setProperty('--dy',(Math.sin(a)*d-10)+'px'); $('field').appendChild(f); setTimeout(()=>f.remove(),560); } }
   function fxGate(x){ const g=document.createElement('div'); g.className='gateflash'; g.style.left=(x-35)+'px'; $('field').appendChild(g); setTimeout(()=>g.remove(),520); }
   function fxBanner(text,color){ const b=$('fxBanner'); b.textContent=text; b.style.background=color||'var(--gold)'; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
   function fxTierFlash(){ const t=$('tierflash'); t.classList.remove('go'); void t.offsetWidth; t.classList.add('go'); }
@@ -8866,6 +9007,12 @@ const Game = (()=>{
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
       allies:[], enemies:[], spawnIdx:0, bossAlive:false, bossPhase:false,
+      triggerPaid:0, triggerBoss:false, // ②城トリガー：城ダメージで湧いた割合／主の出現済み
+      heroFired:false, // ③勇者の一撃：勇者の大ビームを撃ったか
+      surNext:0, surviveSide:1, // ④survive：次の両側湧き時刻／味方の交互出撃サイド(1=右,-1=左)
+      rushIdx:0, rushTotal:stage.bossCount||0, rushGap:0, rushAddNext:0, rushDone:false, // ⑤rush：出したボス数／総数／次出現の間／取り巻き間隔／決着済み
+      bufferDeadUntil:6, healerDeadUntil:8, // 壁2/壁3：中ボス級常駐敵の次出現可能時刻（初回ディレイ）
+
       queue:[], cd:{}, answered:0, correct:0, missStreak:0, reviewWins:0, mistakes:[],
       tier:0, wasCleared:false,
       slow:slowMode
@@ -9024,7 +9171,7 @@ const Game = (()=>{
     wireVoiceToggle('tgVoiceQ','voiceWarnQ');
     // ステージ（クリアで次が解放）
     const unlocked=maxUnlocked();
-    if(!playTab){ var __cur=Math.min(15,unlocked); playTab = __cur<=5?1:(__cur<=10?2:3); }
+    if(!playTab){ var __cur=Math.min(75,unlocked); playTab = Math.ceil(__cur/5); }
     var __sb=$('quizSummaryBtn');
     if(__sb){ var __sel=QuizEngine.getSel(), __gm={word:'単語',idiom:'熟語',grammar:'文法'};
       var __g=__gm[__sel.genre]||'';
@@ -9034,12 +9181,14 @@ const Game = (()=>{
       __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__rng+'｜'+choiceMode+'択　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）⚙ 出題範囲設定 ▸</span>'; }
     var __ct=$('chapTabs');
     if(__ct){ __ct.innerHTML='';
-      [[1,'1章'],[2,'2章'],[3,'3章'],['special','⭐特殊']].forEach(function(t){ var bb=document.createElement('button'); bb.textContent=t[1]; if(playTab===t[0]) bb.classList.add('sel'); bb.onclick=function(){ playTab=t[0]; renderHome(); }; __ct.appendChild(bb); }); }
+      var __tabs=[]; for(var __c=1;__c<=15;__c++) __tabs.push([__c, __c+'章']); __tabs.push(['special','⭐特殊']);
+      var __unlChap=Math.ceil(Math.min(75,unlocked)/5); // 解禁済みの最終章
+      __tabs.forEach(function(t){ var locked=(t[0]!=='special' && t[0]>__unlChap); var bb=document.createElement('button'); bb.textContent=t[1]+(locked?' 🔒':''); if(playTab===t[0]) bb.classList.add('sel'); if(locked){ bb.disabled=true; } else { bb.onclick=function(){ playTab=t[0]; renderHome(); }; } __ct.appendChild(bb); }); }
     var __sc=$('stageCard'), __spc=$('specialCard');
     if(playTab==='special'){ if(__sc)__sc.style.display='none'; if(__spc)__spc.style.display='block'; }
     else {
       if(__sc)__sc.style.display='block'; if(__spc)__spc.style.display='none';
-      var __title=$('chapTitle'); if(__title) __title.innerHTML='🗺️ '+playTab+'章 <span class="muted">（'+(playTab===3?'嵐の章・':'')+'5/10/15はボス）</span>';
+      var __title=$('chapTitle'); if(__title){ var __th=CHAPTER_THEMES[playTab-1]||''; var __ba=playTab*5; __title.innerHTML='🗺️ '+playTab+'章 '+__th+' <span class="muted">（エリア'+__ba+'＝ボス：'+(GIM_LABEL[BOSS_GIMMICK[__ba]]||'強敵')+'）</span>'; }
       const grid=$('stageGrid'); grid.innerHTML='';
       STAGES.filter(function(s){return s.world===playTab;}).forEach(s=>{
         const lock = s.area>unlocked;
@@ -9064,10 +9213,13 @@ const Game = (()=>{
     $('castleAsvg').innerHTML = SVG.get('castleA');
     $('castleEsvg').innerHTML = SVG.get('castleE');
     $('crackA').innerHTML = CRACK_SVG; $('crackE').innerHTML = CRACK_SVG;
-    ['castleA','castleE'].forEach(id=>$(id).classList.remove('dmg1','dmg2','dmg3','low','shakeC'));
+    ['castleA','castleE'].forEach(id=>$(id).classList.remove('dmg1','dmg2','dmg3','low','shakeC','blast'));
     buildSky();
-    $('field').querySelectorAll('.unit,.float,.ring,.spark,.frag,.gateflash').forEach(n=>n.remove());
+    $('field').classList.toggle('survive', stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive); // ④中央城レイアウト
+    $('field').querySelectorAll('.unit,.float,.ring,.spark,.frag,.gateflash,.herobeam,.shockwave').forEach(n=>n.remove());
     $('field').classList.remove('warm','hot');
+    // ギミックHUD/勇者は前の戦闘の表示が残らないよう毎回隠す（該当ギミックのtickが再表示する）
+    ['chargeBar','heroBar','heroUnit'].forEach(function(id){ var b=$(id); if(b){ b.style.display='none'; b.classList.remove('danger'); } });
     // 召喚キュー初期化（次2体プレビュー）
     B.cd={}; rebuildQueue();
     show('battle');
@@ -9128,6 +9280,7 @@ const Game = (()=>{
         (pending?`<span class="cd">⏳${cd.toFixed(1)}</span>`:'');
     });
     const front=B.queue[0];
+    if(B.allies.length>=ALLY_CAP){ $('summonBtn').disabled=true; $('summonBtn').textContent='🚧 満員（'+ALLY_CAP+'体）'; return; }
     if(!front||!ROSTER[front.key]){ $('summonBtn').disabled=true; $('summonBtn').textContent='⏳ じゅんび中…'; return; }
     const fcd=cdLeft(front.key);
     if(fcd>0){ $('summonBtn').disabled=true; $('summonBtn').textContent=`⏳ クールダウン ${fcd.toFixed(1)}秒`; return; }
@@ -9137,6 +9290,7 @@ const Game = (()=>{
   }
   function summon(){
     if(!B||!B.running) return;
+    if(B.allies.length >= ALLY_CAP) return; // 召喚上限（性能対策）
     const u=B.queue[0]; if(!u||!ROSTER[u.key]) return;
     if(cdLeft(u.key)>0) return;        // クールダウン中は出せない（灰色予約）
     if(B.energy < u.cost) return;
@@ -9159,6 +9313,8 @@ const Game = (()=>{
   // 遠距離キャラのフィールド飛び道具（弾→着弾で爆発）。targetX=狙う中心x（フィールド座標）
   function fireFieldProjectile(a, targetX){
     const v=ALLY_VIS[a.key]; if(!v||!v.proj) return;
+    if(activeProj>=PROJ_CAP) return;              // 同時弾数の上限（混戦での弾スパム抑制）
+    if(lod() && Math.random()<0.5) return;        // 多数描画時は弾を半分間引き
     const field=$('field'); if(!field) return;
     const fr=field.getBoundingClientRect(), ar=a.el.getBoundingClientRect();
     const sx=(ar.left-fr.left)+ar.width*0.82, sy=(ar.top-fr.top)+ar.height*0.34;
@@ -9166,41 +9322,280 @@ const Game = (()=>{
     const sz=v.projBig?42:26;
     const p=document.createElement('div'); p.className='fieldProj';
     p.style.cssText='left:'+sx+'px;top:'+sy+'px;width:'+sz+'px;height:'+sz+'px;margin-left:'+(-sz/2)+'px;margin-top:'+(-sz/2)+'px';
-    p.innerHTML=FX_PROJ[v.proj]||''; field.appendChild(p);
+    p.innerHTML=FX_PROJ[v.proj]||''; field.appendChild(p); activeProj++;
     const dur=v.projMs||420;
     requestAnimationFrame(function(){ p.style.transition='transform '+dur+'ms '+(v.arc?'cubic-bezier(.2,-.5,.7,1)':'linear'); p.style.transform='translate('+(ex-sx)+'px,'+(ey-sy)+'px)'; });
-    setTimeout(function(){ if(p.parentNode)p.remove(); if(v.explode){ const b=document.createElement('div'); b.className='fieldBoom'; b.style.left=ex+'px'; b.style.top=ey+'px'; b.innerHTML=FX_BOOM_FIELD; field.appendChild(b); setTimeout(function(){ if(b.parentNode)b.remove(); },560); } }, dur);
+    setTimeout(function(){ if(p.parentNode)p.remove(); activeProj--; if(v.explode && !lod()){ const b=document.createElement('div'); b.className='fieldBoom'; b.style.left=ex+'px'; b.style.top=ey+'px'; b.innerHTML=FX_BOOM_FIELD; field.appendChild(b); setTimeout(function(){ if(b.parentNode)b.remove(); },560); } }, dur);
   }
   function spawnAlly(key){
     const r=ROSTER[key];
     const v=ALLY_VIS[key]||{};
     const el=document.createElement('div'); el.className='unit spawning newcv '+(v.atk||'')+(v.fly?' flying':'');
     el.dataset.atkdur=(v.dur||600);
-    el.innerHTML = allyInner(r.sprite); if(r.scale) el.style.transform='scale('+r.scale+')';
+    el.innerHTML = allyInner(r.sprite);
+    let x=84, dir=1;
+    if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
+      dir = B.surviveSide; B.surviveSide *= -1;       // 左右交互に出撃
+      x = fieldW()/2 + dir*10;                          // 中央の自城から
+      el.style.transform=(dir<0?'scaleX(-1) ':'')+(r.scale?('scale('+r.scale+')'):''); // 向かう側を向く
+    } else if(r.scale){ el.style.transform='scale('+r.scale+')'; }
     $('field').appendChild(el);
-    fxGate(84); Sound.play('summon');
+    fxGate(x); Sound.play('summon');
     const __st=unitStats(key);
-    B.allies.push({ key, el, x:84, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0 });
+    B.allies.push({ key, el, x, dir, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0 });
   }
-  function spawnEnemy(type){
+  function spawnEnemy(type, side){
     if(type==="BOSS"){ spawnBoss(); return; }
     const t=ENEMY_TYPES[type]; const s=B.stage;
     const el=document.createElement('div'); el.className='unit';
-    el.style.transform='scaleX(-1)'+(t.scale?(' scale('+t.scale+')'):'');
+    let x, dir;
+    if(s.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
+      const fromLeft = side ? (side==='L') : (Math.random()<0.5);
+      x = fromLeft ? 18 : fieldW()-18; dir = fromLeft ? 1 : -1; // 端から中央へ
+      el.style.transform=(fromLeft?'':'scaleX(-1)')+(t.scale?(' scale('+t.scale+')'):''); // 中央を向く
+    } else {
+      x = fieldW()-84; dir = -1;
+      el.style.transform='scaleX(-1)'+(t.scale?(' scale('+t.scale+')'):'');
+    }
     el.innerHTML=unitBody(t.sprite);
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul);
-    B.enemies.push({ type, el, x:fieldW()-84, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null });
+    if(t.buffAura) el.classList.add('buffaura'); else if(t.heal) el.classList.add('healaura');
+    B.enemies.push({ type, el, x, dir, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null,
+      heal: t.heal? Math.round(t.heal*s.enemyHpMul) : 0, buffer: !!t.buffAura, buffAura: t.buffAura||0, buffRange: t.buffRange||0 });
   }
-  function spawnBoss(){
-    const s=B.stage;
+  function spawnBoss(rush){
+    const s=B.stage; const bs=s.bossStats||{hp:1400,atk:22,speed:13,range:70,scale:1.0};
+    // ⑤rush：連戦するボスごとに見た目を変え、後半ほど強く（個々は単独ボスよりやや軽め→徐々に重く）
+    let sprite=s.sprite, hpMul=1, atkMul=1;
+    if(rush){ sprite=BOSS_SPRITES[(rush.idx-1)%BOSS_SPRITES.length]; hpMul=0.78+0.22*rush.idx; atkMul=0.9+0.1*rush.idx; }
     const el=document.createElement('div'); el.className='unit boss-unit';
-    el.style.transform='scaleX(-1)';
-    el.innerHTML=unitBody(s.sprite);
+    el.style.transform='scaleX(-1)'+(bs.scale?(' scale('+bs.scale+')'):'');
+    el.innerHTML=unitBody(sprite);
     $('field').appendChild(el);
     B.bossAlive=true;
-    const hp=Math.round(BOSS_BASE.hp*s.enemyHpMul);
-    B.enemies.push({ type:"BOSS", el, x:fieldW()-110, hp, hpMax:hp, atk:BOSS_BASE.atk*s.enemyAtkMul, speed:BOSS_BASE.speed, range:BOSS_BASE.range, cd:0, boss:true, wind:(s.sprite==='bossThunder'), windCd:3.2 });
+    const hp=Math.round(bs.hp*hpMul);
+    const bossObj={ type:"BOSS", el, x:fieldW()-110, hp, hpMax:hp, atk:Math.round(bs.atk*s.enemyAtkMul*atkMul), speed:bs.speed, range:bs.range, cd:0, boss:true, wind:(sprite==='bossThunder'), windCd:3.2 };
+    // ギミック①：ためチャージ即死。ボスは敵城前でほぼ静止し、60秒チャージ満タンで全味方ノックアウト＋自城70%
+    if(s.gimmick==='charge' && IMPLEMENTED_GIMMICKS.charge){ bossObj.charge={ max:30, t:0 }; bossObj.speed=4; /* 非常にゆっくり前進（味方の近接が早く届く＝プレイヤー有利） */ }
+    // ギミック③：勇者の一撃・耐久。倒せない巨大ボスがゆっくり進攻。自城の勇者がチャージし切る(timeLimit)まで耐える
+    if(s.gimmick==='godhold' && IMPLEMENTED_GIMMICKS.godhold){
+      bossObj.invincible=true; bossObj.speed=6; // 倒せない＝無敵。低速で着実に前進し前線を圧迫
+      // 範囲攻撃：遠距離キャラ(射程~120)より少し狭い半径110で薙ぎ払い、たまった遠距離味方を一掃。前進で射程外の味方も巻き込む
+      bossObj.aoe={ range:110, cd:5, interval:4.5, dmg:Math.round(bossObj.atk*1.0) };
+      el.style.transform='scaleX(-1) scale('+((bs.scale||1)*1.25)+')'; // 一回り大きく
+      ensureHero(); // 自城の上に勇者を配置（チャージ開始）
+      try{ fxBanner('🛡️ このボスは倒せない！勇者の一撃まで耐えろ！','#5a7fc0'); fxTierFlash(); Sound.play('boss'); }catch(e){}
+    }
+    B.enemies.push(bossObj);
+  }
+  function bossOf(){ for(var i=0;i<B.enemies.length;i++){ if(B.enemies[i].boss) return B.enemies[i]; } return null; }
+  function ensureChargeBar(){ var el=$('chargeBar'); if(!el){ el=document.createElement('div'); el.id='chargeBar'; el.className='chargebar'; el.innerHTML='<span class="lab"></span><div class="cbtrack"><i></i></div>'; $('field').appendChild(el); } return el; }
+  function gimmickTick(dt){
+    if(!B||!B.stage) return;
+    if(B.stage.gimmick==='charge' && IMPLEMENTED_GIMMICKS.charge) chargeTick(dt);
+    if(B.stage.mode==='trigger' && IMPLEMENTED_GIMMICKS.trigger) triggerTick(dt);
+    if(B.stage.gimmick==='godhold' && IMPLEMENTED_GIMMICKS.godhold) godholdTick(dt);
+    if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive) surviveTick(dt);
+    if(B.stage.gimmick==='rush' && IMPLEMENTED_GIMMICKS.rush) rushTick(dt);
+    specialEnemyTick(dt);
+  }
+  // 壁2/壁3：中ボス級の常駐敵。通常ステージに「1体だけ」常駐し、倒すと一定時間で再出撃（雑魚の画面上限に押し出されないよう専用管理）
+  function specialEnemyTick(dt){
+    if(B.stage.boss || B.stage.endless) return;          // ボス戦・塔には出さない
+    const ch=B.stage.chapter||1;
+    if(ch>=10){ // 壁2：攻撃バッファー中ボス
+      var bAlive=false; for(var i=0;i<B.enemies.length;i++){ if(B.enemies[i].buffer){ bAlive=true; break; } }
+      if(!bAlive && B.t >= (B.bufferDeadUntil||0)){ spawnEnemy('buffer'); try{ fxBanner('🗿 鼓舞の巨像 出現！周囲の敵が強化される','#c0392b'); fxTierFlash(); Sound.play('boss'); }catch(e){} }
+    }
+    if(ch>=14){ // 壁3：敵ヒーラー（後方から回復＝DPSキャップ）
+      var hAlive=false; for(var j=0;j<B.enemies.length;j++){ if(B.enemies[j].heal){ hAlive=true; break; } }
+      if(!hAlive && B.t >= (B.healerDeadUntil||0)){ spawnEnemy('healer'); try{ fxBanner('💚 癒し手 出現！周囲の敵が回復する','#3a9d57'); }catch(e){} }
+    }
+  }
+  // ②城トリガー大群：敵城を削るほど城から敵が湧く。低HPで主(ボス)出現
+  function chapterEnemyPool(ch){
+    // どの章のプールにも遠距離(slinger/darkMage)を必ず1種以上混ぜる（近接だけだと壁を作って簡単になる対策）
+    var pool;
+    if(ch>=12) pool=['stoneGiant','golem','mummy','ghost','darkMage','slinger'];
+    else if(ch>=9) pool=['darkMage','mummy','golem','bat','slinger'];
+    else if(ch>=6) pool=['ghost','mummy','torii','bat','darkMage','slinger'];
+    else if(ch>=3) pool=['totem','torii','slinger','hare','darkMage'];
+    else pool=['slime','hare','totem','slinger'];
+    if(ch>=4) pool=pool.concat(['cannon']);            // 壁1：砲台（超長射程）を混ぜる
+    if(ch>=14) pool=pool.concat(['healer','healer']);  // 壁3：ヒーラーを出やすめに
+    return pool;
+  }
+  // 章に応じた遠距離雑魚（ステージ5以降の沸きで必ず混ぜる用）
+  function rangedTypeFor(ch){ return ch>=7 ? 'darkMage' : 'slinger'; }
+  function spawnTriggerBatch(){
+    const ch=B.stage.chapter||1; const pool=chapterEnemyPool(ch);
+    const n=(3+Math.floor(ch/2)+Math.floor(Math.random()*3))*ENEMY_MULT; // 章で増量×敵2倍
+    for(let i=0;i<n;i++){ if(B.enemies.length>=ENEMY_CAP) break;
+      const t=(i===0 && (B.stage.area||0)>=5) ? rangedTypeFor(ch) : pool[Math.floor(Math.random()*pool.length)]; // ステージ5以降は遠距離を必ず混ぜる
+      spawnEnemy(t);
+    }
+  }
+  // 固定ウェーブを撃ち尽くした後の無限沸き。章相応の敵を一定間隔で湧かす（画面上限ENEMY_CAPで頭打ち）
+  function continuousSpawn(){
+    if(B.enemies.length>=ENEMY_CAP) return;
+    if(B.t*1000 < (B.contNext||0)) return;
+    const ch=B.stage.chapter||1; const pool=chapterEnemyPool(ch);
+    const n=(2+Math.floor(ch/3))*ENEMY_MULT;
+    for(let i=0;i<n;i++){ if(B.enemies.length>=ENEMY_CAP) break;
+      // ステージ5以降は1バッチに必ず遠距離を1体は混ぜる
+      const t=(i===0 && (B.stage.area||0)>=5) ? rangedTypeFor(ch) : pool[Math.floor(Math.random()*pool.length)];
+      spawnEnemy(t);
+    }
+    B.contNext = B.t*1000 + Math.max(800, 2000 - ch*70); // 章が進むほど沸き間隔が短い
+  }
+  function triggerTick(dt){
+    const lost = 1 - B.castleE/Math.max(1,B.castleEMax); // 城を削った割合
+    let guard=0;
+    while(B.triggerPaid < lost-0.0001 && B.enemies.length<ENEMY_CAP && guard<10){ B.triggerPaid += 0.03; spawnTriggerBatch(); guard++; } // 3%削るごとに大量バッチ
+    if(!B.triggerBoss && B.stage.bossStats && B.castleE <= B.castleEMax*0.35){ B.triggerBoss=true; spawnBoss(); try{ fxBanner('👹 城の主が出た！','#e0683b'); fxTierFlash(); Sound.play('boss'); }catch(e){} }
+  }
+  function chargeTick(dt){
+    const boss=bossOf();
+    if(!boss||!boss.charge){ var cb=$('chargeBar'); if(cb) cb.style.display='none'; return; }
+    boss.charge.t += dt;
+    const r=Math.min(1, boss.charge.t/boss.charge.max);
+    const bar=ensureChargeBar(); bar.style.display='flex';
+    bar.querySelector('i').style.width=(r*100)+'%';
+    bar.classList.toggle('danger', r>0.7);
+    bar.querySelector('.lab').textContent = r>0.7 ? '⚡ 大ためが来る！倒せ！' : '⚡ ボスがチャージ中…';
+    if(r>=1){ bossChargeFire(boss); boss.charge.t=0; bar.classList.remove('danger'); bar.querySelector('i').style.width='0%'; }
+  }
+  function bossChargeFire(boss){
+    try{ fxTierFlash(); }catch(e){} Sound.play('boss'); fxBanner('💥 全体ぶっとばし！','#e0683b');
+    B.allies.forEach(function(a){ try{ floatText(a.x,26,'✖','var(--bad)'); fxFrag(a.x, fieldFloorY(), '#3aa6e0'); if(a.el) a.el.remove(); }catch(e){} });
+    B.allies.length=0;
+    B.castleA -= Math.round(B.castleAMax*0.38); if(B.castleA<0) B.castleA=0;
+    try{ castleHit('castleA'); }catch(e){}
+  }
+
+  // ③勇者の一撃・耐久：自城の勇者がtimeLimit秒チャージ。撃ち切れば大ビーム→敵を全消滅＋敵城破壊＝勝利。途中で自城0なら負け
+  function ensureHero(){ var el=$('heroUnit'); if(!el){ el=document.createElement('div'); el.id='heroUnit'; el.innerHTML='<div class="hero-aura"></div><div class="hero-body">'+SVG.get('thunderDragon')+'</div>'; $('field').appendChild(el); } el.style.display='block'; el.className=''; return el; }
+  function ensureHeroBar(){ var el=$('heroBar'); if(!el){ el=document.createElement('div'); el.id='heroBar'; el.className='chargebar herobar'; el.innerHTML='<span class="lab"></span><div class="cbtrack"><i></i></div>'; $('field').appendChild(el); } return el; }
+  function godholdTick(dt){
+    const lim=B.stage.timeLimit||120;
+    if(B.heroFired){ var hb0=$('heroBar'); if(hb0) hb0.style.display='none'; return; }
+    const r=Math.min(1, B.t/lim); const remain=Math.max(0, Math.ceil(lim-B.t));
+    const bar=ensureHeroBar(); bar.style.display='flex';
+    bar.querySelector('i').style.width=(r*100)+'%';
+    bar.classList.toggle('danger', remain<=15);
+    bar.querySelector('.lab').textContent = remain<=15 ? ('⚔️ もうすぐ勇者の一撃！耐えろ！ あと'+remain+'秒') : ('⚔️ 勇者がチャージ中… あと'+remain+'秒 耐えろ！');
+    // 勇者の攻撃モーション：チャージ進行に応じてオーラと震えを強める（120秒かけて溜める表現）
+    var hero=ensureHero(); hero.style.setProperty('--p', r.toFixed(3)); hero.classList.toggle('near', remain<=15);
+    if(B.t>=lim) heroStrike();
+  }
+  function heroStrike(){
+    if(B.heroFired) return; B.heroFired=true;
+    try{ fxTierFlash(); }catch(e){} Sound.play('win'); fxBanner('⚔️ 勇者の一撃ッ！！','#5a7fc0');
+    // 勇者の発射モーション → 大ビームを左の自城上から右へ描写
+    var hero=$('heroUnit'); if(hero){ hero.classList.add('fire'); }
+    var beam=document.createElement('div'); beam.className='herobeam'; $('field').appendChild(beam); setTimeout(function(){ if(beam) beam.remove(); }, 800);
+    // 大ビームが全敵を消し飛ばす。ボスは専用の消滅演出を入れてから除去
+    B.enemies.forEach(function(e){ try{
+      if(e.boss){ fxSparks(e.x, fieldFloorY(), 24, '#ffd24a'); fxFrag(e.x, fieldFloorY(), '#ffd24a'); if(e.el){ e.el.classList.add('vanish'); var __be=e.el; setTimeout(function(){ if(__be) __be.remove(); }, 620); } }
+      else { fxFrag(e.x, fieldFloorY(), '#5a7fc0'); fxSparks(e.x, fieldFloorY(), 10, '#bcd6ff'); if(e.el) e.el.remove(); }
+    }catch(_){ } });
+    B.enemies.length=0; B.bossAlive=false;
+    B.castleE=0; try{ castleHit('castleE'); }catch(e){}
+    var hb=$('heroBar'); if(hb) hb.style.display='none';
+    setTimeout(function(){ var h=$('heroUnit'); if(h) h.style.display='none'; }, 900);
+  }
+  // 倒せないボスの薙ぎ払い（範囲攻撃）：boss.x中心・半径aoe.rangeの味方をまとめて殴る
+  function bossAoeFire(boss){
+    var R=boss.aoe.range, dmg=boss.aoe.dmg, hit=0;
+    B.allies.forEach(function(a){ if(Math.abs(a.x-boss.x)<=R){ damage(a, dmg); floatText(a.x,24,'-'+dmg,'var(--bad)'); hit++; } });
+    // 衝撃波リング（直径=2R）
+    var sw=document.createElement('div'); sw.className='shockwave'; sw.style.left=boss.x+'px'; sw.style.setProperty('--r',(R*2)+'px'); $('field').appendChild(sw); setTimeout(function(){ if(sw) sw.remove(); }, 520);
+    try{ flash(boss.el); lunge(boss.el); Sound.play('hit'); }catch(e){}
+    if(hit>0) fxBanner('💥 ボスの薙ぎ払い！','#c0392b');
+  }
+
+  // ④survive（両側なだれ込み耐久）：敵城なし・自城は中央。左右両端から敵が湧き、timeLimit秒耐え切れば勝ち。自城0で負け
+  function spawnSurviveWave(){
+    const ch=B.stage.chapter||1; const pool=chapterEnemyPool(ch);
+    const perSide=1+Math.floor(ch/4); // 章で1サイドあたりの数が増える
+    ['L','R'].forEach(function(side){
+      for(let i=0;i<perSide;i++){ if(B.enemies.length>=ENEMY_CAP) break;
+        const t=(i===0)?rangedTypeFor(ch):pool[Math.floor(Math.random()*pool.length)]; // 各サイド必ず遠距離を1体
+        spawnEnemy(t, side);
+      }
+    });
+  }
+  function surviveTick(dt){
+    const lim=B.stage.timeLimit||90;
+    if(B.t>=lim){ beginEnd(true); return; } // 耐え切った＝勝利
+    const ch=B.stage.chapter||1;
+    if(B.t*1000 >= (B.surNext||0)){ spawnSurviveWave(); B.surNext = B.t*1000 + Math.max(900, 2200 - ch*90); }
+  }
+  function surviveVictoryFx(){
+    try{ fxTierFlash(); Sound.play('win'); fxBanner('🎉 守り切った！','#3a9d57'); }catch(e){}
+    B.enemies.forEach(function(e){ try{ fxFrag(e.x, fieldFloorY(), '#9cc5d6'); if(e.el){ e.el.classList.add('vanish'); var __ee=e.el; setTimeout(function(){ if(__ee) __ee.remove(); }, 600); } }catch(_){ } });
+    B.enemies.length=0;
+  }
+  // survive専用の前後判定（dir方向にいる相手）
+  function survNearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(function(e){ const ahead=a.dir>0?(e.x>=a.x-4):(e.x<=a.x+4); if(ahead){ const d=Math.abs(e.x-a.x); if(d<bd){bd=d;best=e;} } }); return best; }
+  function survNearestAlly(e){ let best=null,bd=1e9; B.allies.forEach(function(a){ const ahead=e.dir>0?(a.x>=e.x-4):(a.x<=e.x+4); if(ahead){ const d=Math.abs(a.x-e.x); if(d<bd){bd=d;best=a;} } }); return best; }
+  function stepUnitsSurvive(dt){
+    const W=fieldW(); const center=W/2; const edge=56; // 味方は端からedge手前で停止（場外に出さない）
+    B.allies.forEach(function(a){
+      a.cd-=dt;
+      if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.dir*a.speed*dt; a.x=Math.max(edge,Math.min(W-edge,a.x)); place(a.el,a.x); return; }
+      const target=survNearestEnemy(a);
+      var __atk=a.atk*allyAtkMul(a);
+      if(target && Math.abs(target.x-a.x)<=a.range){
+        if(a.cd<=0){
+          if(a.splash||a.pierce){ B.enemies.forEach(function(e){ const ahead=a.dir>0?(e.x>=a.x-4):(e.x<=a.x+4); if(ahead && Math.abs(e.x-a.x)<=a.range){ damage(e,__atk); if(a.slow)e.slowT=2.0; if(a.knockback)e.x+=a.dir*a.knockback; } }); floatText(a.x,26,a.pierce?'⇶':'💥','var(--ally)'); }
+          else { damage(target,__atk); if(a.slow){ target.slowT=2.0; floatText(target.x,22,'❄','#5aa0d6'); } if(a.knockback) target.x+=a.dir*a.knockback; }
+          a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); hitFx(target);
+          { var __v=ALLY_VIS[a.key]; if(__v&&__v.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, target.x, (__v.projDelay||0)); } }
+        }
+      } else { a.x+=a.dir*a.speed*dt; a.x=Math.max(edge,Math.min(W-edge,a.x)); }
+      place(a.el,a.x);
+    });
+    B.enemies.forEach(function(e){
+      e.cd-=dt;
+      if(e.dir==null) e.dir = (e.x<center?1:-1); // 分裂児など未設定の保険
+      if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
+      const target=survNearestAlly(e);
+      if(target && Math.abs(target.x-e.x)<=e.range){
+        if(e.cd<=0){ damage(target, e.atk); e.cd=0.8; flash(e.el); lunge(e.el); hitFx(target); }
+      } else if(!target && Math.abs(e.x-center)<=e.range+28){
+        if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); lunge(e.el); castleHit('castleA'); floatText(center,30,'-'+Math.round(e.atk),'var(--bad)'); }
+      } else {
+        e.x += e.dir*e.speed*(e.slowT>0?0.45:1)*dt;
+        if(e.dir>0) e.x=Math.min(e.x,center); else e.x=Math.max(e.x,center); // 中央を越えない
+      }
+      place(e.el,e.x);
+    });
+    cleanup();
+  }
+
+  // ⑤rush（ボスラッシュ）：ボスを2〜3体連戦。1体倒すと少し間を置いて次が出る。全員倒せば勝ち（自城0で負け）
+  function rushSpawnNext(){
+    B.rushIdx++; B.bossPhase=false; // 各ボスでフェーズ移行(HP30%強化)を再判定できるよう戻す
+    spawnBoss({ idx:B.rushIdx, total:B.rushTotal });
+    try{ fxBanner('👹 ボス '+B.rushIdx+'/'+B.rushTotal+'！','#e0683b'); fxTierFlash(); Sound.play('boss'); }catch(e){}
+  }
+  function rushTick(dt){
+    if(B.rushDone) return;
+    if(B.bossAlive){
+      B.rushGap=0;
+      // 軽い取り巻き（遠距離も必ず）。ボス戦を遠距離で安置されないように
+      if(B.t*1000 >= (B.rushAddNext||0)){
+        if(B.enemies.length < 12){ const ch=B.stage.chapter||1; const pool=chapterEnemyPool(ch); spawnEnemy(rangedTypeFor(ch)); if(Math.random()<0.6 && B.enemies.length<12) spawnEnemy(pool[Math.floor(Math.random()*pool.length)]); }
+        B.rushAddNext = B.t*1000 + 3000;
+      }
+      return;
+    }
+    // ボス不在：全員撃破済みなら勝利、まだなら少し間を置いて次のボス
+    if(B.rushIdx>=B.rushTotal){ B.rushDone=true; B.enemies.forEach(function(e){ try{ fxFrag(e.x,fieldFloorY(),'#e0683b'); if(e.el)e.el.remove(); }catch(_){ } }); B.enemies.length=0; beginEnd(true); return; }
+    if(!B.rushGap){ B.rushGap = B.t + (B.rushIdx===0 ? 0.6 : 1.6); } // 初手は早め、以降は1.6秒の小休止
+    if(B.t >= B.rushGap){ rushSpawnNext(); B.rushGap=0; }
   }
 
   function spawnSplitChild(type, x){
@@ -9218,7 +9613,12 @@ const Game = (()=>{
   function nextQuestion(){
     // 2択/4択は設定で固定（混ぜない）
     const cc = choiceMode;
-    curQ = QuizEngine.next(cc);
+    // デバッグ専用問題（生徒には出ない・治具検証用）：2択・左が正解固定
+    if(window.__GGDEBUG && window.__ggTestQ){
+      curQ = { qtext:'🐛 デバッグ：左を選べ', choices:['○ 正解（左）','× 不正解（右）'], answerIndex:0, choiceCount:2, review:false, speak:null, dir:null, locked:false };
+    } else {
+      curQ = QuizEngine.next(cc);
+    }
     if(!curQ){ $('qtext').textContent='問題データが読めませんでした'; return; }
     $('qtext').innerHTML = (curQ.review?'<span style="color:var(--gold)">🔁 </span>':'') + curQ.qtext;
     const box=$('choices'); box.className = curQ.choiceCount===2?'c2':''; box.innerHTML='';
@@ -9278,7 +9678,7 @@ const Game = (()=>{
   /* ---- ループ ---- */
   function loop(now){
     if(!B||!B.running) return;
-    const dt=Math.min(0.05,(now-B.last)/1000); B.last=now; B.t+=dt*(B.slow?0.6:1);
+    let dt=Math.min(0.05,(now-B.last)/1000); B.last=now; if(window.__GGDEBUG && window.__timeScale>1) dt*=window.__timeScale; B.t+=dt*(B.slow?0.6:1);
     // エネルギー加速：regen = base × (1 + combo/softcap) クランプ
     const mult=Math.min(B.maxMult, 1 + B.combo/B.softcap);
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
@@ -9289,8 +9689,13 @@ const Game = (()=>{
     if(autoSummon && B.queue[0] && cdLeft(B.queue[0].key)<=0 && B.energy>=B.queue[0].cost) summon();
     // ウェーブ
     if(B.stage.endless){ towerStep(); }
-    else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ spawnEnemy(B.stage.waves[B.spawnIdx].type); B.spawnIdx++; } }
+    else if(B.stage.mode==='trigger' && IMPLEMENTED_GIMMICKS.trigger){ /* ②時間湧きなし：敵城へのダメージでgimmickTickが湧かす */ }
+    else if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ /* ④両側湧きはsurviveTickが担当 */ }
+    else if(B.stage.gimmick==='rush' && IMPLEMENTED_GIMMICKS.rush){ /* ⑤ボス連戦＋取り巻きはrushTickが担当 */ }
+    else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ const __wt=B.stage.waves[B.spawnIdx].type; if(__wt==='BOSS'){ spawnEnemy(__wt); } else { for(let __m=0;__m<ENEMY_MULT;__m++){ if(B.enemies.length<ENEMY_CAP) spawnEnemy(__wt); } } B.spawnIdx++; }
+      if(B.spawnIdx>=B.stage.waves.length) continuousSpawn(); } // ウェーブ撃ち尽くし後は無限沸き（画面上限ENEMY_CAPまで）
     stepUnits(dt);
+    gimmickTick(dt);
     syncHUD(); renderQueue();
     if(B.stage.endless){ var __he=$('hpEtxt'); if(__he) __he.textContent='🗼'+(B.floor||1)+'階'; }
     checkEnd();
@@ -9298,6 +9703,7 @@ const Game = (()=>{
   }
 
   function stepUnits(dt){
+    if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ stepUnitsSurvive(dt); return; } // ④両側レイアウトは専用処理
     const W=fieldW();
     // 味方：右へ。敵 or 敵城と戦う
     B.allies.forEach(a=>{
@@ -9324,26 +9730,33 @@ const Game = (()=>{
     B.enemies.forEach(e=>{
       e.cd-=dt;
       if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
+      // 壁3：敵ヒーラー＝攻撃せず前進しつつ周囲の敵を回復（後方支援）
+      if(e.heal){ if(e.cd<=0){ var __eh=false; B.enemies.forEach(function(o){ if(o!==e && Math.abs(o.x-e.x)<=e.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+e.heal); var __hi=o.el.querySelector('.hpb i'); if(__hi)__hi.style.width=(o.hp/o.hpMax*100)+'%'; __eh=true; } }); if(__eh){ e.cd=1.0; flash(e.el); floatText(e.x,24,'+♥','#e07ba0'); } } e.x -= e.speed*(e.slowT>0?0.45:1)*dt; place(e.el,e.x); return; }
       const target=nearestAlly(e);
       const myCastleX=70;
+      const __ea = e.atk*enemyDmgBuff(e); // 壁2：バッファー中ボスが近くにいると攻撃UP
       if(target && Math.abs(target.x-e.x) <= e.range){
-        if(e.cd<=0){ damage(target, e.atk); e.cd=0.8; flash(e.el); lunge(e.el); hitFx(target); }
+        if(e.cd<=0){ if(__ea>0) damage(target, __ea); e.cd=0.8; flash(e.el); lunge(e.el); hitFx(target); }
       }else if(!target && e.x <= myCastleX+e.range){
-        if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); lunge(e.el); castleHit('castleA'); floatText(70, 30, '-'+Math.round(e.atk), 'var(--bad)'); }
+        if(e.cd<=0){ if(__ea>0){ B.castleA-=__ea; castleHit('castleA'); floatText(70, 30, '-'+Math.round(__ea), 'var(--bad)'); } e.cd=0.8; flash(e.el); lunge(e.el); }
       }else{
         e.x -= e.speed*(e.slowT>0?0.45:1)*dt;
       }
       // ボスのフェーズ移行（HP30%で攻撃強化）
       if(e.boss && !B.bossPhase && e.hp<=e.hpMax*0.3){ B.bossPhase=true; e.atk*=1.6; e.el.style.filter='drop-shadow(0 0 8px #e0683b)'; floatText(e.x,20,'PHASE2!','var(--enemy)'); fxBanner('⚡ ボス覚醒!','#e0683b'); fxTierFlash(); Sound.play('boss'); }
       if(e.boss && e.wind){ e.windCd-=dt; if(e.windCd<=0){ e.windCd=B.bossPhase?2.0:3.4; let any=false; B.allies.forEach(function(a){ if(a.x>92){ a.x=Math.max(92,a.x-34); any=true; } }); if(any){ fxBanner('🌪️ 暴風！','#5a7fc0'); fxTierFlash(); Sound.play('hit'); } } }
+      // 倒せないボスの範囲攻撃（薙ぎ払い）：たまった遠距離味方を一掃する
+      if(e.boss && e.aoe){ e.aoe.cd-=dt; if(e.aoe.cd<=0){ e.aoe.cd=e.aoe.interval; bossAoeFire(e); } }
       place(e.el, e.x);
     });
     cleanup();
   }
   function allyAtkMul(a){ var m=1; B.allies.forEach(function(o){ if(o.buff && o!==a && Math.abs(o.x-a.x)<=o.range) m+=o.buff; }); return m; }
+  // 壁2：攻撃バッファー中ボスが近くにいる敵は攻撃力UP
+  function enemyDmgBuff(e){ var m=1; for(var i=0;i<B.enemies.length;i++){ var o=B.enemies[i]; if(o.buffAura && o!==e && Math.abs(o.x-e.x)<=o.buffRange) m+=o.buffAura; } return m; }
   function nearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(e=>{ if(e.x>=a.x-4){ const d=e.x-a.x; if(d<bd){bd=d;best=e;} }}); return best; }
   function nearestAlly(e){ let best=null,bd=1e9; B.allies.forEach(a=>{ if(a.x<=e.x+4){ const d=e.x-a.x; if(d<bd){bd=d;best=a;} }}); return best; }
-  function damage(u,amt){ amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
+  function damage(u,amt){ if(u.invincible){ flash(u.el); return; } amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
   function flash(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),90); }
   function place(el,x){ el.style.left=(x-27)+'px'; }
   function cleanup(){
@@ -9352,22 +9765,43 @@ const Game = (()=>{
     B.enemies=B.enemies.filter(e=>{ if(e.hp<=0){
       if(e.bomb){ fxSparks(e.x, fieldFloorY(), 16, '#e0683b'); B.allies.forEach(function(a){ if(Math.abs(a.x-e.x)<=72){ a.hp-=e.bomb; const i=a.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,a.hp/a.hpMax*100)+'%'; } }); floatText(e.x,28,'💥-'+e.bomb,'var(--enemy)'); }
       if(e.split){ born.push({x:e.x-16,t:e.split}); born.push({x:e.x+16,t:e.split}); }
-      fxFrag(e.x, fieldFloorY(), e.boss?'#e0a93b':'#e0683b'); if(e.boss){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } e.el.remove(); if(e.boss) B.bossAlive=false; gold+=e.boss?200:5; return false;
+      if(e.buffer){ B.bufferDeadUntil = B.t + 12; fxBanner('🗿 巨像を撃破！しばらく出ない','#3a9d57'); } // 倒すと規定秒数 再出撃しない
+      if(e.heal){ B.healerDeadUntil = B.t + 8; } // ヒーラー撃破→規定秒数で再出撃
+      fxFrag(e.x, fieldFloorY(), (e.boss||e.buffer)?'#e0a93b':'#e0683b'); if(e.boss||e.buffer){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } e.el.remove(); if(e.boss) B.bossAlive=false; gold+=(e.boss||e.buffer)?200:5; return false;
     } return true; });
     born.forEach(function(n){ spawnSplitChild(n.t, n.x); });
   }
+  let activeFloat=0;
   function floatText(x,y,txt,color){
+    if(activeFloat >= (lod()?10:24)) return;   // 同時フロートテキスト数の上限（混戦でのダメージ表示スパム抑制）
     const f=document.createElement('div'); f.className='float'; f.style.left=x+'px'; f.style.top=y+'px'; f.style.color=color||'#000'; f.textContent=txt;
-    $('field').appendChild(f); setTimeout(()=>f.remove(),800);
+    $('field').appendChild(f); activeFloat++; setTimeout(()=>{ f.remove(); activeFloat--; },800);
   }
 
   /* ---- HUD ---- */
   function syncHUD(){
     if(!B) return;
     $('hpA').style.width=Math.max(0,B.castleA/B.castleAMax*100)+'%';
-    $('hpE').style.width=Math.max(0,B.castleE/B.castleEMax*100)+'%';
     $('hpAtxt').textContent=Math.max(0,Math.round(B.castleA/B.castleAMax*100))+'%';
-    $('hpEtxt').textContent=Math.max(0,Math.round(B.castleE/B.castleEMax*100))+'%';
+    if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
+      // ④敵城メーターを「残り時間」に流用
+      const lim=B.stage.timeLimit||90; const remain=Math.max(0, lim-B.t);
+      $('hpElab').textContent='⏳ 残り';
+      $('hpEtxt').textContent=Math.ceil(remain)+'秒';
+      $('hpE').style.width=(remain/lim*100)+'%';
+      $('hpE').classList.toggle('low', remain<=15);
+    } else if(B.stage.gimmick==='rush' && IMPLEMENTED_GIMMICKS.rush){
+      // ⑤敵城メーターを「残りボス」に流用（撃破ぶん減る）
+      const tot=B.rushTotal||1; const defeated=Math.max(0, B.rushIdx - (B.bossAlive?1:0)); const remain=tot-defeated;
+      $('hpElab').textContent='👹 ボス';
+      $('hpEtxt').textContent=Math.min(B.rushIdx||1,tot)+'/'+tot;
+      $('hpE').style.width=(remain/tot*100)+'%';
+      $('hpE').classList.toggle('low', remain<=1);
+    } else {
+      $('hpElab').textContent='敵城 🏯';
+      $('hpE').style.width=Math.max(0,B.castleE/B.castleEMax*100)+'%';
+      $('hpEtxt').textContent=Math.max(0,Math.round(B.castleE/B.castleEMax*100))+'%';
+    }
     $('enBar').style.width=(B.energy/B.energyMax*100)+'%';
     $('enTxt').textContent=Math.round(B.energy);
     $('comboTxt').textContent=B.combo;
@@ -9453,8 +9887,24 @@ const Game = (()=>{
   }
   function checkEnd(){
     if(B.ended) return;
-    if(B.castleE<=0){ endBattle(true); }
-    else if(B.castleA<=0){ endBattle(false); }
+    if(B.castleE<=0){ beginEnd(true); }
+    else if(B.castleA<=0){ beginEnd(false); }
+  }
+  // 城が壊れたら約2秒の爆発四散を見せてから結果画面へ（勝ち=敵城・負け=自城）。godholdは大ビーム/ボス消滅もこの間に見える
+  function beginEnd(win){
+    if(B.ended) return; B.ended=true; B.running=false; cancelAnimationFrame(B.raf);
+    if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
+      if(win) surviveVictoryFx(); else castleBlast('castleA', false); // ④勝ち=敵が散る／負け=中央の自城が爆発
+    } else {
+      castleBlast(win?'castleE':'castleA', win);
+    }
+    var myB=B; setTimeout(function(){ if(B===myB) endBattle(win); }, 2000); // 別戦闘へ移っていたら出さない
+  }
+  function castleBlast(id, win){
+    var c=$(id); if(c){ c.classList.remove('shakeC'); c.classList.add('blast'); }
+    var cx = (id==='castleA') ? 38 : fieldW()-38;
+    try{ fxTierFlash(); Sound.play(win?'win':'lose'); }catch(e){}
+    for(var i=0;i<7;i++){ (function(d){ setTimeout(function(){ try{ fxFrag(cx, fieldFloorY()-30, '#caa37a'); fxFrag(cx, fieldFloorY()-60, '#8a8a8a'); fxSparks(cx, fieldFloorY()-40, 14, win?'#ffd24a':'#ff6b5a'); castleHit(id); }catch(e){} }, d); })(i*240); }
   }
   function renderResultMistakes(){
     var el=$('resMistakes'); if(!el) return; el.innerHTML='';
@@ -9638,7 +10088,84 @@ const Game = (()=>{
   }
   function assessSkip(){ if(!placement.doneAt) placement.doneAt='skipped'; AS=null; save(); homeView='menu'; renderHome(); show('home'); }
 
-  return { start, toHome, summon, toggleSound, replayAudio, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES };
+  // ===== 標準プレイテスト治具（難度検証用・__GGDEBUG時のみwindow公開） =====
+  const _test = {
+    // 1章ごとに全強化+Lv2／初期キャラ／自動召喚／デバッグ問題(左が正解固定)
+    setup(chapter){
+      const lv=2*chapter;
+      deck=STARTERS.slice(); STARTERS.forEach(function(k){ if(!owned[k])owned[k]=1; unitLv[k]=lv; });
+      autoSummon=true; choiceMode=2;
+      castleLv=lv; regenLv=lv; enMaxLv=lv;
+      window.__ggTestQ=true; // デバッグ専用問題を使う（確実にコンボを積む）
+      QuizEngine.setSel({genre:'word', levels:['e3']});
+      save();
+      return {deck:deck.slice(), lv:lv};
+    },
+    enter(area){ const st=STAGES[area-1]; if(!st) return 'no stage '+area; playTab=st.chapter; enterBattle(st); return 'entered area'+area; },
+    // 90%正答で1問解く（left=正解固定の前提。fresh問題があるときだけ）
+    answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
+    state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
+      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy) }; }
+    ,
+    // 自動プレイ：area=ステージ, chapter=強化想定章, opts{acc正答率, scale倍速}。logは window.__ptlog、終了で window.__ptdone
+    run(area, chapter, opts){
+      opts=opts||{}; const acc=(opts.acc!=null?opts.acc:0.9); const scale=(opts.scale!=null?opts.scale:2);
+      this.setup(chapter); window.__timeScale=scale; this.enter(area);
+      window.__ptlog=[]; window.__ptdone=null;
+      clearInterval(window.__ptA); clearInterval(window.__ptS);
+      const ansEvery=Math.max(120, Math.round(1500/scale)); // ゲーム内1.5秒に1問相当
+      window.__ptA=setInterval(function(){ try{ _test.answer(Math.random()<acc); }catch(e){} }, ansEvery);
+      window.__ptS=setInterval(function(){ var st=_test.state(); if(!st) return; window.__ptlog.push(st); if(st.ended || st.t>240){ window.__ptdone=st; clearInterval(window.__ptA); clearInterval(window.__ptS); window.__timeScale=1; } }, ansEvery);
+      return 'running area'+area+' chapter'+chapter+' x'+scale;
+    },
+    stop(){ clearInterval(window.__ptA); clearInterval(window.__ptS); clearInterval(window.__benchSamp); window.__timeScale=1; window.__ggTestQ=false; },
+    // 負荷ベンチ：等速で48体(SSR味方24＋同じ重いアートの敵24)を画面に出し、FPSを実測。Chromebook耐性チェック用
+    bench(opts){
+      opts=opts||{}; var dur=opts.ms||6000; var nA=opts.allies!=null?opts.allies:24; var nE=opts.enemies!=null?opts.enemies:24;
+      var ssr=['thunderDragon','dragonTurtle','crystalGolem','orcaKnight']; // 一番重い新アート(SSR)
+      this.setup(10); ssr.forEach(function(k){ owned[k]=1; unitLv[k]=2; }); deck=ssr.slice();
+      autoSummon=false; window.__timeScale=1; window.__ggTestQ=true; // 等速
+      this.enter(38); // ch8通常ステージ(ボス/特殊ギミック無し)
+      B.stage.waves=[]; B.spawnIdx=0; B.contNext=Infinity; B.stage.chapter=5; // 自然湧き・特殊敵を止めて数を固定
+      B.castleA=B.castleAMax=1e9; B.castleE=B.castleEMax=1e9; // 6秒で決着しないように
+      var W=$('field').clientWidth;
+      for(var i=0;i<nA;i++){ spawnAlly(ssr[i%ssr.length]); }
+      B.allies.forEach(function(a,i){ a.hp=a.hpMax=1e9; a.x=90 + i*((W*0.42)/Math.max(1,nA)); }); // 画面に広げて全部描画
+      var heavyEnemies = opts.enemyArt!=='simple'; // 既定=最悪値(敵も新アート)。'simple'で現状の軽い敵アート
+      for(var j=0;j<nE;j++){
+        var x=W-90 - j*((W*0.42)/Math.max(1,nE));
+        if(heavyEnemies){ // 敵も同じ重い新アート(newcv)＝将来 敵に新アートを付けた時の最悪値
+          var key=ssr[j%ssr.length], r=ROSTER[key], v=ALLY_VIS[key]||{};
+          var el=document.createElement('div'); el.className='unit newcv '+(v.atk||'')+(v.fly?' flying':''); el.dataset.atkdur=(v.dur||600);
+          el.style.transform='scaleX(-1)'+(r.scale?(' scale('+r.scale+')'):''); el.innerHTML=allyInner(r.sprite);
+          $('field').appendChild(el);
+          B.enemies.push({ type:'BENCH', el, x, dir:-1, hp:1e9, hpMax:1e9, atk:8, speed:r.speed, range:r.range, cd:0, boss:false, def:0, bomb:0, split:null, heal:0, buffer:false, buffAura:0, buffRange:0 });
+          place(el, x);
+        } else { // 現状の敵アート(.body・軽い)
+          spawnEnemy('stoneGiant'); var en=B.enemies[B.enemies.length-1]; if(en){ en.hp=en.hpMax=1e9; en.x=x; place(en.el,x); }
+        }
+      }
+      // FPSサンプラー（実フレーム間隔を計測）
+      var fr=[], last=0, run=true;
+      function samp(now){ if(!run) return; if(last) fr.push(now-last); last=now; requestAnimationFrame(samp); }
+      requestAnimationFrame(samp);
+      window.__benchResult=null;
+      setTimeout(function(){ run=false;
+        if(!fr.length){ window.__benchResult={error:'no frames'}; return; }
+        fr.sort(function(a,b){return a-b;});
+        var sum=0; for(var k=0;k<fr.length;k++) sum+=fr[k]; var avg=sum/fr.length;
+        var p95=fr[Math.min(fr.length-1, Math.floor(fr.length*0.95))], worst=fr[fr.length-1];
+        var drop=0; for(var m=0;m<fr.length;m++){ if(fr[m]>20) drop++; }
+        window.__benchResult={ unitsOnField:(B?B.allies.length+B.enemies.length:0), frames:fr.length,
+          avgFps:Math.round(1000/avg), minFps:Math.round(1000/worst), avgMs:+avg.toFixed(1), p95ms:+p95.toFixed(1), worstMs:+worst.toFixed(1),
+          droppedFramesPct:Math.round(drop/fr.length*100) };
+        try{ GG_TEST.stop(); }catch(e){}
+      }, dur);
+      return 'benchmarking '+(nA+nE)+' heavy units (等速) for '+dur+'ms → window.__benchResult';
+    }
+  };
+  if(window.__GGDEBUG){ window.GG_TEST=_test; }
+  return { start, toHome, summon, toggleSound, replayAudio, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES, _answerForTest:(i,b)=>answer(i,b) };
 })();
 
 Game.start();
