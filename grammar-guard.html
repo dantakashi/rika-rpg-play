@@ -254,14 +254,14 @@
     <div class="crest" id="titleCrest"></div>
     <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
     <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
-    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07c（発音音声追加／出題設定に音声ON-OFF・コンボ説明・範囲設定ボタン明記）</p>
+    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07d（経済改定：ガチャを💎グラマージェムへ＝問題を解くと貯まる・200で1回／ログボ200💎）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
   </section>
 
   <!-- ===== ホーム ===== -->
   <section id="home" class="screen col">
-    <div class="topbar"><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><span class="pill" id="goldPill">💰 0</span></div>
+    <div class="topbar"><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span></div>
     <div class="pad scroll grow">
       <div id="homeMenu">
         <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
@@ -303,7 +303,7 @@
           <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
           <div class="seg" id="choiceSeg"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
-          <div class="muted" style="margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。</div>
+          <div class="muted" style="margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。<br>🎰 <b>ガチャ用の💎グラマージェムも同じしくみで貯まります</b>（正解で満額・まちがえても約1/3）。たくさん解くほどガチャが引けます。</div>
           <div id="assessReco" class="muted" style="margin-top:8px;line-height:1.45"></div>
         </div>
         <div class="card" style="margin-top:12px">
@@ -314,7 +314,7 @@
         </div>
       </div>
       <div class="homeview" data-view="grow">
-        <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">ゴールドで味方を入手</span></button>
+        <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">💎グラマージェムで味方を入手</span></button>
         <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする</span></button>
         <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
         <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
@@ -7800,6 +7800,12 @@ const ENGLISH_IDIOM_DB_V2 = [
     let g = Math.floor(x); if(Math.random() < (x-g)) g++;
     return Math.max(1,g);
   }
+  // ガチャ通貨（グラマージェム💎）：正解=コンボ式×3／不正解=その約1/3。上級ほど多い。
+  function gemGain(q, correct){
+    const base = q.genre==="grammar" ? (q.choiceCount===4?4:2) : (q.choiceCount===4?2:1);
+    const lm = {e4:1.0, e3:1.25, ep2:1.5, e2:1.75, ep1:2.2}[q.level]||1;
+    return correct ? Math.max(1, Math.round(base*lm*3)) : Math.max(1, Math.round(base*lm));
+  }
 
   // 選択UI・保存用API
   function getSel(){ return {genre:selGenre, levels:[...selLevels], tiers:[...selTiers], grammarMode:grammarMode, fields:[...selFields]}; }
@@ -7818,7 +7824,7 @@ const ENGLISH_IDIOM_DB_V2 = [
   function setGenre(k){ if(["word","idiom","grammar"].includes(k)) selGenre=k; }
   function setGrammarMode(m){ if(m==='eiken'||m==='field') grammarMode=m; }
 
-  return { next, drawFor, comboGain, pushReview, reviewCount, size:()=>DB.length,
+  return { next, drawFor, comboGain, gemGain, pushReview, reviewCount, size:()=>DB.length,
     EIKEN, TIERS, GENRES, FIELDS, LV_LABEL, LV_ORDER,
     getSel, setSel, toggleLevel, toggleTier, toggleField, setGenre, setGrammarMode, poolCount, isBuffEligible,
     genre:()=>selGenre, gmode:()=>grammarMode,
@@ -7942,6 +7948,8 @@ const Game = (()=>{
   const STAGES = makeStages();
   const SAVE_KEY = "gg_v2_save_v1";
   let gold = 0;
+  let gems = 0;            // グラマージェム💎（ガチャ専用通貨。問題を解くと貯まる）
+  let gemsGranted = false; // 初回のみ200💎を配る移行フラグ（既存セーブ救済）
   let cleared = {};        // {area:true}
   let autoSummon = false;  // 苦手な子向け（操作を問題に集中）
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
@@ -7964,7 +7972,7 @@ const Game = (()=>{
   let soundOn = true;
   function load(){
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
-      gold=s.gold||0; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
+      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
@@ -7974,16 +7982,18 @@ const Game = (()=>{
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
+    if(!gemsGranted){ gems += 200; gemsGranted = true; } // 初回のみ1回ぶん(200💎)を配る（新規・既存セーブ救済）
     ensureStarter();
+    save(); // 移行ボーナス・初期キャラ補充を確定保存
   }
   function save(){
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
   /* ============ 入手(ガチャ)・編成・城強化 ============ */
-  const GACHA_COST = 300;
+  const GACHA_COST = 200; // ガチャ1回の費用（グラマージェム💎）
   const RARITY_W = {N:58, R:28, SR:11, SSR:3};
   let lastGacha = null;
   function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
@@ -8006,8 +8016,8 @@ const Game = (()=>{
   function castleUpCost(){ return 250*(castleLv+1); }
   function doGacha(){
     if(gachaAnimating) return;
-    if(gold < GACHA_COST){ lastGacha={msg:'ゴールドが足りません（'+GACHA_COST+'G必要）'}; renderGacha(); return; }
-    gold -= GACHA_COST;
+    if(gems < GACHA_COST){ lastGacha={msg:'グラマージェムが足りません（'+GACHA_COST+'💎必要）'}; renderGacha(); return; }
+    gems -= GACHA_COST; updateGemUI();
     let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
     let x=Math.random()*tot, rar='N';
     for(const r in RARITY_W){ x-=RARITY_W[r]; if(x<=0){ rar=r; break; } }
@@ -8054,7 +8064,7 @@ const Game = (()=>{
       '<div class="gname">'+r.name+' '+tag+'</div></div>';
   }
   function playGachaAnim(info){
-    const stage=$('gachaStage'); const gp=$('goldPill'); if(gp) gp.textContent='💰 '+gold;
+    const stage=$('gachaStage'); const gp=$('goldPill'); if(gp) gp.textContent='💰 '+gold; updateGemUI();
     if(!stage){ renderHome(); return; }
     const r=ROSTER[info.key]; const hi=(info.rar==='SR'||info.rar==='SSR');
     gachaAnimating=true; renderGacha();
@@ -8173,16 +8183,17 @@ const Game = (()=>{
   function upgradeEnMax(){ const c=enMaxCost(); if(gold<c) return; gold-=c; enMaxLv++; Sound.play('correct'); save(); renderHome(); }
 
   function renderGacha(){
-    const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'G）';
+    const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'💎）';
     const stage=$('gachaStage');
     if(stage && !gachaAnimating){
       if(lastGacha && lastGacha.key) stage.innerHTML=gachaRevealHTML(lastGacha);
       else stage.innerHTML='<div class="muted" style="text-align:center">カプセルを回して<br>味方をGETしよう！</div>';
     }
     const body=$('gachaBody'); if(!body) return; body.innerHTML='';
-    const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='width:100%'; btn.textContent= gachaAnimating?'…':'🎰 ガチャを引く（'+GACHA_COST+'G）';
-    btn.disabled = gachaAnimating || gold<GACHA_COST; btn.addEventListener('click',doGacha); body.appendChild(btn);
-    if(!gachaAnimating && gold<GACHA_COST){ const m=document.createElement('div'); m.className='muted'; m.style.cssText='margin-top:6px;text-align:center'; m.textContent='ゴールドが足りません（ステージで稼ごう）'; body.appendChild(m); }
+    const have=document.createElement('div'); have.className='muted'; have.style.cssText='text-align:center;margin-bottom:6px'; have.innerHTML='所持：<b style="color:#a463f2">💎 '+gems+'</b>'; body.appendChild(have);
+    const btn=document.createElement('button'); btn.className='btn'; btn.style.cssText='width:100%'; btn.textContent= gachaAnimating?'…':'🎰 ガチャを引く（'+GACHA_COST+'💎）';
+    btn.disabled = gachaAnimating || gems<GACHA_COST; btn.addEventListener('click',doGacha); body.appendChild(btn);
+    if(!gachaAnimating && gems<GACHA_COST){ const m=document.createElement('div'); m.className='muted'; m.style.cssText='margin-top:6px;text-align:center'; m.textContent='💎が足りません（問題を解いてためよう）'; body.appendChild(m); }
   }
   function renderDeck(){
     const body=$('deckBody'); if(!body) return; body.innerHTML='';
@@ -8337,9 +8348,13 @@ const Game = (()=>{
     show('title');
   }
 
+  // 💎ジェム残高チップを更新（ホームのヘッダー。戦闘中は非表示なので存在チェック）
+  function updateGemUI(){ var g=$('gemPill'); if(g) g.textContent='💎 '+gems; }
+
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
+    updateGemUI();
     renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
     const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
@@ -8584,6 +8599,8 @@ const Game = (()=>{
     if(curQ.speak) Speech.speak(curQ.speak); // 正誤どちらでも正答の英語を再生（誤答でも正しい発音が流れる）
     const right = (i===curQ.answerIndex);
     const buttons=[...$('choices').children];
+    const gemPts = QuizEngine.gemGain(curQ, right); // 💎ガチャ通貨：正解=満額／不正解=約1/3
+    gems += gemPts; updateGemUI(); save(); // 1問ごとに保存（途中でやめても💎は残る）
     if(right){
       btn.classList.add('ok'); B.correct++; B.missStreak=0;
       Sound.play('correct'); fxLetters(btn, curQ.choices[i]);
@@ -8608,6 +8625,7 @@ const Game = (()=>{
       try{ var __mp=(curQ.qtext||'').replace(/<[^>]+>/g,''); var __mc=curQ.choices?curQ.choices[curQ.answerIndex]:''; if(B.mistakes && !B.mistakes.some(function(m){return m.prompt===__mp&&m.correct===__mc;})) B.mistakes.push({prompt:__mp, correct:__mc, desc:curQ.desc||''}); }catch(_){}
       $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
     }
+    floatText($('field').clientWidth/2, right?78:54, `+${gemPts}💎`, '#a463f2'); // ガチャ通貨の手応え
     syncHUD();
     setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, right?800:2000);
   }
@@ -8764,7 +8782,7 @@ const Game = (()=>{
   function dailyGoldCap(){ return 600 + clearedCount()*200; }
   function ensureGoldDay(){ var t=todayStr(); if(goldDay!==t){ goldDay=t; dailyStageGold=0; } }
   function dailyClaimable(){ return lastDaily!==todayStr(); }
-  function claimDaily(){ if(!dailyClaimable()) return; gold+=500; lastDaily=todayStr(); Sound.play('correct'); save(); renderHome(); }
+  function claimDaily(){ if(!dailyClaimable()) return; gems+=200; lastDaily=todayStr(); Sound.play('correct'); save(); renderHome(); }
   // ログインボーナス：スタート時に自動付与してポップアップ表示（ボタン操作は不要）
   function showDailyPopup(amount){
     var amt=$('dailyPopAmt'); if(amt) amt.textContent=amount;
@@ -8775,8 +8793,8 @@ const Game = (()=>{
   function closeDaily(){ var pop=$('dailyPop'); if(pop) pop.classList.remove('on'); }
   function maybeDaily(){
     if(!dailyClaimable()) return;
-    gold+=500; lastDaily=todayStr(); save(); renderHome();
-    showDailyPopup(500);
+    gems+=200; lastDaily=todayStr(); save(); renderHome();
+    showDailyPopup(200);
   }
   function renderTower(){
     var body=$('towerBody'); if(!body) return; body.innerHTML='';
@@ -8970,7 +8988,7 @@ const Game = (()=>{
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+wlab+'</div></div>';
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+glab+'</div></div>';
     html+='</div>';
-    if(reward>0) html+='<div style="font-weight:800;color:var(--gold);font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💰 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+(gain*5)+'連ぶん！）</div></div>';
+    if(reward>0) html+='<div style="font-weight:800;color:var(--gold);font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💰 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（強化に使えるよ！）</div></div>';
     else html+='<div class="muted" style="margin:8px 0">今回はランクアップなし（次はもっと上をめざそう！）</div>';
     html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%。より高い級に挑むほどコンボ倍率も上がります。</div>';
     html+='<button class="btn" id="assessToReco" style="max-width:300px">出題設定をひらく ▶</button>';
@@ -8995,7 +9013,7 @@ window.addEventListener('DOMContentLoaded', Game.start);
   <div style="font-size:46px;line-height:1">🎁</div>
   <div style="font-size:22px;font-weight:800;margin:6px 0">ログインボーナス！</div>
   <div id="dailyPopBody" class="muted" style="margin-bottom:6px;line-height:1.5"></div>
-  <div style="font-size:30px;font-weight:800;color:var(--gold);margin:8px 0">💰 +<span id="dailyPopAmt">500</span>G</div>
+  <div style="font-size:30px;font-weight:800;color:#a463f2;margin:8px 0">💎 +<span id="dailyPopAmt">200</span></div>
   <button class="btn" style="width:100%" onclick="Game.closeDaily()">受け取る</button>
 </div></div>
 <div id="__buildbadge" style="position:fixed;left:6px;bottom:6px;right:6px;z-index:99998;background:#3aa6a0;color:#fff;font:bold 11px/1.3 monospace;padding:4px 8px;border-radius:8px;opacity:.95;box-shadow:0 2px 6px rgba(0,0,0,.3);word-break:break-all;display:none">build 0605f</div>
