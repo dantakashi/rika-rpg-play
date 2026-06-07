@@ -72,6 +72,7 @@
   .fill.castleA{background:var(--good)} .fill.castleE{background:var(--enemy)}
   #combo-big{font-weight:800; font-size:15px; color:var(--gold); min-width:78px; text-align:right}
   #combo-big b{font-size:22px}
+  #guardTxt{font-size:13px}
 
   #field{position:relative; flex:1 1 0; min-height:0; overflow:hidden; transition:background .4s;
     background:linear-gradient(#cfe3f2 0 58%, #d8c79a 58% 100%)}
@@ -109,6 +110,13 @@
   .qnext{opacity:.85; transform:scale(.86)}
   #summonBtn{margin-left:auto; background:var(--good); min-width:128px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   #summonBtn:disabled{filter:grayscale(.7) brightness(.95); opacity:.6}
+  #freezeBtn{background:#5aa0d6; min-width:108px; white-space:nowrap}
+  #freezeBtn:disabled{filter:grayscale(.6) brightness(.97); opacity:.6}
+  #field.frozen{filter:saturate(.55) brightness(1.06)}
+  #field.frozen::after{content:""; position:absolute; inset:0; pointer-events:none; z-index:5;
+    background:linear-gradient(rgba(150,205,240,.30), rgba(120,180,225,.16)); box-shadow:inset 0 0 60px rgba(120,185,230,.5)}
+  .unit.frz{filter:brightness(1.15) sepia(.4) hue-rotate(160deg) saturate(2.2)}
+  .unit.haspart .body{filter:drop-shadow(0 0 3px #ffd24a)}
 
   /* 問題エリア */
   #quiz{flex:0 0 auto; padding:8px 12px 12px; background:var(--panel); border-top:2px solid var(--line)}
@@ -584,6 +592,13 @@
         <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする</span></button>
         <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
         <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
+        <button class="menubtn" id="partsMenuBtn" data-go="parts" style="display:none">🛠️ コンボパーツ<span class="sub">モンスターに装着・コンボで強化</span></button>
+      </div>
+      <div class="homeview" data-view="parts">
+        <div class="card">
+          <div style="font-weight:800; margin-bottom:8px">🛠️ コンボパーツ <span class="muted">モンスターに装着・コンボでステータスUP</span></div>
+          <div id="partsBody"></div>
+        </div>
       </div>
       <div class="homeview" data-view="gacha">
         <div class="card">
@@ -638,7 +653,7 @@
     <div id="hud">
       <div class="meter"><div class="lab"><span>🏰 自城</span><span id="hpAtxt">100%</span></div><div class="bar"><div id="hpA" class="fill castleA"></div></div></div>
       <div class="meter"><div class="lab"><span>⚡ エネルギー</span><span id="enTxt">0</span></div><div class="bar"><div id="enBar" class="fill energy"></div></div></div>
-      <div id="combo-big">COMBO<br><b id="comboTxt">0</b></div>
+      <div id="combo-big">COMBO<br><b id="comboTxt">0</b><span id="guardTxt"></span></div>
       <div class="meter" id="meterE"><div class="lab"><span id="hpElab">敵城 🏯</span><span id="hpEtxt">100%</span></div><div class="bar"><div id="hpE" class="fill castleE"></div></div></div>
     </div>
 
@@ -659,6 +674,7 @@
       <div class="qslot qnext" id="q1"></div>
       <div class="qslot qnext" id="q2"></div>
       <button class="btn" id="summonBtn" onclick="Game.summon()">召喚 ⎵</button>
+      <button class="btn" id="freezeBtn" onclick="Game.freeze()" style="display:none">❄ フリーズ ⏎</button>
     </div>
 
     <div id="quiz">
@@ -686,6 +702,7 @@
     <div class="big" id="resTitle"></div>
     <div id="resMedals"></div>
     <div class="muted" id="resLearn" style="max-width:420px"></div>
+    <div id="resNudge" style="max-width:440px;width:100%"></div>
     <div id="resMistakes" style="max-width:440px;width:100%"></div>
     <div style="height:10px"></div>
     <div id="firstBadge">🏅 はじめて守れた！</div>
@@ -2435,6 +2452,228 @@ const SVG = (()=>{
   </g>
   <g class="p-charge" style="transform-origin:96px 54px"><circle cx="96" cy="54" r="9" fill="#ffe27a" stroke="${S}" stroke-width="2"/><path d="M97 47 l-4 7 l4 0 l-3 6" fill="none" stroke="#fff" stroke-width="2"/></g>
   <g class="p-proj" style="transform-origin:96px 54px"><circle cx="96" cy="54" r="12" fill="#ffe27a" stroke="${S}" stroke-width="2"/><path d="M98 45 l-5 8 l5 0 l-4 8" fill="none" stroke="#fff" stroke-width="2.5"/></g>`,
+  });
+  
+  /* ENEMY_ART_NEW: _charlab.html の邪悪化アートを敵スプライトへ反映（2026-06-07夜・nightly） */
+  Object.assign(lib, {
+    slime:`<ellipse cx="50" cy="86" rx="24" ry="5" fill="#0002"/>
+  <g class="p-body" style="transform-origin:50px 84px">
+    <path d="M24 78 Q18 46 50 44 Q82 46 76 78 Q62 84 50 78 Q38 84 24 78Z" fill="#e0683b" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="50" cy="68" rx="14" ry="11" fill="#f4a983"/>
+    <path d="M37 56 L46 60 M63 56 L54 60" stroke="${S}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="42" cy="61" r="5.5" fill="#ff3b2a" opacity=".35"/><circle cx="58" cy="61" r="5.5" fill="#ff3b2a" opacity=".35"/>
+    <circle cx="42" cy="61" r="3.2" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/><circle cx="58" cy="61" r="3.2" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/>
+    <circle cx="42.6" cy="60.2" r="1" fill="#fff"/><circle cx="58.6" cy="60.2" r="1" fill="#fff"/>
+    <path d="M42 71 L46 68 L50 71 L54 68 L58 71" fill="none" stroke="${S}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>`,
+    hare:`<ellipse cx="50" cy="88" rx="20" ry="4.5" fill="#0002"/>
+  <g class="p-leg"><ellipse cx="37" cy="83" rx="8" ry="6" fill="#e08a5a" stroke="${S}" stroke-width="2.5"/><ellipse cx="63" cy="83" rx="8" ry="6" fill="#e08a5a" stroke="${S}" stroke-width="2.5"/></g>
+  <g class="p-arm" style="transform-origin:32px 64px"><ellipse cx="31" cy="68" rx="5.5" ry="7" fill="#f0a06a" stroke="${S}" stroke-width="2.5"/></g>
+  <g class="p-body" style="transform-origin:50px 82px">
+    <ellipse cx="50" cy="64" rx="20" ry="19" fill="#f0a06a" stroke="${S}" stroke-width="3"/>
+    <ellipse cx="50" cy="70" rx="11" ry="11" fill="#ffe1cf"/>
+  </g>
+  <g class="p-head" style="transform-origin:50px 46px">
+    <g class="p-ear-l" style="transform-origin:43px 32px"><ellipse cx="42" cy="22" rx="5" ry="16" fill="#f0a06a" stroke="${S}" stroke-width="2.5"/><ellipse cx="42" cy="23" rx="2" ry="10" fill="#d97b4a"/></g>
+    <g class="p-ear-r" style="transform-origin:57px 32px"><ellipse cx="58" cy="22" rx="5" ry="16" fill="#f0a06a" stroke="${S}" stroke-width="2.5"/><ellipse cx="58" cy="23" rx="2" ry="10" fill="#d97b4a"/></g>
+    <circle cx="50" cy="45" r="16" fill="#f0a06a" stroke="${S}" stroke-width="3"/>
+    <path d="M37 39 L46 42 M63 39 L54 42" stroke="${S}" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="43" cy="44" r="4.5" fill="#ff3b2a" opacity=".33"/><circle cx="57" cy="44" r="4.5" fill="#ff3b2a" opacity=".33"/>
+    <circle cx="43" cy="44" r="2.8" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/><circle cx="57" cy="44" r="2.8" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/>
+    <circle cx="43.6" cy="43.3" r="0.9" fill="#fff"/><circle cx="57.6" cy="43.3" r="0.9" fill="#fff"/>
+    <path d="M50 49 L47 52 L53 52Z" fill="#7a2f1a"/>
+    <path d="M44 55 L48 53 L50 55 L52 53 L56 55" fill="none" stroke="${S}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M46 55 L46 58 M54 55 L54 58" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  </g>`,
+    totem:`<ellipse cx="50" cy="90" rx="22" ry="4.5" fill="#0002"/>
+  <g class="p-body" style="transform-origin:50px 86px">
+    <path d="M22 38 L34 30 L34 46Z M78 38 L66 30 L66 46Z" fill="#e0a93b" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="34" y="22" width="32" height="64" rx="6" fill="#c8743a" stroke="${S}" stroke-width="3"/>
+    <path d="M34 30 Q50 26 66 30" fill="none" stroke="${S}" stroke-width="2.5"/>
+    <g class="p-head" style="transform-origin:50px 42px">
+      <path d="M38 33 L47 37 M62 33 L53 37" stroke="${S}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="43" cy="40" r="5.5" fill="#ff3b2a" opacity=".35"/><circle cx="57" cy="40" r="5.5" fill="#ff3b2a" opacity=".35"/>
+      <circle cx="43" cy="40" r="3.4" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/><circle cx="57" cy="40" r="3.4" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/>
+      <circle cx="43.6" cy="39.2" r="1" fill="#fff"/><circle cx="57.6" cy="39.2" r="1" fill="#fff"/>
+      <path d="M40 54 Q50 62 60 54 L57 61 Q50 65 43 61Z" fill="#5a1f10" stroke="${S}" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M45 56 L47 60 L49 56Z" fill="#fff"/><path d="M51 56 L53 60 L55 56Z" fill="#fff"/>
+    </g>
+  </g>
+  <g class="p-proj" style="transform-origin:72px 57px"><circle cx="72" cy="57" r="6" fill="#ff7a2a" stroke="${S}" stroke-width="2"/><circle cx="72" cy="57" r="3" fill="#ffd24a"/></g>`,
+    torii:`<ellipse cx="50" cy="90" rx="28" ry="5" fill="#0002"/>
+  <g class="p-body" style="transform-origin:50px 86px">
+    <path d="M12 18 Q50 11 88 18 L88 23 Q50 16 12 23Z" fill="#b32a2a" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="14" y="22" width="72" height="9" rx="3" fill="#d23a3a" stroke="${S}" stroke-width="3"/>
+    <rect x="27" y="35" width="46" height="7" rx="2" fill="#d23a3a" stroke="${S}" stroke-width="2.5"/>
+    <rect x="26" y="31" width="13" height="56" rx="3" fill="#d23a3a" stroke="${S}" stroke-width="3"/>
+    <rect x="61" y="31" width="13" height="56" rx="3" fill="#d23a3a" stroke="${S}" stroke-width="3"/>
+    <path d="M27 49 L36 52 M73 49 L64 52" stroke="${S}" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="32" cy="54" r="4.5" fill="#ff3b2a" opacity=".35"/><circle cx="68" cy="54" r="4.5" fill="#ff3b2a" opacity=".35"/>
+    <circle cx="32" cy="54" r="2.8" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/><circle cx="68" cy="54" r="2.8" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/>
+    <path d="M42 28 Q50 24 58 28" fill="none" stroke="${S}" stroke-width="2.5" stroke-linecap="round"/>
+  </g>`,
+    bat:`<ellipse cx="50" cy="92" rx="14" ry="3" fill="#0001"/>
+  <g class="p-wing-r" style="transform-origin:42px 52px"><path d="M42 52 Q20 36 6 44 Q18 48 22 56 Q12 56 8 64 Q26 62 42 58Z" fill="#8a4a5a" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/></g>
+  <g class="p-wing-l" style="transform-origin:58px 52px"><path d="M58 52 Q80 36 94 44 Q82 48 78 56 Q88 56 92 64 Q74 62 58 58Z" fill="#a05a68" stroke="${S}" stroke-width="3" stroke-linejoin="round"/></g>
+  <g class="p-body" style="transform-origin:50px 60px">
+    <ellipse cx="50" cy="56" rx="16" ry="15" fill="#a05a68" stroke="${S}" stroke-width="3"/>
+    <path d="M40 30 L45 41 L36 39Z M60 30 L55 41 L64 39Z" fill="#a05a68" stroke="${S}" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M39 47 L46 50 M61 47 L54 50" stroke="${S}" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="44" cy="52" r="4.2" fill="#ff3b2a" opacity=".33"/><circle cx="56" cy="52" r="4.2" fill="#ff3b2a" opacity=".33"/>
+    <circle cx="44" cy="52" r="2.8" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/><circle cx="56" cy="52" r="2.8" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/>
+    <circle cx="44.6" cy="51.3" r="0.9" fill="#fff"/><circle cx="56.6" cy="51.3" r="0.9" fill="#fff"/>
+    <path d="M44 60 Q50 63 56 60" fill="none" stroke="${S}" stroke-width="2" stroke-linecap="round"/>
+    <path d="M46 60 L47 64 L49 60Z M51 60 L53 64 L54 60Z" fill="#fff"/>
+    <g class="face-bite">
+      <path d="M43 59 Q50 57 57 59 Q54 66 50 66 Q46 66 43 59Z" fill="#5a1f1f" stroke="${S}" stroke-width="2"/>
+      <path d="M46 59 L47 63 L49 59Z" fill="#fff"/><path d="M51 59 L53 63 L54 59Z" fill="#fff"/>
+    </g>
+  </g>`,
+    golem:`<ellipse cx="50" cy="90" rx="26" ry="5" fill="#0002"/>
+  <g class="p-leg"><rect x="36" y="74" width="12" height="16" rx="2" fill="#b07a4a" stroke="${S}" stroke-width="2.5"/><rect x="52" y="74" width="12" height="16" rx="2" fill="#b07a4a" stroke="${S}" stroke-width="2.5"/></g>
+  <rect x="68" y="52" width="12" height="20" rx="4" fill="#b07a4a" stroke="${S}" stroke-width="2.5"/><circle cx="74" cy="74" r="8" fill="#b07a4a" stroke="${S}" stroke-width="2.5"/>
+  <g class="p-arm" style="transform-origin:30px 56px"><rect x="20" y="52" width="12" height="20" rx="4" fill="#c8905a" stroke="${S}" stroke-width="2.5"/><circle cx="26" cy="74" r="8" fill="#c8905a" stroke="${S}" stroke-width="2.5"/></g>
+  <g class="p-body" style="transform-origin:50px 74px">
+    <path d="M32 40 L68 40 L72 74 L28 74Z" fill="#c8905a" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M40 30 Q40 22 50 22 Q60 22 60 30 L60 40 L40 40Z" fill="#c8905a" stroke="${S}" stroke-width="3"/>
+    <path d="M38 27 L48 30 M62 27 L52 30" stroke="${S}" stroke-width="3" stroke-linecap="round"/>
+    <rect x="40" y="30" width="8" height="5" rx="1" fill="#ff2a14" stroke="${S}" stroke-width="1"/><rect x="52" y="30" width="8" height="5" rx="1" fill="#ff2a14" stroke="${S}" stroke-width="1"/>
+    <path d="M42 46 Q50 42 58 46" fill="none" stroke="${S}" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M36 52 L42 56 M64 52 L58 56" stroke="#8a5a30" stroke-width="2" fill="none"/>
+  </g>`,
+    bombSlime:`<ellipse cx="50" cy="86" rx="24" ry="5" fill="#0002"/>
+  <g class="p-body" style="transform-origin:50px 84px">
+    <path d="M24 78 Q18 48 50 46 Q82 48 76 78 Q62 84 50 78 Q38 84 24 78Z" fill="#d2552f" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M37 59 L46 63 M63 59 L54 63" stroke="${S}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="42" cy="65" r="5" fill="#ff3b2a" opacity=".35"/><circle cx="58" cy="65" r="5" fill="#ff3b2a" opacity=".35"/>
+    <circle cx="42" cy="65" r="3.2" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/><circle cx="58" cy="65" r="3.2" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/>
+    <circle cx="42.6" cy="64.2" r="1" fill="#fff"/><circle cx="58.6" cy="64.2" r="1" fill="#fff"/>
+    <path d="M42 74 L46 71 L50 74 L54 71 L58 74" fill="none" stroke="${S}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="50" cy="40" r="9" fill="#2a2a2a" stroke="${S}" stroke-width="2.5"/>
+    <path d="M55 33 Q60 27 64 30" fill="none" stroke="#8a6a3a" stroke-width="2.5"/>
+    <circle cx="65" cy="29" r="3" fill="#ffb03a"/><circle cx="65" cy="29" r="1.4" fill="#fff6d8"/>
+  </g>
+  <g class="p-debris" style="transform-origin:52px 64px">
+    <circle cx="44" cy="60" r="4" fill="#d2552f" stroke="${S}" stroke-width="1.5"/>
+    <circle cx="60" cy="62" r="3.5" fill="#b8431f" stroke="${S}" stroke-width="1.5"/>
+    <rect x="49" y="67" width="6" height="6" rx="1" fill="#d2552f" stroke="${S}" stroke-width="1.5"/>
+    <circle cx="52" cy="55" r="2.6" fill="#b8431f" stroke="${S}" stroke-width="1.5"/>
+    <path d="M40 68 l4 2 l-2 4Z" fill="#b8431f" stroke="${S}" stroke-width="1.2"/>
+  </g>`,
+    splitMush:`<ellipse cx="50" cy="88" rx="20" ry="4.5" fill="#0002"/>
+  <g class="p-body" style="transform-origin:50px 84px">
+    <rect x="40" y="58" width="20" height="28" rx="6" fill="#f0e0c8" stroke="${S}" stroke-width="3"/>
+    <path d="M43 66 L47 68 M57 66 L53 68" stroke="${S}" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="46" cy="70" r="3.6" fill="#ff3b2a" opacity=".35"/><circle cx="54" cy="70" r="3.6" fill="#ff3b2a" opacity=".35"/>
+    <circle cx="46" cy="70" r="2.3" fill="#ff2a14" stroke="${S}" stroke-width="1"/><circle cx="54" cy="70" r="2.3" fill="#ff2a14" stroke="${S}" stroke-width="1"/>
+    <path d="M45 78 L48 76 L50 78 L52 76 L55 78" fill="none" stroke="${S}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <g class="face-bite"><path d="M44 76 Q50 74 56 76 Q53 82 50 82 Q47 82 44 76Z" fill="#7a2f2f" stroke="${S}" stroke-width="2"/></g>
+    <g class="p-head" style="transform-origin:50px 50px">
+      <path d="M20 52 Q22 26 50 26 Q78 26 80 52 Q50 60 20 52Z" fill="#d23a3a" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="36" cy="42" r="5" fill="#ffe1cf"/><circle cx="58" cy="46" r="6" fill="#ffe1cf"/><circle cx="48" cy="36" r="4" fill="#ffe1cf"/>
+    </g>
+  </g>`,
+    ghost:`<ellipse cx="50" cy="90" rx="14" ry="3" fill="#0001"/>
+  <g class="p-body" style="transform-origin:50px 60px">
+    <path d="M28 56 Q28 26 50 26 Q72 26 72 56 L72 80 Q66 74 60 80 Q54 74 50 80 Q46 74 40 80 Q34 74 28 80Z" fill="#e8d6cc" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M36 41 L46 45 M64 41 L54 45" stroke="${S}" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="42" cy="48" r="6" fill="#ff3b2a" opacity=".35"/><circle cx="58" cy="48" r="6" fill="#ff3b2a" opacity=".35"/>
+    <circle cx="42" cy="48" r="3.6" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/><circle cx="58" cy="48" r="3.6" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/>
+    <circle cx="42.7" cy="47.2" r="1.1" fill="#fff"/><circle cx="58.7" cy="47.2" r="1.1" fill="#fff"/>
+    <ellipse cx="50" cy="62" rx="6" ry="8" fill="#7a2f2f" stroke="${S}" stroke-width="2"/>
+    <g class="face-bite"><ellipse cx="50" cy="62" rx="8" ry="11" fill="#5a1f1f" stroke="${S}" stroke-width="2"/></g>
+  </g>`,
+    mummy:`<ellipse cx="50" cy="90" rx="22" ry="4.5" fill="#0002"/>
+  <g class="p-leg"><rect x="38" y="78" width="10" height="12" rx="3" fill="#d8c6a0" stroke="${S}" stroke-width="2.5"/><rect x="52" y="78" width="10" height="12" rx="3" fill="#d8c6a0" stroke="${S}" stroke-width="2.5"/></g>
+  <rect x="68" y="52" width="16" height="9" rx="4" fill="#d8c6a0" stroke="${S}" stroke-width="2.5"/>
+  <g class="p-arm" style="transform-origin:30px 56px"><rect x="16" y="52" width="16" height="9" rx="4" fill="#e0cfa8" stroke="${S}" stroke-width="2.5"/></g>
+  <g class="p-body" style="transform-origin:50px 80px">
+    <rect x="34" y="46" width="32" height="36" rx="9" fill="#e0cfa8" stroke="${S}" stroke-width="3"/>
+    <path d="M35 54 L65 52 M35 62 L65 64 M35 70 L65 68" stroke="#c0ac80" stroke-width="2" fill="none"/>
+    <circle cx="50" cy="33" r="15" fill="#e0cfa8" stroke="${S}" stroke-width="3"/>
+    <path d="M36 28 L63 30 M37 40 L64 38" stroke="#c0ac80" stroke-width="2" fill="none"/>
+    <path d="M42 34 L52 36" stroke="${S}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="58" cy="35" r="5" fill="#ff3b2a" opacity=".35"/><circle cx="58" cy="35" r="3.2" fill="#ff2a14" stroke="${S}" stroke-width="1.3"/><circle cx="58.6" cy="34.2" r="1" fill="#fff"/>
+  </g>`,
+    darkMage:`<ellipse cx="50" cy="90" rx="20" ry="4.5" fill="#0002"/>
+  <rect x="70" y="40" width="4" height="44" rx="2" fill="#6a4a2a" stroke="${S}" stroke-width="1.5"/>
+  <g class="p-body" style="transform-origin:50px 86px">
+    <path d="M28 86 Q30 44 50 40 Q70 44 72 86Z" fill="#7a3a4a" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M50 40 Q34 42 30 60 Q40 56 50 58 Q60 56 70 60 Q66 42 50 40Z" fill="#9a4a5a" stroke="${S}" stroke-width="2"/>
+    <g class="p-head" style="transform-origin:50px 38px">
+      <path d="M34 38 Q34 18 50 18 Q66 18 66 38 Q50 46 34 38Z" fill="#5a2a3a" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="50" cy="40" rx="14" ry="6" fill="#2a1520"/>
+      <circle cx="44" cy="39" r="4" fill="#ff3b2a" opacity=".4"/><circle cx="56" cy="39" r="4" fill="#ff3b2a" opacity=".4"/>
+      <path d="M40 38 L48 40 M60 38 L52 40" stroke="#ff3b2a" stroke-width="3.2" stroke-linecap="round"/>
+    </g>
+  </g>
+  <g class="p-proj" style="transform-origin:72px 36px"><circle cx="72" cy="36" r="7" fill="#b03a6a" stroke="${S}" stroke-width="2"/><circle cx="72" cy="36" r="3.5" fill="#ff7ab0"/></g>`,
+    stoneGiant:`<ellipse cx="50" cy="92" rx="30" ry="5" fill="#0002"/>
+  <g class="p-leg"><rect x="34" y="72" width="13" height="20" rx="2" fill="#8a7a68" stroke="${S}" stroke-width="2.5"/><rect x="53" y="72" width="13" height="20" rx="2" fill="#9a8a78" stroke="${S}" stroke-width="2.5"/></g>
+  <rect x="16" y="44" width="13" height="26" rx="4" fill="#8a7a68" stroke="${S}" stroke-width="2.5"/><circle cx="22" cy="72" r="9" fill="#8a7a68" stroke="${S}" stroke-width="2.5"/>
+  <g class="p-arm" style="transform-origin:78px 50px"><rect x="71" y="44" width="13" height="26" rx="4" fill="#9a8a78" stroke="${S}" stroke-width="2.5"/><circle cx="78" cy="72" r="9" fill="#9a8a78" stroke="${S}" stroke-width="2.5"/></g>
+  <g class="p-body" style="transform-origin:50px 72px">
+    <path d="M30 34 L70 34 L74 72 L26 72Z" fill="#9a8a78" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M40 24 L60 24 L62 34 L38 34Z" fill="#9a8a78" stroke="${S}" stroke-width="3"/>
+    <path d="M37 22 L48 26 M63 22 L52 26" stroke="${S}" stroke-width="3" stroke-linecap="round"/>
+    <rect x="40" y="26" width="8" height="5" rx="1" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/><rect x="52" y="26" width="8" height="5" rx="1" fill="#ff2a14" stroke="${S}" stroke-width="1.1"/>
+    <path d="M42 46 L50 50 L58 46 M34 40 L40 44 M66 40 L60 44" stroke="#6a5a48" stroke-width="2" fill="none"/>
+    <path d="M44 58 L56 58" stroke="${S}" stroke-width="2.5" stroke-linecap="round"/>
+  </g>`,
+    bossMoai:`<ellipse cx="50" cy="92" rx="30" ry="5" fill="#0003"/>
+  <g class="p-leg"><rect x="34" y="80" width="13" height="11" rx="2" fill="#7a8a90" stroke="${S}" stroke-width="2.5"/><rect x="53" y="80" width="13" height="11" rx="2" fill="#7a8a90" stroke="${S}" stroke-width="2.5"/></g>
+  <rect x="72" y="48" width="10" height="26" rx="4" fill="#7a8a90" stroke="${S}" stroke-width="2.5"/>
+  <g class="p-arm" style="transform-origin:24px 52px"><rect x="18" y="48" width="10" height="26" rx="4" fill="#8a9aa0" stroke="${S}" stroke-width="2.5"/></g>
+  <g class="p-body" style="transform-origin:50px 82px">
+    <path d="M28 26 Q28 12 50 12 Q72 12 72 26 L76 82 Q50 90 24 82Z" fill="#8a9aa0" stroke="${S}" stroke-width="3.5" stroke-linejoin="round"/>
+    <rect x="22" y="18" width="56" height="9" rx="2" fill="#c0a060" stroke="${S}" stroke-width="2"/>
+    <path d="M30 36 L46 34 L46 42 L30 44Z" fill="${S}"/><path d="M70 36 L54 34 L54 42 L70 44Z" fill="${S}"/>
+    <circle cx="39" cy="39" r="3.4" fill="#ff3b2a" opacity=".4"/><circle cx="61" cy="39" r="3.4" fill="#ff3b2a" opacity=".4"/>
+    <circle cx="39" cy="39" r="2.2" fill="#ff2a14"/><circle cx="61" cy="39" r="2.2" fill="#ff2a14"/>
+    <path d="M42 50 L38 64 L54 64Z" fill="#6a7a80" stroke="${S}" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M36 74 Q50 68 64 74" fill="none" stroke="${S}" stroke-width="3.5" stroke-linecap="round"/>
+  </g>`,
+    bossTotem:`<ellipse cx="50" cy="92" rx="26" ry="5" fill="#0003"/>
+  <g class="p-body" style="transform-origin:50px 88px">
+    <path d="M18 34 L34 26 L34 44Z M82 34 L66 26 L66 44Z" fill="#e0a93b" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="32" y="14" width="36" height="74" rx="6" fill="#b85a2a" stroke="${S}" stroke-width="3.5"/>
+    <path d="M32 38 Q50 34 68 38 M32 60 Q50 56 68 60" fill="none" stroke="${S}" stroke-width="2.5"/>
+    <circle cx="42" cy="26" r="3.5" fill="${S}"/><circle cx="58" cy="26" r="3.5" fill="${S}"/>
+    <g class="p-head" style="transform-origin:50px 56px">
+      <path d="M37 44 L47 47 M63 44 L53 47" stroke="${S}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="42" cy="50" r="5.5" fill="#ff3b2a" opacity=".35"/><circle cx="58" cy="50" r="5.5" fill="#ff3b2a" opacity=".35"/>
+      <circle cx="42" cy="50" r="3.4" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/><circle cx="58" cy="50" r="3.4" fill="#ff2a14" stroke="${S}" stroke-width="1.2"/>
+      <circle cx="42.6" cy="49.2" r="1" fill="#fff"/><circle cx="58.6" cy="49.2" r="1" fill="#fff"/>
+      <path d="M38 64 Q50 74 62 64 L58 70 Q50 74 42 70Z" fill="#5a2010" stroke="${S}" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M44 66 L46 70 L48 66Z" fill="#fff"/><path d="M52 66 L54 70 L56 66Z" fill="#fff"/>
+    </g>
+  </g>
+  <g class="p-proj" style="transform-origin:74px 67px"><circle cx="74" cy="67" r="9" fill="#ff7a2a" stroke="${S}" stroke-width="2"/><circle cx="74" cy="67" r="4.5" fill="#ffd24a"/></g>`,
+    bossThunder:`<ellipse cx="50" cy="92" rx="24" ry="5" fill="#0003"/>
+  <g class="p-leg"><rect x="38" y="78" width="11" height="13" rx="3" fill="#7a2a1a" stroke="${S}" stroke-width="2.5"/><rect x="51" y="78" width="11" height="13" rx="3" fill="#7a2a1a" stroke="${S}" stroke-width="2.5"/></g>
+  <ellipse cx="28" cy="64" rx="6" ry="9" fill="#a8362a" stroke="${S}" stroke-width="2.5"/>
+  <g class="p-body" style="transform-origin:50px 70px">
+    <path d="M30 46 Q30 36 50 36 Q70 36 70 46 L74 78 Q50 86 26 78Z" fill="#b0392a" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M44 50 Q50 56 56 50" fill="none" stroke="#7a2014" stroke-width="2"/>
+    <path d="M28 70 Q50 78 72 70 L72 81 Q50 87 28 81Z" fill="#e0b84a" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M38 73 L38 83 M48 74 L48 85 M58 73 L58 83" stroke="${S}" stroke-width="2" fill="none"/>
+  </g>
+  <g class="p-head" style="transform-origin:50px 32px">
+    <path d="M33 18 L27 3 L41 14Z" fill="#f0e0b0" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M67 18 L73 3 L59 14Z" fill="#f0e0b0" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M30 28 Q25 12 38 14 Q34 6 50 8 Q66 6 62 14 Q75 12 70 28Z" fill="#2a1518" stroke="${S}" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="50" cy="32" r="18" fill="#c04030" stroke="${S}" stroke-width="3"/>
+    <path d="M38 26 L48 31" stroke="${S}" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M62 26 L52 31" stroke="${S}" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="43" cy="34" r="5.5" fill="#ff3b2a" opacity=".4"/><circle cx="57" cy="34" r="5.5" fill="#ff3b2a" opacity=".4"/>
+    <circle cx="43" cy="34" r="3.3" fill="#ffe24a" stroke="${S}" stroke-width="1.2"/><circle cx="57" cy="34" r="3.3" fill="#ffe24a" stroke="${S}" stroke-width="1.2"/>
+    <circle cx="43" cy="34" r="1.3" fill="${S}"/><circle cx="57" cy="34" r="1.3" fill="${S}"/>
+    <path d="M40 42 Q50 46 60 42 Q56 53 50 53 Q44 53 40 42Z" fill="#5a1010" stroke="${S}" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M43 43 L45 48 L47 43Z" fill="#fff"/><path d="M53 43 L55 48 L57 43Z" fill="#fff"/>
+  </g>
+  <g class="p-arm" style="transform-origin:70px 56px"><ellipse cx="74" cy="56" rx="6" ry="9" fill="#c04030" stroke="${S}" stroke-width="2.5"/></g>
+  <g class="p-charge" style="transform-origin:82px 50px"><circle cx="82" cy="50" r="8" fill="#ffe27a" stroke="${S}" stroke-width="2"/><path d="M83 43 l-4 7 l4 0 l-3 6" fill="none" stroke="#fff" stroke-width="2"/></g>
+  <g class="p-proj" style="transform-origin:82px 50px"><circle cx="82" cy="50" r="12" fill="#ffe27a" stroke="${S}" stroke-width="2"/><path d="M84 41 l-6 9 l6 0 l-5 9" fill="none" stroke="#fff" stroke-width="2.5"/></g>`,
   });
   return { get:(k)=>wrap(lib[k]||lib.slime) };
 })();
@@ -8453,6 +8692,20 @@ const ROSTER = {
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
+// コンボパーツ（壁2の味方ギミック）：モンスターに装着し、コンボに応じてステータス上昇。
+// type:'atk'=ライブ反映（攻撃ごとに現コンボで再計算）／type:'hp'=召喚時スナップショット。per=コンボ1あたり／cap=上限倍率。
+const PARTS = {
+  fang:       {name:"するどいキバ",   rar:"N",  rarColor:"#7a7a7a", type:'atk', per:0.005, cap:0.25, icon:"🦷"},
+  flameHorn:  {name:"炎のツノ",       rar:"R",  rarColor:"#2f7dd1", type:'atk', per:0.008, cap:0.40, icon:"🔥"},
+  boltBlade:  {name:"雷のヤイバ",     rar:"SR", rarColor:"#8e44ad", type:'atk', per:0.012, cap:0.65, icon:"⚡"},
+  dragonEmber:{name:"竜のホムラ",     rar:"SSR",rarColor:"#e0683b", type:'atk', per:0.016, cap:0.90, icon:"🐲"},
+  shell:      {name:"かたいコウラ",   rar:"N",  rarColor:"#7a7a7a", type:'hp',  per:0.004, cap:0.20, icon:"🐢"},
+  ironMail:   {name:"鉄のヨロイ",     rar:"R",  rarColor:"#2f7dd1", type:'hp',  per:0.007, cap:0.35, icon:"⛓️"},
+  wardAura:   {name:"守りのオーラ",   rar:"SR", rarColor:"#8e44ad", type:'hp',  per:0.010, cap:0.55, icon:"✨"},
+  soul:       {name:"不屈のタマシイ", rar:"SSR",rarColor:"#e0683b", type:'hp',  per:0.015, cap:0.80, icon:"💟"}
+};
+const PARTS_KEYS = Object.keys(PARTS);
+
 /* =========================================================================
    §3  ステージ定義（挑戦のみ。出題範囲は持たない）
    ========================================================================= */
@@ -8538,7 +8791,7 @@ function bossNameFor(ch, gim){
    壁＝ch5/ch10/ch14（序盤→中盤→終盤→ラスト2章の関門）。敵を確定→後で味方をこのカーブに合わせて調整する。 */
 const CURVE_WALLS = {5:true, 10:true, 14:true};
 const CURVE_HP_BASE = 1.15, CURVE_HP_WALL = 1.7;   // 章ごとの基本伸び（HP）／壁章での追加ジャンプ
-const CURVE_ATK_BASE = 1.11, CURVE_ATK_WALL = 1.45; // 章ごとの基本伸び（ATK）／壁章での追加ジャンプ
+const CURVE_ATK_BASE = 1.11, CURVE_ATK_WALL = 1.25; // 章ごとの基本伸び（ATK）／壁章での追加ジャンプ（cycle1: 1.45→1.25 苦手な子の壁1即死対策）
 function chapterMul(ch){
   let hp=1, atk=1;
   for(let c=2;c<=ch;c++){
@@ -8569,7 +8822,7 @@ function makeStages(){
       bossCount: (gim==='rush') ? (ch>=13?3:2) : 0, // ⑤連戦するボスの数（ch8=2体・ch13=3体）
       bossStats: boss ? {
         hp: Math.round(1400*cm.hp),          // ボスHPも段カーブに乗せる（spawnBossでそのまま使用）
-        atk: 40,                              // ボスATKは固定ベース。spawnBossでenemyAtkMul(=段カーブ×章内)を掛けて単一カーブ化
+        atk: 34,                              // ボスATKは固定ベース。spawnBossでenemyAtkMul(=段カーブ×章内)を掛けて単一カーブ化（cycle1: 40→34 ボスの瞬殺火力を抑制）
         speed: 13, range: 70,
         scale: 1.0 + Math.min(0.6, 0.04*ch)
       } : null,
@@ -8622,10 +8875,16 @@ const Game = (()=>{
   let unitLv = {};         // キャラ強化 {key:lv}
   let regenLv = 0;         // エネルギー増加速度Lv
   let enMaxLv = 0;         // エネルギー上限Lv
+  let freezeDurLv = 0;     // ❄フリーズ砲 停止時間Lv（壁1の砲台対策）
+  let freezeCostLv = 0;    // ❄フリーズ砲 消費エネルギー削減Lv
+  let comboGuardLv = 0;    // 🛡コンボ保護Lv（ミスしてもコンボ維持・最大2回／戦闘）
+  let ownedParts = {};     // 🔩コンボパーツ 入手済み {partId:個数}
+  let equippedParts = {};  // 🔩コンボパーツ 装着 {rosterKey:partId}
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
   let homeView = 'menu';   // ホームの表示(menu/play/grow/settings/quiz)
   let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
   let towerBest = 0;       // 修練の塔の最高階
+  let learnBest = {};      // 🗼学習の塔 分野ごとの到達最高階 {field:floor}（永久バフの元）
   let lastDaily = '';      // デイリー受取日(YYYY-M-D)
   let clockTs = 0;         // 観測した最大の実時刻(ms)。カレンダー巻き戻し対策（単調増加）
   let goldDay = '';        // クリア報酬上限の集計日(YYYY-M-D)
@@ -8640,7 +8899,9 @@ const Game = (()=>{
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
-      towerBest=s.towerBest||0; lastDaily=s.lastDaily||'';
+      freezeDurLv=s.freezeDurLv||0; freezeCostLv=s.freezeCostLv||0; comboGuardLv=s.comboGuardLv||0;
+      ownedParts=(s.ownedParts&&typeof s.ownedParts==='object')?s.ownedParts:{}; equippedParts=(s.equippedParts&&typeof s.equippedParts==='object')?s.equippedParts:{};
+      towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||'';
       clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
@@ -8651,12 +8912,12 @@ const Game = (()=>{
   }
   function save(){
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
   /* ============ 入手(ガチャ)・編成・城強化 ============ */
-  const GACHA_COST = 300; // ガチャ1回の費用（グラマージェム💎）
+  const GACHA_COST = 500; // ガチャ1回の費用（グラマージェム💎）cycle2: 300→500 学習を主役にする（ガチャ過多の抑制）
   const RARITY_W = {N:58, R:28, SR:11, SSR:3};
   let lastGacha = null;
   function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
@@ -8744,11 +9005,13 @@ const Game = (()=>{
   }
 
   /* ---- キャラ強化 ---- */
+  const UNIT_MAX_LV = 30; // 味方キャラ強化Lvの上限（青天井での過剰スノーボール防止）
   function unitLevel(key){ return unitLv[key]||0; }
+  function unitMaxed(key){ return unitLevel(key) >= UNIT_MAX_LV; }
   function unitUpCost(key){ return 100*(unitLevel(key)+1); }
   function unitStars(key){ return Math.min(4, Math.max(0, (owned[key]||0)-1)); }
   function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
-  function upgradeUnit(key){ if(!owned[key]) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
+  function upgradeUnit(key){ if(!owned[key]||unitMaxed(key)) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
   function statsAtLv(key, lv){ const r=ROSTER[key], st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
   function traitText(r){ var t=[];
     if(r.range>=110) t.push('遠距離'); if(r.splash) t.push('範囲攻撃'); if(r.pierce) t.push('貫通');
@@ -8791,12 +9054,14 @@ const Game = (()=>{
         acts.appendChild(grid);
       }
     } else {
+      const maxed=unitMaxed(key);
       const c=unitUpCost(key), nx=statsAtLv(key, lv+1);
       const pv=document.createElement('div'); pv.className='muted'; pv.style.cssText='font-size:12px;text-align:center';
-      pv.innerHTML='強化すると ⚔'+cur.atk+'→<b style="color:var(--good)">'+nx.atk+'</b>　♥'+cur.hp+'→<b style="color:var(--good)">'+nx.hp+'</b>';
+      pv.innerHTML= maxed ? '<span style="color:var(--gold);font-weight:800">★MAX（Lv'+UNIT_MAX_LV+'）</span>'
+                          : '強化すると ⚔'+cur.atk+'→<b style="color:var(--good)">'+nx.atk+'</b>　♥'+cur.hp+'→<b style="color:var(--good)">'+nx.hp+'</b>';
       acts.appendChild(pv);
-      const bu=document.createElement('button'); bu.className='btn'; bu.style.width='100%'; bu.textContent='強化する（'+c+'G）'; bu.disabled=gold<c;
-      bu.onclick=function(){ upgradeUnit(key); openUnitPop(key,'charup'); };
+      const bu=document.createElement('button'); bu.className='btn'; bu.style.width='100%'; bu.textContent= maxed?'最大強化ずみ':'強化する（'+c+'G）'; bu.disabled= maxed || gold<c;
+      if(!maxed) bu.onclick=function(){ upgradeUnit(key); openUnitPop(key,'charup'); };
       acts.appendChild(bu);
       // ホーム画面の大表示キャラに追加/解除（最大10体）
       const onHome=homeChars.indexOf(key)>=0;
@@ -8835,12 +9100,13 @@ const Game = (()=>{
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
     Object.keys(owned).forEach(function(key){
       if(!ROSTER[key]) return;
-      const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key);
+      const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key), maxed=unitMaxed(key);
       const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;width:100%;text-align:left;cursor:pointer';
       row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
         '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span> '+(unitStars(key)?'<span style="color:var(--gold)">'+'★'.repeat(unitStars(key))+'</span>':'')+'</div>'+
         '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'　CD'+summonCd(key)+'秒</div></div>'+
-        '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:'+(gold>=cost?'var(--ally)':'var(--muted)')+'">強化 '+cost+'G ▸</span>';
+        (maxed ? '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--gold)">★MAX</span>'
+               : '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:'+(gold>=cost?'var(--ally)':'var(--muted)')+'">強化 '+cost+'G ▸</span>');
       row.addEventListener('click',function(){openUnitPop(key,'charup');});
       list.appendChild(row);
     });
@@ -8856,6 +9122,66 @@ const Game = (()=>{
   function enMaxCost(){ return 250*(enMaxLv+1); }
   function upgradeRegen(){ if(regenMaxed()) return; const c=regenCost(); if(gold<c) return; gold-=c; regenLv++; Sound.play('correct'); save(); renderHome(); }
   function upgradeEnMax(){ const c=enMaxCost(); if(gold<c) return; gold-=c; enMaxLv++; Sound.play('correct'); save(); renderHome(); }
+  // ❄フリーズ砲（壁1=砲台の対）：Enterで発動。エネルギー消費して敵全体の動きを停止。2軸強化＝①停止時間 ②消費E。
+  const FREEZE_DUR_MAX_LV = 10;  // 停止時間：0.5秒→1.5秒
+  const FREEZE_COST_MAX_LV = 10; // 消費E：200→150
+  function freezeUnlockedCh(){ return 4; } // 章4から使える（壁1の砲台が出始める頃）
+  function freezeReadyHere(){ return B && B.stage && (B.stage.chapter||1) >= freezeUnlockedCh() && !B.stage.endless; }
+  function freezeDur(){ return 0.5 + 0.1*Math.min(freezeDurLv, FREEZE_DUR_MAX_LV); }       // 0.5→1.5秒
+  function freezeEnergyCost(){ return 200 - 5*Math.min(freezeCostLv, FREEZE_COST_MAX_LV); } // 200→150
+  function freezeDurMaxed(){ return freezeDurLv >= FREEZE_DUR_MAX_LV; }
+  function freezeCostMaxed(){ return freezeCostLv >= FREEZE_COST_MAX_LV; }
+  function freezeDurUpCost(){ return 300*(freezeDurLv+1); }
+  function freezeCostUpCost(){ return 300*(freezeCostLv+1); }
+  function upgradeFreezeDur(){ if(freezeDurMaxed()) return; const c=freezeDurUpCost(); if(gold<c) return; gold-=c; freezeDurLv++; Sound.play('correct'); save(); renderHome(); }
+  function upgradeFreezeCost(){ if(freezeCostMaxed()) return; const c=freezeCostUpCost(); if(gold<c) return; gold-=c; freezeCostLv++; Sound.play('correct'); save(); renderHome(); }
+  // 🛡コンボ保護（壁1）：膨大なゴールドで購入。ミスしてもコンボを維持＝1戦闘につきLv回ぶん。最大2回。
+  const COMBO_GUARD_MAX_LV = 2;
+  const COMBO_GUARD_COSTS = [8000, 20000]; // 膨大なゴールド：1個目8000G／2個目20000G
+  function comboGuardMaxed(){ return comboGuardLv >= COMBO_GUARD_MAX_LV; }
+  function comboGuardUpCost(){ return COMBO_GUARD_COSTS[comboGuardLv] || 99999; }
+  function upgradeComboGuard(){ if(comboGuardMaxed()) return; const c=comboGuardUpCost(); if(gold<c) return; gold-=c; comboGuardLv++; Sound.play('correct'); save(); renderHome(); }
+  /* ---- 🔩コンボパーツ（壁2）：モンスターに装着・コンボでステータス上昇 ---- */
+  const PARTS_UNLOCK_AREA = 45;   // ステージ9（第9章）のボス撃破で解禁
+  const PARTS_GACHA_COST = 500;   // 💎ジェム共用（キャラガチャと同額）cycle2: 300→500
+  let lastPartGacha = null;
+  let partPickTarget = null; // 🔩装着ピッカーを開いているモンスターkey（nullで閉）
+  function partsUnlocked(){ return !!cleared[PARTS_UNLOCK_AREA]; }
+  function partsByRarity(rar){ return PARTS_KEYS.filter(function(k){ return PARTS[k].rar===rar; }); }
+  function partOf(key){ return PARTS[equippedParts[key]] || null; } // 装着中のパーツ定義（無ければnull）
+  function equipPart(key, id){ if(!owned[key]||!PARTS[id]||!(ownedParts[id]>0)) return; equippedParts[key]=id; Sound.play('correct'); save(); renderHome(); }
+  function unequipPart(key){ if(equippedParts[key]){ delete equippedParts[key]; save(); renderHome(); } }
+  function doPartGacha(){
+    if(gems < PARTS_GACHA_COST){ lastPartGacha={msg:'グラマージェムが足りません（'+PARTS_GACHA_COST+'💎必要）'}; renderHome(); return; }
+    gems -= PARTS_GACHA_COST; updateGemUI();
+    let tot=0; for(const r in RARITY_W) tot+=RARITY_W[r];
+    let x=Math.random()*tot, rar='N';
+    for(const r in RARITY_W){ x-=RARITY_W[r]; if(x<=0){ rar=r; break; } }
+    let pool=partsByRarity(rar); if(!pool.length) pool=PARTS_KEYS;
+    const id=pool[Math.floor(Math.random()*pool.length)];
+    const isNew=!ownedParts[id];
+    ownedParts[id]=(ownedParts[id]||0)+1;
+    lastPartGacha={id:id, isNew:isNew, rar:rar};
+    Sound.play(rar==='SSR'||rar==='SR'?'win':'summon');
+    save(); renderHome();
+  }
+  // コンボによる上昇倍率（攻撃=ライブ／HP=召喚時）。part無し→1.0
+  function comboPartMul(part, combo){ if(!part) return 1; return 1 + Math.min(part.cap, part.per*Math.max(0,combo)); }
+  function comboPartAtkMul(a){ return (a.part && a.part.type==='atk') ? comboPartMul(a.part, B.combo) : 1; }
+  function partHpBonusAtSummon(key){ const p=partOf(key); return (p && p.type==='hp') ? comboPartMul(p, B.combo) : 1; }
+  function freeze(){
+    if(!B||!B.running) return;
+    if(!freezeReadyHere()) return;          // 章4未満・塔では使えない
+    if(B.frozenT>0 || B.freezeCd>0) return; // 効果中・クールダウン中は不可
+    const cost=freezeEnergyCost();
+    if(B.energy < cost) return;             // エネルギー不足
+    B.energy -= cost;
+    B.frozenT = freezeDur();
+    B.freezeCd = B.frozenT + 0.4;           // 連打防止（効果終了後すこし）
+    const f=$('field'); if(f) f.classList.add('frozen');
+    try{ Sound.play('hit'); fxBanner('❄ フリーズ！','#5aa0d6'); floatText(fieldW()/2, 40, '❄ FREEZE', '#5aa0d6'); }catch(e){}
+    renderQueue(); syncHUD();
+  }
 
   function renderGacha(){
     const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'💎）';
@@ -8895,6 +9221,74 @@ const Game = (()=>{
     urow('🏰','自城HP', castleMaxHp(), '+250', castleUpCost(), upgradeCastle, castleMaxed());
     urow('⚡','エネルギー増加速度', regenVal()+'/秒', '+1/秒', regenCost(), upgradeRegen, regenMaxed());
     urow('🔋','エネルギー上限', enMaxVal(), '+30', enMaxCost(), upgradeEnMax);
+    const fnote=document.createElement('div'); fnote.className='muted'; fnote.style.cssText='font-size:12px;margin:10px 0 6px;line-height:1.5';
+    fnote.innerHTML='❄️ <b>フリーズ砲</b>：戦闘中に <b>Enterキー</b>（または砲ボタン）で発動。エネルギーを消費して<b>敵全体の動きを止める</b>。第4章から使えます（砲台対策）。';
+    body.appendChild(fnote);
+    urow('❄️','フリーズ砲 停止時間', freezeDur().toFixed(1)+'秒', '+0.1秒', freezeDurUpCost(), upgradeFreezeDur, freezeDurMaxed());
+    urow('❄️','フリーズ砲 消費エネルギー', freezeEnergyCost(), '-5', freezeCostUpCost(), upgradeFreezeCost, freezeCostMaxed());
+    const gnote=document.createElement('div'); gnote.className='muted'; gnote.style.cssText='font-size:12px;margin:10px 0 6px;line-height:1.5';
+    gnote.innerHTML='🛡️ <b>コンボ保護</b>：まちがえても<b>コンボを失わない</b>お守り。<b>正解すると全回復</b>。1回=2連続ミス、2回=3連続ミスでコンボが減ります（最大2回）。膨大なゴールドが必要。';
+    body.appendChild(gnote);
+    urow('🛡️','コンボ保護', comboGuardLv+'回', '+1回', comboGuardUpCost(), upgradeComboGuard, comboGuardMaxed());
+  }
+
+  /* ---- 🔩コンボパーツ画面 ---- */
+  function renderParts(){
+    const body=$('partsBody'); if(!body) return; body.innerHTML='';
+    if(!partsUnlocked()){
+      body.innerHTML='<div class="muted" style="text-align:center;line-height:1.6;padding:8px">🔒 まだ解禁されていません。<br><b>ステージ9のボス</b>（第9章ボス）を倒すと、コンボパーツが使えるようになります。</div>';
+      return;
+    }
+    function effText(p){ const pct=Math.round(comboPartMul(p,50)*100-100); return (p.type==='atk'?'⚔':'♥')+'+'+pct+'%'; } // コンボ50基準
+    // --- ガチャ ---
+    const g=document.createElement('div'); g.className='card'; g.style.cssText='margin-bottom:10px;background:#fff';
+    let gh='<div style="font-weight:800;margin-bottom:6px">🎰 パーツガチャ <span class="muted">（1回 '+PARTS_GACHA_COST+'💎）</span></div>';
+    gh+='<div class="muted" style="text-align:center;margin-bottom:6px">所持：<b style="color:#a463f2">💎 '+gems+'</b></div>';
+    if(lastPartGacha){
+      if(lastPartGacha.msg){ gh+='<div class="muted" style="text-align:center;color:#c0392b;margin-bottom:6px">'+lastPartGacha.msg+'</div>'; }
+      else { const p=PARTS[lastPartGacha.id]; gh+='<div style="text-align:center;margin-bottom:6px"><span style="font-size:11px;color:#fff;background:'+p.rarColor+';padding:1px 6px;border-radius:6px">'+p.rar+'</span> <span style="font-size:22px">'+p.icon+'</span> <b>'+p.name+'</b> '+(lastPartGacha.isNew?'<span style="color:var(--good)">NEW!</span>':'')+' <span class="muted">'+effText(p)+'</span></div>'; }
+    }
+    g.innerHTML=gh;
+    const gb=document.createElement('button'); gb.className='btn'; gb.style.width='100%'; gb.textContent='🛠️ パーツを引く（'+PARTS_GACHA_COST+'💎）'; gb.disabled=gems<PARTS_GACHA_COST; gb.onclick=doPartGacha; g.appendChild(gb);
+    body.appendChild(g);
+    // --- 装着（編成5体）---
+    const eh=document.createElement('div'); eh.style.cssText='font-weight:800;margin:4px 0 6px'; eh.textContent='🧩 装着（編成の5体）'; body.appendChild(eh);
+    deck.forEach(function(key){ const r=ROSTER[key]; if(!r) return;
+      const cur=partOf(key);
+      const row=document.createElement('div'); row.style.cssText='border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
+      const top=document.createElement('div'); top.style.cssText='display:flex;align-items:center;gap:10px';
+      top.innerHTML='<span style="width:40px;height:40px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+'</div>'+
+        '<div class="muted" style="font-size:12px">'+(cur?('装着中：'+cur.icon+' '+cur.name+'（'+effText(cur)+'）'):'パーツなし')+'</div></div>';
+      const btn=document.createElement('button'); btn.className='btn ghost'; btn.style.cssText='flex:0 0 auto;padding:6px 10px;font-size:13px'; btn.textContent=(partPickTarget===key?'閉じる':'つけかえ');
+      btn.onclick=function(){ partPickTarget=(partPickTarget===key?null:key); renderParts(); };
+      top.appendChild(btn); row.appendChild(top);
+      if(partPickTarget===key){
+        const pick=document.createElement('div'); pick.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:8px';
+        const ownedIds=PARTS_KEYS.filter(function(id){ return ownedParts[id]>0; });
+        if(!ownedIds.length){ const m=document.createElement('div'); m.className='muted'; m.style.fontSize='12px'; m.textContent='パーツを持っていません。上のガチャで入手しよう。'; pick.appendChild(m); }
+        if(cur){ const ub=document.createElement('button'); ub.className='btn ghost'; ub.style.cssText='padding:6px 8px;font-size:12px'; ub.textContent='外す'; ub.onclick=function(){ unequipPart(key); partPickTarget=null; renderParts(); }; pick.appendChild(ub); }
+        ownedIds.forEach(function(id){ const p=PARTS[id]; const eq=(equippedParts[key]===id);
+          const pb=document.createElement('button'); pb.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid '+(eq?'var(--good)':'var(--line)')+';background:'+(eq?'#eafaef':'#fff')+';border-radius:10px;padding:6px 8px;min-width:64px';
+          pb.innerHTML='<span style="font-size:10px;color:#fff;background:'+p.rarColor+';padding:0 4px;border-radius:6px">'+p.rar+'</span><span style="font-size:20px">'+p.icon+'</span><span style="font-size:11px;font-weight:700">'+p.name+'</span><span class="muted" style="font-size:10px">'+effText(p)+'・×'+ownedParts[id]+'</span>';
+          pb.onclick=function(){ equipPart(key,id); partPickTarget=null; renderParts(); };
+          pick.appendChild(pb); });
+        row.appendChild(pick);
+      }
+      body.appendChild(row);
+    });
+    // --- 所持一覧 ---
+    const owned2=PARTS_KEYS.filter(function(id){ return ownedParts[id]>0; });
+    if(owned2.length){
+      const oh=document.createElement('div'); oh.style.cssText='font-weight:800;margin:10px 0 6px'; oh.textContent='📦 持っているパーツ'; body.appendChild(oh);
+      const grid=document.createElement('div'); grid.style.cssText='display:flex;flex-wrap:wrap;gap:6px';
+      owned2.forEach(function(id){ const p=PARTS[id]; const chip=document.createElement('div'); chip.style.cssText='border:2px solid '+p.rarColor+';border-radius:10px;padding:5px 8px;font-size:12px;background:#fff';
+        chip.innerHTML='<span style="font-size:16px">'+p.icon+'</span> <b>'+p.name+'</b> <span class="muted">'+effText(p)+'・×'+ownedParts[id]+'</span>'; grid.appendChild(chip); });
+      body.appendChild(grid);
+    }
+    const note=document.createElement('div'); note.className='muted'; note.style.cssText='font-size:11px;margin-top:10px;line-height:1.5';
+    note.innerHTML='⚔の攻撃パーツは<b>今のコンボに連動してリアルタイムで強くなり</b>、コンボが切れると弱くなります。♥のHPパーツは<b>召喚した瞬間のコンボ</b>でHPが決まります。効果は「コンボ50のとき」の例です。';
+    body.appendChild(note);
   }
 
 
@@ -9002,8 +9396,8 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:30, energyMax:enMaxVal(), baseRegen:regenVal()*(recoBonusActive()?1.3:1), recoBonus:recoBonusActive(), softcap:12, maxMult:4,
-      combo:0, bestCombo:0,
+      energy:30, energyMax:enMaxVal(), baseRegen: stage.learn ? 0 : regenVal()*(recoBonusActive()?1.3:1), recoBonus:recoBonusActive(), softcap:12, maxMult:4,
+      combo:0, bestCombo:0, floor:1, // 🗼塔の階（修練/学習）
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
       allies:[], enemies:[], spawnIdx:0, bossAlive:false, bossPhase:false,
@@ -9012,6 +9406,8 @@ const Game = (()=>{
       surNext:0, surviveSide:1, // ④survive：次の両側湧き時刻／味方の交互出撃サイド(1=右,-1=左)
       rushIdx:0, rushTotal:stage.bossCount||0, rushGap:0, rushAddNext:0, rushDone:false, // ⑤rush：出したボス数／総数／次出現の間／取り巻き間隔／決着済み
       bufferDeadUntil:6, healerDeadUntil:8, // 壁2/壁3：中ボス級常駐敵の次出現可能時刻（初回ディレイ）
+      frozenT:0, freezeCd:0, // ❄フリーズ砲：効果の残り秒／再使用クールダウン
+      comboGuard:comboGuardLv, // 🛡コンボ保護：この戦闘で残っている保護回数
 
       queue:[], cd:{}, answered:0, correct:0, missStreak:0, reviewWins:0, mistakes:[],
       tier:0, wasCleared:false,
@@ -9122,10 +9518,11 @@ const Game = (()=>{
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
     renderHomeMenu();
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
-    // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow'};
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts();
+    { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
+    // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
@@ -9266,6 +9663,19 @@ const Game = (()=>{
   }
   function rebuildQueue(){ B.queue=[ pickSlot(999), pickSlot(2), pickSlot(4.99) ]; }
   function renderQueue(){
+    // ❄フリーズ砲ボタン（章4以降のみ表示）
+    const fb=$('freezeBtn');
+    if(fb){
+      if(!freezeReadyHere()){ fb.style.display='none'; }
+      else {
+        fb.style.display='';
+        const cost=freezeEnergyCost();
+        if(B.frozenT>0){ fb.disabled=true; fb.textContent='❄ 停止中 '+B.frozenT.toFixed(1)+'秒'; }
+        else if(B.freezeCd>0){ fb.disabled=true; fb.textContent='⏳ 再装填 '+B.freezeCd.toFixed(1)+'秒'; }
+        else if(B.energy<cost){ fb.disabled=true; fb.textContent='❄ あと⚡'+Math.ceil(cost-B.energy); }
+        else { fb.disabled=false; fb.textContent='❄ フリーズ ⏎（⚡'+cost+'）'; }
+      }
+    }
     const slots=['q0','q1','q2'];
     slots.forEach((id,i)=>{
       const u=B.queue[i]; const el=$(id); if(!el) return;
@@ -9342,7 +9752,12 @@ const Game = (()=>{
     $('field').appendChild(el);
     fxGate(x); Sound.play('summon');
     const __st=unitStats(key);
-    B.allies.push({ key, el, x, dir, hp:__st.hp, hpMax:__st.hp, atk:__st.atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0 });
+    const __part=partOf(key);                                  // 🔩装着パーツ
+    const __lb=1+learnBuffPct();                               // 🎓学習の塔の永久バフ（味方ATK/HP）
+    const __hp=Math.round(__st.hp*partHpBonusAtSummon(key)*__lb); // HPパーツは召喚時のコンボで確定
+    const __atk=Math.round(__st.atk*__lb);
+    if(__part) el.classList.add('haspart');
+    B.allies.push({ key, el, x, dir, hp:__hp, hpMax:__hp, atk:__atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0, part:__part });
   }
   function spawnEnemy(type, side){
     if(type==="BOSS"){ spawnBoss(); return; }
@@ -9402,7 +9817,7 @@ const Game = (()=>{
   }
   // 壁2/壁3：中ボス級の常駐敵。通常ステージに「1体だけ」常駐し、倒すと一定時間で再出撃（雑魚の画面上限に押し出されないよう専用管理）
   function specialEnemyTick(dt){
-    if(B.stage.boss || B.stage.endless) return;          // ボス戦・塔には出さない
+    if(B.stage.boss || B.stage.endless || B.stage.learn) return;          // ボス戦・塔には出さない
     const ch=B.stage.chapter||1;
     if(ch>=10){ // 壁2：攻撃バッファー中ボス
       var bAlive=false; for(var i=0;i<B.enemies.length;i++){ if(B.enemies[i].buffer){ bAlive=true; break; } }
@@ -9458,7 +9873,7 @@ const Game = (()=>{
   function chargeTick(dt){
     const boss=bossOf();
     if(!boss||!boss.charge){ var cb=$('chargeBar'); if(cb) cb.style.display='none'; return; }
-    boss.charge.t += dt;
+    if(B.frozenT<=0) boss.charge.t += dt; // ❄フリーズ中はボスのチャージも止まる
     const r=Math.min(1, boss.charge.t/boss.charge.max);
     const bar=ensureChargeBar(); bar.style.display='flex';
     bar.querySelector('i').style.width=(r*100)+'%';
@@ -9546,7 +9961,7 @@ const Game = (()=>{
       a.cd-=dt;
       if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.dir*a.speed*dt; a.x=Math.max(edge,Math.min(W-edge,a.x)); place(a.el,a.x); return; }
       const target=survNearestEnemy(a);
-      var __atk=a.atk*allyAtkMul(a);
+      var __atk=a.atk*allyAtkMul(a)*comboPartAtkMul(a); // 🔩攻撃パーツ＝現コンボでライブ加算
       if(target && Math.abs(target.x-a.x)<=a.range){
         if(a.cd<=0){
           if(a.splash||a.pierce){ B.enemies.forEach(function(e){ const ahead=a.dir>0?(e.x>=a.x-4):(e.x<=a.x+4); if(ahead && Math.abs(e.x-a.x)<=a.range){ damage(e,__atk); if(a.slow)e.slowT=2.0; if(a.knockback)e.x+=a.dir*a.knockback; } }); floatText(a.x,26,a.pierce?'⇶':'💥','var(--ally)'); }
@@ -9558,6 +9973,8 @@ const Game = (()=>{
       place(a.el,a.x);
     });
     B.enemies.forEach(function(e){
+      if(B.frozenT>0){ if(e.el) e.el.classList.add('frz'); return; } // ❄フリーズ中：敵は動かず攻撃もしない
+      if(e.el) e.el.classList.remove('frz');
       e.cd-=dt;
       if(e.dir==null) e.dir = (e.x<center?1:-1); // 分裂児など未設定の保険
       if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
@@ -9616,6 +10033,8 @@ const Game = (()=>{
     // デバッグ専用問題（生徒には出ない・治具検証用）：2択・左が正解固定
     if(window.__GGDEBUG && window.__ggTestQ){
       curQ = { qtext:'🐛 デバッグ：左を選べ', choices:['○ 正解（左）','× 不正解（右）'], answerIndex:0, choiceCount:2, review:false, speak:null, dir:null, locked:false };
+    } else if(B && B.stage && B.stage.learn){
+      curQ = learnDraw(B.stage.learnField, learnLevelForFloor(B.floor||1), cc) || QuizEngine.next(cc); // 🎓階に応じた級・分野で出題
     } else {
       curQ = QuizEngine.next(cc);
     }
@@ -9648,10 +10067,12 @@ const Game = (()=>{
     gems += gemPts; updateGemUI(); save(); // 1問ごとに保存（途中でやめても💎は残る）
     if(right){
       btn.classList.add('ok'); B.correct++; B.missStreak=0;
+      B.comboGuard=comboGuardLv; // 🛡️正解でコンボ保護が全回復（連続ミスのときだけ消費されていく）
       Sound.play('correct'); fxLetters(btn, curQ.choices[i]);
       const gain=QuizEngine.comboGain(curQ);
       B.combo += gain; B.bestCombo=Math.max(B.bestCombo,B.combo);
       B.energy=Math.min(B.energyMax, B.energy+2); // ささやかな即時手応え
+      if(B.stage.learn) B.energy=Math.min(B.energyMax, B.energy + LEARN_ENERGY_PER_CORRECT); // 🎓学習の塔：自然回復なし＝正解で大きく加算
       floatText($('field').clientWidth/2, 30, `+COMBO ${gain}`, 'var(--gold)');
       if(curQ.review){
         B.reviewWins++; B.energy=Math.min(B.energyMax,B.energy+6); // 取り返せた手応え
@@ -9665,14 +10086,23 @@ const Game = (()=>{
       buttons[curQ.answerIndex].classList.add('ok');
       Sound.play('wrong');
       B.missStreak++;
-      B.combo = Math.floor(B.combo * (B.slow?0.75:0.5)); // 途切れ→加速ダウン（ゼロにしない）
+      if(B.stage.learn){
+        // 🎓学習の塔：コンボは途切れない（減らさない）。代わりにエネルギーが増えない＝間違えると召喚が止まる
+        $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
+      }else if(B.comboGuard>0){
+        B.comboGuard--; // 🛡コンボ保護を1回消費＝コンボを維持（半減させない）
+        floatText($('field').clientWidth/2, 30, '🛡️ コンボ保護！', '#4a90d0');
+        $('qfeedback').innerHTML = `<span style="color:#4a90d0">🛡️ コンボ保護！</span> ${curQ.desc||''}`;
+      }else{
+        B.combo = Math.floor(B.combo * (B.slow?0.75:0.5)); // 途切れ→加速ダウン（ゼロにしない）
+        $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
+      }
       QuizEngine.pushReview(curQ); // 間違えた問題は近いうち再出題
       try{ var __mp=(curQ.qtext||'').replace(/<[^>]+>/g,''); var __mc=curQ.choices?curQ.choices[curQ.answerIndex]:''; if(B.mistakes && !B.mistakes.some(function(m){return m.prompt===__mp&&m.correct===__mc;})) B.mistakes.push({prompt:__mp, correct:__mc, desc:curQ.desc||''}); }catch(_){}
-      $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
     }
     floatText($('field').clientWidth/2, right?78:54, `+${gemPts}💎${B.recoBonus?' ✨推奨2倍':''}`, '#a463f2'); // ガチャ通貨の手応え
     syncHUD();
-    setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, right?800:2000);
+    setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, (right?800:2000)/((window.__GGDEBUG&&window.__timeScale>1)?window.__timeScale:1)); // 検証時は倍速に合わせ解答間隔も縮める（ゲーム内時間で一定＝難度のブレ防止）
   }
 
   /* ---- ループ ---- */
@@ -9682,6 +10112,9 @@ const Game = (()=>{
     // エネルギー加速：regen = base × (1 + combo/softcap) クランプ
     const mult=Math.min(B.maxMult, 1 + B.combo/B.softcap);
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
+    // ❄フリーズ砲：効果＆クールダウンの消化（効果が切れたら凍結表示を解除）
+    if(B.freezeCd>0){ B.freezeCd-=dt; if(B.freezeCd<0) B.freezeCd=0; }
+    if(B.frozenT>0){ B.frozenT-=dt; if(B.frozenT<=0){ B.frozenT=0; var __ff=$('field'); if(__ff) __ff.classList.remove('frozen'); } }
     // クールダウン消化。CDが明けて出せる枠が空いていれば補充
     for(var __k in B.cd){ if(B.cd[__k]>0){ B.cd[__k]-=dt; if(B.cd[__k]<0) B.cd[__k]=0; } }
     if(!B.queue||B.queue.length<3||!B.queue[0]) rebuildQueue();
@@ -9689,6 +10122,7 @@ const Game = (()=>{
     if(autoSummon && B.queue[0] && cdLeft(B.queue[0].key)<=0 && B.energy>=B.queue[0].cost) summon();
     // ウェーブ
     if(B.stage.endless){ towerStep(); }
+    else if(B.stage.learn){ learnStep(dt); } // 🎓学習の塔：階で級UP・頂上クリア
     else if(B.stage.mode==='trigger' && IMPLEMENTED_GIMMICKS.trigger){ /* ②時間湧きなし：敵城へのダメージでgimmickTickが湧かす */ }
     else if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ /* ④両側湧きはsurviveTickが担当 */ }
     else if(B.stage.gimmick==='rush' && IMPLEMENTED_GIMMICKS.rush){ /* ⑤ボス連戦＋取り巻きはrushTickが担当 */ }
@@ -9698,6 +10132,7 @@ const Game = (()=>{
     gimmickTick(dt);
     syncHUD(); renderQueue();
     if(B.stage.endless){ var __he=$('hpEtxt'); if(__he) __he.textContent='🗼'+(B.floor||1)+'階'; }
+    if(B.stage.learn){ var __hl=$('hpElab'), __ht=$('hpEtxt'), __hb=$('hpE'); if(__hl)__hl.textContent='🗼 '+QuizEngine.LV_LABEL[learnLevelForFloor(B.floor||1)]; if(__ht)__ht.textContent=(B.floor||1)+'/'+LEARN_FLOORS+'階'; if(__hb)__hb.style.width=((B.floor||1)/LEARN_FLOORS*100)+'%'; }
     checkEnd();
     if(B.running) B.raf=requestAnimationFrame(loop);
   }
@@ -9711,7 +10146,7 @@ const Game = (()=>{
       if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.speed*dt; place(a.el,a.x); return; }
       const target = nearestEnemy(a);
       const enemyCastleX = W-70;
-      var __atk = a.atk * allyAtkMul(a);
+      var __atk = a.atk * allyAtkMul(a) * comboPartAtkMul(a); // 🔩攻撃パーツ＝現コンボでライブ加算
       if(target && Math.abs(target.x-a.x) <= a.range){
         if(a.cd<=0){
           if(a.splash||a.pierce){ B.enemies.forEach(function(e){ if(e.x>=a.x-4 && Math.abs(e.x-a.x)<=a.range){ damage(e,__atk); if(a.slow)e.slowT=2.0; if(a.knockback)e.x=Math.min(W-60,e.x+a.knockback); } }); floatText(a.x,26, a.pierce?'⇶':'💥','var(--ally)'); }
@@ -9728,6 +10163,8 @@ const Game = (()=>{
     });
     // 敵：左へ。味方 or 自城と戦う
     B.enemies.forEach(e=>{
+      if(B.frozenT>0){ if(e.el) e.el.classList.add('frz'); return; } // ❄フリーズ中：敵は動かず攻撃もしない
+      if(e.el) e.el.classList.remove('frz');
       e.cd-=dt;
       if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
       // 壁3：敵ヒーラー＝攻撃せず前進しつつ周囲の敵を回復（後方支援）
@@ -9805,6 +10242,7 @@ const Game = (()=>{
     $('enBar').style.width=(B.energy/B.energyMax*100)+'%';
     $('enTxt').textContent=Math.round(B.energy);
     $('comboTxt').textContent=B.combo;
+    { var __g=$('guardTxt'); if(__g) __g.textContent = (comboGuardLv>0) ? (' '+'🛡️'.repeat(B.comboGuard)) : ''; }
     const big=$('combo-big'); big.style.color = B.combo>=15?'#e0683b':B.combo>=6?'#e0a93b':'#bbb';
     const f=$('field'); f.classList.toggle('warm', B.combo>=6 && B.combo<15); f.classList.toggle('hot', B.combo>=15);
     // 城ダメージ段階＋瀕死バリア
@@ -9852,6 +10290,64 @@ const Game = (()=>{
     var retry=$('resRetry'); retry.textContent='もう一度 🗼'; retry.onclick=function(){ enterTower(); };
     show('result');
   }
+
+  /* ---- 🎓学習の塔（壁3）：分野ごと・階で級UP(4級→準1級)・正解でエネルギー・コンボ継続・頂上クリア。進度で永久バフ ---- */
+  const LEARN_UNLOCK_AREA = 50;   // ステージ10ボス撃破で解禁
+  const LEARN_FLOORS = 15;        // 頂上=15階（準1級）
+  const LEARN_PER_FLOOR = 0.015;  // 永久バフ：到達階の合計×1.5%（味方ATK/HP）
+  const LEARN_SEC_PER_FLOOR = 14; // 1階あたりの秒数
+  const LEARN_ENERGY_PER_CORRECT = 22; // 自然回復なし＝正解で加算
+  const LEARN_FIELDS = [{key:'word',label:'単語'},{key:'idiom',label:'熟語'},{key:'grammar',label:'文法'}];
+  function learnUnlocked(){ return !!cleared[LEARN_UNLOCK_AREA]; }
+  function learnLevelForFloor(f){ var idx=Math.min(QuizEngine.LV_ORDER.length-1, Math.floor((Math.max(1,f)-1)/3)); return QuizEngine.LV_ORDER[idx]; } // 3階ごとに1級上げる
+  function learnDraw(field, level, cc){ var order=QuizEngine.LV_ORDER, i=order.indexOf(level);
+    for(var k=i;k>=0;k--){ var q=QuizEngine.drawFor(field, order[k], cc); if(q) return q; }      // 指定級が無ければ級を下げて確保
+    for(var j=i+1;j<order.length;j++){ var q2=QuizEngine.drawFor(field, order[j], cc); if(q2) return q2; }
+    return null; }
+  function learnBuffFloors(){ var n=0; for(var k in learnBest){ n+=(learnBest[k]||0); } return n; }
+  function learnBuffPct(){ return LEARN_PER_FLOOR * learnBuffFloors(); } // 味方ATK/HPに乗算（全塔の到達階合計）
+  function enterLearnTower(field){
+    if(!learnUnlocked()) return;
+    var lf=LEARN_FIELDS.find(function(x){return x.key===field;})||LEARN_FIELDS[0];
+    enterBattle({ id:'learn', area:0, boss:false, endless:false, learn:true, learnField:lf.key, name:'学習の塔（'+lf.label+'）', sprite:'castleE', world:9, enemyHpMul:1, enemyAtkMul:1, castleEHp:1e9, waves:[] });
+  }
+  function learnStep(dt){
+    var prev=B.floor||1;
+    B.floor = Math.min(LEARN_FLOORS, 1 + Math.floor(B.t/LEARN_SEC_PER_FLOOR));
+    if(B.floor>prev){ try{ fxBanner('🗼 '+B.floor+'階：'+QuizEngine.LV_LABEL[learnLevelForFloor(B.floor)],'#3aa6a0'); fxTierFlash(); }catch(e){} }
+    if(B.t*1000 >= (B.nextSpawn||0)){
+      var f=B.floor;
+      var types = f<4?['slime','hare','slinger'] : f<8?['hare','totem','torii','slinger','bat'] : f<12?['totem','torii','slinger','bat','golem'] : ['torii','slinger','bat','golem','bombSlime','splitMush','darkMage'];
+      var n=1+Math.floor(f/3);
+      B.stage.enemyHpMul=Math.pow(1.16, f-1);
+      B.stage.enemyAtkMul=Math.pow(1.11, f-1);
+      for(var i=0;i<n;i++){ if(B.enemies.length<ENEMY_CAP) spawnEnemy(types[Math.floor(Math.random()*types.length)]); }
+      B.nextSpawn=B.t*1000+Math.max(900, 2200 - f*70);
+    }
+    if(B.t >= LEARN_FLOORS*LEARN_SEC_PER_FLOOR){ B.learnCleared=true; beginEnd(true); } // 頂上を耐え切った＝完走
+  }
+  function endLearnTower(win){
+    B.ended=true; B.running=false; cancelAnimationFrame(B.raf); Sound.play(win?'win':'lose');
+    var field=B.stage.learnField, reached = win ? LEARN_FLOORS : (B.floor||1);
+    var label=(LEARN_FIELDS.find(function(x){return x.key===field;})||{}).label||'';
+    var prev=learnBest[field]||0, isBest=reached>prev; if(isBest){ learnBest[field]=reached; }
+    var gain=reached*40; gold+=gain; save();
+    $('firstBadge').classList.remove('show');
+    $('resTitle').textContent = win ? ('🎓 学習の塔（'+label+'）完走！') : ('🗼 '+reached+'階で力尽きた');
+    $('resTitle').style.color = win?'var(--good)':'var(--enemy)';
+    var pct=Math.round(learnBuffPct()*100);
+    $('resMedals').innerHTML='<span class="medal">到達 '+reached+'/'+LEARN_FLOORS+'階</span>'+
+      '<span class="medal">'+QuizEngine.LV_LABEL[learnLevelForFloor(reached)]+'</span>'+
+      (isBest?'<span class="medal">🏆 自己ベスト！</span>':'')+
+      '<span class="medal">💰 +'+gain+'</span>'+
+      '<span class="medal">🎓 永久バフ ⚔♥+'+pct+'%</span>';
+    $('resLearn').textContent='学習の塔の進度に応じて、通常ステージの味方が永久に強くなります（攻撃力・HP）。上の級ほど大きく伸びる！';
+    var nd=$('resNudge'); if(nd) nd.innerHTML='';
+    renderResultMistakes();
+    var retry=$('resRetry'); retry.textContent='もう一度 🗼'; retry.onclick=function(){ enterLearnTower(field); };
+    if(win) confetti();
+    show('result');
+  }
   // カレンダー巻き戻し対策：観測した最大時刻を保持し、過去に戻しても「今日」は戻らない
   function guardedNow(){ clockTs=Math.max(clockTs||0, Date.now()); return clockTs; }
   function todayStr(){ var d=new Date(guardedNow()); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
@@ -9881,6 +10377,22 @@ const Game = (()=>{
     var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
     body.appendChild(t);
     var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
+    // 🎓学習の塔（壁3）：解禁後のみ
+    if(learnUnlocked()){
+      var lh=document.createElement('div'); lh.style.cssText='font-weight:800;margin:14px 0 6px;border-top:2px dashed var(--line);padding-top:12px';
+      lh.innerHTML='🎓 学習の塔 <span class="muted">分野ごと・4級→準1級／進度で永久バフ ⚔♥+'+Math.round(learnBuffPct()*100)+'%</span>';
+      body.appendChild(lh);
+      LEARN_FIELDS.forEach(function(lf){
+        var best=learnBest[lf.key]||0, done=best>=LEARN_FLOORS;
+        var row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
+        row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:800">🗼 '+lf.label+'の塔'+(done?' <span style="color:var(--gold)">🎓完走</span>':'')+'</div><div class="muted" style="font-size:12px">最高 '+best+'/'+LEARN_FLOORS+'階'+(best?'（'+QuizEngine.LV_LABEL[learnLevelForFloor(best)]+'まで）':'')+'</div></div>';
+        var b=document.createElement('button'); b.className='btn'; b.style.cssText='flex:0 0 auto;padding:8px 12px'; b.textContent=done?'再挑戦':'挑戦'; b.onclick=function(){ enterLearnTower(lf.key); };
+        row.appendChild(b); body.appendChild(row);
+      });
+      var ln=document.createElement('div'); ln.className='muted'; ln.style.cssText='font-size:12px;line-height:1.5;margin-bottom:6px';
+      ln.innerHTML='エネルギーは自然回復せず<b>正解で増える</b>・<b>コンボは途切れない</b>。階が上がるほど級が上がり頂上は<b>準1級</b>。解けないと召喚できず進めません。完走で大きな永久バフ！';
+      body.appendChild(ln);
+    }
     var ci=document.createElement('div'); ci.className='muted'; ci.style.cssText='margin-top:10px;font-size:12px;line-height:1.5';
     ci.innerHTML='💰 ゴールドは強化に使います（クリア報酬の上限なし＝何回でも満額）。<br>🎰 ガチャ用の💎は問題を解くほど貯まります。<b>推奨難易度で遊ぶと💎が2倍！</b>';
     body.appendChild(ci);
@@ -9892,7 +10404,7 @@ const Game = (()=>{
   }
   // 城が壊れたら約2秒の爆発四散を見せてから結果画面へ（勝ち=敵城・負け=自城）。godholdは大ビーム/ボス消滅もこの間に見える
   function beginEnd(win){
-    if(B.ended) return; B.ended=true; B.running=false; cancelAnimationFrame(B.raf);
+    if(B.ended) return; B.ended=true; B.resultWin=!!win; B.running=false; cancelAnimationFrame(B.raf);
     if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
       if(win) surviveVictoryFx(); else castleBlast('castleA', false); // ④勝ち=敵が散る／負け=中央の自城が爆発
     } else {
@@ -9916,7 +10428,30 @@ const Game = (()=>{
     });
     el.innerHTML=h;
   }
+  // 敗北時の強化ガイド：負けた原因を推定し「次に何を強くすればよいか」を提示（中盤の心理的詰まり対策）
+  function lossGuidanceHTML(){
+    var acc = B.answered? (B.correct/B.answered) : 0;
+    var fast = B.t < 50;                                  // 速攻で自城が割れた＝守り不足
+    var combo = B.bestCombo||0;
+    // 敵の残り：ボス戦はボスHP%・通常は敵城%
+    var enemyRemain;
+    var boss=null; for(var i=0;i<B.enemies.length;i++){ if(B.enemies[i].boss){boss=B.enemies[i];break;} }
+    if(boss){ enemyRemain = Math.round(boss.hp/boss.hpMax*100); }
+    else { enemyRemain = Math.round(B.castleE/Math.max(1,B.castleEMax)*100); }
+    var tips=[];
+    if(enemyRemain>40) tips.push('⚔ <b>火力が足りない</b>：キャラ強化(💪)・攻撃パーツ(🛠️)・<b>学習の塔(🎓)</b>で味方を永久に強く。');
+    if(fast) tips.push('🏰 <b>守りが薄い</b>：城HP強化・<b>❄フリーズ砲(Enter)</b>・コンボ保護で立て直す時間を作ろう。');
+    if(combo<15) tips.push('🔥 <b>コンボが続かず召喚が遅い</b>：正解を続けるとエネルギーが加速。エネルギー速度/上限の強化も。');
+    if(acc<0.5) tips.push('📚 <b>今の級が難しいかも</b>：出題設定で少しやさしい級に、または学習の塔で基礎から。');
+    tips.push('🎓 <b>学習の塔</b>をクリアすると味方が永久に強くなります（壁を越える近道）。');
+    tips = tips.slice(0,3);
+    return '<div style="text-align:left;margin-top:10px;border:2px solid var(--line);border-radius:12px;padding:10px;background:#fff">'+
+      '<div style="font-weight:800;margin-bottom:6px">💡 次にためすこと</div>'+
+      tips.map(function(t){return '<div style="font-size:13px;line-height:1.6;margin-bottom:3px">'+t+'</div>';}).join('')+
+      '</div>';
+  }
   function endBattle(win){
+    if(B.stage.learn){ endLearnTower(win); return; } // 🎓学習の塔
     if(B.stage.endless){ endTower(); return; }
     B.ended=true; B.running=false; cancelAnimationFrame(B.raf);
     Sound.play(win?'win':'lose');
@@ -9937,6 +10472,7 @@ const Game = (()=>{
     $('resLearn').textContent = !win
       ? 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎'
       : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
+    { var __nd=$('resNudge'); if(__nd) __nd.innerHTML = win ? '' : lossGuidanceHTML(); } // 敗北時のみ強化ガイド
     renderResultMistakes();
     const retry=$('resRetry'); retry.textContent = win?'次へ ▶':'もう一度';
     retry.onclick=()=>{
@@ -9946,8 +10482,11 @@ const Game = (()=>{
     show('result');
   }
 
-  // スペースキー召喚
-  window.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); summon(); } });
+  // スペースキー召喚／Enterキーでフリーズ砲
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault(); summon(); }
+    else if(e.code==='Enter'||e.code==='NumpadEnter'){ e.preventDefault(); freeze(); }
+  });
   // 凍結タブ復元時は戦闘の途中状態で固まらないようホームへ戻す
   window.addEventListener('pageshow', e=>{ if(e.persisted){ try{ toHome(); }catch(_){} } });
 
@@ -10095,17 +10634,96 @@ const Game = (()=>{
       const lv=2*chapter;
       deck=STARTERS.slice(); STARTERS.forEach(function(k){ if(!owned[k])owned[k]=1; unitLv[k]=lv; });
       autoSummon=true; choiceMode=2;
-      castleLv=lv; regenLv=lv; enMaxLv=lv;
+      castleLv=lv; regenLv=lv; enMaxLv=lv; freezeDurLv=lv; freezeCostLv=lv; comboGuardLv=Math.min(COMBO_GUARD_MAX_LV, lv);
+      cleared[PARTS_UNLOCK_AREA]=true; PARTS_KEYS.forEach(function(id){ ownedParts[id]=(ownedParts[id]||0)+1; }); // 🔩パーツ解禁＋全種付与（装着は手動。sweepは既定で変えない）
+      cleared[LEARN_UNLOCK_AREA]=true; // 🎓学習の塔も解禁
       window.__ggTestQ=true; // デバッグ専用問題を使う（確実にコンボを積む）
       QuizEngine.setSel({genre:'word', levels:['e3']});
       save();
       return {deck:deck.slice(), lv:lv};
     },
     enter(area){ const st=STAGES[area-1]; if(!st) return 'no stage '+area; playTab=st.chapter; enterBattle(st); return 'entered area'+area; },
+    // ===== ペルソナ・バランス計測ハーネス（夜間自走・debug専用） =====
+    // 既定の英検知識ペルソナ（window.__ggPersonas があればそちらを優先）。knowProb=その級を「わかる」確率（適当タップ前）
+    _personas: {
+      target:   {word:{e4:.80,e3:.60,ep2:.20,e2:.05,ep1:.02}, idiom:{e4:.75,e3:.55,ep2:.18,e2:.04,ep1:.01}, grammar:{e4:.70,e3:.50,ep2:.18,e2:.05,ep1:.02}},
+      stronger: {word:{e4:.95,e3:.82,ep2:.50,e2:.25,ep1:.10}, idiom:{e4:.92,e3:.78,ep2:.45,e2:.22,ep1:.08}, grammar:{e4:.90,e3:.75,ep2:.45,e2:.22,ep1:.10}},
+      weaker:   {word:{e4:.50,e3:.30,ep2:.08,e2:.02,ep1:.00}, idiom:{e4:.45,e3:.25,ep2:.06,e2:.01,ep1:.00}, grammar:{e4:.45,e3:.28,ep2:.08,e2:.02,ep1:.00}},
+      bilingual:{word:{e4:1,e3:1,ep2:1,e2:1,ep1:.55}, idiom:{e4:1,e3:1,ep2:.95,e2:.9,ep1:.5}, grammar:{e4:.95,e3:.9,ep2:.8,e2:.7,ep1:.4}}
+    },
+    persona(id){ return (window.__ggPersonas&&window.__ggPersonas[id])||this._personas[id]; },
+    // 進行度に応じた戦力を注入（save()しない＝transient）。p={unitLv,castleLv,regenLv,enMaxLv,freezeDurLv,freezeCostLv,comboGuardLv,partKey,learnFloors}
+    applyPower(p){
+      p=p||{};
+      deck=STARTERS.slice(); STARTERS.forEach(function(k){ if(!owned[k])owned[k]=1; unitLv[k]=p.unitLv||0; });
+      castleLv=p.castleLv||0; regenLv=p.regenLv||0; enMaxLv=p.enMaxLv||0;
+      freezeDurLv=p.freezeDurLv||0; freezeCostLv=p.freezeCostLv||0; comboGuardLv=Math.min(COMBO_GUARD_MAX_LV, p.comboGuardLv||0);
+      cleared[PARTS_UNLOCK_AREA]=true; cleared[LEARN_UNLOCK_AREA]=true;
+      ownedParts={}; equippedParts={};
+      if(p.partKey){ PARTS_KEYS.forEach(function(id){ ownedParts[id]=1; }); STARTERS.forEach(function(k){ equippedParts[k]=p.partKey; }); }
+      learnBest={}; if(p.learnFloors){ learnBest.word=p.learnFloors; }
+      autoSummon=true;
+      return { atk:unitStats('guardTurtle').atk, hp:unitStats('guardTurtle').hp, learnBuffPct:Math.round(learnBuffPct()*100) };
+    },
+    // 現在の問題に対し、ペルソナの知識率で正誤を決めて回答（実問題・選択肢運込み）
+    answerKnow(prof){
+      if(!curQ||curQ.locked) return false;
+      var lvl=curQ.level||'e4', gen=curQ.genre||'word';
+      var tbl=(prof&&(prof[gen]||prof.word))||{};
+      var know=(tbl[lvl]!=null)?tbl[lvl]:0;
+      var cc=curQ.choiceCount||2;
+      var p=know+(1-know)/cc;                       // 適当タップ込みの正解確率
+      var correct=Math.random()<p;
+      var ai=curQ.answerIndex, idx;
+      if(correct){ idx=ai; } else { idx=Math.floor(Math.random()*cc); if(idx===ai) idx=(idx+1)%cc; }
+      var b=$('choices').children[idx]; if(!b) return false;
+      answer(idx,b); return true;
+    },
+    // ジョブ列を1戦ずつ自走（ブラウザ内でチェーン）。jobs=[{area|learnField, personaId, level, genre, cc, power, god}]
+    // 結果は window.__ggBatch={done,i,total,results:[{job,win,...state}]} に蓄積→Claudeがポーリングして回収
+    batch(jobs, opts){
+      opts=opts||{};
+      var scale=opts.scale||5, thinkMs=opts.thinkMs||1200, maxT=opts.maxT||220;
+      var ansMs=Math.max(60, Math.round(thinkMs/scale));
+      var self=this;
+      window.__ggBatch={done:false, i:0, total:jobs.length, results:[], startedScale:scale};
+      function startJob(idx){
+        if(idx>=jobs.length){ window.__ggBatch.done=true; window.__timeScale=1; window.__ggTestQ=false; return; }
+        var j=jobs[idx]; var prof=self.persona(j.personaId)||{};
+        self.applyPower(j.power||{});
+        choiceMode=j.cc||4; window.__ggTestQ=false;
+        QuizEngine.setSel({genre:j.genre||'word', levels:[j.level||'e3']});
+        window.__timeScale=scale;
+        if(j.area!=null) delete cleared[j.area];                 // win判定用にリセット
+        if(j.learnField){ enterLearnTower(j.learnField); } else { self.enter(j.area); }
+        if(j.god) self.godCastle();
+        clearInterval(window.__ggA); clearInterval(window.__ggW);
+        window.__ggA=setInterval(function(){ try{ self.answerKnow(prof); }catch(e){} }, ansMs);
+        window.__ggW=setInterval(function(){
+          if(!B) return;
+          var ended=!!B.ended, over=(B.t>maxT);
+          if(ended||over){
+            clearInterval(window.__ggA); clearInterval(window.__ggW);
+            var st=j.learnField?self.learnState():self.state();
+            var win=j.learnField?(B.learnCleared===true):(B.resultWin===true);
+            var rec=Object.assign({job:j, win:win, timeout:(over&&!ended)}, st||{});
+            window.__ggBatch.results.push(rec); window.__ggBatch.i=idx+1;
+            setTimeout(function(){ startJob(idx+1); }, 80);
+          }
+        }, ansMs);
+      }
+      startJob(0);
+      return 'batch started: '+jobs.length+' jobs @x'+scale;
+    },
+    batchState(){ var b=window.__ggBatch; return b?{done:b.done, i:b.i, total:b.total, last:b.results[b.results.length-1]||null}:null; },
+    learn(field){ this.setup(2); cleared[LEARN_UNLOCK_AREA]=true; window.__timeScale=(window.__timeScale||1); enterLearnTower(field||'word'); return 'learn tower '+(field||'word'); }, // 🎓学習の塔の検証
+    learnState(){ if(!B||!B.stage||!B.stage.learn) return null; return { t:+B.t.toFixed(1), floor:B.floor, level:learnLevelForFloor(B.floor||1), energy:Math.round(B.energy), combo:B.combo, allies:B.allies.length, enemies:B.enemies.length, ca:Math.round(B.castleA/B.castleAMax*100), ended:!!B.ended, field:B.stage.learnField, buffPct:Math.round(learnBuffPct()*100) }; },
+    godCastle(){ if(!B) return 'no battle'; B.castleA=B.castleAMax=1e9; return 'castle invincible (test)'; }, // 検証用：自城を実質無敵に（完走テスト）
     // 90%正答で1問解く（left=正解固定の前提。fresh問題があるときだけ）
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
-      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy) }; }
+      let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
+      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), partUnit:pu }; }
     ,
     // 自動プレイ：area=ステージ, chapter=強化想定章, opts{acc正答率, scale倍速}。logは window.__ptlog、終了で window.__ptdone
     run(area, chapter, opts){
@@ -10118,7 +10736,7 @@ const Game = (()=>{
       window.__ptS=setInterval(function(){ var st=_test.state(); if(!st) return; window.__ptlog.push(st); if(st.ended || st.t>240){ window.__ptdone=st; clearInterval(window.__ptA); clearInterval(window.__ptS); window.__timeScale=1; } }, ansEvery);
       return 'running area'+area+' chapter'+chapter+' x'+scale;
     },
-    stop(){ clearInterval(window.__ptA); clearInterval(window.__ptS); clearInterval(window.__benchSamp); window.__timeScale=1; window.__ggTestQ=false; },
+    stop(){ clearInterval(window.__ptA); clearInterval(window.__ptS); clearInterval(window.__ggA); clearInterval(window.__ggW); clearInterval(window.__benchSamp); if(window.__ggBatch) window.__ggBatch.done=true; window.__timeScale=1; window.__ggTestQ=false; },
     // 負荷ベンチ：等速で48体(SSR味方24＋同じ重いアートの敵24)を画面に出し、FPSを実測。Chromebook耐性チェック用
     bench(opts){
       opts=opts||{}; var dur=opts.ms||6000; var nA=opts.allies!=null?opts.allies:24; var nE=opts.enemies!=null?opts.enemies:24;
@@ -10165,7 +10783,7 @@ const Game = (()=>{
     }
   };
   if(window.__GGDEBUG){ window.GG_TEST=_test; }
-  return { start, toHome, summon, toggleSound, replayAudio, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES, _answerForTest:(i,b)=>answer(i,b) };
+  return { start, toHome, summon, freeze, toggleSound, replayAudio, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES, _answerForTest:(i,b)=>answer(i,b) };
 })();
 
 Game.start();
