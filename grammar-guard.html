@@ -227,6 +227,31 @@
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
+  /* ホーム：左(上)ショーケース ＋ 右(下)メニュー。スマホは縦積み（ショーケース上・メニュー下） */
+  #homeGrid{display:grid; grid-template-columns:1.05fr .95fr; gap:10px; align-items:start}
+  #homeShowcase{display:flex; flex-direction:column; gap:8px; min-width:0}
+  .scard{background:linear-gradient(180deg,#fffef9,#fff6e6); border:2px solid var(--line); border-radius:18px; padding:12px 14px; box-shadow:0 3px 0 var(--line)}
+  #rankCard{background:linear-gradient(135deg,#fff3d6,#ffe2bd); border-color:var(--gold)}
+  /* キャラ（枠なし・大きく表示／矢印は端／スワイプ切替・タップで攻撃） */
+  #homeCharWrap{position:relative; display:flex; align-items:center; justify-content:center; height:176px; touch-action:pan-y}
+  #homeCharSprite{width:160px; height:160px; cursor:pointer; filter:drop-shadow(0 7px 9px rgba(0,0,0,.2)); transition:transform .08s}
+  #homeCharSprite:active{transform:scale(.94)}
+  #homeCharSprite.atk{animation:homeAtk .45s ease}
+  .charArrow{position:absolute; top:50%; margin-top:-26px; width:34px; height:52px; border:2px solid var(--line); background:#fff; border-radius:12px; font-size:18px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); cursor:pointer; opacity:.9}
+  .charArrow:active{opacity:1; background:#f3eee2}
+  #charPrev{left:0}
+  #charNext{right:0}
+  @keyframes homeAtk{0%{transform:translateX(0) scale(1)}22%{transform:translateX(-10px) scale(1.05) rotate(-7deg)}55%{transform:translateX(18px) scale(1.13) rotate(9deg)}100%{transform:translateX(0) scale(1)}}
+  .homeSlash{position:absolute; left:50%; top:42%; font-size:46px; pointer-events:none; z-index:3; animation:homeSlash .5s ease-out forwards}
+  @keyframes homeSlash{0%{opacity:0; transform:translate(-40px,-10px) rotate(-35deg) scale(.6)}30%{opacity:1}100%{opacity:0; transform:translate(36px,14px) rotate(18deg) scale(1.5)}}
+  /* 今日の英単語：高さ固定・折り返さない（ガタつき防止）。見出しは置かず英単語だけ見せる */
+  #wordCard{position:relative; background:linear-gradient(180deg,#eafaf0,#dcf3e6); border-color:#86d3a3; height:86px; display:flex; flex-direction:column; justify-content:center; overflow:hidden; cursor:pointer}
+  #wordCard .wline{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+  #wordEn{letter-spacing:.5px; line-height:1.1}
+  #wordSpeakBtn{position:absolute; top:8px; right:8px; z-index:2}
+  #homeMenuBtns{display:flex; flex-direction:column}
+  #homeMenuBtns .menubtn{margin-bottom:8px; font-size:18px; padding:12px 16px}
+  @media (max-width:560px){ #homeGrid{grid-template-columns:1fr} }
   .homeview{display:none}
   .homeview.on{display:block}
   #homeBack{cursor:pointer}
@@ -254,20 +279,27 @@
     <div class="crest" id="titleCrest"></div>
     <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
     <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
-    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07e（経済改定2：ガチャ300💎・推奨難易度で💎2倍・実力測定報酬を💎へ・ゴールド上限撤廃）</p>
+    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07h（ホーム微調整：英単語見出し削除・矢印を端へ・キャラ大型化＆余白・スマホ最適化）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
   </section>
 
   <!-- ===== ホーム ===== -->
   <section id="home" class="screen col">
-    <div class="topbar"><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span></div>
+    <div class="topbar"><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><button class="pill" id="homeSettingsBtn" data-go="settings" title="せってい" style="cursor:pointer">⚙️</button><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span></div>
     <div class="pad scroll grow">
       <div id="homeMenu">
-        <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
-        <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
-        <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
-        <button class="menubtn" onclick="Game.startAssessment()">📊 実力測定<span class="sub">単語・文法のレベルを判定（推奨級＆💎報酬）</span></button>
+        <div id="homeGrid">
+          <div id="homeShowcase">
+            <div class="scard" id="rankCard"></div>
+            <div id="homeCharWrap"></div>
+            <div class="scard" id="wordCard"></div>
+          </div>
+          <div id="homeMenuBtns">
+            <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
+            <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
+          </div>
+        </div>
       </div>
       <div class="homeview" data-view="play">
         <button class="quizbar" id="quizSummaryBtn" data-go="quiz"></button>
@@ -7800,6 +7832,17 @@ const ENGLISH_IDIOM_DB_V2 = [
     let g = Math.floor(x); if(Math.random() < (x-g)) g++;
     return Math.max(1,g);
   }
+  // 今日の英単語：推奨級(level)の単語からn語を日付シードで固定抽出（足りなければ全単語から）。
+  function dailyWords(level, n, seedStr){
+    var pool=DB.filter(function(q){ return q.genre==='word' && q.level===level; });
+    if(pool.length<n) pool=DB.filter(function(q){ return q.genre==='word'; });
+    var h=2166136261, s=String(seedStr||'');
+    for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); }
+    function rnd(){ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)/4294967296); }
+    var arr=pool.slice();
+    for(var k=arr.length-1;k>0;k--){ var j=Math.floor(rnd()*(k+1)); var t=arr[k]; arr[k]=arr[j]; arr[j]=t; }
+    return arr.slice(0,n).map(function(q){ return {name:q.name, answer:q.answer, desc:q.desc, level:q.level, pos:q.pos}; });
+  }
   // ガチャ通貨（グラマージェム💎）：正解=コンボ式×3／不正解=その約1/3。上級ほど多い。
   function gemGain(q, correct){
     const base = q.genre==="grammar" ? (q.choiceCount===4?4:2) : (q.choiceCount===4?2:1);
@@ -7824,7 +7867,7 @@ const ENGLISH_IDIOM_DB_V2 = [
   function setGenre(k){ if(["word","idiom","grammar"].includes(k)) selGenre=k; }
   function setGrammarMode(m){ if(m==='eiken'||m==='field') grammarMode=m; }
 
-  return { next, drawFor, comboGain, gemGain, pushReview, reviewCount, size:()=>DB.length,
+  return { next, drawFor, comboGain, gemGain, dailyWords, pushReview, reviewCount, size:()=>DB.length,
     EIKEN, TIERS, GENRES, FIELDS, LV_LABEL, LV_ORDER,
     getSel, setSel, toggleLevel, toggleTier, toggleField, setGenre, setGrammarMode, poolCount, isBuffEligible,
     genre:()=>selGenre, gmode:()=>grammarMode,
@@ -7949,7 +7992,9 @@ const Game = (()=>{
   const SAVE_KEY = "gg_v2_save_v1";
   let gold = 0;
   let gems = 0;            // グラマージェム💎（ガチャ専用通貨。問題を解くと貯まる）
-  let gemsGranted = false; // 初回のみ200💎を配る移行フラグ（既存セーブ救済）
+  let gemsGranted = false; // 初回のみ300💎を配る移行フラグ（既存セーブ救済）
+  let homeChars = [];      // ホームに表示するキャラのキー配列（最大10・強化画面で選択）
+  let homeCharIdx = 0;     // ホーム表示キャラの現在位置（矢印/スワイプで切替・非保存）
   let cleared = {};        // {area:true}
   let autoSummon = false;  // 苦手な子向け（操作を問題に集中）
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
@@ -7972,7 +8017,7 @@ const Game = (()=>{
   let soundOn = true;
   function load(){
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
-      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
+      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
@@ -7988,7 +8033,7 @@ const Game = (()=>{
   }
   function save(){
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -8133,6 +8178,14 @@ const Game = (()=>{
       const bu=document.createElement('button'); bu.className='btn'; bu.style.width='100%'; bu.textContent='強化する（'+c+'G）'; bu.disabled=gold<c;
       bu.onclick=function(){ upgradeUnit(key); openUnitPop(key,'charup'); };
       acts.appendChild(bu);
+      // ホーム画面の大表示キャラに追加/解除（最大10体）
+      const onHome=homeChars.indexOf(key)>=0;
+      const bh=document.createElement('button'); bh.className='btn ghost'; bh.style.width='100%';
+      if(onHome){ bh.textContent='🏠 ホーム表示中（タップで外す）'; }
+      else if(homeChars.length>=10){ bh.textContent='🏠 ホーム表示は最大10体'; bh.disabled=true; }
+      else { bh.textContent='🏠 ホーム画面に表示する'; }
+      bh.onclick=function(){ toggleHomeChar(key); renderHome(); openUnitPop(key,'charup'); };
+      acts.appendChild(bh);
     }
     const bc=document.createElement('button'); bc.className='btn ghost'; bc.style.width='100%'; bc.textContent='キャンセル'; bc.onclick=closeUnitPop;
     acts.appendChild(bc); card.appendChild(acts);
@@ -8274,8 +8327,8 @@ const Game = (()=>{
     }
     if(supported){ pick(); try{ synth.onvoiceschanged=pick; }catch(e){} }
     function hasEnglishVoice(){ if(!listLoaded) pick(); return !!voice; }
-    function speak(text){
-      if(!on||!supported||!text) return;
+    function speak(text, force){
+      if((!on&&!force)||!supported||!text) return;          // forceなら音声OFFでも再生（今日の英単語の明示タップ等）
       if(!listLoaded || !voice) pick();                    // 初回はvoices未ロードのことがあるので再取得
       if(!voice) return;                                   // 英語ボイスが無い端末では読まない（カタカナ棒読み回避）
       try{
@@ -8351,10 +8404,87 @@ const Game = (()=>{
   // 💎ジェム残高チップを更新（ホームのヘッダー。戦闘中は非表示なので存在チェック）
   function updateGemUI(){ var g=$('gemPill'); if(g) g.textContent='💎 '+gems; }
 
+  /* ---- ホームのショーケース（英語ランク・お気に入り・今日の英単語） ---- */
+  function titleRank(score){
+    var T=[{m:0,n:'かけだし',e:'🌱'},{m:1,n:'みならい',e:'📗'},{m:3,n:'ルーキー',e:'⭐'},{m:5,n:'チャレンジャー',e:'🔥'},{m:7,n:'エキスパート',e:'💎'},{m:9,n:'マスター',e:'👑'}];
+    var r=T[0]; T.forEach(function(t){ if(score>=t.m) r=t; }); return r;
+  }
+  function playFavAttack(el){
+    if(!el) return;
+    el.classList.remove('atk'); void el.offsetWidth; el.classList.add('atk');
+    try{ Sound.play('hit'); }catch(e){}
+    var card=el.parentNode; if(card){ var s=document.createElement('div'); s.className='homeSlash'; s.textContent='⚔️'; card.appendChild(s); setTimeout(function(){ s.remove(); },520); }
+  }
+  // ホーム表示キャラ：選択セット(homeChars・最大10)。未設定なら編成の先頭。矢印/スワイプで切替・タップで攻撃。
+  function homeShowList(){
+    var list=(homeChars||[]).filter(function(k){return owned[k]&&ROSTER[k];});
+    if(!list.length){ var d=(deck&&deck[0])||Object.keys(owned).filter(function(k){return ROSTER[k];})[0]; if(d) list=[d]; }
+    return list;
+  }
+  function toggleHomeChar(key){
+    if(!owned[key]||!ROSTER[key]) return;
+    var i=homeChars.indexOf(key);
+    if(i>=0){ homeChars.splice(i,1); } else { if(homeChars.length>=10) return; homeChars.push(key); }
+    save();
+  }
+  function renderHomeChar(){
+    var wrap=$('homeCharWrap'); if(!wrap) return;
+    var list=homeShowList(); if(!list.length){ wrap.innerHTML=''; return; }
+    if(homeCharIdx>=list.length) homeCharIdx=0; if(homeCharIdx<0) homeCharIdx=list.length-1;
+    var r=ROSTER[list[homeCharIdx]], multi=list.length>1;
+    wrap.innerHTML=(multi?'<button class="charArrow" id="charPrev">◀</button>':'')
+      +'<div id="homeCharSprite" title="タップで攻撃">'+SVG.get(r.sprite)+'</div>'
+      +(multi?'<button class="charArrow" id="charNext">▶</button>':'');
+    var sp=$('homeCharSprite'); if(sp) sp.onclick=function(){ playFavAttack(sp); };
+    function go(d){ homeCharIdx=(homeCharIdx+d+list.length)%list.length; renderHomeChar(); }
+    var pv=$('charPrev'); if(pv) pv.onclick=function(){ go(-1); };
+    var nx=$('charNext'); if(nx) nx.onclick=function(){ go(1); };
+    var sx=null;
+    wrap.ontouchstart=function(e){ sx=e.touches[0].clientX; };
+    wrap.ontouchend=function(e){ if(sx==null) return; var dx=e.changedTouches[0].clientX-sx; sx=null; if(list.length>1 && Math.abs(dx)>40) go(dx<0?1:-1); };
+  }
+  var dailyWordIdx=0;
+  function dailyWordList(){ var lv=(placement&&placement.word)?placement.word:'e4'; return QuizEngine.dailyWords(lv, 10, todayStr()); }
+  function fitWord(){ var en=$('wordEn'); if(!en) return; var fs=24; en.style.fontSize=fs+'px'; while(en.scrollWidth>en.clientWidth && fs>11){ fs-=1; en.style.fontSize=fs+'px'; } }
+  function renderDailyWord(){
+    var wc=$('wordCard'); if(!wc) return;
+    var list=dailyWordList(); if(!list.length){ wc.innerHTML='<div class="muted">単語データなし</div>'; return; }
+    if(dailyWordIdx>=list.length) dailyWordIdx=0;
+    var w=list[dailyWordIdx];
+    wc.innerHTML=((Speech.supported&&Speech.hasEnglishVoice())?'<button class="pill" id="wordSpeakBtn">🔊</button>':'')
+      +'<div id="wordEn" class="wline" style="font-weight:800;color:#2e8b57;text-align:center;margin:0">'+w.answer+'</div>'
+      +'<div class="wline" style="text-align:center;font-weight:700;font-size:16px;margin-top:2px">'+w.name+'</div>'
+      +'<div class="muted wline" style="text-align:center;font-size:11px;margin-top:3px">'+(w.desc||'')+'</div>';
+    fitWord();
+    function next(){ dailyWordIdx=(dailyWordIdx+1)%list.length; renderDailyWord(); var nw=dailyWordList()[dailyWordIdx]; if(nw) Speech.speak(nw.answer, true); }
+    wc.onclick=next;
+    var sb=$('wordSpeakBtn'); if(sb) sb.onclick=function(e){ e.stopPropagation(); Speech.speak(w.answer, true); };
+  }
+  function renderHomeMenu(){
+    var rc=$('rankCard');
+    if(rc){
+      var wl=placement.word?QuizEngine.LV_LABEL[placement.word].replace('英検',''):'未測定';
+      var gl=placement.grammar?QuizEngine.LV_LABEL[placement.grammar].replace('英検',''):'未測定';
+      var tr=titleRank(placement.bestScore||0);
+      rc.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'
+        +'<div style="min-width:0">'
+        +'<div class="muted" style="font-weight:800">🎖️ 英語ランク</div>'
+        +'<div style="font-size:22px;font-weight:800;color:#c77b1a;line-height:1.15">'+tr.e+' '+tr.n+'</div>'
+        +'<div style="font-size:12px;font-weight:700">単語 <b style="color:var(--ally)">'+wl+'</b> ／ 文法 <b style="color:var(--ally)">'+gl+'</b></div>'
+        +'</div>'
+        +'<button class="btn" id="rankAssessBtn" style="flex:0 0 auto;width:auto;padding:9px 12px;font-size:13px;white-space:nowrap">📊 実力測定</button>'
+        +'</div>';
+      var ab=$('rankAssessBtn'); if(ab) ab.onclick=function(){ startAssessment(); };
+    }
+    renderHomeChar();
+    renderDailyWord();
+  }
+
   /* ---- ホーム描画 ---- */
   function renderHome(){
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
+    renderHomeMenu();
     renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower();
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle）
     const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化'};
