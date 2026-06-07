@@ -254,7 +254,7 @@
     <div class="crest" id="titleCrest"></div>
     <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
     <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
-    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07d（経済改定：ガチャを💎グラマージェムへ＝問題を解くと貯まる・200で1回／ログボ200💎）</p>
+    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07e（経済改定2：ガチャ300💎・推奨難易度で💎2倍・実力測定報酬を💎へ・ゴールド上限撤廃）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
   </section>
@@ -267,7 +267,7 @@
         <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
         <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
         <button class="menubtn" data-go="settings">⚙️ せってい<span class="sub">あそびやすさ</span></button>
-        <button class="menubtn" onclick="Game.startAssessment()">📊 実力測定<span class="sub">単語・文法のレベルを判定（推奨級＆コイン報酬）</span></button>
+        <button class="menubtn" onclick="Game.startAssessment()">📊 実力測定<span class="sub">単語・文法のレベルを判定（推奨級＆💎報酬）</span></button>
       </div>
       <div class="homeview" data-view="play">
         <button class="quizbar" id="quizSummaryBtn" data-go="quiz"></button>
@@ -303,7 +303,7 @@
           <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
           <div class="seg" id="choiceSeg"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
-          <div class="muted" style="margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。<br>🎰 <b>ガチャ用の💎グラマージェムも同じしくみで貯まります</b>（正解で満額・まちがえても約1/3）。たくさん解くほどガチャが引けます。</div>
+          <div class="muted" style="margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。<br>🎰 <b>ガチャ用の💎グラマージェムも同じしくみで貯まります</b>（正解で満額・まちがえても約1/3）。たくさん解くほどガチャが引けます（1回300💎）。<br>⭐ <b>推奨難易度（実力測定の推奨級）で遊ぶと💎が2倍！</b></div>
           <div id="assessReco" class="muted" style="margin-top:8px;line-height:1.45"></div>
         </div>
         <div class="card" style="margin-top:12px">
@@ -7982,7 +7982,7 @@ const Game = (()=>{
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
-    if(!gemsGranted){ gems += 200; gemsGranted = true; } // 初回のみ1回ぶん(200💎)を配る（新規・既存セーブ救済）
+    if(!gemsGranted){ gems += 300; gemsGranted = true; } // 初回のみ1回ぶん(300💎)を配る（新規・既存セーブ救済）
     ensureStarter();
     save(); // 移行ボーナス・初期キャラ補充を確定保存
   }
@@ -7993,7 +7993,7 @@ const Game = (()=>{
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
   /* ============ 入手(ガチャ)・編成・城強化 ============ */
-  const GACHA_COST = 200; // ガチャ1回の費用（グラマージェム💎）
+  const GACHA_COST = 300; // ガチャ1回の費用（グラマージェム💎）
   const RARITY_W = {N:58, R:28, SR:11, SSR:3};
   let lastGacha = null;
   function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
@@ -8385,7 +8385,7 @@ const Game = (()=>{
     __seg('choiceSeg', [{key:2,label:'2択'},{key:4,label:'4択'}], function(k){return k===choiceMode;}, function(k){choiceMode=k;});
     const __pc=$('poolCount'); if(__pc) __pc.textContent='今の出題範囲：'+QuizEngine.poolCount()+'問';
     var __ar=$('assessReco');
-    if(__ar){ if(placement.doneAt && placement.word){ __ar.innerHTML='📊 あなたの推奨級 — 単語: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</b> ／ 文法: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</b>'+(recoBonusActive()?' <span style="color:#3aa6a0;font-weight:800">⚡加速中!</span>':' <span style="font-size:11px">←この級を選ぶと⚡加速UP</span>'); } else { __ar.innerHTML='📊 実力測定がまだです。ホームの「実力測定」で単語・文法のレベルを判定できます。'; } }
+    if(__ar){ if(placement.doneAt && placement.word){ __ar.innerHTML='📊 あなたの推奨級 — 単語: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</b> ／ 文法: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</b>'+(recoBonusActive()?' <span style="color:#3aa6a0;font-weight:800">⚡加速中! 💎2倍中!</span>':' <span style="font-size:11px">←この級を選ぶと⚡加速＆💎2倍</span>'); } else { __ar.innerHTML='📊 実力測定がまだです。ホームの「実力測定」で単語・文法のレベルを判定できます。'; } }
     // あそびやすさトグル
     const ta=$('tgAuto'), ts=$('tgSlow');
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
@@ -8451,7 +8451,7 @@ const Game = (()=>{
     // 召喚キュー初期化（次2体プレビュー）
     B.cd={}; rebuildQueue();
     show('battle');
-    if(B.recoBonus){ try{ fxBanner('📊 推奨級チャレンジ! ⚡加速+30%','#3aa6a0'); }catch(e){} }
+    if(B.recoBonus){ try{ fxBanner('📊 推奨級チャレンジ! ⚡加速+30% 💎2倍','#3aa6a0'); }catch(e){} }
     renderQueue(); nextQuestion();
     syncHUD();
     B.running=true; B.last=performance.now();
@@ -8599,7 +8599,8 @@ const Game = (()=>{
     if(curQ.speak) Speech.speak(curQ.speak); // 正誤どちらでも正答の英語を再生（誤答でも正しい発音が流れる）
     const right = (i===curQ.answerIndex);
     const buttons=[...$('choices').children];
-    const gemPts = QuizEngine.gemGain(curQ, right); // 💎ガチャ通貨：正解=満額／不正解=約1/3
+    let gemPts = QuizEngine.gemGain(curQ, right); // 💎ガチャ通貨：正解=満額／不正解=約1/3
+    if(B.recoBonus) gemPts *= 2; // 推奨難易度（推奨級チャレンジ中）は💎2倍
     gems += gemPts; updateGemUI(); save(); // 1問ごとに保存（途中でやめても💎は残る）
     if(right){
       btn.classList.add('ok'); B.correct++; B.missStreak=0;
@@ -8625,7 +8626,7 @@ const Game = (()=>{
       try{ var __mp=(curQ.qtext||'').replace(/<[^>]+>/g,''); var __mc=curQ.choices?curQ.choices[curQ.answerIndex]:''; if(B.mistakes && !B.mistakes.some(function(m){return m.prompt===__mp&&m.correct===__mc;})) B.mistakes.push({prompt:__mp, correct:__mc, desc:curQ.desc||''}); }catch(_){}
       $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
     }
-    floatText($('field').clientWidth/2, right?78:54, `+${gemPts}💎`, '#a463f2'); // ガチャ通貨の手応え
+    floatText($('field').clientWidth/2, right?78:54, `+${gemPts}💎${B.recoBonus?' ✨推奨2倍':''}`, '#a463f2'); // ガチャ通貨の手応え
     syncHUD();
     setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, right?800:2000);
   }
@@ -8801,9 +8802,8 @@ const Game = (()=>{
     var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
     body.appendChild(t);
     var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
-    ensureGoldDay();
     var ci=document.createElement('div'); ci.className='muted'; ci.style.cssText='margin-top:10px;font-size:12px;line-height:1.5';
-    ci.innerHTML='💰 本日のクリア報酬：<b>'+dailyStageGold+' / '+dailyGoldCap()+'G</b><br>毎日コツコツが英語上達のコツ。上限はステージを進める（クリア数を増やす）ほど解放され、<b>新ステージの初クリアは上限を超えてもフルでもらえます</b>。';
+    ci.innerHTML='💰 ゴールドは強化に使います（クリア報酬の上限なし＝何回でも満額）。<br>🎰 ガチャ用の💎は問題を解くほど貯まります。<b>推奨難易度で遊ぶと💎が2倍！</b>';
     body.appendChild(ci);
   }
   function checkEnd(){
@@ -8830,27 +8830,18 @@ const Game = (()=>{
     if(win) confetti();
     $('resTitle').textContent = win? '🏯 まもり切った！' : '🛡️ 作戦変更だ';
     $('resTitle').style.color = win? 'var(--good)':'var(--enemy)';
-    ensureGoldDay();
-    const newClear = win && !B.wasCleared;     // 初クリアは上限を超えても満額（＝達成報酬・上限解放）
-    const full = win ? stageReward(B.stage) : 0;
-    let reward, capped=false;
-    if(!win){ reward=10; }
-    else if(newClear){ reward=full; }
-    else { const room=Math.max(0, dailyGoldCap()-dailyStageGold); reward=Math.min(full, room); capped=(reward<full); }
+    const reward = win ? stageReward(B.stage) : 10; // ゴールド上限は撤廃：リプレイでも常に満額
     gold+=reward;
-    if(win){ dailyStageGold+=reward; cleared[B.stage.area]=true; }
+    if(win){ cleared[B.stage.area]=true; }
     save();
     $('resMedals').innerHTML =
       `<span class="medal">最大コンボ ${B.bestCombo}</span>`+
       `<span class="medal">正答率 ${acc}%</span>`+
       (B.reviewWins?`<span class="medal">🔁 復習成功 ${B.reviewWins}</span>`:'')+
-      `<span class="medal">💰 +${reward}${capped?'（上限到達）':''}</span>`+
-      (win?`<span class="medal">本日のクリア報酬 ${dailyStageGold}/${dailyGoldCap()}G</span>`:'');
+      `<span class="medal">💰 +${reward}</span>`;
     $('resLearn').textContent = !win
       ? 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎'
-      : capped
-        ? '本日のクリア報酬は上限に達しました。英語は毎日コツコツが効きます — また明日プレイすると満タンに回復！新しいステージを初クリアすると上限を超えてもフルでもらえ、上限自体も増えます。'
-        : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
+      : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
     renderResultMistakes();
     const retry=$('resRetry'); retry.textContent = win?'次へ ▶':'もう一度';
     retry.onclick=()=>{
@@ -8893,7 +8884,7 @@ const Game = (()=>{
     html+='<div style="max-width:440px;line-height:1.7;text-align:left;margin:0 auto 14px">';
     html+='<b>グラマー・ガード</b>は、英単語・文法のクイズに答えて味方を呼び出し、敵のお城をせめる<b>タワーディフェンス型の英語ゲーム</b>です。<br><br>';
     html+='まずは<b>実力測定</b>で、あなたの英検レベル（<b>単語</b>と<b>文法</b>）を調べましょう。やさしい問題から1段ずつ上がっていき、どこまで登れるかでランクが決まります。<br><br>';
-    html+='測定すると…<br>・ぴったりの難易度で遊べる（推奨級を表示）<br>・推奨級で挑戦すると⚡エネルギー加速＋30%<br>・ランクが上がるほど大きなコイン報酬💰';
+    html+='測定すると…<br>・ぴったりの難易度で遊べる（推奨級を表示）<br>・推奨級で挑戦すると⚡エネルギー加速＋30%＆💎2倍<br>・ランクが上がるほど大きな💎報酬';
     html+='</div>';
     html+='<button class="btn" id="assessBegin" style="max-width:300px">📊 実力測定をする</button>';
     html+='<button class="btn ghost" id="assessLater" style="max-width:300px;margin-top:8px">あとで（ホームへ）</button>';
@@ -8979,7 +8970,7 @@ const Game = (()=>{
     var prev=placement.bestScore||0;
     var gain=Math.max(0,total-prev), reward=gain*1500, up=gain>0;
     if(up) placement.bestScore=total;
-    gold+=reward; save();
+    gems+=reward; updateGemUI(); save();
     assessView('result');
     var wlab=placement.word?QuizEngine.LV_LABEL[placement.word]:'未測定';
     var glab=placement.grammar?QuizEngine.LV_LABEL[placement.grammar]:'未測定';
@@ -8988,9 +8979,9 @@ const Game = (()=>{
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+wlab+'</div></div>';
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+glab+'</div></div>';
     html+='</div>';
-    if(reward>0) html+='<div style="font-weight:800;color:var(--gold);font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💰 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（強化に使えるよ！）</div></div>';
+    if(reward>0) html+='<div style="font-weight:800;color:#a463f2;font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💎 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+Math.floor(reward/GACHA_COST)+'回ぶん！）</div></div>';
     else html+='<div class="muted" style="margin:8px 0">今回はランクアップなし（次はもっと上をめざそう！）</div>';
-    html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%。より高い級に挑むほどコンボ倍率も上がります。</div>';
+    html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%＆💎グラマージェム2倍。より高い級に挑むほどコンボ倍率も上がります。</div>';
     html+='<button class="btn" id="assessToReco" style="max-width:300px">出題設定をひらく ▶</button>';
     html+='<button class="btn ghost" id="assessHome" style="max-width:300px;margin-top:8px">ホームへ</button>';
     html+='<button class="btn ghost" id="assessAgain" style="max-width:300px;margin-top:8px">もう一度測定</button>';
