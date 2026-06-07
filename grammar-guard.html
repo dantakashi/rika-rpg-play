@@ -8791,7 +8791,7 @@ function bossNameFor(ch, gim){
    壁＝ch5/ch10/ch14（序盤→中盤→終盤→ラスト2章の関門）。敵を確定→後で味方をこのカーブに合わせて調整する。 */
 const CURVE_WALLS = {5:true, 10:true, 14:true};
 const CURVE_HP_BASE = 1.15, CURVE_HP_WALL = 1.7;   // 章ごとの基本伸び（HP）／壁章での追加ジャンプ
-const CURVE_ATK_BASE = 1.11, CURVE_ATK_WALL = 1.25; // 章ごとの基本伸び（ATK）／壁章での追加ジャンプ（cycle1: 1.45→1.25 苦手な子の壁1即死対策）
+const CURVE_ATK_BASE = 1.11, CURVE_ATK_WALL = 1.45; // 章ごとの基本伸び（ATK）／壁章での追加ジャンプ（敵ステは絶対=固定。cycle1のnerf 1.25 は方針違反のため1.45へ差し戻し。壁は味方強化で解く）
 function chapterMul(ch){
   let hp=1, atk=1;
   for(let c=2;c<=ch;c++){
@@ -8822,7 +8822,7 @@ function makeStages(){
       bossCount: (gim==='rush') ? (ch>=13?3:2) : 0, // ⑤連戦するボスの数（ch8=2体・ch13=3体）
       bossStats: boss ? {
         hp: Math.round(1400*cm.hp),          // ボスHPも段カーブに乗せる（spawnBossでそのまま使用）
-        atk: 34,                              // ボスATKは固定ベース。spawnBossでenemyAtkMul(=段カーブ×章内)を掛けて単一カーブ化（cycle1: 40→34 ボスの瞬殺火力を抑制）
+        atk: 40,                              // ボスATKは固定ベース。spawnBossでenemyAtkMul(=段カーブ×章内)を掛けて単一カーブ化（敵ステは絶対=固定。cycle1のnerf 34 は方針違反のため40へ差し戻し）
         speed: 13, range: 70,
         scale: 1.0 + Math.min(0.6, 0.04*ch)
       } : null,
@@ -10655,15 +10655,16 @@ const Game = (()=>{
     // 進行度に応じた戦力を注入（save()しない＝transient）。p={unitLv,castleLv,regenLv,enMaxLv,freezeDurLv,freezeCostLv,comboGuardLv,partKey,learnFloors}
     applyPower(p){
       p=p||{};
-      deck=STARTERS.slice(); STARTERS.forEach(function(k){ if(!owned[k])owned[k]=1; unitLv[k]=p.unitLv||0; });
+      var roster = (p.deckKeys && p.deckKeys.length) ? p.deckKeys.slice(0,5) : STARTERS.slice(); // SSR編成も検証可
+      deck=roster.slice(); roster.forEach(function(k){ if(!owned[k])owned[k]=1; unitLv[k]=p.unitLv||0; });
       castleLv=p.castleLv||0; regenLv=p.regenLv||0; enMaxLv=p.enMaxLv||0;
       freezeDurLv=p.freezeDurLv||0; freezeCostLv=p.freezeCostLv||0; comboGuardLv=Math.min(COMBO_GUARD_MAX_LV, p.comboGuardLv||0);
       cleared[PARTS_UNLOCK_AREA]=true; cleared[LEARN_UNLOCK_AREA]=true;
       ownedParts={}; equippedParts={};
-      if(p.partKey){ PARTS_KEYS.forEach(function(id){ ownedParts[id]=1; }); STARTERS.forEach(function(k){ equippedParts[k]=p.partKey; }); }
+      if(p.partKey){ PARTS_KEYS.forEach(function(id){ ownedParts[id]=1; }); roster.forEach(function(k){ equippedParts[k]=p.partKey; }); }
       learnBest={}; if(p.learnFloors){ learnBest.word=p.learnFloors; }
       autoSummon=true;
-      return { atk:unitStats('guardTurtle').atk, hp:unitStats('guardTurtle').hp, learnBuffPct:Math.round(learnBuffPct()*100) };
+      return { deck:deck.slice(), atk:unitStats(roster[0]).atk, hp:unitStats(roster[0]).hp, learnBuffPct:Math.round(learnBuffPct()*100) };
     },
     // 現在の問題に対し、ペルソナの知識率で正誤を決めて回答（実問題・選択肢運込み）
     answerKnow(prof){
