@@ -254,7 +254,7 @@
     <div class="crest" id="titleCrest"></div>
     <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
     <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
-    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07（熟語・文法を英検準拠に強化／文法は分野別モード対応）</p>
+    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07b（単語・熟語に発音音声を追加＝Web Speech API／せってい で音声ON-OFF）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
   </section>
@@ -350,6 +350,12 @@
           <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button><button class="toggle" id="tgSlow">ゆっくり</button></div>
           <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚は操作を問題だけに集中できる。ゆっくりでも報酬は同じ。</div>
         </div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">🔊 単語の音声</div>
+          <div class="seg"><button class="toggle" id="tgVoice">単語・熟語を読み上げ</button></div>
+          <div class="muted" style="margin-top:6px">英単語と熟語の発音を再生。英→日は問題が出たとき自動で、解答したときは正しい答えの発音が流れます（まちがえても聞けます）。🔊ボタンで聞き直しも可。教室では切っておけます。</div>
+          <div id="voiceWarn" style="display:none; margin-top:6px; color:#c0392b; font-size:12px; font-weight:700"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -384,6 +390,7 @@
 
     <div id="quiz">
       <div id="qtext"></div>
+      <button id="replayBtn" class="toggle" style="display:none; margin:2px auto 6px" onclick="Game.replayAudio()" title="もう一度きく">🔊 おんせい</button>
       <div id="choices"></div>
       <div id="qfeedback"></div>
     </div>
@@ -7743,7 +7750,8 @@ const ENGLISH_IDIOM_DB_V2 = [
     const correct = labels[0];
     const shuffled = labels.slice().sort(()=>Math.random()-0.5);
     return { genre:q.genre, level:q.level, qtext, choices:shuffled,
-      answerIndex:shuffled.indexOf(correct), desc:q.desc, choiceCount };
+      answerIndex:shuffled.indexOf(correct), desc:q.desc, choiceCount,
+      speak:q.answer, dir:dirEnToJp?'enjp':'jpen' }; // speak=英語(正答)・dir=出題方向(英→日は表示時に自動再生)
   }
   function buildGrammar(q, choiceCount){
     let choices = q.choices.slice();
@@ -7951,6 +7959,7 @@ const Game = (()=>{
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
       gold=s.gold||0; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
+      Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
       towerBest=s.towerBest||0; lastDaily=s.lastDaily||'';
@@ -7962,7 +7971,7 @@ const Game = (()=>{
   }
   function save(){
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, towerBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -8219,6 +8228,47 @@ const Game = (()=>{
     };
     return { play:k=>{ ensure(); if(SE[k]) SE[k](); }, toggle:()=>{ on=!on; return on; }, setOn:v=>on=!!v, isOn:()=>on, ensure };
   })();
+  // 単語・熟語の発音（Web Speech API＝ブラウザ内蔵TTS。音声ファイル不要・容量0・オフライン可）。既定OFF。
+  const Speech = (()=>{
+    const synth = window.speechSynthesis;
+    const supported = !!synth && typeof window.SpeechSynthesisUtterance!=='undefined';
+    let on=false, voice=null, listLoaded=false;
+    // 英語ボイスだけを採点して選ぶ。日本語ボイスは除外（英語をカタカナ読みさせないため）。
+    function score(v){
+      const lang=(v.lang||'').toLowerCase(), name=(v.name||'').toLowerCase();
+      if(!/^en([-_]|$)/.test(lang)) return -1;            // 英語(en-*)以外は不採用
+      let s=0;
+      s += /^en[-_]us/.test(lang) ? 4 : 2;                // 米国英語を優先
+      if(/google/.test(name)) s+=4;                        // Chromebook等のGoogle英語ボイス＝高品質
+      if(/natural|neural|online/.test(name)) s+=3;         // Microsoft Natural等
+      if(/zira|aria|jenny|david|mark|guy|samantha/.test(name)) s+=1;
+      if(v.default) s+=1;
+      return s;
+    }
+    function pick(){
+      if(!supported) return null;
+      const vs=synth.getVoices()||[];
+      if(vs.length) listLoaded=true;
+      let best=null, bs=-1;
+      vs.forEach(v=>{ const s=score(v); if(s>bs){ bs=s; best=v; } });
+      voice = bs>=0 ? best : null;                          // 英語ボイスが1つも無ければ null
+      return voice;
+    }
+    if(supported){ pick(); try{ synth.onvoiceschanged=pick; }catch(e){} }
+    function hasEnglishVoice(){ if(!listLoaded) pick(); return !!voice; }
+    function speak(text){
+      if(!on||!supported||!text) return;
+      if(!listLoaded || !voice) pick();                    // 初回はvoices未ロードのことがあるので再取得
+      if(!voice) return;                                   // 英語ボイスが無い端末では読まない（カタカナ棒読み回避）
+      try{
+        synth.cancel();                                    // 連打・前の発話を止めてから
+        const u=new SpeechSynthesisUtterance(String(text));
+        u.lang='en-US'; u.rate=0.9; u.voice=voice;
+        synth.speak(u);
+      }catch(e){}
+    }
+    return { speak, supported, hasEnglishVoice, toggle:()=>{ on=!on; if(!on&&supported){ try{synth.cancel();}catch(e){} } return on; }, setOn:v=>{ on=!!v&&supported; }, isOn:()=>on, _score:score };
+  })();
   function fieldFloorY(){ return ($('field').clientHeight||300)-40; }
   function fxRing(x,y,color){ const r=document.createElement('div'); r.className='ring'; r.style.left=x+'px'; r.style.top=y+'px'; if(color)r.style.borderColor=color; $('field').appendChild(r); setTimeout(()=>r.remove(),360); }
   function fxSparks(x,y,n,color){ for(let i=0;i<n;i++){ const s=document.createElement('div'); s.className='spark'; s.style.left=x+'px'; s.style.top=y+'px'; s.style.background=color||'#ffd24a'; const a=Math.random()*6.28,d=14+Math.random()*22; s.style.setProperty('--dx',Math.cos(a)*d+'px'); s.style.setProperty('--dy',Math.sin(a)*d+'px'); $('field').appendChild(s); setTimeout(()=>s.remove(),440); } }
@@ -8319,6 +8369,11 @@ const Game = (()=>{
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
     ta.onclick=()=>{ autoSummon=!autoSummon; save(); renderHome(); };
     ts.onclick=()=>{ slowMode=!slowMode; save(); renderHome(); };
+    const tv=$('tgVoice'), vw=$('voiceWarn');
+    if(tv){ if(!Speech.supported){ tv.classList.remove('on'); tv.disabled=true; tv.textContent='この端末は非対応'; if(vw) vw.style.display='none'; }
+      else { tv.classList.toggle('on', Speech.isOn()); tv.onclick=()=>{ Speech.toggle(); save(); renderHome(); };
+        // 英語ボイスが無い端末（例: 日本語Windowsで英語音声未追加）は読み上げないので理由を表示
+        if(vw){ if(Speech.isOn() && !Speech.hasEnglishVoice()){ vw.style.display=''; vw.innerHTML='⚠ この端末に英語の音声が見つかりません。Chromebookでは標準で使えます。Windowsは［設定→時刻と言語→音声認識→音声を追加→英語(米国)］を追加すると読み上げます。'; } else { vw.style.display='none'; } } } }
     // ステージ（クリアで次が解放）
     const unlocked=maxUnlocked();
     if(!playTab){ var __cur=Math.min(15,unlocked); playTab = __cur<=5?1:(__cur<=10?2:3); }
@@ -8503,10 +8558,17 @@ const Game = (()=>{
       box.appendChild(b);
     });
     $('qfeedback').textContent='';
+    // 音声：ONかつ単語/熟語(speakあり)のときだけ🔊表示。英→日は答えが見えているので問題表示時に自動再生（日→英は答えバレ防止で解答時のみ）
+    const rb=$('replayBtn');
+    if(curQ.speak && Speech.supported && Speech.isOn() && Speech.hasEnglishVoice()){
+      rb.style.display=''; if(curQ.dir==='enjp') Speech.speak(curQ.speak);
+    } else { rb.style.display='none'; }
   }
+  function replayAudio(){ if(curQ && curQ.speak) Speech.speak(curQ.speak); }
   function answer(i, btn){
     if(!curQ || curQ.locked) return; curQ.locked=true;
     B.answered++;
+    if(curQ.speak) Speech.speak(curQ.speak); // 正誤どちらでも正答の英語を再生（誤答でも正しい発音が流れる）
     const right = (i===curQ.answerIndex);
     const buttons=[...$('choices').children];
     if(right){
@@ -8913,7 +8975,7 @@ const Game = (()=>{
   }
   function assessSkip(){ if(!placement.doneAt) placement.doneAt='skipped'; AS=null; save(); homeView='menu'; renderHome(); show('home'); }
 
-  return { start, toHome, summon, toggleSound, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES };
+  return { start, toHome, summon, toggleSound, replayAudio, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES };
 })();
 
 Game.start();
