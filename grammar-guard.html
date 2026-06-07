@@ -254,7 +254,7 @@
     <div class="crest" id="titleCrest"></div>
     <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
     <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
-    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07b（単語・熟語に発音音声を追加＝Web Speech API／せってい で音声ON-OFF）</p>
+    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07c（発音音声追加／出題設定に音声ON-OFF・コンボ説明・範囲設定ボタン明記）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
   </section>
@@ -303,7 +303,14 @@
           <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
           <div class="seg" id="choiceSeg"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
+          <div class="muted" style="margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。</div>
           <div id="assessReco" class="muted" style="margin-top:8px;line-height:1.45"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div style="font-weight:800; margin-bottom:6px">🔊 単語の音声</div>
+          <div class="seg"><button class="toggle" id="tgVoiceQ">単語・熟語を読み上げ</button></div>
+          <div class="muted" style="margin-top:6px;font-size:12px">英単語・熟語の発音を再生（英→日は出題時に自動、解答時は正答を再生）。せってい でも切替できます。</div>
+          <div id="voiceWarnQ" style="display:none; margin-top:6px; color:#c0392b; font-size:12px; font-weight:700"></div>
         </div>
       </div>
       <div class="homeview" data-view="grow">
@@ -8369,11 +8376,17 @@ const Game = (()=>{
     ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
     ta.onclick=()=>{ autoSummon=!autoSummon; save(); renderHome(); };
     ts.onclick=()=>{ slowMode=!slowMode; save(); renderHome(); };
-    const tv=$('tgVoice'), vw=$('voiceWarn');
-    if(tv){ if(!Speech.supported){ tv.classList.remove('on'); tv.disabled=true; tv.textContent='この端末は非対応'; if(vw) vw.style.display='none'; }
-      else { tv.classList.toggle('on', Speech.isOn()); tv.onclick=()=>{ Speech.toggle(); save(); renderHome(); };
-        // 英語ボイスが無い端末（例: 日本語Windowsで英語音声未追加）は読み上げないので理由を表示
-        if(vw){ if(Speech.isOn() && !Speech.hasEnglishVoice()){ vw.style.display=''; vw.innerHTML='⚠ この端末に英語の音声が見つかりません。Chromebookでは標準で使えます。Windowsは［設定→時刻と言語→音声認識→音声を追加→英語(米国)］を追加すると読み上げます。'; } else { vw.style.display='none'; } } } }
+    // 音声トグルは「せってい」と「出題設定」の2か所。両方を同じ状態に同期して配線する。
+    function wireVoiceToggle(tvId, vwId){
+      const tv=$(tvId), vw=$(vwId); if(!tv) return;
+      if(!Speech.supported){ tv.classList.remove('on'); tv.disabled=true; tv.textContent='この端末は非対応'; if(vw) vw.style.display='none'; return; }
+      tv.classList.toggle('on', Speech.isOn());
+      tv.onclick=()=>{ Speech.toggle(); save(); renderHome(); };
+      // 英語ボイスが無い端末（例: 日本語Windowsで英語音声未追加）は読み上げないので理由を表示
+      if(vw){ if(Speech.isOn() && !Speech.hasEnglishVoice()){ vw.style.display=''; vw.innerHTML='⚠ この端末に英語の音声が見つかりません。Chromebookでは標準で使えます。Windowsは［設定→時刻と言語→音声認識→音声を追加→英語(米国)］を追加すると読み上げます。'; } else { vw.style.display='none'; } }
+    }
+    wireVoiceToggle('tgVoice','voiceWarn');
+    wireVoiceToggle('tgVoiceQ','voiceWarnQ');
     // ステージ（クリアで次が解放）
     const unlocked=maxUnlocked();
     if(!playTab){ var __cur=Math.min(15,unlocked); playTab = __cur<=5?1:(__cur<=10?2:3); }
@@ -8383,7 +8396,7 @@ const Game = (()=>{
       var __rng;
       if(__sel.genre==='grammar' && __sel.grammarMode==='field'){ __rng='分野別'+(__sel.fields.length?('('+__sel.fields.length+')'):''); }
       else { __rng=__sel.levels.map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join(','); }
-      __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__rng+'｜'+choiceMode+'択　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）変更▸</span>'; }
+      __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__rng+'｜'+choiceMode+'択　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）⚙ 出題範囲設定 ▸</span>'; }
     var __ct=$('chapTabs');
     if(__ct){ __ct.innerHTML='';
       [[1,'1章'],[2,'2章'],[3,'3章'],['special','⭐特殊']].forEach(function(t){ var bb=document.createElement('button'); bb.textContent=t[1]; if(playTab===t[0]) bb.classList.add('sel'); bb.onclick=function(){ playTab=t[0]; renderHome(); }; __ct.appendChild(bb); }); }
@@ -8770,10 +8783,6 @@ const Game = (()=>{
     var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
     body.appendChild(t);
     var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
-    var claim=dailyClaimable();
-    var ds2=document.createElement('div'); ds2.className='muted'; ds2.style.cssText='width:100%;text-align:center;font-size:13px;padding:8px 0;border:2px dashed var(--line);border-radius:12px';
-    ds2.innerHTML = claim ? '🎁 ログインボーナスは<b>スタート時に自動</b>でもらえます' : '🎁 本日のログインボーナス：<b>受取済み</b>（また明日！）';
-    body.appendChild(ds2);
     ensureGoldDay();
     var ci=document.createElement('div'); ci.className='muted'; ci.style.cssText='margin-top:10px;font-size:12px;line-height:1.5';
     ci.innerHTML='💰 本日のクリア報酬：<b>'+dailyStageGold+' / '+dailyGoldCap()+'G</b><br>毎日コツコツが英語上達のコツ。上限はステージを進める（クリア数を増やす）ほど解放され、<b>新ステージの初クリアは上限を超えてもフルでもらえます</b>。';
