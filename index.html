@@ -63,6 +63,7 @@
   .ic-eng {background:linear-gradient(160deg,#8b5cf6,#5b21b6)}
   .ic-gori{background:linear-gradient(160deg,#fb923c,#c2410c)}
   .ic-run {background:linear-gradient(160deg,#fb7185,#be123c)}
+  .ic-data{background:linear-gradient(160deg,#22d3ee,#0e7490)}
   .ic-soon{background:linear-gradient(160deg,#64748b,#334155); opacity:.65}
   .app.soon{cursor:default}
   .app.soon:active{transform:none}
@@ -131,6 +132,23 @@
       <span class="dot" data-p="1"></span>
     </div>
     <div class="hint">← よこにスワイプでプロフィール →</div>
+
+    <!-- 💾 データ移行オーバーレイ -->
+    <div id="dataOverlay" style="position:absolute;inset:0;z-index:50;background:rgba(5,7,15,.92);display:none;flex-direction:column;padding:18px;overflow:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:18px;font-weight:800">💾 データの保存・読込</div>
+        <button id="dataClose" style="background:var(--glass);border:1px solid var(--line);color:inherit;border-radius:999px;width:34px;height:34px;font-size:16px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">理科RPGと英語（グラマー・ガード）の<b>両方のデータ</b>を1つの文字にまとめて保存できます。機種変更や万一のキャッシュ削除に備えて、コピー（またはファイル保存）しておくと、別の端末でも「読み込む」で元に戻せます。</div>
+      <button id="dataExport" style="background:#19c37d;color:#06281b;border:0;border-radius:12px;padding:12px;font-weight:800;font-size:15px;cursor:pointer">📤 まとめて書き出す</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="dataCopy" style="flex:1;background:var(--glass);border:1px solid var(--line);color:inherit;border-radius:12px;padding:10px;font-weight:700;cursor:pointer">📋 コピー</button>
+        <button id="dataDownload" style="flex:1;background:var(--glass);border:1px solid var(--line);color:inherit;border-radius:12px;padding:10px;font-weight:700;cursor:pointer">💾 ファイル保存</button>
+      </div>
+      <textarea id="dataBox" placeholder="「まとめて書き出す」で文字が出ます。読み込みたいときは、保存しておいた文字をここに貼り付けて「読み込む」。" style="width:100%;height:110px;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px;font-family:monospace;background:#0c1020;color:#dfe6ff;box-sizing:border-box"></textarea>
+      <button id="dataImport" style="background:#4f7cff;color:#fff;border:0;border-radius:12px;padding:12px;font-weight:800;font-size:15px;cursor:pointer;margin-top:8px">📥 読み込む（両ゲームを上書き）</button>
+      <div id="dataMsg" style="font-size:12px;margin-top:8px;min-height:18px"></div>
+    </div>
   </div>
 </div>
 
@@ -152,6 +170,7 @@
     {key:'eng',  label:'グラマー・ガード', sub:'英語',       icon:'🛡️', cls:'ic-eng',  href:ENG},
     {key:'gori', label:'ゴリラ大砲',      sub:'数学',        icon:'🦍', cls:'ic-gori', href:'math-gorilla/index.html'},
     {key:'run',  label:'割れる数ラン',    sub:'数学',        icon:'🏃', cls:'ic-run',  href:'math-run/index.html'},
+    {key:'data', label:'データ',          sub:'保存・引っこし', icon:'💾', cls:'ic-data', action:'data'},
     {key:'soon', label:'おたのしみに',    sub:'',            icon:'➕', cls:'ic-soon', href:null, soon:true},
   ];
 
@@ -163,7 +182,8 @@
       '<div class="icon '+a.cls+'">'+a.icon+(a.soon?'<span class="badge-soon">準備中</span>':'')+'</div>'+
       '<div class="label">'+a.label+'</div>'+
       (a.sub?'<div class="sub">'+a.sub+'</div>':'');
-    if(!a.soon){ btn.addEventListener('click', function(){ location.href = a.href; }); }
+    if(a.action==='data'){ btn.addEventListener('click', function(){ document.getElementById('dataOverlay').style.display='flex'; }); }
+    else if(!a.soon){ btn.addEventListener('click', function(){ location.href = a.href; }); }
     grid.appendChild(btn);
   });
 
@@ -210,6 +230,50 @@
   pager.addEventListener('mousedown', function(e){ sx=e.clientX; dx=0; drag=true; });
   window.addEventListener('mousemove', function(e){ if(drag) dx=e.clientX - sx; });
   window.addEventListener('mouseup', function(){ if(!drag) return; drag=false; if(Math.abs(dx)>60){ go(page+(dx<0?1:-1)); } });
+
+  // ---- 💾 両ゲーム共通のデータ保存・読込（機種変更の移行・要望#16理科共通） ----
+  // 理科(chemical_rpg_save_v1)と英語(gg_v2_save_v1)は同一オリジンなのでlocalStorageを共有。
+  // 両方を1文字列(RIKA1:+base64(JSON))にまとめて退避/復元する。
+  var GG_KEY='gg_v2_save_v1', RIKA_KEY='chemical_rpg_save_v1', DPREFIX='RIKA1:';
+  function dmsg(t,ok){ var m=document.getElementById('dataMsg'); if(m){ m.textContent=t; m.style.color=ok?'#7ee2a8':'#ff9a8a'; } }
+  function b64e(s){ return btoa(unescape(encodeURIComponent(s))); }
+  function b64d(s){ return decodeURIComponent(escape(atob(s))); }
+  var ov=document.getElementById('dataOverlay'); // 「💾データ」アプリタイルから開く(クリック配線はAPPS生成側)
+  document.getElementById('dataClose').addEventListener('click', function(){ ov.style.display='none'; });
+  document.getElementById('dataExport').addEventListener('click', function(){
+    try{
+      var payload={ v:1, gg:localStorage.getItem(GG_KEY)||null, rika:localStorage.getItem(RIKA_KEY)||null };
+      if(!payload.gg && !payload.rika){ dmsg('まだ保存できるデータがありません。',false); return; }
+      document.getElementById('dataBox').value = DPREFIX + b64e(JSON.stringify(payload));
+      dmsg('書き出しました。コピー or ファイル保存しておいてね。',true);
+    }catch(e){ dmsg('書き出しに失敗しました。',false); }
+  });
+  document.getElementById('dataCopy').addEventListener('click', function(){
+    var box=document.getElementById('dataBox'); if(!box.value){ document.getElementById('dataExport').click(); }
+    if(!box.value) return;
+    try{ box.select(); if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(box.value); } else { document.execCommand('copy'); } dmsg('コピーしました。',true); }
+    catch(e){ dmsg('コピーできませんでした。長押しで選択してね。',false); }
+  });
+  document.getElementById('dataDownload').addEventListener('click', function(){
+    var box=document.getElementById('dataBox'); if(!box.value){ document.getElementById('dataExport').click(); }
+    if(!box.value) return;
+    try{ var blob=new Blob([box.value],{type:'text/plain'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='manabi-save.txt'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },100); dmsg('ファイルに保存しました。',true); }
+    catch(e){ dmsg('保存に失敗しました。',false); }
+  });
+  document.getElementById('dataImport').addEventListener('click', function(){
+    var code=(document.getElementById('dataBox').value||'').trim();
+    if(!code){ dmsg('読み込む文字を貼り付けてね。',false); return; }
+    if(code.indexOf(DPREFIX)!==0){ dmsg('このデータは「まなびポータル」の保存ではないみたい。',false); return; }
+    var p; try{ p=JSON.parse(b64d(code.slice(DPREFIX.length))); }catch(e){ dmsg('文字が壊れているようです。コピーし直してね。',false); return; }
+    if(p.gg){ try{ JSON.parse(p.gg); }catch(e){ dmsg('英語データが壊れています。',false); return; } }
+    if(p.rika){ try{ JSON.parse(p.rika); }catch(e){ dmsg('理科データが壊れています。',false); return; } }
+    if(!window.confirm('この端末の理科・英語のデータを、読み込んだデータで上書きします。よろしいですか？')) return;
+    try{
+      if(p.gg) localStorage.setItem(GG_KEY, p.gg);
+      if(p.rika) localStorage.setItem(RIKA_KEY, p.rika);
+      dmsg('読み込みました！ 各ゲームを開くと反映されます。',true);
+    }catch(e){ dmsg('読み込みに失敗しました。',false); }
+  });
 })();
 </script>
 </body>

@@ -2027,10 +2027,15 @@ let player = {
 
     // シリアル化ハッシュ化PvPデータ構築
     function fillCurrentPvpCode(playerNum) {
-      const jsonStr = JSON.stringify(player);
-      const base64Str = btoa(encodeURIComponent(jsonStr));
+      // 対戦専用の「読み取り専用カード」を発行する。ゴールド・所持品・進行などは含めず、
+      // 戦闘に必要な実効ステータスと名前だけ（=これを渡してもセーブを奪われない）。
+      const card = { pvp: 1, name: player.name, stats: getEffectiveStats(player) };
+      const base64Str = btoa(encodeURIComponent(JSON.stringify(card)));
       document.getElementById(`pvp-code-${playerNum}`).value = base64Str;
     }
+    // 対戦データから戦闘ステータスを取り出す。新形式=読み取り専用カード(.pvp) はそのまま、
+    // 旧形式=フルセーブコードは getEffectiveStats で算出（後方互換）。
+    function pvpStatsOf(d) { return (d && d.pvp && d.stats) ? d.stats : getEffectiveStats(d); }
 
     function startPvPBattle() {
       const code1 = document.getElementById('pvp-code-1').value.trim();
@@ -2056,8 +2061,8 @@ let player = {
     }
 
     function simulate1vs1(p1, p2, logContainer) {
-      const stats1 = getEffectiveStats(p1);
-      const stats2 = getEffectiveStats(p2);
+      const stats1 = pvpStatsOf(p1);
+      const stats2 = pvpStatsOf(p2);
 
       let hp1 = stats1.hp;
       let hp2 = stats2.hp;
