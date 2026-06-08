@@ -9179,6 +9179,13 @@ const Game = (()=>{
     B.frozenT = freezeDur();
     B.freezeCd = B.frozenT + 0.4;           // 連打防止（効果終了後すこし）
     const f=$('field'); if(f) f.classList.add('frozen');
+    // ⚡対チャージ手段(壁3 cycle4・B案): 危険域(r>0.7=「大ためが来る！」表示中)のフリーズはためチャージを阻止＝メーター0へ。
+    // chargeボス専用に効き他ステージへ波及しない。敵ステは不変・コスト/CDは通常フリーズと同じ＝連打不可で味方ツールとして成立。
+    try{ var __cb=bossOf(); if(__cb && __cb.charge && (__cb.charge.t/__cb.charge.max) > 0.7){
+      __cb.charge.t = 0;
+      var __bar=$('chargeBar'); if(__bar){ __bar.classList.remove('danger'); var __i=__bar.querySelector('i'); if(__i) __i.style.width='0%'; }
+      fxBanner('⚡ ためチャージを止めた！','#5aa0d6');
+    } }catch(e){}
     try{ Sound.play('hit'); fxBanner('❄ フリーズ！','#5aa0d6'); floatText(fieldW()/2, 40, '❄ FREEZE', '#5aa0d6'); }catch(e){}
     renderQueue(); syncHUD();
   }
