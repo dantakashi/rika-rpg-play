@@ -98,6 +98,14 @@
 </style>
 </head>
 <body>
+<button id="portalBackBtn" title="ポータル（アプリ一覧）へ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">🏠 ポータル</button>
+<script>
+  // dev では親に launcher.html、本番(配布)では親に index.html(=ポータル)。存在確認して遷移。
+  document.getElementById('portalBackBtn').addEventListener('click',function(){
+    fetch('../launcher.html',{method:'HEAD'}).then(function(r){ location.href = r.ok ? '../launcher.html' : '../index.html'; })
+      .catch(function(){ location.href='../index.html'; });
+  });
+</script>
 <div class="wrap">
   <h1>ゴリラ大砲 🦍🍌💥</h1>
   <p class="sub">大きい方をすばやく当てて大砲をチャージ！ ゴリラを9999体ぶっ飛ばせ！</p>
