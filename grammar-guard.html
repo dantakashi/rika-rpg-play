@@ -601,6 +601,7 @@
             <button class="menubtn" data-go="practice">✏️ れんしゅう<span class="sub">問題を解いて💎をためる（戦闘なし）</span></button>
             <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
             <button class="menubtn" data-go="mistakes">⭐ お気に入り / まちがえた問題<span class="sub" id="mistakesSub">お気に入りはいつでも・誤答は2回正解で消える</span></button>
+            <button class="menubtn" data-go="pvp">🆚 たいせん<span class="sub">編成・強化データで友だちと自動対戦</span></button>
           </div>
         </div>
       </div>
@@ -729,6 +730,25 @@
           <textarea id="ggSaveBox" placeholder="ここに「書き出す」で文字が出ます。読み込みたいときは、保存しておいた文字をここに貼り付けて「読み込む」。" style="width:100%;height:84px;margin-top:8px;border:2px solid var(--line);border-radius:10px;padding:8px;font-size:12px;font-family:monospace;box-sizing:border-box"></textarea>
           <button class="btn" style="width:100%;margin-top:8px;background:#5aa0d6" onclick="ggSaveImport()">📥 読み込む（今のデータを上書き）</button>
           <div id="ggSaveMsg" class="muted" style="margin-top:6px;font-size:12px"></div>
+        </div>
+      </div>
+      <div class="homeview" data-view="pvp">
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">🆚 たいせん（自動シミュ対戦）</div>
+          <div class="muted" style="font-size:12px;line-height:1.6">あなたの<b>編成・城強化・その他強化</b>でカードを作り、友だちと交換。両者のデータで<b>普段のステージ戦を自動シミュ</b>（コンボ20想定）して勝敗を出します。問題を解く必要はありません。</div>
+          <div style="margin-top:10px">
+            <label style="font-size:12px;font-weight:700">あなたの名前（任意）</label>
+            <input id="pvpName" maxlength="12" placeholder="プレイヤー" style="width:100%;margin-top:4px;border:2px solid var(--line);border-radius:10px;padding:8px;font-size:14px;box-sizing:border-box">
+          </div>
+          <button class="btn" style="width:100%;margin-top:8px" onclick="GG_PVP.makeCard()">📤 自分のカードを作る</button>
+          <textarea id="pvpMyCard" readonly placeholder="ここに自分のカードが出ます（コピーして相手に送る）" style="width:100%;height:60px;margin-top:8px;border:2px solid var(--line);border-radius:10px;padding:8px;font-size:12px;font-family:monospace;box-sizing:border-box"></textarea>
+          <button class="btn ghost" style="width:100%;margin-top:6px" onclick="GG_PVP.copyCard()">📋 自分のカードをコピー</button>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">⚔️ 相手と対戦</div>
+          <textarea id="pvpOppCard" placeholder="相手からもらったカードをここに貼り付け" style="width:100%;height:60px;border:2px solid var(--line);border-radius:10px;padding:8px;font-size:12px;font-family:monospace;box-sizing:border-box"></textarea>
+          <button class="btn" style="width:100%;margin-top:8px;background:#e0683b" onclick="GG_PVP.battle()">🆚 対戦する！</button>
+          <div id="pvpResult" style="margin-top:10px"></div>
         </div>
       </div>
     </div>
@@ -9085,6 +9105,7 @@ const Game = (()=>{
     save(); // 移行ボーナス・初期キャラ補充を確定保存
   }
   function save(){
+    if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
     try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
@@ -9892,8 +9913,8 @@ const Game = (()=>{
     { var __ms=$('mistakesSub'); if(__ms) __ms.textContent = mistakeCount()? ('復習リスト '+mistakeCount()+'問（2回正解で消える）') : '復習リスト（まちがえるとここに）'; }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', skins:'🏯 城スキン'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', skins:'grow'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', skins:'🏯 城スキン', pvp:'🆚 たいせん'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', skins:'grow', pvp:'menu'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ var __v=b.getAttribute('data-go'); if(__v==='practice'){ pracStarted=false; pracQ=null; } homeView=__v; renderHome(); }; });
@@ -10535,10 +10556,12 @@ const Game = (()=>{
   /* ---- ループ ---- */
   function loop(now){
     if(!B||!B.running) return;
-    let dt=Math.min(0.05,(now-B.last)/1000); B.last=now; if(window.__GGDEBUG && window.__timeScale>1) dt*=window.__timeScale; B.t+=dt*(B.slow?0.6:1);
-    // エネルギー加速：コンボ非依存の固定倍率(=20コンボ相当)に変更(要望#8)。
-    // コンボは召喚速度を加速させない(ダメージ/💎にのみ効く)。20コンボ相当 = 1+20/softcap をmaxMaxでクランプ。
-    const mult=Math.min(B.maxMult, 1 + 20/B.softcap);
+    let dt=Math.min(0.05,(now-B.last)/1000); B.last=now; if((window.__GGDEBUG||B.pvp) && window.__timeScale>1) dt*=window.__timeScale; B.t+=dt*(B.slow?0.6:1);
+    if(B.pvp) B.combo=20; // ⑱対戦は常にコンボ20想定(エネ速度・ダメージとも)
+    // エネルギー加速：通常戦はコンボで上昇(=1+combo/softcap)。対戦(自走シミュ)のみ
+    // コンボ20相当で固定(B.pvpFixedCombo)＝両者同条件で戦力差だけを比較するため(要望#8修正・2026-06-09)。
+    const __comboForEnergy = B.pvpFixedCombo ? 20 : B.combo;
+    const mult=Math.min(B.maxMult, 1 + __comboForEnergy/B.softcap);
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
     // ❄フリーズ砲：効果＆クールダウンの消化（効果が切れたら凍結表示を解除）
     if(B.freezeCd>0){ B.freezeCd-=dt; if(B.freezeCd<0) B.freezeCd=0; }
@@ -10837,6 +10860,8 @@ const Game = (()=>{
   // 城が壊れたら約2秒の爆発四散を見せてから結果画面へ（勝ち=敵城・負け=自城）。godholdは大ビーム/ボス消滅もこの間に見える
   function beginEnd(win){
     if(B.ended) return; B.ended=true; B.resultWin=!!win; B.running=false; cancelAnimationFrame(B.raf);
+    if(B.pvp){ return; } // ⑱対戦シミュ：報酬/セーブ/結果画面は出さない。勝敗はウォッチャが集計
+
     if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
       if(win) surviveVictoryFx(); else castleBlast('castleA', false); // ④勝ち=敵が散る／負け=中央の自城が爆発
     } else {
@@ -11066,6 +11091,100 @@ const Game = (()=>{
     try{ Sound.play('correct'); }catch(e){}
   }
   function assessSkip(){ if(!placement.doneAt) placement.doneAt='skipped'; AS=null; save(); homeView='menu'; renderHome(); show('home'); }
+
+  // ===== ⑱ 英語PvP（自動シミュ対戦・確定仕様 2026-06-09）=====
+  // 相手の編成・城強化・その他強化を読み込み、コンボ20想定で同じ標準ステージを自走シミュ→敵城ダメージで勝敗。
+  const PVP_PREFIX='GGPVP1:', PVP_STAGE_AREA=28, PVP_SIM_SECONDS=60, PVP_TIMESCALE=8;
+  function pvpSnap(){ return {deck:deck.slice(),owned:Object.assign({},owned),unitLv:Object.assign({},unitLv),castleLv:castleLv,regenLv:regenLv,enMaxLv:enMaxLv,freezeDurLv:freezeDurLv,freezeCostLv:freezeCostLv,comboGuardLv:comboGuardLv,equippedSkin:equippedSkin,ownedSkins:Object.assign({},ownedSkins),equippedParts:Object.assign({},equippedParts),ownedParts:Object.assign({},ownedParts),learnBest:Object.assign({},learnBest),autoSummon:autoSummon}; }
+  function pvpRestore(s){ deck=s.deck;owned=s.owned;unitLv=s.unitLv;castleLv=s.castleLv;regenLv=s.regenLv;enMaxLv=s.enMaxLv;freezeDurLv=s.freezeDurLv;freezeCostLv=s.freezeCostLv;comboGuardLv=s.comboGuardLv;equippedSkin=s.equippedSkin;ownedSkins=s.ownedSkins;equippedParts=s.equippedParts;ownedParts=s.ownedParts;learnBest=s.learnBest;autoSummon=s.autoSummon; }
+  function pvpMakeCardObj(name){
+    var c={v:1,name:(name||'プレイヤー').toString().slice(0,12)||'プレイヤー',deck:deck.slice(0,5),lv:{},stars:{},parts:{},cas:castleLv,reg:regenLv,enm:enMaxLv,fzd:freezeDurLv,fzc:freezeCostLv,cg:comboGuardLv,skin:equippedSkin,learn:Object.assign({},learnBest)};
+    c.deck.forEach(function(k){ c.lv[k]=unitLv[k]||0; c.stars[k]=owned[k]||1; if(equippedParts[k])c.parts[k]=equippedParts[k]; });
+    return c;
+  }
+  function pvpEncode(o){ return PVP_PREFIX+btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
+  function pvpDecode(str){ str=(str||'').trim(); if(str.indexOf(PVP_PREFIX)!==0)return null; try{ var o=JSON.parse(decodeURIComponent(escape(atob(str.slice(PVP_PREFIX.length))))); return (o&&Array.isArray(o.deck))?o:null; }catch(e){ return null; } }
+  function pvpApply(c){
+    deck=(c.deck||[]).slice(0,5).filter(function(k){return ROSTER[k];}); if(!deck.length) deck=STARTERS.slice(0,5);
+    owned={}; unitLv={}; equippedParts={}; ownedParts={};
+    deck.forEach(function(k){ owned[k]=(c.stars&&c.stars[k])||1; unitLv[k]=(c.lv&&c.lv[k])||0; if(c.parts&&c.parts[k]){ equippedParts[k]=c.parts[k]; ownedParts[c.parts[k]]=1; } });
+    castleLv=c.cas||0; regenLv=c.reg||0; enMaxLv=c.enm||0; freezeDurLv=c.fzd||0; freezeCostLv=c.fzc||0; comboGuardLv=c.cg||0;
+    equippedSkin=c.skin||'default'; var os={default:1}; if(equippedSkin)os[equippedSkin]=1; ownedSkins=os;
+    learnBest=Object.assign({},c.learn||{}); autoSummon=true;
+  }
+  // 1編成ぶんの戦力を事前計算。カードをglobalsに適用してからステータスを読む。コンボ20・スキン/学習バフ込み。
+  function pvpComputeSide(card){
+    pvpApply(card); // ★このカードの編成・強化をglobalsへ反映してから読む(両軍が同一になるバグ修正)
+    var lb=1+learnBuffPct(), sb=skinBuff();
+    var units=deck.map(function(k){
+      var s=unitStats(k), r=ROSTER[k];
+      return { key:k, atk:Math.round(s.atk*lb), hp:Math.round(s.hp*lb), speed:r.speed, range:r.range,
+        atkCd:Math.max(0.2,(r.atkCd||0.7)*(1-(sb.atkSpd||0))), cost:r.cost, def:r.def||0, heal:r.heal?Math.round(r.heal):0 };
+    }).filter(Boolean);
+    if(!units.length) units=[{key:'guardTurtle',atk:12,hp:130,speed:30,range:42,atkCd:0.9,cost:20,def:0,heal:0}];
+    return { name:(card.name||'プレイヤー'), units:units, castleHp:castleMaxHp(), regen:regenVal()+(sb.castleHp?0:0), enMax:enMaxVal() };
+  }
+  // 両軍を1Dレーンで直接対戦させる決定論シミュ（自分の編成 vs 相手の編成）。コンボ20固定・同期実行。
+  // すり抜け防止(接触でブロック)・死亡ユニットskip・毎tick先後交代(先手バイアス除去)・座標クランプ。
+  function pvpRunSim(A, B){
+    var W=900, dt=0.05, T=120, MULT=Math.min(4, 1+20/12); // コンボ20相当のエネ倍率
+    function side(s, dir){ return {dir:dir, castle:s.castleHp, castleMax:s.castleHp, energy:80, regen:s.regen*MULT, enMax:s.enMax, idx:0, units:[], deck:s.units, minCost:Math.min.apply(null,s.units.map(function(u){return u.cost;}))}; }
+    var L=side(A,1), R=side(B,-1);
+    function summon(st){ var u=st.deck[st.idx % st.deck.length]; if(st.energy<u.cost) return false; st.energy-=u.cost; st.idx++; st.units.push({x:st.dir>0?84:W-84,dir:st.dir,hp:u.hp,hpMax:u.hp,atk:u.atk,speed:u.speed,range:u.range,cd:0,atkCd:u.atkCd,def:u.def,heal:u.heal}); return true; }
+    function nearestLiveFoe(u, foes){ var best=null,bd=1e9; for(var i=0;i<foes.length;i++){ var f=foes[i]; if(f.hp<=0) continue; var d=Math.abs(f.x-u.x); if(d<bd){bd=d;best=f;} } return best; }
+    function stepSide(me, foe){
+      for(var i=0;i<me.units.length;i++){ var u=me.units[i]; if(u.hp<=0) continue; u.cd-=dt;
+        if(u.heal>0){ if(u.cd<=0){ for(var h=0;h<me.units.length;h++){ var o=me.units[h]; if(o!==u&&o.hp>0&&Math.abs(o.x-u.x)<=u.range&&o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+u.heal); u.cd=0.9; break; } } } u.x+=u.dir*u.speed*dt; u.x=Math.max(60,Math.min(W-60,u.x)); continue; }
+        var tgt=nearestLiveFoe(u, foe.units);
+        if(tgt && Math.abs(tgt.x-u.x)<=u.range){ if(u.cd<=0){ tgt.hp-=Math.max(1,u.atk-(tgt.def||0)); u.cd=u.atkCd; } } // 接触＝攻撃(前進しない＝すり抜け防止)
+        else { var cx=me.dir>0?(W-70):70; var atC=me.dir>0?(u.x>=cx-u.range):(u.x<=cx+u.range);
+          if(atC){ if(u.cd<=0){ foe.castle-=u.atk; u.cd=u.atkCd; } } else { u.x+=u.dir*u.speed*dt; u.x=Math.max(60,Math.min(W-60,u.x)); } }
+      }
+    }
+    var t=0, tick=0;
+    while(t<T){ t+=dt; tick++;
+      [L,R].forEach(function(st){ st.energy=Math.min(st.enMax, st.energy+st.regen*dt); var g=0; while(st.energy>=st.minCost && g<4){ if(!summon(st)) break; g++; } });
+      if(tick%2){ stepSide(L,R); stepSide(R,L); } else { stepSide(R,L); stepSide(L,R); } // 先後交代でバイアス除去
+      L.units=L.units.filter(function(u){return u.hp>0;}); R.units=R.units.filter(function(u){return u.hp>0;});
+      if(L.castle<=0 || R.castle<=0) break;
+    }
+    var aP=Math.max(0,L.castle)/L.castleMax, bP=Math.max(0,R.castle)/R.castleMax;
+    var winA = R.castle<=0 ? (L.castle>0?true:(aP>=bP)) : (L.castle<=0 ? false : (aP>bP));
+    var draw = (L.castle>0 && R.castle>0 && Math.abs(aP-bP)<0.02);
+    return { winA:winA, draw:draw, aCastle:Math.round(aP*100), bCastle:Math.round(bP*100), t:+t.toFixed(1), aBroke:R.castle<=0, bBroke:L.castle<=0 };
+  }
+  const GG_PVP={
+    makeCard:function(){ var nm=($('pvpName')&&$('pvpName').value)||'プレイヤー'; var t=$('pvpMyCard'); if(t)t.value=pvpEncode(pvpMakeCardObj(nm)); },
+    copyCard:function(){ var t=$('pvpMyCard'); if(!t||!t.value) GG_PVP.makeCard(); t=$('pvpMyCard'); if(!t||!t.value)return; try{ t.select(); if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value); else document.execCommand('copy'); }catch(e){} },
+    battle:function(){
+      var res=$('pvpResult'); var opp=pvpDecode($('pvpOppCard')&&$('pvpOppCard').value);
+      if(!opp){ if(res)res.innerHTML='<div style="color:var(--enemy);font-weight:800">相手のカードが正しくありません。貼り付け直してね。</div>'; return; }
+      var myName=($('pvpName')&&$('pvpName').value)||'あなた';
+      var myCard=pvpMakeCardObj(myName);
+      // 両編成の戦力を事前計算→本物の編成に復元（本物のセーブ・画面に影響なし）
+      var snap=pvpSnap();
+      var meSide=pvpComputeSide(myCard);
+      var opSide=pvpComputeSide(opp);
+      pvpRestore(snap);
+      // 左右の有利を消すため、攻守を入れ替えて2回シミュ→合算で公平に判定。
+      var r1=pvpRunSim(meSide, opSide);   // 自分=左 / 相手=右
+      var r2=pvpRunSim(opSide, meSide);   // 相手=左 / 自分=右
+      var meRem = (r1.aCastle + r2.bCastle)/2;   // 自分の城の残り(2回平均)
+      var opRem = (r1.bCastle + r2.aCastle)/2;   // 相手の城の残り
+      var meBrokeOpp = r1.aBroke || r2.bBroke;   // 自分が相手の城を落とした
+      var opBrokeMe  = r1.bBroke || r2.aBroke;   // 相手が自分の城を落とした
+      var draw = Math.abs(meRem-opRem) < 1.5;
+      var win = !draw && (meRem > opRem);
+      function castleLine(nm,rem,broke,me){ return '<div style="border:2px solid var(--line);border-radius:10px;padding:8px;margin-top:6px;background:#fff"><b>'+esc(nm)+'</b>'+(me?'（あなた）':'')+'：🏯 城 '+Math.round(rem)+'％ のこり'+(broke?' <span style="color:var(--enemy)">(一部の対戦で陥落)</span>':'')+'</div>'; }
+      var verdict=draw?'🤝 引き分け！':(win?'🎉 あなたの勝ち！':'💧 相手の勝ち…');
+      if(res)res.innerHTML='<div style="font-weight:800;font-size:18px;text-align:center;margin-bottom:4px">'+verdict+'</div>'
+        +castleLine(myName, meRem, opBrokeMe, true)
+        +castleLine(opp.name||'あいて', opRem, meBrokeOpp, false)
+        +'<div class="muted" style="font-size:11px;margin-top:8px">⚔️ あなたの編成と相手の編成が直接対戦（コンボ20想定・攻守を入れ替えて2回判定）。育成が強いほど有利です。</div>';
+      try{ Sound.play(win?'win':'lose'); }catch(e){}
+    }
+  };
+  try{ window.GG_PVP=GG_PVP; }catch(e){}
 
   // ===== 標準プレイテスト治具（難度検証用・__GGDEBUG時のみwindow公開） =====
   const _test = {
