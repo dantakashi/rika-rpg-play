@@ -261,7 +261,11 @@
   @keyframes badgePop{from{transform:rotate(-4deg) scale(.3); opacity:0} to{transform:rotate(-4deg) scale(1); opacity:1}}
   .soundbtn{position:absolute; top:8px; right:10px; z-index:30; border:2px solid var(--line); background:#fff;
     border-radius:999px; width:34px; height:34px; font-size:16px; padding:0}
-  .homebtn{position:absolute; top:8px; left:10px; z-index:30; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink)}
+  /* ☄️隕石（survive城中央ステージ）：落下予兆マーカー＋落下体 */
+  .meteor-warn{position:absolute; bottom:36px; width:130px; height:44px; margin-left:-65px; border:3px dashed #c0392b; border-radius:50%; background:rgba(192,57,43,.16); z-index:26; animation:mwarn .4s steps(2) infinite; pointer-events:none}
+  @keyframes mwarn{50%{opacity:.35}}
+  .meteor-rock{position:absolute; width:34px; height:34px; margin-left:-17px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ffd27a, #e0683b 60%, #7a2d16); box-shadow:0 0 18px 6px rgba(224,104,59,.7); z-index:27; pointer-events:none}
+  .homebtn{position:absolute; top:8px; left:10px; z-index:9999; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink); box-shadow:0 2px 8px rgba(0,0,0,.35); pointer-events:auto}
   #dailyPop{position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:24px}
   #dailyPop.on{display:flex}
   #dailyPop .card{background:var(--panel); border:3px solid var(--gold); border-radius:20px; padding:24px 22px; max-width:340px; width:100%; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.4); animation:badgePop .6s cubic-bezier(.2,1.5,.4,1)}
@@ -539,7 +543,9 @@
           </div>
           <div id="homeMenuBtns">
             <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
+            <button class="menubtn" data-go="practice">✏️ れんしゅう<span class="sub">問題を解いて💎をためる（戦闘なし）</span></button>
             <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
+            <button class="menubtn" data-go="mistakes">📚 まちがえた問題<span class="sub" id="mistakesSub">復習リスト（2回正解で消える）</span></button>
           </div>
         </div>
       </div>
@@ -555,9 +561,17 @@
           <div id="towerBody"></div>
         </div>
       </div>
+      <div class="homeview" data-view="mistakes">
+        <div class="card"><div id="mistakesBody"></div></div>
+      </div>
+      <div class="homeview" data-view="practice">
+        <div class="card"><div id="practiceBody"></div></div>
+      </div>
       <div class="homeview" data-view="quiz">
         <div class="card">
-          <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（ジャンルを1つ選び範囲を設定）</span></div>
+          <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（むずかしさを選ぶ）</span></div>
+          <div id="presetRow" style="display:flex;gap:6px;margin-bottom:8px"></div>
+          <div class="muted" style="font-size:12px;margin-bottom:8px;line-height:1.5">かんたんに決めるなら上の<b>おすすめ／やさしめ／むずかしめ</b>。細かく決めたい人は下で選べます。</div>
           <div style="font-size:13px;font-weight:700;margin-bottom:4px">ジャンル（1つ選ぶ）</div>
           <div class="seg" id="genreSeg"></div>
           <div id="gmModeWrap" style="display:none">
@@ -593,6 +607,10 @@
         <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
         <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
         <button class="menubtn" id="partsMenuBtn" data-go="parts" style="display:none">🛠️ コンボパーツ<span class="sub">モンスターに装着・コンボで強化</span></button>
+        <button class="menubtn" data-go="skins">🏯 城スキン<span class="sub">城の見た目を変える＋バフ（💎ガチャ）</span></button>
+      </div>
+      <div class="homeview" data-view="skins">
+        <div class="card"><div id="skinsBody"></div></div>
       </div>
       <div class="homeview" data-view="parts">
         <div class="card">
@@ -8559,6 +8577,18 @@ const ENGLISH_IDIOM_DB_V2 = [
 
   const rnd = a=>a[Math.floor(Math.random()*a.length)];
 
+  // 問題の安定キー（誤答SRS・定着用）。単語/熟語=正答英語、文法=問題文。
+  function keyOf(q){ return q.genre==='grammar' ? ('grammar|'+q.question) : (q.genre+'|'+q.answer); }
+  function byKey(k){ for(var i=0;i<DB.length;i++){ if(keyOf(DB[i])===k) return DB[i]; } return null; }
+  function buildOne(q, cc){ return q.genre==='grammar' ? buildGrammar(q, cc) : buildWord(q, cc); }
+  function buildFrom(key, cc){ var q=byKey(key); return q ? buildOne(q, cc) : null; }
+
+  // ステージ出題プール：1戦の開始時に出題範囲から n 問だけ抽出して固定。戦闘中はこの n 問を巡回（尽きたら再シャッフル）＝同じ問題が繰り返し出て定着（要望2026-06-08）。
+  let stagePool=null, stageIdx=0;
+  function shuf(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function buildStagePool(n){ var p=pool(); if(!p.length){ stagePool=null; return 0; } var arr=shuf(p.slice()); stagePool=arr.slice(0, Math.min(n||15, arr.length)); stageIdx=0; return stagePool.length; }
+  function clearStagePool(){ stagePool=null; stageIdx=0; }
+
   function buildWord(q, choiceCount){
     let same;
     if(q.genre==="word"){
@@ -8586,7 +8616,7 @@ const ENGLISH_IDIOM_DB_V2 = [
     const shuffled = labels.slice().sort(()=>Math.random()-0.5);
     return { genre:q.genre, level:q.level, qtext, choices:shuffled,
       answerIndex:shuffled.indexOf(correct), desc:q.desc, choiceCount,
-      speak:q.answer, dir:dirEnToJp?'enjp':'jpen' }; // speak=英語(正答)・dir=出題方向(英→日は表示時に自動再生)
+      speak:q.answer, dir:dirEnToJp?'enjp':'jpen', srcKey:keyOf(q) }; // speak=英語(正答)・dir=出題方向(英→日は表示時に自動再生)・srcKey=誤答SRS用
   }
   function buildGrammar(q, choiceCount){
     let choices = q.choices.slice();
@@ -8597,7 +8627,7 @@ const ENGLISH_IDIOM_DB_V2 = [
     }
     const qtext = q.question.replace("( )", '<span class="blank">(&nbsp;&nbsp;)</span>');
     return { genre:"grammar", level:q.level, qtext, choices,
-      answerIndex:choices.indexOf(correct), desc:q.desc, choiceCount };
+      answerIndex:choices.indexOf(correct), desc:q.desc, choiceCount, srcKey:keyOf(q) };
   }
 
   let reviewQ=[];
@@ -8615,9 +8645,14 @@ const ENGLISH_IDIOM_DB_V2 = [
       const __i=reviewQ.findIndex(r=>r.genre===selGenre);
       if(__i>=0){ return Object.assign({}, reviewQ.splice(__i,1)[0], {review:true, locked:false}); }
     }
+    // ステージプールがあれば その n 問を巡回（尽きたら再シャッフルで反復＝定着）
+    if(stagePool && stagePool.length){
+      if(stageIdx>=stagePool.length){ shuf(stagePool); stageIdx=0; }
+      return buildOne(stagePool[stageIdx++], choiceCount);
+    }
     const p = pool(); if(!p.length) return null;
     const q = rnd(p);
-    return q.genre==="grammar" ? buildGrammar(q, choiceCount) : buildWord(q, choiceCount);
+    return buildOne(q, choiceCount);
   }
 
   // コンボ増加：単語/熟語=2択+1・4択+2／文法=2択+2・4択+4。さらに上の級ほど倍率UP（上の難易度を選びたくなる）。
@@ -8664,6 +8699,7 @@ const ENGLISH_IDIOM_DB_V2 = [
   function setGrammarMode(m){ if(m==='eiken'||m==='field') grammarMode=m; }
 
   return { next, drawFor, comboGain, gemGain, dailyWords, pushReview, reviewCount, size:()=>DB.length,
+    keyOf, byKey, buildFrom, buildStagePool, clearStagePool,
     EIKEN, TIERS, GENRES, FIELDS, LV_LABEL, LV_ORDER,
     getSel, setSel, toggleLevel, toggleTier, toggleField, setGenre, setGrammarMode, poolCount, isBuffEligible,
     genre:()=>selGenre, gmode:()=>grammarMode,
@@ -8691,6 +8727,47 @@ const ROSTER = {
   thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:22, range:150, atkCd:2.0, splash:true, scale:1.5, weight:5, scd:9.0}
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
+
+// 🏯城スキン（要望#15・2026-06-08）：最初から引けるガチャ。装備中の1つだけバフが有効（ユーザー確定）。
+// t='atk'|'hp'（微弱バフの種類）。バフはskinBuffForで rar から導出。SVGはパレット差し替えで生成。
+const CASTLE_SKINS = [
+  {key:'default',  name:'きほんの城',     rar:'N',  t:'atk', body:'#8fb98f',batt:'#6fa06f',door:'#3a5f3a',flag:'#3a9d57'},
+  {key:'brick',    name:'レンガ城',       rar:'N',  t:'hp',  body:'#cf8f6f',batt:'#b3744f',door:'#5f2f1a',flag:'#e0683b'},
+  {key:'sky',      name:'そらいろ城',     rar:'N',  t:'atk', body:'#8fb6d9',batt:'#6fa0d1',door:'#2f4f6a',flag:'#2f7dd1'},
+  {key:'sand',     name:'すなの城',       rar:'N',  t:'hp',  body:'#d9c79a',batt:'#c2ad78',door:'#6a5a3a',flag:'#e0a93b'},
+  {key:'rose',     name:'ばらいろ城',     rar:'N',  t:'atk', body:'#d99ab0',batt:'#c47b95',door:'#6a2f44',flag:'#d14f7d'},
+  {key:'mint',     name:'ミント城',       rar:'N',  t:'hp',  body:'#9ad9c0',batt:'#7bc4a6',door:'#2f6a55',flag:'#3aa6a0'},
+  {key:'lav',      name:'ラベンダー城',   rar:'N',  t:'atk', body:'#b6a8d8',batt:'#9a86b0',door:'#4a3a6a',flag:'#8e44ad'},
+  {key:'lemon',    name:'レモン城',       rar:'N',  t:'hp',  body:'#e3d98f',batt:'#c4b86a',door:'#6a6030',flag:'#e0c43b'},
+  {key:'slate',    name:'はがねの城',     rar:'N',  t:'atk', body:'#a6acb3',batt:'#878d94',door:'#3f444a',flag:'#5a6670'},
+  {key:'coral',    name:'コーラル城',     rar:'R',  t:'atk', body:'#f0a48f',batt:'#d98570',door:'#7a3a2a',flag:'#e0683b'},
+  {key:'ocean',    name:'オーシャン城',   rar:'R',  t:'hp',  body:'#7fb6c8',batt:'#5f97a8',door:'#2f4f5a',flag:'#2f9dd1'},
+  {key:'forest',   name:'もりの城',       rar:'R',  t:'atk', body:'#7fb96f',batt:'#5f9a4f',door:'#2f4f1a',flag:'#3a9d57'},
+  {key:'plum',     name:'うめの城',       rar:'R',  t:'hp',  body:'#c88fb6',batt:'#a86f97',door:'#5a2f4a',flag:'#b04f8e'},
+  {key:'amber',    name:'こはくの城',     rar:'R',  t:'atk', body:'#e3b86a',batt:'#c49a4a',door:'#6a4f1a',flag:'#e0883b'},
+  {key:'jade',     name:'翡翠の城',       rar:'SR', t:'hp',  body:'#6fc4a0',batt:'#4fa080',door:'#1f5a44',flag:'#2fc49d'},
+  {key:'ruby',     name:'ルビー城',       rar:'SR', t:'atk', body:'#e06f7f',batt:'#c44f60',door:'#6a1f2a',flag:'#e0304f'},
+  {key:'royal',    name:'ロイヤル城',     rar:'SR', t:'hp',  body:'#7f8fd9',batt:'#5f6fc4',door:'#2f3a7a',flag:'#3a4fd1'},
+  {key:'gold',     name:'黄金城',         rar:'SSR',t:'atk', body:'#f0d27a',batt:'#e0b84a',door:'#8a6a1a',flag:'#ffcf4a'},
+  {key:'crystal',  name:'クリスタル城',   rar:'SSR',t:'hp',  body:'#a0e0e8',batt:'#7fc4d1',door:'#2f6a7a',flag:'#3ad1e0'},
+  {key:'dragon',   name:'竜王城',         rar:'SSR',t:'atk', body:'#e08f5f',batt:'#c46f3f',door:'#6a2f1a',flag:'#e0301a'}
+];
+const CASTLE_SKIN_KEYS = CASTLE_SKINS.map(function(s){return s.key;});
+function skinBuffFor(s){
+  if(!s) return {};
+  if(s.rar==='SSR') return {regen:1, atkSpd:0.10, castleHp:500, atkPct:2, hpPct:2};
+  if(s.rar==='SR')  return s.t==='hp'?{hpPct:3}:{atkPct:3};
+  if(s.rar==='R')   return s.t==='hp'?{hpPct:2}:{atkPct:2};
+  if(s.key==='default') return {};
+  return s.t==='hp'?{hpPct:1}:{atkPct:1}; // N
+}
+function skinSVGStr(s){ var S='#3a2f25';
+  return '<rect x="14" y="40" width="36" height="74" fill="'+s.body+'" stroke="'+S+'" stroke-width="3"/>'
+    +'<path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="'+s.batt+'" stroke="'+S+'" stroke-width="3"/>'
+    +'<rect x="26" y="64" width="14" height="50" fill="'+s.door+'"/>'
+    +'<path d="M50 22 L50 14 L66 18 L50 22" fill="'+s.flag+'" stroke="'+S+'" stroke-width="2"/>'
+    +(s.rar==='SSR'?'<circle cx="32" cy="35" r="3.4" fill="#fff3b0" stroke="'+S+'" stroke-width="1.2"/><circle cx="44" cy="35" r="3.4" fill="#fff3b0" stroke="'+S+'" stroke-width="1.2"/>':'');
+}
 
 // コンボパーツ（壁2の味方ギミック）：モンスターに装着し、コンボに応じてステータス上昇。
 // type:'atk'=ライブ反映（攻撃ごとに現コンボで再計算）／type:'hp'=召喚時スナップショット。per=コンボ1あたり／cap=上限倍率。
@@ -8768,6 +8845,24 @@ const CHAPTER_THEMES = [
   "やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
   "霧の樹海","灼熱の砂漠","氷結の谷","雷鳴の高地","黄金の神殿",
   "嵐の海原","奈落の洞窟","天空回廊","幻影の城","終焉の祭壇"
+];
+// 章ごとの背景（空の上色／地面色／シルエット絵文字／敵城の色味hue）。背景が1種類でつまらない対策（要望#14）
+const CHAPTER_BG = [
+  {top:'#cfe3f2',ground:'#bfe0a0',arts:['🌳','🌼','🐑','🌳'],hue:0},
+  {top:'#bfe6f2',ground:'#ecd9a8',arts:['⛵','🏖️','🐚','🌴'],hue:25},
+  {top:'#d7e3d0',ground:'#c9bda0',arts:['🏛️','🗿','🌿','🏛️'],hue:300},
+  {top:'#f6c89a',ground:'#c9a86f',arts:['🌄','🌅','🌳','⛰️'],hue:340},
+  {top:'#bfe6e0',ground:'#d8c79a',arts:['🗿','🌴','🗿','🌊'],hue:160},
+  {top:'#cdddcf',ground:'#9fae8c',arts:['🌲','🌫️','🌲','🍄'],hue:110},
+  {top:'#f4d2bc',ground:'#e0c48a',arts:['🌵','☀️','🏜️','🌵'],hue:30},
+  {top:'#d6ecf5',ground:'#cfe0e6',arts:['❄️','🏔️','⛄','❄️'],hue:190},
+  {top:'#b9b6cf',ground:'#9a93a8',arts:['⚡','🌩️','⛰️','⚡'],hue:255},
+  {top:'#f3e4b0',ground:'#d8b86a',arts:['🏯','✨','🏯','✨'],hue:45},
+  {top:'#9fb6c8',ground:'#7f97a8',arts:['🌊','⛈️','🌊','⚓'],hue:205},
+  {top:'#6f6878',ground:'#46414f',arts:['🕳️','🦇','💎','🪨'],hue:270},
+  {top:'#cfe3f8',ground:'#cdd6ea',arts:['☁️','🌈','☁️','🕊️'],hue:215},
+  {top:'#c7b6d8',ground:'#9a86b0',arts:['🏰','🌙','🏰','✨'],hue:285},
+  {top:'#d89a9a',ground:'#6a4a4a',arts:['🔥','🗿','💀','🔥'],hue:355}
 ];
 // 章ごとの通常敵スプライト（雰囲気づけ。実体ステータスはENEMY_TYPES）
 const CH_NORMAL_SPRITE = ["slime","hare","totem","torii","slime","ghost","mummy","bat","darkMage","golem","bombSlime","splitMush","stoneGiant","ghost","mummy"];
@@ -8890,6 +8985,10 @@ const Game = (()=>{
   let goldDay = '';        // クリア報酬上限の集計日(YYYY-M-D)
   let dailyStageGold = 0;  // 本日ステージクリアで得たゴールド
   let curStage = null;
+  let ownedSkins = {default:1}; // 🏯所有城スキン {key:1}（defaultは最初から所有・要望#15）
+  let equippedSkin = 'default'; // 装備中の城スキン（1つだけバフ有効＝ユーザー確定）
+  let mistakes = {};       // 永続誤答SRS {srcKey:{key,genre,level,need,ts}}。need回正解でマーク消去＆リスト除去（要望2026-06-08）
+  let lastWasReview=false, lastMistakeKey=null; // 復習/誤答を2連続で出さないための直近フラグ（非保存）
 
   let soundOn = true;
   function load(){
@@ -8903,6 +9002,9 @@ const Game = (()=>{
       ownedParts=(s.ownedParts&&typeof s.ownedParts==='object')?s.ownedParts:{}; equippedParts=(s.equippedParts&&typeof s.equippedParts==='object')?s.equippedParts:{};
       towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||'';
       clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
+      mistakes=(s.mistakes&&typeof s.mistakes==='object')?s.mistakes:{};
+      ownedSkins=(s.ownedSkins&&typeof s.ownedSkins==='object')?s.ownedSkins:{default:1}; if(!ownedSkins.default) ownedSkins.default=1;
+      equippedSkin=s.equippedSkin||'default'; if(!ownedSkins[equippedSkin]) equippedSkin='default';
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
@@ -8912,9 +9014,36 @@ const Game = (()=>{
   }
   function save(){
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement, mistakes, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
+
+  // ===== 永続誤答SRS（要望2026-06-08）：間違えたら need=2、正解ごとに need--、0でリスト除去 =====
+  function recordMistake(q){ if(!q||!q.srcKey) return; var m=mistakes[q.srcKey]||{key:q.srcKey}; m.need=2; m.genre=q.genre; m.level=q.level; m.ts=Date.now(); mistakes[q.srcKey]=m; }
+  function creditMistake(q){ if(!q||!q.srcKey) return; var m=mistakes[q.srcKey]; if(!m) return; m.need=(m.need||1)-1; if(m.need<=0) delete mistakes[q.srcKey]; }
+  function dueMistakeKeys(genre){ var a=[]; for(var k in mistakes){ if(!genre||mistakes[k].genre===genre) a.push(k); } return a; }
+  function pickDueMistake(genre){ var a=dueMistakeKeys(genre).filter(function(k){return k!==lastMistakeKey;}); if(!a.length) a=dueMistakeKeys(genre); if(!a.length) return null; return a[Math.floor(Math.random()*a.length)]; }
+  function mistakeCount(){ var n=0; for(var k in mistakes) n++; return n; }
+
+  // ===== 🏯城スキン（要望#15）。装備中の1つだけバフ有効 =====
+  const SKIN_GACHA_COST = 300; // 城スキンガチャ1回（💎共用）
+  let lastSkin = null;
+  function curSkin(){ for(var i=0;i<CASTLE_SKINS.length;i++){ if(CASTLE_SKINS[i].key===equippedSkin) return CASTLE_SKINS[i]; } return CASTLE_SKINS[0]; }
+  function skinBuff(){ return skinBuffFor(curSkin()); }
+  function castleSkinSVG(){ return skinSVGStr(curSkin()); }
+  function skinsByRarity(rar){ return CASTLE_SKINS.filter(function(s){return s.rar===rar;}); }
+  function pullSkin(){
+    if(gems<SKIN_GACHA_COST){ try{ fxBanner('💎が足りません','#c0392b'); }catch(e){} return; }
+    gems-=SKIN_GACHA_COST;
+    var roll=Math.random()*100, rar = roll<RARITY_W.SSR?'SSR':roll<RARITY_W.SSR+RARITY_W.SR?'SR':roll<RARITY_W.SSR+RARITY_W.SR+RARITY_W.R?'R':'N';
+    var pool=skinsByRarity(rar); if(!pool.length) pool=CASTLE_SKINS;
+    var s=pool[Math.floor(Math.random()*pool.length)];
+    var dup=!!ownedSkins[s.key]; ownedSkins[s.key]=1; lastSkin={skin:s, dup:dup};
+    if(!dup && rarRank(s.rar)>=rarRank(curSkin().rar)) equippedSkin=s.key; // 初入手で同等以上なら自動装備
+    updateGemUI(); save(); renderHome();
+  }
+  function rarRank(r){ return {N:0,R:1,SR:2,SSR:3}[r]||0; }
+  function equipSkin(key){ if(!ownedSkins[key]) return; equippedSkin=key; save(); renderHome(); }
 
   /* ============ 入手(ガチャ)・編成・城強化 ============ */
   const GACHA_COST = 500; // ガチャ1回の費用（グラマージェム💎）cycle2: 300→500 学習を主役にする（ガチャ過多の抑制）
@@ -8937,7 +9066,7 @@ const Game = (()=>{
     deck[i]=inKey; save(); renderHome();
   }
   const CASTLE_MAX_LV = 16; // 自城HP強化の上限（青天井での要塞化＝終盤も負けない問題の対策）。Lv16=最大5000HP
-  function castleMaxHp(){ return 1000 + Math.min(castleLv, CASTLE_MAX_LV)*250; } // 上限Lv16＝最大5000
+  function castleMaxHp(){ return 1000 + Math.min(castleLv, CASTLE_MAX_LV)*250 + (skinBuff().castleHp||0); } // 上限Lv16＝最大5000（＋城スキンSSRで+500）
   function castleMaxed(){ return castleLv >= CASTLE_MAX_LV; }
   function castleUpCost(){ return 250*(castleLv+1); }
   function doGacha(){
@@ -9010,7 +9139,7 @@ const Game = (()=>{
   function unitMaxed(key){ return unitLevel(key) >= UNIT_MAX_LV; }
   function unitUpCost(key){ return 100*(unitLevel(key)+1); }
   function unitStars(key){ return Math.min(4, Math.max(0, (owned[key]||0)-1)); }
-  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
+  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key), sb=skinBuff(); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)*(1+(sb.atkPct||0)/100)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st)*(1+(sb.hpPct||0)/100))}; }
   function upgradeUnit(key){ if(!owned[key]||unitMaxed(key)) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
   function statsAtLv(key, lv){ const r=ROSTER[key], st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st))}; }
   function traitText(r){ var t=[];
@@ -9115,7 +9244,7 @@ const Game = (()=>{
 
   /* ---- 城強化(拡張) ---- */
   const REGEN_MAX_LV = 12; // エネルギー増加速度の強化上限（青天井での召喚スノーボール防止）
-  function regenVal(){ return 12 + Math.min(regenLv, REGEN_MAX_LV)*1; } // 基礎8→12(cycle3 味方強化: 壁1の苦手な子救済。低正答=コンボ少なめの子ほど基礎回復に依存。上限Lv12＝最大24/秒)
+  function regenVal(){ return 12 + Math.min(regenLv, REGEN_MAX_LV)*1 + (skinBuff().regen||0); } // 基礎8→12(cycle3)＋城スキンSSRで+1/s。上限Lv12＝最大24(+1)/秒
   function regenMaxed(){ return regenLv >= REGEN_MAX_LV; }
   function regenCost(){ return 300*(regenLv+1); }
   function enMaxVal(){ return 200 + enMaxLv*30; }
@@ -9137,7 +9266,7 @@ const Game = (()=>{
   function upgradeFreezeCost(){ if(freezeCostMaxed()) return; const c=freezeCostUpCost(); if(gold<c) return; gold-=c; freezeCostLv++; Sound.play('correct'); save(); renderHome(); }
   // 🛡コンボ保護（壁1）：膨大なゴールドで購入。ミスしてもコンボを維持＝1戦闘につきLv回ぶん。最大2回。
   const COMBO_GUARD_MAX_LV = 2;
-  const COMBO_GUARD_COSTS = [8000, 20000]; // 膨大なゴールド：1個目8000G／2個目20000G
+  const COMBO_GUARD_COSTS = [20000, 100000]; // 膨大なゴールド：1個目20000G／2個目100000G（要望2026-06-08）
   function comboGuardMaxed(){ return comboGuardLv >= COMBO_GUARD_MAX_LV; }
   function comboGuardUpCost(){ return COMBO_GUARD_COSTS[comboGuardLv] || 99999; }
   function upgradeComboGuard(){ if(comboGuardMaxed()) return; const c=comboGuardUpCost(); if(gold<c) return; gold-=c; comboGuardLv++; Sound.play('correct'); save(); renderHome(); }
@@ -9228,15 +9357,118 @@ const Game = (()=>{
     urow('🏰','自城HP', castleMaxHp(), '+250', castleUpCost(), upgradeCastle, castleMaxed());
     urow('⚡','エネルギー増加速度', regenVal()+'/秒', '+1/秒', regenCost(), upgradeRegen, regenMaxed());
     urow('🔋','エネルギー上限', enMaxVal(), '+30', enMaxCost(), upgradeEnMax);
-    const fnote=document.createElement('div'); fnote.className='muted'; fnote.style.cssText='font-size:12px;margin:10px 0 6px;line-height:1.5';
-    fnote.innerHTML='❄️ <b>フリーズ砲</b>：戦闘中に <b>Enterキー</b>（または砲ボタン）で発動。エネルギーを消費して<b>敵全体の動きを止める</b>。第4章から使えます（砲台対策）。';
-    body.appendChild(fnote);
-    urow('❄️','フリーズ砲 停止時間', freezeDur().toFixed(1)+'秒', '+0.1秒', freezeDurUpCost(), upgradeFreezeDur, freezeDurMaxed());
-    urow('❄️','フリーズ砲 消費エネルギー', freezeEnergyCost(), '-5', freezeCostUpCost(), upgradeFreezeCost, freezeCostMaxed());
+    // ❄フリーズ砲の強化は第4章(エリア16〜)に到達してから表示（それ以前は使えないので隠す。要望2026-06-08）
+    var __maxA=0; for(var __k in cleared){ if(cleared[__k] && (+__k)>__maxA) __maxA=+__k; }
+    if(__maxA >= 15){
+      const fnote=document.createElement('div'); fnote.className='muted'; fnote.style.cssText='font-size:12px;margin:10px 0 6px;line-height:1.5';
+      fnote.innerHTML='❄️ <b>フリーズ砲</b>：戦闘中に <b>Enterキー</b>（または砲ボタン）で発動。エネルギーを消費して<b>敵全体の動きを止める</b>。第4章から使えます（砲台対策）。';
+      body.appendChild(fnote);
+      urow('❄️','フリーズ砲 停止時間', freezeDur().toFixed(1)+'秒', '+0.1秒', freezeDurUpCost(), upgradeFreezeDur, freezeDurMaxed());
+      urow('❄️','フリーズ砲 消費エネルギー', freezeEnergyCost(), '-5', freezeCostUpCost(), upgradeFreezeCost, freezeCostMaxed());
+    }
     const gnote=document.createElement('div'); gnote.className='muted'; gnote.style.cssText='font-size:12px;margin:10px 0 6px;line-height:1.5';
     gnote.innerHTML='🛡️ <b>コンボ保護</b>：まちがえても<b>コンボを失わない</b>お守り。<b>正解すると全回復</b>。1回=2連続ミス、2回=3連続ミスでコンボが減ります（最大2回）。膨大なゴールドが必要。';
     body.appendChild(gnote);
     urow('🛡️','コンボ保護', comboGuardLv+'回', '+1回', comboGuardUpCost(), upgradeComboGuard, comboGuardMaxed());
+  }
+
+  /* ---- 📚 まちがえた問題の図書館（誤答SRSの一覧） ---- */
+  function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';}); }
+  function renderMistakes(){
+    var body=$('mistakesBody'); if(!body) return; body.innerHTML='';
+    var keys=Object.keys(mistakes);
+    if(!keys.length){ body.innerHTML='<div class="muted" style="text-align:center;padding:18px;line-height:1.7">🎉 まちがえた問題はありません。<br>問題をまちがえると ここに たまり、<b>2回正解</b>すると消えます。'+(  '')+'</div>'; return; }
+    var head=document.createElement('div'); head.className='muted'; head.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6';
+    head.innerHTML='まちがえた問題（'+keys.length+'問）は ステージや れんしゅうで <b>時々もう一度</b>出ます。<b>2回正解</b>で消えます（右の「あと○回」）。';
+    body.appendChild(head);
+    keys.forEach(function(k){
+      var m=mistakes[k]; var q=QuizEngine.byKey(k); if(!q) return;
+      var prompt, ans; if(q.genre==='grammar'){ prompt=q.question.replace('( )','(　)'); ans=q.choices[q.answer]; } else { prompt=q.name; ans=q.answer; }
+      var row=document.createElement('div'); row.style.cssText='border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
+      row.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">'
+        +'<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:14px">'+esc(prompt)+'</div>'
+        +'<div style="font-size:13px;color:var(--ally);font-weight:700">→ '+esc(ans)+'</div>'
+        +(q.desc?'<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.4">'+esc(q.desc)+'</div>':'')+'</div>'
+        +'<div style="flex:0 0 auto;text-align:center;min-width:42px"><div class="muted" style="font-size:11px">あと</div><div style="font-weight:800;color:#c77b1a">'+(m.need||1)+'回</div></div>'
+        +'</div>';
+      if(q.genre!=='grammar' && Speech.supported){ var sb=document.createElement('button'); sb.className='btn'; sb.style.cssText='margin-top:6px;padding:6px 10px;font-size:13px;width:auto'; sb.textContent='🔊 おんせい'; sb.onclick=function(){ Speech.speak(q.answer, true); }; row.appendChild(sb); }
+      body.appendChild(row);
+    });
+  }
+
+  /* ---- ✏️ れんしゅうモード（戦闘なし・問題だけ・💎が貯まる。まちがえたら2タップで次へ＝ゆっくり確認） ---- */
+  let pracQ=null, pracAnswered=false, pracPick=-1;
+  function pracDraw(){
+    var cc=choiceMode; pracQ=null; pracAnswered=false; pracPick=-1; QuizEngine.clearStagePool();
+    if(!lastWasReview){ var dk=pickDueMistake(QuizEngine.genre()); if(dk && Math.random()<0.30){ var mq=QuizEngine.buildFrom(dk,cc); if(mq){ mq.review=true; pracQ=mq; lastMistakeKey=dk; } } }
+    if(!pracQ) pracQ=QuizEngine.next(cc);
+    lastWasReview=!!(pracQ&&pracQ.review);
+  }
+  function pracAnswer(i){
+    if(!pracQ||pracAnswered) return; pracAnswered=true; pracPick=i;
+    var right=(i===pracQ.answerIndex);
+    if(pracQ.speak) Speech.speak(pracQ.speak); // 解答時に正答英語を再生
+    var pts=QuizEngine.gemGain(pracQ,right); gems+=pts;
+    if(right) creditMistake(pracQ); else recordMistake(pracQ);
+    save(); updateGemUI(); renderPractice();
+  }
+  function renderPractice(){
+    var body=$('practiceBody'); if(!body) return;
+    if(homeView!=='practice') return;        // アクティブな時だけ描画（誤って進めない）
+    if(!pracQ) pracDraw();
+    body.innerHTML='';
+    if(!pracQ){ body.innerHTML='<div class="muted" style="padding:16px;text-align:center">出題できる問題がありません。<br>「あそぶ→出題設定」で範囲を確認してください。</div>'; return; }
+    var head=document.createElement('div'); head.className='muted'; head.style.cssText='font-size:12px;margin-bottom:8px';
+    head.innerHTML='✏️ れんしゅう：正解で💎がたまります（戦闘なし）。'+(pracQ.review?'<span style="color:var(--gold);font-weight:800"> 🔁 復習</span>':'');
+    body.appendChild(head);
+    var qd=document.createElement('div'); qd.style.cssText='font-weight:800;font-size:17px;line-height:1.5;margin:6px 0 12px;text-align:center'; qd.innerHTML=pracQ.qtext; body.appendChild(qd);
+    // 音声ボタン：解答前は英→日のみ（カンニング防止）、解答後は単語/熟語なら確認用に表示
+    if(pracQ.speak && Speech.supported && Speech.isOn() && Speech.hasEnglishVoice() && (pracAnswered || pracQ.dir==='enjp')){
+      var rb=document.createElement('button'); rb.className='btn'; rb.style.cssText='width:auto;padding:6px 12px;font-size:13px;margin:0 auto 10px;display:block'; rb.textContent='🔊 おんせい'; rb.onclick=function(){ Speech.speak(pracQ.speak); }; body.appendChild(rb);
+      if(!pracAnswered && pracQ.dir==='enjp') Speech.speak(pracQ.speak);
+    }
+    var box=document.createElement('div'); box.className='choices'+(pracQ.choiceCount===2?' c2':''); box.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px';
+    pracQ.choices.forEach(function(c,i){
+      var b=document.createElement('button'); b.className='choice'; b.textContent=c; b.style.cssText='padding:12px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:15px';
+      if(pracAnswered){ if(i===pracQ.answerIndex) b.style.cssText+=';background:#e7f7e9;border-color:var(--good)'; else if(i===pracPick) b.style.cssText+=';background:#fdeaea;border-color:var(--enemy)'; }
+      else { b.onclick=(function(idx){return function(){ pracAnswer(idx); };})(i); }
+      box.appendChild(b);
+    });
+    body.appendChild(box);
+    if(pracAnswered){
+      var ok=(pracPick===pracQ.answerIndex);
+      var fb=document.createElement('div'); fb.style.cssText='margin-top:10px;font-size:14px;line-height:1.5';
+      fb.innerHTML=(ok?'<span style="color:var(--good);font-weight:800">○ 正解！</span>':'<span style="color:var(--enemy);font-weight:800">× おしい！</span>')+' '+esc(pracQ.desc||'');
+      body.appendChild(fb);
+      var nb=document.createElement('button'); nb.className='btn'; nb.style.cssText='width:100%;margin-top:12px;padding:12px;font-size:16px'; nb.textContent='つぎへ ▶'; nb.onclick=function(){ pracDraw(); renderPractice(); }; body.appendChild(nb);
+    } else {
+      var hint=document.createElement('div'); hint.className='muted'; hint.style.cssText='font-size:12px;margin-top:10px;text-align:center'; hint.textContent='答えをタップ → 確認して「つぎへ」'; body.appendChild(hint);
+    }
+  }
+
+  /* ---- 🏯城スキン画面（ガチャ＋コレクション＋装備） ---- */
+  function rarColor(r){ return {N:'#7a7a7a',R:'#2f7dd1',SR:'#8e44ad',SSR:'#e0683b'}[r]||'#7a7a7a'; }
+  function rarTag(r){ return '<span style="color:'+rarColor(r)+';font-weight:800">'+r+'</span>'; }
+  function skinBuffLabel(s){ var b=skinBuffFor(s); var p=[]; if(b.atkPct)p.push('⚔+'+b.atkPct+'%'); if(b.hpPct)p.push('♥+'+b.hpPct+'%'); if(b.regen)p.push('⚡+'+b.regen+'/s'); if(b.atkSpd)p.push('⚔速+'+Math.round(b.atkSpd*100)+'%'); if(b.castleHp)p.push('🏯+'+b.castleHp); return p.length?p.join(' '):'バフなし'; }
+  function renderSkins(){
+    var body=$('skinsBody'); if(!body) return; body.innerHTML='';
+    var owned=Object.keys(ownedSkins).filter(function(k){return CASTLE_SKIN_KEYS.indexOf(k)>=0;}).length;
+    var g=document.createElement('div'); g.style.cssText='text-align:center;margin-bottom:10px';
+    g.innerHTML='<div class="muted" style="font-size:12px;margin-bottom:6px">装備中の<b>1つだけ</b>バフが有効。あつめた数 <b>'+owned+' / '+CASTLE_SKINS.length+'</b></div>';
+    var gb=document.createElement('button'); gb.className='btn'; gb.style.cssText='width:100%;max-width:320px;padding:12px;font-size:16px'; gb.textContent='🎰 城スキンを引く（'+SKIN_GACHA_COST+'💎）'; gb.disabled=gems<SKIN_GACHA_COST; gb.onclick=function(){ pullSkin(); }; g.appendChild(gb);
+    if(lastSkin){ var ls=lastSkin.skin; var lr=document.createElement('div'); lr.style.cssText='margin-top:8px;font-weight:800'; lr.innerHTML=(lastSkin.dup?'<span class="muted">（ダブり）</span> ':'<span style="color:var(--good)">✨GET！</span> ')+rarTag(ls.rar)+' '+esc(ls.name); g.appendChild(lr); }
+    body.appendChild(g);
+    var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px';
+    CASTLE_SKINS.forEach(function(s){
+      var own=!!ownedSkins[s.key], eq=(equippedSkin===s.key);
+      var c=document.createElement('div'); c.style.cssText='border:2px solid '+(eq?'var(--ally)':'var(--line)')+';border-radius:12px;padding:6px;background:'+(eq?'#eef6ff':'#fff')+';text-align:center';
+      var svg='<svg viewBox="0 0 100 120" width="52" height="62" style="display:block;margin:0 auto'+(own?'':';filter:grayscale(1) brightness(1.4);opacity:.45')+'">'+skinSVGStr(s)+'</svg>';
+      c.innerHTML=svg+'<div style="font-size:11px;font-weight:800;margin-top:2px">'+(own?esc(s.name):'？？？')+'</div><div style="font-size:10px">'+rarTag(s.rar)+'</div><div style="font-size:10px;color:#c77b1a;font-weight:700;min-height:14px;line-height:1.2">'+(own?skinBuffLabel(s):'')+'</div>';
+      var btn=document.createElement('button'); btn.className='btn'+(eq?' ghost':''); btn.style.cssText='width:100%;margin-top:4px;padding:5px;font-size:12px';
+      if(!own){ btn.textContent='未入手'; btn.disabled=true; } else if(eq){ btn.textContent='✓装備中'; btn.disabled=true; } else { btn.textContent='装備する'; btn.onclick=(function(k){return function(){ equipSkin(k); };})(s.key); }
+      c.appendChild(btn); grid.appendChild(c);
+    });
+    body.appendChild(grid);
   }
 
   /* ---- 🔩コンボパーツ画面 ---- */
@@ -9389,10 +9621,17 @@ const Game = (()=>{
   function hitFx(target){ if(target&&target.el){ target.el.classList.add('shake'); setTimeout(()=>target.el.classList.remove('shake'),180); fxRing(target.x, fieldFloorY()); fxSparks(target.x, fieldFloorY(), 4); } Sound.play('hit'); }
   function castleHit(id){ const c=$(id); c.classList.add('shakeC'); setTimeout(()=>c.classList.remove('shakeC'),200); Sound.play('hit'); }
   function setCastleDmg(id,ratio){ const c=$(id); c.classList.toggle('dmg1', ratio<=0.66&&ratio>0.4); c.classList.toggle('dmg2', ratio<=0.4&&ratio>0.18); c.classList.toggle('dmg3', ratio<=0.18); }
-  function buildSky(){
+  function buildSky(ch){
     const sky=$('sky'); sky.innerHTML='';
+    const bg=CHAPTER_BG[(ch||1)-1]||CHAPTER_BG[0];
     for(let i=0;i<4;i++){ const c=document.createElement('div'); c.className='cloud'; c.textContent='☁'; c.style.top=(6+i*16)+'%'; c.style.left=(-10+i*8)+'%'; c.style.animationDuration=(22+i*7)+'s'; c.style.animationDelay=(-i*5)+'s'; sky.appendChild(c); }
-    const arts=['🗿','🏛️','⛩️','🗼']; arts.forEach((a,i)=>{ const s=document.createElement('div'); s.className='silhouette'; s.textContent=a; s.style.left=(12+i*24)+'%'; s.style.fontSize='44px'; sky.appendChild(s); });
+    const arts=bg.arts||['🗿','🏛️','⛩️','🗼']; arts.forEach((a,i)=>{ const s=document.createElement('div'); s.className='silhouette'; s.textContent=a; s.style.left=(12+i*24)+'%'; s.style.fontSize='44px'; sky.appendChild(s); });
+  }
+  // 章テーマに応じて戦場の背景と敵城の色味を変える（要望#14）
+  function applyChapterBg(ch){
+    const bg=CHAPTER_BG[(ch||1)-1]||CHAPTER_BG[0];
+    var f=$('field'); if(f){ f.classList.remove('warm','hot'); f.style.background='linear-gradient('+bg.top+' 0 58%, '+bg.ground+' 58% 100%)'; }
+    var ce=$('castleEsvg'); if(ce){ ce.style.filter = bg.hue ? ('hue-rotate('+bg.hue+'deg)') : 'none'; }
   }
   function confetti(){ const r=$('result'); for(let i=0;i<26;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.background=['#e0683b','#2f7dd1','#3a9d57','#e0a93b'][i%4]; c.style.animationDuration=(1.6+Math.random()*1.4)+'s'; c.style.animationDelay=(Math.random()*0.5)+'s'; r.appendChild(c); setTimeout(()=>c.remove(),3300); } }
   function toggleSound(){ const on=Sound.toggle(); $('soundBtn').textContent=on?'🔊':'🔇'; save(); }
@@ -9525,11 +9764,12 @@ const Game = (()=>{
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
     renderHomeMenu();
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderPractice(); renderSkins();
+    { var __ms=$('mistakesSub'); if(__ms) __ms.textContent = mistakeCount()? ('復習リスト '+mistakeCount()+'問（2回正解で消える）') : '復習リスト（まちがえるとここに）'; }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'📚 まちがえた問題', practice:'✏️ れんしゅう', skins:'🏯 城スキン'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', skins:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
@@ -9554,6 +9794,14 @@ const Game = (()=>{
     __seg('tierSeg',  QuizEngine.TIERS,  function(k){return QuizEngine.has('tier',k);},  function(k){QuizEngine.toggleTier(k);});
     __seg('fieldSeg', QuizEngine.FIELDS, function(k){return QuizEngine.has('field',k);}, function(k){QuizEngine.toggleField(k);});
     __seg('choiceSeg', [{key:2,label:'2択'},{key:4,label:'4択'}], function(k){return k===choiceMode;}, function(k){choiceMode=k;});
+    // かんたんプリセット（出題範囲が分かりづらい対策・要望#4）：おすすめ=検定の推奨級／やさしめ=1つ下／むずかしめ=1つ上
+    var __prow=$('presetRow');
+    if(__prow){ __prow.innerHTML=''; var __LVO=QuizEngine.LV_ORDER; var __gk=(QuizEngine.genre()==='grammar')?'grammar':'word'; var __rk=placement[__gk]||'e4'; var __ri=Math.max(0,__LVO.indexOf(__rk));
+      function __setLv(arr){ QuizEngine.setSel({levels:arr}); save(); renderHome(); }
+      [ {l:'📊 おすすめ',a:[__LVO[__ri]]}, {l:'やさしめ',a:[__LVO[Math.max(0,__ri-1)]]}, {l:'むずかしめ',a:[__LVO[Math.min(__LVO.length-1,__ri+1)]]} ].forEach(function(p){
+        var b=document.createElement('button'); b.className='btn ghost'; b.style.cssText='flex:1;padding:9px 4px;font-size:13px'; b.innerHTML=p.l+'<br><span style="font-size:11px;font-weight:700">'+(QuizEngine.LV_LABEL[p.a[0]]||'').replace('英検','')+'</span>';
+        b.onclick=function(){ __setLv(p.a); }; __prow.appendChild(b); });
+    }
     const __pc=$('poolCount'); if(__pc) __pc.textContent='今の出題範囲：'+QuizEngine.poolCount()+'問';
     var __ar=$('assessReco');
     if(__ar){ if(placement.doneAt && placement.word){ __ar.innerHTML='📊 あなたの推奨級 — 単語: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</b> ／ 文法: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</b>'+(recoBonusActive()?' <span style="color:#3aa6a0;font-weight:800">⚡加速中! 💎2倍中!</span>':' <span style="font-size:11px">←この級を選ぶと⚡加速＆💎2倍</span>'); } else { __ar.innerHTML='📊 実力測定がまだです。ホームの「実力測定」で単語・文法のレベルを判定できます。'; } }
@@ -9584,10 +9832,25 @@ const Game = (()=>{
       else { __rng=__sel.levels.map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join(','); }
       __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__rng+'｜'+choiceMode+'択　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）⚙ 出題範囲設定 ▸</span>'; }
     var __ct=$('chapTabs');
-    if(__ct){ __ct.innerHTML='';
-      var __tabs=[]; for(var __c=1;__c<=15;__c++) __tabs.push([__c, __c+'章']); __tabs.push(['special','⭐特殊']);
-      var __unlChap=Math.ceil(Math.min(75,unlocked)/5); // 解禁済みの最終章
-      __tabs.forEach(function(t){ var locked=(t[0]!=='special' && t[0]>__unlChap); var bb=document.createElement('button'); bb.textContent=t[1]+(locked?' 🔒':''); if(playTab===t[0]) bb.classList.add('sel'); if(locked){ bb.disabled=true; } else { bb.onclick=function(){ playTab=t[0]; renderHome(); }; } __ct.appendChild(bb); }); }
+    var __unlChap=Math.ceil(Math.min(75,unlocked)/5); // 解禁済みの最終章
+    if(__ct){ __ct.innerHTML=''; __ct.className=''; __ct.style.cssText='display:flex;align-items:center;gap:8px;margin:10px 0 4px';
+      // 章はカルーセル（◀ N章 テーマ ▶）＝15章の羅列をやめてスッキリ（要望#3）。⭐特殊は別ボタン。
+      if(playTab==='special'){
+        var __bk=document.createElement('button'); __bk.className='btn ghost'; __bk.style.cssText='flex:1'; __bk.textContent='◀ 章をえらぶ'; __bk.onclick=function(){ playTab=__unlChap; renderHome(); }; __ct.appendChild(__bk);
+      } else {
+        var __pv=document.createElement('button'); __pv.className='btn ghost'; __pv.textContent='◀'; __pv.style.cssText='flex:0 0 auto;min-width:46px;padding:8px 0'; __pv.disabled=(playTab<=1); __pv.onclick=function(){ if(playTab>1){playTab--;renderHome();} };
+        var __lab=document.createElement('div'); __lab.style.cssText='flex:1;text-align:center;font-weight:800;font-size:15px'; __lab.innerHTML=playTab+'章 <span style="color:var(--ally)">'+(CHAPTER_THEMES[playTab-1]||'')+'</span><div class="muted" style="font-size:11px;font-weight:700">'+playTab+' / '+__unlChap+' 章まで解放</div>';
+        var __nx=document.createElement('button'); __nx.className='btn ghost'; __nx.textContent='▶'; __nx.style.cssText='flex:0 0 auto;min-width:46px;padding:8px 0'; __nx.disabled=(playTab>=__unlChap); __nx.onclick=function(){ if(playTab<__unlChap){playTab++;renderHome();} };
+        var __sp=document.createElement('button'); __sp.className='btn ghost'; __sp.textContent='⭐'; __sp.title='特殊ステージ'; __sp.style.cssText='flex:0 0 auto;min-width:46px;padding:8px 0'; __sp.onclick=function(){ playTab='special'; renderHome(); };
+        __ct.appendChild(__pv); __ct.appendChild(__lab); __ct.appendChild(__nx); __ct.appendChild(__sp);
+      }
+      // スワイプで章送り（要望#3）。一度だけ設定。
+      var __sg=$('stageCard');
+      if(__sg && !__sg.__swipeWired){ __sg.__swipeWired=true; var __sx=0;
+        __sg.addEventListener('touchstart',function(e){ __sx=e.changedTouches[0].clientX; },{passive:true});
+        __sg.addEventListener('touchend',function(e){ var dx=e.changedTouches[0].clientX-__sx; if(Math.abs(dx)<50) return; var uc=Math.ceil(Math.min(75,maxUnlocked())/5); if(typeof playTab==='number'){ if(dx<0 && playTab<uc){playTab++;renderHome();} else if(dx>0 && playTab>1){playTab--;renderHome();} } },{passive:true});
+      }
+    }
     var __sc=$('stageCard'), __spc=$('specialCard');
     if(playTab==='special'){ if(__sc)__sc.style.display='none'; if(__spc)__spc.style.display='block'; }
     else {
@@ -9614,20 +9877,24 @@ const Game = (()=>{
     curStage=stage;
     B = freshBattle(stage);
     B.wasCleared = !!cleared[stage.area];
-    $('castleAsvg').innerHTML = SVG.get('castleA');
+    $('castleAsvg').innerHTML = castleSkinSVG(); // 🏯装備中の城スキンで自城を描画
     $('castleEsvg').innerHTML = SVG.get('castleE');
     $('crackA').innerHTML = CRACK_SVG; $('crackE').innerHTML = CRACK_SVG;
     ['castleA','castleE'].forEach(id=>$(id).classList.remove('dmg1','dmg2','dmg3','low','shakeC','blast'));
-    buildSky();
+    var __ch = stage.chapter || stage.world || 1;
+    buildSky(__ch);
+    applyChapterBg(__ch); // 章テーマ別の背景＋敵城の色味（要望#14）
     $('field').classList.toggle('survive', stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive); // ④中央城レイアウト
     $('field').querySelectorAll('.unit,.float,.ring,.spark,.frag,.gateflash,.herobeam,.shockwave').forEach(n=>n.remove());
-    $('field').classList.remove('warm','hot');
     // ギミックHUD/勇者は前の戦闘の表示が残らないよう毎回隠す（該当ギミックのtickが再表示する）
     ['chargeBar','heroBar','heroUnit'].forEach(function(id){ var b=$(id); if(b){ b.style.display='none'; b.classList.remove('danger'); } });
     // 召喚キュー初期化（次2体プレビュー）
     B.cd={}; rebuildQueue();
     show('battle');
     if(B.recoBonus){ try{ fxBanner('📊 推奨級チャレンジ! ⚡加速+30% 💎2倍','#3aa6a0'); }catch(e){} }
+    // 1戦15問プール（同じ問題が繰り返し出て定着）。学習/修練の塔は別ロジックなのでクリア。
+    if(stage.learn || stage.endless){ QuizEngine.clearStagePool(); } else { QuizEngine.buildStagePool(15); }
+    lastWasReview=false; lastMistakeKey=null;
     renderQueue(); nextQuestion();
     syncHUD();
     B.running=true; B.last=performance.now();
@@ -9764,7 +10031,7 @@ const Game = (()=>{
     const __hp=Math.round(__st.hp*partHpBonusAtSummon(key)*__lb); // HPパーツは召喚時のコンボで確定
     const __atk=Math.round(__st.atk*__lb);
     if(__part) el.classList.add('haspart');
-    B.allies.push({ key, el, x, dir, hp:__hp, hpMax:__hp, atk:__atk, speed:r.speed, range:r.range, cd:0, splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0, part:__part });
+    B.allies.push({ key, el, x, dir, hp:__hp, hpMax:__hp, atk:__atk, speed:r.speed, range:r.range, cd:0, atkCd:0.7*(1-(skinBuff().atkSpd||0)), splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0, part:__part });
   }
   function spawnEnemy(type, side){
     if(type==="BOSS"){ spawnBoss(); return; }
@@ -9953,6 +10220,25 @@ const Game = (()=>{
     if(B.t>=lim){ beginEnd(true); return; } // 耐え切った＝勝利
     const ch=B.stage.chapter||1;
     if(B.t*1000 >= (B.surNext||0)){ spawnSurviveWave(); B.surNext = B.t*1000 + Math.max(900, 2200 - ch*90); }
+    // ☄️隕石：定期的にランダム位置へ落下。予兆→着弾で範囲内の味方に最大HP40%ダメージ（要望#13）
+    if(B.meteorPending){ if(B.t>=B.meteorPending.at) meteorImpact(); }
+    else if(B.t*1000 >= (B.meteorNext||4000)){ dropMeteorWarn(); B.meteorNext = B.t*1000 + Math.max(5000, 9000 - ch*200); }
+  }
+  function dropMeteorWarn(){
+    var W=fieldW(); var x=70+Math.random()*(W-140);
+    B.meteorPending={x:x, at:B.t+0.9}; // 0.9秒の予兆のあと着弾
+    try{ var m=document.createElement('div'); m.className='meteor-warn'; m.style.left=x+'px'; $('field').appendChild(m); B.meteorEl=m;
+      var r=document.createElement('div'); r.className='meteor-rock'; r.style.left=x+'px'; r.style.top='-40px'; $('field').appendChild(r); B.meteorRock=r;
+      requestAnimationFrame(function(){ if(r){ r.style.transition='top .85s cubic-bezier(.6,.1,.9,.6)'; r.style.top=(fieldFloorY()-10)+'px'; } });
+    }catch(e){}
+  }
+  function meteorImpact(){
+    var p=B.meteorPending; B.meteorPending=null; if(!p) return;
+    var x=p.x, R=100;
+    try{ if(B.meteorEl){ B.meteorEl.remove(); B.meteorEl=null; } if(B.meteorRock){ B.meteorRock.remove(); B.meteorRock=null; } }catch(e){}
+    try{ fxFrag(x, fieldFloorY(), '#e0683b'); fxSparks(x, fieldFloorY(), 16, '#ffb24a'); fxBanner('☄️ 隕石ちゅうい！','#c0392b'); Sound.play('boss'); }catch(e){}
+    B.allies.forEach(function(a){ if(Math.abs(a.x-x)<=R){ var dmg=Math.round(a.hpMax*0.40); a.hp-=dmg; floatText(a.x,30,'-'+dmg,'var(--bad)'); if(a.hp>0){ var __i=a.el&&a.el.querySelector('.hpb i'); if(__i)__i.style.width=(a.hp/a.hpMax*100)+'%'; flash(a.el); } else { try{ if(a.el) a.el.remove(); }catch(_){} } } });
+    B.allies = B.allies.filter(function(a){ return a.hp>0; });
   }
   function surviveVictoryFx(){
     try{ fxTierFlash(); Sound.play('win'); fxBanner('🎉 守り切った！','#3a9d57'); }catch(e){}
@@ -10043,9 +10329,16 @@ const Game = (()=>{
     } else if(B && B.stage && B.stage.learn){
       curQ = learnDraw(B.stage.learnField, learnLevelForFloor(B.floor||1), cc) || QuizEngine.next(cc); // 🎓階に応じた級・分野で出題
     } else {
-      curQ = QuizEngine.next(cc);
+      // 永続誤答SRSの差し込み：2連続回避＋約30%で due な誤答を再出題（現ジャンル優先）。クリアまで時々出る。
+      curQ = null;
+      if(!lastWasReview){
+        var __dk = pickDueMistake(QuizEngine.genre());
+        if(__dk && Math.random()<0.30){ var __mq=QuizEngine.buildFrom(__dk, cc); if(__mq){ __mq.review=true; __mq.locked=false; curQ=__mq; lastMistakeKey=__dk; } }
+      }
+      if(!curQ) curQ = QuizEngine.next(cc);
     }
     if(!curQ){ $('qtext').textContent='問題データが読めませんでした'; return; }
+    lastWasReview = !!(curQ && curQ.review);
     $('qtext').innerHTML = (curQ.review?'<span style="color:var(--gold)">🔁 </span>':'') + curQ.qtext;
     const box=$('choices'); box.className = curQ.choiceCount===2?'c2':''; box.innerHTML='';
     curQ.choices.forEach((c,i)=>{
@@ -10058,8 +10351,10 @@ const Game = (()=>{
     $('qfeedback').textContent='';
     // 音声：ONかつ単語/熟語(speakあり)のときだけ🔊表示。英→日は答えが見えているので問題表示時に自動再生（日→英は答えバレ防止で解答時のみ）
     const rb=$('replayBtn');
-    if(curQ.speak && Speech.supported && Speech.isOn() && Speech.hasEnglishVoice()){
-      rb.style.display=''; if(curQ.dir==='enjp') Speech.speak(curQ.speak);
+    // 英→日(enjp)は答えが日本語なので英語を聞いてOK＝ボタン表示＋自動再生。
+    // 和→英(jpen)は答えが英語なので解答前に聞けるとカンニング→ボタンを出さない（グリッチ修正2026-06-08）。解答時はanswer()内で自動再生。
+    if(curQ.speak && Speech.supported && Speech.isOn() && Speech.hasEnglishVoice() && curQ.dir==='enjp'){
+      rb.style.display=''; Speech.speak(curQ.speak);
     } else { rb.style.display='none'; }
   }
   function replayAudio(){ if(curQ && curQ.speak) Speech.speak(curQ.speak); }
@@ -10074,6 +10369,7 @@ const Game = (()=>{
     gems += gemPts; updateGemUI(); save(); // 1問ごとに保存（途中でやめても💎は残る）
     if(right){
       btn.classList.add('ok'); B.correct++; B.missStreak=0;
+      creditMistake(curQ); // 正解：誤答SRSのneedを1減らす（2回正解でマーク消去）
       B.comboGuard=comboGuardLv; // 🛡️正解でコンボ保護が全回復（連続ミスのときだけ消費されていく）
       Sound.play('correct'); fxLetters(btn, curQ.choices[i]);
       const gain=QuizEngine.comboGain(curQ);
@@ -10104,10 +10400,12 @@ const Game = (()=>{
         B.combo = Math.floor(B.combo * (B.slow?0.75:0.5)); // 途切れ→加速ダウン（ゼロにしない）
         $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
       }
-      QuizEngine.pushReview(curQ); // 間違えた問題は近いうち再出題
+      QuizEngine.pushReview(curQ); // 間違えた問題は近いうち再出題（戦闘内）
+      recordMistake(curQ); // 永続誤答SRS：need=2 でリスト登録（2回正解で消える）
       try{ var __mp=(curQ.qtext||'').replace(/<[^>]+>/g,''); var __mc=curQ.choices?curQ.choices[curQ.answerIndex]:''; if(B.mistakes && !B.mistakes.some(function(m){return m.prompt===__mp&&m.correct===__mc;})) B.mistakes.push({prompt:__mp, correct:__mc, desc:curQ.desc||''}); }catch(_){}
     }
     floatText($('field').clientWidth/2, right?78:54, `+${gemPts}💎${B.recoBonus?' ✨推奨2倍':''}`, '#a463f2'); // ガチャ通貨の手応え
+    save(); // 誤答SRSの更新（recordMistake/creditMistake）を確実に保存
     syncHUD();
     setTimeout(()=>{ if(B&&B.running) nextQuestion(); }, (right?800:2000)/((window.__GGDEBUG&&window.__timeScale>1)?window.__timeScale:1)); // 検証時は倍速に合わせ解答間隔も縮める（ゲーム内時間で一定＝難度のブレ防止）
   }
@@ -10475,13 +10773,16 @@ const Game = (()=>{
     $('resTitle').style.color = win? 'var(--good)':'var(--enemy)';
     const reward = win ? stageReward(B.stage) : 10; // ゴールド上限は撤廃：リプレイでも常に満額
     gold+=reward;
+    const gemReward = win ? (B.stage.boss ? 500 : 100) : 0; // クリア報酬💎：通常100・ボス500（要望2026-06-08）
+    if(gemReward) gems += gemReward;
     if(win){ cleared[B.stage.area]=true; }
     save();
     $('resMedals').innerHTML =
       `<span class="medal">最大コンボ ${B.bestCombo}</span>`+
       `<span class="medal">正答率 ${acc}%</span>`+
       (B.reviewWins?`<span class="medal">🔁 復習成功 ${B.reviewWins}</span>`:'')+
-      `<span class="medal">💰 +${reward}</span>`;
+      `<span class="medal">💰 +${reward}</span>`+
+      (gemReward?`<span class="medal">💎 +${gemReward}</span>`:'');
     $('resLearn').textContent = !win
       ? 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎'
       : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
@@ -10540,7 +10841,8 @@ const Game = (()=>{
     $('assessLater').onclick=function(){ assessSkip(); };
   }
   function beginMeasure(){
-    AS={ genre:'word', idx:0, cleared:-1, misses:0, seen:{word:{},grammar:{}}, ranks:{}, locked:false, cur:null, asked:0 };
+    // streak=同じ級で連続正解（3でその級クリア＝上へ）／fails=同じ級での失敗回数（3でその級が上限＝確定）。要望2026-06-08
+    AS={ genre:'word', idx:0, cleared:-1, streak:0, fails:0, seen:{word:{},grammar:{}}, ranks:{}, locked:false, cur:null, asked:0 };
     assessView('quiz'); assessNext();
   }
   function drawUnseen(genre, level){
@@ -10564,7 +10866,8 @@ const Game = (()=>{
     var genre=AS.genre, level=LV5[AS.idx];
     var q=drawUnseen(genre, level); AS.cur=q; AS.locked=false; AS.asked++;
     var gname=genre==='word'?'単語':'文法';
-    var pr=$('assessProg'); if(pr) pr.innerHTML='📊 <b>'+gname+'</b>の実力をチェック中　— いま <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[level]+'</b> に挑戦！'+(AS.misses>0?'　<span style="color:var(--gold)">（あと1問！）</span>':'');
+    var pr=$('assessProg'); if(pr) pr.innerHTML='📊 <b>'+gname+'</b>の実力をチェック中　— いま <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[level]+'</b> に挑戦！'
+      +'　<span style="color:var(--ally);font-weight:800">連続正解 '+AS.streak+'/3</span>'+(AS.fails>0?'　<span style="color:var(--enemy)">ミス '+AS.fails+'/3</span>':'');
     var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
     renderTicks();
     if(!q){ $('assessQ').textContent='問題が読めませんでした'; return; }
@@ -10581,12 +10884,15 @@ const Game = (()=>{
     if(!right && btns[q.answerIndex]) btns[q.answerIndex].classList.add('ok');
     try{ Sound.play(right?'correct':'wrong'); }catch(e){}
     if(right){
-      AS.cleared=AS.idx; AS.misses=0; AS.idx++;
-      var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
-      if(AS.idx>=LV5.length){ setTimeout(function(){ genreDone(LV5[LV5.length-1]); },700); return; }
+      AS.streak++;
+      if(AS.streak>=3){ // 同じ級で3連続正解＝その級クリア→上へ
+        AS.cleared=AS.idx; AS.idx++; AS.streak=0; AS.fails=0;
+        var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
+        if(AS.idx>=LV5.length){ setTimeout(function(){ genreDone(LV5[LV5.length-1]); },700); return; }
+      }
     } else {
-      AS.misses++;
-      if(AS.misses>=2){ setTimeout(function(){ genreDone(AS.cleared>=0?LV5[AS.cleared]:LV5[0]); },700); return; }
+      AS.streak=0; AS.fails++; // 連続は途切れる
+      if(AS.fails>=3){ setTimeout(function(){ genreDone(AS.cleared>=0?LV5[AS.cleared]:LV5[0]); },700); return; } // 級内で3回失敗＝直近クリアした級で確定
     }
     setTimeout(assessNext, 800);
   }
@@ -10606,7 +10912,7 @@ const Game = (()=>{
     html+='<button class="btn" id="assessGoGrammar" style="max-width:300px">▶ 文法も測定する</button>';
     html+='<button class="btn ghost" id="assessStopHere" style="max-width:300px;margin-top:8px">ここで終わる</button>';
     var rb=$('assessResult'); rb.innerHTML=html;
-    $('assessGoGrammar').onclick=function(){ AS.genre='grammar'; AS.idx=0; AS.cleared=-1; AS.misses=0; assessView('quiz'); assessNext(); };
+    $('assessGoGrammar').onclick=function(){ AS.genre='grammar'; AS.idx=0; AS.cleared=-1; AS.streak=0; AS.fails=0; assessView('quiz'); assessNext(); };
     $('assessStopHere').onclick=function(){ finalizeAssess(); };
     try{ Sound.play('correct'); }catch(e){}
   }
