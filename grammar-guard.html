@@ -10406,6 +10406,12 @@ const Game = (()=>{
   }
   function checkEnd(){
     if(B.ended) return;
+    // ⚡chargeステージ(壁3 area70等)はch14の連続湧きで敵城まで押し切れず膠着する。敵ステは不変のまま、
+    // 「ためチャージboss(蓄雷帝)を倒したら勝ち」という勝利条件を追加(=本来のボス戦の期待どおり)。フリーズ(B案)で全滅を防ぎ続けボスを削り切れば勝てる。
+    if(B.stage && B.stage.gimmick==='charge' && IMPLEMENTED_GIMMICKS.charge){
+      if(B.bossAlive) B.chargeBossSeen=true;
+      if(B.chargeBossSeen && !B.bossAlive){ beginEnd(true); return; }
+    }
     if(B.castleE<=0){ beginEnd(true); }
     else if(B.castleA<=0){ beginEnd(false); }
   }
