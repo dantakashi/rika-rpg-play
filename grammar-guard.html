@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="notranslate" translate="no">
 <head>
 <meta charset="utf-8">
+<meta name="google" content="notranslate"><!-- 英語の問題/選択肢が自動翻訳で答えバレしないよう翻訳を無効化 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>グラマー・ガード</title>
 <script>window.__GGDEBUG=/[?&]debug=1/.test(location.search||'');window.addEventListener('error',function(e){if(!window.__GGDEBUG)return;try{var d=document.getElementById('__err')||document.createElement('div');d.id='__err';d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font:12px/1.4 monospace;padding:6px;white-space:pre-wrap';d.textContent='ERR: '+(e.message||(e.error&&e.error.stack)||e.type)+' @'+((e.filename||'').split('/').pop())+':'+(e.lineno||'');if(!d.parentNode)(document.body||document.documentElement).appendChild(d);}catch(_){}}, false);</script>
@@ -85,8 +86,7 @@
   .castle{position:absolute; bottom:6px; width:64px; height:120px}
   .csvg{position:absolute; inset:0}
   #castleA{left:6px} #castleE{right:6px}
-  /* ④survive：自城を中央へ・敵城は無し（左右両端から攻めてくる） */
-  #field.survive #castleA{left:50%; transform:translateX(-50%)}
+  /* ④survive(要望#1で通常配置化)：自城は左のまま・敵城は無し(実質無敵)。隕石が主役ギミック。 */
   #field.survive #castleE{display:none}
   .ground-line{position:absolute; left:0; right:0; top:58%; height:2px; background:rgba(0,0,0,.08)}
   .unit{position:absolute; bottom:14px; width:54px; height:54px; will-change:transform; transition:none; transform-origin:50% 100%}
@@ -112,6 +112,13 @@
   #summonBtn:disabled{filter:grayscale(.7) brightness(.95); opacity:.6}
   #freezeBtn{background:#5aa0d6; min-width:108px; white-space:nowrap}
   #freezeBtn:disabled{filter:grayscale(.6) brightness(.97); opacity:.6}
+  /* スマホ狭幅: 召喚キューの最小幅合計が画面を超え、フリーズ砲が画面外に出るのを防ぐ(要望#11)。
+     折り返し可＋ボタンを縮めて、フリーズが必ず画面内に収まるようにする。 */
+  @media (max-width:430px){
+    #queue{flex-wrap:wrap; row-gap:6px}
+    #summonBtn{min-width:104px}
+    #freezeBtn{min-width:92px}
+  }
   #field.frozen{filter:saturate(.55) brightness(1.06)}
   #field.frozen::after{content:""; position:absolute; inset:0; pointer-events:none; z-index:5;
     background:linear-gradient(rgba(150,205,240,.30), rgba(120,180,225,.16)); box-shadow:inset 0 0 60px rgba(120,185,230,.5)}
@@ -518,6 +525,49 @@
 </style>
 </head>
 <body>
+<script>
+  // ポータル/理科RPGへの遷移。開発では本ファイルは _english_draft/ 配下なので
+  // 1つ上に戻る。本番(配布)ではルート直下フラット配置(理科=rika.html)。
+  (function(){
+    var dev = /_english_draft/.test(location.pathname);
+    window.ggGoPortal  = function(){ location.href = dev ? '../launcher.html' : 'index.html'; };
+    window.ggGoScience = function(){ location.href = dev ? '../index.html'    : 'rika.html'; };
+  })();
+  // 💾 セーブのテキスト書出/読込(要望#16中核)。localStorage完結なのでGameクロージャ外でOK。
+  (function(){
+    var KEY='gg_v2_save_v1', PREFIX='GGSAVE1:';
+    function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
+    function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
+    function msg(t,ok){ var m=document.getElementById('ggSaveMsg'); if(m){ m.textContent=t; m.style.color=ok?'#3a9d57':'#c0392b'; } }
+    window.ggSaveExport=function(){
+      try{ var raw=localStorage.getItem(KEY); if(!raw){ msg('まだセーブがありません。',false); return; }
+        var code=PREFIX+b64enc(raw); var box=document.getElementById('ggSaveBox'); if(box) box.value=code;
+        msg('書き出しました。これをコピー or ファイルに保存しておいてね。',true);
+      }catch(e){ msg('書き出しに失敗しました。',false); }
+    };
+    window.ggSaveCopy=function(){
+      var box=document.getElementById('ggSaveBox'); if(!box||!box.value){ window.ggSaveExport(); }
+      box=document.getElementById('ggSaveBox'); if(!box||!box.value){ return; }
+      try{ box.select(); if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(box.value); } else { document.execCommand('copy'); } msg('コピーしました。',true); }
+      catch(e){ msg('コピーできませんでした。長押しで選択してコピーしてね。',false); }
+    };
+    window.ggSaveDownload=function(){
+      var box=document.getElementById('ggSaveBox'); if(!box||!box.value){ window.ggSaveExport(); box=document.getElementById('ggSaveBox'); }
+      if(!box||!box.value) return;
+      try{ var blob=new Blob([box.value],{type:'text/plain'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='grammar-guard-save.txt'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },100); msg('ファイルに保存しました。',true); }
+      catch(e){ msg('保存に失敗しました。',false); }
+    };
+    window.ggSaveImport=function(){
+      var box=document.getElementById('ggSaveBox'); var code=(box&&box.value||'').trim();
+      if(!code){ msg('読み込む文字を貼り付けてね。',false); return; }
+      if(code.indexOf(PREFIX)!==0){ msg('この文字はグラマー・ガードのセーブではないみたい。',false); return; }
+      var raw; try{ raw=b64dec(code.slice(PREFIX.length)); JSON.parse(raw); }catch(e){ msg('文字が壊れているようです。コピーし直してね。',false); return; }
+      if(!window.confirm('今のデータを、読み込んだデータで上書きします。よろしいですか？')) return;
+      try{ localStorage.setItem(KEY, raw); msg('読み込みました。画面を更新します…',true); setTimeout(function(){ location.reload(); },600); }
+      catch(e){ msg('読み込みに失敗しました。',false); }
+    };
+  })();
+</script>
 <div id="app">
 
   <!-- ===== タイトル ===== -->
@@ -528,11 +578,16 @@
     <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07h（ホーム微調整：英単語見出し削除・矢印を端へ・キャラ大型化＆余白・スマホ最適化）</p>
     <div style="height:14px"></div>
     <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
+    <div style="height:16px"></div>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
+      <button class="pill" onclick="ggGoPortal()" title="ポータル（ホーム）へ" style="cursor:pointer">🏠 ポータル</button>
+      <button class="pill" onclick="ggGoScience()" title="理科RPGへ" style="cursor:pointer">🧪 理科RPGへ</button>
+    </div>
   </section>
 
   <!-- ===== ホーム ===== -->
   <section id="home" class="screen col">
-    <div class="topbar"><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><button class="pill" id="homeSettingsBtn" data-go="settings" title="せってい" style="cursor:pointer">⚙️</button><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span></div>
+    <div class="topbar"><button class="pill" onclick="ggGoPortal()" title="ポータル（アプリ一覧）へ" style="cursor:pointer">🚪</button><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><button class="pill" id="homeSettingsBtn" data-go="settings" title="せってい" style="cursor:pointer">⚙️</button><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span></div>
     <div class="pad scroll grow">
       <div id="homeMenu">
         <div id="homeGrid">
@@ -545,7 +600,7 @@
             <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
             <button class="menubtn" data-go="practice">✏️ れんしゅう<span class="sub">問題を解いて💎をためる（戦闘なし）</span></button>
             <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
-            <button class="menubtn" data-go="mistakes">📚 まちがえた問題<span class="sub" id="mistakesSub">復習リスト（2回正解で消える）</span></button>
+            <button class="menubtn" data-go="mistakes">⭐ お気に入り / まちがえた問題<span class="sub" id="mistakesSub">お気に入りはいつでも・誤答は2回正解で消える</span></button>
           </div>
         </div>
       </div>
@@ -569,6 +624,12 @@
       </div>
       <div class="homeview" data-view="quiz">
         <div class="card">
+          <div style="font-weight:800; margin-bottom:6px">🔊 単語の音声</div>
+          <div class="seg"><button class="toggle" id="tgVoiceQ">単語・熟語を読み上げ</button></div>
+          <div class="muted" style="margin-top:6px;font-size:12px">英単語・熟語の発音を再生（英→日は出題時に自動、解答時は正答を再生）。せってい でも切替できます。</div>
+          <div id="voiceWarnQ" style="display:none; margin-top:6px; color:#c0392b; font-size:12px; font-weight:700"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
           <div style="font-weight:800; margin-bottom:6px">📝 出題設定 <span class="muted">（むずかしさを選ぶ）</span></div>
           <div id="presetRow" style="display:flex;gap:6px;margin-bottom:8px"></div>
           <div class="muted" style="font-size:12px;margin-bottom:8px;line-height:1.5">かんたんに決めるなら上の<b>おすすめ／やさしめ／むずかしめ</b>。細かく決めたい人は下で選べます。</div>
@@ -591,14 +652,9 @@
           <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
           <div class="seg" id="choiceSeg"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
-          <div class="muted" style="margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。<br>🎰 <b>ガチャ用の💎グラマージェムも同じしくみで貯まります</b>（正解で満額・まちがえても約1/3）。たくさん解くほどガチャが引けます（1回300💎）。<br>⭐ <b>推奨難易度（実力測定の推奨級）で遊ぶと💎が2倍！</b></div>
+          <button class="toggle" id="comboInfoToggle" style="margin-top:8px;width:100%;text-align:left" onclick="(function(b){var p=document.getElementById('comboInfoBody');var open=p.style.display==='none';p.style.display=open?'block':'none';b.textContent=(open?'💥 コンボのしくみ ▴':'💥 コンボのしくみ ▾');})(this)">💥 コンボのしくみ ▾</button>
+          <div id="comboInfoBody" class="muted" style="display:none;margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。<br>🎰 <b>ガチャ用の💎グラマージェムも同じしくみで貯まります</b>（正解で満額・まちがえても約1/3）。たくさん解くほどガチャが引けます（1回300💎）。<br>⭐ <b>推奨難易度（実力測定の推奨級）で遊ぶと💎が2倍！</b></div>
           <div id="assessReco" class="muted" style="margin-top:8px;line-height:1.45"></div>
-        </div>
-        <div class="card" style="margin-top:12px">
-          <div style="font-weight:800; margin-bottom:6px">🔊 単語の音声</div>
-          <div class="seg"><button class="toggle" id="tgVoiceQ">単語・熟語を読み上げ</button></div>
-          <div class="muted" style="margin-top:6px;font-size:12px">英単語・熟語の発音を再生（英→日は出題時に自動、解答時は正答を再生）。せってい でも切替できます。</div>
-          <div id="voiceWarnQ" style="display:none; margin-top:6px; color:#c0392b; font-size:12px; font-weight:700"></div>
         </div>
       </div>
       <div class="homeview" data-view="grow">
@@ -653,14 +709,26 @@
       <div class="homeview" data-view="settings">
         <div class="card" style="margin-bottom:12px">
           <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
-          <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button><button class="toggle" id="tgSlow">ゆっくり</button></div>
-          <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚は操作を問題だけに集中できる。ゆっくりでも報酬は同じ。</div>
+          <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button></div>
+          <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚をオンにすると、操作を問題だけに集中できます。</div>
         </div>
         <div class="card" style="margin-bottom:12px">
           <div style="font-weight:800; margin-bottom:6px">🔊 単語の音声</div>
           <div class="seg"><button class="toggle" id="tgVoice">単語・熟語を読み上げ</button></div>
           <div class="muted" style="margin-top:6px">英単語と熟語の発音を再生。英→日は問題が出たとき自動で、解答したときは正しい答えの発音が流れます（まちがえても聞けます）。🔊ボタンで聞き直しも可。教室では切っておけます。</div>
           <div id="voiceWarn" style="display:none; margin-top:6px; color:#c0392b; font-size:12px; font-weight:700"></div>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">💾 データの保存・読みこみ</div>
+          <div class="muted" style="margin-top:2px;font-size:12px;line-height:1.6">キャッシュを消すとデータが消えます。<b>機種変更や万一に備えて</b>、文字をコピー（またはファイルに保存）しておくと復元できます。</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+            <button class="btn" style="flex:1;min-width:120px" onclick="ggSaveExport()">📤 書き出す</button>
+            <button class="btn ghost" style="flex:1;min-width:120px" onclick="ggSaveCopy()">📋 コピー</button>
+            <button class="btn ghost" style="flex:1;min-width:120px" onclick="ggSaveDownload()">💾 ファイルに保存</button>
+          </div>
+          <textarea id="ggSaveBox" placeholder="ここに「書き出す」で文字が出ます。読み込みたいときは、保存しておいた文字をここに貼り付けて「読み込む」。" style="width:100%;height:84px;margin-top:8px;border:2px solid var(--line);border-radius:10px;padding:8px;font-size:12px;font-family:monospace;box-sizing:border-box"></textarea>
+          <button class="btn" style="width:100%;margin-top:8px;background:#5aa0d6" onclick="ggSaveImport()">📥 読み込む（今のデータを上書き）</button>
+          <div id="ggSaveMsg" class="muted" style="margin-top:6px;font-size:12px"></div>
         </div>
       </div>
     </div>
@@ -8988,12 +9056,15 @@ const Game = (()=>{
   let ownedSkins = {default:1}; // 🏯所有城スキン {key:1}（defaultは最初から所有・要望#15）
   let equippedSkin = 'default'; // 装備中の城スキン（1つだけバフ有効＝ユーザー確定）
   let mistakes = {};       // 永続誤答SRS {srcKey:{key,genre,level,need,ts}}。need回正解でマーク消去＆リスト除去（要望2026-06-08）
+  let favorites = {};      // ⭐お気に入り {srcKey:1}。誤答SRSと独立(消えない)。練習/図鑑で★登録(要望#14)
   let lastWasReview=false, lastMistakeKey=null; // 復習/誤答を2連続で出さないための直近フラグ（非保存）
+  function isFav(k){ return !!(k && favorites[k]); }
+  function toggleFav(k){ if(!k) return; if(favorites[k]) delete favorites[k]; else favorites[k]=1; save(); }
 
   let soundOn = true;
   function load(){
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
-      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; slowMode=!!s.slowMode;
+      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; /* slowMode廃止: 常にfalse */
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
@@ -9003,6 +9074,7 @@ const Game = (()=>{
       towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||'';
       clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
       mistakes=(s.mistakes&&typeof s.mistakes==='object')?s.mistakes:{};
+      favorites=(s.favorites&&typeof s.favorites==='object')?s.favorites:{};
       ownedSkins=(s.ownedSkins&&typeof s.ownedSkins==='object')?s.ownedSkins:{default:1}; if(!ownedSkins.default) ownedSkins.default=1;
       equippedSkin=s.equippedSkin||'default'; if(!ownedSkins[equippedSkin]) equippedSkin='default';
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
@@ -9014,7 +9086,7 @@ const Game = (()=>{
   }
   function save(){
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement, mistakes, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -9376,28 +9448,49 @@ const Game = (()=>{
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';}); }
   function renderMistakes(){
     var body=$('mistakesBody'); if(!body) return; body.innerHTML='';
-    var keys=Object.keys(mistakes);
-    if(!keys.length){ body.innerHTML='<div class="muted" style="text-align:center;padding:18px;line-height:1.7">🎉 まちがえた問題はありません。<br>問題をまちがえると ここに たまり、<b>2回正解</b>すると消えます。'+(  '')+'</div>'; return; }
-    var head=document.createElement('div'); head.className='muted'; head.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6';
-    head.innerHTML='まちがえた問題（'+keys.length+'問）は ステージや れんしゅうで <b>時々もう一度</b>出ます。<b>2回正解</b>で消えます（右の「あと○回」）。';
-    body.appendChild(head);
-    keys.forEach(function(k){
-      var m=mistakes[k]; var q=QuizEngine.byKey(k); if(!q) return;
+    // 共通の行ビルダー。opts.need で「あと○回」、opts.favSection でお気に入り欄からの★解除→即再描画。
+    function mkRow(k, opts){
+      opts=opts||{}; var q=QuizEngine.byKey(k); if(!q) return null;
       var prompt, ans; if(q.genre==='grammar'){ prompt=q.question.replace('( )','(　)'); ans=q.choices[q.answer]; } else { prompt=q.name; ans=q.answer; }
       var row=document.createElement('div'); row.style.cssText='border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
+      var needBox = opts.need ? '<div style="flex:0 0 auto;text-align:center;min-width:42px"><div class="muted" style="font-size:11px">あと</div><div style="font-weight:800;color:#c77b1a">'+opts.need+'回</div></div>' : '';
       row.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">'
         +'<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:14px">'+esc(prompt)+'</div>'
         +'<div style="font-size:13px;color:var(--ally);font-weight:700">→ '+esc(ans)+'</div>'
         +(q.desc?'<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.4">'+esc(q.desc)+'</div>':'')+'</div>'
-        +'<div style="flex:0 0 auto;text-align:center;min-width:42px"><div class="muted" style="font-size:11px">あと</div><div style="font-weight:800;color:#c77b1a">'+(m.need||1)+'回</div></div>'
-        +'</div>';
-      if(q.genre!=='grammar' && Speech.supported){ var sb=document.createElement('button'); sb.className='btn'; sb.style.cssText='margin-top:6px;padding:6px 10px;font-size:13px;width:auto'; sb.textContent='🔊 おんせい'; sb.onclick=function(){ Speech.speak(q.answer, true); }; row.appendChild(sb); }
-      body.appendChild(row);
+        + needBox + '</div>';
+      var btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px;margin-top:6px;flex-wrap:wrap';
+      if(q.genre!=='grammar' && Speech.supported){ var sb=document.createElement('button'); sb.className='btn'; sb.style.cssText='padding:6px 10px;font-size:13px;width:auto'; sb.textContent='🔊 おんせい'; sb.onclick=function(){ Speech.speak(q.answer, true); }; btnRow.appendChild(sb); }
+      var fb=document.createElement('button'); fb.className='btn ghost'; fb.style.cssText='padding:6px 10px;font-size:13px;width:auto';
+      var setf=function(){ fb.textContent=isFav(k)?'⭐ 解除':'☆ お気に入り'; };
+      setf(); fb.onclick=function(){ toggleFav(k); if(opts.favSection){ renderMistakes(); } else { setf(); } }; btnRow.appendChild(fb);
+      row.appendChild(btnRow); return row;
+    }
+    // ⭐ お気に入り（誤答SRSと独立＝消えない・要望#14）
+    var fav=Object.keys(favorites).filter(function(k){ return QuizEngine.byKey(k); });
+    var favHead=document.createElement('div'); favHead.style.cssText='font-weight:800;font-size:15px;margin:4px 0 6px'; favHead.textContent='⭐ お気に入り（'+fav.length+'問）'; body.appendChild(favHead);
+    if(!fav.length){ var fe=document.createElement('div'); fe.className='muted'; fe.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; fe.innerHTML='れんしゅう中に「☆ お気に入りに追加」でここに保存。いつでも答え・解説・音声を確認できます（消えません）。'; body.appendChild(fe); }
+    else { fav.forEach(function(k){ var r=mkRow(k,{favSection:true}); if(r) body.appendChild(r); }); }
+    // 📚 まちがえた問題（ジャンル別）
+    var keys=Object.keys(mistakes).filter(function(k){ return QuizEngine.byKey(k); });
+    var mHead=document.createElement('div'); mHead.style.cssText='font-weight:800;font-size:15px;margin:16px 0 6px'; mHead.textContent='📚 まちがえた問題（'+keys.length+'問）'; body.appendChild(mHead);
+    if(!keys.length){ var me=document.createElement('div'); me.className='muted'; me.style.cssText='text-align:center;padding:12px;line-height:1.7'; me.innerHTML='🎉 まちがえた問題はありません。<br>問題をまちがえると ここに たまり、<b>2回正解</b>すると消えます。'; body.appendChild(me); return; }
+    var sub=document.createElement('div'); sub.className='muted'; sub.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; sub.innerHTML='ステージや れんしゅうで <b>時々もう一度</b>出ます。<b>2回正解</b>で消えます（右の「あと○回」）。'; body.appendChild(sub);
+    var GROUPS=[{g:'word',label:'📕 単語'},{g:'idiom',label:'📗 熟語'},{g:'grammar',label:'📘 文法'}];
+    var known={word:1,idiom:1,grammar:1};
+    GROUPS.forEach(function(grp){
+      var gkeys=keys.filter(function(k){ var q=QuizEngine.byKey(k); return q && q.genre===grp.g; });
+      if(!gkeys.length) return;
+      var gh=document.createElement('div'); gh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px;color:var(--ink)'; gh.textContent=grp.label+'（'+gkeys.length+'問）'; body.appendChild(gh);
+      gkeys.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) body.appendChild(r); });
     });
+    var others=keys.filter(function(k){ var q=QuizEngine.byKey(k); return q && !known[q.genre]; });
+    if(others.length){ var oh=document.createElement('div'); oh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px'; oh.textContent='📦 その他（'+others.length+'問）'; body.appendChild(oh); others.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) body.appendChild(r); }); }
   }
 
   /* ---- ✏️ れんしゅうモード（戦闘なし・問題だけ・💎が貯まる。まちがえたら2タップで次へ＝ゆっくり確認） ---- */
   let pracQ=null, pracAnswered=false, pracPick=-1;
+  let pracStarted=false;   // ②練習は「範囲設定→スタート」してから出題(要望#2)
   function pracDraw(){
     var cc=choiceMode; pracQ=null; pracAnswered=false; pracPick=-1; QuizEngine.clearStagePool();
     if(!lastWasReview){ var dk=pickDueMistake(QuizEngine.genre()); if(dk && Math.random()<0.30){ var mq=QuizEngine.buildFrom(dk,cc); if(mq){ mq.review=true; pracQ=mq; lastMistakeKey=dk; } } }
@@ -9415,6 +9508,31 @@ const Game = (()=>{
   function renderPractice(){
     var body=$('practiceBody'); if(!body) return;
     if(homeView!=='practice') return;        // アクティブな時だけ描画（誤って進めない）
+    if(!pracStarted){                         // ②まず出題範囲を決めてからスタート(要望#2)
+      body.innerHTML='';
+      var sel=QuizEngine.getSel();
+      var genLabel={word:'単語',idiom:'熟語',grammar:'文法'}[sel.genre]||sel.genre;
+      var lvLabel=(sel.levels||[]).map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join('・')||'—';
+      var g=document.createElement('div');
+      g.innerHTML='<div style="font-weight:800;font-size:16px;margin-bottom:6px">✏️ れんしゅうの範囲をえらぼう</div>'
+        +'<div class="muted" style="font-size:13px;line-height:1.6;margin-bottom:10px">いまの範囲：<b>'+genLabel+'</b>｜<b>'+lvLabel+'</b>｜'+choiceMode+'択　（'+QuizEngine.poolCount()+'問）</div>';
+      body.appendChild(g);
+      var prow=document.createElement('div'); prow.style.cssText='display:flex;gap:6px;margin-bottom:10px';
+      var LVO=QuizEngine.LV_ORDER; var gk=(sel.genre==='grammar')?'grammar':'word'; var rk=placement[gk]||'e4'; var ri=Math.max(0,LVO.indexOf(rk));
+      [{l:'📊 おすすめ',a:[LVO[ri]]},{l:'やさしめ',a:[LVO[Math.max(0,ri-1)]]},{l:'むずかしめ',a:[LVO[Math.min(LVO.length-1,ri+1)]]}].forEach(function(p){
+        var b=document.createElement('button'); b.className='btn ghost'; b.style.cssText='flex:1;padding:9px 4px;font-size:13px';
+        b.innerHTML=p.l+'<br><span style="font-size:11px;font-weight:700">'+(QuizEngine.LV_LABEL[p.a[0]]||'').replace('英検','')+'</span>';
+        b.onclick=function(){ QuizEngine.setSel({levels:p.a}); save(); renderPractice(); }; prow.appendChild(b);
+      });
+      body.appendChild(prow);
+      var detail=document.createElement('button'); detail.className='btn ghost'; detail.style.cssText='width:100%;margin-bottom:10px'; detail.textContent='📝 くわしく設定する（ジャンル・級・選択肢）';
+      detail.onclick=function(){ homeView='quiz'; renderHome(); }; body.appendChild(detail);
+      var canStart=QuizEngine.poolCount()>0;
+      var start=document.createElement('button'); start.className='btn'; start.style.cssText='width:100%;padding:14px;font-size:17px';
+      start.textContent=canStart?'この範囲で練習スタート ▶':'この範囲に問題がありません'; start.disabled=!canStart;
+      start.onclick=function(){ pracStarted=true; pracQ=null; renderPractice(); }; body.appendChild(start);
+      return;
+    }
     if(!pracQ) pracDraw();
     body.innerHTML='';
     if(!pracQ){ body.innerHTML='<div class="muted" style="padding:16px;text-align:center">出題できる問題がありません。<br>「あそぶ→出題設定」で範囲を確認してください。</div>'; return; }
@@ -9422,6 +9540,12 @@ const Game = (()=>{
     head.innerHTML='✏️ れんしゅう：正解で💎がたまります（戦闘なし）。'+(pracQ.review?'<span style="color:var(--gold);font-weight:800"> 🔁 復習</span>':'');
     body.appendChild(head);
     var qd=document.createElement('div'); qd.style.cssText='font-weight:800;font-size:17px;line-height:1.5;margin:6px 0 12px;text-align:center'; qd.innerHTML=pracQ.qtext; body.appendChild(qd);
+    // ⭐お気に入りトグル(要望#14)：あとで図書館の「お気に入り」でゆっくり見れる
+    if(pracQ.srcKey){
+      var favb=document.createElement('button'); favb.className='btn ghost'; favb.style.cssText='width:auto;padding:6px 14px;font-size:13px;margin:0 auto 10px;display:block';
+      var __setFav=function(){ favb.textContent=isFav(pracQ.srcKey)?'⭐ お気に入り済み':'☆ お気に入りに追加'; };
+      __setFav(); favb.onclick=function(){ toggleFav(pracQ.srcKey); __setFav(); }; body.appendChild(favb);
+    }
     // 音声ボタン：解答前は英→日のみ（カンニング防止）、解答後は単語/熟語なら確認用に表示
     if(pracQ.speak && Speech.supported && Speech.isOn() && Speech.hasEnglishVoice() && (pracAnswered || pracQ.dir==='enjp')){
       var rb=document.createElement('button'); rb.className='btn'; rb.style.cssText='width:auto;padding:6px 12px;font-size:13px;margin:0 auto 10px;display:block'; rb.textContent='🔊 おんせい'; rb.onclick=function(){ Speech.speak(pracQ.speak); }; body.appendChild(rb);
@@ -9768,11 +9892,11 @@ const Game = (()=>{
     { var __ms=$('mistakesSub'); if(__ms) __ms.textContent = mistakeCount()? ('復習リスト '+mistakeCount()+'問（2回正解で消える）') : '復習リスト（まちがえるとここに）'; }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'📚 まちがえた問題', practice:'✏️ れんしゅう', skins:'🏯 城スキン'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', skins:'🏯 城スキン'};
     const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', skins:'grow'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
-    document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ homeView=b.getAttribute('data-go'); renderHome(); }; });
+    document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ var __v=b.getAttribute('data-go'); if(__v==='practice'){ pracStarted=false; pracQ=null; } homeView=__v; renderHome(); }; });
     document.querySelectorAll('#home .homeview').forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-view')===homeView); });
     const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ homeView=__parent[homeView]||'menu'; renderHome(); }; }
     // 出題設定（ジャンル/英検級/ティア＝複数選択・混在OK、選択肢=固定）
@@ -9806,10 +9930,9 @@ const Game = (()=>{
     var __ar=$('assessReco');
     if(__ar){ if(placement.doneAt && placement.word){ __ar.innerHTML='📊 あなたの推奨級 — 単語: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.word]+'</b> ／ 文法: <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[placement.grammar]+'</b>'+(recoBonusActive()?' <span style="color:#3aa6a0;font-weight:800">⚡加速中! 💎2倍中!</span>':' <span style="font-size:11px">←この級を選ぶと⚡加速＆💎2倍</span>'); } else { __ar.innerHTML='📊 実力測定がまだです。ホームの「実力測定」で単語・文法のレベルを判定できます。'; } }
     // あそびやすさトグル
-    const ta=$('tgAuto'), ts=$('tgSlow');
-    ta.classList.toggle('on', autoSummon); ts.classList.toggle('on', slowMode);
+    const ta=$('tgAuto');
+    ta.classList.toggle('on', autoSummon);
     ta.onclick=()=>{ autoSummon=!autoSummon; save(); renderHome(); };
-    ts.onclick=()=>{ slowMode=!slowMode; save(); renderHome(); };
     // 音声トグルは「せってい」と「出題設定」の2か所。両方を同じ状態に同期して配線する。
     function wireVoiceToggle(tvId, vwId){
       const tv=$(tvId), vw=$(vwId); if(!tv) return;
@@ -9867,6 +9990,14 @@ const Game = (()=>{
         if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(s); }
         grid.appendChild(d);
       });
+      // 最終章(ゲーム内に存在する最後の章)に到達したら、続きは準備中だと案内（要望#12）。
+      var __maxChap=1; STAGES.forEach(function(s){ if(s.world>__maxChap) __maxChap=s.world; });
+      if(playTab===__maxChap){
+        var __cs=document.createElement('div');
+        __cs.style.cssText='margin-top:12px;text-align:center;border:2px dashed var(--line);border-radius:12px;padding:14px;background:#fff7e8';
+        __cs.innerHTML='<div style="font-weight:800;font-size:15px">✨ つづきは Coming Soon</div><div class="muted" style="font-size:12px;margin-top:4px;line-height:1.5">ここまでが今のぼうけんです。<br>あたらしい章はアップデートでとどける予定だよ。おたのしみに！</div>';
+        grid.appendChild(__cs);
+      }
     }
   }
 
@@ -9876,6 +10007,8 @@ const Game = (()=>{
   function enterBattle(stage){
     curStage=stage;
     B = freshBattle(stage);
+    // ④survive：敵城は無い(実質無敵)＝攻撃で削れて勝ってしまわないよう巨大HPに。勝ちはtimeLimit耐久のみ(要望#1)。
+    if(stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ B.castleE=B.castleEMax=1e9; }
     B.wasCleared = !!cleared[stage.area];
     $('castleAsvg').innerHTML = castleSkinSVG(); // 🏯装備中の城スキンで自城を描画
     $('castleEsvg').innerHTML = SVG.get('castleE');
@@ -10017,12 +10150,8 @@ const Game = (()=>{
     const el=document.createElement('div'); el.className='unit spawning newcv '+(v.atk||'')+(v.fly?' flying':'');
     el.dataset.atkdur=(v.dur||600);
     el.innerHTML = allyInner(r.sprite);
-    let x=84, dir=1;
-    if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
-      dir = B.surviveSide; B.surviveSide *= -1;       // 左右交互に出撃
-      x = fieldW()/2 + dir*10;                          // 中央の自城から
-      el.style.transform=(dir<0?'scaleX(-1) ':'')+(r.scale?('scale('+r.scale+')'):''); // 向かう側を向く
-    } else if(r.scale){ el.style.transform='scale('+r.scale+')'; }
+    let x=84, dir=1;                                   // 通常配置：自城(左)から右へ。surviveも同じ(要望#1)
+    if(r.scale){ el.style.transform='scale('+r.scale+')'; }
     $('field').appendChild(el);
     fxGate(x); Sound.play('summon');
     const __st=unitStats(key);
@@ -10038,14 +10167,8 @@ const Game = (()=>{
     const t=ENEMY_TYPES[type]; const s=B.stage;
     const el=document.createElement('div'); el.className='unit';
     let x, dir;
-    if(s.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){
-      const fromLeft = side ? (side==='L') : (Math.random()<0.5);
-      x = fromLeft ? 18 : fieldW()-18; dir = fromLeft ? 1 : -1; // 端から中央へ
-      el.style.transform=(fromLeft?'':'scaleX(-1)')+(t.scale?(' scale('+t.scale+')'):''); // 中央を向く
-    } else {
-      x = fieldW()-84; dir = -1;
-      el.style.transform='scaleX(-1)'+(t.scale?(' scale('+t.scale+')'):'');
-    }
+    x = fieldW()-84; dir = -1;                          // 通常配置：右から左へ。surviveも同じ(要望#1)
+    el.style.transform='scaleX(-1)'+(t.scale?(' scale('+t.scale+')'):'');
     el.innerHTML=unitBody(t.sprite);
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul);
@@ -10204,16 +10327,15 @@ const Game = (()=>{
     if(hit>0) fxBanner('💥 ボスの薙ぎ払い！','#c0392b');
   }
 
-  // ④survive（両側なだれ込み耐久）：敵城なし・自城は中央。左右両端から敵が湧き、timeLimit秒耐え切れば勝ち。自城0で負け
+  // ④survive(要望#1で通常配置化)：敵城なし(無敵)・自城は左。右から敵が定期的に湧き、隕石をよけつつ
+  //   timeLimit秒 耐え切れば勝ち。自城0で負け。両側なだれ込みは廃止＝通常どおり右から攻めてくる。
   function spawnSurviveWave(){
     const ch=B.stage.chapter||1; const pool=chapterEnemyPool(ch);
-    const perSide=1+Math.floor(ch/4); // 章で1サイドあたりの数が増える
-    ['L','R'].forEach(function(side){
-      for(let i=0;i<perSide;i++){ if(B.enemies.length>=ENEMY_CAP) break;
-        const t=(i===0)?rangedTypeFor(ch):pool[Math.floor(Math.random()*pool.length)]; // 各サイド必ず遠距離を1体
-        spawnEnemy(t, side);
-      }
-    });
+    const num=2+Math.floor(ch/4); // 章でウェーブの数が増える(旧:1サイドあたり×2サイド ≒ 同程度)
+    for(let i=0;i<num;i++){ if(B.enemies.length>=ENEMY_CAP) break;
+      const t=(i===0)?rangedTypeFor(ch):pool[Math.floor(Math.random()*pool.length)]; // 必ず遠距離を1体混ぜる
+      spawnEnemy(t); // 右から(通常配置)
+    }
   }
   function surviveTick(dt){
     const lim=B.stage.timeLimit||90;
@@ -10414,8 +10536,9 @@ const Game = (()=>{
   function loop(now){
     if(!B||!B.running) return;
     let dt=Math.min(0.05,(now-B.last)/1000); B.last=now; if(window.__GGDEBUG && window.__timeScale>1) dt*=window.__timeScale; B.t+=dt*(B.slow?0.6:1);
-    // エネルギー加速：regen = base × (1 + combo/softcap) クランプ
-    const mult=Math.min(B.maxMult, 1 + B.combo/B.softcap);
+    // エネルギー加速：コンボ非依存の固定倍率(=20コンボ相当)に変更(要望#8)。
+    // コンボは召喚速度を加速させない(ダメージ/💎にのみ効く)。20コンボ相当 = 1+20/softcap をmaxMaxでクランプ。
+    const mult=Math.min(B.maxMult, 1 + 20/B.softcap);
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
     // ❄フリーズ砲：効果＆クールダウンの消化（効果が切れたら凍結表示を解除）
     if(B.freezeCd>0){ B.freezeCd-=dt; if(B.freezeCd<0) B.freezeCd=0; }
@@ -10429,7 +10552,7 @@ const Game = (()=>{
     if(B.stage.endless){ towerStep(); }
     else if(B.stage.learn){ learnStep(dt); } // 🎓学習の塔：階で級UP・頂上クリア
     else if(B.stage.mode==='trigger' && IMPLEMENTED_GIMMICKS.trigger){ /* ②時間湧きなし：敵城へのダメージでgimmickTickが湧かす */ }
-    else if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ /* ④両側湧きはsurviveTickが担当 */ }
+    else if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ /* ④右からの定期ウェーブ＋隕石＋耐久判定はsurviveTickが担当 */ }
     else if(B.stage.gimmick==='rush' && IMPLEMENTED_GIMMICKS.rush){ /* ⑤ボス連戦＋取り巻きはrushTickが担当 */ }
     else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ const __wt=B.stage.waves[B.spawnIdx].type; if(__wt==='BOSS'){ spawnEnemy(__wt); } else { for(let __m=0;__m<ENEMY_MULT;__m++){ if(B.enemies.length<ENEMY_CAP) spawnEnemy(__wt); } } B.spawnIdx++; }
       if(B.spawnIdx>=B.stage.waves.length) continuousSpawn(); } // ウェーブ撃ち尽くし後は無限沸き（画面上限ENEMY_CAPまで）
@@ -10443,8 +10566,8 @@ const Game = (()=>{
   }
 
   function stepUnits(dt){
-    if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ stepUnitsSurvive(dt); return; } // ④両側レイアウトは専用処理
     const W=fieldW();
+    const survive = B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive; // ④通常配置の耐久(敵城は無敵・timeLimitで勝ち)
     // 味方：右へ。敵 or 敵城と戦う
     B.allies.forEach(a=>{
       a.cd-=dt;
@@ -10460,7 +10583,8 @@ const Game = (()=>{
           { var __v=ALLY_VIS[a.key]; if(__v&&__v.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, target.x, (__v.projDelay||0)); } }
         }
       }else if(!target && a.x >= enemyCastleX-a.range){
-        if(a.cd<=0){ B.castleE-=__atk; a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); { var __v2=ALLY_VIS[a.key]; if(__v2&&__v2.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, enemyCastleX, (__v2.projDelay||0)); } } }
+        // surviveは敵城が無い(無敵)＝攻撃せず右前線で待機。通常面は敵城を攻撃。
+        if(!survive && a.cd<=0){ B.castleE-=__atk; a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); { var __v2=ALLY_VIS[a.key]; if(__v2&&__v2.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, enemyCastleX, (__v2.projDelay||0)); } } }
       }else{
         a.x += a.speed*dt;
       }
@@ -10698,9 +10822,6 @@ const Game = (()=>{
       ln.innerHTML='エネルギーは自然回復せず<b>正解で増える</b>・<b>コンボは途切れない</b>。階が上がるほど級が上がり頂上は<b>準1級</b>。解けないと召喚できず進めません。完走で大きな永久バフ！';
       body.appendChild(ln);
     }
-    var ci=document.createElement('div'); ci.className='muted'; ci.style.cssText='margin-top:10px;font-size:12px;line-height:1.5';
-    ci.innerHTML='💰 ゴールドは強化に使います（クリア報酬の上限なし＝何回でも満額）。<br>🎰 ガチャ用の💎は問題を解くほど貯まります。<b>推奨難易度で遊ぶと💎が2倍！</b>';
-    body.appendChild(ci);
   }
   function checkEnd(){
     if(B.ended) return;
