@@ -13,7 +13,7 @@
        ・制限時間 はやい4秒(×2)/ふつう8秒(×1.5)/おそい12秒(×1)。
        ・ズレた数字（倍数でない数）は見た目は普通のタイルと同じ。
          数字を読んで自分で見抜き、✕/Xで消す（落とすと💀じゃまブロック）。
-       ・図形は丸っこい多角形。1.1倍ずつ大きく・回転して転がる（円判定＋回転）。
+       ・図形は丸っこい多角形。サイズはS字カーブ(1〜3小/5〜7中/9〜11大)で大きくなる（円判定）。
        ・クレーンが掴んで手放す→落下。ガラス箱＋奥行き＋ラボ背景。
      外部ライブラリ無し・自己完結HTML（既存ゲームと同方針）。
      ============================================================ */
@@ -141,8 +141,10 @@ var KMAX = 11;             // k=11 が最大。最大どうしは合体で消滅
 // 色は倍率(k)ごと（1ゲーム1素数なので、色＆形＆数字で見分けやすい）
 var KCOLORS = ['#ff6b6b','#ff922b','#ffd43b','#a9e34b','#51cf66','#20c997','#22b8cf','#4dabf7','#9775fa','#f06595','#2f9e44'];
 function colorForK(k){ return KCOLORS[Math.min(k,KMAX)-1]; }
-var R0 = 19, GROW = 1.1;   // 図形は 1.1倍ずつ大きく。大きい数字ほど大きい。
-function radiusForK(k){ return R0 * Math.pow(GROW, Math.min(k,KMAX)-1); }
+// サイズは線形でなくS字: 1〜3=小さめ / 5〜7=中型 / 9〜11=大型、4と8は中間。
+// （k＝何倍か。1〜11倍）最大k=11は旧サイズ比およそ1.5倍の直径。
+var RADII = [0, 18,20,22, 27, 33,36,40, 48, 58,66,74];   // index=k(1〜11)
+function radiusForK(k){ k=Math.round(k); if(k<1)k=1; if(k>KMAX)k=KMAX; return RADII[k]; }
 // 倍率kの図形（5と8は星、11は丸＝最大）
 function shapeForK(k){
   switch(k){
@@ -170,6 +172,11 @@ var PX0=BX0+6, PX1=BX1-6, PY_TOP=BY0+8, PY_BOT=BY1-8;  // 物理の内壁
 var RAIL_Y=40, SPAWN_Y=74;                    // クレーンのレール／タイル保持位置
 var ZURE_PROB=0.16;
 var GRAVITY=0.05, MAX_FALL=2.2;               // ふわっと落下（終端速度）
+// 重なり解消の安定化パラメータ（深く積もっても暴れない／吹き飛ばない）
+var SLOP=0.6;                                 // この程度の食い込みは許容（微振動を抑える）
+var CORR_PCT=0.4;                             // 1反復あたりの位置補正の割合（段階的に解く）
+var CORR_MAX=2.0;                             // 1反復の最大押し戻し量（爆発的補正の上限）
+var SOLVE_ITERS=3;                            // 衝突解決の反復回数（積み山を安定化）
 var OVERFLOW_LIMIT=1.4;                        // 赤線オーバーが何秒続いたらアウトか
 var SAVE_KEY='prime_merge_best_v1';
 
@@ -260,35 +267,47 @@ function stepSim(dt){
   checkGameOver(dt);
 }
 
+function clampBounds(a){
+  if(a.x<PX0+a.r)a.x=PX0+a.r; if(a.x>PX1-a.r)a.x=PX1-a.r;
+  if(a.y>PY_BOT-a.r)a.y=PY_BOT-a.r; if(a.y<PY_TOP-a.r*1.5)a.y=PY_TOP-a.r*1.5;
+}
 function integrate(h){
-  var i,j,a,b;
+  var i,j,a,b,it;
+  // 1) 重力・移動・壁/床（速度はぶつかる向きのときだけ反射＝エネルギーを足さない）
   for(i=0;i<bodies.length;i++){
     a=bodies[i];
     a.vy+=GRAVITY; if(a.vy>MAX_FALL)a.vy=MAX_FALL;
     a.x+=a.vx; a.y+=a.vy; a.angle+=a.spin;
-    if(a.x<PX0+a.r){ a.x=PX0+a.r; a.vx*=-0.25; a.spin+=a.vy/a.r*0.02; }
-    if(a.x>PX1-a.r){ a.x=PX1-a.r; a.vx*=-0.25; a.spin-=a.vy/a.r*0.02; }
-    if(a.y>PY_BOT-a.r){ a.y=PY_BOT-a.r; a.vy*=-0.12; a.vx*=0.88;
-      a.spin = a.spin*0.7 + (a.vx/a.r)*0.12; }   // 床で少し転がる
+    if(a.x<PX0+a.r){ a.x=PX0+a.r; if(a.vx<0)a.vx*=-0.25; a.spin+=a.vy/a.r*0.02; }
+    if(a.x>PX1-a.r){ a.x=PX1-a.r; if(a.vx>0)a.vx*=-0.25; a.spin-=a.vy/a.r*0.02; }
+    if(a.y>PY_BOT-a.r){ a.y=PY_BOT-a.r; if(a.vy>0)a.vy*=-0.12;
+      if(Math.abs(a.vy)<0.25)a.vy=0; a.vx*=0.88; a.spin=a.spin*0.7+(a.vx/a.r)*0.12; }
     a.vx*=0.99; a.spin*=0.88;
+    if(Math.abs(a.vx)<0.02)a.vx=0;            // 微小振動を眠らせる
     if(a.spin>0.09)a.spin=0.09; if(a.spin<-0.09)a.spin=-0.09;
   }
-  for(i=0;i<bodies.length;i++){
-    for(j=i+1;j<bodies.length;j++){
-      a=bodies[i]; b=bodies[j];
-      if(!a||!b||a.merged||b.merged) continue;
-      var dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy), min=a.r+b.r;
-      if(dist<min && dist>0){
-        if(!a.obstacle && !b.obstacle && a.value===b.value){ mergePair(a,b); continue; }
-        var nx=dx/dist, ny=dy/dist, ov=(min-dist)*0.5;
-        a.x-=nx*ov; a.y-=ny*ov; b.x+=nx*ov; b.y+=ny*ov;
-        var dvx=b.vx-a.vx, dvy=b.vy-a.vy, rel=dvx*nx+dvy*ny;
-        if(rel<0){ var imp=rel*0.5; a.vx+=imp*nx; a.vy+=imp*ny; b.vx-=imp*nx; b.vy-=imp*ny; }
-        // 接触の横ずれ→回転（ごく弱く）
-        var vt=dvx*(-ny)+dvy*nx;
-        a.spin-=(vt/a.r)*0.03; b.spin+=(vt/b.r)*0.03;
+  // 2) 衝突解決を複数回反復（積み山でも安定。位置補正はスロップ＋段階的＋上限つき）
+  for(it=0; it<SOLVE_ITERS; it++){
+    for(i=0;i<bodies.length;i++){
+      for(j=i+1;j<bodies.length;j++){
+        a=bodies[i]; b=bodies[j];
+        if(!a||!b||a.merged||b.merged) continue;
+        var dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy), min=a.r+b.r;
+        if(dist<min && dist>0){
+          // 結合は最初の反復だけ＝ジッターでの多重結合を防ぐ
+          if(it===0 && !a.obstacle && !b.obstacle && a.value===b.value){ mergePair(a,b); continue; }
+          var nx=dx/dist, ny=dy/dist;
+          var pen=min-dist-SLOP; if(pen<0)pen=0;
+          var corr=pen*CORR_PCT; if(corr>CORR_MAX)corr=CORR_MAX;  // 一気に押し戻さない
+          a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
+          var dvx=b.vx-a.vx, dvy=b.vy-a.vy, rel=dvx*nx+dvy*ny;
+          if(rel<0){ var imp=rel*0.5; a.vx+=imp*nx; a.vy+=imp*ny; b.vx-=imp*nx; b.vy-=imp*ny; }
+          var vt=dvx*(-ny)+dvy*nx;
+          a.spin-=(vt/a.r)*0.03; b.spin+=(vt/b.r)*0.03;
+        }
       }
     }
+    for(i=0;i<bodies.length;i++){ if(bodies[i]&&!bodies[i].merged) clampBounds(bodies[i]); }
   }
   bodies=bodies.filter(function(x){ return !x.merged; });
 }
@@ -304,7 +323,7 @@ function mergePair(a,b){
     return;
   }
   var nk=a.k+1;
-  bodies.push({ x:mx, y:my, vx:(a.vx+b.vx)/2, vy:-0.4, angle:0, spin:0,
+  bodies.push({ x:mx, y:my, vx:(a.vx+b.vx)*0.3, vy:0, angle:0, spin:0,
     k:nk, value:gamePrime*nk, r:radiusForK(nk), obstacle:false, merged:false, rest:0, pop:1 });
   addScore(Math.round(gamePrime*nk*scoreMult));
   burst(mx,my,radiusForK(nk),colorForK(nk));
