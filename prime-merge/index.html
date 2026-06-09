@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>そすうマージ 🔢✨</title>
+<style>
+  /* ============================================================
+     そすうマージ — 数学ハクスラ第3弾（スイカゲーム × 倍数）
+     ・落ちる数字は 43〜97 の素数 ×1〜5倍（ランダム）。
+     ・同じ数字どうしが結合 → その素数の「次の倍数」へ
+       例) 43+43→86(43×2)、86+86→129(43×3) … ＝倍数を学ぶ。
+     ・4秒以内に落とす（残りバー表示・時間切れは自動落下）。
+     ・たまに「ズレた数字（倍数でない）」が出る → ✕/Xキーで削除。
+       消さずに落とすと、消えない灰色の「じゃまブロック」になる。
+     ・図形は丸っこい多角形：倍率が上がるほど辺が増える（色＝素数）。
+     ・スイカ式の溢れライン超過でゲームオーバー。スマホ対応。
+     外部ライブラリ無し・自己完結HTML（既存ゲームと同方針）。
+     ============================================================ */
+  :root{
+    --ink:#172033; --paper:#f3f7ff; --line:#cfe0ff;
+    --sky:#dff0ff; --gold:#f3b21f; --red:#ef5350; --green:#27a35a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{
+    color:var(--ink); overflow:hidden; user-select:none; -webkit-user-select:none;
+    font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",system-ui,sans-serif;
+    background:linear-gradient(180deg,#0b1026 0%,#1a1f44 60%,#23184a 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .app{position:relative; width:100%; max-width:440px; height:100%; max-height:940px;
+    display:flex; flex-direction:column; padding:8px 10px max(8px,env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,#101638,#1b1648);}
+  @media(min-width:480px){ .app{border-radius:30px; height:min(94vh,900px);
+    box-shadow:0 30px 80px rgba(0,0,0,.6);} }
+
+  /* 上バー */
+  .top{display:flex; align-items:center; gap:8px; color:#eaf0ff; padding:4px 4px 8px;}
+  .home{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); color:#eaf0ff;
+    border-radius:12px; padding:7px 11px; font-size:14px; font-weight:700; cursor:pointer;}
+  .scoreBox{flex:1; text-align:center;}
+  .scoreBox .lab{font-size:11px; color:#9fb0e6; font-weight:700;}
+  .scoreBox .val{font-size:26px; font-weight:800; line-height:1;}
+  .best{font-size:12px; color:#9fb0e6; min-width:78px; text-align:right; font-weight:700;}
+
+  /* タイマーバー */
+  .timerWrap{height:12px; background:rgba(255,255,255,.12); border-radius:8px; overflow:hidden; margin:0 4px 6px;}
+  .timer{height:100%; width:100%; border-radius:8px; background:linear-gradient(90deg,#43e97b,#38f9d7); transition:width .08s linear;}
+  .timer.warn{background:linear-gradient(90deg,#ffd54a,#ff8a3c);}
+  .timer.danger{background:linear-gradient(90deg,#ff6a6a,#ff2e63);}
+
+  /* 盤面 */
+  .stageWrap{flex:1; position:relative; display:flex; align-items:stretch; justify-content:center; min-height:0;}
+  canvas{background:linear-gradient(180deg,#f7fbff,#e8f1ff); border-radius:18px; touch-action:none;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.35); width:100%; height:100%;}
+
+  /* 操作バー */
+  .controls{display:flex; gap:10px; padding:10px 4px 4px;}
+  .ctrl{flex:1; border:none; border-radius:16px; padding:14px 8px; font-size:17px; font-weight:800;
+    color:#fff; cursor:pointer; box-shadow:0 5px 0 rgba(0,0,0,.25); transition:transform .06s;}
+  .ctrl:active{transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,.25);}
+  .ctrl.drop{background:linear-gradient(180deg,#4f8cff,#2f64e6); flex:2;}
+  .ctrl.del{background:linear-gradient(180deg,#ff7a7a,#e0533d);}
+  .ctrl small{display:block; font-size:11px; font-weight:600; opacity:.9; margin-top:2px;}
+
+  /* オーバーレイ（タイトル・終了） */
+  .overlay{position:absolute; inset:0; z-index:20; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; padding:24px;
+    background:rgba(8,11,28,.82); backdrop-filter:blur(3px); color:#eaf0ff;}
+  .overlay.hide{display:none;}
+  .overlay h1{font-size:30px; margin:.1em 0; letter-spacing:1px;}
+  .overlay .tag{color:#a9b8ee; font-size:13px; margin-bottom:14px;}
+  .rules{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); border-radius:16px;
+    padding:14px 16px; font-size:13px; line-height:1.85; text-align:left; max-width:340px; margin-bottom:18px;}
+  .rules b{color:#ffe08a;}
+  .bigBtn{background:linear-gradient(180deg,#43e97b,#1fae57); color:#06281b; border:none;
+    border-radius:16px; padding:16px 40px; font-size:20px; font-weight:800; cursor:pointer;
+    box-shadow:0 6px 0 #128043;}
+  .bigBtn:active{transform:translateY(3px); box-shadow:0 3px 0 #128043;}
+  .finalScore{font-size:46px; font-weight:800; margin:6px 0;}
+  .finalBest{color:#ffe08a; font-size:15px; margin-bottom:18px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <button class="home" onclick="goHome()">‹ もどる</button>
+    <div class="scoreBox"><div class="lab">スコア</div><div class="val" id="score">0</div></div>
+    <div class="best" id="best">ベスト 0</div>
+  </div>
+
+  <div class="timerWrap"><div class="timer" id="timer"></div></div>
+
+  <div class="stageWrap">
+    <canvas id="cv"></canvas>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl del" id="btnDel" ontouchstart="onDel(event)" onclick="onDel(event)">✕ けす<small>ズレた数字を消す（Xキー）</small></button>
+    <button class="ctrl drop" id="btnDrop" ontouchstart="onDropBtn(event)" onclick="onDropBtn(event)">▼ おとす<small>スペースキー</small></button>
+  </div>
+
+  <!-- タイトル -->
+  <div class="overlay" id="ovTitle">
+    <h1>そすうマージ 🔢</h1>
+    <div class="tag">スイカゲーム × 倍数のおべんきょう</div>
+    <div class="rules">
+      ・おなじ数字どうしがぶつかると<b>合体</b>して、その素数の<b>次の倍数</b>になるよ。<br>
+      　例) 43+43→<b>86</b>、86+86→<b>129</b><br>
+      ・<b>4秒以内</b>に落とそう（バーが減るよ）。<br>
+      ・たまに出る<b>ズレた数字</b>（倍数じゃない数）は<br>　<b>✕ボタン / Xキー</b>で消す！<br>
+      ・消さずに落とすと…消えない<b>じゃまブロック</b>に💀<br>
+      ・上のラインを<b>こえたら</b>おしまい。
+    </div>
+    <button class="bigBtn" onclick="startGame()">スタート ▶</button>
+  </div>
+
+  <!-- 終了 -->
+  <div class="overlay hide" id="ovOver">
+    <h1>おしまい！</h1>
+    <div class="tag">よくがんばったね</div>
+    <div class="finalScore" id="finalScore">0</div>
+    <div class="finalBest" id="finalBest">ベスト 0</div>
+    <button class="bigBtn" onclick="startGame()">もういちど ▶</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ---- 定数 -----------------------------------------------------------
+var PRIMES = [43,47,53,59,61,67,71,73,79,83,89,97];
+// 素数ごとの色（色＝素数の種類。同じ仲間が一目で分かる）
+var COLORS = {};
+PRIMES.forEach(function(p,i){ COLORS[p] = 'hsl('+Math.round(i*30)+',78%,58%)'; });
+
+var LOGW = 360;            // 論理座標の幅（描画はcanvasサイズに自動スケール）
+var LOGH = 540;            // 論理座標の高さ
+var WALL = 6;              // 壁の厚み
+var OVER_Y = 86;           // この高さより上に積もったらアウト
+var SPAWN_Y = 44;          // タイル待機・落下開始のy
+var DROP_TIME = 4.0;       // 落とすまでの制限（秒）
+var ZURE_PROB = 0.18;      // ズレた数字の出現率
+var GRAVITY = 0.42;
+var REST_FRAMES = 70;      // 溢れライン上で静止が続いたらアウト
+var SAVE_KEY = 'prime_merge_best_v1';
+
+// ---- 状態 -----------------------------------------------------------
+var cv, ctx, scale=1, ox=0, oy=0;     // 表示スケールとオフセット
+var state = 'title';                   // title / play / over
+var bodies = [];                       // 盤面の物体
+var current = null;                    // いま持っているタイル
+var aimX = LOGW/2;                     // 落下位置
+var dropCooldown = 0;                  // 連続落下の間
+var bornAt = 0;                        // currentが出た時刻
+var score = 0, best = 0;
+var flashMsg = null, flashUntil = 0;
+var lastT = 0;
+
+// ---- ユーティリティ -------------------------------------------------
+function rand(n){ return Math.floor(Math.random()*n); }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function radiusForK(k){ return 20 + Math.min(k,8)*3.2; }   // 倍率が上がるほど少し大きく
+// 倍率kの図形の辺の数（5は星）
+function shapeForK(k){
+  if(k<=1) return {sides:3};   // 丸っこい三角
+  if(k===2) return {sides:4};  // 四角
+  if(k===3) return {sides:5};  // 五角形
+  if(k===4) return {sides:6};  // 六角形
+  if(k===5) return {star:true};// 星
+  if(k===6) return {sides:7};
+  return {sides:8};
+}
+
+// ---- タイル生成 -----------------------------------------------------
+function makeNormal(){
+  var p = PRIMES[rand(PRIMES.length)];
+  var k = 1 + rand(5);                 // 1〜5倍
+  return { zure:false, p:p, k:k, value:p*k, r:radiusForK(k) };
+}
+function makeZure(){
+  // 倍数に近いけれど倍数でない数（±1〜±2ずらす）
+  var p = PRIMES[rand(PRIMES.length)];
+  var k = 1 + rand(5);
+  var off = (rand(2)?1:-1) * (1+rand(2));
+  var v = p*k + off;
+  if(v<10) v = p*k+1;
+  return { zure:true, p:p, k:k, value:v, r:radiusForK(2) };
+}
+function spawnCurrent(){
+  current = (Math.random()<ZURE_PROB) ? makeZure() : makeNormal();
+  current.x = aimX = clamp(aimX, WALL+current.r, LOGW-WALL-current.r);
+  bornAt = performance.now()/1000;
+}
+
+// ---- 落とす / 消す --------------------------------------------------
+function dropCurrent(){
+  if(!current || dropCooldown>0) return;
+  var b = {
+    x: clamp(aimX, WALL+current.r, LOGW-WALL-current.r), y: SPAWN_Y,
+    vx:0, vy:0, p:current.p, k:current.k, value:current.value, r:current.r,
+    obstacle: current.zure,   // ズレを落とすと=消えないじゃまブロック
+    merged:false, rest:0
+  };
+  bodies.push(b);
+  beep(b.obstacle?160:330, .06);
+  current = null;
+  dropCooldown = 0.35;
+}
+function deleteCurrent(){
+  if(!current) return;
+  if(current.zure){
+    score += 30;                       // ナイス削除ボーナス
+    flash('ナイス！ ✓', '#27e08a');
+    beep(880,.08);
+    current = null; dropCooldown = 0.18;
+    updateScore();
+  } else {
+    flash('これは正しい数だよ', '#ffd54a'); // 通常タイルは消せない
+    beep(200,.05);
+  }
+}
+
+// ---- 物理 -----------------------------------------------------------
+function step(dt){
+  if(dropCooldown>0){ dropCooldown -= dt; if(dropCooldown<0)dropCooldown=0; }
+  if(state!=='play') return;
+
+  // currentが無く、クールダウン明けなら次を出す
+  if(!current && dropCooldown<=0) spawnCurrent();
+
+  // 制限時間：切れたら自動で落とす
+  if(current){
+    var rem = DROP_TIME - (performance.now()/1000 - bornAt);
+    if(rem<=0) dropCurrent();
+  }
+
+  var sub = 4, h = dt/sub;
+  for(var s=0;s<sub;s++) integrate(h);
+
+  checkGameOver(dt);
+}
+
+function integrate(h){
+  var i,j,a,b;
+  // 重力・移動
+  for(i=0;i<bodies.length;i++){
+    a = bodies[i];
+    a.vy += GRAVITY;
+    a.x += a.vx; a.y += a.vy;
+    // 壁
+    if(a.x < WALL+a.r){ a.x = WALL+a.r; a.vx *= -0.3; }
+    if(a.x > LOGW-WALL-a.r){ a.x = LOGW-WALL-a.r; a.vx *= -0.3; }
+    if(a.y > LOGH-WALL-a.r){ a.y = LOGH-WALL-a.r; a.vy *= -0.2; a.vx *= 0.9; }
+    a.vx *= 0.992; // 空気抵抗
+  }
+  // 衝突・合体
+  for(i=0;i<bodies.length;i++){
+    for(j=i+1;j<bodies.length;j++){
+      a=bodies[i]; b=bodies[j];
+      if(!a||!b||a.merged||b.merged) continue;
+      var dx=b.x-a.x, dy=b.y-a.y;
+      var dist=Math.hypot(dx,dy), min=a.r+b.r;
+      if(dist<min && dist>0){
+        // 合体判定：通常どうし & 同じ数字
+        if(!a.obstacle && !b.obstacle && a.value===b.value){
+          mergePair(a,b); continue;
+        }
+        // 押し戻し
+        var ov=(min-dist), nx=dx/dist, ny=dy/dist, push=ov*0.5;
+        a.x-=nx*push; a.y-=ny*push; b.x+=nx*push; b.y+=ny*push;
+        var dvx=b.vx-a.vx, dvy=b.vy-a.vy, rel=dvx*nx+dvy*ny;
+        if(rel<0){ var imp=rel*0.5; a.vx+=imp*nx; a.vy+=imp*ny; b.vx-=imp*nx; b.vy-=imp*ny; }
+      }
+    }
+  }
+  bodies = bodies.filter(function(x){ return !x.merged; });
+}
+
+function mergePair(a,b){
+  a.merged=true; b.merged=true;
+  var nk=a.k+1, p=a.p;
+  var nb={ x:(a.x+b.x)/2, y:(a.y+b.y)/2, vx:0, vy:-1.5,
+    p:p, k:nk, value:p*nk, r:radiusForK(nk), obstacle:false, merged:false, rest:0, pop:1 };
+  bodies.push(nb);
+  score += p*nk;
+  updateScore();
+  flash('×'+nk+' = '+(p*nk), COLORS[p]);
+  beep(440+nk*60,.07);
+}
+
+function checkGameOver(dt){
+  var f = dt*60;
+  for(var i=0;i<bodies.length;i++){
+    var a=bodies[i];
+    var speed=Math.hypot(a.vx,a.vy);
+    if(a.y - a.r < OVER_Y && speed < 1.3){
+      a.rest += f;
+      if(a.rest > REST_FRAMES){ gameOver(); return; }
+    } else { a.rest = 0; }
+  }
+}
+
+// ---- 描画 -----------------------------------------------------------
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.setTransform(scale,0,0,scale,ox,oy);
+
+  // 盤の枠
+  ctx.fillStyle='rgba(20,40,90,.06)';
+  ctx.fillRect(0,0,WALL,LOGH); ctx.fillRect(LOGW-WALL,0,WALL,LOGH); ctx.fillRect(0,LOGH-WALL,LOGW,WALL);
+
+  // 溢れライン
+  ctx.strokeStyle='rgba(239,83,80,.55)'; ctx.lineWidth=2; ctx.setLineDash([8,7]);
+  ctx.beginPath(); ctx.moveTo(WALL,OVER_Y); ctx.lineTo(LOGW-WALL,OVER_Y); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 物体
+  for(var i=0;i<bodies.length;i++) drawTile(bodies[i], false);
+
+  // 落下ガイド & current
+  if(current && state==='play'){
+    var cx = clamp(aimX, WALL+current.r, LOGW-WALL-current.r);
+    ctx.strokeStyle = current.zure?'rgba(239,83,80,.5)':'rgba(60,110,220,.4)';
+    ctx.lineWidth=2; ctx.setLineDash([5,6]);
+    ctx.beginPath(); ctx.moveTo(cx, SPAWN_Y+current.r); ctx.lineTo(cx, LOGH-WALL); ctx.stroke();
+    ctx.setLineDash([]);
+    current.x = cx;
+    drawTile({x:cx,y:SPAWN_Y,r:current.r,p:current.p,k:current.k,value:current.value,obstacle:current.zure}, current.zure);
+  }
+
+  // フラッシュメッセージ
+  if(flashMsg && performance.now()/1000 < flashUntil){
+    ctx.globalAlpha=0.92; ctx.fillStyle=flashMsg.color;
+    ctx.font='bold 26px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(flashMsg.text, LOGW/2, LOGH*0.32);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawTile(b, warnPulse){
+  var r=b.r, x=b.x, y=b.y;
+  if(b.pop && b.pop>0){ r *= (1 + b.pop*0.18); b.pop -= 0.08; if(b.pop<0)b.pop=0; }
+
+  var fill, stroke, txt='#fff';
+  if(b.obstacle){
+    fill='#7c8597'; stroke='#4b5566'; txt='#fff';
+  } else {
+    fill=COLORS[b.p]; stroke='rgba(0,0,0,.18)';
+  }
+
+  // ズレた現タイルは警告点滅
+  if(warnPulse){
+    var pul = 0.5+0.5*Math.sin(performance.now()/120);
+    fill = 'rgba(239,83,80,'+(0.55+0.35*pul)+')'; stroke='#b3261e';
+  }
+
+  ctx.save();
+  ctx.translate(x,y);
+  var sh = b.obstacle ? {sides:4} : shapeForK(b.k);
+  pathShape(sh, r);
+  // 影
+  ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=6; ctx.shadowOffsetY=2;
+  ctx.fillStyle=fill; ctx.fill();
+  ctx.shadowColor='transparent';
+  // 角丸＆フチ
+  ctx.lineJoin='round'; ctx.lineWidth=r*0.34; ctx.strokeStyle=fill; ctx.stroke();
+  ctx.lineWidth=2; ctx.strokeStyle=stroke; ctx.stroke();
+  // つや
+  ctx.beginPath(); ctx.ellipse(-r*0.28,-r*0.34,r*0.34,r*0.2,-0.5,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
+
+  // 数字
+  ctx.fillStyle=txt; ctx.textAlign='center'; ctx.textBaseline='middle';
+  var fs = b.value>=1000? r*0.62 : (b.value>=100? r*0.74 : r*0.86);
+  ctx.font='bold '+fs+'px system-ui,sans-serif';
+  ctx.fillText(String(b.value), 0, 1);
+  if(b.obstacle){ ctx.font='bold '+(r*0.5)+'px system-ui'; ctx.fillText('💀',0,-r*0.55); }
+  ctx.restore();
+}
+
+// 角丸の多角形 / 星 のパスを作る（lineJoin:round の太フチで丸っこく見せる）
+function pathShape(sh, r){
+  ctx.beginPath();
+  var rr = r*0.82; // フチ太化ぶん内側に
+  if(sh.star){
+    var pts=5;
+    for(var i=0;i<pts*2;i++){
+      var ang=-Math.PI/2 + i*Math.PI/pts;
+      var rad=(i%2===0)? rr : rr*0.46;
+      var px=Math.cos(ang)*rad, py=Math.sin(ang)*rad;
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+  } else {
+    var n=sh.sides, rot=(n%2===0)? Math.PI/n : -Math.PI/2;
+    for(var j=0;j<n;j++){
+      var a=rot + j*2*Math.PI/n;
+      var qx=Math.cos(a)*rr, qy=Math.sin(a)*rr;
+      j===0?ctx.moveTo(qx,qy):ctx.lineTo(qx,qy);
+    }
+  }
+  ctx.closePath();
+}
+
+// ---- 画面・入力 -----------------------------------------------------
+function flash(text,color){ flashMsg={text:text,color:color||'#fff'}; flashUntil=performance.now()/1000+0.8; }
+function updateScore(){ document.getElementById('score').textContent=score; if(score>best){best=score;} }
+
+function updateTimerBar(){
+  var el=document.getElementById('timer');
+  if(state!=='play' || !current){ el.style.width='0%'; return; }
+  var rem = DROP_TIME - (performance.now()/1000 - bornAt);
+  var pct = clamp(rem/DROP_TIME,0,1)*100;
+  el.style.width = pct+'%';
+  el.className = 'timer' + (pct<30?' danger':(pct<60?' warn':''));
+}
+
+function resize(){
+  var wrap = cv.parentElement;
+  var w = wrap.clientWidth, h = wrap.clientHeight;
+  var dpr = Math.min(window.devicePixelRatio||1, 2.5);
+  cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  cv.style.width=w+'px'; cv.style.height=h+'px';
+  // 論理座標(LOGW×LOGH)を中央に収める
+  var sc = Math.min(w/LOGW, h/LOGH);
+  scale = sc*dpr;
+  ox = (cv.width - LOGW*scale)/2;
+  oy = (cv.height - LOGH*scale)/2;
+}
+
+function clientToLogicX(clientX){
+  var rect = cv.getBoundingClientRect();
+  var dpr = Math.min(window.devicePixelRatio||1, 2.5);
+  var px = (clientX-rect.left)*(cv.width/rect.width);
+  return (px - ox)/scale;
+}
+
+// ドラッグで狙う、離して落とす
+var dragging=false;
+function pdown(e){ if(state!=='play')return; dragging=true; aimX=clientToLogicX(e.clientX); }
+function pmove(e){ if(state!=='play')return; if(dragging || e.pointerType==='mouse') aimX=clientToLogicX(e.clientX); }
+function pup(e){ if(state!=='play'){dragging=false;return;} if(dragging){ dropCurrent(); } dragging=false; }
+
+window.onDropBtn=function(e){ if(e)e.preventDefault(); if(state==='play') dropCurrent(); };
+window.onDel=function(e){ if(e)e.preventDefault(); if(state==='play') deleteCurrent(); };
+window.startGame=function(){
+  bodies=[]; current=null; score=0; dropCooldown=0; aimX=LOGW/2;
+  document.getElementById('ovTitle').classList.add('hide');
+  document.getElementById('ovOver').classList.add('hide');
+  updateScore();
+  state='play';
+  spawnCurrent();
+};
+window.goHome=function(){
+  // ポータルへ。開発(launcher.html)と本番(index.html)の両対応で親へ。
+  try{ window.location.href='../index.html'; }catch(e){}
+};
+function gameOver(){
+  if(state==='over')return;
+  state='over';
+  if(score>best){ best=score; try{ localStorage.setItem(SAVE_KEY,String(best)); }catch(e){} }
+  document.getElementById('finalScore').textContent=score;
+  document.getElementById('finalBest').textContent='ベスト '+best;
+  document.getElementById('ovOver').classList.remove('hide');
+}
+
+// ---- 簡易サウンド ---------------------------------------------------
+var actx=null;
+function beep(freq,dur){
+  try{
+    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    var o=actx.createOscillator(), g=actx.createGain();
+    o.type='triangle'; o.frequency.value=freq;
+    g.gain.value=0.06; o.connect(g); g.connect(actx.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+dur);
+    o.stop(actx.currentTime+dur+0.02);
+  }catch(e){}
+}
+
+// ---- メインループ ---------------------------------------------------
+function loop(t){
+  var dt = lastT? Math.min((t-lastT)/1000, 0.05) : 0.016;
+  lastT=t;
+  step(dt);
+  draw();
+  updateTimerBar();
+  requestAnimationFrame(loop);
+}
+
+// ---- 初期化 ---------------------------------------------------------
+function init(){
+  cv=document.getElementById('cv'); ctx=cv.getContext('2d');
+  try{ best=parseInt(localStorage.getItem(SAVE_KEY)||'0',10)||0; }catch(e){ best=0; }
+  document.getElementById('best').textContent='ベスト '+best;
+  resize();
+  window.addEventListener('resize', resize);
+  cv.addEventListener('pointerdown', pdown);
+  cv.addEventListener('pointermove', pmove);
+  window.addEventListener('pointerup', pup);
+  window.addEventListener('keydown', function(e){
+    if(e.code==='Space'){ e.preventDefault(); if(state==='play') dropCurrent(); else startGame(); }
+    else if(e.key==='x'||e.key==='X'){ e.preventDefault(); if(state==='play') deleteCurrent(); }
+    else if(e.key==='ArrowLeft'){ aimX-=14; }
+    else if(e.key==='ArrowRight'){ aimX+=14; }
+  });
+  requestAnimationFrame(loop);
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+
+})();
+</script>
+</body>
+</html>
