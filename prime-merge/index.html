@@ -6,10 +6,10 @@
 <title>そすうマージ 🔢✨</title>
 <style>
   /* ============================================================
-     そすうマージ — 数学ハクスラ第3弾（スイカゲーム × 倍数）
+     そすうマージ — 数学ハクスラ第3弾（マージ × 倍数）
      §0 方針
-       ・1ゲーム＝1つの素数の倍数だけ。同値どうし合体で次の倍数へ。
-         例) 43→86→129…、最大 k=11＝「スイカ」。スイカ同士は消滅。
+       ・1ゲーム＝1つの素数の倍数だけ（毎回13〜97からランダム）。同値どうし合体で次の倍数へ。
+         例) 43→86→129…、最大 k=11。最大どうしは合体で消滅して大得点。
        ・制限時間 はやい4秒(×2)/ふつう8秒(×1.5)/おそい12秒(×1)。
        ・ズレた数字（倍数でない数）は見た目は普通のタイルと同じ。
          数字を読んで自分で見抜き、✕/Xで消す（落とすと💀じゃまブロック）。
@@ -103,14 +103,14 @@
   <!-- タイトル -->
   <div class="overlay" id="ovTitle">
     <h1>そすうマージ 🔢</h1>
-    <div class="tag">スイカゲーム × 倍数のおべんきょう</div>
+    <div class="tag">おなじ倍数どうしを合体させよう</div>
     <div class="rules">
-      ・1ゲームで出るのは<b>1つの素数の倍数</b>だけ（例：43,86,129…）。<br>
-      ・おなじ数字どうしが合体→<b>次の倍数</b>。最大は<b>スイカ🍉</b>、スイカ同士は<b>消滅</b>して大得点！<br>
+      ・1ゲームで出るのは<b>1つの素数の倍数</b>だけ。毎回ちがう素数（13〜97）で出題！<br>
+      ・おなじ数字どうしが合体→<b>次の倍数</b>（例：43と43→86）。最大までいくと<b>消滅</b>して大得点！<br>
       ・<b>クレーンを動かして</b>ねらい、<b>▼おとす</b>で落とす。<br>
       ・たまに<b>倍数じゃない数</b>がまざる。見た目は同じ＝<b>数字をよく見て</b>見抜き、<b>✕けす</b>で消す（ドラッグ中でもOK）。<br>
       ・消さずに落とすと…消えない<b>じゃまブロック💀</b>に。<br>
-      ・上のラインを<b>こえたら</b>おしまい。
+      ・<b>赤いライン</b>をこえて積み上がると<b>おしまい</b>。
     </div>
     <div class="diffTitle">⏱️ 制限時間をえらぶ（みじかいほど高得点）</div>
     <div class="diffRow" id="diffRow">
@@ -136,14 +136,14 @@
 'use strict';
 
 // ---- §1 定数 -------------------------------------------------------
-var PRIMES = [43,47,53,59,61,67,71,73,79,83,89,97];
-var KMAX = 11;             // k=11 が「スイカ」。スイカ同士は消滅。
+var PRIMES = [13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
+var KMAX = 11;             // k=11 が最大。最大どうしは合体で消滅して大得点。
 // 色は倍率(k)ごと（1ゲーム1素数なので、色＆形＆数字で見分けやすい）
 var KCOLORS = ['#ff6b6b','#ff922b','#ffd43b','#a9e34b','#51cf66','#20c997','#22b8cf','#4dabf7','#9775fa','#f06595','#2f9e44'];
 function colorForK(k){ return KCOLORS[Math.min(k,KMAX)-1]; }
 var R0 = 19, GROW = 1.1;   // 図形は 1.1倍ずつ大きく。大きい数字ほど大きい。
 function radiusForK(k){ return R0 * Math.pow(GROW, Math.min(k,KMAX)-1); }
-// 倍率kの図形（5と8は星、11はスイカ＝丸）
+// 倍率kの図形（5と8は星、11は丸＝最大）
 function shapeForK(k){
   switch(k){
     case 1: return {sides:3};  case 2: return {sides:4};
@@ -151,7 +151,7 @@ function shapeForK(k){
     case 5: return {star:5};   case 6: return {sides:7};
     case 7: return {sides:8};  case 8: return {star:6};
     case 9: return {sides:9};  case 10:return {sides:10};
-    case 11:return {watermelon:true};
+    case 11:return {circle:true};
     default:return {sides:10};
   }
 }
@@ -170,7 +170,7 @@ var PX0=BX0+6, PX1=BX1-6, PY_TOP=BY0+8, PY_BOT=BY1-8;  // 物理の内壁
 var RAIL_Y=40, SPAWN_Y=74;                    // クレーンのレール／タイル保持位置
 var ZURE_PROB=0.16;
 var GRAVITY=0.05, MAX_FALL=2.2;               // ふわっと落下（終端速度）
-var REST_FRAMES=70;
+var OVERFLOW_LIMIT=1.4;                        // 赤線オーバーが何秒続いたらアウトか
 var SAVE_KEY='prime_merge_best_v1';
 
 // ---- §2 状態 -------------------------------------------------------
@@ -188,6 +188,8 @@ var craneOpenT=0;
 var pops=[];
 var flashMsg=null, flashUntil=0;
 var lastT=0;
+var overflowT=0;
+var countT=0;          // スタート前カウントダウン残り秒
 
 // ---- §3 ユーティリティ ---------------------------------------------
 function rand(n){ return Math.floor(Math.random()*n); }
@@ -221,7 +223,7 @@ function dropCurrent(){
   if(!current || dropCooldown>0) return;
   bodies.push({
     x: clamp(aimX, PX0+current.r, PX1-current.r), y:SPAWN_Y, vx:0, vy:0,
-    angle:(Math.random()-0.5)*0.5, spin:0,
+    angle:(Math.random()-0.5)*0.2, spin:0,
     k:current.k, value:current.value, r:current.r,
     obstacle:current.zure, merged:false, rest:0, pop:0.6
   });
@@ -245,6 +247,7 @@ function stepSim(dt){
   if(dropCooldown>0){ dropCooldown-=dt; if(dropCooldown<0)dropCooldown=0; }
   if(craneOpenT>0){ craneOpenT-=dt; if(craneOpenT<0)craneOpenT=0; }
   for(var p=pops.length-1;p>=0;p--){ pops[p].life-=dt; if(pops[p].life<=0)pops.splice(p,1); }
+  if(state==='countdown'){ countT-=dt; if(countT<=0){ state='play'; spawnCurrent(); } return; }
   if(state!=='play') return;
 
   if(!current && dropCooldown<=0) spawnCurrent();
@@ -263,12 +266,12 @@ function integrate(h){
     a=bodies[i];
     a.vy+=GRAVITY; if(a.vy>MAX_FALL)a.vy=MAX_FALL;
     a.x+=a.vx; a.y+=a.vy; a.angle+=a.spin;
-    if(a.x<PX0+a.r){ a.x=PX0+a.r; a.vx*=-0.25; a.spin+=a.vy/a.r*0.08; }
-    if(a.x>PX1-a.r){ a.x=PX1-a.r; a.vx*=-0.25; a.spin-=a.vy/a.r*0.08; }
+    if(a.x<PX0+a.r){ a.x=PX0+a.r; a.vx*=-0.25; a.spin+=a.vy/a.r*0.02; }
+    if(a.x>PX1-a.r){ a.x=PX1-a.r; a.vx*=-0.25; a.spin-=a.vy/a.r*0.02; }
     if(a.y>PY_BOT-a.r){ a.y=PY_BOT-a.r; a.vy*=-0.12; a.vx*=0.88;
-      a.spin = a.spin*0.55 + (a.vx/a.r)*0.45; }   // 床で転がる
-    a.vx*=0.99; a.spin*=0.96;
-    if(a.spin>0.4)a.spin=0.4; if(a.spin<-0.4)a.spin=-0.4;
+      a.spin = a.spin*0.7 + (a.vx/a.r)*0.12; }   // 床で少し転がる
+    a.vx*=0.99; a.spin*=0.88;
+    if(a.spin>0.09)a.spin=0.09; if(a.spin<-0.09)a.spin=-0.09;
   }
   for(i=0;i<bodies.length;i++){
     for(j=i+1;j<bodies.length;j++){
@@ -281,9 +284,9 @@ function integrate(h){
         a.x-=nx*ov; a.y-=ny*ov; b.x+=nx*ov; b.y+=ny*ov;
         var dvx=b.vx-a.vx, dvy=b.vy-a.vy, rel=dvx*nx+dvy*ny;
         if(rel<0){ var imp=rel*0.5; a.vx+=imp*nx; a.vy+=imp*ny; b.vx-=imp*nx; b.vy-=imp*ny; }
-        // 接触の横ずれ→回転（転がり）
+        // 接触の横ずれ→回転（ごく弱く）
         var vt=dvx*(-ny)+dvy*nx;
-        a.spin-=(vt/a.r)*0.10; b.spin+=(vt/b.r)*0.10;
+        a.spin-=(vt/a.r)*0.03; b.spin+=(vt/b.r)*0.03;
       }
     }
   }
@@ -293,31 +296,33 @@ function integrate(h){
 function mergePair(a,b){
   a.merged=true; b.merged=true;
   var mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
-  if(a.k>=KMAX){                       // スイカ＋スイカ＝消滅
+  if(a.k>=KMAX){                       // 最大どうし＝消滅して大得点
     addScore(Math.round(gamePrime*KMAX*6*scoreMult));
-    burst(mx,my,a.r*1.6,'#2f9e44'); burst(mx,my,a.r*1.2,'#ffd43b');
-    flash('🍉 スイカ消滅！ +'+Math.round(gamePrime*KMAX*6*scoreMult),'#51cf66');
-    beep(180,.18); beep(120,.22);
+    burst(mx,my,a.r*1.7,'#ffd43b'); burst(mx,my,a.r*1.3,'#ff6b6b');
+    flash('消滅！ +'+Math.round(gamePrime*KMAX*6*scoreMult),'#ffd43b');
+    beep(880,.10); beep(1200,.14);
     return;
   }
   var nk=a.k+1;
-  bodies.push({ x:mx, y:my, vx:(a.vx+b.vx)/2, vy:-0.4, angle:0, spin:(a.spin+b.spin)/2,
+  bodies.push({ x:mx, y:my, vx:(a.vx+b.vx)/2, vy:-0.4, angle:0, spin:0,
     k:nk, value:gamePrime*nk, r:radiusForK(nk), obstacle:false, merged:false, rest:0, pop:1 });
   addScore(Math.round(gamePrime*nk*scoreMult));
   burst(mx,my,radiusForK(nk),colorForK(nk));
-  if(nk===KMAX){ flash('🍉 スイカ完成！','#51cf66'); beep(660,.12); }
-  else flash(gamePrime+'×'+nk+' = '+(gamePrime*nk), colorForK(nk));
+  flash(gamePrime+'×'+nk+' = '+(gamePrime*nk), colorForK(nk));
   beep(420+nk*45,.06);
 }
 function burst(x,y,r,color){ pops.push({x:x,y:y,r:r,color:color,life:0.45,max:0.45}); }
 
 function checkGameOver(dt){
-  var f=dt*60;
+  // 「赤線の上にはみ出して落ち着いている球」が1つでもあれば溢れ時間を加算。
+  // 落下中（vyが大きい）はカウントしない＝積み上がって止まったときだけ進む。揺れても消えない。
+  var over=false;
   for(var i=0;i<bodies.length;i++){
-    var a=bodies[i], speed=Math.hypot(a.vx,a.vy);
-    if(a.y-a.r<PY_TOP && speed<1.3){ a.rest+=f; if(a.rest>REST_FRAMES){ gameOver(); return; } }
-    else a.rest=0;
+    var a=bodies[i];
+    if(a.y-a.r<PY_TOP && a.vy<0.6){ over=true; break; }
   }
+  if(over){ overflowT+=dt; if(overflowT>OVERFLOW_LIMIT){ gameOver(); return; } }
+  else overflowT=Math.max(0, overflowT-dt*1.5);  // 解消すれば少しずつ戻る
 }
 
 // ---- §7 描画 -------------------------------------------------------
@@ -328,8 +333,10 @@ function draw(){
 
   drawLabBg();
   drawBoxBack();
-  // 溢れライン
-  ctx.strokeStyle='rgba(239,83,80,.5)'; ctx.lineWidth=2; ctx.setLineDash([8,7]);
+  if(state==='play'||state==='countdown') drawCenterPrime();   // 何の倍数か＝箱中央に薄く大きく
+  // 溢れライン（オーバー中は濃く太く点滅）
+  var dang=clamp(overflowT/OVERFLOW_LIMIT,0,1);
+  ctx.strokeStyle='rgba(239,83,80,'+(0.45+dang*0.55)+')'; ctx.lineWidth=2+dang*3; ctx.setLineDash([8,7]);
   ctx.beginPath(); ctx.moveTo(PX0,PY_TOP); ctx.lineTo(PX1,PY_TOP); ctx.stroke(); ctx.setLineDash([]);
 
   for(var i=0;i<bodies.length;i++) drawTile(bodies[i]);
@@ -337,6 +344,34 @@ function draw(){
   drawBoxGlass();           // ガラスの艶（タイルの上に薄く重ねて奥行き感）
   if(current && state==='play') drawCrane();
   drawFlash();
+  if(state==='countdown') drawCountdown();
+}
+
+function drawCenterPrime(){
+  var cx=(PX0+PX1)/2, cy=(PY_TOP+PY_BOT)/2;
+  ctx.save();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.globalAlpha=0.10; ctx.fillStyle='#cfe0ff';
+  ctx.font='bold 150px system-ui,sans-serif'; ctx.fillText(String(gamePrime),cx,cy-12);
+  ctx.font='bold 30px system-ui,sans-serif'; ctx.fillText('の倍数',cx,cy+72);
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+function drawCountdown(){
+  ctx.save(); boxPath(BX0,BY0,BX1,BY1,10); ctx.clip();
+  ctx.fillStyle='rgba(8,11,28,.55)'; ctx.fillRect(BX0,BY0,BX1-BX0,BY1-BY0); ctx.restore();
+  var cx=(PX0+PX1)/2, cy=(PY_TOP+PY_BOT)/2;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='bold 30px system-ui,sans-serif'; ctx.lineWidth=5; ctx.strokeStyle='rgba(0,0,0,.55)';
+  ctx.strokeText(gamePrime+' の倍数！',cx,cy-60);
+  ctx.fillStyle='#ffe08a'; ctx.fillText(gamePrime+' の倍数！',cx,cy-60);
+  var n=Math.ceil(countT); if(n<1)n=1; var frac=countT-(n-1);
+  var sc=0.8+0.5*frac;
+  ctx.save(); ctx.translate(cx,cy+22); ctx.scale(sc,sc);
+  ctx.globalAlpha=clamp(frac*1.5,0,1);
+  ctx.font='bold 110px system-ui,sans-serif'; ctx.lineWidth=8; ctx.strokeStyle='rgba(0,0,0,.55)';
+  ctx.strokeText(String(n),0,0); ctx.fillStyle='#fff'; ctx.fillText(String(n),0,0);
+  ctx.restore(); ctx.globalAlpha=1;
 }
 
 function drawLabBg(){
@@ -400,7 +435,6 @@ function drawTile(b){
   pathShape(sh,r); ctx.fillStyle=fill; ctx.fill(); ctx.shadowColor='transparent';
   ctx.lineJoin='round'; ctx.lineWidth=r*0.3; ctx.strokeStyle=fill; ctx.stroke();  // 角を丸く
   ctx.lineWidth=2; ctx.strokeStyle='rgba(0,0,0,.16)'; ctx.stroke();
-  if(sh.watermelon){ drawWatermelonSkin(r); }
   // つや
   ctx.beginPath(); ctx.ellipse(-r*0.28,-r*0.34,r*0.32,r*0.18,-0.5,0,Math.PI*2);
   ctx.fillStyle='rgba(255,255,255,.32)'; ctx.fill();
@@ -413,17 +447,10 @@ function drawTile(b){
   if(b.obstacle){ ctx.font='bold '+(r*0.5)+'px system-ui'; ctx.fillText('💀',0,-r*0.5); }
   ctx.restore();
 }
-function drawWatermelonSkin(r){
-  ctx.strokeStyle='rgba(20,90,40,.5)'; ctx.lineWidth=r*0.08;
-  for(var a=-1;a<=1;a++){ ctx.beginPath();
-    ctx.moveTo(Math.cos((a*0.5-0.5)*Math.PI)*r*0.0, -r);
-    ctx.quadraticCurveTo(a*r*0.7, 0, Math.cos(0)*0, r); ctx.stroke(); }
-}
-
 function pathShape(sh,r){
   ctx.beginPath();
   var rr=r*0.82;
-  if(sh.watermelon){ ctx.arc(0,0,rr,0,Math.PI*2); ctx.closePath(); return; }
+  if(sh.circle){ ctx.arc(0,0,rr,0,Math.PI*2); ctx.closePath(); return; }
   if(sh.star){
     var pts=sh.star;
     for(var i=0;i<pts*2;i++){ var ang=-Math.PI/2+i*Math.PI/pts; var rad=(i%2===0)?rr:rr*0.5;
@@ -494,14 +521,14 @@ window.selectDiff=function(d){
   btns.forEach(function(b){ b.classList.toggle('sel', b.getAttribute('data-d')===d); });
 };
 window.startGame=function(){
-  bodies=[]; pops=[]; current=null; score=0; dropCooldown=0; aimX=LOGW/2;
+  bodies=[]; pops=[]; current=null; score=0; dropCooldown=0; aimX=LOGW/2; overflowT=0;
   dropTime=DIFFS[selDiff].time; scoreMult=DIFFS[selDiff].mult;
   gamePrime=PRIMES[rand(PRIMES.length)];
   document.getElementById('primeLabel').textContent='🔢 '+gamePrime+' の倍数だけ集めよう！　｜　'+DIFFS[selDiff].label+' ×'+scoreMult;
   document.getElementById('ovTitle').classList.add('hide');
   document.getElementById('ovOver').classList.add('hide');
   document.getElementById('score').textContent='0';
-  state='play'; spawnCurrent();
+  state='countdown'; countT=3.0;       // 「〇〇の倍数！ 3..2..1」のあと開始
 };
 window.goHome=function(){ try{ window.location.href='../index.html'; }catch(e){} };
 function gameOver(){
@@ -550,7 +577,7 @@ function init(){
   resize(); window.addEventListener('resize',resize);
   cv.addEventListener('pointerdown',pdown); cv.addEventListener('pointermove',pmove); window.addEventListener('pointerup',pup);
   window.addEventListener('keydown',function(e){
-    if(e.code==='Space'){ e.preventDefault(); if(state==='play')dropCurrent(); else startGame(); }
+    if(e.code==='Space'){ e.preventDefault(); if(state==='play')dropCurrent(); else if(state==='title'||state==='over')startGame(); }
     else if(e.key==='x'||e.key==='X'){ e.preventDefault(); if(state==='play')deleteCurrent(); }
     else if(e.key==='ArrowLeft'){ aimX-=14; }
     else if(e.key==='ArrowRight'){ aimX+=14; }
