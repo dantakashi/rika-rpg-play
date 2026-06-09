@@ -9511,6 +9511,8 @@ const Game = (()=>{
 
   /* ---- ✏️ れんしゅうモード（戦闘なし・問題だけ・💎が貯まる。まちがえたら2タップで次へ＝ゆっくり確認） ---- */
   let pracQ=null, pracAnswered=false, pracPick=-1;
+  let pracAnsweredAt=0;    // 解答時刻：💎連打稼ぎ防止に「つぎへ」を2秒クールダウン
+  const PRAC_NEXT_COOLDOWN=2000;
   let pracStarted=false;   // ②練習は「範囲設定→スタート」してから出題(要望#2)
   function pracDraw(){
     var cc=choiceMode; pracQ=null; pracAnswered=false; pracPick=-1; QuizEngine.clearStagePool();
@@ -9519,7 +9521,7 @@ const Game = (()=>{
     lastWasReview=!!(pracQ&&pracQ.review);
   }
   function pracAnswer(i){
-    if(!pracQ||pracAnswered) return; pracAnswered=true; pracPick=i;
+    if(!pracQ||pracAnswered) return; pracAnswered=true; pracPick=i; pracAnsweredAt=Date.now();
     var right=(i===pracQ.answerIndex);
     if(pracQ.speak) Speech.speak(pracQ.speak); // 解答時に正答英語を再生
     var pts=QuizEngine.gemGain(pracQ,right); gems+=pts;
@@ -9585,7 +9587,17 @@ const Game = (()=>{
       var fb=document.createElement('div'); fb.style.cssText='margin-top:10px;font-size:14px;line-height:1.5';
       fb.innerHTML=(ok?'<span style="color:var(--good);font-weight:800">○ 正解！</span>':'<span style="color:var(--enemy);font-weight:800">× おしい！</span>')+' '+esc(pracQ.desc||'');
       body.appendChild(fb);
-      var nb=document.createElement('button'); nb.className='btn'; nb.style.cssText='width:100%;margin-top:12px;padding:12px;font-size:16px'; nb.textContent='つぎへ ▶'; nb.onclick=function(){ pracDraw(); renderPractice(); }; body.appendChild(nb);
+      var nb=document.createElement('button'); nb.className='btn'; nb.style.cssText='width:100%;margin-top:12px;padding:12px;font-size:16px';
+      nb.onclick=function(){ if(nb.disabled) return; pracDraw(); renderPractice(); };
+      body.appendChild(nb);
+      // 💎連打稼ぎ防止：解答から2秒経つまで「つぎへ」を押せなくする（残り秒数を表示）
+      var __ggNextTick=function(){
+        if(homeView!=='practice'||!nb.isConnected){ return; }
+        var remain=PRAC_NEXT_COOLDOWN-(Date.now()-pracAnsweredAt);
+        if(remain>0){ nb.disabled=true; nb.style.opacity='.55'; nb.textContent='つぎへ ▶（'+Math.ceil(remain/1000)+'）'; setTimeout(__ggNextTick,200); }
+        else { nb.disabled=false; nb.style.opacity=''; nb.textContent='つぎへ ▶'; }
+      };
+      __ggNextTick();
     } else {
       var hint=document.createElement('div'); hint.className='muted'; hint.style.cssText='font-size:12px;margin-top:10px;text-align:center'; hint.textContent='答えをタップ → 確認して「つぎへ」'; body.appendChild(hint);
     }
