@@ -142,8 +142,9 @@ var KMAX = 11;             // k=11 が最大。最大どうしは合体で消滅
 var KCOLORS = ['#ff6b6b','#ff922b','#ffd43b','#a9e34b','#51cf66','#20c997','#22b8cf','#4dabf7','#9775fa','#f06595','#2f9e44'];
 function colorForK(k){ return KCOLORS[Math.min(k,KMAX)-1]; }
 // サイズは線形でなくS字: 1〜3=小さめ / 5〜7=中型 / 9〜11=大型、4と8は中間。
-// （k＝何倍か。1〜11倍）最大k=11は旧サイズ比およそ1.5倍の直径。
-var RADII = [0, 18,20,22, 27, 33,36,40, 48, 58,66,74];   // index=k(1〜11)
+// 全体を約1.3倍に拡大（たくさん入らないように）。上位は箱に2個並んで合体できる上限(直径)で頭打ち。
+// （k＝何倍か。1〜11倍）
+var RADII = [0, 23,26,29, 35, 43,47,52, 60, 68,74,78];   // index=k(1〜11)
 function radiusForK(k){ k=Math.round(k); if(k<1)k=1; if(k>KMAX)k=KMAX; return RADII[k]; }
 // 倍率kの図形（5と8は星、11は丸＝最大）
 function shapeForK(k){
@@ -173,11 +174,12 @@ var RAIL_Y=40, SPAWN_Y=74;                    // クレーンのレール／タ�
 var ZURE_PROB=0.16;
 var GRAVITY=0.05, MAX_FALL=2.2;               // ふわっと落下（終端速度）
 // 重なり解消の安定化パラメータ（深く積もっても暴れない／吹き飛ばない）
-var SLOP=0.15;                                // 許容する食い込み（ほぼゼロ＝めり込まない）
-var CORR_PCT=0.7;                             // 1反復あたりの位置補正の割合（しっかり押し戻す）
-var CORR_MAX=5.0;                             // 1反復の最大押し戻し量（爆発を防ぐ上限）
-var SOLVE_ITERS=8;                            // 衝突解決の反復回数（積み山でも食い込みを残さない）
-var OVERFLOW_LIMIT=1.4;                        // 赤線オーバーが何秒続いたらアウトか
+var SLOP=0.05;                                // 許容する食い込み（ほぼゼロ＝めり込まない）
+var CORR_PCT=0.5;                             // 位置補正（両方に適用＝ちょうど食い込み分だけ離す。超えると振動するので0.5）
+var CORR_MAX=8.0;                             // 1反復の最大押し戻し量（爆発を防ぐ上限）
+var SOLVE_ITERS=12;                           // 衝突解決の反復回数（積み山の奥まで食い込みを伝播して解消）
+var COG_LEAN=0.45;                            // 真上に積まれたとき横へ崩す強さ（重心を少しずらす＝柱状に積めない）
+var OVERFLOW_LIMIT=3.0;                        // 重心が赤線を越えたブロックが何秒続いたらアウトか
 var SAVE_KEY='prime_merge_best_v1';
 
 // ---- §2 状態 -------------------------------------------------------
@@ -230,9 +232,9 @@ function dropCurrent(){
   if(!current || dropCooldown>0) return;
   bodies.push({
     x: clamp(aimX, PX0+current.r, PX1-current.r), y:SPAWN_Y, vx:0, vy:0,
-    angle:(Math.random()-0.5)*0.2, spin:0,
+    angle:(Math.random()-0.5)*0.2, spin:0, bias:(Math.random()-0.5),
     k:current.k, value:current.value, r:current.r,
-    obstacle:current.zure, merged:false, rest:0, pop:0.6
+    obstacle:current.zure, merged:false, overT:0, pop:0.6
   });
   beep(current.zure?160:330,.06);
   current=null; dropCooldown=0.4; craneOpenT=0.3;
@@ -300,6 +302,11 @@ function integrate(h){
           var pen=min-dist-SLOP; if(pen<0)pen=0;
           var corr=pen*CORR_PCT; if(corr>CORR_MAX)corr=CORR_MAX;  // 一気に押し戻さない
           a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
+          // 真上に積まれた接触（法線がほぼ縦）は、上の物体を固有のバイアス方向へ少し逃がす
+          // ＝重心を少しずらして柱状の積み上げを崩す（毎フレ1回＝itが0のときだけ・ごく弱く）
+          if(it===0 && Math.abs(ny)>0.85){
+            if(a.y<b.y) a.x += (a.bias||0)*COG_LEAN; else b.x += (b.bias||0)*COG_LEAN;
+          }
           var dvx=b.vx-a.vx, dvy=b.vy-a.vy, rel=dvx*nx+dvy*ny;
           if(rel<0){ var imp=rel*0.5; a.vx+=imp*nx; a.vy+=imp*ny; b.vx-=imp*nx; b.vy-=imp*ny; }
           var vt=dvx*(-ny)+dvy*nx;
@@ -323,8 +330,8 @@ function mergePair(a,b){
     return;
   }
   var nk=a.k+1;
-  bodies.push({ x:mx, y:my, vx:(a.vx+b.vx)*0.3, vy:0, angle:0, spin:0,
-    k:nk, value:gamePrime*nk, r:radiusForK(nk), obstacle:false, merged:false, rest:0, pop:1 });
+  bodies.push({ x:mx, y:my, vx:(a.vx+b.vx)*0.3, vy:0, angle:0, spin:0, bias:(Math.random()-0.5),
+    k:nk, value:gamePrime*nk, r:radiusForK(nk), obstacle:false, merged:false, overT:0, pop:1 });
   addScore(Math.round(gamePrime*nk*scoreMult));
   burst(mx,my,radiusForK(nk),colorForK(nk));
   flash(gamePrime+'×'+nk+' = '+(gamePrime*nk), colorForK(nk));
@@ -333,15 +340,17 @@ function mergePair(a,b){
 function burst(x,y,r,color){ pops.push({x:x,y:y,r:r,color:color,life:0.45,max:0.45}); }
 
 function checkGameOver(dt){
-  // 「赤線の上にはみ出して落ち着いている球」が1つでもあれば溢れ時間を加算。
-  // 落下中（vyが大きい）はカウントしない＝積み上がって止まったときだけ進む。揺れても消えない。
-  var over=false;
+  // 重心(中心 a.y)が赤線(PY_TOP)を越えたブロックを1つずつ計測。
+  // 線より下に戻ったときだけリセット＝横移動や揺れではリセットしない。
+  // どれか1つでも OVERFLOW_LIMIT 秒を超えたらアウト。
+  var maxT=0;
   for(var i=0;i<bodies.length;i++){
     var a=bodies[i];
-    if(a.y-a.r<PY_TOP && a.vy<0.6){ over=true; break; }
+    if(a.y<PY_TOP){ a.overT=(a.overT||0)+dt; if(a.overT>maxT)maxT=a.overT; }
+    else a.overT=0;
   }
-  if(over){ overflowT+=dt; if(overflowT>OVERFLOW_LIMIT){ gameOver(); return; } }
-  else overflowT=Math.max(0, overflowT-dt*1.5);  // 解消すれば少しずつ戻る
+  overflowT=maxT;                      // 赤線の点滅表示用（残り時間が近いほど濃く）
+  if(maxT>OVERFLOW_LIMIT) gameOver();
 }
 
 // ---- §7 描画 -------------------------------------------------------
