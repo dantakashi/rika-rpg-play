@@ -49,6 +49,7 @@
   .timer{height:100%; width:100%; border-radius:8px; background:linear-gradient(90deg,#43e97b,#38f9d7); transition:width .08s linear;}
   .timer.warn{background:linear-gradient(90deg,#ffd54a,#ff8a3c);}
   .timer.danger{background:linear-gradient(90deg,#ff6a6a,#ff2e63);}
+  .primeLabel{text-align:center; color:#ffe08a; font-weight:800; font-size:15px; padding:0 0 6px; letter-spacing:.5px; min-height:20px;}
 
   /* 盤面 */
   .stageWrap{flex:1; position:relative; display:flex; align-items:stretch; justify-content:center; min-height:0;}
@@ -91,6 +92,7 @@
   </div>
 
   <div class="timerWrap"><div class="timer" id="timer"></div></div>
+  <div class="primeLabel" id="primeLabel"></div>
 
   <div class="stageWrap">
     <canvas id="cv"></canvas>
@@ -106,7 +108,8 @@
     <h1>そすうマージ 🔢</h1>
     <div class="tag">スイカゲーム × 倍数のおべんきょう</div>
     <div class="rules">
-      ・おなじ数字どうしがぶつかると<b>合体</b>して、その素数の<b>次の倍数</b>になるよ。<br>
+      ・1ゲームで出るのは<b>1つの素数の倍数</b>だけ（例：43,86,129…）。<br>
+      ・おなじ数字どうしがぶつかると<b>合体</b>して、<b>次の倍数</b>になるよ。<br>
       　例) 43+43→<b>86</b>、86+86→<b>129</b><br>
       ・<b>4秒以内</b>に落とそう（バーが減るよ）。<br>
       ・たまに出る<b>ズレた数字</b>（倍数じゃない数）は<br>　<b>✕ボタン / Xキー</b>で消す！<br>
@@ -132,9 +135,9 @@
 
 // ---- 定数 -----------------------------------------------------------
 var PRIMES = [43,47,53,59,61,67,71,73,79,83,89,97];
-// 素数ごとの色（色＝素数の種類。同じ仲間が一目で分かる）
-var COLORS = {};
-PRIMES.forEach(function(p,i){ COLORS[p] = 'hsl('+Math.round(i*30)+',78%,58%)'; });
+// 色は「倍率(k)」ごと。1ゲーム＝1つの素数なので、色＆形で同じ数字が見分けやすい。
+var KCOLORS = ['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#3bc9db','#4dabf7','#9775fa','#f783ac','#e64980'];
+function colorForK(k){ return KCOLORS[(k-1) % KCOLORS.length]; }
 
 var LOGW = 360;            // 論理座標の幅（描画はcanvasサイズに自動スケール）
 var LOGH = 540;            // 論理座標の高さ
@@ -142,8 +145,10 @@ var WALL = 6;              // 壁の厚み
 var OVER_Y = 86;           // この高さより上に積もったらアウト
 var SPAWN_Y = 44;          // タイル待機・落下開始のy
 var DROP_TIME = 4.0;       // 落とすまでの制限（秒）
-var ZURE_PROB = 0.18;      // ズレた数字の出現率
-var GRAVITY = 0.42;
+var ZURE_PROB = 0.15;      // ズレた数字の出現率
+// ふわっと落とすため重力は弱め＋終端速度でキャップ（スイカゲーム風）
+var GRAVITY = 0.05;
+var MAX_FALL = 2.2;        // 終端速度（これ以上は速くならない＝ふわっと）
 var REST_FRAMES = 70;      // 溢れライン上で静止が続いたらアウト
 var SAVE_KEY = 'prime_merge_best_v1';
 
@@ -156,6 +161,7 @@ var aimX = LOGW/2;                     // 落下位置
 var dropCooldown = 0;                  // 連続落下の間
 var bornAt = 0;                        // currentが出た時刻
 var score = 0, best = 0;
+var gamePrime = 43;                    // 1ゲームで使う素数（startGameで抽選）
 var flashMsg = null, flashUntil = 0;
 var lastT = 0;
 
@@ -176,18 +182,16 @@ function shapeForK(k){
 
 // ---- タイル生成 -----------------------------------------------------
 function makeNormal(){
-  var p = PRIMES[rand(PRIMES.length)];
-  var k = 1 + rand(5);                 // 1〜5倍
-  return { zure:false, p:p, k:k, value:p*k, r:radiusForK(k) };
+  var k = 1 + rand(5);                 // 1〜5倍（素数は gamePrime 固定）
+  return { zure:false, p:gamePrime, k:k, value:gamePrime*k, r:radiusForK(k) };
 }
 function makeZure(){
-  // 倍数に近いけれど倍数でない数（±1〜±2ずらす）
-  var p = PRIMES[rand(PRIMES.length)];
+  // gamePrime の倍数に近いけれど倍数でない数（±1〜±2ずらす）
   var k = 1 + rand(5);
   var off = (rand(2)?1:-1) * (1+rand(2));
-  var v = p*k + off;
-  if(v<10) v = p*k+1;
-  return { zure:true, p:p, k:k, value:v, r:radiusForK(2) };
+  var v = gamePrime*k + off;
+  if(v<10) v = gamePrime*k+1;
+  return { zure:true, p:gamePrime, k:k, value:v, r:radiusForK(2) };
 }
 function spawnCurrent(){
   current = (Math.random()<ZURE_PROB) ? makeZure() : makeNormal();
@@ -249,12 +253,13 @@ function integrate(h){
   for(i=0;i<bodies.length;i++){
     a = bodies[i];
     a.vy += GRAVITY;
+    if(a.vy > MAX_FALL) a.vy = MAX_FALL;   // 終端速度＝ふわっと落ちる
     a.x += a.vx; a.y += a.vy;
-    // 壁
-    if(a.x < WALL+a.r){ a.x = WALL+a.r; a.vx *= -0.3; }
-    if(a.x > LOGW-WALL-a.r){ a.x = LOGW-WALL-a.r; a.vx *= -0.3; }
-    if(a.y > LOGH-WALL-a.r){ a.y = LOGH-WALL-a.r; a.vy *= -0.2; a.vx *= 0.9; }
-    a.vx *= 0.992; // 空気抵抗
+    // 壁（やわらかく跳ね返す）
+    if(a.x < WALL+a.r){ a.x = WALL+a.r; a.vx *= -0.25; }
+    if(a.x > LOGW-WALL-a.r){ a.x = LOGW-WALL-a.r; a.vx *= -0.25; }
+    if(a.y > LOGH-WALL-a.r){ a.y = LOGH-WALL-a.r; a.vy *= -0.12; a.vx *= 0.86; }
+    a.vx *= 0.99; // 空気抵抗
   }
   // 衝突・合体
   for(i=0;i<bodies.length;i++){
@@ -282,12 +287,12 @@ function integrate(h){
 function mergePair(a,b){
   a.merged=true; b.merged=true;
   var nk=a.k+1, p=a.p;
-  var nb={ x:(a.x+b.x)/2, y:(a.y+b.y)/2, vx:0, vy:-1.5,
+  var nb={ x:(a.x+b.x)/2, y:(a.y+b.y)/2, vx:0, vy:-0.5,
     p:p, k:nk, value:p*nk, r:radiusForK(nk), obstacle:false, merged:false, rest:0, pop:1 };
   bodies.push(nb);
   score += p*nk;
   updateScore();
-  flash('×'+nk+' = '+(p*nk), COLORS[p]);
+  flash(p+'×'+nk+' = '+(p*nk), colorForK(nk));
   beep(440+nk*60,.07);
 }
 
@@ -345,11 +350,11 @@ function drawTile(b, warnPulse){
   var r=b.r, x=b.x, y=b.y;
   if(b.pop && b.pop>0){ r *= (1 + b.pop*0.18); b.pop -= 0.08; if(b.pop<0)b.pop=0; }
 
-  var fill, stroke, txt='#fff';
+  var fill, stroke, txt='#23233a';
   if(b.obstacle){
     fill='#7c8597'; stroke='#4b5566'; txt='#fff';
   } else {
-    fill=COLORS[b.p]; stroke='rgba(0,0,0,.18)';
+    fill=colorForK(b.k); stroke='rgba(0,0,0,.18)';   // 色＝倍率
   }
 
   // ズレた現タイルは警告点滅
@@ -448,6 +453,8 @@ window.onDropBtn=function(e){ if(e)e.preventDefault(); if(state==='play') dropCu
 window.onDel=function(e){ if(e)e.preventDefault(); if(state==='play') deleteCurrent(); };
 window.startGame=function(){
   bodies=[]; current=null; score=0; dropCooldown=0; aimX=LOGW/2;
+  gamePrime = PRIMES[rand(PRIMES.length)];     // このゲームで使う素数を1つ抽選
+  document.getElementById('primeLabel').textContent = '🔢 '+gamePrime+' の倍数をあわせよう！';
   document.getElementById('ovTitle').classList.add('hide');
   document.getElementById('ovOver').classList.add('hide');
   updateScore();
