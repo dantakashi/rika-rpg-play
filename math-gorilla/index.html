@@ -397,5 +397,20 @@ document.addEventListener('keydown', (e)=>{
 
 showTitleHi();
 </script>
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='gori', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
 </body>
 </html>

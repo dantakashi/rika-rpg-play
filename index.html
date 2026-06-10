@@ -18,18 +18,25 @@
   .stage{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
     background:radial-gradient(1200px 800px at 50% -10%, #16203f 0%, #070a16 60%, #04060e 100%);}
   /* スマホ枠 */
-  .phone{position:relative; width:100%; height:100%; max-width:440px; max-height:920px;
-    overflow:hidden; background:linear-gradient(170deg,var(--bg1),var(--bg2) 55%,var(--bg3));
-    border-radius:0;}
+  .phone{position:relative; width:100%; height:100%; max-width:372px; max-height:740px;
+    overflow:hidden; border-radius:0;
+    --blob1:#4f7cff; --blob2:#b14bff;
+    background:linear-gradient(170deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    transition:background .8s ease;}
+  /* 時間帯で壁紙が変わる（上は暗めにして文字・枠の視認性を確保） */
+  .phone.tod-morning{--blob1:#ffc27a; --blob2:#ffe08a; background:linear-gradient(170deg,#1d2a55,#37508f 52%,#e8a26a)}
+  .phone.tod-day    {--blob1:#7cc4ff; --blob2:#34d3ee; background:linear-gradient(170deg,#15265e,#2f66c4 55%,#74b6ef)}
+  .phone.tod-evening{--blob1:#ff9a5a; --blob2:#d96bb0; background:linear-gradient(170deg,#241246,#6a2f74 50%,#d97a55)}
+  .phone.tod-night  {--blob1:#4f7cff; --blob2:#b14bff; background:linear-gradient(170deg,#070b1e,#121a3e 55%,#221a45)}
   @media(min-width:480px){
-    .phone{border-radius:38px; box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 10px #0b0d18, 0 0 0 12px #20243a;
-      height:min(92vh,900px);}
-    .stage{padding:14px;}
+    .phone{border-radius:34px; box-shadow:0 26px 64px rgba(0,0,0,.6), 0 0 0 9px #0b0d18, 0 0 0 11px #20243a;
+      height:min(94vh,720px);}
+    .stage{padding:12px;}
   }
   /* 壁紙の装飾（ふわっと光る玉） */
   .phone::before,.phone::after{content:""; position:absolute; border-radius:50%; filter:blur(40px); opacity:.55; pointer-events:none;}
-  .phone::before{width:260px;height:260px; background:#4f7cff; top:-60px; right:-60px;}
-  .phone::after{width:240px;height:240px; background:#b14bff; bottom:40px; left:-70px;}
+  .phone::before{width:260px;height:260px; background:var(--blob1); top:-60px; right:-60px; transition:background .8s ease;}
+  .phone::after{width:240px;height:240px; background:var(--blob2); bottom:40px; left:-70px; transition:background .8s ease;}
 
   /* ステータスバー */
   .statusbar{position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between;
@@ -37,51 +44,88 @@
   .statusbar .right{display:flex; gap:7px; align-items:center; opacity:.95}
 
   /* 時計（大きく） */
-  .clockwrap{position:relative; z-index:3; text-align:center; margin-top:6px;}
-  .clock{font-size:62px; font-weight:800; line-height:1; letter-spacing:1px; text-shadow:0 3px 18px rgba(0,0,0,.4)}
-  .date{font-size:14px; color:var(--muted); margin-top:6px; font-weight:600}
+  .clockwrap{position:relative; z-index:3; text-align:center; margin-top:2px;}
+  .clock{font-size:42px; font-weight:800; line-height:1; letter-spacing:1px; text-shadow:0 3px 18px rgba(0,0,0,.4)}
+  .date{font-size:12px; color:var(--muted); margin-top:4px; font-weight:600}
 
   /* ページャ（横スワイプ領域） */
   .pager{position:relative; z-index:3; flex:1; display:flex; overflow:hidden;}
   .track{display:flex; width:200%; flex:0 0 200%; height:100%; transform:translateX(0); transition:transform .32s cubic-bezier(.22,.61,.36,1); touch-action:pan-y; will-change:transform;}
-  .page{width:50%; height:100%; padding:18px 18px 0; display:flex; flex-direction:column;}
+  .page{width:50%; height:100%; padding:14px 15px 0; display:flex; flex-direction:column; overflow-y:auto;}
 
-  /* アプリグリッド */
-  .greet{font-size:15px; color:var(--muted); font-weight:700; margin:6px 4px 14px;}
-  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px 16px; align-content:start;}
-  .app{display:flex; flex-direction:column; align-items:center; gap:9px; cursor:pointer; border:0; background:none; color:inherit; padding:0;
+  /* アプリ：教科フレーム */
+  .greet{font-size:13px; color:var(--muted); font-weight:700; margin:2px 4px 10px;}
+  .frames{display:flex; flex-direction:column; gap:6px; align-content:start;}
+  .frame{background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025));
+    border:1px solid var(--line); border-radius:18px; padding:6px 11px 9px;
+    box-shadow:0 6px 18px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.10);}
+  .frame-head{display:flex; align-items:center; gap:7px; margin:1px 2px 7px;
+    font-size:11.5px; font-weight:800; letter-spacing:.4px; color:var(--ink); opacity:.92}
+  .frame-head .dot-c{width:8px; height:8px; border-radius:50%; background:currentColor; box-shadow:0 0 9px currentColor;}
+  .frame-head .em{font-size:13px}
+  .grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px 4px; align-content:start;}
+  .app{display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; border:0; background:none; color:inherit; padding:0;
     transition:transform .12s ease;}
-  .app:active{transform:scale(.9)}
-  .icon{width:84px; height:84px; border-radius:22px; display:flex; align-items:center; justify-content:center;
-    font-size:44px; box-shadow:0 8px 22px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.35);
-    position:relative; overflow:hidden;}
-  .icon::after{content:""; position:absolute; inset:0; background:linear-gradient(160deg,rgba(255,255,255,.30),transparent 45%);}
-  .label{font-size:13px; font-weight:700; text-align:center; line-height:1.25; text-shadow:0 1px 4px rgba(0,0,0,.5)}
-  .sub{font-size:10.5px; color:var(--muted); font-weight:600; margin-top:-4px}
-  /* アイコン配色 */
-  .ic-rika{background:linear-gradient(160deg,#19c37d,#0b8a57)}
-  .ic-eng {background:linear-gradient(160deg,#8b5cf6,#5b21b6)}
-  .ic-gori{background:linear-gradient(160deg,#fb923c,#c2410c)}
-  .ic-run {background:linear-gradient(160deg,#fb7185,#be123c)}
-  .ic-prime{background:linear-gradient(160deg,#34d399,#7c3aed)}
-  .ic-data{background:linear-gradient(160deg,#22d3ee,#0e7490)}
-  .ic-soon{background:linear-gradient(160deg,#64748b,#334155); opacity:.65}
+  .app:active{transform:scale(.88)}
+  /* パリッとした平面アイコン（外側の発光なし・くっきり） */
+  .icon{width:54px; height:54px; border-radius:15px; display:flex; align-items:center; justify-content:center;
+    font-size:28px; position:relative; overflow:hidden;
+    box-shadow:0 3px 7px rgba(0,0,0,.40), inset 0 0 0 1px rgba(255,255,255,.16);}
+  .icon .em{position:relative; z-index:1; line-height:1; filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
+  .label{font-size:11px; font-weight:700; text-align:center; line-height:1.2; text-shadow:0 1px 4px rgba(0,0,0,.5)}
+  /* アイコン配色（ビビッド・くっきり） */
+  .ic-rika {background:linear-gradient(160deg,#22e58c,#0b8a57)}
+  .ic-eng  {background:linear-gradient(160deg,#a78bfa,#5b21b6)}
+  .ic-gori {background:linear-gradient(160deg,#fbbf24,#c2410c)}
+  .ic-run  {background:linear-gradient(160deg,#fb7185,#be123c)}
+  .ic-merge{background:linear-gradient(160deg,#60a5fa,#1e40af)}
+  .ic-data {background:linear-gradient(160deg,#34e0f0,#0e7490)}
+  .ic-soon {background:linear-gradient(160deg,#5b667c,#2f3a4f)}
   .app.soon{cursor:default}
   .app.soon:active{transform:none}
-  .badge-soon{position:absolute; right:-4px; top:-4px; background:#facc15; color:#3b2c00; font-size:9px; font-weight:800;
-    padding:2px 6px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .badge-soon{position:absolute; right:-3px; top:-3px; background:#facc15; color:#3b2c00; font-size:8px; font-weight:800;
+    padding:1px 5px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,.4); z-index:2}
 
-  /* プロフィールページ（Coming soon） */
-  .profile{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:0 26px;}
-  .pf-avatar{width:110px;height:110px;border-radius:50%; background:linear-gradient(160deg,#334155,#1e293b);
-    display:flex;align-items:center;justify-content:center;font-size:54px; box-shadow:inset 0 2px 0 rgba(255,255,255,.2), 0 10px 30px rgba(0,0,0,.4)}
-  .pf-name{font-size:22px; font-weight:800}
-  .pf-soon{display:inline-block; margin-top:4px; background:var(--glass); border:1px solid var(--line);
-    padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; color:#ffe08a}
-  .pf-desc{font-size:13px; color:var(--muted); line-height:1.7; max-width:300px}
+  /* プロフィールページ */
+  .profile{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:9px; padding:4px 20px 0;}
+  .pf-avatar{width:80px;height:80px;border:0;cursor:pointer; border-radius:50%; color:inherit;
+    background:linear-gradient(160deg,#334155,#1e293b);
+    display:flex;align-items:center;justify-content:center;font-size:42px; box-shadow:inset 0 2px 0 rgba(255,255,255,.2), 0 8px 22px rgba(0,0,0,.4); transition:transform .1s}
+  .pf-avatar:active{transform:scale(.93)}
+  .pf-avatars{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:300px}
+  .pf-avatars button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--glass);
+    font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:inherit}
+  .pf-avatars button.on{border-color:#ffd84d; box-shadow:0 0 0 2px rgba(255,216,77,.4)}
+  .pf-name-row{display:flex;align-items:center;gap:8px}
+  .pf-name{font-size:21px; font-weight:800}
+  .pf-edit{background:none;border:0;color:var(--muted);font-size:15px;cursor:pointer;padding:2px}
+  .pf-streak{display:inline-block;background:linear-gradient(160deg,#f59e0b,#b45309);color:#fff;
+    padding:7px 16px;border-radius:999px;font-size:14px;font-weight:800;box-shadow:0 4px 12px rgba(245,158,11,.35)}
+  .pf-section-t{align-self:flex-start;font-size:12px;font-weight:800;color:var(--muted);margin:5px 2px 0}
+  .pf-total{align-self:flex-start;font-size:12.5px;color:var(--ink);font-weight:700}
+  .pf-stats{width:100%;display:flex;flex-direction:column;gap:8px}
+  .pf-stat{display:flex;align-items:center;gap:9px;text-align:left}
+  .pf-stat .ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-size:18px;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+  .pf-stat .meta{flex:1;min-width:0}
+  .pf-stat .nm{font-size:12px;font-weight:700;display:flex;justify-content:space-between;gap:8px}
+  .pf-stat .nm .t{color:var(--muted);font-variant-numeric:tabular-nums}
+  .pf-bar{height:7px;border-radius:999px;background:rgba(255,255,255,.12);margin-top:4px;overflow:hidden}
+  .pf-bar > i{display:block;height:100%;border-radius:999px}
+  .pf-note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:3px}
+
+  /* 保存うっかり防止トースト */
+  .save-toast{position:absolute; left:12px; right:12px; bottom:48px; z-index:40;
+    background:rgba(18,24,46,.97); border:1px solid var(--line); border-radius:14px; padding:11px 13px;
+    box-shadow:0 12px 32px rgba(0,0,0,.55); display:flex; flex-direction:column; gap:9px;}
+  .save-toast .st-text{font-size:12.5px; font-weight:700; line-height:1.55}
+  .save-toast .st-btns{display:flex; gap:8px}
+  .save-toast .st-btns button{flex:1; border-radius:10px; padding:8px; font-weight:800; font-size:13px; cursor:pointer; border:0}
+  #stSave{background:#19c37d; color:#06281b}
+  #stLater{background:var(--glass); color:inherit; border:1px solid var(--line)}
 
   /* ページドット */
-  .dots{position:relative; z-index:3; display:flex; gap:9px; justify-content:center; padding:16px 0 max(18px, env(safe-area-inset-bottom));}
+  .dots{position:relative; z-index:3; display:flex; gap:9px; justify-content:center; padding:8px 0 max(10px, env(safe-area-inset-bottom));}
   .dot{width:8px;height:8px;border-radius:50%; background:rgba(255,255,255,.35); transition:all .2s; cursor:pointer}
   .dot.on{background:#fff; width:22px; border-radius:6px}
 
@@ -104,35 +148,42 @@
       <div class="date" id="bigDate">　</div>
     </div>
 
-    <!-- ページ -->
+    <!-- ページ（教科ページ＋プロフィールをJSで生成） -->
     <div class="pager" id="pager">
-      <div class="track" id="track">
-
-        <!-- ページ1: アプリ -->
-        <section class="page">
-          <div class="greet" id="greet">ようこそ！　遊ぶアプリをえらんでね</div>
-          <div class="grid" id="appgrid"><!-- JSで生成 --></div>
-        </section>
-
-        <!-- ページ2: プロフィール -->
-        <section class="page">
-          <div class="profile">
-            <div class="pf-avatar">🧑‍🎓</div>
-            <div class="pf-name" id="pfName">プレイヤー</div>
-            <div class="pf-soon">✨ Coming Soon</div>
-            <div class="pf-desc">ここに学習の記録・実績バッジ・全ゲーム共通プロフィールが表示される予定です。<br>今はまだ準備中だよ。</div>
-          </div>
-        </section>
-
-      </div>
+      <div class="track" id="track"><!-- JSで生成 --></div>
     </div>
+
+    <!-- プロフィールページのひな型（JSが最後のページに使う） -->
+    <template id="tpl-profile">
+      <section class="page">
+        <div class="profile">
+          <button class="pf-avatar" id="pfAvatar" title="タップしてきせかえ">🧑‍🎓</button>
+          <div class="pf-avatars" id="pfAvatars"><!-- きせかえ候補 --></div>
+          <div class="pf-name-row">
+            <span class="pf-name" id="pfName">プレイヤー</span>
+            <button class="pf-edit" id="pfEdit" title="名前をかえる">✏️</button>
+          </div>
+          <div class="pf-streak" id="pfStreak">🔥 れんぞく 0日</div>
+          <div class="pf-section-t">⏱️ あそんだ時間</div>
+          <div class="pf-total" id="pfTotal">合計 0分</div>
+          <div class="pf-stats" id="pfStats"><!-- ゲームごと --></div>
+          <div class="pf-note">※ゲームで遊ぶと自動で記録されます。「データ」アプリの引っこしでも一緒に移せます。</div>
+        </div>
+      </section>
+    </template>
 
     <!-- ドット -->
-    <div class="dots">
-      <span class="dot on" data-p="0"></span>
-      <span class="dot" data-p="1"></span>
+    <div class="dots" id="dots"><!-- JSで生成 --></div>
+    <div class="hint">← よこにスワイプでページ切り替え →</div>
+
+    <!-- 💾 保存うっかり防止トースト -->
+    <div id="saveToast" class="save-toast" style="display:none">
+      <div class="st-text" id="stText">💾 データを保存しておこう</div>
+      <div class="st-btns">
+        <button id="stSave">保存する</button>
+        <button id="stLater">あとで</button>
+      </div>
     </div>
-    <div class="hint">← よこにスワイプでプロフィール →</div>
 
     <!-- 💾 データ移行オーバーレイ -->
     <div id="dataOverlay" style="position:absolute;inset:0;z-index:50;background:rgba(5,7,15,.92);display:none;flex-direction:column;padding:18px;overflow:auto">
@@ -163,31 +214,77 @@
   // 開発では launcher.html で開き、理科=index.html・英語=_english_draft/配下(ネスト)。
   var path = location.pathname;
   var isProd = /(\/|index\.html?)$/.test(path); // 末尾が / か index.html → 本番ランチャー
-  var RIKA = isProd ? 'rika.html' : 'index.html';
-  var ENG  = isProd ? 'grammar-guard.html' : '_english_draft/grammar-guard.html';
+  var RIKA  = isProd ? 'rika.html' : 'index.html';
+  var ENG   = isProd ? 'grammar-guard.html' : '_english_draft/grammar-guard.html';
+  var MERGE = 'prime-merge/index.html'; // dev/prod 両方にフォルダあり（2026-06-09 dev取込済）
 
+  // アプリ一覧（catで教科に振り分け）。アプリが無い教科は「おたのしみに」を自動表示。
   var APPS = [
-    {key:'rika', label:'理科RPG',        sub:'化学・物理…', icon:'🧪', cls:'ic-rika', href:RIKA},
-    {key:'eng',  label:'グラマー・ガード', sub:'英語',       icon:'🛡️', cls:'ic-eng',  href:ENG},
-    {key:'gori', label:'ゴリラ大砲',      sub:'数学',        icon:'🦍', cls:'ic-gori', href:'math-gorilla/index.html'},
-    {key:'run',  label:'割れる数ラン',    sub:'数学',        icon:'🏃', cls:'ic-run',  href:'math-run/index.html'},
-    {key:'prime',label:'そすうマージ',    sub:'数学',        icon:'🔢', cls:'ic-prime',href:'prime-merge/index.html'},
-    {key:'data', label:'データ',          sub:'保存・引っこし', icon:'💾', cls:'ic-data', action:'data'},
-    {key:'soon', label:'おたのしみに',    sub:'',            icon:'➕', cls:'ic-soon', href:null, soon:true},
+    {key:'gori',  label:'ゴリラ大砲',      icon:'🦍', cls:'ic-gori',  href:'math-gorilla/index.html', cat:'math'},
+    {key:'run',   label:'割れる数ラン',    icon:'🏃', cls:'ic-run',   href:'math-run/index.html',     cat:'math'},
+    {key:'merge', label:'そすうマージ',    icon:'🔢', cls:'ic-merge', href:MERGE,                     cat:'math'},
+    {key:'eng',   label:'グラマー・ガード', icon:'🛡️', cls:'ic-eng',   href:ENG,                       cat:'english'},
+    {key:'rika',  label:'理科RPG',        icon:'🧪', cls:'ic-rika',  href:RIKA,                      cat:'science'},
+    {key:'data',  label:'データ',          icon:'💾', cls:'ic-data',  action:'data',                  cat:'tool'},
   ];
 
-  var grid = document.getElementById('appgrid');
-  APPS.forEach(function(a){
+  // 教科ごとの「枠」。配列の順＝表示順。1ページに入りきらないぶんは次ページへ。
+  var GROUPS = [
+    {cat:'math',     em:'🔢', name:'数学',   color:'#fbbf24'},
+    {cat:'japanese', em:'📖', name:'国語',   color:'#fb7185'},
+    {cat:'english',  em:'🔤', name:'英語',   color:'#a78bfa'},
+    {cat:'social',   em:'🌏', name:'社会',   color:'#fb923c'},
+    {cat:'science',  em:'🔬', name:'理科',   color:'#26e58c'},
+    {cat:'other',    em:'✨', name:'その他', color:'#94a3b8'},
+    {cat:'tool',     em:'⚙️', name:'ツール', color:'#34e0f0'},
+  ];
+  var FRAMES_PER_PAGE = 4; // 1ページに収める枠の数（縦に収まる範囲）
+
+  var track = document.getElementById('track');
+
+  function makeApp(a){
     var btn = document.createElement('button');
     btn.className = 'app' + (a.soon ? ' soon' : '');
     btn.innerHTML =
-      '<div class="icon '+a.cls+'">'+a.icon+(a.soon?'<span class="badge-soon">準備中</span>':'')+'</div>'+
-      '<div class="label">'+a.label+'</div>'+
-      (a.sub?'<div class="sub">'+a.sub+'</div>':'');
+      '<div class="icon '+a.cls+'"><span class="em">'+a.icon+'</span>'+(a.soon?'<span class="badge-soon">準備中</span>':'')+'</div>'+
+      '<div class="label">'+a.label+'</div>';
     if(a.action==='data'){ btn.addEventListener('click', function(){ document.getElementById('dataOverlay').style.display='flex'; }); }
     else if(!a.soon){ btn.addEventListener('click', function(){ location.href = a.href; }); }
-    grid.appendChild(btn);
-  });
+    return btn;
+  }
+  function makeFrame(g){
+    var apps = APPS.filter(function(a){ return a.cat === g.cat; });
+    if(!apps.length){ apps = [{label:'おたのしみに', icon:'➕', cls:'ic-soon', soon:true}]; } // 未実装の教科
+    var fr = document.createElement('div'); fr.className = 'frame';
+    fr.innerHTML = '<div class="frame-head" style="color:'+g.color+'">'+
+      '<span class="dot-c"></span><span class="em">'+g.em+'</span>'+
+      '<span style="color:var(--ink)">'+g.name+'</span></div>';
+    var grid = document.createElement('div'); grid.className = 'grid';
+    apps.forEach(function(a){ grid.appendChild(makeApp(a)); });
+    fr.appendChild(grid);
+    return fr;
+  }
+
+  // 教科ページを生成（FRAMES_PER_PAGEごとに改ページ）→ 最後にプロフィールページ
+  var totalPages = 0;
+  for(var gi=0; gi<GROUPS.length; gi+=FRAMES_PER_PAGE){
+    var sec = document.createElement('section'); sec.className = 'page';
+    if(gi===0){
+      var greet = document.createElement('div'); greet.className='greet'; greet.id='greet';
+      greet.textContent='ようこそ！　遊ぶアプリをえらんでね';
+      sec.appendChild(greet);
+    }
+    var framesEl = document.createElement('div'); framesEl.className='frames';
+    GROUPS.slice(gi, gi+FRAMES_PER_PAGE).forEach(function(g){ framesEl.appendChild(makeFrame(g)); });
+    sec.appendChild(framesEl); track.appendChild(sec); totalPages++;
+  }
+  track.appendChild(document.getElementById('tpl-profile').content.cloneNode(true)); totalPages++;
+
+  // トラック幅・各ページ幅を動的に設定
+  track.style.width = (totalPages*100)+'%';
+  track.style.flex  = '0 0 '+(totalPages*100)+'%';
+  var PW = 100/totalPages; // 1ページぶんの割合（トラック基準）
+  [].slice.call(track.children).forEach(function(p){ p.style.width = PW+'%'; p.style.flex = '0 0 '+PW+'%'; });
 
   // ---- 時計 -------------------------------------------------------
   function pad(n){ return (n<10?'0':'')+n; }
@@ -198,26 +295,109 @@
     document.getElementById('sb-time').textContent=hm;
     document.getElementById('bigClock').textContent=hm;
     document.getElementById('bigDate').textContent=(d.getMonth()+1)+'月'+d.getDate()+'日（'+WD[d.getDay()]+'）';
-    var h=d.getHours(), g='こんにちは';
-    if(h<5)g='こんばんは'; else if(h<11)g='おはよう'; else if(h<17)g='こんにちは'; else g='こんばんは';
+    var h=d.getHours(), g='こんにちは', tod='tod-day';
+    if(h<5){ g='こんばんは'; tod='tod-night'; }
+    else if(h<10){ g='おはよう'; tod='tod-morning'; }
+    else if(h<17){ g='こんにちは'; tod='tod-day'; }
+    else if(h<19){ g='こんばんは'; tod='tod-evening'; }
+    else { g='こんばんは'; tod='tod-night'; }
     document.getElementById('greet').textContent=g+'！　遊ぶアプリをえらんでね';
+    var phone=document.getElementById('phone');
+    phone.className='phone '+tod; // 時間帯で壁紙切替
   }
   tick(); setInterval(tick, 15000);
 
-  // ---- 名前（ハブ共通プロフィールの種） ----------------------------
-  try{
-    var hub = JSON.parse(localStorage.getItem('rika_hub_v1')||'{}');
-    if(hub && hub.name){ document.getElementById('pfName').textContent = hub.name; }
-  }catch(e){}
+  // ---- 共通プロフィール（まなびハブ） ----------------------------
+  // 全アプリ共通の localStorage キー manabi_hub_v1 に、各ゲームが
+  // 学習日(days)とプレイ時間(play[ゲームkey])を記録する。ここではそれを表示。
+  var HKEY='manabi_hub_v1';
+  var GAME_META=[
+    {key:'rika',  name:'理科RPG',        icon:'🧪', cls:'ic-rika'},
+    {key:'gg',    name:'グラマー・ガード', icon:'🛡️', cls:'ic-eng'},
+    {key:'gori',  name:'ゴリラ大砲',      icon:'🦍', cls:'ic-gori'},
+    {key:'run',   name:'割れる数ラン',    icon:'🏃', cls:'ic-run'},
+    {key:'merge', name:'そすうマージ',    icon:'🔢', cls:'ic-merge'},
+  ];
+  var AVATARS=['🧑‍🎓','👦','👧','🦊','🐱','🐼','🐸','🐯','🤖','🦖','🐧','🦉'];
+  function hubLoad(){ try{return JSON.parse(localStorage.getItem(HKEY))||{};}catch(e){return{};} }
+  function hubSave(h){ try{localStorage.setItem(HKEY,JSON.stringify(h));}catch(e){} }
+  function dayKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function fmtDur(sec){ sec=Math.round(sec||0); if(sec<60)return sec+'秒'; var m=Math.floor(sec/60); if(m<60)return m+'分'; return Math.floor(m/60)+'時間'+(m%60)+'分'; }
+  function calcStreak(days){ days=days||{}; var n=0,d=new Date(); for(;;){ if(days[dayKey(d)]){ n++; d.setDate(d.getDate()-1); } else break; } return n; }
+
+  function renderProfile(){
+    var hub=hubLoad(), play=hub.play||{};
+    // 名前（manabi_hub優先→旧rika_hub→既定）
+    var nm=hub.name; if(!nm){ try{ var rh=JSON.parse(localStorage.getItem('rika_hub_v1')||'{}'); nm=rh&&rh.name; }catch(e){} }
+    var nameEl=document.getElementById('pfName'); if(nameEl) nameEl.textContent=nm||'プレイヤー';
+    // アバター
+    var av=hub.avatar||'🧑‍🎓';
+    var avEl=document.getElementById('pfAvatar'); if(avEl) avEl.textContent=av;
+    var picker=document.getElementById('pfAvatars');
+    if(picker){
+      if(!picker.dataset.built){ picker.dataset.built='1';
+        AVATARS.forEach(function(e){
+          var b=document.createElement('button'); b.textContent=e;
+          b.addEventListener('click', function(){ var h=hubLoad(); h.avatar=e; hubSave(h); renderProfile(); });
+          picker.appendChild(b);
+        });
+      }
+      [].slice.call(picker.children).forEach(function(b){ b.className=(b.textContent===av?'on':''); });
+    }
+    // 名前編集
+    var edit=document.getElementById('pfEdit');
+    if(edit && !edit.dataset.bound){ edit.dataset.bound='1';
+      edit.addEventListener('click', function(){
+        var h=hubLoad(); var cur=h.name||nm||'';
+        var v=window.prompt('名前を入力してね（12文字まで）', cur);
+        if(v!=null){ h.name=v.trim().slice(0,12); hubSave(h); renderProfile(); }
+      });
+    }
+    // 連続学習日数
+    var st=document.getElementById('pfStreak'); if(st) st.textContent='🔥 れんぞく '+calcStreak(hub.days)+'日';
+    // プレイ時間（ゲームごと・portalは除外）
+    var max=1, total=0;
+    GAME_META.forEach(function(g){ max=Math.max(max, play[g.key]||0); });
+    Object.keys(play).forEach(function(k){ if(k!=='portal') total+=play[k]||0; });
+    var totEl=document.getElementById('pfTotal'); if(totEl) totEl.textContent='合計 '+fmtDur(total);
+    var stats=document.getElementById('pfStats');
+    if(stats){ stats.innerHTML='';
+      GAME_META.forEach(function(g){
+        var sec=play[g.key]||0, pct=Math.round((sec/max)*100);
+        var row=document.createElement('div'); row.className='pf-stat';
+        row.innerHTML='<div class="ic '+g.cls+'">'+g.icon+'</div>'+
+          '<div class="meta"><div class="nm"><span>'+g.name+'</span><span class="t">'+(sec?fmtDur(sec):'ーー')+'</span></div>'+
+          '<div class="pf-bar"><i style="width:'+(sec?Math.max(6,pct):0)+'%;background:linear-gradient(90deg,#60a5fa,#a78bfa)"></i></div></div>';
+        stats.appendChild(row);
+      });
+    }
+  }
+
+  // ポータルも「今日あそんだ日」として記録（プレイ時間は portal キーに別計上）
+  (function(){
+    var h=hubLoad(); h.play=h.play||{}; h.days=h.days||{}; h.days[dayKey(new Date())]=true; h.lastApp='portal'; h.lastSeen=Date.now(); hubSave(h);
+    var acc=0,last=Date.now();
+    function flush(){ if(acc<1)return; var g=hubLoad(); g.play=g.play||{}; g.play.portal=(g.play.portal||0)+Math.round(acc); acc=0; hubSave(g); }
+    setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+    document.addEventListener('visibilitychange', function(){ last=Date.now(); if(document.hidden){ flush(); } else { renderProfile(); } });
+    window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+  })();
+
+  renderProfile();
 
   // ---- ページ切り替え（スワイプ） ---------------------------------
-  var track=document.getElementById('track'), pager=document.getElementById('pager');
-  var page=0, MAXP=1;
-  var dots=[].slice.call(document.querySelectorAll('.dot'));
+  var pager=document.getElementById('pager');
+  var dotsWrap=document.getElementById('dots');
+  for(var di=0; di<totalPages; di++){
+    var dd=document.createElement('span'); dd.className='dot'+(di===0?' on':''); dd.dataset.p=di; dotsWrap.appendChild(dd);
+  }
+  var dots=[].slice.call(dotsWrap.querySelectorAll('.dot'));
+  var page=0, MAXP=totalPages-1;
   function go(p){
     page=Math.max(0,Math.min(MAXP,p));
-    track.style.transform='translateX(-'+(page*50)+'%)';
+    track.style.transform='translateX(-'+(page*PW)+'%)';
     dots.forEach(function(d,i){ d.classList.toggle('on', i===page); });
+    if(page===MAXP) renderProfile(); // プロフィールページに来たら最新化
   }
   dots.forEach(function(d){ d.addEventListener('click', function(){ go(+d.dataset.p); }); });
 
@@ -253,13 +433,13 @@
   document.getElementById('dataCopy').addEventListener('click', function(){
     var box=document.getElementById('dataBox'); if(!box.value){ document.getElementById('dataExport').click(); }
     if(!box.value) return;
-    try{ box.select(); if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(box.value); } else { document.execCommand('copy'); } dmsg('コピーしました。',true); }
+    try{ box.select(); if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(box.value); } else { document.execCommand('copy'); } dmsg('コピーしました。',true); markBackup(); }
     catch(e){ dmsg('コピーできませんでした。長押しで選択してね。',false); }
   });
   document.getElementById('dataDownload').addEventListener('click', function(){
     var box=document.getElementById('dataBox'); if(!box.value){ document.getElementById('dataExport').click(); }
     if(!box.value) return;
-    try{ var blob=new Blob([box.value],{type:'text/plain'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='manabi-save.txt'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },100); dmsg('ファイルに保存しました。',true); }
+    try{ var blob=new Blob([box.value],{type:'text/plain'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='manabi-save.txt'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },100); dmsg('ファイルに保存しました。',true); markBackup(); }
     catch(e){ dmsg('保存に失敗しました。',false); }
   });
   document.getElementById('dataImport').addEventListener('click', function(){
@@ -276,6 +456,28 @@
       dmsg('読み込みました！ 各ゲームを開くと反映されます。',true);
     }catch(e){ dmsg('読み込みに失敗しました。',false); }
   });
+
+  // ---- 保存うっかり防止（バックアップの催促） ----------------------
+  // バックアップ(コピー/ファイル保存)した日時を記録し、一定日数あいたら
+  // ポータル起動時にやさしく案内する。「あとで」は数日スヌーズ。
+  function markBackup(){ var h=hubLoad(); h.lastBackup=Date.now(); hubSave(h); }
+  (function(){
+    var DAY=86400000, REMIND_AFTER=7, SNOOZE=3;
+    var hub=hubLoad();
+    var hasData = !!(localStorage.getItem(RIKA_KEY) || localStorage.getItem(GG_KEY)) ||
+      ['rika','gg','gori','run','merge'].some(function(k){ return ((hub.play||{})[k]||0) > 120; });
+    var sinceBackup = hub.lastBackup ? (Date.now()-hub.lastBackup)/DAY : Infinity;
+    var snoozing = hub.backupSnooze ? (Date.now()-hub.backupSnooze)/DAY < SNOOZE : false;
+    var toast=document.getElementById('saveToast');
+    if(hasData && sinceBackup>=REMIND_AFTER && !snoozing){
+      document.getElementById('stText').textContent = '💾 ' +
+        (isFinite(sinceBackup) ? ('保存してから'+Math.floor(sinceBackup)+'日たちました。') : 'まだ一度も保存していません。') +
+        ' 機種変更にそなえて保存しておこう';
+      toast.style.display='flex';
+    }
+    document.getElementById('stSave').addEventListener('click', function(){ toast.style.display='none'; document.getElementById('dataOverlay').style.display='flex'; });
+    document.getElementById('stLater').addEventListener('click', function(){ var h=hubLoad(); h.backupSnooze=Date.now(); hubSave(h); toast.style.display='none'; });
+  })();
 })();
 </script>
 </body>

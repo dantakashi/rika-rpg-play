@@ -18,7 +18,7 @@
 //  §12 PvP・トーナメント                       ～ line 997
 //  §13 セーブ・ロード・初期化                  ～ line 1176
 //  §14 ユーティリティ（戦闘力・アバター）      ～ line 1258
-//  §15 デバッグモード activateDebugMode         ～ line 1330  ← 本番配布前にボタン非表示にすること
+//  §15 デバッグモード activateDebugMode         ～ line 1330  ← 公開版(github.io)では関数冒頭のガードで無効(Issue #10)
 //  §16 公開API return {}                        ～ line 1338
 //
 const GameEngine = (function() {
@@ -2474,6 +2474,12 @@ let player = {
   // 使い方: 画面下のデバッグボタンを押す
   // ※本番（生徒配布時）にはボタンを非表示にすること
   function activateDebugMode() {
+    // 公開版(GitHub Pages)では無効: 対戦・セーブ書出が入り公平性に関わるため(Issue #10)。
+    // 開発環境(file://・localhost)では従来どおり使える。
+    if (/(^|\.)github\.io$/.test(location.hostname)) {
+      alert('🛠️ このボタンは開発用です。公開版では使えません。');
+      return;
+    }
     player.gold = 100000000;                              // ゴールド: 1億
     player.defeatedBosses = GameData.BOSSES_DB.map(b => b.id); // 全ボス撃破済み → 全道場解放
     player.dojoEnemyLevel = 1;
