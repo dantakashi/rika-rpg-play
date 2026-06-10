@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>戦国トレーナー 〜天下統一への道〜</title>
+<style>
+/* ============================================================
+   戦国トレーナー β — パワプロ/ウマ娘型 歴史育成SLG
+   §S1 ベース・テーマ / §S2 タイトル / §S3 育成メイン
+   §S4 モーダル共通・クイズ / §S5 合戦 / §S6 結果・殿堂
+   設計書: ../PLAN_SENGOKU_IKUSEI.md
+   ============================================================ */
+/* ===== §S1 ベース ===== */
+:root{
+  --ink:#2b1d0e; --paper:#f5ead3; --paper2:#efe0c0; --line:#c9b282;
+  --indigo:#1d2438; --indigo2:#2a3450; --gold:#d8a823; --gold2:#f3cf5d;
+  --red:#b3362a; --green:#2e8b57; --blue:#3a6ea5; --purple:#7a4f9d;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0;}
+body{
+  min-height:100vh; color:var(--ink);
+  font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",system-ui,sans-serif;
+  background:linear-gradient(180deg,#141a2c 0%,#1d2438 30%,#2a3450 100%);
+  user-select:none; -webkit-user-select:none;
+}
+.serif{font-family:"Yu Mincho","Hiragino Mincho ProN",serif;}
+.wrap{width:min(520px,100%); margin:0 auto; padding:10px 12px 24px;}
+button{font:inherit; color:inherit; cursor:pointer; border:none; background:none;}
+.btn{display:block; width:100%; padding:14px; border-radius:14px; font-weight:800; font-size:17px; color:var(--ink);
+  background:var(--paper); border:3px solid var(--line); box-shadow:0 4px 0 rgba(0,0,0,.25); transition:transform .06s;}
+.btn:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.25);}
+.btn.gold{background:linear-gradient(180deg,var(--gold2),var(--gold)); border-color:#a87d12; color:#3a2a05;}
+.btn.dim{opacity:.45; pointer-events:none;}
+.note{font-size:12.5px; color:#6b5a3e; line-height:1.5;}
+.scr{display:none;} .scr.on{display:block;}
+
+/* ===== §S2 タイトル ===== */
+#scr-title{text-align:center; color:var(--paper);}
+.titleCrest{font-size:64px; margin-top:36px; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));}
+.titleName{font-size:clamp(34px,9vw,46px); font-weight:900; letter-spacing:.12em; margin:6px 0 2px;
+  background:linear-gradient(180deg,#f7e7ae,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:none;}
+.titleSub{font-size:15px; letter-spacing:.3em; color:#cdbb88; margin-bottom:18px;}
+.titlePolicy{margin:14px auto 18px; width:min(420px,94%); background:rgba(245,234,211,.1);
+  border:1px solid rgba(216,168,35,.45); border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.7; color:#e8dcbb; text-align:left;}
+.titleBtns{width:min(360px,92%); margin:0 auto; display:grid; gap:10px;}
+.verTag{margin-top:18px; font-size:11px; color:#7f8aa8;}
+
+/* ===== §S3 育成メイン ===== */
+.board{background:var(--paper); border-radius:18px; border:3px solid var(--line); overflow:hidden;}
+.gHead{display:flex; align-items:center; justify-content:space-between; padding:8px 12px;
+  background:linear-gradient(180deg,var(--indigo2),var(--indigo)); color:var(--paper);}
+.gYear{font-weight:900; font-size:19px;} .gYear small{font-weight:600; font-size:12px; color:#bfc8e0; margin-left:6px;}
+.gKoku{font-weight:800; font-size:14px; color:var(--gold2);}
+.charRow{display:flex; gap:10px; padding:10px 12px 4px; align-items:center;}
+.charFace{font-size:44px; line-height:1; filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));}
+.charInfo{flex:1;}
+.charName{font-weight:900; font-size:17px;}
+.moodTag{display:inline-block; margin-left:8px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#ddd;}
+.barWrap{margin-top:5px;}
+.barLbl{display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#7a6845;}
+.bar{height:13px; background:#ddd0b0; border-radius:8px; overflow:hidden; border:1px solid var(--line);}
+.bar i{display:block; height:100%; border-radius:8px; background:linear-gradient(90deg,#7fd49a,#2e8b57); transition:width .3s;}
+.bar i.low{background:linear-gradient(90deg,#f0b35e,#d96f30);}
+.bar i.crit{background:linear-gradient(90deg,#e0533d,#b3362a);}
+.statGrid{display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; padding:8px 12px;}
+.stat{display:flex; align-items:center; gap:6px; background:var(--paper2); border-radius:10px; padding:5px 9px;}
+.stat .si{font-size:18px;} .stat .sl{font-size:12px; font-weight:700; color:#7a6845; flex:1;}
+.stat .sv{font-weight:900; font-size:18px;}
+.stat .sv.up{color:var(--green); animation:pop .5s;}
+@keyframes pop{0%{transform:scale(1.6)}100%{transform:scale(1)}}
+.cmdArea{padding:8px 10px 12px;}
+.cmdGrid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.cmd{position:relative; padding:10px 8px 8px; border-radius:14px; border:3px solid var(--line);
+  background:#fffdf4; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;}
+.cmd:active{transform:translateY(2px);}
+.cmd .ci{font-size:24px;} .cmd .cl{font-weight:800; font-size:14px;}
+.cmd .fail{font-size:11px; font-weight:800; color:#999;}
+.cmd .fail.warn{color:#d96f30;} .cmd .fail.danger{color:var(--red);}
+.cmd .mates{position:absolute; top:-10px; right:-4px; display:flex; gap:1px;}
+.cmd .mates span{font-size:17px; background:var(--paper); border:2px solid var(--line); border-radius:999px;
+  width:27px; height:27px; display:flex; align-items:center; justify-content:center;}
+.cmd .mates span.fr{border-color:var(--gold); background:#fff3c8; box-shadow:0 0 8px 2px rgba(243,207,93,.9); animation:glow 1.2s infinite alternate;}
+@keyframes glow{from{box-shadow:0 0 4px 1px rgba(243,207,93,.6)}to{box-shadow:0 0 10px 3px rgba(243,207,93,1)}}
+.cmd.rest{background:#eef6ff;} .cmd.trip{background:#f3ecff;}
+.subRow{display:flex; gap:8px; margin-top:8px;}
+.subBtn{flex:1; padding:8px; border-radius:10px; border:2px solid var(--line); background:var(--paper2); font-size:12.5px; font-weight:700;}
+.bondRow{display:flex; gap:8px; padding:0 12px 10px; flex-wrap:wrap;}
+.bondChip{display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; background:var(--paper2);
+  border:1px solid var(--line); border-radius:999px; padding:3px 8px;}
+.bondChip .bg{width:42px; height:7px; background:#ddd0b0; border-radius:4px; overflow:hidden;}
+.bondChip .bg i{display:block; height:100%; background:linear-gradient(90deg,#f5b0c0,#e0533d);}
+.bondChip.mx{border-color:var(--gold); background:#fff3c8;}
+.nextEv{margin-top:10px; text-align:center; font-size:12.5px; color:#cdbb88;}
+
+/* ===== §S4 モーダル共通・クイズ ===== */
+.ovl{position:fixed; inset:0; z-index:40; background:rgba(10,14,26,.78); display:none;
+  align-items:flex-start; justify-content:center; overflow-y:auto; padding:18px 10px 40px;}
+.ovl.on{display:flex;}
+.box{width:min(500px,100%); background:var(--paper); border-radius:18px; border:3px solid var(--line);
+  padding:16px; animation:rise .25s ease;}
+@keyframes rise{from{transform:translateY(24px); opacity:0}to{transform:none; opacity:1}}
+.box h2{margin:0 0 8px; font-size:20px;}
+.evYear{font-size:13px; font-weight:800; color:var(--red); letter-spacing:.15em;}
+.evText{font-size:15px; line-height:1.85; white-space:pre-wrap; margin:8px 0 14px;}
+.qBadge{display:inline-block; font-size:12px; font-weight:800; color:#fff; background:var(--blue);
+  border-radius:999px; padding:3px 12px; margin-bottom:8px;}
+.qBadge.buyu{background:var(--red);} .qBadge.chiryaku{background:var(--blue);}
+.qBadge.seiji{background:var(--green);} .qBadge.ninbo{background:var(--purple);}
+.qHint{font-size:12px; color:#6b5a3e; background:var(--paper2); border-radius:8px; padding:6px 10px; margin-bottom:10px;}
+.qText{font-size:16px; font-weight:700; line-height:1.8; white-space:pre-wrap; margin-bottom:12px;}
+.choices{display:grid; gap:8px;}
+.choice{padding:12px 12px; border:3px solid var(--line); border-radius:12px; background:#fffdf4;
+  font-size:15px; font-weight:700; text-align:left; line-height:1.5; transition:transform .06s;}
+.choice:active{transform:scale(.985);}
+.choice.good{background:#d7f5e1; border-color:var(--green);}
+.choice.bad{background:#fbdcd5; border-color:var(--red); animation:shake .3s;}
+.choice.lock{pointer-events:none;}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.descBox{margin-top:12px; background:#fff8e4; border:2px solid var(--gold); border-radius:12px; padding:10px 12px;
+  font-size:14px; line-height:1.75;}
+.descBox b{color:#8a6605;}
+.resLine{margin-top:12px; font-size:15.5px; font-weight:800; text-align:center; line-height:1.7; white-space:pre-wrap;}
+.resLine .big{font-size:21px; color:var(--green);}
+.resLine .fail{color:var(--red);}
+.pushRow{display:grid; gap:8px; margin-top:12px;}
+.pushNote{font-size:12px; color:#6b5a3e; text-align:center;}
+
+/* ===== §S5 合戦 ===== */
+.btField{background:linear-gradient(180deg,#3a2430,#1d1622); border-radius:14px; padding:12px; color:var(--paper); margin:8px 0 12px;}
+.btRow{display:flex; justify-content:space-between; font-weight:900; font-size:15px; margin-bottom:4px;}
+.btRow .en{color:#ff9d8a;}
+.btBar{height:16px; background:#0e0a14; border-radius:9px; overflow:hidden; border:1px solid #5a4458; margin-bottom:8px;}
+.btBar i{display:block; height:100%; transition:width .5s;}
+.btBar .me{background:linear-gradient(90deg,#7fb6ff,#3a6ea5);}
+.btBar .foe{background:linear-gradient(90deg,#ff8d76,#b3362a);}
+.btVs{text-align:center; font-size:13px; color:#cdbb88; margin:2px 0 6px;}
+.btLog{font-size:13.5px; line-height:1.7; color:#f0e6cd; min-height:40px; white-space:pre-wrap;}
+
+/* ===== §S6 結果・殿堂 ===== */
+.rankBig{text-align:center; margin:8px 0;}
+.rankBig .rk{font-size:52px; font-weight:900; letter-spacing:.08em;
+  background:linear-gradient(180deg,#f7e7ae,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.rankBig .rsub{font-size:13px; color:#7a6845; font-weight:700;}
+.cardList{display:grid; gap:8px; margin-top:10px;}
+.hallCard{display:flex; gap:10px; align-items:center; background:var(--paper2); border:2px solid var(--line); border-radius:12px; padding:8px 12px;}
+.hallCard .hi{font-size:30px;} .hallCard .hb{flex:1; font-size:12.5px; line-height:1.55;}
+.hallCard .hb b{font-size:14.5px;}
+.hallCard .hr{font-weight:900; font-size:20px; color:#a87d12;}
+.bookItem{background:var(--paper2); border:2px solid var(--line); border-radius:12px; padding:10px 12px; font-size:13.5px; line-height:1.7;}
+.bookItem b{color:var(--red);}
+.toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:60;
+  background:rgba(30,22,10,.92); color:#ffe9a8; font-weight:800; font-size:14px;
+  padding:10px 18px; border-radius:999px; border:1px solid var(--gold); display:none; white-space:nowrap;}
+.toast.on{display:block; animation:tin 2.4s forwards;}
+@keyframes tin{0%{opacity:0; transform:translate(-50%,12px)}10%,80%{opacity:1; transform:translate(-50%,0)}100%{opacity:0}}
+.closeX{position:sticky; top:0; float:right; font-size:20px; font-weight:900; color:#9a8660; padding:0 4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== タイトル ===== -->
+  <div id="scr-title" class="scr on">
+    <div class="titleCrest">⚔️</div>
+    <div class="titleName serif">戦国トレーナー</div>
+    <div class="titleSub serif">〜 天下統一への道 〜</div>
+    <div class="titlePolicy">
+      📖 <b>このゲームは「調べてOK」！</b><br>
+      問題に時間制限はありません。教科書・資料集・ネットで調べてから答えても大丈夫。
+      「調べて、わかって、強くなる」が武将育成の極意です。
+    </div>
+    <div class="titleBtns">
+      <button class="btn gold" onclick="UI.preStart()">⚔️ 育成開始（織田信長）</button>
+      <button id="btn-resume" class="btn" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
+      <button class="btn" onclick="UI.openHall()">🏯 殿堂（育てた武将）</button>
+      <button class="btn" onclick="UI.openBook()">📖 軍学帳（まちがい帳）</button>
+    </div>
+    <div class="verTag">β版 / 社会科・歴史（戦国〜安土桃山） / セーブはこの端末に保存</div>
+  </div>
+
+  <!-- ===== 育成メイン ===== -->
+  <div id="scr-game" class="scr">
+    <div class="board">
+      <div class="gHead">
+        <div class="gYear serif" id="g-year">1551年<small></small></div>
+        <div class="gKoku" id="g-koku">🌾 10万石</div>
+      </div>
+      <div class="charRow">
+        <div class="charFace" id="g-face">👺</div>
+        <div class="charInfo">
+          <div class="charName">織田信長 <span class="moodTag" id="g-mood">ふつう</span></div>
+          <div class="barWrap">
+            <div class="barLbl"><span>体力</span><span id="g-stam-n">100/100</span></div>
+            <div class="bar"><i id="g-stam" style="width:100%"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="statGrid" id="g-stats"></div>
+      <div class="bondRow" id="g-bonds"></div>
+      <div class="cmdArea">
+        <div class="cmdGrid" id="g-cmds"></div>
+        <div class="subRow">
+          <button class="subBtn" onclick="UI.openBook()">📖 軍学帳 <span id="g-bookn"></span></button>
+          <button class="subBtn" onclick="UI.confirmQuit()">🏳️ 育成をやめる</button>
+        </div>
+      </div>
+    </div>
+    <div class="nextEv" id="g-next"></div>
+  </div>
+
+  <!-- ===== 結果 ===== -->
+  <div id="scr-result" class="scr">
+    <div class="board" style="padding:16px;">
+      <h2 class="serif" style="text-align:center; margin:4px 0 2px;">育成完了</h2>
+      <div class="rankBig"><div class="rk serif" id="r-rank">城主</div><div class="rsub" id="r-sub"></div></div>
+      <div class="statGrid" id="r-stats" style="padding:0;"></div>
+      <div class="descBox" id="r-summary" style="margin-top:12px;"></div>
+      <div class="descBox" id="r-legacy" style="margin-top:8px; background:#f0e6ff; border-color:var(--purple);"></div>
+      <div style="display:grid; gap:8px; margin-top:14px;">
+        <button class="btn gold" onclick="UI.toTitle()">🏠 タイトルへ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== クイズ ===== -->
+  <div id="ovl-quiz" class="ovl"><div class="box">
+    <span class="qBadge" id="q-badge">武勇</span>
+    <div class="qHint">📖 時間制限なし。調べてもOK！（それも勉強のうち）</div>
+    <div class="qText" id="q-text"></div>
+    <div class="choices" id="q-choices"></div>
+    <div id="q-after"></div>
+  </div></div>
+
+  <!-- ===== イベント ===== -->
+  <div id="ovl-event" class="ovl"><div class="box">
+    <div class="evYear serif" id="e-year"></div>
+    <h2 class="serif" id="e-title"></h2>
+    <div class="evText" id="e-text"></div>
+    <div id="e-actions" style="display:grid; gap:8px;"></div>
+  </div></div>
+
+  <!-- ===== 合戦 ===== -->
+  <div id="ovl-battle" class="ovl"><div class="box">
+    <div class="evYear serif" id="b-year"></div>
+    <h2 class="serif" id="b-title"></h2>
+    <div class="evText" id="b-intro" style="margin-bottom:8px;"></div>
+    <div class="btField">
+      <div class="btRow"><span>🔵 織田軍 <span id="b-mep"></span></span></div>
+      <div class="btBar"><i class="me" id="b-mebar" style="width:50%"></i></div>
+      <div class="btVs">⚔️ 軍配（クイズ）が戦況を決める ⚔️</div>
+      <div class="btRow"><span class="en">🔴 <span id="b-foe"></span> <span id="b-fop"></span></span></div>
+      <div class="btBar"><i class="foe" id="b-fobar" style="width:100%"></i></div>
+      <div class="btLog" id="b-log"></div>
+    </div>
+    <div id="b-actions" style="display:grid; gap:8px;"></div>
+  </div></div>
+
+  <!-- ===== 殿堂・軍学帳・汎用 ===== -->
+  <div id="ovl-list" class="ovl"><div class="box">
+    <button class="closeX" onclick="UI.closeList()">✕</button>
+    <h2 class="serif" id="l-title"></h2>
+    <div id="l-body" class="cardList"></div>
+  </div></div>
+
+  <div id="toast" class="toast"></div>
+</div>
+
+<script src="data.js"></script>
+<script src="questions_extra.js"></script>
+<script>
+/* ============================================================
+   エンジン
+   §1 定数・状態 / §2 セーブ / §3 クイズ抽選 / §4 育成ターン
+   §5 トレーニング解決 / §6 年表イベント / §7 合戦 / §8 終了評価
+   §9 UI描画 / §10 殿堂・軍学帳
+   ============================================================ */
+const Game = (function(){
+  /* ===== §1 定数・状態 ===== */
+  const D = SENGOKU_DATA;
+  // Codex生成の追加問題（questions_extra.js）があれば結合
+  if (typeof SENGOKU_QUESTIONS_EXTRA !== 'undefined') D.QUESTIONS.push(...SENGOKU_QUESTIONS_EXTRA);
+
+  const START_YEAR = 1551, END_YEAR = 1582;
+  const MOODS = [
+    { label:'絶不調', icon:'😵', mul:0.8, cls:'#e0533d' },
+    { label:'不調',   icon:'😟', mul:0.9, cls:'#d96f30' },
+    { label:'ふつう', icon:'😐', mul:1.0, cls:'#bbb' },
+    { label:'好調',   icon:'😊', mul:1.1, cls:'#7fd49a' },
+    { label:'絶好調', icon:'🔥', mul:1.2, cls:'#f3cf5d' },
+  ];
+  const STAT_KEYS = ['buyu','chiryaku','seiji','ninbo'];
+  const TRAIN_COST = 18;
+  const RANKS = [ // [必要評価点, ランク名, ひとこと]
+    [0,'足軽','まだまだこれから。次はもっと学んでみよう！'],
+    [190,'侍大将','戦場で名が知られ始めた。'],
+    [320,'城主','一城のあるじ。家臣たちが頼りにしている。'],
+    [450,'国主','一国を治める大名。天下が見えてきた。'],
+    [590,'大大名','天下にその名を轟かす大大名！'],
+    [720,'天下人','見事、天下統一！ 歴史にきみの名が刻まれた！'],
+  ];
+
+  let S = null;        // 育成中の状態（runState）
+  let P = loadPersist(); // 永続データ {hall:[], legacy:[], book:[]}
+
+  function newRun(legacyIdx){
+    const s = {
+      year:START_YEAR, buyu:20, chiryaku:24, seiji:14, ninbo:8,
+      stamina:100, mood:2, koku:100, wins:0, battles:0,
+      bonds:{}, bondMaxDone:{}, usedQ:[], placement:{}, correctTotal:0, answerTotal:0,
+      pendingEventDone:{},
+    };
+    D.RETAINERS.forEach(r=>s.bonds[r.id]=20);
+    if (legacyIdx!=null && P.legacy[legacyIdx]){
+      const lg = P.legacy[legacyIdx];
+      s[lg.stat] += lg.val;
+      toast(`📜 遺訓「${lg.name}」発動！ ${D.GENRES[lg.stat].label}+${lg.val}`);
+      P.legacy.splice(legacyIdx,1); savePersist();
+    }
+    return s;
+  }
+
+  /* ===== §2 セーブ ===== */
+  const SAVE_KEY = 'sengoku_save_v1';
+  function saveAll(){
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({run:S, persist:P})); }catch(e){}
+  }
+  function loadRaw(){
+    try{ return JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch(e){ return null; }
+  }
+  function loadPersist(){
+    const raw = loadRaw();
+    const p = (raw && raw.persist) || {};
+    return { hall:p.hall||[], legacy:p.legacy||[], book:p.book||[] };
+  }
+  function savePersist(){ saveAll(); }
+  function hasRun(){ const r=loadRaw(); return !!(r && r.run); }
+  function resume(){
+    const raw = loadRaw();
+    if (raw && raw.run){ S = raw.run; UI.show('game'); turnStart(true); }
+  }
+  function clearRun(){ S=null; saveAll(); }
+
+  /* ===== §3 クイズ抽選 ===== */
+  function diffWeights(){
+    const t = S.year - START_YEAR;
+    if (t<=10) return {1:60,2:35,3:5};
+    if (t<=21) return {1:25,2:50,3:25};
+    return {1:10,2:50,3:40};
+  }
+  function pickQuestion(genre){
+    const w = diffWeights();
+    let pool = D.QUESTIONS.map((q,i)=>({q,i})).filter(o=>o.q.genre===genre && !S.usedQ.includes(o.i));
+    if (!pool.length){ // 使い切ったらこのジャンルの使用済みをリセット
+      S.usedQ = S.usedQ.filter(i=>D.QUESTIONS[i].genre!==genre);
+      pool = D.QUESTIONS.map((q,i)=>({q,i})).filter(o=>o.q.genre===genre);
+    }
+    // 難易度の重み抽選 → その難易度から1問（無ければ全体から）
+    const r = Math.random()*100; let want = 1, acc = 0;
+    for (const d of [1,2,3]){ acc += w[d]; if (r < acc){ want = d; break; } }
+    let cand = pool.filter(o=>o.q.diff===want);
+    if (!cand.length) cand = pool;
+    const sel = cand[Math.floor(Math.random()*cand.length)];
+    S.usedQ.push(sel.i);
+    return sel;
+  }
+  // 選択肢シャッフル（出題ごとに正解位置をランダム化）
+  function shuffled(q){
+    const idx = [0,1,2,3].sort(()=>Math.random()-0.5);
+    return { c: idx.map(i=>q.c[i]), a: idx.indexOf(q.a) };
+  }
+
+  /* ===== §4 育成ターン ===== */
+  function failRate(){ // 体力依存の失敗率（%表示用）
+    return Math.max(0, Math.round((42 - S.stamina) * 1.1));
+  }
+  function placeRetainers(){
+    S.placement = {};
+    D.RETAINERS.forEach(r=>{
+      if (Math.random() < 0.55){
+        const keys = STAT_KEYS;
+        // 60%で得意コマンドに寄る
+        const k = Math.random()<0.6 ? r.fav : keys[Math.floor(Math.random()*keys.length)];
+        (S.placement[k] = S.placement[k]||[]).push(r.id);
+      }
+    });
+  }
+  function timelineEvent(){ return D.TIMELINE.find(e=>e.year===S.year); }
+
+  function turnStart(restored){
+    if (!restored) placeRetainers();
+    else if (!S.placement || !Object.keys(S.placement).length) placeRetainers();
+    saveAll();
+    UI.renderGame();
+    const ev = timelineEvent();
+    if (ev && !S.pendingEventDone[ev.year]){
+      setTimeout(()=>fireEvent(ev), 350);
+    }
+  }
+  function nextTurn(){
+    S.year++;
+    if (S.year > END_YEAR){ endRun(false); return; } // 保険（finalで終わるはず）
+    placeRetainers();
+    turnStart();
+  }
+
+  /* ===== §5 トレーニング解決 ===== */
+  let cur = null; // 現在のクイズ文脈 {mode:'train'|'battle'|'review', genre, sel, sh, ...}
+
+  function doCommand(k){
+    // 未消化の年表イベントがあれば先にそれを処理（連打・先行クリック対策）
+    const ev = timelineEvent();
+    if (ev && !S.pendingEventDone[ev.year]){ fireEvent(ev); return; }
+    if (k==='rest'){
+      const heal = 45 + Math.floor(Math.random()*11);
+      S.stamina = Math.min(100, S.stamina+heal);
+      // 軍学帳があれば復習出題（ノーリスク）
+      if (P.book.length){
+        const bi = Math.floor(Math.random()*P.book.length);
+        cur = { mode:'review', bookIdx:bi, genre:P.book[bi].genre };
+        UI.openQuiz(P.book[bi], cur);
+        toast(`😴 休息で体力+${heal}。軍学帳から復習だ！`);
+        return;
+      }
+      toast(`😴 ゆっくり休んだ。体力+${heal}`);
+      nextTurn(); return;
+    }
+    if (k==='trip'){
+      S.stamina = Math.min(100, S.stamina+25);
+      S.mood = Math.min(4, S.mood+1);
+      const k2 = 10+Math.floor(Math.random()*11);
+      S.koku += k2;
+      toast(`🏯 領内を視察した。やる気UP！ 石高+${fmtKoku(k2)}`);
+      nextTurn(); return;
+    }
+    // 鍛錬: クイズへ
+    cur = { mode:'train', genre:k };
+    const sel = pickQuestion(k);
+    cur.sel = sel;
+    UI.openQuiz(sel.q, cur);
+  }
+
+  function trainGain(q, opts){
+    // 基本上昇量 = 9 + diff*2 + 乱数 → やる気 → 家臣 → 友情
+    let g = 9 + q.diff*2 + Math.floor(Math.random()*4);
+    g = g * MOODS[S.mood].mul;
+    const mates = S.placement[cur.genre]||[];
+    g += mates.length*3;
+    let friend = false;
+    mates.forEach(id=>{
+      const r = D.RETAINERS.find(x=>x.id===id);
+      if (r.fav===cur.genre && S.bonds[id]>=80){ friend = true; }
+    });
+    if (friend) g *= 1.8;
+    let crit = false;
+    if (opts.correct && Math.random()<0.1){ crit = true; g *= 1.5; }
+    if (opts.half) g *= 0.6;
+    return { gain:Math.round(g), friend, crit, mates };
+  }
+
+  function applyTraining(res, failed){
+    const k = cur.genre;
+    if (failed){
+      S.stamina = Math.max(0, S.stamina - TRAIN_COST - 10);
+      S.mood = Math.max(0, S.mood-1);
+      S[k] = Math.max(1, S[k]-2);
+    } else {
+      S.stamina = Math.max(0, S.stamina - TRAIN_COST);
+      S[k] += res.gain;
+      // 絆上昇
+      res.mates.forEach(id=>{
+        S.bonds[id] = Math.min(100, S.bonds[id] + 7 + (cur.lastCorrect?3:0));
+      });
+    }
+    saveAll();
+  }
+  // 絆MAXイベント（適用後にチェック）
+  function checkBondMax(){
+    for (const r of D.RETAINERS){
+      if (S.bonds[r.id]>=100 && !S.bondMaxDone[r.id]){
+        S.bondMaxDone[r.id] = true;
+        const fx = r.maxFx||{};
+        STAT_KEYS.forEach(s=>{ if(fx[s]) S[s]+=fx[s]; });
+        if (fx.stamina) S.stamina = Math.min(100, S.stamina+fx.stamina);
+        if (fx.koku) S.koku += fx.koku;
+        if (fx.mood) S.mood = Math.min(4, S.mood+fx.mood);
+        UI.showEvent({ year:S.year, type:'story', title:`${r.icon} ${r.name}・絆MAX！`,
+          text:r.maxText + '\n\n（ボーナスを獲得した！）' }, ()=>UI.renderGame());
+        saveAll();
+        return;
+      }
+    }
+  }
+
+  /* 回答処理（クイズUIから呼ばれる） */
+  function answer(choiceIdx){
+    const correct = (choiceIdx === cur.sh.a);
+    cur.lastCorrect = correct;
+    if (cur.mode==='battle'){ return battleAnswer(correct); }
+    if (cur.mode==='review'){
+      if (correct){
+        const item = P.book[cur.bookIdx];
+        S[item.genre] = (S[item.genre]||0) + 5;
+        P.book.splice(cur.bookIdx,1);
+        savePersist();
+        return { correct, text:`復習成功！ ${D.GENRES[item.genre].label}+5\n軍学帳から1ページ卒業！`, done:'next' };
+      }
+      return { correct, text:'まだ覚えきれていないようだ。解説を読んでおこう。\n（軍学帳に残しておくね）', done:'next' };
+    }
+    // train
+    S.answerTotal++;
+    if (correct){
+      S.correctTotal++;
+      const res = trainGain(cur.sel.q, {correct:true});
+      cur.res = res;
+      applyTraining(res, false);
+      let t = `${D.GENRES[cur.genre].label}+${res.gain}！`;
+      if (res.crit) t = `🌟大成功！ ${t}`;
+      if (res.friend) t = `🌈友情特訓！ ${t}`;
+      return { correct, text:t, done:'next' };
+    }
+    // 不正解 → 軍学帳に記録し、押し切るか選ばせる
+    addToBook(cur.sel.q);
+    return { correct, push:true };
+  }
+  function addToBook(q){
+    if (!P.book.some(b=>b.q===q.q)){
+      P.book.push({ genre:q.genre, diff:q.diff, q:q.q, c:q.c, a:q.a, desc:q.desc });
+      if (P.book.length>40) P.book.shift();
+      savePersist();
+    }
+  }
+  // 不正解後の選択: 押し切る or 学び直す
+  function pushThrough(){
+    const fr = Math.min(85, failRate()+20);
+    const failed = Math.random()*100 < fr;
+    if (failed){
+      applyTraining(null, true);
+      return { failed:true, text:`💥 大失敗！ 無理がたたって倒れてしまった…\n体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2` };
+    }
+    const res = trainGain(cur.sel.q, {correct:false});
+    applyTraining(res, false);
+    let t = `気合で押し切った！ ${D.GENRES[cur.genre].label}+${res.gain}！`;
+    if (res.friend) t = `🌈友情特訓！ ${t}`;
+    return { failed:false, text:t };
+  }
+  function learnSafe(){
+    const res = trainGain(cur.sel.q, {correct:false, half:true});
+    applyTraining(res, false);
+    return { text:`解説をじっくり読んで学び直した。${D.GENRES[cur.genre].label}+${res.gain}（軍学帳に記録）` };
+  }
+
+  /* ===== §6 年表イベント ===== */
+  function fireEvent(ev){
+    S.pendingEventDone[ev.year] = true;
+    if (ev.type==='battle'){ startBattle(ev); return; }
+    if (ev.type==='final'){ startFinal(ev); return; }
+    if (ev.type==='story'){
+      UI.showEvent(ev, ()=>{ applyFx(ev.effects); UI.renderGame(); saveAll(); });
+      return;
+    }
+    if (ev.type==='choice'){ UI.showChoiceEvent(ev); return; }
+  }
+  function applyFx(fx){
+    if (!fx) return;
+    STAT_KEYS.forEach(k=>{ if(fx[k]) S[k]=Math.max(1,S[k]+fx[k]); });
+    if (fx.stamina) S.stamina = Math.max(0, Math.min(100, S.stamina+fx.stamina));
+    if (fx.mood) S.mood = Math.max(0, Math.min(4, S.mood+fx.mood));
+    if (fx.koku) S.koku = Math.max(10, S.koku+fx.koku);
+  }
+  function choiceFx(ev, idx){
+    const ch = ev.choices[idx];
+    applyFx(ch.fx);
+    saveAll();
+    return ch;
+  }
+
+  /* ===== §7 合戦 ===== */
+  let B = null;
+  function playerPower(){
+    return Math.round(S.buyu*2.2 + S.chiryaku*1.6 + S.ninbo*0.6 + S.koku/15);
+  }
+  function startBattle(ev){
+    B = { ev, q:0, correct:0, max:3 };
+    UI.openBattle(ev, playerPower());
+  }
+  function battleNextQuestion(){
+    B.q++;
+    const genre = Math.random()<0.5 ? 'buyu' : 'chiryaku';
+    cur = { mode:'battle', genre };
+    const sel = pickQuestion(genre);
+    cur.sel = sel;
+    UI.openQuiz(sel.q, cur);
+  }
+  function battleAnswer(correct){
+    S.answerTotal++;
+    if (correct){ S.correctTotal++; B.correct++; }
+    else addToBook(cur.sel.q);
+    const last = (B.q>=B.max);
+    return { correct, battle:true, last,
+      text: correct ? '⚔️ 軍配的中！ わが軍が敵勢を切り崩した！' : '🌀 軍配が乱れた…！ 敵に押し返される！' };
+  }
+  function battleResult(){
+    S.battles++;
+    const ratio = playerPower()/B.ev.enemyPower;
+    const score = ratio*0.6 + (B.correct/B.max)*0.62;
+    const win = score >= 0.95;
+    if (win){ S.wins++; applyFx(B.ev.winFx); }
+    else applyFx(B.ev.loseFx);
+    saveAll();
+    return { win, text: win? B.ev.winText : B.ev.loseText };
+  }
+
+  /* ===== 最終イベント（本能寺） ===== */
+  function startFinal(ev){
+    UI.showEvent(ev, ()=>{
+      const survive = (S.chiryaku>=95 && S.ninbo>=80);
+      const branch = survive? ev.survive : ev.fall;
+      if (survive){ S.koku += 500; S.wins++; S.battles++; }
+      S.survived = survive;
+      UI.showEvent({year:1582, type:'story', title:branch.title, text:branch.text}, ()=>endRun(survive));
+    });
+  }
+
+  /* ===== §8 終了評価 ===== */
+  function endRun(survived){
+    const total = S.buyu + S.chiryaku + S.seiji + S.ninbo + Math.round(S.koku/12) + S.wins*25;
+    let rank = RANKS[0];
+    for (const r of RANKS){ if (total>=r[0]) rank = r; }
+    if (survived && rank[0]<590) rank = RANKS[4]; // IF生存は最低でも大大名
+    // 遺訓: 最高ステに応じて獲得
+    let bestK = 'buyu';
+    STAT_KEYS.forEach(k=>{ if(S[k]>S[bestK]) bestK=k; });
+    const LEGACY_NAMES = { buyu:'攻めてこそ道は開ける', chiryaku:'敵を知り己を知れば百戦危うからず', seiji:'銭は囲うより回せ', ninbo:'人は城、人は石垣' };
+    const legacy = { stat:bestK, val:Math.min(15, 5+Math.floor(S[bestK]/20)), name:LEGACY_NAMES[bestK] };
+    P.legacy.push(legacy); if (P.legacy.length>5) P.legacy.shift();
+    // 殿堂入り
+    P.hall.push({ name:'織田信長', rank:rank[1], total,
+      stats:{buyu:S.buyu, chiryaku:S.chiryaku, seiji:S.seiji, ninbo:S.ninbo},
+      koku:S.koku, wins:S.wins, battles:S.battles, survived:!!survived,
+      acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
+      date:new Date().toLocaleDateString('ja-JP') });
+    if (P.hall.length>30) P.hall.shift();
+    const summary = { rank, total, legacy, survived:!!survived,
+      koku:S.koku, wins:S.wins, battles:S.battles,
+      acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
+      stats:{buyu:S.buyu, chiryaku:S.chiryaku, seiji:S.seiji, ninbo:S.ninbo} };
+    clearRun(); savePersist();
+    UI.showResult(summary);
+  }
+
+  /* 石高表示（内部値の1/10を万石として表示＝史実スケールに近づける） */
+  function fmtKoku(k){ const v = k/10; return (v%1===0? v : v.toFixed(1)) + '万石'; }
+
+  /* toast */
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.remove('on');
+    void t.offsetWidth; t.classList.add('on');
+  }
+
+  return { get S(){return S;}, get P(){return P;}, D, MOODS, STAT_KEYS, RANKS,
+    newRun:(lg)=>{S=newRun(lg); saveAll();}, hasRun, resume, clearRun,
+    failRate, doCommand, answer, pushThrough, learnSafe, checkBondMax,
+    timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
+    battleNextQuestion, battleResult, playerPower, toast, shuffled, fmtKoku,
+    get cur(){return cur;}, get B(){return B;}, START_YEAR, END_YEAR, saveAll };
+})();
+
+/* ============================================================ UI */
+const UI = (function(){
+  const D = Game.D;
+  const $ = id=>document.getElementById(id);
+
+  function show(name){
+    ['title','game','result'].forEach(n=>$('scr-'+n).classList.toggle('on', n===name));
+    if (name==='title') $('btn-resume').style.display = Game.hasRun()? 'block':'none';
+  }
+
+  /* ---- 育成開始（遺訓選択） ---- */
+  function preStart(){
+    if (Game.hasRun() && !confirm('育成中のデータがあります。最初からはじめると消えますが、よろしいですか？')) return;
+    const lg = Game.P.legacy;
+    if (!lg.length){ startRun(null); return; }
+    // 遺訓選択モーダル
+    $('l-title').textContent = '📜 遺訓を選ぶ（1枚だけ使える）';
+    const body = $('l-body'); body.innerHTML='';
+    lg.forEach((g,i)=>{
+      const b = document.createElement('button');
+      b.className='btn';
+      b.innerHTML = `📜 ${g.name}<br><small style="font-weight:600">${D.GENRES[g.stat].icon} ${D.GENRES[g.stat].label}+${g.val} でスタート</small>`;
+      b.onclick = ()=>{ closeList(); startRun(i); };
+      body.appendChild(b);
+    });
+    const skip = document.createElement('button');
+    skip.className='btn'; skip.textContent='使わずに始める';
+    skip.onclick = ()=>{ closeList(); startRun(null); };
+    body.appendChild(skip);
+    $('ovl-list').classList.add('on');
+  }
+  function startRun(legacyIdx){
+    Game.newRun(legacyIdx);
+    show('game');
+    Game.turnStart();
+  }
+  function toTitle(){ show('title'); }
+  function confirmQuit(){
+    if (confirm('この育成をあきらめてタイトルに戻りますか？（育成データは消えます）')){
+      Game.clearRun(); show('title');
+    }
+  }
+
+  /* ---- §9 育成画面の描画 ---- */
+  function renderGame(){
+    const S = Game.S; if (!S) return;
+    const age = S.year - 1534;
+    $('g-year').innerHTML = `${S.year}年 <small>信長 ${age}歳 ／ ${S.year-Game.START_YEAR+1}/32ターン</small>`;
+    $('g-koku').textContent = `🌾 ${Game.fmtKoku(S.koku)}`;
+    const m = Game.MOODS[S.mood];
+    const mt = $('g-mood'); mt.textContent = m.icon+' '+m.label; mt.style.background = m.cls;
+    $('g-face').textContent = S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂');
+    // 体力
+    const st = $('g-stam');
+    st.style.width = S.stamina+'%';
+    st.className = S.stamina<25? 'crit' : (S.stamina<45? 'low' : '');
+    $('g-stam-n').textContent = `${S.stamina}/100`;
+    // ステ
+    const sg = $('g-stats'); sg.innerHTML='';
+    Game.STAT_KEYS.forEach(k=>{
+      const g = D.GENRES[k];
+      sg.insertAdjacentHTML('beforeend',
+        `<div class="stat"><span class="si">${g.icon}</span><span class="sl">${g.label}</span><span class="sv" id="sv-${k}">${S[k]}</span></div>`);
+    });
+    // 絆
+    const br = $('g-bonds'); br.innerHTML='';
+    D.RETAINERS.forEach(r=>{
+      const v = S.bonds[r.id];
+      br.insertAdjacentHTML('beforeend',
+        `<div class="bondChip ${v>=80?'mx':''}">${r.icon} ${r.name.slice(0,5)} <span class="bg"><i style="width:${v}%"></i></span></div>`);
+    });
+    // コマンド
+    const fr = Game.failRate();
+    const cg = $('g-cmds'); cg.innerHTML='';
+    Game.STAT_KEYS.forEach(k=>{
+      const g = D.GENRES[k];
+      const mates = (S.placement[k]||[]);
+      const mateHtml = mates.length?
+        `<div class="mates">${mates.map(id=>{
+          const r = D.RETAINERS.find(x=>x.id===id);
+          const fri = (r.fav===k && S.bonds[id]>=80);
+          return `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
+        }).join('')}</div>` : '';
+      const fcls = fr>=30?'danger':(fr>=12?'warn':'');
+      cg.insertAdjacentHTML('beforeend',
+        `<button class="cmd" onclick="Game.doCommand('${k}')">${mateHtml}
+          <div class="ci">${g.icon}</div><div class="cl">${g.train}</div>
+          <div class="fail ${fcls}">体力-18 / 失敗率${fr}%</div></button>`);
+    });
+    cg.insertAdjacentHTML('beforeend',
+      `<button class="cmd rest" onclick="Game.doCommand('rest')"><div class="ci">😴</div><div class="cl">休息</div>
+        <div class="fail">体力+45〜 ${Game.P.book.length?'/ 📖復習':''}</div></button>`);
+    cg.insertAdjacentHTML('beforeend',
+      `<button class="cmd trip" onclick="Game.doCommand('trip')"><div class="ci">🏯</div><div class="cl">視察</div>
+        <div class="fail">体力+25 / やる気UP</div></button>`);
+    $('g-bookn').textContent = Game.P.book.length? `(${Game.P.book.length})` : '';
+    // 次イベント予告
+    const next = D.TIMELINE.find(e=>e.year>S.year);
+    $('g-next').textContent = next? `📅 次の歴史イベント: ${next.year}年「${next.title.split(' — ')[0]}」` : '';
+  }
+
+  /* ---- クイズ ---- */
+  function openQuiz(q, ctx){
+    ctx.sh = Game.shuffled(q);
+    const g = D.GENRES[q.genre];
+    const badge = $('q-badge');
+    badge.textContent = `${g.icon} ${g.label}（${g.quizLabel}）★${q.diff}`;
+    badge.className = 'qBadge '+q.genre;
+    $('q-text').textContent = q.q;
+    const box = $('q-choices'); box.innerHTML='';
+    ctx.sh.c.forEach((c,i)=>{
+      const b = document.createElement('button');
+      b.className='choice'; b.textContent = ['①','②','③','④'][i]+' '+c;
+      b.onclick = ()=>onAnswer(i, q, ctx);
+      box.appendChild(b);
+    });
+    $('q-after').innerHTML='';
+    $('ovl-quiz').classList.add('on');
+  }
+  function onAnswer(i, q, ctx){
+    const btns = [...$('q-choices').children];
+    btns.forEach(b=>b.classList.add('lock'));
+    btns[ctx.sh.a].classList.add('good');
+    if (i!==ctx.sh.a) btns[i].classList.add('bad');
+    const r = Game.answer(i);
+    const after = $('q-after');
+    let html = `<div class="descBox"><b>📖 解説</b><br>${q.desc}</div>`;
+    if (r.push){
+      // 不正解 → 押し切る / 学び直す の2択
+      const fr = Math.min(85, Game.failRate()+20);
+      html += `<div class="pushRow">
+        <button class="btn" onclick="UI.resolvePush(true)">💪 気合で押し切る（全力アップ・失敗率${fr}%）</button>
+        <button class="btn" onclick="UI.resolvePush(false)">📖 学び直す（6割アップ・安全）</button>
+        <div class="pushNote">まちがえても鍛錬はムダにならない。どちらでも力はつく！</div></div>`;
+      after.innerHTML = html;
+      return;
+    }
+    html += `<div class="resLine ${r.correct?'':'fail'}">${r.correct?'⭕ 正解！':'❌ ざんねん…'}<br><span class="${r.correct?'big':''}">${r.text}</span></div>`;
+    html += `<div class="pushRow"><button class="btn gold" onclick="UI.quizDone()">つぎへ</button></div>`;
+    after.innerHTML = html;
+    after.scrollIntoView({behavior:'smooth', block:'end'});
+  }
+  function resolvePush(push){
+    const r = push? Game.pushThrough() : Game.learnSafe();
+    const after = $('q-after');
+    after.innerHTML = `<div class="resLine ${r.failed?'fail':''}">${r.text}</div>
+      <div class="pushRow"><button class="btn gold" onclick="UI.quizDone()">つぎへ</button></div>`;
+    after.scrollIntoView({behavior:'smooth', block:'end'});
+  }
+  function quizDone(){
+    $('ovl-quiz').classList.remove('on');
+    const ctx = Game.cur;
+    if (ctx.mode==='battle'){ battleStep(); return; }
+    renderGame();
+    Game.checkBondMax();
+    setTimeout(()=>Game.nextTurn(), 250);
+  }
+
+  /* ---- イベント表示 ---- */
+  let evCb = null;
+  function showEvent(ev, cb){
+    $('e-year').textContent = `${ev.year}年`;
+    $('e-title').textContent = ev.title;
+    $('e-text').textContent = ev.text;
+    evCb = cb;
+    $('e-actions').innerHTML = `<button class="btn gold" onclick="UI.eventDone()">つづく</button>`;
+    $('ovl-event').classList.add('on');
+  }
+  function eventDone(){
+    $('ovl-event').classList.remove('on');
+    const cb = evCb; evCb = null;
+    if (cb) cb(); else renderGame();
+  }
+  function showChoiceEvent(ev){
+    $('e-year').textContent = `${ev.year}年`;
+    $('e-title').textContent = ev.title;
+    $('e-text').textContent = ev.text;
+    const act = $('e-actions'); act.innerHTML='';
+    ev.choices.forEach((ch,i)=>{
+      const b = document.createElement('button');
+      b.className = 'btn'+(i===0?' gold':'');
+      b.textContent = ch.label;
+      b.onclick = ()=>{
+        const c = Game.choiceFx(ev, i);
+        showEvent({year:ev.year, title:ev.title, text:c.text}, ()=>renderGame());
+      };
+      act.appendChild(b);
+    });
+    $('ovl-event').classList.add('on');
+  }
+
+  /* ---- 合戦 ---- */
+  function openBattle(ev, myPower){
+    $('b-year').textContent = `${ev.year}年`;
+    $('b-title').textContent = ev.title;
+    $('b-intro').textContent = ev.intro;
+    $('b-foe').textContent = ev.enemyName;
+    $('b-mep').textContent = `戦力 ${myPower}`;
+    $('b-fop').textContent = `戦力 ${ev.enemyPower}`;
+    const ratio = Math.min(1, myPower/ev.enemyPower);
+    $('b-mebar').style.width = Math.round(ratio*100)+'%';
+    $('b-fobar').style.width = '100%';
+    $('b-log').textContent = '軍配（クイズ3問）で勝敗が決まる。戦力差が大きいほど、正確な軍配が必要だ！';
+    $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleGo()">⚔️ 開戦！</button>`;
+    $('ovl-battle').classList.add('on');
+  }
+  function battleGo(){
+    $('ovl-battle').classList.remove('on');
+    Game.battleNextQuestion();
+  }
+  function battleStep(){
+    const B = Game.B;
+    // 戦況バー更新して合戦画面へ戻す
+    $('ovl-battle').classList.add('on');
+    const foePct = Math.max(8, 100 - Math.round((B.correct/B.max)*70));
+    $('b-fobar').style.width = foePct+'%';
+    $('b-log').textContent = `軍配 ${B.q}/${B.max} ── 的中 ${B.correct}`;
+    if (B.q < B.max){
+      $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleGo()">次の軍配へ（${B.q+1}問目）</button>`;
+    } else {
+      $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着！</button>`;
+    }
+  }
+  function battleFinish(){
+    const r = Game.battleResult();
+    $('ovl-battle').classList.remove('on');
+    showEvent({ year:Game.B.ev.year, title: r.win? '🎉 勝利！' : '😱 敗北……しかし', text:r.text },
+      ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); });
+  }
+
+  /* ---- 結果 ---- */
+  function showResult(sum){
+    show('result');
+    $('r-rank').textContent = sum.rank[1];
+    $('r-sub').textContent = `評価点 ${sum.total} ／ ${sum.rank[2]}`;
+    const rs = $('r-stats'); rs.innerHTML='';
+    Game.STAT_KEYS.forEach(k=>{
+      const g = D.GENRES[k];
+      rs.insertAdjacentHTML('beforeend',
+        `<div class="stat"><span class="si">${g.icon}</span><span class="sl">${g.label}</span><span class="sv">${sum.stats[k]}</span></div>`);
+    });
+    $('r-summary').innerHTML =
+      `🌾 石高 <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 合戦 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
+      (sum.survived? '🌟 <b>本能寺の変を生き延び、天下統一を成し遂げた！（IFルート達成）</b>' : '本能寺に散るも、その志は秀吉・家康に受け継がれた。');
+    $('r-legacy').innerHTML = `📜 遺訓を獲得: <b>「${sum.legacy.name}」</b><br>次の育成で ${D.GENRES[sum.legacy.stat].icon}${D.GENRES[sum.legacy.stat].label}+${sum.legacy.val} できる！`;
+  }
+
+  /* ---- §10 殿堂・軍学帳 ---- */
+  function openHall(){
+    $('l-title').textContent = '🏯 殿堂（育てた武将）';
+    const body = $('l-body'); body.innerHTML='';
+    if (!Game.P.hall.length){ body.innerHTML = '<div class="note">まだ誰も育成していません。育成を完了すると、武将がここに記録されます。（将来「戦争モード」で5人編成して戦えるようになる予定！）</div>'; }
+    [...Game.P.hall].reverse().forEach(h=>{
+      body.insertAdjacentHTML('beforeend',
+        `<div class="hallCard"><div class="hi">${h.survived?'🌟':'⚔️'}</div>
+         <div class="hb"><b>${h.name}</b>（${h.date}）<br>
+         ⚔️${h.stats.buyu} 🧠${h.stats.chiryaku} 🏛️${h.stats.seiji} 🤝${h.stats.ninbo} ／ 🌾${Game.fmtKoku(h.koku)} ／ ${h.wins}勝 ／ 正答率${h.acc}%</div>
+         <div class="hr serif">${h.rank}</div></div>`);
+    });
+    $('ovl-list').classList.add('on');
+  }
+  function openBook(){
+    $('l-title').textContent = `📖 軍学帳（まちがい帳）${Game.P.book.length}ページ`;
+    const body = $('l-body'); body.innerHTML='';
+    if (!Game.P.book.length){ body.innerHTML='<div class="note">まちがえた問題がここに記録されます。育成中に「😴休息」すると復習できて、正解すると卒業＆ボーナス！</div>'; }
+    Game.P.book.forEach(b=>{
+      const g = D.GENRES[b.genre];
+      body.insertAdjacentHTML('beforeend',
+        `<div class="bookItem">${g.icon} ${b.q}<br><b>答え: ${b.c[b.a]}</b><br><span class="note">${b.desc}</span></div>`);
+    });
+    $('ovl-list').classList.add('on');
+  }
+  function closeList(){ $('ovl-list').classList.remove('on'); }
+
+  return { show, preStart, toTitle, confirmQuit, renderGame, openQuiz, resolvePush, quizDone,
+    showEvent, eventDone, showChoiceEvent, openBattle, battleGo, battleFinish, showResult,
+    openHall, openBook, closeList };
+})();
+
+/* 初期化 */
+UI.show('title');
+</script>
+</body>
+</html>
