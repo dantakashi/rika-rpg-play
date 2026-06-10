@@ -61,8 +61,11 @@ const GameUI = (function() {
   let _dojoGenres = [];       // 空=その教科の全ジャンル
   let _dojoType = '';         // ''=両方 / 'typing' / 'choice'
   // 出題範囲フルウィンドウ（道場・難易度複数選択）の確定済み状態
-  let _rangeDiffs = ['junior'];  // 選択中の難易度（複数・最上位ほど出やすい）
-  let _rangeGenres = [];         // 選択中ジャンル（教科混在可・空=全ジャンル）
+  // 既定は中1が安全に解ける範囲（#19: 「基礎・全ジャンル」だと中2の化学式/反応式・中3のイオン等が混入していた）。
+  //  ・難易度: 小学校の復習＋入門 ・ジャンル: 中1相当のみ（全教科をカバーする7ジャンル）。
+  //  生徒は範囲ウィンドウからいつでも上の学年・難易度・ジャンルへ広げられる。
+  let _rangeDiffs = ['elementary', 'junior'];  // 選択中の難易度（複数・最上位ほど出やすい）
+  let _rangeGenres = ['matter', 'experiment', 'light_sound', 'force', 'bio_plant', 'bio_eco', 'earth_land']; // 既定=中1相当ジャンル（空=全ジャンル）
   let _rangeType = '';           // ''=両方 / 'typing' / 'choice'
   let _rangeGrades = [];         // 選択中の学年(1/2/3)・空=全学年
   // レアリティ文字色（§12 openGachaRateModal で使用）
@@ -195,8 +198,8 @@ const GameUI = (function() {
 
       // 進度に応じて上級コンテンツを表示/非表示（新規プレイヤーに情報を出しすぎない）
       applyProgressiveDisclosure();
-      // 新規プレイヤーには初回ようこそ画面を一度だけ
-      maybeShowWelcome();
+      // 初回チュートリアル（新規=ようこそ／中断復帰=フェーズ頭から）。既存セーブ(onboardStep=9)は何もしない。
+      tutBootstrap();
     }
 
     // 進度ゲート: data-gate 属性を持つボタンを進度に応じて表示。
@@ -218,30 +221,372 @@ const GameUI = (function() {
       });
     }
 
-    // ── 初回ようこそ（チュートリアル導入） ──
-    function maybeShowWelcome() {
-      if (GameEngine.player.seenWelcome) return;
-      // メニュー以外を開いている最中は出さない（戦闘復帰時など）
+    // ============================================================
+    //   §X 初回チュートリアル（手取り足取り・本物のゲームを動かしながら案内）
+    // ============================================================
+    // onboardStep を進行チェックポイントに使う:
+    //   0=未開始(ようこそ) / 1=フェーズA(コーラ) / 2=B(道場) / 3=C(ガチャ) / 4=D(装備) / 5=E(まとめ) / 9=完了
+    //   ※既存セーブは loadUserData 補完で 9（完了）＝チュートリアルをスキップ。
+    // 中断（リロード）はそのフェーズの頭からやり直す方針。
+    let _tutActive = false;   // 多重起動ガード（updateMenuUI から何度も呼ばれるため）
+    let _tutWatch  = null;    // ゲーム状態のポーリング監視（正解した/敵を倒した 等の検知）
+    let _tutNextFn = null;    // 「次へ」ボタンの遷移先
+    let _tutBattleWon = false; // 直近の戦闘の勝敗（endBattle が設定。撤退・敗北を「倒した」扱いにしないため）
+
+    // 最初の固定問題（小学校の復習・4択・化学）。DBを汚さないよう都度コピーして使う。
+    const TUT_FIRST_Q = { subject:'chemistry', genre:'matter', diff:'elementary', type:'choice',
+      name:'形と重さ', q:'ねん土の形を変えると重さは？', c:['変わらない','重くなる','軽くなる','消える'], a:0,
+      desc:'形を変えても、なくならないかぎり重さは同じです。' };
+    // 必殺技デモ用の固定クイズ（コーラにちなんだやさしい問題・位置安定）。
+    const TUT_ULT_Q = { q:'コーラの「シュワシュワ」のあわの正体は、つぎのうちどれ？', c:['二酸化炭素','酸素','水素','ちっ素'], a:0 };
+    let _tutDimAlpha = 0.55;  // 暗幕の濃さ（戦闘を見せたいステップでは薄くする）
+    let _tutCurTarget = null;   // 現在ハイライト中のターゲット（レイアウト確定後に位置を補正するため保持）
+    let _tutRepoInterval = null; // 位置補正の繰り返しタイマー（画像読み込み等でモーダルが伸びるのに追従）
+
+    // ── ようこそモーダル ──
+    function openWelcomeModal() { const m=document.getElementById('welcome-modal'); if(m) m.classList.remove('hidden'); }
+    function closeWelcomeModal() { const m=document.getElementById('welcome-modal'); if(m) m.classList.add('hidden'); }
+
+    // 起動・ホーム表示のたびに呼ばれる入口。新規=ようこそ表示／中断復帰=そのフェーズ頭から。
+    function tutBootstrap() {
+      const step = GameEngine.player.onboardStep;
+      if (typeof step !== 'number' || step >= 9) return;   // 完了/対象外（既存セーブ=9）
+      if (_tutActive) return;                              // 進行中（多重起動防止）
       const menu = document.getElementById('screen-menu');
-      if (menu && menu.classList.contains('hidden')) return;
-      openWelcomeModal();
+      if (menu && menu.classList.contains('hidden')) return; // メニュー表示中のみ開始
+      if (step === 0) { openWelcomeModal(); return; }       // 新規プレイヤー: ようこそ → OKで開始
+      // リロード復帰: そのフェーズの頭から
+      _tutActive = true;
+      if (step === 1) _tutPhaseA();
+      else if (step === 2) _tutPhaseB();
+      else if (step === 3) _tutPhaseC();
+      else if (step === 4) _tutPhaseD();
+      else if (step === 5) _tutPhaseE();
+      else _tutComplete();
     }
-    function openWelcomeModal() {
-      const m = document.getElementById('welcome-modal');
-      if (m) m.classList.remove('hidden');
-    }
-    function _dismissWelcome() {
-      GameEngine.player.seenWelcome = true;
-      try { GameEngine.saveUserDataLocal(); } catch (e) {}
-    }
-    function closeWelcomeModal() {
-      _dismissWelcome();
-      const m = document.getElementById('welcome-modal');
-      if (m) m.classList.add('hidden');
-    }
-    function startTutorialDojo() {
+    // ようこその「OK」ボタン
+    function tutStartFromWelcome() {
       closeWelcomeModal();
-      openDojoPopup();
+      GameEngine.player.seenWelcome = true;
+      GameEngine.player.onboardStep = 1;
+      try { GameEngine.saveUserDataLocal(); } catch (e) {}
+      _tutActive = true;
+      _tutPhaseA();
+    }
+
+    // ── オーバーレイ部品（暗幕＋ターゲットくり抜き＋フキダシ） ──
+    function _tutOverlay(show) {
+      const o=document.getElementById('tut-overlay'); if(o) o.classList.toggle('hidden', !show);
+      if (!show) { if (_tutRepoInterval) { clearInterval(_tutRepoInterval); _tutRepoInterval = null; } _tutCurTarget = null; }
+      else if (!_tutResizeBound) { // 画面回転・リサイズでもハイライト位置を追従（初回のみバインド）
+        _tutResizeBound = true;
+        window.addEventListener('resize', function(){
+          if (_tutCurTarget && !document.getElementById('tut-overlay').classList.contains('hidden')) _tutPlaceSpotlight(_tutCurTarget, true);
+        });
+      }
+    }
+    let _tutResizeBound = false;
+    function _tutClearWatch() { if(_tutWatch){ clearInterval(_tutWatch); _tutWatch=null; } }
+    function _tutWaitFor(cond, then) {
+      _tutClearWatch();
+      _tutWatch = setInterval(function(){ try { if(cond()){ _tutClearWatch(); then(); } } catch(e){} }, 150);
+    }
+    // フキダシ表示。opts:{ target:CSSセレクタ, next:関数, nextLabel, dim:0〜1(暗幕の濃さ) }
+    function _tutBubble(html, opts) {
+      opts = opts || {};
+      _tutDimAlpha = (typeof opts.dim === 'number') ? opts.dim : 0.55;
+      _tutOverlay(true);
+      document.getElementById('tut-text').innerHTML = html;
+      const nextBtn = document.getElementById('tut-next-btn');
+      if (opts.next) { nextBtn.classList.remove('hidden'); nextBtn.textContent = opts.nextLabel || '次へ ▶'; _tutNextFn = opts.next; }
+      else { nextBtn.classList.add('hidden'); _tutNextFn = null; }
+      _tutCurTarget = opts.target || null;
+      _tutPlaceSpotlight(_tutCurTarget);
+      // モーダルや画像が後から読み込まれて位置がずれるため、しばらく短い間隔で位置を補正し続ける
+      _tutScheduleReposition(_tutCurTarget);
+    }
+    function _tutScheduleReposition(target) {
+      if (_tutRepoInterval) { clearInterval(_tutRepoInterval); _tutRepoInterval = null; }
+      if (!target) return;
+      let count = 0;
+      _tutRepoInterval = setInterval(function(){
+        count++;
+        if (_tutCurTarget !== target || count > 16) { clearInterval(_tutRepoInterval); _tutRepoInterval = null; return; }
+        _tutPlaceSpotlight(target, true); // 補正中はスクロールしない（画面の揺れ防止）
+      }, 150); // 約2.4秒、レイアウト確定まで追従
+    }
+    function tutNextBtn() { const fn=_tutNextFn; _tutNextFn=null; if(fn) fn(); }
+
+    // 正解の選択肢を緑に光らせる（チュートリアルなので答えを教えてOK）。
+    //  containerSel 内の idx 番目のボタンに .tut-answer を付与（毎回付け直す＝出題が変わっても追従）。
+    function _tutHighlightChoice(containerSel, idx) {
+      const box=document.querySelector(containerSel); if(!box) return;
+      const btns=box.querySelectorAll('button');
+      btns.forEach(function(b,i){ b.classList.toggle('tut-answer', i===idx); });
+    }
+    function _tutClearHighlight() {
+      document.querySelectorAll('.tut-answer').forEach(function(b){ b.classList.remove('tut-answer'); });
+    }
+
+    function _tutBlock(el, l, t, w, h) {
+      el.classList.remove('hidden');
+      el.style.cssText = 'position:absolute;background:rgba(2,6,23,'+_tutDimAlpha+');'
+        + 'left:'+(typeof l==='number'?l+'px':l)+';top:'+(typeof t==='number'?t+'px':t)
+        + ';width:'+(typeof w==='number'?w+'px':w)+';height:'+(typeof h==='number'?h+'px':h);
+    }
+    function _tutPlaceSpotlight(sel, skipScroll) {
+      const ring=document.getElementById('tut-ring');
+      const bt=document.getElementById('tut-bt'), bb=document.getElementById('tut-bb'),
+            bl=document.getElementById('tut-bl'), br=document.getElementById('tut-br');
+      const bubble=document.getElementById('tut-bubble');
+      const el = sel ? document.querySelector(sel) : null;
+      const vw=window.innerWidth, vh=window.innerHeight;
+      if (el && el.getBoundingClientRect) {
+        if (!skipScroll) { try { el.scrollIntoView({block:'center'}); } catch(e){} }
+        const r=el.getBoundingClientRect(), pad=6;
+        const x=Math.max(0,r.left-pad), y=Math.max(0,r.top-pad), w=r.width+pad*2, h=r.height+pad*2;
+        ring.classList.remove('hidden');
+        ring.style.left=x+'px'; ring.style.top=y+'px'; ring.style.width=w+'px'; ring.style.height=h+'px';
+        _tutBlock(bt, 0, 0, '100%', y);              // 上
+        _tutBlock(bb, 0, y+h, '100%', Math.max(0,vh-(y+h))); // 下
+        _tutBlock(bl, 0, y, x, h);                   // 左
+        _tutBlock(br, x+w, y, Math.max(0,vw-(x+w)), h);      // 右
+        // フキダシ: ターゲットの下に置く。下に入らなければ上。
+        const bw=Math.min(320, vw-24);
+        const bx=Math.min(Math.max(12,x), vw-bw-12);
+        const by=(y+h+12+170 < vh) ? (y+h+12) : Math.max(12, y-12-170);
+        bubble.style.transform='none';
+        bubble.style.left=bx+'px'; bubble.style.top=by+'px'; bubble.style.width=bw+'px'; bubble.style.maxWidth=bw+'px';
+        bubble.style.right='auto'; bubble.style.bottom='auto';
+      } else {
+        // ターゲット無し＝全面ディム＋中央フキダシ
+        ring.classList.add('hidden');
+        _tutBlock(bt, 0, 0, '100%', '100%');
+        [bb,bl,br].forEach(function(b){ b.classList.add('hidden'); });
+        bubble.style.left='50%'; bubble.style.top='50%'; bubble.style.transform='translate(-50%,-50%)';
+        bubble.style.width='min(22rem,90vw)'; bubble.style.maxWidth='90vw'; bubble.style.right='auto'; bubble.style.bottom='auto';
+      }
+    }
+
+    // ── フェーズA: ようこそ → コーラ戦（手取り足取り） ──
+    function _tutPhaseA() {
+      _tutActive = true;
+      GameEngine.player.onboardStep = 1; try { GameEngine.saveUserDataLocal(); } catch(e){}
+      const cola = GameData.BOSSES_DB.find(function(b){ return b.id==='b1_1'; });
+      // 激弱コーラ・小学校の復習・4択固定・凍結・HP下限（放置しても負けない）
+      const tut = { hp:90, atk:8, hpFloor:72, tier:'elementary', freeze:true, forcedQ: Object.assign({}, TUT_FIRST_Q) };
+      GameEngine.startBossBattle(cola, null, 'choice', tut);
+      setTimeout(_tutA1, 400); // 戦闘画面に切り替わってからフキダシ
+    }
+    function _tutA1() { _tutBubble('⚗️ <b>コーラ</b>があらわれた！<br>まずは問題に正解して攻撃してみよう。', { next:_tutA2, dim:0.4 }); }
+    function _tutA2() {
+      _tutBubble('<b style="color:#34d399">みどりに光っている答え</b>をタップ！<br>正解すると相手にダメージを与えられるよ。', { target:'#choice-buttons', dim:0.32 });
+      const _markCorrect = function(){ const q=GameEngine.battle.currentQuestion; if(q && q.type==='choice') _tutHighlightChoice('#choice-buttons', q.a); };
+      _markCorrect();
+      // 出題が変わっても正解ハイライトを追従させつつ、ダメージが入ったら次へ
+      _tutWaitFor(function(){ const b=GameEngine.battle; _markCorrect(); return b.active && b.enemyHp < b.enemyMaxHp; },
+        function(){ _tutClearHighlight(); _tutA3(); });
+    }
+    // 「攻撃を受けてみよう」: 画面全体を枠で囲み、入力を止めて、敵の攻撃を“自然に”待つ。
+    function _tutA3() {
+      const b=GameEngine.battle;
+      _tutBubble('つぎは<b>相手の攻撃</b>を受けてみよう。<br>そのまま少し待ってね…👀', { target:'#screen-battle', dim:0.3 });
+      GameEngine.isFeedbacking = true; // この間は入力（回答）を受け付けない
+      b.enemyUltGauge = 0;             // 必殺ではなく通常攻撃を出させる
+      b.enemyActionGauge = 98;         // すぐ攻撃が来るようゲージをほぼ満タンに
+      b.tutFreeze = false;             // 敵の行動を解禁（攻撃が来るのを待つ）
+      _tutWaitFor(function(){ return b.playerHp < b.playerMaxHp; },
+        function(){ b.tutFreeze = true; GameEngine.isFeedbacking = false; _tutA4(); });
+    }
+    function _tutA4() { _tutBubble('攻撃を受けて<b>HPが減った</b>。<br>HPが0になると負け…でも今は練習だから平気！', { next:_tutA5, dim:0.4 }); }
+    function _tutA5() {
+      _tutBubble('敵は<b>必殺技ゲージ</b>をためてくる。<br>満タンになると強力な必殺技がくるよ！',
+        { nextLabel:'必殺技を見る', dim:0.5, next:function(){
+          GameEngine.battle.tutForcedUltQuiz = Object.assign({}, TUT_ULT_Q); // やさしい固定クイズ
+          _tutOverlay(false); GameEngine.tutorialForceUlt(); setTimeout(_tutA6, 450);
+        } });
+    }
+    function _tutA6() {
+      _tutBubble('必殺技は<b>クイズ</b>で防ぐ！<br><b style="color:#34d399">みどりに光っている答え</b>を選ぼう。', { target:'#quiz-choices-container', dim:0.32 });
+      _tutHighlightChoice('#quiz-choices-container', GameEngine.battle.quizCorrect);
+      _tutWaitFor(function(){ return !GameEngine.battle.quizActive; }, function(){ _tutClearHighlight(); _tutA7(); });
+    }
+    function _tutA7() {
+      GameEngine.battle.tutFreeze = false; // 凍結解除＝本物の戦闘（HP下限は維持＝負けない）
+      _tutBubble('あとは自由に問題を解いて<b>コーラを倒そう</b>！<br>連続で正解すると<b>コンボ</b>でどんどん強くなるよ💪',
+        { nextLabel:'たたかう！', dim:0.5, next:function(){ _tutOverlay(false); _tutWaitFor(function(){ return !GameEngine.battle.active; },
+          function(){ if (_tutBattleWon) _tutA8(); else _tutARetry(); }); } });
+    }
+    function _tutA8() { _tutBubble('🎉 <b>コーラをたおした！おめでとう！</b><br>キミはもう立派な理科の冒険者だ。', { next:_tutAEnd, dim:0.5 }); }
+    // 撤退などで倒さずに戦闘が終わった場合: フェーズAの頭からやり直し（中断=フェーズ頭やり直しの方針と同じ）
+    function _tutARetry() { _tutBubble('にげちゃった！💨<br>もういちど<b>コーラ</b>にちょうせんしよう。', { nextLabel:'再挑戦！', next:_tutPhaseA, dim:0.55 }); }
+    function _tutAEnd() { _tutBubble('これで<b>バトルの基本</b>はバッチリ！<br>つぎは「<b>道場</b>」を覚えよう。', { nextLabel:'道場へ', next:_tutPhaseB, dim:0.5 }); }
+
+    // ── フェーズB: ホーム → 道場（範囲・レベルの解説 → 1体倒して退場） ──
+    function _tutPhaseB() {
+      _tutActive = true;
+      GameEngine.player.onboardStep = 2; try { GameEngine.saveUserDataLocal(); } catch(e){}
+      // 道場の出題範囲を「小学校の復習・全ジャンル・4択」にしておく（やさしく・正解ハイライトが効く）
+      _rangeDiffs = ['elementary']; _rangeGenres = []; _rangeType = 'choice'; _rangeGrades = [];
+      _tutOverlay(false);
+      showMenu();               // ホームへ
+      setTimeout(_tutB1, 450);
+    }
+    function _tutB1() { _tutBubble('ここから先のボスは<b>もっと手ごわい</b>よ。<br>勝つには「練習」で強くなろう！', { next:_tutB2, dim:0.55 }); }
+    function _tutB2() {
+      _tutBubble('そこで<b>道場</b>！答えを見ながら練習でき、<br>コインも稼げる。道場の<b>ボタンをタップ</b>してみよう。', { target:'#dojo-panel', dim:0.4 });
+      _tutWaitFor(function(){ return !document.getElementById('dojo-popup').classList.contains('hidden'); }, _tutB3);
+    }
+    function _tutB3() {
+      _tutBubble('ここで<b>問題のはんい</b>をえらべるよ。<br>今回は<b>小学校の復習</b>にしてあるね👍', { target:'button[onclick="openRangeWindow()"]', dim:0.4, next:_tutB4 });
+    }
+    function _tutB4() {
+      _tutBubble('これは<b>敵のレベル</b>。高いほど強いけど<br>コインもいっぱい。今は<b>Lv.1でOK</b>！', { target:'#dojo-popup-lv-slider', dim:0.4, next:_tutB5 });
+    }
+    function _tutB5() {
+      _tutBubble('じゅんびOK！<br><b>「入場する」</b>を押して道場に入ろう。', { target:'#dojo-popup-enter-btn', dim:0.4 });
+      _tutWaitFor(function(){ const b=GameEngine.battle; return b.active && b.mode==='dojo'; }, _tutB6);
+    }
+    function _tutB6() {
+      _tutBubble('<b style="color:#34d399">光っている答え</b>を選んで、<br>道場の敵をたおそう！', { target:'#choice-buttons', dim:0.32 });
+      const _mark = function(){ const q=GameEngine.battle.currentQuestion; if(q && q.type==='choice') _tutHighlightChoice('#choice-buttons', q.a); };
+      _mark();
+      // 1体倒す＝獲得ゴールドが入る
+      _tutWaitFor(function(){ _mark(); return GameEngine.battle.goldEarnedInSession > 0; }, function(){ _tutClearHighlight(); _tutB7(); });
+    }
+    function _tutB7() {
+      _tutBubble('1体たおせた！🎉<br>『<b>ポーズ</b>』を押して、いったん道場を出よう。', { target:'button[onclick="pauseGame()"]', dim:0.4 });
+      _tutWaitFor(function(){ return !document.getElementById('pause-overlay').classList.contains('hidden'); }, _tutB8);
+    }
+    function _tutB8() {
+      _tutBubble('『<b>撤退する</b>』を押して、ホームに戻ろう。', { target:'#pause-overlay button[onclick="quitBattle()"]', dim:0.4 });
+      _tutWaitFor(function(){ return !document.getElementById('result-screen').classList.contains('hidden'); }, _tutB9);
+    }
+    function _tutB9() {
+      _tutBubble('おつかれさま！<br>練習で<b>コイン</b>を手に入れたね🪙', { nextLabel:'つぎへ', next:_tutPhaseC, dim:0.5 });
+    }
+
+    // ── フェーズC: ガチャ（無料ブロンズ11連） ──
+    function tutFreeGacha() { return _tutActive && GameEngine.player.onboardStep === 3 && !GameEngine.player.tutGachaUsed; }
+    function _tutPhaseC() {
+      _tutActive = true;
+      // リロード復帰で既に無料11連を引いた後なら、ガチャ説明は済み＝装備フェーズへ（二重付与なし）
+      if (GameEngine.player.tutGachaUsed) { _tutPhaseD(); return; }
+      GameEngine.player.onboardStep = 3; try { GameEngine.saveUserDataLocal(); } catch(e){}
+      _tutOverlay(false);
+      showMenu();                 // ホームへ（リザルト画面から戻す）
+      setTimeout(_tutC1, 450);
+    }
+    function _tutC1() {
+      _tutBubble('つよい<b>そうび</b>は「<b>ガチャ</b>」で手に入るよ！<br>ガチャを開いてみよう。', { target:'button[onclick="openGachaScreen()"]', dim:0.4 });
+      _tutWaitFor(function(){ return !document.getElementById('screen-gacha').classList.contains('hidden'); }, _tutC2);
+    }
+    function _tutC2() {
+      // ブロンズに固定して無料11連ボタンを出す（renderGachaCarousel がチュートリアル時に対応）
+      renderGachaCarousel();
+      const _prevInv = (GameEngine.player.inventory || []).length;
+      _tutBubble('今だけ<b>むりょう</b>🎁<br>「<b>10+1連</b>」を回してみよう！', { target:'#gacha-carousel-card button[onclick="pullGachaMulti(\'bronze\')"]', dim:0.35 });
+      _tutWaitFor(function(){ return !document.getElementById('gacha-result-popup').classList.contains('hidden') || (GameEngine.player.inventory||[]).length > _prevInv; }, _tutC3);
+    }
+    function _tutC3() {
+      _tutBubble('<b>11個</b>のそうびが出たよ！✨<br>かくにんしたら「✕」でとじよう。', { target:'#gacha-result-popup button[onclick="GameUI.closeGachaResultPopup()"]', dim:0.4 });
+      _tutWaitFor(function(){ return document.getElementById('gacha-result-popup').classList.contains('hidden'); }, _tutC4);
+    }
+    function _tutC4() {
+      _tutBubble('「<b>戻る</b>」でホームに帰ろう。', { target:'#screen-gacha button[onclick="showMenu()"]', dim:0.4 });
+      _tutWaitFor(function(){ return !document.getElementById('screen-menu').classList.contains('hidden'); }, _tutCEnd);
+    }
+    function _tutCEnd() {
+      _tutBubble('そうびが手に入った！🎉<br>さいごに「<b>そうび</b>」を覚えよう。', { nextLabel:'つぎへ', next:_tutPhaseD, dim:0.5 });
+    }
+
+    // ── フェーズD: 装備（つける・強化・レベルアップ） ──
+    let _tutEquipItem = null;
+    // インベントリ内の「まだ装備していない最初の装備」を緑に光らせる
+    function _tutMarkFirstUnequipped() {
+      _tutClearHighlight();
+      const grid = document.getElementById('inventory-grid'); if (!grid) return;
+      const eqIds = new Set(Object.values(GameEngine.player.equipped).filter(Boolean).map(function(e){ return e.uniqueId; }));
+      const list = GameEngine.player.inventory.filter(function(it){ return (_invSlotFilter==='all'||it.type===_invSlotFilter) && (_invStatFilter==='all'||it.stat===_invStatFilter); });
+      let idx = list.findIndex(function(it){ return !eqIds.has(it.uniqueId); }); if (idx < 0) idx = 0;
+      const btns = grid.querySelectorAll('button'); if (btns[idx]) btns[idx].classList.add('tut-answer');
+    }
+    function _tutPhaseD() {
+      _tutActive = true;
+      GameEngine.player.onboardStep = 4; try { GameEngine.saveUserDataLocal(); } catch(e){}
+      _tutOverlay(false); showMenu(); setTimeout(_tutD1, 450);
+    }
+    function _tutD1() {
+      _tutBubble('ガチャで出た<b>そうび</b>をつけよう！<br>「<b>変更・管理</b>」をタップ。', { target:'button[onclick="openInventoryPopup()"]', dim:0.4 });
+      _tutWaitFor(function(){ return !document.getElementById('inventory-popup').classList.contains('hidden'); }, _tutD2);
+    }
+    function _tutD2() {
+      _tutMarkFirstUnequipped();
+      _tutBubble('もっている装備がならんでるよ。<br><b style="color:#34d399">光っている装備</b>をタップ！', { target:'#inventory-grid', dim:0.35 });
+      _tutWaitFor(function(){ _tutMarkFirstUnequipped(); return !document.getElementById('equip-detail-modal').classList.contains('hidden'); },
+        function(){ _tutClearHighlight(); _tutEquipItem = GameEngine.selectedModalItem; _tutD3(); });
+    }
+    function _tutD3() {
+      _tutBubble('この装備を<b>「そうびする」</b>と、<br>つよさ（戦闘力）がアップするよ！', { target:'#modal-equip-toggle-btn', dim:0.4 });
+      _tutWaitFor(function(){ return document.getElementById('equip-detail-modal').classList.contains('hidden'); }, _tutD4);
+    }
+    function _tutD4() {
+      if (_tutEquipItem) openEquipModal(_tutEquipItem); // 同じ装備を開き直して「強化」を説明
+      setTimeout(function(){
+        _tutBubble('そうびは<b>「強化」</b>でもっと強くできる！<br>（コインを使うよ）覚えておこう👍', { target:'#modal-upgrade-btn', dim:0.4, next:_tutD5 });
+      }, 280);
+    }
+    function _tutD5() {
+      closeEquipModal(); closeInventoryPopup();
+      setTimeout(function(){
+        _tutBubble('もうひとつ！コインで<b>体力や攻撃力</b>を<br>じかに強化できるよ。「<b>レベルアップ</b>」をタップ。', { target:'button[onclick="openStatPopup()"]', dim:0.4 });
+        _tutWaitFor(function(){ return !document.getElementById('stat-popup').classList.contains('hidden'); }, _tutD6);
+      }, 300);
+    }
+    function _tutD6() {
+      const _before = (GameEngine.player.stats.hp||0)+(GameEngine.player.stats.atk||0)+(GameEngine.player.stats.def||0);
+      _tutBubble('コインを使って<b>強化</b>してみよう！<br>（<b>↑</b>ボタンをタップ）', { target:'#menu-stat-list button[onclick*="upgradeStatWithGold"]', dim:0.35 });
+      _tutWaitFor(function(){ const n=(GameEngine.player.stats.hp||0)+(GameEngine.player.stats.atk||0)+(GameEngine.player.stats.def||0); return n > _before; }, _tutPhaseE);
+    }
+
+    // ── フェーズE: まとめ ──
+    function _tutPhaseE() {
+      _tutActive = true;
+      GameEngine.player.onboardStep = 5; try { GameEngine.saveUserDataLocal(); } catch(e){}
+      closeStatPopup(); _tutOverlay(false); showMenu(); setTimeout(_tutE1, 450);
+    }
+    function _tutE1() {
+      _tutBubble('🎉 <b>これでチュートリアルは終了！</b><br>よくがんばったね！', { nextLabel:'まとめを見る', next:_tutE2, dim:0.55 });
+    }
+    function _tutE2() {
+      _tutBubble('<div class="font-black text-amber-300 mb-2 text-center">📚 おぼえたこと</div>'
+        + '<div class="text-left text-[12px] leading-relaxed space-y-1">'
+        + '⚔️ <b>バトル</b>：問題に正解して攻撃<br>'
+        + '🛡️ <b>必殺技</b>：クイズで防ぐ<br>'
+        + '🥋 <b>道場</b>：答えを見ながら練習＆コイン稼ぎ<br>'
+        + '🎰 <b>ガチャ</b>：そうびを手に入れる<br>'
+        + '💪 <b>そうび・レベルアップ</b>：もっと強くなる'
+        + '</div>', { nextLabel:'ぼうけんを はじめる！', next:_tutComplete, dim:0.6 });
+    }
+
+    function _tutComplete() {
+      _tutClearWatch(); _tutOverlay(false); _tutClearHighlight();
+      GameEngine.player.onboardStep = 9; // 完了
+      if (GameEngine.battle) { GameEngine.battle.tutHpFloor = 0; GameEngine.battle.tutFreeze = false; }
+      GameEngine.isFeedbacking = false; // 「攻撃を受ける」中に中断しても入力ロックを残さない
+      try { GameEngine.saveUserDataLocal(); } catch(e){}
+      _tutActive = false;
+      showMenu();
+    }
+    // スキップ（テスト・2回目以降向け。確認ダイアログ付き）
+    function tutSkip() {
+      if (!confirm('チュートリアルをスキップしますか？')) return;
+      _tutClearWatch();
+      if (GameEngine.battle && GameEngine.battle.active) {
+        GameEngine.battle.tutHpFloor = 0; GameEngine.battle.tutFreeze = false;
+        try { endBattle(false); } catch(e){} // ui.js側の正規endBattle（ポーズ解除・画面後始末込み。engine側は死にコード=Issue #9）
+      }
+      _tutComplete();
     }
 
     // 部位アイコン（装備カード右下に表示）と部位ラベル
@@ -946,7 +1291,9 @@ const GameUI = (function() {
     function _doEnterDojo(gradesOverride) {
       closeGradeWarn();
       closeDojoPopup();
-      GameEngine.startDojo(_rangeDiffs.slice(), _rangeGenres.slice(), _rangeType || null, gradesOverride || _rangeGrades.slice());
+      // 🔰 チュートリアル中（フェーズB）の道場は、弱い敵＆HP下限で入場（1体で倒せる練習）
+      const tut = (_tutActive && GameEngine.player.onboardStep === 2) ? { hpFloor: 60, enemyHp: 40 } : undefined;
+      GameEngine.startDojo(_rangeDiffs.slice(), _rangeGenres.slice(), _rangeType || null, gradesOverride || _rangeGrades.slice(), tut);
     }
     function challengeKeepingOverGrade() { _doEnterDojo(_rangeGrades.slice()); } // 外さずそのまま
     function challengeRemovingOverGrade() {
@@ -1817,6 +2164,9 @@ const GameUI = (function() {
       // カルーセル: 1ガチャだけ大きく表示＋ドット
       function renderGachaCarousel() {
       const keys = Object.keys(GameData.GACHA_DB);
+      // 🔰 チュートリアル(フェーズC): ブロンズに固定し、10+1連を無料で回せるようにする
+      const _tutGacha = tutFreeGacha(); // チュートリアル中・未使用のときだけ無料11連を出す
+      if (_tutGacha) { const bi = keys.indexOf('bronze'); if (bi >= 0) _gachaIndex = bi; }
       if (_gachaIndex >= keys.length) _gachaIndex = 0;
       const key = keys[_gachaIndex];
       const machine = GameData.GACHA_DB[key];
@@ -1825,7 +2175,8 @@ const GameUI = (function() {
       const pct = GameData.gachaDiscountPct(milestones);
       const locked = machine.requiresClear && !GameEngine.player.hasClearedOnce;
       const canAfford = GameEngine.player.gold >= price;
-      const canAfford10 = GameEngine.player.gold >= price * 10;
+      const _multiFree = _tutGacha && key === 'bronze';
+      const canAfford10 = _multiFree || (GameEngine.player.gold >= price * 10);
 
       let bgStyle = "bg-slate-900 border-slate-800", textShadow = "";
       if (machine.theme) {
@@ -1860,7 +2211,7 @@ const GameUI = (function() {
           </div>
           <div class="flex flex-col gap-1.5 mt-3">
             <button onclick="pullGacha('${key}')" class="${btnClass} py-2 rounded-xl text-xs w-full" ${(canAfford && !locked)?'':'disabled'}>${btnLabel}</button>
-            <button onclick="pullGachaMulti('${key}')" class="${(canAfford10 && !locked)?'bg-orange-500 hover:bg-orange-400 text-slate-950 font-black shadow active:scale-95':'bg-slate-800 text-slate-500 cursor-not-allowed font-bold'} py-2 rounded-xl text-[11px] w-full transition-all" ${(canAfford10 && !locked)?'':'disabled'}>${locked?'🔒':'10+1連 🪙'+(price*10).toLocaleString()}</button>
+            <button onclick="pullGachaMulti('${key}')" class="${(canAfford10 && !locked)?'bg-orange-500 hover:bg-orange-400 text-slate-950 font-black shadow active:scale-95':'bg-slate-800 text-slate-500 cursor-not-allowed font-bold'} py-2 rounded-xl text-[11px] w-full transition-all" ${(canAfford10 && !locked)?'':'disabled'}>${locked?'🔒':(_multiFree?'🎁 むりょうで 10+1連！':'10+1連 🪙'+(price*10).toLocaleString())}</button>
           </div>
         </div>`;
 
@@ -2462,6 +2813,7 @@ const GameUI = (function() {
     }
 
       function endBattle(isVictory) {
+      _tutBattleWon = !!isVictory; // チュートリアルの勝敗判定用（撤退=falseを区別する）
       GameEngine.battle.active = false;
       GameEngine.battle.paused = false; // ⏸ ポーズ状態を必ず解除（撤退や次戦で固まらないように）
       hidePauseScreen();
@@ -2527,6 +2879,8 @@ const GameUI = (function() {
           title.textContent = '討伐成功！';
 
           let goldReward = boss.hp * 5;
+          // 🔰 チュートリアルの弱体ボスは初回撃破のみ報酬（リロードでフェーズAを繰り返す金策を防ぐ。通常ボスの再戦報酬は従来どおり）
+          if (GameEngine.battle.tutTier && GameEngine.player.defeatedBosses.includes(boss.id)) goldReward = 0;
 
           // 🪙 ゴールド倍率（ステータス＋ボーナス枠＋錬金術師の欲望）を反映
           const _gm = GameEngine.getEffectiveStats().goldMul || 1.0;
@@ -2697,7 +3051,9 @@ const GameUI = (function() {
     openRankModal, closeRankModal, useDojoRecommendedLevel,
     openRerollModal, closeRerollModal, toggleRerollLock, confirmReroll,
     useGachaGold10, openURPicker, closeURPicker, pickUR,
-    openWelcomeModal, closeWelcomeModal, startTutorialDojo, applyProgressiveDisclosure,
+    openWelcomeModal, closeWelcomeModal, applyProgressiveDisclosure,
+    // 初回チュートリアル
+    tutBootstrap, tutStartFromWelcome, tutNextBtn, tutSkip, tutFreeGacha,
     openSaveLoadModal, closeSaveLoadModal, copySaveCode, loadSaveCode,
     // インベントリ
     openInventoryPopup, closeInventoryPopup, renderEquippedSlots, renderInventoryGrid, autoEquipBest,

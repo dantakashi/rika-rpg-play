@@ -36,6 +36,8 @@ let player = {
       rankExp: 0,       // 現ランク内のEXP進捗
       tickets: { statReroll: 0, gachaGold10: 0, selectUR: 0 }, // ランク報酬の各種「券」
       seenWelcome: false, // 初回ようこそ画面を見たか（新規プレイヤーのみ表示）
+      onboardStep: 0,   // 初回オンボーディング進行: 0=ようこそ前/1=A:コーラ戦/2=B:道場/3=C:ガチャ/4=D:装備/5=E:まとめ/9=完了
+      tutGachaUsed: false, // チュートリアルの無料11連を引いたか（リロードによる再付与を防ぐ）
       defeatedBosses: [],
       hasClearedOnce: false,
       stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
@@ -419,6 +421,35 @@ let player = {
       player.inventory.push(newEquip);
       return newEquip;
     }
+    // ── 初回プレイヤーへのスターター装備 ──
+    //  新規プレイヤーは素のATK10では最易ボスにも届かないため、オーソドックスなコモン装備一式を配って装備させる。
+    //  固定の uniqueId を使い、万一二重呼び出しされても重複しない（loadUserData 側でも !saved でガードする）。
+    function grantStarterGear() {
+      const STARTER = [
+        { slot: 'weapon',    id: 'nb_w01' }, // 鉄の剣 ATK+11
+        { slot: 'head',      id: 'nb_h01' }, // 安全帽 HP+65
+        { slot: 'body',      id: 'nb_b02' }, // 体力の鎧 HP+75
+        { slot: 'feet',      id: 'nb_f01' }, // 運動ぐつ 回避+5%
+        { slot: 'accessory', id: 'nb_a01' }, // 会心リング クリ+5%
+      ];
+      if (!Array.isArray(player.inventory)) player.inventory = [];
+      if (!player.equipped) player.equipped = { weapon:null, head:null, body:null, feet:null, accessory:null };
+      STARTER.forEach(s => {
+        const uid = 'eq_starter_' + s.id;
+        if (player.inventory.some(it => it && it.uniqueId === uid)) return; // 既に配布済みなら何もしない
+        const t = GameData.BASE_EQUIP_TEMPLATES.find(x => x.id === s.id);
+        if (!t) return;
+        const eq = {
+          uniqueId: uid,
+          id: t.id, type: t.type, name: t.name, stat: t.stat,
+          baseVal: t.baseVal * GameData.RARITY_DB.Common.mult,
+          bonusStats: [], emoji: t.emoji, skill: t.skill, rarity: 'Common', level: 0, trans: 0
+        };
+        player.inventory.push(eq);
+        if (!player.equipped[s.slot]) player.equipped[s.slot] = eq; // 空きスロットにだけ装備
+      });
+    }
+
     // ガチャ結果カードのHTML（compact=10連グリッド用 / isBonus=確定枠）
     function _gachaCardHtml(eq, compact, isBonus) {
       const rData = GameData.RARITY_DB[eq.rarity];
@@ -501,7 +532,7 @@ let player = {
     }
 
     // 10連＋1連（11個）。費用は単発×10。最後の1個は必ずそのガチャの最高レアリティ。
-    function pullGachaMulti(tier) {
+    function pullGachaMulti(tier, freeForTutorial) {
       const db = GameData.GACHA_DB[tier];
       if (!db) return;
       if (db.requiresClear && !player.hasClearedOnce) {
@@ -512,9 +543,12 @@ let player = {
         alert('インベントリの空きが足りません！（11枠必要）不要な装備を売却してください。');
         return;
       }
-      const cost = gachaPrice(tier) * 10;
+      // 🔰 チュートリアルの無料11連はブロンズ限定・一回きり（リロードやコンソール経由の再付与を防ぐ）
+      const free = !!freeForTutorial && tier === 'bronze' && !player.tutGachaUsed;
+      const cost = free ? 0 : gachaPrice(tier) * 10;
       if (player.gold < cost) { alert('ゴールドが足りません！（10連: 🪙' + cost.toLocaleString() + '）'); return; }
 
+      if (free) player.tutGachaUsed = true;
       player.gold -= cost;
       playSound('skill');
       const results = [];
@@ -736,7 +770,7 @@ let player = {
     //  difficulty : 難易度キー
     //  filterGenres : 出題ジャンル配列（null/空=全ジャンル）
     //  filterType   : 'typing'/'choice'/null（出題形式）
-    function startDojo(difficulty, filterGenres, filterType, filterGrades) {
+    function startDojo(difficulty, filterGenres, filterType, filterGrades, tut) {
       const order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       // difficulty は配列（範囲選択）または文字列（図書館など旧経路）。配列に正規化。
       // 難易度のハードロックは廃止：全難易度を最初から選べる（案内は学年警告に一本化）。
@@ -790,6 +824,12 @@ let player = {
       battle.playerHp = stats.hp;
       initBattleSkillState(stats);
 
+      // 🔰 チュートリアル: HP下限＆敵HP上書き（1体で倒せる弱い敵）。通常戦は tut 無し＝素通り。
+      if (tut) {
+        battle.tutHpFloor = tut.hpFloor || 0;
+        battle.tutEnemyHp = tut.enemyHp || 0;
+      }
+
       const _dLbl = { elementary:'小学校の復習', junior:'基礎', mid:'応用', senior:'発展', supreme:'受験' };
       const _diffTitle = diffs.length > 1 ? `${_dLbl[topDiff]}まで` : _dLbl[topDiff];
       document.getElementById('battle-mode-title').textContent = `道場特訓: ${_diffTitle} (敵Lv.${player.dojoEnemyLevel})`;
@@ -838,9 +878,15 @@ let player = {
       battle.isBonus = false;
       battle.bonusTimeLeft = 0;
 
+      // 🔰 チュートリアル: 敵HPを上書きし、1〜2手で倒せる弱い敵にする（ボーナス敵は出さない）
+      if (battle.tutEnemyHp) {
+        battle.enemyMaxHp = battle.enemyHp = battle.tutEnemyHp;
+        battle.enemyEvade = 0;
+      }
+
       // ✨ ボーナスモンスター抽選（基本1% + 装備の『ボーナス出現率+N%』）
       const _eff = getEffectiveStats();
-      if (Math.random() < (0.01 + (_eff.bonusSpawnRate || 0))) {
+      if (!battle.tutEnemyHp && Math.random() < (0.01 + (_eff.bonusSpawnRate || 0))) {
         battle.isBonus = true;
         battle.enemyEvade = 0.85;   // 非常に高い回避（命中率を上げるほど狩りやすい）
         // HPは敵レベルで増加: Lv1〜10=5, Lv11〜20=6 … 10レベルごとに+1（1ダメージずつしか通らない）
@@ -930,6 +976,21 @@ let player = {
       battle.typedSoFar = '';
       document.getElementById('typing-question-name').textContent = prob.name;
 
+      // 出題見出しを教科・問題形式に合わせる（#20: 物理の計算問題でも「化学式」表記だった不具合）
+      const _descEl = document.getElementById('typing-question-desc');
+      if (_descEl) {
+        const _subj = prob.subject || 'chemistry';
+        if (prob.plain) {
+          // 物理などの数値計算（答えの単位は問題文 display 内に表示済み）
+          _descEl.textContent = '計算して答えを入力せよ！';
+        } else if (_subj === 'chemistry') {
+          _descEl.textContent = 'この化学式をタイピングせよ！';
+        } else {
+          // 化学以外の用語タイピング（生物・地学など）
+          _descEl.textContent = '答えをタイピングせよ！';
+        }
+      }
+
       // plain:true（物理の計算タイピング等）は化学式整形を通さない
       const _fmt = (t) => prob.plain ? t : GameData.fmtChem(t);
       // ヒント武器: 答えの最初の1文字だけ開示（道場ヒント表示時は元から全部見えるので無関係）
@@ -978,7 +1039,7 @@ let player = {
 
     //  filterGenres : 出題ジャンル配列（null/空=その難易度の全ジャンル）。
     //   ※ ボス通常攻撃は必ずタイピング。実験操作(選択式専用)はボスでは出ない。
-    function startBossBattle(boss, filterGenres, filterType) {
+    function startBossBattle(boss, filterGenres, filterType, tut) {
       battle.active = true;
       battle.mode = 'boss';
       battle.bossId = boss.id;
@@ -1018,6 +1079,18 @@ let player = {
       battle.bossSpeed = boss.speed;
       battle.bossUltSpeed = boss.ultSpeed;
       battle.subject = 'chemistry'; // 通常ボス12体は化学（必殺クイズの教科）
+
+      // 🔰 チュートリアル上書き（弱体化コーラ・HP下限・凍結・固定問題・初期必殺ゲージ）。通常戦は tut 無し＝素通り。
+      if (tut) {
+        if (tut.hp)  { battle.enemyMaxHp = battle.enemyHp = tut.hp; }
+        if (tut.atk != null) { battle.bossAtk = tut.atk; }
+        if (typeof tut.ultGauge === 'number') battle.enemyUltGauge = tut.ultGauge;
+        battle.enemyEvade = 0; // チュートリアルは必中（理不尽な空振りを防ぐ）
+        battle.tutFreeze  = !!tut.freeze;
+        battle.tutHpFloor = tut.hpFloor || 0;
+        battle.tutForcedQ = tut.forcedQ || null;
+        battle.tutTier    = tut.tier || null;
+      }
 
       // ボス表示設定
       const _bossGlow = { junior:'0 0 20px #22d3ee', mid:'0 0 20px #f97316', senior:'0 0 22px #a78bfa', supreme:'0 0 25px #f43f5e' };
@@ -1162,6 +1235,8 @@ let player = {
             battle.shield -= abs; slipDmg -= abs;
           }
           battle.playerHp = Math.max(0, battle.playerHp - slipDmg);
+          // 🔰 チュートリアル中はHP下限を割らない
+          if (battle.tutHpFloor && battle.playerHp < battle.tutHpFloor) battle.playerHp = battle.tutHpFloor;
           if (battle.playerHp <= 0) {
             GameUI.endBattle(false);
             return;
@@ -1180,8 +1255,8 @@ let player = {
           }
         }
 
-        // 3. ボスの行動・必殺技ゲージ蓄積（クイズ表示中・強制必殺連撃中は停止＝誤動作防止）
-        if (!battle.enemyIsStunned && !battle.quizActive && !battle.forcedUltActive) {
+        // 3. ボスの行動・必殺技ゲージ蓄積（クイズ表示中・強制必殺連撃中・🔰チュートリアル凍結中は停止＝誤動作防止）
+        if (!battle.enemyIsStunned && !battle.quizActive && !battle.forcedUltActive && !battle.tutFreeze) {
           let speedFactor = 1.0;
           if (battle.mode === 'boss') {
             speedFactor = battle.bossSpeed;
@@ -1232,6 +1307,13 @@ let player = {
 
     // 戦闘開始時にスキル由来の戦闘状態を初期化（シールド・必殺封印回数・不死フラグ）
     function initBattleSkillState(stats) {
+      // 🔰 チュートリアル用フラグは毎戦リセット（通常/裏ボス戦に持ち越さない）。startDojo/startBossBattle が後で上書きする。
+      battle.tutFreeze = false;   // 敵の行動・ゲージ蓄積を止める（入力は受け付ける）
+      battle.tutHpFloor = 0;      // この値未満にHPを下げない（放置死防止）
+      battle.tutForcedQ = null;   // 次の1問を固定問題に差し替え（消費したらnull）
+      battle.tutEnemyHp = 0;      // 道場敵のHP上書き（0=通常）
+      battle.tutTier = null;      // ボス戦の出題難易度を上書き（コーラ＝小学校の復習）
+      battle.tutForcedUltQuiz = null; // 必殺クイズを固定問題に差し替え（チュートリアル用・位置安定＆やさしく）
       battle.playerSkills = stats.skills || [];   // ヒント/コンボ爆撃 等の判定に使う（毎戦キャッシュ）
       battle.shield = stats.shield || 0;
       battle.maxShield = stats.shield || 0;
@@ -1282,6 +1364,8 @@ let player = {
         dmg -= absorbed;
       }
       battle.playerHp = Math.max(0, battle.playerHp - dmg);
+      // 🔰 チュートリアル中はHP下限を割らない（放置しても負けない・説明はしない）
+      if (battle.tutHpFloor && battle.playerHp < battle.tutHpFloor) battle.playerHp = battle.tutHpFloor;
       // 不死の誓い: 1戦闘に1度だけHP1で踏みとどまる
       if (battle.playerHp <= 0 && !battle.undyingUsed && p.skills && p.skills.indexOf('不死の誓い') >= 0) {
         battle.undyingUsed = true;
@@ -1342,13 +1426,20 @@ let player = {
     // 必殺技クイズ（長文）を実際に画面に出す共通処理。通常必殺・強制必殺の両方から呼ぶ。
     function _showUltimateQuiz() {
       playSound('wrong');
-      // 戦闘の教科に合った必殺クイズを引く（subject無印は化学扱い）。battle.subject が null（オメガ等）なら全教科から。
-      let _pool = GameData.ULTIMATE_QUIZZES;
-      if (battle.subject) {
-        const _f = GameData.ULTIMATE_QUIZZES.filter(q => (q.subject || 'chemistry') === battle.subject);
-        if (_f.length) _pool = _f;
+      // 🔰 チュートリアル: 固定の必殺クイズに差し替え（位置安定・やさしい）。通常戦は従来どおりランダム。
+      let quiz;
+      if (battle.tutForcedUltQuiz) {
+        quiz = battle.tutForcedUltQuiz;
+        battle.tutForcedUltQuiz = null; // 一度きりで消費（同じ戦闘の以降の必殺は通常のランダム出題）
+      } else {
+        // 戦闘の教科に合った必殺クイズを引く（subject無印は化学扱い）。battle.subject が null（オメガ等）なら全教科から。
+        let _pool = GameData.ULTIMATE_QUIZZES;
+        if (battle.subject) {
+          const _f = GameData.ULTIMATE_QUIZZES.filter(q => (q.subject || 'chemistry') === battle.subject);
+          if (_f.length) _pool = _f;
+        }
+        quiz = _pool[Math.floor(Math.random() * _pool.length)];
       }
-      const quiz = _pool[Math.floor(Math.random() * _pool.length)];
       document.getElementById('quiz-question-txt').textContent = quiz.q;
       const choicesBox = document.getElementById('quiz-choices-container');
       choicesBox.innerHTML = '';
@@ -1871,6 +1962,10 @@ let player = {
       if (battle.enemyHp <= 0) { isFeedbacking = true; advanceAfterAnswer(p.goldMul); }
     }
 
+    // 🔰 チュートリアル司令塔(ui.js)から戦闘の演出を1回だけ強制発火させるための公開ラッパー
+    function tutorialForceNormalAttack() { if (battle.active) triggerBossNormalAttack(); }
+    function tutorialForceUlt() { if (battle.active) triggerBossUltimate(); }
+
     // showDamagePopup は GameUI.showDamagePopup を使用（ui.js §18）
     function checkLevelUp() { /* EXP廃止につき無効化 */ }
 
@@ -1897,7 +1992,14 @@ let player = {
       }
       const _genres = battle.filterGenres;
       const _grades = isBoss || battle.isEndgame ? null : battle.filterGrades; // 学年絞り込みは道場のみ
-      battle.currentQuestion = getWeightedQuestion(_nqTier, _genres, _type, _grades);
+      if (battle.tutTier) _nqTier = battle.tutTier; // 🔰 チュートリアル: 出題難易度を上書き（コーラ＝elementary）
+      // 🔰 チュートリアル: 最初の1問だけ固定問題に差し替え（消費したら通常出題に戻る）
+      if (battle.tutForcedQ) {
+        battle.currentQuestion = battle.tutForcedQ;
+        battle.tutForcedQ = null;
+      } else {
+        battle.currentQuestion = getWeightedQuestion(_nqTier, _genres, _type, _grades);
+      }
       if (battle.mode === 'dojo') battle.currentQuestion = _reduceDojoChoices(battle.currentQuestion); // 道場のみ2択
       battle.qHadMiss = false; // 新しい問題＝ミスフラグをリセット（正答率用）
       battle.typedSoFar = '';
@@ -2216,10 +2318,11 @@ let player = {
 
     function loadUserData() {
       const saved = localStorage.getItem('chemical_rpg_save_v1');
+      let isNew = !saved; // セーブが無い＝初回起動のプレイヤー（スターター装備＆オンボーディング対象）
       if (saved) {
         try {
           player = JSON.parse(saved);
-        } catch(e) {}
+        } catch(e) { isNew = true; } // 壊れたセーブ＝初期playerのまま＝新規扱い（装備なしでチュートリアルが始まるのを防ぐ）
       }
       // ── 旧セーブデータ移行・欠損フィールド補完 ──
       if (!player.defeatedBosses) player.defeatedBosses = [];
@@ -2246,6 +2349,9 @@ let player = {
       if (typeof player.rankExp !== 'number' || player.rankExp < 0) player.rankExp = 0;
       // ようこそ画面: 既存セーブ(=セーブが存在するプレイヤー)は表示済み扱い＝新規だけに出す。
       if (typeof player.seenWelcome !== 'boolean') player.seenWelcome = true;
+      // 初回チュートリアル: 既存セーブ（onboardStep 未定義）は完了扱い(9)＝スキップ。新規は 0 のまま進める。
+      if (typeof player.onboardStep !== 'number') player.onboardStep = 9;
+      if (typeof player.tutGachaUsed !== 'boolean') player.tutGachaUsed = false; // 無料11連の消費フラグ（欠損補完）
       // ランク報酬の各種券（欠損補完・加算的＝既存セーブ安全）
       if (!player.tickets || typeof player.tickets !== 'object') player.tickets = { statReroll: 0, gachaGold10: 0, selectUR: 0 };
       if (typeof player.tickets.statReroll !== 'number') player.tickets.statReroll = 0;
@@ -2298,6 +2404,8 @@ let player = {
         if (_isLegacyEquip(player.equipped[slot])) { player.equipped[slot] = null; _removed++; }
       });
       if (_removed > 0) console.error('[旧装備廃止] 個体値仕様の旧装備 ' + _removed + ' 個を削除しました（仕様変更のため）');
+      // 初回プレイヤー: スターター装備一式を配布して即保存（次回以降は saved 有りで通らない＝二重配布なし）
+      if (isNew) { grantStarterGear(); saveUserDataLocal(); }
       updateMenuUI();
       // スライダーUIを初期化
       setTimeout(() => updateDojoLevelUI(player.dojoEnemyLevel), 0);
@@ -2317,6 +2425,8 @@ let player = {
         rankExp: 0,
         tickets: { statReroll: 0, gachaGold10: 0, selectUR: 0 },
         seenWelcome: false,
+        onboardStep: 0,
+        tutGachaUsed: false,
         defeatedBosses: [],
         hasClearedOnce: false,
         defeatedEndgame: [],
@@ -2330,6 +2440,7 @@ let player = {
         inventory: [],
         quizStats: {}
       };
+      grantStarterGear(); // 初期化後もスターター装備一式を配布（新規プレイヤーと同じ下地）
       saveUserDataLocal();
       playSound('skill');
       alert('✅ 全データを初期化しました。最初からスタートです！');
@@ -2521,6 +2632,7 @@ let player = {
     getRecommendedDojoLevel, getBossRecommendedPower, getBossReadiness,
     startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion,
     processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, quitBattle, endBattle, pauseGame, resumeGame,
+    tutorialForceNormalAttack, tutorialForceUlt,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,
     autoSortInventory, saveUserDataLocal, loadUserData, resetAllData,
     pullGacha, pullGachaMulti, pullUntilStat, gachaPrice, rerollEquipBonus, redeemGachaGold10, redeemSelectUR, exportSave, importSave, getSaveCode, applySaveCode, changePlayerName, closeNameEditModal, savePlayerName, setPlayerGrade,
