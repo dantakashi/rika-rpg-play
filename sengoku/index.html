@@ -175,6 +175,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div class="titleBtns">
       <button class="btn gold" onclick="UI.preStart()">⚔️ 育成開始（織田信長）</button>
       <button id="btn-resume" class="btn" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
+      <button class="btn" onclick="UI.openHowto()">❓ 遊び方</button>
       <button class="btn" onclick="UI.openHall()">🏯 殿堂（育てた武将）</button>
       <button class="btn" onclick="UI.openBook()">📖 軍学帳（まちがい帳）</button>
     </div>
@@ -942,10 +943,23 @@ const UI = (function(){
     $('ovl-list').classList.add('on');
   }
   function closeList(){ $('ovl-list').classList.remove('on'); }
+  function openHowto(){
+    $('l-title').textContent = '❓ 遊び方';
+    $('l-body').innerHTML = `<div class="bookItem" style="font-size:14px;">
+      <b style="color:#8a6605">⚔️ 織田信長の人生32年（32ターン）を一緒に駆け抜けるゲームだ。</b><br><br>
+      🎯 <b>毎ターン、コマンドを1つ選ぶ</b>と歴史クイズが出る。<b>時間制限なし・調べてOK！</b><br><br>
+      ⭕ 正解するとステータスが大きく成長。<br>
+      ❌ 不正解でも「気合で押し切る」と同じだけ成長できる。ただし<b>失敗率</b>のぶんだけ大失敗のリスクが…！<br><br>
+      ❤️ <b>体力が減ると失敗率が上がる</b>。😴休息でしっかり回復しよう（まちがえた問題の復習チャンスもある）。<br><br>
+      🤝 家臣がいるコマンドで特訓すると<b>絆</b>が深まる。絆80以上の家臣が得意コマンドにいると<b>🌈友情特訓</b>で超成長！<br><br>
+      🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。クイズの軍配で勝敗が決まるぞ。<b>負けても育成は続く</b>から安心して挑め。<br><br>
+      🔥 そして1582年、本能寺の変——<b>知略と人望を高く育てておくと、「もしも」の歴史</b>が見られるかもしれない…。</div>`;
+    $('ovl-list').classList.add('on');
+  }
 
   return { show, preStart, toTitle, confirmQuit, renderGame, openQuiz, resolvePush, quizDone,
     showEvent, eventDone, showChoiceEvent, openBattle, battleGo, battleFinish, showResult,
-    openHall, openBook, closeList };
+    openHall, openBook, closeList, openHowto };
 })();
 
 /* 初期化 */
