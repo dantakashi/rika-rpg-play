@@ -41,6 +41,21 @@ const SENGOKU_DATA = (function(){
       maxFx:{ ninbo:10, mood:2 } },
   ];
 
+  /* ===== §2.5 武将ロスター（編成画面の予定表示・βでは信長のみ育成可） =====
+     buff は将来の戦争モード/育成解放時の持ち味（現状は表示のみ・未実装） */
+  const WARLORDS = [
+    { id:'nobunaga',  name:'織田信長', icon:'⚡', title:'第六天魔王',
+      buff:'友情特訓の効果が大きい', playable:true },
+    { id:'hideyoshi', name:'豊臣秀吉', icon:'🐒', title:'人たらしの天下人',
+      buff:'家臣との絆が上がりやすい', playable:false },
+    { id:'ieyasu',    name:'徳川家康', icon:'🦅', title:'忍耐の大御所',
+      buff:'体力の消耗が少ない', playable:false },
+    { id:'shingen',   name:'武田信玄', icon:'🐯', title:'甲斐の虎',
+      buff:'武勇の鍛錬が伸びやすい', playable:false },
+    { id:'kenshin',   name:'上杉謙信', icon:'🐉', title:'越後の軍神',
+      buff:'合戦の軍配がはずれにくい', playable:false },
+  ];
+
   /* ===== §3 年表イベント =====
      type: story（読み物）/ choice（選択肢）/ battle（合戦）/ final（本能寺）
      effects: {buyu,chiryaku,seiji,ninbo,stamina,mood,koku} 省略可 */
@@ -58,17 +73,17 @@ const SENGOKU_DATA = (function(){
 
     { year:1556, type:'battle', title:'稲生の戦い — 家中をまとめろ',
       intro:'弟・信行（信勝）を担ぐ家臣団が反旗を翻した。相手は柴田勝家ら織田家の重臣たち。まずは身内との戦いに勝ち、尾張をまとめなければ天下どころではない。',
-      enemyName:'弟・信行派の軍勢', enemyPower:110,
+      enemyName:'弟・信行派の軍勢', enemyIcon:'🛡️', enemyPower:100,
       winText:'勝利！ 反乱は鎮圧された。母の取りなしで弟を許し、柴田勝家はこの戦いを境にあなたの忠実な家臣となった。尾張統一へ大きく前進。',
-      loseText:'【IF】まさかの敗北……。だが夜陰に紛れて清洲城へ逃げ延びた。柴田勝家は「殿はまだ伸びる」となぜか寝返ってきた。歴史は少し違う道筋で、しかし確かに進んでいく。',
-      winFx:{ koku:80, buyu:5 }, loseFx:{ koku:-30, mood:-1 } },
+      loseText:'【敗北】家中の反乱を抑えきれなかった……。「尾張のうつけ」の夢は、ここで潰えた。\n\n（育成終了。序盤から武勇や知略をしっかり鍛えて、もう一度挑もう！）',
+      winFx:{ koku:80, buyu:5 } },
 
     { year:1560, type:'battle', title:'桶狭間の戦い — 運命の十倍の敵',
       intro:'駿河の大大名・今川義元が、約2万5千の大軍で尾張に攻め込んできた。こちらはわずか数千。家臣は籠城を勧めるが、あなたは「敦盛」を舞い、夜明けに出陣を決意する。狙うは、桶狭間で休む義元の本陣ただ一点——。',
-      enemyName:'今川義元の大軍', enemyPower:300,
+      enemyName:'今川義元の大軍', enemyIcon:'👑', enemyPower:240,
       winText:'豪雨に紛れた奇襲が成功！ 今川義元を討ち取った！ この「桶狭間の戦い」で、無名だった織田信長の名は一気に全国へ轟いた。',
-      loseText:'【IF】奇襲は失敗し、命からがら清洲城へ……。だが今川軍は当主を狙われたことに動揺し、駿河へ引き上げた。「次は負けぬ」——この屈辱が、あなたを強くする。',
-      winFx:{ koku:150, buyu:8, ninbo:5 }, loseFx:{ koku:-40, mood:-1 } },
+      loseText:'【敗北】奇襲は読まれていた。今川の大軍の前に織田軍は壊滅……。\n\n（育成終了。格上との決戦だ。それまでに体力を整え、軍配＝クイズを確実に当てられる力をつけよう！）',
+      winFx:{ koku:150, buyu:8, ninbo:5 } },
 
     { year:1562, type:'story', title:'清洲同盟 — 生涯の盟友',
       text:'今川家から独立した三河の松平元康（のちの徳川家康）と、清洲城で同盟を結んだ。背後の心配がなくなり、美濃攻めに集中できる。\n\nこの同盟は本能寺の変まで約20年間守られ、戦国時代でもまれな「裏切られなかった同盟」として知られる。',
@@ -76,10 +91,10 @@ const SENGOKU_DATA = (function(){
 
     { year:1567, type:'battle', title:'稲葉山城の戦い — 天下布武',
       intro:'美濃の斎藤龍興（道三の孫）との長い戦いも大詰め。木下藤吉郎が敵の城下に一夜で砦を築いた（墨俣一夜城の伝説）。決戦のときだ。',
-      enemyName:'斎藤龍興の美濃勢', enemyPower:320,
+      enemyName:'斎藤龍興の美濃勢', enemyIcon:'🐍', enemyPower:280,
       winText:'稲葉山城を攻め落とした！ 城を「岐阜」と改名し、「天下布武」（武力で天下を統一する）の印を使い始める。あなたの目は、もう京の都を見ている。',
-      loseText:'【IF】城は落ちなかった……が、藤吉郎の調略で斎藤家の家臣が次々と寝返り、龍興は城を捨てて逃げた。形は違えど、美濃はあなたのものだ。',
-      winFx:{ koku:150, chiryaku:5, seiji:5 }, loseFx:{ koku:-40, mood:-1 } },
+      loseText:'【敗北】美濃の堅城はあまりに固かった……。天下布武の夢、ここまで。\n\n（育成終了。鍛錬の積み重ねが軍の強さになる。次はもっと育ててから挑もう！）',
+      winFx:{ koku:150, chiryaku:5, seiji:5 } },
 
     { year:1568, type:'choice', title:'上洛 — 将軍を奉じて京へ',
       text:'室町幕府13代将軍の弟・足利義昭が「兄の仇を討ち、自分を将軍にしてほしい」と頼ってきた。京に上る大義名分になるが……。',
@@ -90,10 +105,10 @@ const SENGOKU_DATA = (function(){
 
     { year:1570, type:'battle', title:'姉川の戦い — 裏切りの代償',
       intro:'妹・お市の方を嫁がせた浅井長政が、よりによって朝倉攻めの最中に裏切った！ 挟み撃ちの危機を辛くも脱出（金ヶ崎の退き口）。徳川家康と共に、姉川で浅井・朝倉連合軍と決着をつける。',
-      enemyName:'浅井・朝倉連合軍', enemyPower:420,
+      enemyName:'浅井・朝倉連合軍', enemyIcon:'💔', enemyPower:360,
       winText:'徳川軍の奮戦もあり勝利！ 浅井・朝倉に大打撃を与えた。だが包囲網はまだ続く。武田・本願寺・将軍義昭……敵は四方にいる。',
-      loseText:'【IF】姉川で押し込まれ、岐阜へ後退……。だが浅井・朝倉も消耗し、戦線は膠着。あなたは「敵を一つずつ潰す」方針に切り替えた。',
-      winFx:{ koku:120, buyu:5 }, loseFx:{ koku:-50, mood:-1 } },
+      loseText:'【敗北】裏切りの代償はあまりに大きく、姉川で織田軍は崩れ去った……。\n\n（育成終了。軍学帳でまちがえた問題を復習して、リベンジだ！）',
+      winFx:{ koku:120, buyu:5 } },
 
     { year:1571, type:'choice', title:'比叡山焼き討ち — 鬼か、王か',
       text:'比叡山延暦寺は浅井・朝倉をかくまい、仏の権威を盾に織田軍に立ちはだかる。家臣の中にも「寺を攻めるなど罰当たり」とためらう声があるが……。',
@@ -108,10 +123,10 @@ const SENGOKU_DATA = (function(){
 
     { year:1575, type:'battle', title:'長篠の戦い — 鉄砲三千挺',
       intro:'「戦国最強」と謳われた武田の騎馬軍団が、後継者・武田勝頼に率いられ長篠城に迫る。あなたの答えは——大量の鉄砲と馬防柵。戦の常識を変えるときだ。',
-      enemyName:'武田勝頼の騎馬軍団', enemyPower:560,
+      enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyPower:470,
       winText:'鉄砲隊の一斉射撃が騎馬隊を打ち砕いた！ 「長篠の戦い」は、鉄砲が戦の主役になったことを天下に示した。武田家はこの敗北から立ち直れない。',
-      loseText:'【IF】雨だ！ 火縄銃が湿って使えない……柵を破られ撤退。だが武田軍も深追いできず兵を引いた。「天候まで読んでこその戦よ」——高くついた授業料だった。',
-      winFx:{ koku:180, buyu:8, chiryaku:5 }, loseFx:{ koku:-50, mood:-1 } },
+      loseText:'【敗北】雨に濡れた鉄砲は火を噴かず、戦国最強の騎馬隊が柵を破った……。\n\n（育成終了。ここまで来たきみなら、次はきっと勝てる！）',
+      winFx:{ koku:180, buyu:8, chiryaku:5 } },
 
     { year:1576, type:'story', title:'安土城 — 天下統一の本拠地',
       text:'琵琶湖のほとりに、五層七階・金箔瓦の壮大な安土城を築き始めた。山頂にそびえる豪華な天主（天守）は、城が「戦いの砦」から「権力を見せつける宮殿」へ変わったことを象徴している。\n\nこの時代の豪華で力強い文化を、安土城と桃山（伏見城）の名から「桃山文化」と呼ぶ。',
@@ -212,5 +227,5 @@ const SENGOKU_DATA = (function(){
       desc:'阿国のかぶき踊りはのちの歌舞伎のもとになった。能・狂言は室町時代に観阿弥・世阿弥らが大成したもので、時代の区別がよく問われる。' },
   ];
 
-  return { GENRES, RETAINERS, TIMELINE, QUESTIONS };
+  return { GENRES, RETAINERS, WARLORDS, TIMELINE, QUESTIONS };
 })();
