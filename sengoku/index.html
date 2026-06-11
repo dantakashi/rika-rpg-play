@@ -292,7 +292,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="stageChar" id="g-face">🙂</div>
         <button class="miniMapBtn" id="g-minimap" onclick="UI.openMap()"></button>
         <div class="stageName">
-          <span class="charName serif">織田信長</span>
+          <span class="charName serif" id="g-heroname">織田信長</span>
           <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span>
         </div>
       </div>
@@ -363,7 +363,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div class="bField" id="b-field" onclick="UI.battleFast()">
       <div class="bSky" id="b-sky"></div>
       <div class="bArmies">
-        <div class="bSide"><div class="bName">🔵 織田軍</div><div class="bHP" id="b-mehp"></div></div>
+        <div class="bSide"><div class="bName" id="b-mename">🔵 織田軍</div><div class="bHP" id="b-mehp"></div></div>
         <div class="bVsTag serif">VS</div>
         <div class="bSide foe"><div class="bName en" id="b-foename"></div><div class="bHP" id="b-foehp"></div></div>
       </div>
@@ -405,7 +405,8 @@ const Game = (function(){
   // Codex生成の追加問題（questions_extra.js）があれば結合
   if (typeof SENGOKU_QUESTIONS_EXTRA !== 'undefined') D.QUESTIONS.push(...SENGOKU_QUESTIONS_EXTRA);
 
-  const START_YEAR = 1551, END_YEAR = 1582;
+  // 育成中の偉人パック（シナリオ固有データは必ず H 経由で参照。将来ここが選択式になる）
+  let H = D.HEROES.nobunaga;
   const MOODS = [
     { label:'絶不調', icon:'😵', mul:0.8, cls:'#e0533d' },
     { label:'不調',   icon:'😟', mul:0.9, cls:'#d96f30' },
@@ -434,13 +435,14 @@ const Game = (function(){
 
   function newRun(legacyIdx){
     const s = {
-      year:START_YEAR, buyu:20, chiryaku:24, seiji:14, ninbo:8,
-      stamina:100, mood:2, koku:100, wins:0, battles:0,
+      hero:H.id, year:H.startYear,
+      buyu:H.start.buyu, chiryaku:H.start.chiryaku, seiji:H.start.seiji, ninbo:H.start.ninbo,
+      stamina:100, mood:2, koku:H.start.koku, wins:0, battles:0,
       injury:null, skillPt:0, skills:{}, trainStreak:0,
       bonds:{}, bondMaxDone:{}, usedQ:[], placement:{}, correctTotal:0, answerTotal:0,
       pendingEventDone:{},
     };
-    D.RETAINERS.forEach(r=>s.bonds[r.id]=20);
+    H.retainers.forEach(r=>s.bonds[r.id]=20);
     if (legacyIdx!=null && P.legacy[legacyIdx]){
       const lg = P.legacy[legacyIdx];
       s[lg.stat] += lg.val;
@@ -469,12 +471,14 @@ const Game = (function(){
     const raw = loadRaw();
     if (raw && raw.run){
       S = raw.run;
+      H = D.HEROES[S.hero] || D.HEROES.nobunaga;
+      S.hero = H.id;
       // 旧セーブの欠損補完（ケガ/スキルP=06-11、スキル/鍛錬連続/側近6人=06-13追加）
       S.injury = S.injury || null;
       S.skillPt = S.skillPt || 0;
       S.skills = S.skills || {};
       S.trainStreak = S.trainStreak || 0;
-      D.RETAINERS.forEach(r=>{ if (S.bonds[r.id]==null) S.bonds[r.id]=20; });
+      H.retainers.forEach(r=>{ if (S.bonds[r.id]==null) S.bonds[r.id]=20; });
       UI.show('game'); turnStart(true);
     }
   }
@@ -484,7 +488,7 @@ const Game = (function(){
      通常特訓=易しめ（テンポ重視）／合戦=難しめ（決戦の重み）— 2026-06-11 教師FB */
   function diffWeights(kind){
     if (kind==='battle') return {1:20,2:55,3:25};
-    const t = S.year - START_YEAR;
+    const t = S.year - H.startYear;
     if (t<=10) return {1:85,2:15,3:0};
     if (t<=21) return {1:65,2:30,3:5};
     return {1:50,2:40,3:10};
@@ -518,7 +522,7 @@ const Game = (function(){
   function placeRetainers(){
     S.placement = {};
     // 6人化に伴い出現率を下げる（1人あたりの効果もtrainGain側で減・2026-06-13）
-    D.RETAINERS.forEach(r=>{
+    H.retainers.forEach(r=>{
       if (Math.random() < 0.5){
         const keys = STAT_KEYS;
         // 60%で得意コマンドに寄る
@@ -527,7 +531,7 @@ const Game = (function(){
       }
     });
   }
-  function timelineEvent(){ return D.TIMELINE.find(e=>e.year===S.year); }
+  function timelineEvent(){ return H.timeline.find(e=>e.year===S.year); }
 
   function turnStart(restored){
     if (!restored) placeRetainers();
@@ -547,7 +551,7 @@ const Game = (function(){
   }
   function nextTurn(){
     S.year++;
-    if (S.year > END_YEAR){ endRun(false); return; } // 保険（finalで終わるはず）
+    if (S.year > H.endYear){ endRun(false); return; } // 保険（finalで終わるはず）
     placeRetainers();
     turnStart();
   }
@@ -580,7 +584,7 @@ const Game = (function(){
           { t:'体の芯から力がみなぎってきた。完全復活だ！', fx:{stamina:60, mood:2} },
         ];
         const l = lucks[Math.floor(Math.random()*lucks.length)];
-        if (l.bond) D.RETAINERS.forEach(r=>S.bonds[r.id]=Math.min(100, S.bonds[r.id]+l.bond));
+        if (l.bond) H.retainers.forEach(r=>S.bonds[r.id]=Math.min(100, S.bonds[r.id]+l.bond));
         applyFx(l.fx);
         saveAll();
         UI.showEvent({ year:S.year, type:'story', title:'🌿 塞翁（さいおう）が馬！', art:'🌿🐴',
@@ -634,7 +638,7 @@ const Game = (function(){
     g += mates.length*2;
     let friend = false;
     mates.forEach(id=>{
-      const r = D.RETAINERS.find(x=>x.id===id);
+      const r = H.retainers.find(x=>x.id===id);
       if (r.fav===cur.genre && S.bonds[id]>=80){ friend = true; }
     });
     if (friend) g *= 1.6;
@@ -677,7 +681,7 @@ const Game = (function(){
   }
   // 絆MAXイベント（適用後にチェック）
   function checkBondMax(){
-    for (const r of D.RETAINERS){
+    for (const r of H.retainers){
       if (S.bonds[r.id]>=100 && !S.bondMaxDone[r.id]){
         S.bondMaxDone[r.id] = true;
         const fx = r.maxFx||{};
@@ -871,8 +875,8 @@ const Game = (function(){
 
   /* ===== §7.5 小競り合い ＝ 1ラウンド版の合戦絵巻（石高とスキルP稼ぎ・敗北しても育成は続く） ===== */
   function startSkirmish(){
-    const foe = D.SKIRMISH_FOES[Math.floor(Math.random()*D.SKIRMISH_FOES.length)];
-    const situ = D.SKIRMISH_SITUS[Math.floor(Math.random()*D.SKIRMISH_SITUS.length)];
+    const foe = H.skirmishFoes[Math.floor(Math.random()*H.skirmishFoes.length)];
+    const situ = H.skirmishSitus[Math.floor(Math.random()*H.skirmishSitus.length)];
     S.trainStreak = 0;
     S.stamina = Math.max(0, S.stamina-14);
     startBattle({
@@ -890,7 +894,7 @@ const Game = (function(){
     const win = (tier==='kaishin' || tier==='yuko');
     let text;
     if (win){
-      let k = Math.round((12 + (S.year-START_YEAR) + Math.random()*8) * (tier==='kaishin' ? 1.6 : 1.0));
+      let k = Math.round((12 + (S.year-H.startYear) + Math.random()*8) * (tier==='kaishin' ? 1.6 : 1.0));
       if (S.skills && S.skills.zeni) k = Math.round(k*1.5);
       S.koku += k; S.skillPt += 3;
       if (tier==='kaishin') S.mood = Math.min(4, S.mood+1);
@@ -930,7 +934,7 @@ const Game = (function(){
   /* ===== 最終イベント（本能寺） ===== */
   function startFinal(ev){
     UI.showEvent(ev, ()=>{
-      const survive = (S.chiryaku>=95 && S.ninbo>=80);
+      const survive = Object.entries(H.finalReq).every(([k,v])=>S[k]>=v);
       const branch = survive? ev.survive : ev.fall;
       if (survive){ S.koku += 500; S.wins++; S.battles++; }
       S.survived = survive;
@@ -947,11 +951,10 @@ const Game = (function(){
     // 遺訓: 最高ステに応じて獲得
     let bestK = 'buyu';
     STAT_KEYS.forEach(k=>{ if(S[k]>S[bestK]) bestK=k; });
-    const LEGACY_NAMES = { buyu:'攻めてこそ道は開ける', chiryaku:'敵を知り己を知れば百戦危うからず', seiji:'銭は囲うより回せ', ninbo:'人は城、人は石垣' };
-    const legacy = { stat:bestK, val:Math.min(15, 5+Math.floor(S[bestK]/20)), name:LEGACY_NAMES[bestK] };
+    const legacy = { stat:bestK, val:Math.min(15, 5+Math.floor(S[bestK]/20)), name:H.legacyNames[bestK] };
     P.legacy.push(legacy); if (P.legacy.length>5) P.legacy.shift();
     // 殿堂入り
-    P.hall.push({ name:'織田信長', rank:rank[1], total,
+    P.hall.push({ name:H.name, rank:rank[1], total,
       stats:{buyu:S.buyu, chiryaku:S.chiryaku, seiji:S.seiji, ninbo:S.ninbo},
       koku:S.koku, wins:S.wins, battles:S.battles, survived:!!survived, fell:fellLabel||null,
       acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
@@ -980,7 +983,7 @@ const Game = (function(){
     failRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
     battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
-    get cur(){return cur;}, get B(){return B;}, START_YEAR, END_YEAR, saveAll };
+    get cur(){return cur;}, get B(){return B;}, get H(){return H;}, saveAll };
 })();
 
 /* ============================================================ UI */
@@ -1041,9 +1044,10 @@ const UI = (function(){
   /* 勢力図（mini=立ち絵の右下用 / 拡大はリスト overlay） */
   function mapHtml(mini){
     const S = Game.S; if (!S) return '';
-    const next = D.TIMELINE.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
-    const warLoc = next? D.MAP.battleLoc[next.year] : null;
-    return `<span class="mapGrid ${mini?'mini':''}">` + D.MAP.provinces.map(p=>{
+    const H = Game.H;
+    const next = H.timeline.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
+    const warLoc = next? H.map.battleLoc[next.year] : null;
+    return `<span class="mapGrid ${mini?'mini':''}">` + H.map.provinces.map(p=>{
       const own = p.own && S.year>=p.own;
       const ally = p.ally && S.year>=p.ally;
       const war = (p.n===warLoc);
@@ -1053,12 +1057,13 @@ const UI = (function(){
   }
   function openMap(){
     const S = Game.S; if (!S) return;
-    const ownN = D.MAP.provinces.filter(p=>p.own && S.year>=p.own).length;
-    const next = D.TIMELINE.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
+    const H = Game.H;
+    const ownN = H.map.provinces.filter(p=>p.own && S.year>=p.own).length;
+    const next = H.timeline.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
     $('l-title').textContent = '🗾 勢力図';
     $('l-body').innerHTML = mapHtml(false) +
       `<div class="note" style="margin-top:8px;">🟦 織田領（いま${ownN}か国） ／ 🟩 同盟（徳川） ／ ⚔️ 次の合戦の地` +
-      (next? `<br>📅 次の合戦: ${next.year}年「${next.title.split(' — ')[0]}」（${D.MAP.battleLoc[next.year]||'—'}）` : '<br>🎌 残る合戦はない') + `</div>`;
+      (next? `<br>📅 次の合戦: ${next.year}年「${next.title.split(' — ')[0]}」（${H.map.battleLoc[next.year]||'—'}）` : '<br>🎌 残る合戦はない') + `</div>`;
     $('ovl-list').classList.add('on');
   }
 
@@ -1066,19 +1071,21 @@ const UI = (function(){
   function renderGame(){
     const S = Game.S; if (!S) return;
     $('g-year').textContent = `${S.year}年`;
-    $('g-turn').textContent = `${S.year-Game.START_YEAR+1}/32`;
+    $('g-turn').textContent = `${S.year-Game.H.startYear+1}/${Game.H.endYear-Game.H.startYear+1}`;
     $('g-koku').textContent = `🌾 ${Game.fmtKoku(S.koku)}`;
     const m = Game.MOODS[S.mood];
     const mt = $('g-mood'); mt.textContent = m.icon+' '+m.label; mt.style.background = m.cls;
     const injured = !!S.injury;
     $('g-inj').style.display = injured? 'inline-block' : 'none';
     // 中央ステージ: 石高が増えるほど居城が立派になる
-    const tier = S.koku>=1500?5 : S.koku>=900?4 : S.koku>=500?3 : S.koku>=250?2 : 1;
-    const castles = {1:['⛺','陣屋'], 2:['🏘️','館'], 3:['🏯','城'], 4:['🏯','大天守'], 5:['🏯','黄金の天守']};
-    $('g-castlebox').className = 'stageCastle t'+tier;
-    $('g-castle').textContent = castles[tier][0];
-    $('g-castlelbl').textContent = `居城: ${castles[tier][1]}`;
-    $('g-season').textContent = ['🌸','☀️','🍂','⛄'][(S.year-1551)%4];
+    const cs = Game.H.castles;
+    let tier = 0;
+    cs.forEach((c,i)=>{ if (S.koku>=c[0]) tier=i; });
+    $('g-castlebox').className = 'stageCastle t'+(tier+1);
+    $('g-castle').textContent = cs[tier][1];
+    $('g-castlelbl').textContent = `居城: ${cs[tier][2]}`;
+    $('g-heroname').textContent = Game.H.name;
+    $('g-season').textContent = Game.H.seasons[(S.year-Game.H.startYear)%Game.H.seasons.length];
     $('g-face').textContent = injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'));
     // 体力
     const st = $('g-stam');
@@ -1092,7 +1099,7 @@ const UI = (function(){
       `<div class="stat" onclick="UI.openSkill()"><span class="sl">スキルP</span>
         <span class="srow"><b class="srk" style="color:#7a4f9d">${S.skillPt||0}</b></span></div>`;
     // 側近（◯枠アイコンのみ・絆ゲージ付き）
-    $('g-bonds').innerHTML = D.RETAINERS.map(r=>{
+    $('g-bonds').innerHTML = Game.H.retainers.map(r=>{
       const v = S.bonds[r.id];
       return `<span class="bondC ${v>=80?'mx':''}" title="${r.name}">${r.icon}<i><b style="width:${v}%"></b></i></span>`;
     }).join('');
@@ -1100,7 +1107,7 @@ const UI = (function(){
     let mateIcons = '';
     Game.STAT_KEYS.forEach(k=>{
       (S.placement[k]||[]).forEach(id=>{
-        const r = D.RETAINERS.find(x=>x.id===id);
+        const r = Game.H.retainers.find(x=>x.id===id);
         const fri = (r.fav===k && S.bonds[id]>=80);
         mateIcons += `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
       });
@@ -1115,7 +1122,7 @@ const UI = (function(){
       <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')">小競り合い</button>`;
     $('g-bookn').textContent = Game.P.book.length? `(${Game.P.book.length})` : '';
     // 次イベント予告
-    const next = D.TIMELINE.find(e=>e.year>S.year);
+    const next = Game.H.timeline.find(e=>e.year>S.year);
     $('g-next').textContent = next? `📅 次の歴史イベント: ${next.year}年「${next.title.split(' — ')[0]}」` : '';
   }
 
@@ -1129,7 +1136,7 @@ const UI = (function(){
       const g = D.GENRES[k];
       let glow = false;
       const mateHtml = (S.placement[k]||[]).map(id=>{
-        const r = D.RETAINERS.find(x=>x.id===id);
+        const r = Game.H.retainers.find(x=>x.id===id);
         const fri = (r.fav===k && S.bonds[id]>=80);
         if (fri) glow = true;
         return `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
@@ -1334,6 +1341,7 @@ const UI = (function(){
     $('b-intro').textContent = ev.intro || '';
     $('b-intro').style.display = ev.intro ? 'block' : 'none';
     $('b-sky').textContent = `${ev.terrain.icon} ${ev.terrain.label}`.trim();
+    $('b-mename').textContent = `${Game.H.armyIcon} ${Game.H.armyName}`;
     $('b-foename').textContent = `${ev.enemyIcon || '🔴'} ${ev.enemyName}`;
     $('b-castername').textContent = L.caster;
     $('b-log').innerHTML = ''; $('b-actions').innerHTML = '';

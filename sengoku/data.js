@@ -7,6 +7,7 @@
    §2.6 合戦絵巻（実況セリフ・采配・小競り合い）
    §2.7 勢力図（領地マップ）
    §2.8 スキル定義
+   §2.9 偉人パック（エンジンが参照する単位。偉人追加=パック追加）
    §3 年表イベント（織田信長 1551-1582）
    §4 クイズDB（シード問題。Codex生成分は QUESTIONS_EXTRA に追記）
    ------------------------------------------------------------
@@ -512,5 +513,23 @@ const SENGOKU_DATA = (function(){
       desc:'阿国のかぶき踊りはのちの歌舞伎のもとになった。能・狂言は室町時代に観阿弥・世阿弥らが大成したもので、時代の区別がよく問われる。' },
   ];
 
-  return { GENRES, RETAINERS, WARLORDS, SKILLS, BATTLE_LINES, SKIRMISH_FOES, SKIRMISH_SITUS, MAP, TIMELINE, QUESTIONS };
+  /* ===== §2.9 偉人パック =====
+     エンジンはシナリオ固有データをすべて「偉人パック」経由で参照する（偉人トレーナー構想・PLAN §9）。
+     偉人を追加するとき＝このパックを1つ書くだけ（年表・側近・勢力図・小競り合い・開始ステ・IF条件） */
+  const HEROES = {
+    nobunaga: {
+      id:'nobunaga', name:'織田信長', armyIcon:'🔵', armyName:'織田軍',
+      startYear:1551, endYear:1582,
+      start:{ buyu:20, chiryaku:24, seiji:14, ninbo:8, koku:100 },
+      finalReq:{ chiryaku:95, ninbo:80 },  // 最終イベントのIF生存条件（本能寺を察知）
+      legacyNames:{ buyu:'攻めてこそ道は開ける', chiryaku:'敵を知り己を知れば百戦危うからず',
+        seiji:'銭は囲うより回せ', ninbo:'人は城、人は石垣' },
+      castles:[ [0,'⛺','陣屋'], [250,'🏘️','館'], [500,'🏯','城'], [900,'🏯','大天守'], [1500,'🏯','黄金の天守'] ],
+      seasons:['🌸','☀️','🍂','⛄'],
+      retainers:RETAINERS, timeline:TIMELINE, map:MAP,
+      skirmishFoes:SKIRMISH_FOES, skirmishSitus:SKIRMISH_SITUS,
+    },
+  };
+
+  return { GENRES, WARLORDS, SKILLS, BATTLE_LINES, HEROES, QUESTIONS };
 })();
