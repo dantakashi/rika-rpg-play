@@ -123,6 +123,7 @@
   #field.frozen::after{content:""; position:absolute; inset:0; pointer-events:none; z-index:5;
     background:linear-gradient(rgba(150,205,240,.30), rgba(120,180,225,.16)); box-shadow:inset 0 0 60px rgba(120,185,230,.5)}
   .unit.frz{filter:brightness(1.15) sepia(.4) hue-rotate(160deg) saturate(2.2)}
+  .unit .shieldbadge{position:absolute; top:-22px; left:50%; transform:translateX(-50%); background:#5aa0d6; color:#fff; border:2px solid #2b2620; border-radius:9px; font-size:11px; font-weight:800; padding:0 5px; line-height:15px; z-index:5; white-space:nowrap}
   .unit.haspart .body{filter:drop-shadow(0 0 3px #ffd24a)}
 
   /* 問題エリア */
@@ -2781,6 +2782,61 @@ const SVG = (()=>{
   <g class="p-charge" style="transform-origin:82px 50px"><circle cx="82" cy="50" r="8" fill="#ffe27a" stroke="${S}" stroke-width="2"/><path d="M83 43 l-4 7 l4 0 l-3 6" fill="none" stroke="#fff" stroke-width="2"/></g>
   <g class="p-proj" style="transform-origin:82px 50px"><circle cx="82" cy="50" r="12" fill="#ffe27a" stroke="${S}" stroke-width="2"/><path d="M84 41 l-6 9 l6 0 l-5 9" fill="none" stroke="#fff" stroke-width="2.5"/></g>`,
   });
+  // === 新キャラ5体のアート（2026-06-11夜間バッチ。既存ゆるキャラ調・朝の実機確認でブラッシュアップ可） ===
+  Object.assign(lib, {
+    togeHedge:`<ellipse cx="50" cy="88" rx="26" ry="4" fill="#0002"/>
+      <path d="M50 30 L58 40 L70 36 L72 50 L84 52 L76 62 L82 74 L68 76 L64 86 L50 80 L36 86 L32 76 L18 74 L24 62 L16 52 L28 50 L30 36 L42 40Z" fill="#8a6a4a" stroke="${S}" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="50" cy="62" r="20" fill="#e8c89a" stroke="${S}" stroke-width="3"/>
+      <circle cx="44" cy="58" r="2.6" fill="${S}"/><circle cx="56" cy="58" r="2.6" fill="${S}"/>
+      <ellipse cx="50" cy="67" rx="4" ry="3" fill="#5a3a2a"/>
+      <path d="M44 72 q6 4 12 0" stroke="${S}" stroke-width="2" fill="none"/>`,
+    iceFairy:`<ellipse cx="50" cy="90" rx="20" ry="3.5" fill="#0002"/>
+      <path d="M30 52 q-14 -6 -10 -20 q12 2 16 12Z" fill="#cfeefc" stroke="${S}" stroke-width="2.5"/>
+      <path d="M70 52 q14 -6 10 -20 q-12 2 -16 12Z" fill="#cfeefc" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="50" cy="58" r="22" fill="#a8ddf2" stroke="${S}" stroke-width="3"/>
+      <circle cx="43" cy="54" r="2.6" fill="${S}"/><circle cx="57" cy="54" r="2.6" fill="${S}"/>
+      <path d="M44 66 q6 4 12 0" stroke="${S}" stroke-width="2" fill="none"/>
+      <path d="M50 24 v10 M45 27 l10 4 M55 27 l-10 4" stroke="#5fb6e0" stroke-width="2.5"/>
+      <circle cx="50" cy="29" r="2.5" fill="#fff"/>`,
+    hammerMole:`<ellipse cx="50" cy="89" rx="27" ry="4" fill="#0002"/>
+      <rect x="66" y="30" width="9" height="44" rx="3" fill="#9a7a4a" stroke="${S}" stroke-width="2.5"/>
+      <rect x="56" y="20" width="30" height="18" rx="5" fill="#7a8a96" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="48" cy="64" rx="25" ry="23" fill="#7a5a3e" stroke="${S}" stroke-width="3"/>
+      <ellipse cx="48" cy="72" rx="14" ry="10" fill="#caa87e"/>
+      <circle cx="40" cy="58" r="2.4" fill="${S}"/><circle cx="56" cy="58" r="2.4" fill="${S}"/>
+      <ellipse cx="48" cy="66" rx="4.5" ry="3.5" fill="#3a2a20"/>
+      <path d="M30 50 l-6 -6 M66 50 l6 -6" stroke="${S}" stroke-width="2.5"/>`,
+    moonArcher:`<ellipse cx="50" cy="90" rx="22" ry="3.5" fill="#0002"/>
+      <path d="M50 22 q-22 6 -22 36 l0 24 l44 0 l0 -24 q0 -30 -22 -36Z" fill="#5a4a8a" stroke="${S}" stroke-width="3"/>
+      <path d="M50 22 q-15 4 -17 24 q17 -8 34 0 q-2 -20 -17 -24Z" fill="#3a2f60" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="43" cy="52" r="3" fill="#cfe6ff"/><circle cx="57" cy="52" r="3" fill="#cfe6ff"/>
+      <path d="M74 36 q14 22 0 44" stroke="#d8c87a" stroke-width="3.5" fill="none"/>
+      <path d="M74 36 L74 80" stroke="#fff" stroke-width="1.6"/>
+      <path d="M80 16 a9 9 0 1 0 6 14 a7 7 0 1 1 -6 -14Z" fill="#ffe9a8" stroke="${S}" stroke-width="2"/>`,
+    phoenix:`<ellipse cx="50" cy="92" rx="22" ry="3.5" fill="#0002"/>
+      <path d="M22 40 q-8 18 8 28 q-2 -14 6 -22Z" fill="#ff9a3b" stroke="${S}" stroke-width="2.5"/>
+      <path d="M78 40 q8 18 -8 28 q2 -14 -6 -22Z" fill="#ff9a3b" stroke="${S}" stroke-width="2.5"/>
+      <path d="M50 16 q-5 8 0 14 q5 -6 0 -14Z" fill="#ffce4a" stroke="${S}" stroke-width="2"/>
+      <ellipse cx="50" cy="56" rx="22" ry="24" fill="#f06a3a" stroke="${S}" stroke-width="3"/>
+      <path d="M38 74 q-10 14 -4 22 q8 -4 10 -14 M62 74 q10 14 4 22 q-8 -4 -10 -14 M50 78 q0 14 0 18" stroke="#ffce4a" stroke-width="3" fill="none"/>
+      <circle cx="43" cy="50" r="2.8" fill="${S}"/><circle cx="57" cy="50" r="2.8" fill="${S}"/>
+      <path d="M46 60 L54 60 L50 68Z" fill="#ffce4a" stroke="${S}" stroke-width="2"/>`,
+    shieldy:`<ellipse cx="50" cy="89" rx="26" ry="4" fill="#0002"/>
+      <circle cx="58" cy="50" r="17" fill="#8a96a3" stroke="${S}" stroke-width="3"/>
+      <circle cx="53" cy="46" r="2.4" fill="${S}"/><circle cx="64" cy="46" r="2.4" fill="${S}"/>
+      <path d="M54 56 q5 3 10 0" stroke="${S}" stroke-width="2" fill="none"/>
+      <rect x="48" y="64" width="20" height="22" rx="6" fill="#6a7682" stroke="${S}" stroke-width="3"/>
+      <path d="M20 38 q14 -8 22 0 l0 30 q-8 12 -11 14 q-3 -2 -11 -14Z" fill="#5aa0d6" stroke="${S}" stroke-width="3"/>
+      <path d="M31 44 v28 M24 52 h14" stroke="#cfe6f5" stroke-width="3"/>`,
+    summoner:`<ellipse cx="50" cy="90" rx="24" ry="4" fill="#0002"/>
+      <path d="M50 26 q-20 6 -19 38 l-3 22 l44 0 l-3 -22 q1 -32 -19 -38Z" fill="#5a3a7a" stroke="${S}" stroke-width="3"/>
+      <path d="M50 26 q-13 4 -15 22 q15 -7 30 0 q-2 -18 -15 -22Z" fill="#3a2255" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="44" cy="54" r="2.8" fill="#d8b6ff"/><circle cx="56" cy="54" r="2.8" fill="#d8b6ff"/>
+      <rect x="74" y="38" width="5" height="48" fill="#6a5a3a" stroke="${S}" stroke-width="2"/>
+      <circle cx="76.5" cy="33" r="8" fill="#a463f2" stroke="${S}" stroke-width="2.5"/>
+      <circle cx="76.5" cy="33" r="3" fill="#e8d6ff"/>
+      <path d="M22 60 q4 -8 10 -4 M18 72 q5 -7 11 -3" stroke="#a463f2" stroke-width="2.5" fill="none"/>`
+  });
   return { get:(k)=>wrap(lib[k]||lib.slime) };
 })();
 
@@ -2818,7 +2874,13 @@ const ALLY_VIS = {
   cheerTanuki:{tier:'tier-low', atk:'atk-buff', dur:840},
   steelBull:{tier:'tier-low', atk:'atk-headswing', dur:660},
   crystalGolem:{tier:'tier-high', atk:'atk-oraora', dur:1000, big:true},
-  thunderDragon:{tier:'tier-fly', atk:'atk-fireball', dur:1350, fly:true, big:true, proj:'lightning', projBig:true, arc:true, explode:true, projDelay:560, projMs:560}
+  thunderDragon:{tier:'tier-fly', atk:'atk-fireball', dur:1350, fly:true, big:true, proj:'lightning', projBig:true, arc:true, explode:true, projDelay:560, projMs:560},
+  // 新キャラ5体(2026-06-11)
+  togeHedge:{tier:'tier-low', atk:'atk-bite', dur:640},
+  iceFairy:{tier:'tier-low', atk:'atk-shot', dur:720, proj:'star', projDelay:130, projMs:360},
+  hammerMole:{tier:'tier-low', atk:'atk-push', dur:700},
+  moonArcher:{tier:'tier-low', atk:'atk-shot', dur:760, proj:'arrow', projDelay:150, projMs:340},
+  phoenix:{tier:'tier-fly', atk:'atk-heal', dur:840, fly:true}
 };
 function allyEffectsHTML(){ return FXSVG.GLOW+FXSVG.BURST+FXSVG.PUSH+FXSVG.HEAL+FXSVG.BUFF+FXSVG.BOOM+FXSVG.SLASH; }
 // 味方ユニットの中身（HPバー＋エフェクト層＋キャラ本体）。.unitのclassNameに atk/tier/flying を付与する側で対応
@@ -8566,6 +8628,113 @@ const ENGLISH_IDIOM_DB_V2 = [
 ];
 /*__ENGLISH_IDIOM_DB_V2_END__*/
 
+/*__GG_E5_DATA_START__ 英検5級新設(2026-06-11)*/
+// 英検5級(e5)追加データ＋格下げリスト（2026-06-11生成。GG_E5_ADD=新規問題 / GG_E5_DOWN_*=V2既存をe5へ格下げ）
+const GG_E5_ADD = [
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"警察官","answer":"police officer","hint":"p____e o_____r / 警察官","desc":"police officer = 警察官。町の安全を守る人。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"ボール","answer":"ball","hint":"b__l / ボール","desc":"ball = ボール。球技で使うもの。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"車","answer":"car","hint":"c_r / 車","desc":"car = 車。道路を走る乗り物。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"自転車","answer":"bike","hint":"b__e / 自転車","desc":"bike = 自転車。bicycle より短い言い方。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"テレビ","answer":"television","hint":"t________n / テレビ","desc":"television = テレビ。TV とも言う。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"靴","answer":"shoes","hint":"s___s / 靴","desc":"shoes = 靴。ふつう左右で一組として使う。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"写真・絵","answer":"picture","hint":"p_____e / 写真・絵","desc":"picture = 写真や絵。見て楽しむもの。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"コーヒー","answer":"coffee","hint":"c____e / コーヒー","desc":"coffee = コーヒー。飲み物の名前。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"v","type":"typing","name":"見る","answer":"look","hint":"l__k / 見る","desc":"look = 見る。目を向ける動作を表す。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"v","type":"typing","name":"する","answer":"do","hint":"d_ / する","desc":"do = する。動作を表す基本の動詞。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"adj","type":"typing","name":"元気な","answer":"fine","hint":"f__e / 元気な","desc":"fine = 元気な、よい。How are you? の返事でも使う。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"adj","type":"typing","name":"左の","answer":"left","hint":"l__t / 左の","desc":"left = 左の。方向を表す語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"adj","type":"typing","name":"おもしろい","answer":"funny","hint":"f___y / おもしろい","desc":"funny = おもしろい。笑えるものに使う。"},
+{"genre":"word","level":"e5","tier":"adv","pos":"adj","type":"typing","name":"茶色の","answer":"brown","hint":"b___n / 茶色の","desc":"brown = 茶色の。色を表す語。"},
+{"genre":"word","level":"e5","tier":"adv","pos":"adv","type":"typing","name":"〜もまた・〜すぎる","answer":"too","hint":"t_o / 〜もまた・〜すぎる","desc":"too = 〜もまた、〜すぎる。文の位置に注意する。"},
+{"genre":"word","level":"e5","tier":"adv","pos":"adv","type":"typing","name":"〜もまた","answer":"also","hint":"a__o / 〜もまた","desc":"also = 〜もまた。同じことを加えるときに使う。"},
+{"genre":"word","level":"e5","tier":"adv","pos":"adv","type":"typing","name":"こんにちは","answer":"hello","hint":"h___o / こんにちは","desc":"hello = こんにちは。あいさつの基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"犬","answer":"dog","hint":"d_g / 犬","desc":"dog = 犬。動物の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"猫","answer":"cat","hint":"c_t / 猫","desc":"cat = 猫。動物の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"学校","answer":"school","hint":"s____l / 学校","desc":"school = 学校。毎日通う場所。"},
+{"genre":"word","level":"e5","tier":"must","pos":"v","type":"typing","name":"食べる","answer":"eat","hint":"e_t / 食べる","desc":"eat = 食べる。食事の基本動詞。"},
+{"genre":"word","level":"e5","tier":"must","pos":"v","type":"typing","name":"飲む","answer":"drink","hint":"d___k / 飲む","desc":"drink = 飲む。飲み物に使う動詞。"},
+{"genre":"word","level":"e5","tier":"must","pos":"v","type":"typing","name":"行く","answer":"go","hint":"g_ / 行く","desc":"go = 行く。移動の基本動詞。"},
+{"genre":"word","level":"e5","tier":"must","pos":"v","type":"typing","name":"走る","answer":"run","hint":"r_n / 走る","desc":"run = 走る。運動の基本動詞。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"大きい","answer":"big","hint":"b_g / 大きい","desc":"big = 大きい。サイズの基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"小さい","answer":"small","hint":"s___l / 小さい","desc":"small = 小さい。bigの反対。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"背が高い","answer":"tall","hint":"t__l / 背が高い","desc":"tall = 背が高い。人や建物に使う。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"赤い","answer":"red","hint":"r_d / 赤い","desc":"red = 赤。色の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"青い","answer":"blue","hint":"b__e / 青い","desc":"blue = 青。色の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"緑の","answer":"green","hint":"g___n / 緑の","desc":"green = 緑。色の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"黄色い","answer":"yellow","hint":"y____w / 黄色い","desc":"yellow = 黄色。色の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"黒い","answer":"black","hint":"b___k / 黒い","desc":"black = 黒。色の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"adj","type":"typing","name":"白い","answer":"white","hint":"w___e / 白い","desc":"white = 白。色の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"1","answer":"one","hint":"o_e / 1","desc":"one = 1。数の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"2","answer":"two","hint":"t_o / 2","desc":"two = 2。数の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"3","answer":"three","hint":"t___e / 3","desc":"three = 3。数の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"4","answer":"four","hint":"f__r / 4","desc":"four = 4。数の基本語。"},
+{"genre":"word","level":"e5","tier":"must","pos":"n","type":"typing","name":"5","answer":"five","hint":"f__e / 5","desc":"five = 5。数の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"6","answer":"six","hint":"s_x / 6","desc":"six = 6。数の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"7","answer":"seven","hint":"s___n / 7","desc":"seven = 7。数の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"8","answer":"eight","hint":"e___t / 8","desc":"eight = 8。ghは発音しない。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"9","answer":"nine","hint":"n__e / 9","desc":"nine = 9。数の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"10","answer":"ten","hint":"t_n / 10","desc":"ten = 10。数の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"月曜日","answer":"monday","hint":"m____y / 月曜日","desc":"Monday = 月曜日。曜日の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"火曜日","answer":"tuesday","hint":"t_____y / 火曜日","desc":"Tuesday = 火曜日。曜日の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"水曜日","answer":"wednesday","hint":"w_______y / 水曜日","desc":"Wednesday = 水曜日。つづりに注意。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"木曜日","answer":"thursday","hint":"t______y / 木曜日","desc":"Thursday = 木曜日。曜日の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"金曜日","answer":"friday","hint":"f____y / 金曜日","desc":"Friday = 金曜日。曜日の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"土曜日","answer":"saturday","hint":"s______y / 土曜日","desc":"Saturday = 土曜日。曜日の基本語。"},
+{"genre":"word","level":"e5","tier":"basic","pos":"n","type":"typing","name":"日曜日","answer":"sunday","hint":"s____y / 日曜日","desc":"Sunday = 日曜日。曜日の基本語。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"be動詞","question":"I ( ) a student.","choices":["am","is","are","be"],"answer":0,"desc":"主語が I のとき be動詞は am。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"be動詞","question":"This ( ) my cap.","choices":["am","is","are","be"],"answer":1,"desc":"主語が this のとき be動詞は is。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"be動詞","question":"You ( ) kind.","choices":["am","is","are","be"],"answer":2,"desc":"主語が you のとき be動詞は are。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"be動詞","question":"He ( ) my uncle.","choices":["am","are","be","is"],"answer":3,"desc":"主語が he のとき be動詞は is。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"be動詞","question":"We ( ) in the room.","choices":["are","am","is","be"],"answer":0,"desc":"主語が we のとき be動詞は are。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"一般動詞","question":"I ( ) tennis.","choices":["plays","play","playing","played"],"answer":1,"desc":"主語が I の現在の文では play を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"一般動詞","question":"He ( ) a bike.","choices":["ride","riding","rides","rode"],"answer":2,"desc":"主語が he の現在では動詞に s がつく。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"一般動詞","question":"They ( ) English.","choices":["studies","studying","studied","study"],"answer":3,"desc":"主語が they の現在の文では study を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"一般動詞","question":"She ( ) in Tokyo.","choices":["lives","live","living","lived"],"answer":0,"desc":"主語が she の現在では live に s がつく。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"一般動詞","question":"I ( ) my hands.","choices":["washes","wash","washing","washed"],"answer":1,"desc":"主語が I の現在の文では wash を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"疑問文","question":"( ) is this? It is a box.","choices":["Where","Who","What","How"],"answer":2,"desc":"物をたずねるときは What を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"疑問文","question":"( ) is your bag? It is on the table.","choices":["What","Who","How","Where"],"answer":3,"desc":"場所をたずねるときは Where を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"疑問文","question":"( ) is he? He is my brother.","choices":["Who","What","Where","How"],"answer":0,"desc":"人をたずねるときは Who を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"疑問文","question":"( ) many balls do you have?","choices":["What","How","Where","Who"],"answer":1,"desc":"数をたずねるときは How many を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"疑問文","question":"( ) you like tea?","choices":["Are","Is","Do","Does"],"answer":2,"desc":"you と一般動詞の疑問文では Do を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"疑問文","question":"( ) he play soccer?","choices":["Do","Is","Are","Does"],"answer":3,"desc":"he と一般動詞の疑問文では Does を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"代名詞","question":"( ) am Ken.","choices":["I","My","Me","You"],"answer":0,"desc":"主語として自分を表すときは I を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"代名詞","question":"This is ( ) bag.","choices":["I","my","me","you"],"answer":1,"desc":"私のバッグと言うときは my bag。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"代名詞","question":"Please help ( ).","choices":["I","my","me","he"],"answer":2,"desc":"動詞の後で私を表すときは me。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"代名詞","question":"( ) are my friend.","choices":["I","My","Me","You"],"answer":3,"desc":"相手を主語にするときは You を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"代名詞","question":"Is this ( ) book?","choices":["your","you","he","me"],"answer":0,"desc":"あなたの本と言うときは your book。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"代名詞","question":"( ) is my father.","choices":["His","He","Him","Her"],"answer":1,"desc":"男性を主語にするときは He を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"代名詞","question":"This is ( ) cap.","choices":["he","him","his","I"],"answer":2,"desc":"彼の帽子と言うときは his cap。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"冠詞","question":"This is ( ) orange.","choices":["a","the","no","an"],"answer":3,"desc":"orange は母音の音で始まるので an を使う。"},
+{"genre":"grammar","level":"e5","tier":"must","type":"choice","field":"冠詞","question":"I have ( ) cup.","choices":["a","an","are","am"],"answer":0,"desc":"cup は子音の音で始まるので a を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"冠詞","question":"She has ( ) umbrella.","choices":["a","an","is","are"],"answer":1,"desc":"umbrella は母音の音で始まるので an を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"冠詞","question":"He is ( ) doctor.","choices":["an","the","a","are"],"answer":2,"desc":"doctor は子音の音で始まるので a を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"前置詞","question":"The ball is ( ) the box.","choices":["at","on","under","in"],"answer":3,"desc":"箱の中にあるときは in を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"前置詞","question":"The book is ( ) the table.","choices":["on","in","at","under"],"answer":0,"desc":"机の上にあるときは on を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"前置詞","question":"I get up ( ) seven.","choices":["on","at","in","under"],"answer":1,"desc":"時刻の前には at を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"前置詞","question":"The cat is ( ) the chair.","choices":["on","in","under","at"],"answer":2,"desc":"いすの下にあるときは under を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"前置詞","question":"I live ( ) Japan.","choices":["on","at","under","in"],"answer":3,"desc":"国や場所の中に住むときは in を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"be動詞","question":"My mother ( ) a nurse.","choices":["is","am","are","be"],"answer":0,"desc":"主語が my mother のとき be動詞は is。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"be動詞","question":"Tom and Ken ( ) friends.","choices":["is","are","am","be"],"answer":1,"desc":"二人以上が主語のとき be動詞は are。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"一般動詞","question":"My sister ( ) a song.","choices":["sing","singing","sings","sang"],"answer":2,"desc":"主語が my sister の現在では sing に s がつく。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"一般動詞","question":"We ( ) to school.","choices":["goes","going","went","go"],"answer":3,"desc":"主語が we の現在の文では go を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"疑問文","question":"( ) is your name?","choices":["What","Where","Who","How"],"answer":0,"desc":"名前をたずねるときは What is your name?。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"疑問文","question":"( ) old are you?","choices":["What","How","Where","Who"],"answer":1,"desc":"年れいをたずねるときは How old を使う。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"代名詞","question":"This is ( ) father.","choices":["he","him","his","I"],"answer":2,"desc":"彼の父と言うときは his father。"},
+{"genre":"grammar","level":"e5","tier":"basic","type":"choice","field":"冠詞","question":"I see ( ) baby.","choices":["an","the","am","a"],"answer":3,"desc":"baby は子音の音で始まるので a を使う。"},
+{"genre":"idiom","level":"e5","tier":"must","type":"typing","name":"毎日","answer":"every day","hint":"e____ d_y / 毎日","desc":"every day = 毎日。くり返す習慣を表す。"},
+{"genre":"idiom","level":"e5","tier":"must","type":"typing","name":"向こうに","answer":"over there","hint":"o__r t___e / 向こうに","desc":"over there = 向こうに。少し離れた場所を指す。"},
+{"genre":"idiom","level":"e5","tier":"must","type":"typing","name":"とても・大いに","answer":"very much","hint":"v__y m__h / とても","desc":"very much = とても、大いに。気持ちの強さを表す。"},
+{"genre":"idiom","level":"e5","tier":"must","type":"typing","name":"家で","answer":"at home","hint":"a_ h__e / 家で","desc":"at home = 家で。家にいる状態を表す。"},
+{"genre":"idiom","level":"e5","tier":"must","type":"typing","name":"夕食後に","answer":"after dinner","hint":"a___r d____r / 夕食後に","desc":"after dinner = 夕食後に。時間の順番を表す。"},
+{"genre":"idiom","level":"e5","tier":"basic","type":"typing","name":"〜の前に","answer":"in front of","hint":"i_ f____ o_ / 〜の前に","desc":"in front of = 〜の前に。場所を表す言い方。"},
+{"genre":"idiom","level":"e5","tier":"basic","type":"typing","name":"〜のとなりに","answer":"next to","hint":"n__t t_ / 〜のとなりに","desc":"next to = 〜のとなりに。すぐ横の場所を表す。"},
+{"genre":"idiom","level":"e5","tier":"basic","type":"typing","name":"学校で","answer":"at school","hint":"a_ s____l / 学校で","desc":"at school = 学校で。学校にいる状態を表す。"},
+{"genre":"idiom","level":"e5","tier":"basic","type":"typing","name":"自転車で","answer":"by bike","hint":"b_ b__e / 自転車で","desc":"by bike = 自転車で。交通手段を表す言い方。"}
+];
+const GG_E5_DOWN_W = ["boy","girl","man","woman","child","baby","grandfather","grandmother","uncle","aunt","cousin","son","daughter","class","club","team","member","doctor","nurse","driver","king","queen","cup","box","bus","train","table","bed","sofa","radio","phone","computer","camera","clock","map","cap","hat","shirt","pants","coat","umbrella","key","card","stamp","letter","wall","floor","roof","banana","orange","juice","tea","cake","cookie","candy","soup","salad","sandwich","pizza","potato","sit","stand","stop","love","live","jump","sing","dance","wash","clean","cut","put","get","smile","cry","sleep","wake","draw","paint","drive","ride","fly","touch","push","pull","move","turn","show","catch","throw","kick","climb","stay","enjoy","talk","copy","fix","mix","nice","cute","pretty","free","right","cool","warm","dark","light","hard","high","low","rich","poor","full","empty","angry","hungry","thirsty","sleepy","pink","now","then","well","only","first","next","last","up","down","inside","outside","please","apple","book","good","bad","like","beautiful","new","old","happy","water","milk","egg","pen","desk","friend","mother","father","play","come","see","walk","swim","bird","fish","hand","head","eye","rain","snow","sun","moon","star","tree","flower","help","door","window","chair","study","want"];
+const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit down","stand up","on foot"];
+/*__GG_E5_DATA_END__*/
+
 
   let DB = [];
   // 各ジャンルに V2(英検級ネイティブ) があれば旧データを除外して置き換える。無いジャンルは旧データを使う。
@@ -8578,6 +8747,9 @@ const ENGLISH_IDIOM_DB_V2 = [
   try{ if(V2W) DB = DB.concat(ENGLISH_WORD_DB_V2); }catch(e){}
   try{ if(V2I) DB = DB.concat(ENGLISH_IDIOM_DB_V2); }catch(e){}
   try{ if(V2G) DB = DB.concat(ENGLISH_GRAMMAR_DB_V2); }catch(e){}
+  // 英検5級(2026-06-11): 新規問題を追加し、超基礎語はV2のe4/e3からe5へ格下げ（重複追加を避けるため既存エントリの級を書き換える方式）
+  try{ if(typeof GG_E5_ADD!=='undefined') DB = DB.concat(GG_E5_ADD); }catch(e){}
+  try{ if(typeof GG_E5_DOWN_W!=='undefined'){ var __d5w=new Set(GG_E5_DOWN_W), __d5i=new Set(GG_E5_DOWN_I); DB.forEach(function(q){ if(q.genre==='word'&&__d5w.has(q.answer)&&(q.level==='e4'||q.level==='e3')) q.level='e5'; else if(q.genre==='idiom'&&__d5i.has(q.answer)&&(q.level==='e4'||q.level==='e3')) q.level='e5'; }); } }catch(e){}
   if(DB.length===0){
     DB = [
       {genre:"grammar",diff:"junior",type:"choice",question:"I ( ) a student.",choices:["am","is","are","be"],answer:0,desc:"主語が I のとき be動詞は am。"},
@@ -8592,6 +8764,7 @@ const ENGLISH_IDIOM_DB_V2 = [
   }
   // ===== 難易度＝英検級(4級〜準1級)×ティア(必須/基礎/発展)・ジャンル(単語/熟語/文法) =====
   const EIKEN = [
+    {key:"e5",  label:"5級"},
     {key:"e4",  label:"4級"},
     {key:"e3",  label:"3級"},
     {key:"ep2", label:"準2級"},
@@ -8647,7 +8820,7 @@ const ENGLISH_IDIOM_DB_V2 = [
 
   // 選択状態：ジャンルは単一選択(ヘッダー)。文法のみ「英検基準/分野別」を切替。
   let selGenre  = "word";                 // 'word' | 'idiom' | 'grammar'
-  let selLevels = new Set(["e4"]);        // 英検級(複数選択)
+  let selLevels = new Set(["e5"]);        // 英検級(複数選択)。既定は最易のe5（初学者ほど遊べる・2026-06-11）
   let selTiers  = new Set(["must","basic","adv"]);
   let grammarMode = "eiken";              // 'eiken' | 'field'（文法のときだけ有効）
   let selFields = new Set(FIELD_KEYS);    // 分野別(複数選択)
@@ -8746,7 +8919,7 @@ const ENGLISH_IDIOM_DB_V2 = [
   // コンボ増加：単語/熟語=2択+1・4択+2／文法=2択+2・4択+4。さらに上の級ほど倍率UP（上の難易度を選びたくなる）。
   function comboGain(q){
     const base = q.genre==="grammar" ? (q.choiceCount===4?4:2) : (q.choiceCount===4?2:1);
-    const lm = {e4:1.0, e3:1.25, ep2:1.5, e2:1.75, ep1:2.2}[q.level]||1;
+    const lm = {e5:0.85, e4:1.0, e3:1.25, ep2:1.5, e2:1.75, ep1:2.2}[q.level]||1;
     const x = base*lm;
     let g = Math.floor(x); if(Math.random() < (x-g)) g++;
     return Math.max(1,g);
@@ -8765,7 +8938,7 @@ const ENGLISH_IDIOM_DB_V2 = [
   // ガチャ通貨（グラマージェム💎）：正解=コンボ式×3／不正解=その約1/3。上級ほど多い。
   function gemGain(q, correct){
     const base = q.genre==="grammar" ? (q.choiceCount===4?4:2) : (q.choiceCount===4?2:1);
-    const lm = {e4:1.0, e3:1.25, ep2:1.5, e2:1.75, ep1:2.2}[q.level]||1;
+    const lm = {e5:0.85, e4:1.0, e3:1.25, ep2:1.5, e2:1.75, ep1:2.2}[q.level]||1;
     return correct ? Math.max(1, Math.round(base*lm*3)) : Math.max(1, Math.round(base*lm));
   }
 
@@ -8812,7 +8985,13 @@ const ROSTER = {
   ninjaFrog:{name:"忍びガエル", sprite:"ninjaFrog", rar:"R", rarColor:"#2f7dd1", cost:48, hp:85, atk:26, speed:60, range:42, atkCd:0.6, weight:18, scd:2.5},
   steelBull:{name:"鋼の猛牛", sprite:"steelBull", rar:"SR", rarColor:"#8e44ad", cost:96, hp:340, atk:36, speed:24, range:46, atkCd:1.3, knockback:18, weight:10, scd:5.0},
   crystalGolem:{name:"水晶ゴーレム", sprite:"crystalGolem", rar:"SSR", rarColor:"#e0683b", cost:150, hp:780, atk:8, speed:16, range:50, atkCd:0.22, def:14, scale:1.5, weight:6, scd:8.0},
-  thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:22, range:150, atkCd:2.0, splash:true, scale:1.5, weight:5, scd:9.0}
+  thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:22, range:150, atkCd:2.0, splash:true, scale:1.5, weight:5, scd:9.0},
+  // ===== 新キャラ5体（2026-06-11夜間バッチ・課題5「味方が少ない」対応。役割の穴埋め） =====
+  togeHedge:{name:"トゲハリン", sprite:"togeHedge", rar:"N", rarColor:"#7a7a7a", cost:22, hp:150, atk:14, speed:30, range:40, atkCd:0.8, def:4, weight:40, scd:1.5},
+  iceFairy:{name:"こおりの精", sprite:"iceFairy", rar:"R", rarColor:"#2f7dd1", cost:52, hp:80, atk:18, speed:30, range:110, atkCd:1.0, slow:true, weight:18, scd:2.5},
+  hammerMole:{name:"ハンマーモグラ", sprite:"hammerMole", rar:"SR", rarColor:"#8e44ad", cost:90, hp:300, atk:30, speed:26, range:46, atkCd:1.1, knockback:22, weight:12, scd:5.0},
+  moonArcher:{name:"月かげの射手", sprite:"moonArcher", rar:"SSR", rarColor:"#e0683b", cost:135, hp:180, atk:50, speed:28, range:210, atkCd:1.7, weight:7, scd:7.0}, // 射程210＝敵の砲台(190)を外から撃てる唯一のキャラ（壁1/壁3対策）
+  phoenix:{name:"ほのおの鳳凰", sprite:"phoenix", rar:"SSR", rarColor:"#e0683b", cost:150, hp:320, atk:6, speed:26, range:90, atkCd:1.4, heal:22, scale:1.3, weight:6, scd:8.0} // いやしの精の上位（heal持ちは攻撃しない仕様）
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
@@ -8890,8 +9069,9 @@ function buildEnemyWaves(area, boss){
     if(area>=11){ push(t(14),"bat",3,700); push(t(20),"golem",2,1600); }
     if(area>=16) push(t(18),"cannon",1,0); // 壁1：砲台取り巻き
     if(area>=66) push(t(22),"healer",1,0); // 壁3：敵ヒーラー取り巻き
+    if(area>=76){ push(t(16),"shieldy",2,1000); push(t(26),"summoner",1,0); } // 16章〜ボス戦にも新ギミック敵
     // ボス戦の持続取り巻き
-    for(let k=0;k<7;k++){ const base=24+k*8; push(t(base),"slime",4,500); push(t(base+3),area>=6?"torii":"totem",2,800); if(area>=11) push(t(base+5),"bat",3,500); if(area>=5) push(t(base+6),rngd,1+Math.floor(area/25),700); if(area>=16 && k%2===0) push(t(base+4),"cannon",1,0); if(area>=66 && k%3===0) push(t(base+7),"healer",1,0); }
+    for(let k=0;k<7;k++){ const base=24+k*8; push(t(base),"slime",4,500); push(t(base+3),area>=6?"torii":"totem",2,800); if(area>=11) push(t(base+5),"bat",3,500); if(area>=5) push(t(base+6),rngd,1+Math.floor(Math.min(area,75)/25),700); if(area>=16 && k%2===0) push(t(base+4),"cannon",1,0); if(area>=66 && k%3===0) push(t(base+7),"healer",1,0); } // 取り巻き数は75でクランプ(16章〜が雪だるまにならないように・2026-06-11)
     return W;
   }
   const dens = 1 + Math.min(area,22)*0.12; // 密度は頭打ち（数を増やしすぎない）。難度はHP/ATKインフレで担保
@@ -8911,6 +9091,7 @@ function buildEnemyWaves(area, boss){
   if(area>=12){ push(t(16),"stoneGiant", 1, 0); push(t(22),"stoneGiant", 1, 0); }
   if(area>=16){ push(t(11),"cannon", 1, 0); push(t(20),"cannon", 1, 0); } // 壁1：砲台（超長射程）
   if(area>=66) push(t(18),"healer", 1, 0); // 壁3：敵ヒーラー
+  if(area>=76){ push(t(9),"shieldy", 2, 1300); push(t(17),"summoner", 1, 0); } // 16章〜：🛡シールド兵＋🔮術師（新ギミック）
   if(area>=8) push(t(19),tank, 2, 900);
   // 持続フェーズ：中盤以降も切れ目なく前線を維持（戦闘を2〜3分の歯ごたえに）
   for(let k=0;k<7;k++){
@@ -8921,6 +9102,8 @@ function buildEnemyWaves(area, boss){
     if(area>=3) push(t(base+1.5),"slinger", Math.max(1,Math.round(1+area*0.3)), 800);
     if(area>=16) push(t(base+4),"cannon", 1+Math.floor(area/35), 900); // 壁1：砲台を継続投入
     if(area>=66 && k%2===0) push(t(base+6),"healer", 1, 0);           // 壁3：敵ヒーラーを継続投入
+    if(area>=76 && k%2===1) push(t(base+5),"shieldy", 2, 800);        // 16章〜：シールド兵を継続投入
+    if(area>=78 && k%3===0) push(t(base+6.5),"summoner", 1, 0);       // 16章〜：術師を継続投入
     if(area>=11 && k%2===0) push(t(base+5),"bombSlime", Math.max(1,Math.round(area*0.3)), 800);
     if(area>=4 && k%3===1) push(t(base+5.5),"ghost", 2, 500);
     if(area>=7 && k%3===2) push(t(base+6),"mummy", 1, 0);
@@ -8928,11 +9111,12 @@ function buildEnemyWaves(area, boss){
   }
   return W;
 }
-/* ===== 15章×5ステージ＝75ステージ。各章5番目(エリア5,10,…,75)が15体のボス ===== */
+/* ===== 20章×5ステージ＝100ステージ。各章5番目(エリア5,10,…,100)がボス（16〜20章=2026-06-11増築） ===== */
 const CHAPTER_THEMES = [
   "やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
   "霧の樹海","灼熱の砂漠","氷結の谷","雷鳴の高地","黄金の神殿",
-  "嵐の海原","奈落の洞窟","天空回廊","幻影の城","終焉の祭壇"
+  "嵐の海原","奈落の洞窟","天空回廊","幻影の城","終焉の祭壇",
+  "星くずの砂丘","紅蓮の火山","深海の宮殿","暗黒の魔城","虹のかなた"
 ];
 // 章ごとの背景（空の上色／地面色／シルエット絵文字／敵城の色味hue）。背景が1種類でつまらない対策（要望#14）
 const CHAPTER_BG = [
@@ -8950,12 +9134,18 @@ const CHAPTER_BG = [
   {top:'#6f6878',ground:'#46414f',arts:['🕳️','🦇','💎','🪨'],hue:270},
   {top:'#cfe3f8',ground:'#cdd6ea',arts:['☁️','🌈','☁️','🕊️'],hue:215},
   {top:'#c7b6d8',ground:'#9a86b0',arts:['🏰','🌙','🏰','✨'],hue:285},
-  {top:'#d89a9a',ground:'#6a4a4a',arts:['🔥','🗿','💀','🔥'],hue:355}
+  {top:'#d89a9a',ground:'#6a4a4a',arts:['🔥','🗿','💀','🔥'],hue:355},
+  {top:'#2a2a4a',ground:'#caa86a',arts:['🌠','✨','🏜️','🌟'],hue:230},
+  {top:'#e8744a',ground:'#5a3030',arts:['🌋','🔥','🪨','🌋'],hue:15},
+  {top:'#1a3a5a',ground:'#2a5a7a',arts:['🐚','🫧','🏛️','🐠'],hue:200},
+  {top:'#3a2a3a',ground:'#241a2e',arts:['🏰','🦇','⚡','💀'],hue:300},
+  {top:'#bfe0f5',ground:'#e8d6f0',arts:['🌈','☀️','🌈','🕊️'],hue:0}
 ];
 // 章ごとの通常敵スプライト（雰囲気づけ。実体ステータスはENEMY_TYPES）
-const CH_NORMAL_SPRITE = ["slime","hare","totem","torii","slime","ghost","mummy","bat","darkMage","golem","bombSlime","splitMush","stoneGiant","ghost","mummy"];
-// 15体ボスのギミック割り当て（ボスエリア → ギミックid）。⓪plain/①charge/②trigger/③godhold/④survive(両側)/⑤rush
-const BOSS_GIMMICK = {5:"charge",10:"trigger",15:"plain",20:"charge",25:"survive",30:"trigger",35:"plain",40:"rush",45:"charge",50:"godhold",55:"survive",60:"trigger",65:"rush",70:"charge",75:"godhold"};
+const CH_NORMAL_SPRITE = ["slime","hare","totem","torii","slime","ghost","mummy","bat","darkMage","golem","bombSlime","splitMush","stoneGiant","ghost","mummy","shieldy","golem","summoner","darkMage","stoneGiant"];
+// ボスのギミック割り当て（ボスエリア → ギミックid）。⓪plain/①charge/②trigger/③godhold/④survive(両側)/⑤rush
+const BOSS_GIMMICK = {5:"charge",10:"trigger",15:"plain",20:"charge",25:"survive",30:"trigger",35:"plain",40:"rush",45:"charge",50:"godhold",55:"survive",60:"trigger",65:"rush",70:"charge",75:"godhold",
+  80:"rush",85:"charge",90:"trigger",95:"charge",100:"godhold"}; // 16〜20章(2026-06-11増築)。survive/plain/19章rushは終盤数値だと防御崩壊or膠着（ハーネス確認）のため、勝てると実証できた構成のみ使用
 const GIM_MODE = {plain:"destroy",charge:"destroy",trigger:"trigger",godhold:"finisher",survive:"survive",rush:"destroy"};
 const GIM_LABEL = {plain:"強敵",charge:"ためチャージ即死",trigger:"城トリガー大群",godhold:"神の一撃・耐久",survive:"両側なだれ込み耐久",rush:"ボスラッシュ"};
 // まだ挙動を実装していないギミックはこの集合に入るまで通常ボス(destroy)として遊べる
@@ -8972,20 +9162,27 @@ function bossNameFor(ch, gim){
 /* ===== 敵ステータスの章カーブ（段階インフレ＝壁を作る）=====
    一定指数をやめ、区間は緩やか・壁の章で前章比およそ2倍ジャンプ。係数はここ1か所で管理。
    壁＝ch5/ch10/ch14（序盤→中盤→終盤→ラスト2章の関門）。敵を確定→後で味方をこのカーブに合わせて調整する。 */
-const CURVE_WALLS = {5:true, 10:true, 14:true};
+const CURVE_WALLS = {5:true, 10:true, 14:true, 17:true, 20:true}; // 17/20=新章の壁(2026-06-11)。壁は敵固定→味方強化(限界突破など)で越える
 const CURVE_HP_BASE = 1.15, CURVE_HP_WALL = 1.7;   // 章ごとの基本伸び（HP）／壁章での追加ジャンプ
 const CURVE_ATK_BASE = 1.11, CURVE_ATK_WALL = 1.45; // 章ごとの基本伸び（ATK）／壁章での追加ジャンプ（敵ステは絶対=固定。cycle1のnerf 1.25 は方針違反のため1.45へ差し戻し。壁は味方強化で解く）
 function chapterMul(ch){
   let hp=1, atk=1;
   for(let c=2;c<=ch;c++){
-    hp*=CURVE_HP_BASE; atk*=CURVE_ATK_BASE;
-    if(CURVE_WALLS[c]){ hp*=CURVE_HP_WALL; atk*=CURVE_ATK_WALL; } // 壁の章で一段急に
+    if(c<=15){ // 1〜15章: 確定済みカーブ（絶対値・触らない）
+      hp*=CURVE_HP_BASE; atk*=CURVE_ATK_BASE;
+      if(CURVE_WALLS[c]){ hp*=CURVE_HP_WALL; atk*=CURVE_ATK_WALL; } // 壁の章で一段急に
+    } else { // 16〜20章(2026-06-11新設): 入口は15章より少し下げ→緩やかに成長。難しさはステータスでなく新ギミック敵(シールド兵/術師)で出す。
+      // 味方の伸び(限界突破Lv45・城Lv30)が線形なため、ATKの伸びは特に抑える（城が即壊れる事故防止）。ハーネスでカンスト戦力の勝利可能性を確認した値。
+      if(c===16){ hp*=0.95; atk*=0.85; } // 限界突破直後に「強くなった」を体感させる入口
+      hp*=1.04; atk*=1.015; // ATKはほぼ横ばい（防御が崩れると勝ち筋が消えることをハーネスで確認）。難しさはHPグラインド＋新ギミック＋英雄級で出す
+      if(CURVE_WALLS[c]){ hp*=1.15; atk*=1.03; }
+    }
   }
   return {hp, atk};
 }
 function makeStages(){
   const arr=[];
-  for(let a=1;a<=75;a++){
+  for(let a=1;a<=100;a++){
     const boss=(a%5===0);
     const ch=Math.ceil(a/5);          // 1..15（=world/章）
     const within=((a-1)%5)+1;         // 1..5
@@ -9009,7 +9206,7 @@ function makeStages(){
         speed: 13, range: 70,
         scale: 1.0 + Math.min(0.6, 0.04*ch)
       } : null,
-      timeLimit: (gim==='godhold') ? Math.round(120 + (ch-10)*4) : (gim==='survive') ? Math.round(90 + (ch-5)*5) : 0, // ③godhold=勇者チャージ(ch10=120→ch15=140)/④survive=耐久(ch5=90→ch11=120)秒
+      timeLimit: (gim==='godhold') ? Math.min(140, Math.round(120 + (ch-10)*4)) : (gim==='survive') ? Math.min(120, Math.round(90 + (ch-5)*5)) : 0, // ③godhold=勇者チャージ(ch10=120→上限140)/④survive=耐久(ch5=90→上限120)秒。上限は16章〜の耐久が長すぎないように(2026-06-11・既存章は不変)
       waves: buildEnemyWaves(a, boss)
     });
   }
@@ -9034,7 +9231,12 @@ const ENEMY_TYPES = {
   // 壁3(ch14)：ヒーラー＝攻撃せず周囲の敵を回復。範囲＋単体火力で削り切らないと前衛が溶けない（DPSキャップ）
   healer:{name:"癒し手", sprite:"healer", hp:150, atk:0, speed:13, range:95, heal:16},
   // 壁2(ch10)：攻撃バッファー中ボス＝高耐久・攻撃しない・最前で殴られ役・周囲の敵の攻撃を強化
-  buffer:{name:"鼓舞の巨像", sprite:"buffer", hp:650, atk:0, speed:19, range:30, scale:1.5, buffAura:0.45, buffRange:130}
+  buffer:{name:"鼓舞の巨像", sprite:"buffer", hp:650, atk:0, speed:19, range:30, scale:1.5, buffAura:0.45, buffRange:130},
+  // ===== 新ギミック敵（2026-06-11・16章以降＋英雄級に出現） =====
+  // 🛡シールド兵：被弾N回まで無効。ただし「問題に正解」すると場の全シールドが砕ける＝解くことが戦術になる
+  shieldy:{name:"シールド兵", sprite:"shieldy", hp:150, atk:15, speed:20, range:44, shield:4},
+  // 🔮よびだし術師：攻撃せず後方で雑魚を呼び続ける。倒すまで増え続ける＝優先目標
+  summoner:{name:"よびだし術師", sprite:"summoner", hp:180, atk:0, speed:11, range:0, summon:"slime", summonEvery:7}
 };
 
 /* =========================================================================
@@ -9047,9 +9249,12 @@ const Game = (()=>{
   let gold = 0;
   let gems = 0;            // グラマージェム💎（ガチャ専用通貨。問題を解くと貯まる）
   let gemsGranted = false; // 初回のみ300💎を配る移行フラグ（既存セーブ救済）
+  let placementReset1 = false; // 2026-06-11移行: 推奨級ロック導入に伴い実力試験を全員リセット（再測定・💎重複配布は許容＝ユーザー決定）
   let homeChars = [];      // ホームに表示するキャラのキー配列（最大10・強化画面で選択）
   let homeCharIdx = 0;     // ホーム表示キャラの現在位置（矢印/スワイプで切替・非保存）
   let cleared = {};        // {area:true}
+  let heroCleared = {};    // 👑英雄級のクリア {area:true}（2026-06-11・2周目モード）
+  let heroView = false;    // あそぶ画面で英雄級タブ表示中か（非保存）
   let autoSummon = false;  // 苦手な子向け（操作を問題に集中）
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
   let owned = {};          // 入手済み {key:count}
@@ -9084,7 +9289,7 @@ const Game = (()=>{
   let soundOn = true;
   function load(){
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
-      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; autoSummon=!!s.autoSummon; /* slowMode廃止: 常にfalse */
+      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; heroCleared=(s.heroCleared&&typeof s.heroCleared==='object')?s.heroCleared:{}; autoSummon=!!s.autoSummon; /* slowMode廃止: 常にfalse */
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
@@ -9098,16 +9303,18 @@ const Game = (()=>{
       ownedSkins=(s.ownedSkins&&typeof s.ownedSkins==='object')?s.ownedSkins:{default:1}; if(!ownedSkins.default) ownedSkins.default=1;
       equippedSkin=s.equippedSkin||'default'; if(!ownedSkins[equippedSkin]) equippedSkin='default';
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
+      placementReset1=!!s.placementReset1;
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     if(!gemsGranted){ gems += 300; gemsGranted = true; } // 初回のみ1回ぶん(300💎)を配る（新規・既存セーブ救済）
+    if(!placementReset1){ placement={word:null,grammar:null,bestScore:0,doneAt:''}; placementReset1=true; } // 2026-06-11: 推奨級ロック導入＝全員再測定（過去の試験結果を消去。💎は再獲得＝重複配布を許容）
     ensureStarter();
     save(); // 移行ボーナス・初期キャラ補充を確定保存
   }
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -9123,7 +9330,8 @@ const Game = (()=>{
   let lastSkin = null;
   function curSkin(){ for(var i=0;i<CASTLE_SKINS.length;i++){ if(CASTLE_SKINS[i].key===equippedSkin) return CASTLE_SKINS[i]; } return CASTLE_SKINS[0]; }
   function skinBuff(){ return skinBuffFor(curSkin()); }
-  function castleSkinSVG(){ return skinSVGStr(curSkin()); }
+  // ⚠ skinSVGStrは<svg>の中身だけを返す。divのinnerHTMLに入れる際はラッパー必須（無いと描画されない＝城が消えるバグの原因 2026-06-11修正）
+  function castleSkinSVG(){ return '<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">'+skinSVGStr(curSkin())+'</svg>'; }
   function skinsByRarity(rar){ return CASTLE_SKINS.filter(function(s){return s.rar===rar;}); }
   function pullSkin(){
     if(gems<SKIN_GACHA_COST){ try{ fxBanner('💎が足りません','#c0392b'); }catch(e){} return; }
@@ -9159,8 +9367,9 @@ const Game = (()=>{
     deck[i]=inKey; save(); renderHome();
   }
   const CASTLE_MAX_LV = 16; // 自城HP強化の上限（青天井での要塞化＝終盤も負けない問題の対策）。Lv16=最大5000HP
-  function castleMaxHp(){ return 1000 + Math.min(castleLv, CASTLE_MAX_LV)*250 + (skinBuff().castleHp||0); } // 上限Lv16＝最大5000（＋城スキンSSRで+500）
-  function castleMaxed(){ return castleLv >= CASTLE_MAX_LV; }
+  function castleMaxLvCap(){ return cleared[75] ? 30 : CASTLE_MAX_LV; } // 🔓限界突破: エリア75撃破で城Lv30(8500HP)まで。16〜20章は敵ATKが13章比1.8倍のため城も同比率で（ハーネス校正・2026-06-11）
+  function castleMaxHp(){ return 1000 + Math.min(castleLv, castleMaxLvCap())*250 + (skinBuff().castleHp||0); }
+  function castleMaxed(){ return castleLv >= castleMaxLvCap(); }
   function castleUpCost(){ return 250*(castleLv+1); }
   function doGacha(){
     if(gachaAnimating) return;
@@ -9227,9 +9436,11 @@ const Game = (()=>{
   }
 
   /* ---- キャラ強化 ---- */
-  const UNIT_MAX_LV = 30; // 味方キャラ強化Lvの上限（青天井での過剰スノーボール防止）
+  const UNIT_MAX_LV = 30; // 味方キャラ強化Lvの基本上限（青天井での過剰スノーボール防止）
+  // 🔓限界突破(2026-06-11): 旧最終章ボス(エリア75)撃破でLv上限30→40。16〜20章の敵カーブを越えるための味方強化（鉄則どおり敵は触らない）
+  function unitMaxLvCap(){ return cleared[75] ? 45 : UNIT_MAX_LV; }
   function unitLevel(key){ return unitLv[key]||0; }
-  function unitMaxed(key){ return unitLevel(key) >= UNIT_MAX_LV; }
+  function unitMaxed(key){ return unitLevel(key) >= unitMaxLvCap(); }
   function unitUpCost(key){ return 100*(unitLevel(key)+1); }
   function unitStars(key){ return Math.min(4, Math.max(0, (owned[key]||0)-1)); }
   function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key), sb=skinBuff(); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+0.06*st)*(1+(sb.atkPct||0)/100)), hp:Math.round(r.hp*(1+0.10*lv)*(1+0.05*st)*(1+(sb.hpPct||0)/100))}; }
@@ -9279,7 +9490,7 @@ const Game = (()=>{
       const maxed=unitMaxed(key);
       const c=unitUpCost(key), nx=statsAtLv(key, lv+1);
       const pv=document.createElement('div'); pv.className='muted'; pv.style.cssText='font-size:12px;text-align:center';
-      pv.innerHTML= maxed ? '<span style="color:var(--gold);font-weight:800">★MAX（Lv'+UNIT_MAX_LV+'）</span>'
+      pv.innerHTML= maxed ? '<span style="color:var(--gold);font-weight:800">★MAX（Lv'+unitMaxLvCap()+'）</span>'
                           : '強化すると ⚔'+cur.atk+'→<b style="color:var(--good)">'+nx.atk+'</b>　♥'+cur.hp+'→<b style="color:var(--good)">'+nx.hp+'</b>';
       acts.appendChild(pv);
       const bu=document.createElement('button'); bu.className='btn'; bu.style.width='100%'; bu.textContent= maxed?'最大強化ずみ':'強化する（'+c+'G）'; bu.disabled= maxed || gold<c;
@@ -9337,7 +9548,12 @@ const Game = (()=>{
 
   /* ---- 城強化(拡張) ---- */
   const REGEN_MAX_LV = 12; // エネルギー増加速度の強化上限（青天井での召喚スノーボール防止）
-  function regenVal(){ return 12 + Math.min(regenLv, REGEN_MAX_LV)*1 + (skinBuff().regen||0); } // 基礎8→12(cycle3)＋城スキンSSRで+1/s。上限Lv12＝最大24(+1)/秒
+  function regenVal(){ return 12 + Math.min(regenLv, REGEN_MAX_LV)*1 + (skinBuff().regen||0); } // 旧式(基礎12+Lv)。⑱PvP自走シミュ専用に温存（対戦は回答が無いため自然回復で駆動）
+  // ⚡フィーバー方式（2026-06-11 課題1対応）: コンボによるエネルギー加速(×1〜4)は「正解から8秒間」だけ有効。
+  // 旧仕様はコンボが残り続ける＝10コンボ貯めて放置すれば加速し続ける抜け道があった。
+  // 解き続ける生徒は従来と同じ強さ（壁勝率はハーネスでベースライン一致を確認）・放置だけが等速に落ちる。敵ステは不変（鉄則）。
+  const EN_FEVER_S = 8;        // 正解後にコンボ加速が有効な秒数
+  const EN_ANSWER_INSTANT = 8; // 正解の即時エネルギー（旧+2。手応え強化）
   function regenMaxed(){ return regenLv >= REGEN_MAX_LV; }
   function regenCost(){ return 300*(regenLv+1); }
   function enMaxVal(){ return 200 + enMaxLv*30; }
@@ -9799,7 +10015,7 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:80, energyMax:enMaxVal(), baseRegen: stage.learn ? 0 : regenVal()*(recoBonusActive()?1.3:1), recoBonus:recoBonusActive(), softcap:12, maxMult:4, // 初期エネ30→80(cycle3 味方強化: 開幕に守備を1〜2体置けて壁1の速攻死を緩和。終盤は誤差)
+      energy:80, energyMax:enMaxVal(), baseRegen: stage.learn ? 0 : regenVal()*(recoBonusActive()?1.3:1), recoBonus:recoBonusActive(), softcap:12, maxMult:4, feverT:0, // 初期エネ30→80(cycle3)。feverT=コンボ加速の残り秒(正解で8sリチャージ・2026-06-11)
       combo:0, bestCombo:0, floor:1, // 🗼塔の階（修練/学習）
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
@@ -9979,7 +10195,7 @@ const Game = (()=>{
     wireVoiceToggle('tgVoiceQ','voiceWarnQ');
     // ステージ（クリアで次が解放）
     const unlocked=maxUnlocked();
-    if(!playTab){ var __cur=Math.min(75,unlocked); playTab = Math.ceil(__cur/5); }
+    if(!playTab){ var __cur=Math.min(STAGES.length,unlocked); playTab = Math.ceil(__cur/5); }
     var __sb=$('quizSummaryBtn');
     if(__sb){ var __sel=QuizEngine.getSel(), __gm={word:'単語',idiom:'熟語',grammar:'文法'};
       var __g=__gm[__sel.genre]||'';
@@ -10004,7 +10220,7 @@ const Game = (()=>{
       var __sg=$('stageCard');
       if(__sg && !__sg.__swipeWired){ __sg.__swipeWired=true; var __sx=0;
         __sg.addEventListener('touchstart',function(e){ __sx=e.changedTouches[0].clientX; },{passive:true});
-        __sg.addEventListener('touchend',function(e){ var dx=e.changedTouches[0].clientX-__sx; if(Math.abs(dx)<50) return; var uc=Math.ceil(Math.min(75,maxUnlocked())/5); if(typeof playTab==='number'){ if(dx<0 && playTab<uc){playTab++;renderHome();} else if(dx>0 && playTab>1){playTab--;renderHome();} } },{passive:true});
+        __sg.addEventListener('touchend',function(e){ var dx=e.changedTouches[0].clientX-__sx; if(Math.abs(dx)<50) return; var uc=Math.ceil(Math.min(STAGES.length,maxUnlocked())/5); if(typeof playTab==='number'){ if(dx<0 && playTab<uc){playTab++;renderHome();} else if(dx>0 && playTab>1){playTab--;renderHome();} } },{passive:true});
       }
     }
     var __sc=$('stageCard'), __spc=$('specialCard');
@@ -10013,14 +10229,27 @@ const Game = (()=>{
       if(__sc)__sc.style.display='block'; if(__spc)__spc.style.display='none';
       var __title=$('chapTitle'); if(__title){ var __th=CHAPTER_THEMES[playTab-1]||''; var __ba=playTab*5; __title.innerHTML='🗺️ '+playTab+'章 '+__th+' <span class="muted">（エリア'+__ba+'＝ボス：'+(GIM_LABEL[BOSS_GIMMICK[__ba]]||'強敵')+'）</span>'; }
       const grid=$('stageGrid'); grid.innerHTML='';
+      // 👑英雄級（2周目・2026-06-11）: 章ボス撃破でその章の英雄級が解禁。敵HP×2.2/ATK×1.6＋新ギミック敵が乱入・報酬2.5倍
+      if(heroView && !cleared[playTab*5]) heroView=false; // ボス未撃破の章へ移動したら通常へ戻す
+      if(cleared[playTab*5]){
+        var __hv=document.createElement('div'); __hv.style.cssText='display:flex;gap:8px;margin-bottom:8px';
+        var __bn=document.createElement('button'); __bn.className='btn'+(heroView?' ghost':''); __bn.style.cssText='flex:1;padding:8px 0'; __bn.textContent='通常'; __bn.onclick=function(){ heroView=false; renderHome(); };
+        var __bh=document.createElement('button'); __bh.className='btn'+(heroView?'':' ghost'); __bh.style.cssText='flex:1;padding:8px 0'; __bh.textContent='👑 英雄級'; __bh.onclick=function(){ heroView=true; renderHome(); };
+        __hv.appendChild(__bn); __hv.appendChild(__bh); grid.appendChild(__hv);
+        if(heroView){
+          var __hi=document.createElement('div'); __hi.className='muted'; __hi.style.cssText='font-size:12px;line-height:1.5;margin-bottom:8px;text-align:center';
+          __hi.innerHTML='👑 同じステージの<b>強化版</b>。🛡シールド兵（正解でシールドブレイク！）と🔮術師が乱入。<b>報酬2.5倍</b>';
+          grid.appendChild(__hi);
+        }
+      }
       STAGES.filter(function(s){return s.world===playTab;}).forEach(s=>{
-        const lock = s.area>unlocked;
+        const lock = heroView ? false : s.area>unlocked; // 英雄級は章ボス撃破済みが前提＝章内全開放
         const d=document.createElement('button');
         d.className='stage'+(s.boss?' boss':'')+(lock?' lock':'');
-        d.innerHTML=`<span class="no">エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
-          +(cleared[s.area]?`<span class="flag">🚩</span>`:'')
+        d.innerHTML=`<span class="no">${heroView?'👑':''}エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
+          +((heroView?heroCleared[s.area]:cleared[s.area])?`<span class="flag">${heroView?'👑':'🚩'}</span>`:'')
           +(lock?`<span class="lockmark">🔒</span>`:'');
-        if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(s); }
+        if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(heroView?heroicStage(s):s); }
         grid.appendChild(d);
       });
       // 最終章(ゲーム内に存在する最後の章)に到達したら、続きは準備中だと案内（要望#12）。
@@ -10035,6 +10264,16 @@ const Game = (()=>{
   }
 
   /* ---- バトル開始 ---- */
+  // 👑英雄級ステージ生成（元ステージのコピーに強化倍率。元データは不変）
+  function heroicStage(s){
+    var h=Object.assign({}, s);
+    h.hero=true;
+    h.enemyHpMul=s.enemyHpMul*2.2; h.enemyAtkMul=s.enemyAtkMul*1.6;
+    h.castleEHp=(s.castleEHp>=1e9)?s.castleEHp:Math.round(s.castleEHp*1.5);
+    if(s.bossStats) h.bossStats=Object.assign({}, s.bossStats, {hp:Math.round(s.bossStats.hp*2.2)});
+    h.name='👑'+s.name;
+    return h;
+  }
   const FIELD_W = 940; // 論理幅(px相当)。castle間。
   function fieldW(){ return $('field').clientWidth; }
   function enterBattle(stage){
@@ -10042,7 +10281,8 @@ const Game = (()=>{
     B = freshBattle(stage);
     // ④survive：敵城は無い(実質無敵)＝攻撃で削れて勝ってしまわないよう巨大HPに。勝ちはtimeLimit耐久のみ(要望#1)。
     if(stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ B.castleE=B.castleEMax=1e9; }
-    B.wasCleared = !!cleared[stage.area];
+    B.hero = !!stage.hero; B.heroNext = 14; // 👑英雄級: 新ギミック敵の乱入タイマー
+    B.wasCleared = stage.hero ? !!heroCleared[stage.area] : !!cleared[stage.area];
     $('castleAsvg').innerHTML = castleSkinSVG(); // 🏯装備中の城スキンで自城を描画
     $('castleEsvg').innerHTML = SVG.get('castleE');
     $('crackA').innerHTML = CRACK_SVG; $('crackE').innerHTML = CRACK_SVG;
@@ -10206,8 +10446,10 @@ const Game = (()=>{
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul);
     if(t.buffAura) el.classList.add('buffaura'); else if(t.heal) el.classList.add('healaura');
+    if(t.shield){ el.insertAdjacentHTML('beforeend','<div class="shieldbadge">🛡'+t.shield+'</div>'); } // 🛡シールド兵: 残回数バッジ
     B.enemies.push({ type, el, x, dir, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null,
-      heal: t.heal? Math.round(t.heal*s.enemyHpMul) : 0, buffer: !!t.buffAura, buffAura: t.buffAura||0, buffRange: t.buffRange||0 });
+      heal: t.heal? Math.round(t.heal*s.enemyHpMul) : 0, buffer: !!t.buffAura, buffAura: t.buffAura||0, buffRange: t.buffRange||0,
+      shield: t.shield||0, summon: t.summon||null, sumCd: (t.summonEvery||0)*0.6, summonEvery: t.summonEvery||0 });
   }
   function spawnBoss(rush){
     const s=B.stage; const bs=s.bossStats||{hp:1400,atk:22,speed:13,range:70,scale:1.0};
@@ -10262,7 +10504,8 @@ const Game = (()=>{
   function chapterEnemyPool(ch){
     // どの章のプールにも遠距離(slinger/darkMage)を必ず1種以上混ぜる（近接だけだと壁を作って簡単になる対策）
     var pool;
-    if(ch>=12) pool=['stoneGiant','golem','mummy','ghost','darkMage','slinger'];
+    if(ch>=16) pool=['stoneGiant','golem','mummy','darkMage','slinger','shieldy','shieldy','summoner']; // 16章〜：新ギミック敵を混ぜる
+    else if(ch>=12) pool=['stoneGiant','golem','mummy','ghost','darkMage','slinger'];
     else if(ch>=9) pool=['darkMage','mummy','golem','bat','slinger'];
     else if(ch>=6) pool=['ghost','mummy','torii','bat','darkMage','slinger'];
     else if(ch>=3) pool=['totem','torii','slinger','hare','darkMage'];
@@ -10363,8 +10606,9 @@ const Game = (()=>{
   // ④survive(要望#1で通常配置化)：敵城なし(無敵)・自城は左。右から敵が定期的に湧き、隕石をよけつつ
   //   timeLimit秒 耐え切れば勝ち。自城0で負け。両側なだれ込みは廃止＝通常どおり右から攻めてくる。
   function spawnSurviveWave(){
-    const ch=B.stage.chapter||1; const pool=chapterEnemyPool(ch);
-    const num=2+Math.floor(ch/4); // 章でウェーブの数が増える(旧:1サイドあたり×2サイド ≒ 同程度)
+    const ch=B.stage.chapter||1;
+    const pool=chapterEnemyPool(ch).filter(function(t){ return t!=='shieldy'&&t!=='summoner'; }); // surviveの物量湧きにシールド無効と増援は不公平（正解ブレイクが追いつかない）＝除外(2026-06-11)
+    const num=2+Math.floor(Math.min(ch,15)/4); // 章でウェーブの数が増える（16章〜はch15相当でクランプ・2026-06-11）
     for(let i=0;i<num;i++){ if(B.enemies.length>=ENEMY_CAP) break;
       const t=(i===0)?rangedTypeFor(ch):pool[Math.floor(Math.random()*pool.length)]; // 必ず遠距離を1体混ぜる
       spawnEnemy(t); // 右から(通常配置)
@@ -10529,8 +10773,14 @@ const Game = (()=>{
       Sound.play('correct'); fxLetters(btn, curQ.choices[i]);
       const gain=QuizEngine.comboGain(curQ);
       B.combo += gain; B.bestCombo=Math.max(B.bestCombo,B.combo);
-      B.energy=Math.min(B.energyMax, B.energy+2); // ささやかな即時手応え
-      if(B.stage.learn) B.energy=Math.min(B.energyMax, B.energy + LEARN_ENERGY_PER_CORRECT); // 🎓学習の塔：自然回復なし＝正解で大きく加算
+      if(B.stage.learn){ B.energy=Math.min(B.energyMax, B.energy + LEARN_ENERGY_PER_CORRECT); } // 🎓学習の塔：従来どおり正解で大きく加算
+      else if(!B.pvp){ // ⚡フィーバー: 正解でコンボ加速を8秒リチャージ＋即時エネルギー
+        B.feverT=EN_FEVER_S;
+        B.energy=Math.min(B.energyMax, B.energy+EN_ANSWER_INSTANT);
+        // 🛡シールド兵: 正解すると場の全シールドが砕ける（新ギミック・解くことが戦術になる）
+        var __sbn=0; B.enemies.forEach(function(e){ if(e.shield>0){ e.shield=0; var b=e.el.querySelector('.shieldbadge'); if(b)b.remove(); flash(e.el); __sbn++; } });
+        if(__sbn){ floatText($('field').clientWidth/2, 100, '🛡✨ シールドブレイク!', '#5aa0d6'); try{ Sound.play('hit'); }catch(e){} }
+      }
       floatText($('field').clientWidth/2, 30, `+COMBO ${gain}`, 'var(--gold)');
       if(curQ.review){
         B.reviewWins++; B.energy=Math.min(B.energyMax,B.energy+6); // 取り返せた手応え
@@ -10544,6 +10794,7 @@ const Game = (()=>{
       buttons[curQ.answerIndex].classList.add('ok');
       Sound.play('wrong');
       B.missStreak++;
+      if(!B.stage.learn && !B.pvp) B.feverT=EN_FEVER_S; // ⚡フィーバーは「答え続けること」で維持（不正解でもOK。コンボ半減で加速倍率は自然に下がる＝弱い子の保護）
       if(B.stage.learn){
         // 🎓学習の塔：コンボは途切れない（減らさない）。代わりにエネルギーが増えない＝間違えると召喚が止まる
         $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
@@ -10574,7 +10825,10 @@ const Game = (()=>{
     // コンボ20相当で固定(B.pvpFixedCombo)＝両者同条件で戦力差だけを比較するため(要望#8修正・2026-06-09)。
     const __comboForEnergy = B.pvpFixedCombo ? 20 : B.combo;
     const mult=Math.min(B.maxMult, 1 + __comboForEnergy/B.softcap);
-    B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*mult*dt);
+    // ⚡フィーバー方式: コンボ加速は正解後8秒だけ有効（PvP自走シミュは回答が無いため常時有効=従来挙動）。
+    if(B.feverT>0){ B.feverT=Math.max(0, B.feverT-dt); if(B.feverT===0 && !B.stage.learn && !B.pvp){ floatText($('field').clientWidth/2, 100, '🐢 とまった… 解いて加速!', '#7a7060'); } }
+    var __fmult = (B.pvpFixedCombo || B.feverT>0) ? mult : 1;
+    B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*__fmult*dt);
     // ❄フリーズ砲：効果＆クールダウンの消化（効果が切れたら凍結表示を解除）
     if(B.freezeCd>0){ B.freezeCd-=dt; if(B.freezeCd<0) B.freezeCd=0; }
     if(B.frozenT>0){ B.frozenT-=dt; if(B.frozenT<=0){ B.frozenT=0; var __ff=$('field'); if(__ff) __ff.classList.remove('frozen'); } }
@@ -10591,6 +10845,11 @@ const Game = (()=>{
     else if(B.stage.gimmick==='rush' && IMPLEMENTED_GIMMICKS.rush){ /* ⑤ボス連戦＋取り巻きはrushTickが担当 */ }
     else { while(B.spawnIdx<B.stage.waves.length && B.stage.waves[B.spawnIdx].at<=B.t*1000){ const __wt=B.stage.waves[B.spawnIdx].type; if(__wt==='BOSS'){ spawnEnemy(__wt); } else { for(let __m=0;__m<ENEMY_MULT;__m++){ if(B.enemies.length<ENEMY_CAP) spawnEnemy(__wt); } } B.spawnIdx++; }
       if(B.spawnIdx>=B.stage.waves.length) continuousSpawn(); } // ウェーブ撃ち尽くし後は無限沸き（画面上限ENEMY_CAPまで）
+    // 👑英雄級: 新ギミック敵（シールド兵/術師）が定期乱入
+    if(B.hero && !B.stage.learn && !B.stage.endless && B.t>=(B.heroNext||14)){
+      if(B.enemies.length<ENEMY_CAP){ spawnEnemy(B.heroAlt?'summoner':'shieldy'); B.heroAlt=!B.heroAlt; }
+      B.heroNext=B.t+16;
+    }
     stepUnits(dt);
     gimmickTick(dt);
     syncHUD(); renderQueue();
@@ -10633,6 +10892,8 @@ const Game = (()=>{
       if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
       // 壁3：敵ヒーラー＝攻撃せず前進しつつ周囲の敵を回復（後方支援）
       if(e.heal){ if(e.cd<=0){ var __eh=false; B.enemies.forEach(function(o){ if(o!==e && Math.abs(o.x-e.x)<=e.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+e.heal); var __hi=o.el.querySelector('.hpb i'); if(__hi)__hi.style.width=(o.hp/o.hpMax*100)+'%'; __eh=true; } }); if(__eh){ e.cd=1.0; flash(e.el); floatText(e.x,24,'+♥','#e07ba0'); } } e.x -= e.speed*(e.slowT>0?0.45:1)*dt; place(e.el,e.x); return; }
+      // 🔮よびだし術師＝攻撃せずゆっくり前進し、一定間隔で雑魚を呼ぶ（倒すまで増え続ける優先目標）
+      if(e.summon){ e.sumCd-=dt; if(e.sumCd<=0){ if(B.enemies.length<ENEMY_CAP){ spawnEnemy(e.summon); var __ne=B.enemies[B.enemies.length-1]; if(__ne){ __ne.x=Math.max(120, e.x-20); place(__ne.el,__ne.x); } floatText(e.x,24,'🔮召喚!','#a463f2'); flash(e.el); } e.sumCd=e.summonEvery; } e.x -= e.speed*(e.slowT>0?0.45:1)*dt; place(e.el,e.x); return; }
       const target=nearestAlly(e);
       const myCastleX=70;
       const __ea = e.atk*enemyDmgBuff(e); // 壁2：バッファー中ボスが近くにいると攻撃UP
@@ -10657,7 +10918,10 @@ const Game = (()=>{
   function enemyDmgBuff(e){ var m=1; for(var i=0;i<B.enemies.length;i++){ var o=B.enemies[i]; if(o.buffAura && o!==e && Math.abs(o.x-e.x)<=o.buffRange) m+=o.buffAura; } return m; }
   function nearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(e=>{ if(e.x>=a.x-4){ const d=e.x-a.x; if(d<bd){bd=d;best=e;} }}); return best; }
   function nearestAlly(e){ let best=null,bd=1e9; B.allies.forEach(a=>{ if(a.x<=e.x+4){ const d=e.x-a.x; if(d<bd){bd=d;best=a;} }}); return best; }
-  function damage(u,amt){ if(u.invincible){ flash(u.el); return; } amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
+  function damage(u,amt){ if(u.invincible){ flash(u.el); return; }
+    // 🛡シールド兵: シールドが残っている間はダメージ無効（1被弾で1枚消費）。正解で全砕き＝answer()参照
+    if(u.shield>0){ u.shield--; var __sbg=u.el.querySelector('.shieldbadge'); if(__sbg){ if(u.shield>0){ __sbg.textContent='🛡'+u.shield; } else { __sbg.remove(); } } flash(u.el); return; }
+    amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
   function flash(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),90); }
   function place(el,x){ el.style.left=(x-27)+'px'; }
   function cleanup(){
@@ -10704,7 +10968,11 @@ const Game = (()=>{
       $('hpEtxt').textContent=Math.max(0,Math.round(B.castleE/B.castleEMax*100))+'%';
     }
     $('enBar').style.width=(B.energy/B.energyMax*100)+'%';
-    $('enTxt').textContent=Math.round(B.energy);
+    // ⚡フィーバー可視化: 加速中はバーを金色に＋実効倍率（狭幅画面のためコンパクト表記。切れた瞬間のナッジはloop側のfloatText）
+    var __fOn = B.pvpFixedCombo || B.feverT>0;
+    var __fm = Math.min(B.maxMult, 1 + (B.pvpFixedCombo?20:B.combo)/B.softcap);
+    $('enBar').style.background = __fOn ? 'linear-gradient(90deg,#e0a93b,#ffd24a)' : '';
+    $('enTxt').textContent = Math.round(B.energy) + (B.stage.learn ? '' : (__fOn ? ' ⚡×'+__fm.toFixed(1) : ' 🐢'));
     $('comboTxt').textContent=B.combo;
     { var __g=$('guardTxt'); if(__g) __g.textContent = (comboGuardLv>0) ? (' '+'🛡️'.repeat(B.comboGuard)) : ''; }
     const big=$('combo-big'); big.style.color = B.combo>=15?'#e0683b':B.combo>=6?'#e0a93b':'#bbb';
@@ -10763,7 +11031,8 @@ const Game = (()=>{
   const LEARN_ENERGY_PER_CORRECT = 22; // 自然回復なし＝正解で加算
   const LEARN_FIELDS = [{key:'word',label:'単語'},{key:'idiom',label:'熟語'},{key:'grammar',label:'文法'}];
   function learnUnlocked(){ return !!cleared[LEARN_UNLOCK_AREA]; }
-  function learnLevelForFloor(f){ var idx=Math.min(QuizEngine.LV_ORDER.length-1, Math.floor((Math.max(1,f)-1)/3)); return QuizEngine.LV_ORDER[idx]; } // 3階ごとに1級上げる
+  const LEARN_FLOOR_LV=['e5','e5','e4','e4','e4','e3','e3','e3','ep2','ep2','ep2','e2','e2','e2','ep1']; // e5新設(2026-06-11): 15階のまま6級を踏破（1-2階=5級…15階=準1級）
+  function learnLevelForFloor(f){ var i=Math.min(LEARN_FLOOR_LV.length-1, Math.max(1,f)-1); return LEARN_FLOOR_LV[i]; }
   function learnDraw(field, level, cc){ var order=QuizEngine.LV_ORDER, i=order.indexOf(level);
     for(var k=i;k>=0;k--){ var q=QuizEngine.drawFor(field, order[k], cc); if(q) return q; }      // 指定級が無ければ級を下げて確保
     for(var j=i+1;j<order.length;j++){ var q2=QuizEngine.drawFor(field, order[j], cc); if(q2) return q2; }
@@ -10929,12 +11198,14 @@ const Game = (()=>{
     if(win) confetti();
     $('resTitle').textContent = win? '🏯 まもり切った！' : '🛡️ 作戦変更だ';
     $('resTitle').style.color = win? 'var(--good)':'var(--enemy)';
-    const reward = win ? stageReward(B.stage) : 10; // ゴールド上限は撤廃：リプレイでも常に満額
+    const reward = win ? Math.round(stageReward(B.stage)*(B.stage.hero?2.5:1)) : 10; // ゴールド上限は撤廃：リプレイでも常に満額。👑英雄級は2.5倍
     gold+=reward;
-    const gemReward = win ? (B.stage.boss ? 500 : 100) : 0; // クリア報酬💎：通常100・ボス500（要望2026-06-08）
+    const gemReward = win ? (B.stage.hero ? (B.stage.boss?750:250) : (B.stage.boss ? 500 : 100)) : 0; // クリア報酬💎：通常100・ボス500／👑英雄級250・ボス750
     if(gemReward) gems += gemReward;
-    if(win){ cleared[B.stage.area]=true; }
+    var __firstLimitBreak = win && !B.stage.hero && B.stage.area===75 && !cleared[75]; // 🔓限界突破の初回解放検知
+    if(win){ if(B.stage.hero){ heroCleared[B.stage.area]=true; } else { cleared[B.stage.area]=true; } }
     save();
+    if(__firstLimitBreak){ try{ fxBanner('🔓 限界突破！キャラLv上限45・城Lv上限30に解放','#e0a93b'); }catch(e){} }
     $('resMedals').innerHTML =
       `<span class="medal">最大コンボ ${B.bestCombo}</span>`+
       `<span class="medal">正答率 ${acc}%</span>`+
@@ -10991,6 +11262,7 @@ const Game = (()=>{
     html+='<b>グラマー・ガード</b>は、英単語・文法のクイズに答えて味方を呼び出し、敵のお城をせめる<b>タワーディフェンス型の英語ゲーム</b>です。<br><br>';
     html+='まずは<b>実力測定</b>で、あなたの英検レベル（<b>単語</b>と<b>文法</b>）を調べましょう。やさしい問題から1段ずつ上がっていき、どこまで登れるかでランクが決まります。<br><br>';
     html+='測定すると…<br>・ぴったりの難易度で遊べる（推奨級を表示）<br>・推奨級で挑戦すると⚡エネルギー加速＋30%＆💎2倍<br>・ランクが上がるほど大きな💎報酬';
+    html+='<div style="margin-top:12px;border:2px solid #e0a93b;background:#fff7e8;border-radius:10px;padding:10px;font-size:13px;line-height:1.6"><b>⚠ だいじな注意</b><br>合格した級は記録され、<b>あとからランクを下げることはできません</b>。ランクが上がると「推奨級」も上がり、ボーナス（⚡加速＋💎2倍）は<b>その高い級でしか</b>もらえなくなります。<br><b>調べながら答えると、あとで自分が苦しくなるよ。今の実力で答えよう！</b></div>';
     html+='</div>';
     html+='<button class="btn" id="assessBegin" style="max-width:300px">📊 実力測定をする</button>';
     html+='<button class="btn ghost" id="assessLater" style="max-width:300px;margin-top:8px">あとで（ホームへ）</button>';
@@ -11056,8 +11328,10 @@ const Game = (()=>{
   }
   function genreDone(rankKey){
     AS.ranks[AS.genre]=rankKey;
-    if(AS.genre==='word'){ placement.word=rankKey; showWordResult(rankKey); }
-    else { placement.grammar=rankKey; finalizeAssess(); }
+    // 推奨級ロック（2026-06-11）: 一度合格した級より下には二度と下がらない（調べながら受けて後悔しても戻せない仕様＝受験前に警告済み）
+    function lockHigher(prev,nk){ if(!prev) return nk; return LV5.indexOf(nk)>LV5.indexOf(prev)?nk:prev; }
+    if(AS.genre==='word'){ placement.word=lockHigher(placement.word,rankKey); showWordResult(placement.word); }
+    else { placement.grammar=lockHigher(placement.grammar,rankKey); finalizeAssess(); }
   }
   function showWordResult(rankKey){
     assessView('result');
@@ -11217,10 +11491,10 @@ const Game = (()=>{
     // ===== ペルソナ・バランス計測ハーネス（夜間自走・debug専用） =====
     // 既定の英検知識ペルソナ（window.__ggPersonas があればそちらを優先）。knowProb=その級を「わかる」確率（適当タップ前）
     _personas: {
-      target:   {word:{e4:.80,e3:.60,ep2:.20,e2:.05,ep1:.02}, idiom:{e4:.75,e3:.55,ep2:.18,e2:.04,ep1:.01}, grammar:{e4:.70,e3:.50,ep2:.18,e2:.05,ep1:.02}},
-      stronger: {word:{e4:.95,e3:.82,ep2:.50,e2:.25,ep1:.10}, idiom:{e4:.92,e3:.78,ep2:.45,e2:.22,ep1:.08}, grammar:{e4:.90,e3:.75,ep2:.45,e2:.22,ep1:.10}},
-      weaker:   {word:{e4:.50,e3:.30,ep2:.08,e2:.02,ep1:.00}, idiom:{e4:.45,e3:.25,ep2:.06,e2:.01,ep1:.00}, grammar:{e4:.45,e3:.28,ep2:.08,e2:.02,ep1:.00}},
-      bilingual:{word:{e4:1,e3:1,ep2:1,e2:1,ep1:.55}, idiom:{e4:1,e3:1,ep2:.95,e2:.9,ep1:.5}, grammar:{e4:.95,e3:.9,ep2:.8,e2:.7,ep1:.4}}
+      target:   {word:{e5:.92,e4:.80,e3:.60,ep2:.20,e2:.05,ep1:.02}, idiom:{e5:.88,e4:.75,e3:.55,ep2:.18,e2:.04,ep1:.01}, grammar:{e5:.82,e4:.70,e3:.50,ep2:.18,e2:.05,ep1:.02}},
+      stronger: {word:{e5:.98,e4:.95,e3:.82,ep2:.50,e2:.25,ep1:.10}, idiom:{e5:.96,e4:.92,e3:.78,ep2:.45,e2:.22,ep1:.08}, grammar:{e5:.95,e4:.90,e3:.75,ep2:.45,e2:.22,ep1:.10}},
+      weaker:   {word:{e5:.68,e4:.50,e3:.30,ep2:.08,e2:.02,ep1:.00}, idiom:{e5:.62,e4:.45,e3:.25,ep2:.06,e2:.01,ep1:.00}, grammar:{e5:.60,e4:.45,e3:.28,ep2:.08,e2:.02,ep1:.00}},
+      bilingual:{word:{e5:1,e4:1,e3:1,ep2:1,e2:1,ep1:.55}, idiom:{e5:1,e4:1,e3:1,ep2:.95,e2:.9,ep1:.5}, grammar:{e5:1,e4:.95,e3:.9,ep2:.8,e2:.7,ep1:.4}}
     },
     persona(id){ return (window.__ggPersonas&&window.__ggPersonas[id])||this._personas[id]; },
     // 進行度に応じた戦力を注入（save()しない＝transient）。p={unitLv,castleLv,regenLv,enMaxLv,freezeDurLv,freezeCostLv,comboGuardLv,partKey,learnFloors}
@@ -11371,5 +11645,20 @@ window.addEventListener('DOMContentLoaded', Game.start);
 </div></div>
 <div id="__buildbadge" style="position:fixed;left:6px;bottom:6px;right:6px;z-index:99998;background:#3aa6a0;color:#fff;font:bold 11px/1.3 monospace;padding:4px 8px;border-radius:8px;opacity:.95;box-shadow:0 2px 6px rgba(0,0,0,.3);word-break:break-all;display:none">build 0605f</div>
 <script>(function(){if(!window.__GGDEBUG)return;var bb0=document.getElementById("__buildbadge");if(bb0)bb0.style.display="block";var errs=[];window.addEventListener("error",function(e){errs.push((e.message||"err").toString().slice(0,70))});window.addEventListener("unhandledrejection",function(e){errs.push("rej:"+((e.reason&&e.reason.message)||e.reason||"").toString().slice(0,60))});setInterval(function(){var b=document.getElementById("__buildbadge");if(!b)return;var on=[].slice.call(document.querySelectorAll(".screen.on")).map(function(s){return s.id}).join(",")||"none";var cA=((document.getElementById("castleAsvg")||{}).innerHTML||"").length>10?"城Y":"城N";var qt=((document.getElementById("qtext")||{}).textContent||"").trim()?"問Y":"問N";var ch=((document.getElementById("choices")||{}).children||[]).length;var db=(window.getComputedStyle&&document.getElementById("battle"))?getComputedStyle(document.getElementById("battle")).display:"?";var cv=(navigator.userAgent.match(/Chrome\/(\d+)/)||[])[1]||"?";b.textContent="0605f 画面:"+on+" dispB:"+db+" "+cA+" "+qt+" 選"+ch+" Cr"+cv+(errs.length?(" ERR:"+errs[errs.length-1]):" err無");},400);})();</script>
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='gg', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
 </body>
 </html>
