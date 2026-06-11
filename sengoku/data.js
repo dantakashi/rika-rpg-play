@@ -5,6 +5,7 @@
    §2 家臣（サポートカード簡易版）
    §2.5 武将ロスター
    §2.6 合戦絵巻（実況セリフ・采配・小競り合い）
+   §2.7 勢力図（領地マップ）
    §3 年表イベント（織田信長 1551-1582）
    §4 クイズDB（シード問題。Codex生成分は QUESTIONS_EXTRA に追記）
    ------------------------------------------------------------
@@ -128,6 +129,25 @@ const SENGOKU_DATA = (function(){
           ok:'火を頼りに斬り込んだ！ 霧の中の混戦を制したのは武勇だ！' },
       ] },
   ];
+
+  /* ===== §2.7 勢力図（信長シナリオ・支配国の変遷） =====
+     own: その年以降は織田領（青）。ally: 同盟＝徳川（緑）。c/r: 地図グリッド位置（西=左） */
+  const MAP = {
+    provinces: [
+      { n:'越前', c:3, r:1, own:1573 },
+      { n:'信濃', c:5, r:1, own:1582 },
+      { n:'京',   c:2, r:2, own:1568 },
+      { n:'近江', c:3, r:2, own:1573 },
+      { n:'美濃', c:4, r:2, own:1567 },
+      { n:'甲斐', c:6, r:2, own:1582 },
+      { n:'摂津', c:1, r:3, own:1580 },
+      { n:'伊勢', c:3, r:3, own:1569 },
+      { n:'尾張', c:4, r:3, own:1551 },
+      { n:'三河', c:5, r:3, ally:1562 },
+      { n:'駿河', c:6, r:3, own:1582 },
+    ],
+    battleLoc: { 1556:'尾張', 1560:'尾張', 1567:'美濃', 1570:'近江', 1575:'三河', 1582:'京' },
+  };
 
   /* ===== §3 年表イベント =====
      type: story（読み物）/ choice（選択肢）/ battle（合戦）/ final（本能寺）
@@ -475,5 +495,5 @@ const SENGOKU_DATA = (function(){
       desc:'阿国のかぶき踊りはのちの歌舞伎のもとになった。能・狂言は室町時代に観阿弥・世阿弥らが大成したもので、時代の区別がよく問われる。' },
   ];
 
-  return { GENRES, RETAINERS, WARLORDS, BATTLE_LINES, SKIRMISH_FOES, SKIRMISH_SITUS, TIMELINE, QUESTIONS };
+  return { GENRES, RETAINERS, WARLORDS, BATTLE_LINES, SKIRMISH_FOES, SKIRMISH_SITUS, MAP, TIMELINE, QUESTIONS };
 })();
