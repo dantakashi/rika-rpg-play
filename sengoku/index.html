@@ -414,11 +414,11 @@ const Game = (function(){
     { label:'絶好調', icon:'🔥', mul:1.2, cls:'#f3cf5d' },
   ];
   const STAT_KEYS = ['buyu','chiryaku','seiji','ninbo'];
-  // 2026-06-12 生徒FB「体力が減らなすぎ」: 18→24に増。側近が同席する鍛錬は1人につき-3軽減（最低15）
+  // 2026-06-12 生徒FB「体力が減らなすぎ」: 18→24に増。側近が同席する鍛錬は1人につき-2軽減（最低15）
   const TRAIN_COST = 24;
   function trainCost(genre){
     const mates = (S.placement[genre]||[]).length;
-    return Math.max(15, TRAIN_COST - mates*3);
+    return Math.max(15, TRAIN_COST - mates*2);
   }
   const RANKS = [ // [必要評価点, ランク名, ひとこと]
     [0,'足軽','まだまだこれから。次はもっと学んでみよう！'],
@@ -436,7 +436,7 @@ const Game = (function(){
     const s = {
       year:START_YEAR, buyu:20, chiryaku:24, seiji:14, ninbo:8,
       stamina:100, mood:2, koku:100, wins:0, battles:0,
-      injury:null, skillPt:0,
+      injury:null, skillPt:0, skills:{}, trainStreak:0,
       bonds:{}, bondMaxDone:{}, usedQ:[], placement:{}, correctTotal:0, answerTotal:0,
       pendingEventDone:{},
     };
@@ -469,9 +469,12 @@ const Game = (function(){
     const raw = loadRaw();
     if (raw && raw.run){
       S = raw.run;
-      // 旧セーブの欠損補完（ケガ・スキルPは2026-06-11追加）
+      // 旧セーブの欠損補完（ケガ/スキルP=06-11、スキル/鍛錬連続/側近6人=06-13追加）
       S.injury = S.injury || null;
       S.skillPt = S.skillPt || 0;
+      S.skills = S.skills || {};
+      S.trainStreak = S.trainStreak || 0;
+      D.RETAINERS.forEach(r=>{ if (S.bonds[r.id]==null) S.bonds[r.id]=20; });
       UI.show('game'); turnStart(true);
     }
   }
@@ -514,8 +517,9 @@ const Game = (function(){
   }
   function placeRetainers(){
     S.placement = {};
+    // 6人化に伴い出現率を下げる（1人あたりの効果もtrainGain側で減・2026-06-13）
     D.RETAINERS.forEach(r=>{
-      if (Math.random() < 0.55){
+      if (Math.random() < 0.5){
         const keys = STAT_KEYS;
         // 60%で得意コマンドに寄る
         const k = Math.random()<0.6 ? r.fav : keys[Math.floor(Math.random()*keys.length)];
@@ -528,6 +532,11 @@ const Game = (function(){
   function turnStart(restored){
     if (!restored) placeRetainers();
     else if (!S.placement || !Object.keys(S.placement).length) placeRetainers();
+    // 気分の小イベント（やる気を日常的に動かす・2026-06-13 生徒FB対応）
+    if (!restored && !timelineEvent() && Math.random()<0.12){
+      if (Math.random()<0.5 && S.mood<4){ S.mood++; toast('☀️ 気持ちのいい朝だ。やる気UP！'); }
+      else if (S.mood>0){ S.mood--; toast('🌧️ 長雨続きで、気分が少し沈む…'); }
+    }
     saveAll();
     UI.renderGame();
     const ev = timelineEvent();
@@ -558,6 +567,7 @@ const Game = (function(){
     if (S.injury && k!=='care'){ toast('🤕 ケガの体では無理はできぬ…。🌿薬師に診てもらおう'); return; }
     if (k==='care'){
       if (!S.injury){ toast('🌿 いまは元気そのものだ！'); return; }
+      S.trainStreak = 0;
       S.injury = null;
       const heal = 40 + Math.floor(Math.random()*11);
       S.stamina = Math.min(100, S.stamina+heal);
@@ -585,6 +595,7 @@ const Game = (function(){
     }
     if (k==='skirmish'){ startSkirmish(); return; }
     if (k==='rest'){
+      S.trainStreak = 0;
       const heal = 45 + Math.floor(Math.random()*11);
       S.stamina = Math.min(100, S.stamina+heal);
       // 軍学帳があれば復習出題（ノーリスク）
@@ -599,9 +610,11 @@ const Game = (function(){
       nextTurn(); return;
     }
     if (k==='trip'){
+      S.trainStreak = 0;
       S.stamina = Math.min(100, S.stamina+25);
       S.mood = Math.min(4, S.mood+1);
-      const k2 = 10+Math.floor(Math.random()*11);
+      let k2 = 10+Math.floor(Math.random()*11);
+      if (S.skills && S.skills.zeni) k2 = Math.round(k2*1.5);
       S.koku += k2;
       toast(`🏯 領内を視察した。やる気UP！ 石高+${fmtKoku(k2)}`);
       nextTurn(); return;
@@ -614,17 +627,18 @@ const Game = (function(){
   }
 
   function trainGain(q, opts){
-    // 基本上昇量 = 9 + diff*2 + 乱数 → やる気 → 家臣 → 友情
+    // 基本上昇量 = 9 + diff*2 + 乱数 → やる気 → 側近 → 友情（6人化に伴い1人あたり効果は減・2026-06-13）
     let g = 9 + q.diff*2 + Math.floor(Math.random()*4);
     g = g * MOODS[S.mood].mul;
     const mates = S.placement[cur.genre]||[];
-    g += mates.length*3;
+    g += mates.length*2;
     let friend = false;
     mates.forEach(id=>{
       const r = D.RETAINERS.find(x=>x.id===id);
       if (r.fav===cur.genre && S.bonds[id]>=80){ friend = true; }
     });
-    if (friend) g *= 1.8;
+    if (friend) g *= 1.6;
+    if (S.skills && S.skills.manabi) g *= 1.1;
     let crit = false;
     if (opts.correct && Math.random()<0.1){ crit = true; g *= 1.5; }
     if (opts.half) g *= 0.6;
@@ -633,6 +647,13 @@ const Game = (function(){
 
   function applyTraining(res, failed){
     const k = cur.genre;
+    // 鍛錬の続けすぎでやる気が下がる（3連続から確率上昇・2026-06-13 生徒FB「やる気が動かない」対応）
+    S.trainStreak = (S.trainStreak||0) + 1;
+    if (S.trainStreak>=3 && S.mood>0 && Math.random() < 0.35 + 0.1*(S.trainStreak-3)){
+      S.mood--;
+      S.trainStreak = 2; // 続ければまた下がりうる
+      S.moodMsg = '🔥 働き詰めで、やる気が下がった…（視察や休息で気分転換！）';
+    }
     if (failed){
       S.stamina = Math.max(0, S.stamina - trainCost(k) - 10);
       S.mood = Math.max(0, S.mood-1);
@@ -640,12 +661,19 @@ const Game = (function(){
     } else {
       S.stamina = Math.max(0, S.stamina - trainCost(k));
       S[k] += res.gain;
-      // 絆上昇
+      // 絆上昇（6人化に伴い1回あたりを減）
       res.mates.forEach(id=>{
-        S.bonds[id] = Math.min(100, S.bonds[id] + 7 + (cur.lastCorrect?3:0));
+        S.bonds[id] = Math.min(100, S.bonds[id] + 5 + (cur.lastCorrect?2:0));
       });
     }
     saveAll();
+  }
+  // やる気の変化メッセージを結果文に添える
+  function takeMoodMsg(){
+    if (!S.moodMsg) return '';
+    const m = '\n' + S.moodMsg;
+    S.moodMsg = null;
+    return m;
   }
   // 絆MAXイベント（適用後にチェック）
   function checkBondMax(){
@@ -692,6 +720,12 @@ const Game = (function(){
       let t = `${D.GENRES[cur.genre].label}+${res.gain}！ ✨スキルP+2`;
       if (res.crit) t = `🌟大成功！ ${t}`;
       if (res.friend) t = `🌈友情特訓！ ${t}`;
+      // 大成功・友情特訓は気分も上がる（2026-06-13 やる気活性化）
+      if ((res.crit || res.friend) && S.mood<4 && Math.random()<0.5){
+        S.mood++; t += '\n😊 手応えあり！ やる気UP！';
+      }
+      t += takeMoodMsg();
+      saveAll();
       return { correct, text:t, done:'next' };
     }
     // 不正解 → 軍学帳に記録し、押し切るか選ばせる
@@ -711,21 +745,27 @@ const Game = (function(){
     const failed = Math.random()*100 < fr;
     if (failed){
       applyTraining(null, true);
-      // 大失敗＝ケガ。薬師で治すまで鍛錬・視察・小競り合い不可（2026-06-11 ユーザー要望）
-      S.injury = 1;
+      // 大失敗＝ケガ。ただしスキル「丈夫な体」なら半分の確率で耐える
+      let t;
+      if (S.skills && S.skills.joubu && Math.random()<0.5){
+        t = `💥 大失敗！ 体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2\n🩹 だが「丈夫な体」のおかげでケガは免れた！`;
+      } else {
+        S.injury = 1;
+        t = `💥 大失敗！ 無理がたたって倒れ、ケガをしてしまった……\n体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2\n\n🌿 まずは薬師（くすし）に診てもらおう`;
+      }
       saveAll();
-      return { failed:true, text:`💥 大失敗！ 無理がたたって倒れ、ケガをしてしまった……\n体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2\n\n🌿 まずは薬師（くすし）に診てもらおう` };
+      return { failed:true, text:t };
     }
     const res = trainGain(cur.sel.q, {correct:false});
     applyTraining(res, false);
     let t = `気合で押し切った！ ${D.GENRES[cur.genre].label}+${res.gain}！`;
     if (res.friend) t = `🌈友情特訓！ ${t}`;
-    return { failed:false, text:t };
+    return { failed:false, text:t + takeMoodMsg() };
   }
   function learnSafe(){
     const res = trainGain(cur.sel.q, {correct:false, half:true});
     applyTraining(res, false);
-    return { text:`解説をじっくり読んで学び直した。${D.GENRES[cur.genre].label}+${res.gain}（軍学帳に記録）` };
+    return { text:`解説をじっくり読んで学び直した。${D.GENRES[cur.genre].label}+${res.gain}（軍学帳に記録）` + takeMoodMsg() };
   }
 
   /* ===== §6 年表イベント ===== */
@@ -779,13 +819,17 @@ const Game = (function(){
     const opt = B.opt;
     // 搦め手（trick）は参照ステ90以上で合致が1段「化ける」
     const fit = Math.min(2, opt.fit + ((opt.style==='trick' && S[opt.stat]>=90) ? 1 : 0));
-    let tier;
+    let tier, kokozo = false;
     if (correct){
       S.correctTotal++;
       tier = (opt.hist || fit===2) ? 'kaishin' : (fit===1 ? 'yuko' : 'fuhatsu');
     } else {
       addToBook(cur.sel.q);
       tier = (opt.style==='risky') ? 'shikujiri' : 'fuhatsu';
+      // スキル「ここぞの度胸」: しくじりを1周に1回だけ不発に踏みとどまる
+      if (tier==='shikujiri' && S.skills && S.skills.kokozo && !S.kokozoUsed){
+        S.kokozoUsed = true; kokozo = true; tier = 'fuhatsu';
+      }
     }
     // 内部スコア = 階調 × ステ補正(0.85〜1.2) × 博打ボーナス
     let val = TIER_VAL[tier];
@@ -803,9 +847,10 @@ const Game = (function(){
     B.last = { tier, opt, correct };
     const head = { kaishin: opt.hist? '⚡ 史実の一手で会心！' : '⚡ 会心！',
       yuko:'⭕ 有効打！', fuhatsu:'😶 不発…', shikujiri:'💢 しくじり！' }[tier];
-    const text = (tier==='kaishin'||tier==='yuko') ? `${head}\n${opt.ok}`
+    let text = (tier==='kaishin'||tier==='yuko') ? `${head}\n${opt.ok}`
       : tier==='fuhatsu' ? `${head}\n「${opt.label}」は戦況に響かなかった…`
       : `${head}\n「${opt.label}」が裏目に出て、敵に押し込まれた！`;
+    if (kokozo) text += '\n⚡「ここぞの度胸」で踏みとどまった！';
     return { correct, battle:true, last:(B.round>=B.max), text };
   }
   // 押し合いゲージ用: 現在の戦況（1.0=勝敗ライン）
@@ -828,6 +873,7 @@ const Game = (function(){
   function startSkirmish(){
     const foe = D.SKIRMISH_FOES[Math.floor(Math.random()*D.SKIRMISH_FOES.length)];
     const situ = D.SKIRMISH_SITUS[Math.floor(Math.random()*D.SKIRMISH_SITUS.length)];
+    S.trainStreak = 0;
     S.stamina = Math.max(0, S.stamina-14);
     startBattle({
       skirmish:true, year:S.year, title:`🚩 ${foe.name}`, intro:'',
@@ -844,7 +890,8 @@ const Game = (function(){
     const win = (tier==='kaishin' || tier==='yuko');
     let text;
     if (win){
-      const k = Math.round((12 + (S.year-START_YEAR) + Math.random()*8) * (tier==='kaishin' ? 1.6 : 1.0));
+      let k = Math.round((12 + (S.year-START_YEAR) + Math.random()*8) * (tier==='kaishin' ? 1.6 : 1.0));
+      if (S.skills && S.skills.zeni) k = Math.round(k*1.5);
       S.koku += k; S.skillPt += 3;
       if (tier==='kaishin') S.mood = Math.min(4, S.mood+1);
       text = `🚩 勝利！ 石高+${fmtKoku(k)}・✨スキルP+3${tier==='kaishin' ? '・やる気UP' : ''}`;
@@ -864,6 +911,20 @@ const Game = (function(){
   function defeatEnd(){
     const ev = B.ev;
     endRun(false, `${ev.year}年「${ev.title.split(' — ')[0]}」`);
+  }
+
+  /* ===== §7.8 スキル習得（スキルP消費・その育成1周の間有効） ===== */
+  function buySkill(id){
+    if (!S) return;
+    const sk = D.SKILLS.find(s=>s.id===id);
+    if (!sk || S.skills[id]) return;
+    if ((S.skillPt||0) < sk.cost){ toast('✨スキルPが足りない…鍛錬の正解や合戦で貯めよう！'); return; }
+    S.skillPt -= sk.cost;
+    S.skills[id] = true;
+    saveAll();
+    toast(`${sk.icon} スキル「${sk.name}」を習得した！`);
+    UI.renderGame();
+    UI.openSkill();
   }
 
   /* ===== 最終イベント（本能寺） ===== */
@@ -916,7 +977,7 @@ const Game = (function(){
 
   return { get S(){return S;}, get P(){return P;}, D, MOODS, STAT_KEYS, RANKS,
     newRun:(lg)=>{S=newRun(lg); saveAll();}, hasRun, resume, clearRun,
-    failRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent,
+    failRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
     battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
     get cur(){return cur;}, get B(){return B;}, START_YEAR, END_YEAR, saveAll };
@@ -1086,15 +1147,25 @@ const UI = (function(){
   function pickTrain(k){ $('ovl-train').classList.remove('on'); Game.doCommand(k); }
   function closeTrain(){ $('ovl-train').classList.remove('on'); }
 
-  /* ---- スキル（βはポイント蓄積のみ・割り振りはCOMING SOON） ---- */
+  /* ---- スキル（スキルPで習得・2026-06-13 実装） ---- */
   function openSkill(){
+    const S = Game.S;
     $('l-title').textContent = '✨ スキル';
-    $('l-body').innerHTML = `
-      <div class="bookItem" style="text-align:center; font-size:15px;">いま持っているスキルP<br>
-        <b style="font-size:34px; color:#8a6605;">✨ ${Game.S? (Game.S.skillPt||0) : 0}</b></div>
-      <div class="note">⚒️ <b>武将固有スキル — ただいま支度中！</b><br>
-      スキルPは「鍛錬の正解」「合戦の勝利」「小競り合いの勝利」「側近の絆MAX」で貯まる。<br>
-      近いうちに「ここぞの一撃」「鉄砲三段撃ち」など、武将ならではのスキルと交換できるようになるぞ。<b>Pは貯めておいて損なし！</b></div>`;
+    let html = `<div class="bookItem" style="text-align:center;">いま持っているスキルP
+      <b style="font-size:28px; color:#7a4f9d;">✨${S? (S.skillPt||0) : 0}</b><br>
+      <span class="note">鍛錬の正解+2 ／ 合戦勝利+8 ／ 小競り合い+3 ／ 側近の絆MAX+5。スキルはこの育成の間だけ有効</span></div>`;
+    if (S){
+      html += D.SKILLS.map(sk=>{
+        const owned = S.skills && S.skills[sk.id];
+        const ok = !owned && (S.skillPt||0) >= sk.cost;
+        return `<button class="btn ${ok?'gold':''}" style="${owned?'opacity:.55; pointer-events:none;':''}"
+          onclick="Game.buySkill('${sk.id}')">${sk.icon} ${sk.name}（${owned?'習得済み✅':'✨'+sk.cost}）<br>
+          <small style="font-weight:600">${sk.desc}</small></button>`;
+      }).join('');
+    } else {
+      html += `<div class="note">スキルは育成中に習得できる。</div>`;
+    }
+    $('l-body').innerHTML = html;
     $('ovl-list').classList.add('on');
   }
 
@@ -1415,8 +1486,9 @@ const UI = (function(){
     $('l-body').innerHTML = `<div class="bookItem" style="font-size:14px;">
       <b style="color:#8a6605">⚔️ 織田信長の人生32年（32ターン）を一緒に駆け抜けるゲームだ。</b><br><br>
       🎯 <b>毎ターン、コマンドを1つ選ぶ</b>。⚔️鍛錬を選ぶと歴史クイズが出る。<b>時間制限はない</b>、じっくり考えよう。<br><br>
-      ⭕ 正解するとステータスが大きく成長＋✨スキルPゲット。<br>
+      ⭕ 正解するとステータスが大きく成長＋✨スキルPゲット。貯めたPは<b>スキル</b>（成長アップ・ケガ予防など）と交換できる！<br>
       ❌ 不正解でも「気合で押し切る」と同じだけ成長できる。ただし<b>失敗率</b>のぶんだけ大失敗のリスクが…！<br><br>
+      😊 <b>やる気</b>は成長量に直結する。🔥鍛錬を続けすぎると下がるぞ——🏯視察で気分転換、🌟大成功や🌈友情特訓で上がる！<br><br>
       🤕 大失敗すると<b>ケガ</b>をする。ケガをしたら<b>🌿薬師（くすし）</b>で治療！ たまに「塞翁が馬」——ケガが思わぬ福を呼ぶことも…。<br><br>
       ❤️ <b>体力が減ると失敗率が上がる</b>。😴休息でしっかり回復しよう（まちがえた問題の復習チャンスもある）。<br><br>
       🤝 側近（そっきん）がいる鍛錬は伸びやすく・体力消耗も軽く・<b>絆</b>も深まる。絆80以上の側近が得意鍛錬で輝いていたら<b>🌈友情特訓</b>で超成長！<br><br>

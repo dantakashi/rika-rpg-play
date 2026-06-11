@@ -6,6 +6,7 @@
    §2.5 武将ロスター
    §2.6 合戦絵巻（実況セリフ・采配・小競り合い）
    §2.7 勢力図（領地マップ）
+   §2.8 スキル定義
    §3 年表イベント（織田信長 1551-1582）
    §4 クイズDB（シード問題。Codex生成分は QUESTIONS_EXTRA に追記）
    ------------------------------------------------------------
@@ -42,6 +43,14 @@ const SENGOKU_DATA = (function(){
       intro:'美濃の斎藤道三の娘にして信長の妻。「まむしの娘」。',
       maxText:'「うつけ殿が、ここまでの大将になるとはな」（誰よりも近くで、あなたの成長を見てきた人の言葉）',
       maxFx:{ ninbo:10, mood:2 } },
+    { id:'toshiie', name:'前田利家', icon:'🗡️', fav:'buyu',
+      intro:'「槍の又左」と呼ばれた若き猛者。のちの加賀百万石の祖。',
+      maxText:'「殿の槍さばき、この又左より上やもしれませぬな！」（生涯の友となる男が、隣で笑っている）',
+      maxFx:{ buyu:8, koku:20 } },
+    { id:'kazumasu', name:'滝川一益', icon:'🎯', fav:'chiryaku',
+      intro:'「進むも退くも滝川」。鉄砲と忍びに通じた知略の士。',
+      maxText:'「殿の読みの深さ、それがしの忍びより速うございます」（寡黙な男が、最大級の賛辞を口にした）',
+      maxFx:{ chiryaku:8, stamina:20 } },
   ];
 
   /* ===== §2.5 武将ロスター（編成画面の予定表示・βでは信長のみ育成可） =====
@@ -148,6 +157,14 @@ const SENGOKU_DATA = (function(){
     ],
     battleLoc: { 1556:'尾張', 1560:'尾張', 1567:'美濃', 1570:'近江', 1575:'三河', 1582:'京' },
   };
+
+  /* ===== §2.8 スキル（スキルPで習得・その育成1周の間だけ有効） ===== */
+  const SKILLS = [
+    { id:'manabi', icon:'📖', name:'学びの極意',   cost:20, desc:'鍛錬の成長量が1割増える' },
+    { id:'zeni',   icon:'🌾', name:'銭の才',       cost:20, desc:'視察・小競り合いで得る石高が5割増える' },
+    { id:'joubu',  icon:'🩹', name:'丈夫な体',     cost:25, desc:'鍛錬の大失敗でケガをしにくくなる（半分の確率で耐える）' },
+    { id:'kokozo', icon:'⚡', name:'ここぞの度胸', cost:30, desc:'合戦の「しくじり」を1回だけ「不発」に踏みとどまる（1周に1回）' },
+  ];
 
   /* ===== §3 年表イベント =====
      type: story（読み物）/ choice（選択肢）/ battle（合戦）/ final（本能寺）
@@ -495,5 +512,5 @@ const SENGOKU_DATA = (function(){
       desc:'阿国のかぶき踊りはのちの歌舞伎のもとになった。能・狂言は室町時代に観阿弥・世阿弥らが大成したもので、時代の区別がよく問われる。' },
   ];
 
-  return { GENRES, RETAINERS, WARLORDS, BATTLE_LINES, SKIRMISH_FOES, SKIRMISH_SITUS, MAP, TIMELINE, QUESTIONS };
+  return { GENRES, RETAINERS, WARLORDS, SKILLS, BATTLE_LINES, SKIRMISH_FOES, SKIRMISH_SITUS, MAP, TIMELINE, QUESTIONS };
 })();
