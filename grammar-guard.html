@@ -598,6 +598,7 @@
             <div class="scard" id="wordCard"></div>
           </div>
           <div id="homeMenuBtns">
+            <button class="menubtn" id="dailyChalBtn" style="display:none"></button>
             <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
             <button class="menubtn" data-go="practice">✏️ れんしゅう<span class="sub">問題を解いて💎をためる（戦闘なし）</span></button>
             <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
@@ -9274,6 +9275,7 @@ const Game = (()=>{
   let towerBest = 0;       // 修練の塔の最高階
   let learnBest = {};      // 🗼学習の塔 分野ごとの到達最高階 {field:floor}（永久バフの元）
   let lastDaily = '';      // デイリー受取日(YYYY-M-D)
+  let dailyChalDone = '';  // 📅きょうのチャレンジ達成日(YYYY-M-D・2026-06-11)
   let clockTs = 0;         // 観測した最大の実時刻(ms)。カレンダー巻き戻し対策（単調増加）
   let goldDay = '';        // クリア報酬上限の集計日(YYYY-M-D)
   let dailyStageGold = 0;  // 本日ステージクリアで得たゴールド
@@ -9296,7 +9298,7 @@ const Game = (()=>{
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
       freezeDurLv=s.freezeDurLv||0; freezeCostLv=s.freezeCostLv||0; comboGuardLv=s.comboGuardLv||0;
       ownedParts=(s.ownedParts&&typeof s.ownedParts==='object')?s.ownedParts:{}; equippedParts=(s.equippedParts&&typeof s.equippedParts==='object')?s.equippedParts:{};
-      towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||'';
+      towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||''; dailyChalDone=s.dailyChalDone||'';
       clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
       mistakes=(s.mistakes&&typeof s.mistakes==='object')?s.mistakes:{};
       favorites=(s.favorites&&typeof s.favorites==='object')?s.favorites:{};
@@ -9314,7 +9316,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -9564,7 +9566,7 @@ const Game = (()=>{
   const FREEZE_DUR_MAX_LV = 10;  // 停止時間：0.5秒→1.5秒
   const FREEZE_COST_MAX_LV = 10; // 消費E：200→150
   function freezeUnlockedCh(){ return 4; } // 章4から使える（壁1の砲台が出始める頃）
-  function freezeReadyHere(){ return B && B.stage && (B.stage.chapter||1) >= freezeUnlockedCh() && !B.stage.endless; }
+  function freezeReadyHere(){ return B && B.stage && (B.stage.chapter||1) >= freezeUnlockedCh() && !B.stage.endless && B.stage.dailyRule!=='noFreeze'; }
   function freezeDur(){ return 0.5 + 0.1*Math.min(freezeDurLv, FREEZE_DUR_MAX_LV); }       // 0.5→1.5秒
   function freezeEnergyCost(){ return 200 - 5*Math.min(freezeCostLv, FREEZE_COST_MAX_LV); } // 200→150
   function freezeDurMaxed(){ return freezeDurLv >= FREEZE_DUR_MAX_LV; }
@@ -10130,6 +10132,18 @@ const Game = (()=>{
     }
     renderHomeChar();
     renderDailyWord();
+    // 📅 きょうのチャレンジ（クリア済みステージが1つ以上ある子にだけ表示）
+    var dc=$('dailyChalBtn');
+    if(dc){ var ds=dailyChalStage();
+      if(!ds){ dc.style.display='none'; }
+      else {
+        dc.style.display='';
+        var done=dailyChalDoneToday();
+        dc.innerHTML='📅 きょうのチャレンジ'+(done?' <span style="color:var(--good)">✅達成!</span>':' <span style="color:#a463f2;font-weight:800">💎150</span>')
+          +'<span class="sub">'+ds.name.replace('📅','')+'（エリア'+ds.area+'）／制約: '+ds.dailyRuleLabel+(done?'／また明日！':'')+'</span>';
+        dc.onclick=function(){ var st=dailyChalStage(); if(st) enterBattle(st); };
+      }
+    }
   }
 
   /* ---- ホーム描画 ---- */
@@ -10313,7 +10327,14 @@ const Game = (()=>{
      ・予想枠の表示ルール：q1(次)=CD2秒以内のみ／q2(次の次)=CD5秒未満のみ。
        SSRはCDが長く予想に出ない＝高コストが連続して詰まらない。 */
   function summonCd(key){ return ROSTER[key].scd||1.5; }
-  function deckKeys(){ var d=((deck&&deck.length)?deck:ROSTER_KEYS).filter(function(k){return ROSTER[k];}); return d.length?d:ROSTER_KEYS.slice(); }
+  function deckKeys(){ var d=((deck&&deck.length)?deck:ROSTER_KEYS).filter(function(k){return ROSTER[k];}); if(!d.length) d=ROSTER_KEYS.slice();
+    // 📅きょうのチャレンジ: 編成制約（全滅しないよう最低2体は保証）
+    if(B&&B.stage&&B.stage.daily){
+      if(B.stage.dailyRule==='noSSR') d=d.filter(function(k){return ROSTER[k].rar!=='SSR';});
+      else if(B.stage.dailyRule==='cost60') d=d.filter(function(k){return ROSTER[k].cost<=60;});
+      if(!d.length) d=['guardTurtle','dashFox'];
+    }
+    return d; }
   function cdLeft(key){ return (B&&B.cd&&B.cd[key])||0; }
   function unitWeight(key){ return ROSTER[key].weight||10; }
   function weightedPick(keys){
@@ -11105,6 +11126,25 @@ const Game = (()=>{
     gems+=200; lastDaily=todayStr(); save(); renderHome();
     showDailyPopup(200);
   }
+  // ===== 📅 きょうのチャレンジ（2026-06-11・BTD6デイリー式）=====
+  // 日付シードで「クリア済みステージ×制約」を決定的に生成。サーバ不要・全員同じお題。1日1回クリアで💎150+💰300。
+  const DAILY_RULES=[
+    {id:'noSSR',   label:'SSR禁止'},
+    {id:'cost60',  label:'コスト60以下だけ'},
+    {id:'noFreeze',label:'フリーズ砲禁止'}
+  ];
+  function dailySeed(){ var s=todayStr(), h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+  function dailyChalStage(){
+    var areas=[]; for(var a=1;a<=STAGES.length;a++){ if(cleared[a]) areas.push(a); }
+    if(!areas.length) return null; // まだ1つもクリアしていない子には出さない
+    var seed=dailySeed();
+    var base=STAGES[areas[seed%areas.length]-1];
+    var rule=DAILY_RULES[Math.floor(seed/7)%DAILY_RULES.length];
+    var st=Object.assign({}, base);
+    st.daily=true; st.dailyRule=rule.id; st.dailyRuleLabel=rule.label; st.name='📅'+base.name;
+    return st;
+  }
+  function dailyChalDoneToday(){ return dailyChalDone===todayStr(); }
   function renderTower(){
     var body=$('towerBody'); if(!body) return; body.innerHTML='';
     var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
@@ -11203,6 +11243,8 @@ const Game = (()=>{
     const gemReward = win ? (B.stage.hero ? (B.stage.boss?750:250) : (B.stage.boss ? 500 : 100)) : 0; // クリア報酬💎：通常100・ボス500／👑英雄級250・ボス750
     if(gemReward) gems += gemReward;
     var __firstLimitBreak = win && !B.stage.hero && B.stage.area===75 && !cleared[75]; // 🔓限界突破の初回解放検知
+    var __dailyWin = win && B.stage.daily && !dailyChalDoneToday(); // 📅きょうのチャレンジ（1日1回）
+    if(__dailyWin){ dailyChalDone=todayStr(); gems+=150; gold+=300; }
     if(win){ if(B.stage.hero){ heroCleared[B.stage.area]=true; } else { cleared[B.stage.area]=true; } }
     save();
     if(__firstLimitBreak){ try{ fxBanner('🔓 限界突破！キャラLv上限45・城Lv上限30に解放','#e0a93b'); }catch(e){} }
@@ -11211,7 +11253,8 @@ const Game = (()=>{
       `<span class="medal">正答率 ${acc}%</span>`+
       (B.reviewWins?`<span class="medal">🔁 復習成功 ${B.reviewWins}</span>`:'')+
       `<span class="medal">💰 +${reward}</span>`+
-      (gemReward?`<span class="medal">💎 +${gemReward}</span>`:'');
+      (gemReward?`<span class="medal">💎 +${gemReward}</span>`:'')+
+      (__dailyWin?`<span class="medal">📅 チャレンジ達成! 💎+150 💰+300</span>`:'');
     $('resLearn').textContent = !win
       ? 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎'
       : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
