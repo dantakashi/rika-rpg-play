@@ -4,7 +4,7 @@
    §1 ジャンル定義（育成コマンド⇔クイズジャンル対応）
    §2 家臣（サポートカード簡易版）
    §2.5 武将ロスター
-   §2.6 戦術と地形（合戦・小競り合い用）
+   §2.6 合戦絵巻（実況セリフ・采配・小競り合い）
    §3 年表イベント（織田信長 1551-1582）
    §4 クイズDB（シード問題。Codex生成分は QUESTIONS_EXTRA に追記）
    ------------------------------------------------------------
@@ -58,42 +58,75 @@ const SENGOKU_DATA = (function(){
       buff:'合戦の軍配がはずれにくい', playable:false },
   ];
 
-  /* ===== §2.6 戦術と地形 =====
-     合戦・小競り合いで毎回「戦術」を選ぶ。stat: 効くステ / genre: 出題ジャンル。
-     地形の compat（2=◎ 1=○ 0=△）×ステ×史実戦術ボーナスで戦況が動く */
-  const TACTICS = {
-    totsugeki: { label:'突撃',   icon:'⚔️', stat:'buyu',     genre:'buyu',
-      ok:'全軍突撃！ 敵の陣形を正面から打ち破った！',
-      ng:'突撃が読まれていた…敵に押し返される！' },
-    kishu:     { label:'奇襲',   icon:'🌫️', stat:'chiryaku', genre:'chiryaku',
-      ok:'敵の裏をかいた！ 敵本陣が大混乱に陥る！',
-      ng:'奇襲を見破られた…罠にかかったのはこちらだ！' },
-    teppo:     { label:'鉄砲隊', icon:'💥', stat:'seiji',    genre:'seiji',
-      ok:'三段撃ちの轟音！ 敵兵が次々と倒れていく！',
-      ng:'火縄が湿って不発…敵の突進を許してしまう！' },
-    chouryaku: { label:'調略',   icon:'🤝', stat:'ninbo',    genre:'ninbo',
-      ok:'敵将が寝返った！ 敵軍に動揺が走る！',
-      ng:'調略は失敗…かえって敵の結束を固めてしまった！' },
+  /* ===== §2.6 合戦絵巻（実況・采配） =====
+     設計: rpg_v3/DESIGN_SENGOKU_BATTLE_V2.md（2026-06-12 生徒FB対応）
+     合戦は3ラウンドの「戦況→采配→クイズ→結果4階調」。采配opt:
+       stat: 参照ステ（UIに数値表示） / genre: 出題ジャンル
+       style: safe(堅実=中効果・安全) / risky(博打=大効果・外すと痛い) / trick(搦め手=ステ90+で化ける)
+       fit: 戦況との合致 0-2（非表示。文章から推理させる） / hist: 史実采配=確定会心 */
+
+  /* 実況キャラ「物見の佐助」のセリフ素材（tierごとの汎用行） */
+  const BATTLE_LINES = {
+    caster: '📣 物見の佐助',
+    casterIntro: '実況はわたくし、足だけが自慢の物見・佐助でお送りしますッ！',
+    kaishin: ['会心の采配だあーっ！！ 戦場の流れが一気に傾いたぞ！', 'なんという一手！ 敵陣から悲鳴が聞こえてくるーっ！'],
+    yuko:    ['有効打！ 着実に敵を削っていくっ！', '悪くない悪くない、確実に前に出ているぞ！'],
+    fuhatsu: ['うーん、戦果はいまひとつだあ…！', '空振りだ…！ だがまだ立て直せるッ！'],
+    shikujiri:['痛恨の采配ミス！ 逆に押し込まれたあーっ！', 'しまったあ！ 敵の反撃をまともに食らったぞ…！'],
+    mid:     ['両軍、一進一退の攻防だ！', '土煙が上がる！ 押して押されての大乱戦！', '矢が、礫（つぶて）が、怒号が飛び交うーっ！'],
+    hist:    '📜 これぞ史実の一手！ 本物の信長と同じ決断だ！',
+    winSeq:  ['敵が崩れた…総崩れだあーっ！！', '勝鬨（かちどき）を上げろーっ！ えい、えい、おーっ！！'],
+    loseSeq: ['味方が…味方が崩れていく…！', '無念…！ ここまでかあ…！'],
   };
 
-  /* 小競り合い（任意参加のミニ合戦＝石高稼ぎ）用のランダム戦場と相手 */
-  const SKIRMISH_TERRAINS = [
-    { icon:'🌾', label:'開けた野原',   hint:'正面からの突撃が決まりやすい',
-      compat:{ totsugeki:2, kishu:1, teppo:1, chouryaku:1 } },
-    { icon:'⛰️', label:'険しい山道',   hint:'待ち伏せ・奇襲に向いた地形だ',
-      compat:{ totsugeki:0, kishu:2, teppo:1, chouryaku:1 } },
-    { icon:'🌫️', label:'夜霧の里',     hint:'視界が悪い。忍び寄った方が勝つ',
-      compat:{ totsugeki:1, kishu:2, teppo:0, chouryaku:1 } },
-    { icon:'🏞️', label:'川辺の浅瀬',   hint:'渡河中の敵を撃てる。鉄砲が有利',
-      compat:{ totsugeki:1, kishu:1, teppo:2, chouryaku:0 } },
-    { icon:'🏘️', label:'宿場の町なか', hint:'戦わずに話をつける手もある',
-      compat:{ totsugeki:0, kishu:1, teppo:1, chouryaku:2 } },
-  ];
+  /* 小競り合い（任意参加のミニ合戦＝1ラウンド版の合戦絵巻） */
   const SKIRMISH_FOES = [
-    { icon:'👹', name:'野盗の討伐',       text:'領内を荒らす野盗の群れが現れた。民を守り、武名を上げる好機だ。' },
-    { icon:'🏴', name:'国境の小競り合い', text:'隣国の兵が国境の村に手を出してきた。すばやく追い払え！' },
-    { icon:'🗼', name:'敵方の砦攻め',     text:'敵方の小さな砦が街道をふさいでいる。落とせば領地が広がるぞ。' },
-    { icon:'⛵', name:'川筋の水賊退治',   text:'川の水運を荒らす水賊ども。商人たちが討伐を願い出ている。' },
+    { icon:'👹', name:'野盗の討伐',       army:600,  text:'領内を荒らす野盗の群れが現れた！' },
+    { icon:'🏴', name:'国境の小競り合い', army:900,  text:'隣国の兵が国境の村に手を出してきた！' },
+    { icon:'🗼', name:'敵方の砦攻め',     army:1100, text:'敵方の小さな砦が街道をふさいでいる！' },
+    { icon:'⛵', name:'川筋の水賊退治',   army:700,  text:'川の水運を荒らす水賊ども、討伐の願いが届いた！' },
+  ];
+  const SKIRMISH_SITUS = [
+    { sky:'🌾 開けた野原',
+      situ:'敵は野原のど真ん中で隊列を組んでいる！ よく見ると正面が薄いぞ…！',
+      opts:[
+        { icon:'⚔️', label:'薄い正面へ一点突破', stat:'buyu', genre:'buyu', style:'safe', fit:2,
+          ok:'まっすぐ貫いたーっ！ 敵の隊列が真っ二つだ！' },
+        { icon:'🌫️', label:'大回りして背後から', stat:'chiryaku', genre:'chiryaku', style:'risky', fit:1,
+          ok:'背後を取った！ 敵は大慌てで向きを変えるが、もう遅い！' },
+        { icon:'🤝', label:'戦わずに投降を呼びかける', stat:'ninbo', genre:'ninbo', style:'trick', fit:1,
+          ok:'敵から白旗だ！ 人望が刃より強いこともある！' },
+      ] },
+    { sky:'⛰️ 険しい山道',
+      situ:'敵は細い山道を一列になって進んでいる。仕掛けるなら今しかない！',
+      opts:[
+        { icon:'🌫️', label:'崖の上から一斉に奇襲', stat:'chiryaku', genre:'chiryaku', style:'safe', fit:2,
+          ok:'頭上から岩と矢の雨だ！ 細い道では逃げ場がないーっ！' },
+        { icon:'⚔️', label:'正面から道を塞いで叩く', stat:'buyu', genre:'buyu', style:'risky', fit:1,
+          ok:'狭い道での白兵戦！ 一騎当千の働きだ！' },
+        { icon:'💥', label:'狙いを定めて鉄砲を放つ', stat:'seiji', genre:'seiji', style:'trick', fit:1,
+          ok:'一列の敵に鉄砲が刺さる刺さる！ 銭で揃えた甲斐があった！' },
+      ] },
+    { sky:'🏞️ 川辺の浅瀬',
+      situ:'敵が川を渡り始めた！ 半分はまだ水の中…これは好機か!?',
+      opts:[
+        { icon:'💥', label:'渡河中の敵を撃ちまくる', stat:'seiji', genre:'seiji', style:'safe', fit:2,
+          ok:'水の中では身動きが取れない！ 一方的な展開だーっ！' },
+        { icon:'🧠', label:'上流の堰（せき）を切る', stat:'chiryaku', genre:'chiryaku', style:'risky', fit:2,
+          ok:'鉄砲水だーっ！！ 敵が丸ごと押し流されていく！ 大博打、大成功！' },
+        { icon:'⚔️', label:'岸で待ち構えて突撃', stat:'buyu', genre:'buyu', style:'safe', fit:1,
+          ok:'上がってきた敵を片っ端から叩く！ 手堅い勝ち筋だ！' },
+      ] },
+    { sky:'🌫️ 深い夜霧',
+      situ:'夜霧が出てきた。敵はこちらの兵の数をつかめていない様子だ…！',
+      opts:[
+        { icon:'🌫️', label:'霧にまぎれて夜襲', stat:'chiryaku', genre:'chiryaku', style:'safe', fit:2,
+          ok:'音もなく忍び寄って一斉に襲いかかる！ 敵は同士討ちを始めたぞ！' },
+        { icon:'🤝', label:'大軍のふりをして降伏勧告', stat:'ninbo', genre:'ninbo', style:'trick', fit:2,
+          ok:'太鼓を打ち鳴らし数千の軍勢を演出！ 敵が震え上がって降伏だーっ！' },
+        { icon:'⚔️', label:'篝火（かがりび）を目印に突撃', stat:'buyu', genre:'buyu', style:'risky', fit:1,
+          ok:'火を頼りに斬り込んだ！ 霧の中の混戦を制したのは武勇だ！' },
+      ] },
   ];
 
   /* ===== §3 年表イベント =====
@@ -112,19 +145,85 @@ const SENGOKU_DATA = (function(){
       ] },
 
     { year:1556, type:'battle', title:'稲生の戦い — 家中をまとめろ',
-      terrain:{ icon:'🌾', label:'尾張の野原', hint:'開けた平地。正面からの突撃が決まりやすい',
-        compat:{ totsugeki:2, kishu:1, teppo:1, chouryaku:1 } }, bestTactic:'totsugeki',
+      terrain:{ icon:'🌾', label:'尾張・稲生の野原' },
       intro:'弟・信行（信勝）を担ぐ家臣団が反旗を翻した。相手は柴田勝家ら織田家の重臣たち。まずは身内との戦いに勝ち、尾張をまとめなければ天下どころではない。',
       enemyName:'弟・信行派の軍勢', enemyIcon:'🛡️', enemyPower:100,
+      army:{ me:700, foe:1700 }, meUnit:'🛡️', foeUnit:'⚔️',
+      open:[
+        'さあ始まりました、家督を懸けた身内の決戦・稲生の戦い！',
+        '織田信長軍はおよそ700！ 対する弟・信行方は約1700、数では倍以上の差だあーっ！',
+      ],
+      rounds:[
+        { situ:'敵将・林通具（みちとも）の隊が先陣を切って突っ込んでくる！ 寡兵のこちらはどう受ける!?',
+          opts:[
+            { icon:'⚔️', label:'こちらから先に斬り込む', stat:'buyu', genre:'buyu', style:'risky', fit:2,
+              ok:'先手必勝！ 信長隊の鋭い突撃が林隊のド真ん中を貫いたーっ！' },
+            { icon:'🛡️', label:'陣を固めて受け止める', stat:'buyu', genre:'buyu', style:'safe', fit:1,
+              ok:'がっちり受け止めた！ 数の不利を感じさせない堅い守りだ！' },
+            { icon:'🤝', label:'敵中の旧知に文を放つ', stat:'ninbo', genre:'ninbo', style:'trick', fit:1,
+              ok:'おおっと、敵の一角の動きが鈍いぞ！ あの文が効いているのか!?' },
+          ] },
+        { situ:'猛将・柴田勝家の本隊が来たーっ！ こちらの先陣がじりじり押し込まれていく…！',
+          opts:[
+            { icon:'🧠', label:'柴田隊の側面へ回り込む', stat:'chiryaku', genre:'chiryaku', style:'safe', fit:2,
+              ok:'横っ腹に食らいついた！ さしもの「かかれ柴田」も足が止まる！' },
+            { icon:'⚔️', label:'真っ向から槍を合わせる', stat:'buyu', genre:'buyu', style:'risky', fit:1,
+              ok:'力と力の真っ向勝負！ 押して押して押しまくるーっ！' },
+            { icon:'🏛️', label:'銭をばらまき動揺を誘う', stat:'seiji', genre:'seiji', style:'trick', fit:0,
+              ok:'戦の最中に銭は届かないか…！ だが敵は少し困惑している！' },
+          ] },
+        { situ:'敵がひるんだ、ここが勝負どころだ！ 若き信長、どう出る!?',
+          opts:[
+            { icon:'⚔️', label:'自ら大音声を上げて突撃', stat:'buyu', genre:'buyu', style:'risky', fit:2, hist:true,
+              ok:'「うつけの大音声」一喝ッ！！ 敵兵が凍りつき、そこから総崩れが始まったーっ！' },
+            { icon:'🌫️', label:'伏せておいた兵で挟み撃ち', stat:'chiryaku', genre:'chiryaku', style:'safe', fit:1,
+              ok:'挟み撃ちが決まった！ 敵は前と後ろの敵に大混乱だ！' },
+            { icon:'🤝', label:'「降れば許す」と呼びかける', stat:'ninbo', genre:'ninbo', style:'trick', fit:1,
+              ok:'投降する兵が出始めた！ 戦わずして敵を崩していく！' },
+          ] },
+      ],
       winText:'勝利！ 反乱は鎮圧された。母の取りなしで弟を許し、柴田勝家はこの戦いを境にあなたの忠実な家臣となった。尾張統一へ大きく前進。',
       loseText:'【敗北】家中の反乱を抑えきれなかった……。「尾張のうつけ」の夢は、ここで潰えた。\n\n（育成終了。序盤から武勇や知略をしっかり鍛えて、もう一度挑もう！）',
       winFx:{ koku:80, buyu:5 } },
 
     { year:1560, type:'battle', title:'桶狭間の戦い — 運命の十倍の敵',
-      terrain:{ icon:'🌧️', label:'豪雨の窪地', hint:'豪雨で視界が利かない。奇襲の絶好機！ ただし火縄は湿って使えない',
-        compat:{ totsugeki:1, kishu:2, teppo:0, chouryaku:1 } }, bestTactic:'kishu',
+      terrain:{ icon:'🌧️', label:'桶狭間 — 豪雨の窪地' },
       intro:'駿河の大大名・今川義元が、約2万5千の大軍で尾張に攻め込んできた。こちらはわずか数千。家臣は籠城を勧めるが、あなたは「敦盛」を舞い、夜明けに出陣を決意する。狙うは、桶狭間で休む義元の本陣ただ一点——。',
       enemyName:'今川義元の大軍', enemyIcon:'👑', enemyPower:240,
+      army:{ me:3000, foe:25000 }, meUnit:'🛡️', foeUnit:'🗡️',
+      open:[
+        'さあ大一番！ 駿河の太守・今川義元、2万5千の大軍で尾張へ侵攻ーっ！',
+        '対する織田軍はわずか3千！ 大人と子供…いや、象とアリの戦いだあーっ！',
+      ],
+      rounds:[
+        { situ:'丸根砦・鷲津砦、陥落の急報！ 家臣たちは「清洲に籠城を」と叫ぶが——若殿の決断は!?',
+          opts:[
+            { icon:'⚔️', label:'出陣！ 前線の中島砦へ進む', stat:'buyu', genre:'buyu', style:'risky', fit:2,
+              ok:'まさかの出撃だあーっ！ 死中に活を求める若き信長、敦盛を舞って馬に飛び乗った！' },
+            { icon:'🛡️', label:'清洲城に籠もって守る', stat:'seiji', genre:'seiji', style:'safe', fit:0,
+              ok:'手堅い…手堅いが！ 2万5千を相手に籠城はジリ貧の道だぞ…！' },
+            { icon:'🤝', label:'降伏すると見せかけ油断させる', stat:'ninbo', genre:'ninbo', style:'trick', fit:1,
+              ok:'偽りの使者で時間を稼ぐ！ 義元が油断すれば、そこに勝機が生まれる…！' },
+          ] },
+        { situ:'空が真っ黒に…来た、豪雨だあーっ！ 視界はゼロ、敵もこちらも見えない！',
+          opts:[
+            { icon:'🌫️', label:'雨にまぎれて義元本陣の近くへ', stat:'chiryaku', genre:'chiryaku', style:'safe', fit:2,
+              ok:'豪雨をカーテンにして接近！ 今川の物見は何も見えていないッ！' },
+            { icon:'💥', label:'鉄砲を撃ちかけて威嚇する', stat:'seiji', genre:'seiji', style:'risky', fit:0,
+              ok:'むむっ、火縄が湿って火がつかない！ この大雨では鉄砲は使えないかーっ！' },
+            { icon:'⚔️', label:'目の前の敵部隊に斬りかかる', stat:'buyu', genre:'buyu', style:'safe', fit:1,
+              ok:'小競り合いで一勝！ だが本命は別にいるぞ…兵を消耗するな！' },
+          ] },
+        { situ:'物見の急報ーっ！ 「義元本陣、桶狭間山にて休息中！ 酒宴を開いている模様！」',
+          opts:[
+            { icon:'🌫️', label:'全軍、義元本陣へ奇襲！', stat:'chiryaku', genre:'chiryaku', style:'risky', fit:2, hist:true,
+              ok:'歴史が動いたあーっ！！ 雨上がりの一瞬、織田軍3千が義元本陣へ突入だーっ！' },
+            { icon:'⚔️', label:'正面の敵を蹴散らして進む', stat:'buyu', genre:'buyu', style:'risky', fit:1,
+              ok:'力ずくで道を開く！ だが本陣に着く前に敵が集まってくるぞ、急げーっ！' },
+            { icon:'🤝', label:'偽の降伏で本陣に近づく', stat:'ninbo', genre:'ninbo', style:'trick', fit:1,
+              ok:'敵が受け入れた…！ 懐に入ってからが本当の勝負だ！' },
+          ] },
+      ],
       winText:'豪雨に紛れた奇襲が成功！ 今川義元を討ち取った！ この「桶狭間の戦い」で、無名だった織田信長の名は一気に全国へ轟いた。',
       loseText:'【敗北】奇襲は読まれていた。今川の大軍の前に織田軍は壊滅……。\n\n（育成終了。格上との決戦だ。それまでに体力を整え、軍配＝クイズを確実に当てられる力をつけよう！）',
       winFx:{ koku:150, buyu:8, ninbo:5 } },
@@ -134,10 +233,43 @@ const SENGOKU_DATA = (function(){
       effects:{ ninbo:5, koku:30 } },
 
     { year:1567, type:'battle', title:'稲葉山城の戦い — 天下布武',
-      terrain:{ icon:'⛰️', label:'山上の堅城', hint:'力攻めは通じない山城。敵の家臣を調略で切り崩せ（史実では美濃三人衆が寝返った）',
-        compat:{ totsugeki:0, kishu:1, teppo:1, chouryaku:2 } }, bestTactic:'chouryaku',
+      terrain:{ icon:'⛰️', label:'稲葉山 — 山上の堅城' },
       intro:'美濃の斎藤龍興（道三の孫）との長い戦いも大詰め。木下藤吉郎が敵の城下に一夜で砦を築いた（墨俣一夜城の伝説）。決戦のときだ。',
       enemyName:'斎藤龍興の美濃勢', enemyIcon:'🐍', enemyPower:280,
+      army:{ me:10000, foe:7000 }, meUnit:'🛡️', foeUnit:'🏹',
+      open:[
+        '美濃攻め、ついに最終局面！ 舞台は天下の堅城・稲葉山城だあーっ！',
+        '攻める織田軍1万、籠もる斎藤勢7千！ だが山城の守りは数字以上だぞ…！',
+      ],
+      rounds:[
+        { situ:'切り立った山の上の城だ…！ 力攻めをすれば損害は計り知れない。どう攻める!?',
+          opts:[
+            { icon:'🏛️', label:'墨俣に砦を築き補給路を断つ', stat:'seiji', genre:'seiji', style:'safe', fit:2,
+              ok:'藤吉郎の一夜城だあーっ！ 敵の喉元に楔（くさび）を打ち込んだ！' },
+            { icon:'⚔️', label:'かまわず正面から力攻め', stat:'buyu', genre:'buyu', style:'risky', fit:0,
+              ok:'登る登る！ …だが頭上から石と矢の雨だ！ 損害覚悟の力押しになっているぞ！' },
+            { icon:'🧠', label:'間道を探して搦め手から', stat:'chiryaku', genre:'chiryaku', style:'trick', fit:1,
+              ok:'裏の細道を発見！ 少数精鋭なら忍び込めるかもしれない！' },
+          ] },
+        { situ:'「美濃三人衆が斎藤に愛想を尽かしている」…そんな噂が陣中に届いた！',
+          opts:[
+            { icon:'🤝', label:'三人衆へ調略の文を送る', stat:'ninbo', genre:'ninbo', style:'safe', fit:2, hist:true,
+              ok:'美濃三人衆、寝返ったああーっ！！ 城内は今ごろ上を下への大騒ぎだ！' },
+            { icon:'⚔️', label:'噂は捨て置き攻め続ける', stat:'buyu', genre:'buyu', style:'risky', fit:1,
+              ok:'攻め手は緩めない！ この圧力も立派な交渉材料だ！' },
+            { icon:'🏛️', label:'商人から城内の内情を買う', stat:'seiji', genre:'seiji', style:'trick', fit:1,
+              ok:'「米びつの底が見えてきた」との情報！ 城内の士気は下がる一方だ！' },
+          ] },
+        { situ:'城内の動揺は頂点に達した！ さあ、総仕上げのときだーっ！',
+          opts:[
+            { icon:'⚔️', label:'全軍一斉に総攻撃', stat:'buyu', genre:'buyu', style:'safe', fit:2,
+              ok:'怒涛の総攻撃ーっ！ 動揺した城兵に、もう支える力は残っていない！' },
+            { icon:'🧠', label:'夜陰に乗じ天守へ斬り込む', stat:'chiryaku', genre:'chiryaku', style:'risky', fit:1,
+              ok:'夜襲が刺さった！ 闇の中、城内は同士討ち寸前の大混乱だ！' },
+            { icon:'🤝', label:'「城兵の命は取らぬ」と勧告', stat:'ninbo', genre:'ninbo', style:'trick', fit:1,
+              ok:'白旗が上がり始めた！ 血を流さずに城が落ちていく…！' },
+          ] },
+      ],
       winText:'稲葉山城を攻め落とした！ 城を「岐阜」と改名し、「天下布武」（武力で天下を統一する）の印を使い始める。あなたの目は、もう京の都を見ている。',
       loseText:'【敗北】美濃の堅城はあまりに固かった……。天下布武の夢、ここまで。\n\n（育成終了。鍛錬の積み重ねが軍の強さになる。次はもっと育ててから挑もう！）',
       winFx:{ koku:150, chiryaku:5, seiji:5 } },
@@ -150,10 +282,43 @@ const SENGOKU_DATA = (function(){
       ] },
 
     { year:1570, type:'battle', title:'姉川の戦い — 裏切りの代償',
-      terrain:{ icon:'🏞️', label:'姉川の河原', hint:'浅瀬を挟んだ正面決戦。押し合いの力勝負だ',
-        compat:{ totsugeki:2, kishu:1, teppo:1, chouryaku:1 } }, bestTactic:'totsugeki',
+      terrain:{ icon:'🏞️', label:'姉川 — 浅瀬の河原' },
       intro:'妹・お市の方を嫁がせた浅井長政が、よりによって朝倉攻めの最中に裏切った！ 挟み撃ちの危機を辛くも脱出（金ヶ崎の退き口）。徳川家康と共に、姉川で浅井・朝倉連合軍と決着をつける。',
       enemyName:'浅井・朝倉連合軍', enemyIcon:'💔', enemyPower:360,
+      army:{ me:28000, foe:18000 }, meUnit:'🛡️', foeUnit:'🗡️',
+      open:[
+        '裏切りの清算、姉川の戦い！ 織田・徳川連合2万8千、対する浅井・朝倉連合1万8千！',
+        '浅瀬を挟んでにらみ合う両軍…先に動くのはどっちだあーっ！？',
+      ],
+      rounds:[
+        { situ:'川を挟んで対峙中！ 先に渡れば足場は悪いが、機先は制せる…どうする!?',
+          opts:[
+            { icon:'🛡️', label:'敵の渡河を待って叩く', stat:'chiryaku', genre:'chiryaku', style:'safe', fit:2,
+              ok:'読みが当たった！ 渡河中の敵を半包囲、川面は大混乱だあーっ！' },
+            { icon:'⚔️', label:'こちらから一気に渡河攻撃', stat:'buyu', genre:'buyu', style:'risky', fit:1,
+              ok:'水しぶきを上げて突撃ーっ！ 勢いで敵の出鼻をくじいた！' },
+            { icon:'🏛️', label:'徳川勢と攻め口をすり合わせる', stat:'seiji', genre:'seiji', style:'trick', fit:1,
+              ok:'連携の段取りが整った！ 同盟軍の動きが見違えるようだ！' },
+          ] },
+        { situ:'浅井勢、決死の猛攻ーっ！ 13段構えの陣が11段まで破られた！ 本陣が危ないぞ！',
+          opts:[
+            { icon:'⚔️', label:'旗本を投入して支える', stat:'buyu', genre:'buyu', style:'safe', fit:2,
+              ok:'本陣の精鋭が踏みとどまったあーっ！ ここが我慢のしどころだ！' },
+            { icon:'🌫️', label:'一旦引いて陣形を立て直す', stat:'chiryaku', genre:'chiryaku', style:'trick', fit:1,
+              ok:'下がりながら陣を組み直す！ 慌てない、慌てない…！' },
+            { icon:'🤝', label:'長政に「降れば妹は返す」と叫ぶ', stat:'ninbo', genre:'ninbo', style:'risky', fit:0,
+              ok:'長政の表情が揺れた…が、浅井の兵は止まらない！ 戦場は情に訴えるには熱すぎる！' },
+          ] },
+        { situ:'徳川勢が朝倉勢を押し返したーっ！ 見ろ、浅井勢の横腹がガラ空きだ！',
+          opts:[
+            { icon:'⚔️', label:'浅井勢の側面へ総攻撃！', stat:'buyu', genre:'buyu', style:'safe', fit:2, hist:true,
+              ok:'横殴りの一撃が決まったあーっ！ 浅井の陣形が音を立てて崩れていく！' },
+            { icon:'💥', label:'鉄砲隊で追い撃ちをかける', stat:'seiji', genre:'seiji', style:'safe', fit:1,
+              ok:'轟音が川原に響く！ 崩れかけた敵に容赦ない追い打ちだ！' },
+            { icon:'🧠', label:'退路の橋を先回りして断つ', stat:'chiryaku', genre:'chiryaku', style:'risky', fit:1,
+              ok:'退き口を塞いだ！ 敵は袋のネズミ…だが窮鼠（きゅうそ）も噛むぞ、油断するな！' },
+          ] },
+      ],
       winText:'徳川軍の奮戦もあり勝利！ 浅井・朝倉に大打撃を与えた。だが包囲網はまだ続く。武田・本願寺・将軍義昭……敵は四方にいる。',
       loseText:'【敗北】裏切りの代償はあまりに大きく、姉川で織田軍は崩れ去った……。\n\n（育成終了。軍学帳でまちがえた問題を復習して、リベンジだ！）',
       winFx:{ koku:120, buyu:5 } },
@@ -170,10 +335,43 @@ const SENGOKU_DATA = (function(){
       effects:{ seiji:8, koku:100 } },
 
     { year:1575, type:'battle', title:'長篠の戦い — 鉄砲三千挺',
-      terrain:{ icon:'🛡️', label:'馬防柵の平野', hint:'柵が敵の騎馬を防ぐ。銭で揃えた鉄砲隊の出番だ！',
-        compat:{ totsugeki:1, kishu:1, teppo:2, chouryaku:0 } }, bestTactic:'teppo',
+      terrain:{ icon:'🛡️', label:'設楽原 — 馬防柵の平野' },
       intro:'「戦国最強」と謳われた武田の騎馬軍団が、後継者・武田勝頼に率いられ長篠城に迫る。あなたの答えは——大量の鉄砲と馬防柵。戦の常識を変えるときだ。',
       enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyPower:470,
+      army:{ me:38000, foe:15000 }, meUnit:'🛡️', foeUnit:'🐴',
+      open:[
+        '決戦・長篠！ 織田・徳川連合3万8千、対する武田勝頼1万5千！',
+        'だが油断するなーっ、武田の騎馬軍団は「戦国最強」！ 数字だけでは測れないぞ！',
+      ],
+      rounds:[
+        { situ:'武田騎馬軍団の襲来は時間の問題！ 決戦の前に、どう備える!?',
+          opts:[
+            { icon:'🏛️', label:'馬防柵を築き鉄砲3千を集める', stat:'seiji', genre:'seiji', style:'safe', fit:2, hist:true,
+              ok:'銭の力ここにありーっ！ 柵と鉄砲3千挺、戦の常識を変える布陣が完成だ！' },
+            { icon:'⚔️', label:'柵などいらん、野戦で迎え撃つ', stat:'buyu', genre:'buyu', style:'risky', fit:0,
+              ok:'漢気あふれる選択！ …だが最強騎馬軍団と真っ向勝負は、さすがに分が悪いぞ！' },
+            { icon:'🧠', label:'鳶ヶ巣山の敵砦へ別働隊', stat:'chiryaku', genre:'chiryaku', style:'trick', fit:1,
+              ok:'背後を突く別働隊が出発！ 敵の退路と補給に圧力をかける！' },
+          ] },
+        { situ:'敵は柵を警戒して動かない…にらみ合いが続く！ どう誘い出す!?',
+          opts:[
+            { icon:'🌫️', label:'背後の鳶ヶ巣山砦を奇襲', stat:'chiryaku', genre:'chiryaku', style:'safe', fit:2,
+              ok:'鳶ヶ巣山、陥落の報ーっ！ 武田勢に「後ろを取られた」と動揺が走る！' },
+            { icon:'⚔️', label:'少数で柵から出て挑発', stat:'buyu', genre:'buyu', style:'risky', fit:1,
+              ok:'挑発に乗った！ 敵の先鋒が柵に向かって動き出したぞーっ！' },
+            { icon:'🤝', label:'武田の重臣に偽の密書', stat:'ninbo', genre:'ninbo', style:'trick', fit:1,
+              ok:'疑心暗鬼の種をまいた！ 敵の軍議が荒れている模様だ！' },
+          ] },
+        { situ:'来たああーっ！ 武田騎馬隊の総突撃！ 地響きがこちらまで届くぞ！',
+          opts:[
+            { icon:'💥', label:'三段撃ちで迎え撃て！', stat:'seiji', genre:'seiji', style:'safe', fit:2,
+              ok:'轟音三連ッ！ 途切れない銃声が騎馬の波を打ち砕くーっ！ これが新時代の戦だ！' },
+            { icon:'⚔️', label:'柵際で槍衾（やりぶすま）を組む', stat:'buyu', genre:'buyu', style:'safe', fit:1,
+              ok:'槍の壁が騎馬を受け止めた！ 柵と槍の二段構えだ！' },
+            { icon:'🧠', label:'柵を開けて誘い込み袋叩き', stat:'chiryaku', genre:'chiryaku', style:'risky', fit:1,
+              ok:'わざと開けた口に敵が飛び込んだ！ 三方から袋叩きだあーっ！' },
+          ] },
+      ],
       winText:'鉄砲隊の一斉射撃が騎馬隊を打ち砕いた！ 「長篠の戦い」は、鉄砲が戦の主役になったことを天下に示した。武田家はこの敗北から立ち直れない。',
       loseText:'【敗北】雨に濡れた鉄砲は火を噴かず、戦国最強の騎馬隊が柵を破った……。\n\n（育成終了。ここまで来たきみなら、次はきっと勝てる！）',
       winFx:{ koku:180, buyu:8, chiryaku:5 } },
@@ -277,5 +475,5 @@ const SENGOKU_DATA = (function(){
       desc:'阿国のかぶき踊りはのちの歌舞伎のもとになった。能・狂言は室町時代に観阿弥・世阿弥らが大成したもので、時代の区別がよく問われる。' },
   ];
 
-  return { GENRES, RETAINERS, WARLORDS, TACTICS, SKIRMISH_TERRAINS, SKIRMISH_FOES, TIMELINE, QUESTIONS };
+  return { GENRES, RETAINERS, WARLORDS, BATTLE_LINES, SKIRMISH_FOES, SKIRMISH_SITUS, TIMELINE, QUESTIONS };
 })();

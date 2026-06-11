@@ -162,35 +162,50 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .pushRow{display:grid; gap:8px; margin-top:12px;}
 .pushNote{font-size:12px; color:#6b5a3e; text-align:center;}
 
-/* ===== §S5 合戦（押し合い演出） ===== */
-.btField{background:linear-gradient(180deg,#3a2430,#1d1622); border-radius:14px; padding:12px; color:var(--paper); margin:8px 0 12px;}
-.tugIcons{display:flex; align-items:center; justify-content:space-between; padding:0 6px; margin-bottom:2px;}
-.tugIcons .tugMe,.tugIcons .tugFoe{font-size:44px; filter:drop-shadow(0 2px 4px rgba(0,0,0,.5)); transition:transform .4s;}
-.tugIcons .tugFoe{transform:scaleX(-1);}
-.tugIcons .tugVs{font-size:18px; font-weight:900; color:var(--gold2); letter-spacing:.1em;}
-.tugIcons.clash .tugMe{animation:pushL .5s;}
-.tugIcons.clash .tugFoe{animation:pushR .5s;}
-@keyframes pushL{0%,100%{transform:translateX(0)}50%{transform:translateX(10px) rotate(8deg)}}
-@keyframes pushR{0%,100%{transform:scaleX(-1) translateX(0)}50%{transform:scaleX(-1) translateX(10px) rotate(8deg)}}
-.tugNames{display:flex; justify-content:space-between; font-weight:900; font-size:13.5px; margin-bottom:4px;}
-.tugNames .en{color:#ff9d8a;}
-.btBar{height:18px; background:linear-gradient(90deg,#ff8d76,#b3362a); border-radius:9px; overflow:hidden; border:1px solid #5a4458; margin-bottom:8px;}
-.btBar i{display:block; height:100%; transition:width .6s;}
-.btBar .me{background:linear-gradient(90deg,#7fb6ff,#3a6ea5); border-right:3px solid #ffe9a8;}
-.btVs{text-align:center; font-size:15px; font-weight:900; color:#cdbb88; margin:2px 0 6px;}
-.btLog{font-size:13.5px; line-height:1.7; color:#f0e6cd; min-height:40px; white-space:pre-wrap;}
-/* 地形バッジと戦術選択（2026-06-11 合戦刷新） */
-.terrainTag{margin:0 0 10px; padding:8px 10px; border-radius:10px; background:#f3ecff; border:2px solid var(--purple);
-  font-size:13px; line-height:1.6;}
-.tactic{display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:12px;
+/* ===== §S5 合戦絵巻（2026-06-12 生徒FB対応。設計: DESIGN_SENGOKU_BATTLE_V2.md） ===== */
+.bField{position:relative; background:linear-gradient(180deg,#3a2430,#1d1622); border-radius:14px;
+  padding:10px 12px 12px; color:var(--paper); margin:8px 0 10px; overflow:hidden; cursor:pointer;}
+.bSky{text-align:center; font-size:12.5px; font-weight:800; color:#cdbb88; margin-bottom:6px;}
+.bArmies{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+.bSide{text-align:left;} .bSide.foe{text-align:right;}
+.bName{font-weight:900; font-size:13px;} .bName.en{color:#ff9d8a;}
+.bHP{font-size:21px; font-weight:900; font-variant-numeric:tabular-nums;}
+.bSide.foe .bHP{color:#ff9d8a;}
+.bVsTag{font-size:14px; font-weight:900; color:var(--gold2);}
+.bStrip{display:flex; align-items:center; justify-content:space-between; font-size:20px; margin:6px 0 4px; min-height:28px;}
+.bStrip .bUnits{filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); letter-spacing:-3px;}
+.bStrip .bUnits.foe{transform:scaleX(-1);}
+.bClash{font-size:22px; animation:clashPulse 1.6s infinite;}
+@keyframes clashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25) rotate(10deg)}}
+.btBar{height:14px; background:linear-gradient(90deg,#ff8d76,#b3362a); border-radius:9px; overflow:hidden; border:1px solid #5a4458;}
+.btBar .me{display:block; height:100%; background:linear-gradient(90deg,#7fb6ff,#3a6ea5); border-right:3px solid #ffe9a8; transition:width .8s;}
+/* 結果エフェクト4階調: 会心=大シェイク+フラッシュ / 有効=中 / 不発=小 / しくじり=被弾 */
+.bField.fxBig{animation:shakeBig .6s;} .bField.fxMid{animation:shakeMid .45s;}
+.bField.fxSmall{animation:dimSmall .5s;} .bField.fxBad{animation:shakeBad .5s;}
+@keyframes shakeBig{0%,100%{transform:none}15%{transform:translate(-7px,3px) rotate(-1deg)}30%{transform:translate(7px,-3px) rotate(1deg)}45%{transform:translate(-6px,2px)}60%{transform:translate(6px,-2px)}75%{transform:translate(-3px,1px)}}
+@keyframes shakeMid{0%,100%{transform:none}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,1px)}}
+@keyframes dimSmall{0%,100%{filter:none}50%{filter:brightness(.7)}}
+@keyframes shakeBad{0%,100%{transform:none}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.bField.fxBig::after{content:''; position:absolute; inset:0; background:rgba(255,235,160,.45); animation:flashOut .6s forwards; pointer-events:none;}
+@keyframes flashOut{from{opacity:1}to{opacity:0}}
+.bCutin{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
+  font-size:32px; font-weight:900; color:#fff3c8; text-shadow:0 0 18px rgba(243,207,93,1), 0 2px 4px rgba(0,0,0,.6);
+  opacity:0; transform:scale(.6);}
+.bCutin.on{animation:cutin 1.2s forwards;}
+@keyframes cutin{0%{opacity:0; transform:scale(.5)}20%{opacity:1; transform:scale(1.15)}35%{transform:scale(1)}85%{opacity:1}100%{opacity:0; transform:scale(1.05)}}
+.bCaster{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; color:#8a6605;}
+.bCaster .bFastTip{font-weight:600; color:#9a8660; font-size:11px;}
+.bLog{min-height:70px; font-size:13.5px; line-height:1.65; background:#fff8e4; border:2px solid var(--gold);
+  border-radius:10px; padding:8px 10px; margin:4px 0 10px;}
+.bLog div{opacity:.5;} .bLog div.new{opacity:1; font-weight:700; animation:rise .3s;}
+/* 采配ボタン（堅実/博打/搦め手のチップつき・参照ステ数値明記） */
+.saihai{display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:12px;
   border:3px solid var(--line); background:#fffdf4; text-align:left; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;}
-.tactic:active{transform:translateY(2px);}
-.tactic .ti{font-size:22px;}
-.tactic .tb{flex:1; line-height:1.3;} .tactic .tb b{font-size:14.5px;}
-.tactic .tb small{display:block; font-size:11px; color:#7a6845;}
-.tactic .tm{font-size:20px; font-weight:900;}
-.tactic.c2{border-color:var(--gold); background:#fff3c8;} .tactic.c2 .tm{color:#a87d12;}
-.tactic.c1 .tm{color:var(--blue);} .tactic.c0 .tm{color:#999;}
+.saihai:active{transform:translateY(2px);}
+.saihai .ti{font-size:22px;}
+.saihai .tb{flex:1; line-height:1.3;} .saihai .tb b{font-size:14.5px;}
+.saihai .tb small{display:block; font-size:11px; color:#7a6845;}
+.saihai .chip{font-size:11px; font-weight:800; color:#fff; border-radius:999px; padding:3px 9px; white-space:nowrap;}
 
 /* ===== §S6 結果・殿堂 ===== */
 .rankBig{text-align:center; margin:8px 0;}
@@ -310,23 +325,28 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div id="e-actions" style="display:grid; gap:8px;"></div>
   </div></div>
 
-  <!-- ===== 合戦（数値は出さない・絵文字の押し合いで戦況を暗示） ===== -->
+  <!-- ===== 合戦絵巻（オート進行＋采配介入。実況: 物見の佐助。史実兵力を表示） ===== -->
   <div id="ovl-battle" class="ovl"><div class="box">
     <div class="evYear serif" id="b-year"></div>
     <h2 class="serif" id="b-title"></h2>
     <div class="evText" id="b-intro" style="margin-bottom:8px;"></div>
-    <div class="terrainTag" id="b-terrain"></div>
-    <div class="btField">
-      <div class="tugIcons">
-        <span class="tugMe" id="b-meicon">😤</span>
-        <span class="tugVs serif">VS</span>
-        <span class="tugFoe" id="b-foeicon">👑</span>
+    <div class="bField" id="b-field" onclick="UI.battleFast()">
+      <div class="bSky" id="b-sky"></div>
+      <div class="bArmies">
+        <div class="bSide"><div class="bName">🔵 織田軍</div><div class="bHP" id="b-mehp"></div></div>
+        <div class="bVsTag serif">VS</div>
+        <div class="bSide foe"><div class="bName en" id="b-foename"></div><div class="bHP" id="b-foehp"></div></div>
       </div>
-      <div class="tugNames"><span>🔵 織田軍</span><span class="en" id="b-foe"></span></div>
-      <div class="btBar tug"><i class="me" id="b-tug" style="width:50%"></i></div>
-      <div class="btVs" id="b-adv"></div>
-      <div class="btLog" id="b-log"></div>
+      <div class="bStrip">
+        <span class="bUnits" id="b-meunits"></span>
+        <span class="bClash">💥</span>
+        <span class="bUnits foe" id="b-foeunits"></span>
+      </div>
+      <div class="btBar"><i class="me" id="b-tug" style="width:50%"></i></div>
+      <div class="bCutin" id="b-cutin"></div>
     </div>
+    <div class="bCaster"><span id="b-castername"></span><span class="bFastTip">戦場をタップで早送り⏩</span></div>
+    <div class="bLog" id="b-log"></div>
     <div id="b-actions" style="display:grid; gap:8px;"></div>
   </div></div>
 
@@ -616,7 +636,6 @@ const Game = (function(){
     const correct = (choiceIdx === cur.sh.a);
     cur.lastCorrect = correct;
     if (cur.mode==='battle'){ return battleAnswer(correct); }
-    if (cur.mode==='skirmish'){ return skirmishAnswer(correct); }
     if (cur.mode==='review'){
       if (correct){
         const item = P.book[cur.bookIdx];
@@ -699,60 +718,68 @@ const Game = (function(){
     return ch;
   }
 
-  /* ===== §7 合戦（地形×戦術×軍配＝2026-06-11 ユーザー要望でコア刷新） =====
-     毎問の前に戦術4択（突撃/奇襲/鉄砲隊/調略）を選ぶ。
-     正解時の戦果 = 地形相性（◎1.3/○1.0/△0.6）× ステ補正（0.85〜1.2）× 史実戦術1.15 */
+  /* ===== §7 合戦絵巻（戦況→采配→クイズ→結果4階調。設計: DESIGN_SENGOKU_BATTLE_V2.md） ===== */
   let B = null;
   function playerPower(){
     return Math.round(S.buyu*2.2 + S.chiryaku*1.6 + S.ninbo*0.6 + S.koku/15);
   }
+  const TIER_VAL = { kaishin:1.4, yuko:1.0, fuhatsu:0.35, shikujiri:0 };
   function startBattle(ev){
-    B = { ev, terrain:ev.terrain, q:0, score:0, max:3, tactic:null, lastText:'' };
+    B = { ev, round:0, max:ev.rounds.length, score:0,
+      meHP:ev.army.me, foeHP:ev.army.foe, opt:null, last:null, skirmish:!!ev.skirmish };
     UI.openBattle(ev);
   }
-  // 戦術を選ぶと、その戦術に対応するジャンルから出題される
-  function setTactic(tid){
-    B.tactic = tid;
-    B.q++;
-    const t = D.TACTICS[tid];
-    cur = { mode:'battle', genre:t.genre };
-    const sel = pickQuestion(t.genre, 'battle');
+  // 采配を選ぶ → その采配の参照ステに対応するジャンルから出題
+  function battlePick(optIdx){
+    const opt = B.ev.rounds[B.round].opts[optIdx];
+    B.round++;
+    B.opt = opt;
+    cur = { mode:'battle', genre:opt.genre };
+    const sel = pickQuestion(opt.genre, B.skirmish? null : 'battle');
     cur.sel = sel;
     UI.openQuiz(sel.q, cur);
   }
-  function tacticPower(tid, compat, hist){
-    const mul = compat===2 ? 1.3 : compat===1 ? 1.0 : 0.6;
-    const st = D.TACTICS[tid].stat;
-    const sb = Math.max(0.85, Math.min(1.2, 1 + (S[st]-60)/400));
-    return mul * sb * (hist ? 1.15 : 1);
+  function battleAnswer(correct){
+    S.answerTotal++;
+    const opt = B.opt;
+    // 搦め手（trick）は参照ステ90以上で合致が1段「化ける」
+    const fit = Math.min(2, opt.fit + ((opt.style==='trick' && S[opt.stat]>=90) ? 1 : 0));
+    let tier;
+    if (correct){
+      S.correctTotal++;
+      tier = (opt.hist || fit===2) ? 'kaishin' : (fit===1 ? 'yuko' : 'fuhatsu');
+    } else {
+      addToBook(cur.sel.q);
+      tier = (opt.style==='risky') ? 'shikujiri' : 'fuhatsu';
+    }
+    // 内部スコア = 階調 × ステ補正(0.85〜1.2) × 博打ボーナス
+    let val = TIER_VAL[tier];
+    if (tier==='kaishin' || tier==='yuko'){
+      val *= Math.max(0.85, Math.min(1.2, 1 + (S[opt.stat]-60)/400));
+      if (opt.style==='risky') val *= 1.2;
+    }
+    B.score += val;
+    // 兵力表示の増減（演出用マッピング。勝敗は内部スコアで判定）
+    const E0 = B.ev.army.foe, M0 = B.ev.army.me;
+    const foeCut = { kaishin:0.17, yuko:0.11, fuhatsu:0.05, shikujiri:0.02 }[tier];
+    const meCut  = 0.04 + (tier==='shikujiri' ? (opt.style==='risky' ? 0.14 : 0.10) : 0);
+    B.foeHP = Math.max(Math.round(E0*0.08), B.foeHP - Math.round(E0*foeCut));
+    B.meHP  = Math.max(Math.round(M0*0.10), B.meHP - Math.round(M0*meCut));
+    B.last = { tier, opt, correct };
+    const head = { kaishin: opt.hist? '⚡ 史実の一手で会心！' : '⚡ 会心！',
+      yuko:'⭕ 有効打！', fuhatsu:'😶 不発…', shikujiri:'💢 しくじり！' }[tier];
+    const text = (tier==='kaishin'||tier==='yuko') ? `${head}\n${opt.ok}`
+      : tier==='fuhatsu' ? `${head}\n「${opt.label}」は戦況に響かなかった…`
+      : `${head}\n「${opt.label}」が裏目に出て、敵に押し込まれた！`;
+    return { correct, battle:true, last:(B.round>=B.max), text };
   }
   // 押し合いゲージ用: 現在の戦況（1.0=勝敗ライン）
   function battleProgress(){
     const ratio = playerPower()/B.ev.enemyPower;
     return (ratio*0.6 + 0.62*(B.score/B.max)) / 0.9;
   }
-  function battleAnswer(correct){
-    S.answerTotal++;
-    const t = D.TACTICS[B.tactic];
-    const compat = B.terrain.compat[B.tactic];
-    const hist = (B.ev.bestTactic===B.tactic);
-    let text;
-    if (correct){
-      S.correctTotal++;
-      B.score += tacticPower(B.tactic, compat, hist);
-      text = `${t.icon} ${t.ok}`;
-      if (hist) text += '\n📜 史実と同じ戦術がぴたりとはまった！';
-      else if (compat===2) text += '\n🗺️ 地の利を活かした！';
-      else if (compat===0) text += '\n（この地形では戦果はいまひとつ…）';
-    } else {
-      addToBook(cur.sel.q);
-      text = `${t.icon} ${t.ng}`;
-    }
-    B.lastText = text;
-    const last = (B.q>=B.max);
-    return { correct, battle:true, last, text };
-  }
   function battleResult(){
+    if (B.skirmish) return skirmishResult();
     S.battles++;
     const ratio = playerPower()/B.ev.enemyPower;
     const score = ratio*0.6 + (B.score/B.max)*0.62;
@@ -762,45 +789,41 @@ const Game = (function(){
     return { win, text: win? B.ev.winText : B.ev.loseText };
   }
 
-  /* ===== §7.5 小競り合い（任意参加のミニ合戦＝レース枠。石高とスキルPを稼ぐ） ===== */
+  /* ===== §7.5 小競り合い ＝ 1ラウンド版の合戦絵巻（石高とスキルP稼ぎ・敗北しても育成は続く） ===== */
   function startSkirmish(){
-    const terrain = D.SKIRMISH_TERRAINS[Math.floor(Math.random()*D.SKIRMISH_TERRAINS.length)];
     const foe = D.SKIRMISH_FOES[Math.floor(Math.random()*D.SKIRMISH_FOES.length)];
-    cur = { mode:'skirmish', terrain, foe };
-    UI.showSkirmish(terrain, foe);
-  }
-  function skirmishPick(tid){
+    const situ = D.SKIRMISH_SITUS[Math.floor(Math.random()*D.SKIRMISH_SITUS.length)];
     S.stamina = Math.max(0, S.stamina-14);
-    cur.tactic = tid;
-    cur.genre = D.TACTICS[tid].genre;
-    const sel = pickQuestion(cur.genre);
-    cur.sel = sel;
-    UI.openQuiz(sel.q, cur);
+    startBattle({
+      skirmish:true, year:S.year, title:`🚩 ${foe.name}`, intro:'',
+      terrain:{ icon:'', label:situ.sky },
+      enemyName:foe.name, enemyIcon:foe.icon, enemyPower:Math.max(40, playerPower()),
+      army:{ me:Math.min(2500, 400+Math.round(S.koku)), foe:foe.army },
+      meUnit:'🛡️', foeUnit:'🗡️',
+      open:[ foe.text ],
+      rounds:[ situ ],
+    });
   }
-  function skirmishAnswer(correct){
-    S.answerTotal++;
-    const t = D.TACTICS[cur.tactic];
-    const compat = cur.terrain.compat[cur.tactic];
-    if (correct){
-      S.correctTotal++;
-      const mul = compat===2 ? 1.5 : compat===1 ? 1.0 : 0.7;
-      const k = Math.round((12 + (S.year-START_YEAR) + Math.random()*8) * mul);
+  function skirmishResult(){
+    const tier = B.last.tier;
+    const win = (tier==='kaishin' || tier==='yuko');
+    let text;
+    if (win){
+      const k = Math.round((12 + (S.year-START_YEAR) + Math.random()*8) * (tier==='kaishin' ? 1.6 : 1.0));
       S.koku += k; S.skillPt += 3;
-      if (compat===2) S.mood = Math.min(4, S.mood+1);
-      saveAll();
-      let txt = `${t.icon} ${t.ok}\n🚩 勝利！ 石高+${fmtKoku(k)}・✨スキルP+3`;
-      if (compat===2) txt += '・やる気UP（地の利を突いた！）';
-      return { correct, text:txt, done:'next' };
-    }
-    addToBook(cur.sel.q);
-    S.mood = Math.max(0, S.mood-1);
-    // 敗走中は低確率でケガ（体力が低いほど危ない）
-    if (Math.random()*100 < failRate()/2 + 8){
-      S.injury = 1; saveAll();
-      return { correct, text:`${t.icon} ${t.ng}\n💥 敗走の途中でケガをしてしまった……（🌿薬師で治療しよう）`, done:'next' };
+      if (tier==='kaishin') S.mood = Math.min(4, S.mood+1);
+      text = `🚩 勝利！ 石高+${fmtKoku(k)}・✨スキルP+3${tier==='kaishin' ? '・やる気UP' : ''}`;
+    } else {
+      S.mood = Math.max(0, S.mood-1);
+      if (Math.random()*100 < failRate()/2 + 8){
+        S.injury = 1;
+        text = '💥 敗走の途中でケガをしてしまった……（🌿薬師で治療しよう）';
+      } else {
+        text = '🌀 戦果なし…兵を退いた。やる気DOWN';
+      }
     }
     saveAll();
-    return { correct, text:`${t.icon} ${t.ng}\n🌀 小競り合いに敗れた……やる気DOWN`, done:'next' };
+    return { win, text, skirmish:true };
   }
   // 敗北＝育成終了（パワプロ/ウマ娘式・2026-06-11 教師FB）
   function defeatEnd(){
@@ -860,7 +883,7 @@ const Game = (function(){
     newRun:(lg)=>{S=newRun(lg); saveAll();}, hasRun, resume, clearRun,
     failRate, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
-    setTactic, skirmishPick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
+    battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
     get cur(){return cur;}, get B(){return B;}, START_YEAR, END_YEAR, saveAll };
 })();
 
@@ -1070,7 +1093,7 @@ const UI = (function(){
   function quizDone(){
     $('ovl-quiz').classList.remove('on');
     const ctx = Game.cur;
-    if (ctx.mode==='battle'){ battleStep(); return; }
+    if (ctx.mode==='battle'){ battleResolve(); return; }
     renderGame();
     Game.checkBondMax();
     setTimeout(()=>Game.nextTurn(), 250);
@@ -1131,92 +1154,151 @@ const UI = (function(){
     $('ovl-event').classList.add('on');
   }
 
-  /* ---- 小競り合い（戦術を選んで1問勝負。「やめておく」ならターン消費なし） ---- */
-  function tacticHtml(terrain, picker){
-    const marks = ['△','○','◎'];
-    return Object.keys(D.TACTICS).map(id=>{
-      const t = D.TACTICS[id];
-      const c = terrain.compat[id];
-      const st = D.GENRES[t.stat];
-      return `<button class="tactic c${c}" onclick="${picker}('${id}')">
-        <span class="ti">${t.icon}</span>
-        <span class="tb"><b>${t.label}</b><small>${st.icon}${st.label}が効く ／ ${st.quizLabel}の問題</small></span>
-        <span class="tm">${marks[c]}</span></button>`;
-    }).join('');
-  }
-  function showSkirmish(ter, foe){
-    $('e-year').textContent = `${Game.S.year}年`;
-    setArt('🚩'+foe.icon);
-    $('e-title').textContent = `🚩 ${foe.name}`;
-    $('e-text').textContent = `${foe.text}\n\n${ter.icon} 戦場: ${ter.label} — ${ter.hint}\n（体力-14。勝てば石高と✨スキルP！ ◎=地形と相性ばつぐん）`;
-    $('e-fx').classList.remove('on');
-    evCb = null;
-    $('e-actions').innerHTML = tacticHtml(ter, 'UI.pickSkirmishTactic')
-      + `<button class="btn" onclick="UI.eventDone()">やめておく（ターンは進まない）</button>`;
-    $('ovl-event').classList.add('on');
-  }
-  function pickSkirmishTactic(tid){
-    $('ovl-event').classList.remove('on');
-    Game.skirmishPick(tid);
-  }
+  /* （小競り合いのUIは合戦絵巻に統合 — §合戦絵巻を参照） */
 
-  /* ---- 合戦（数値は見せず、押し合いゲージと形勢ことばで暗示） ---- */
-  function advWord(p){
-    if (p>=1.15) return '🔥 こちらが大優勢！';
-    if (p>=1.0)  return '😤 こちらが優勢';
-    if (p>=0.85) return '⚔️ 互角の押し合い！';
-    if (p>=0.7)  return '😰 こちらが劣勢…';
-    return '💀 圧倒的に不利……！';
+  /* ---- 合戦絵巻（実況: 物見の佐助。タップ早送り・兵力カウントダウン・4階調エフェクト） ---- */
+  const L = D.BATTLE_LINES;
+  let castT = [], castFast = false, logLines = [];
+  function clearCast(){ castT.forEach(clearTimeout); castT = []; }
+  function battleFast(){ castFast = true; }
+  function castWait(ms){ return castFast ? 90 : ms; }
+  function addLog(t){
+    logLines.push(t);
+    if (logLines.length > 3) logLines.shift();
+    $('b-log').innerHTML = logLines.map((l,i)=>`<div class="${i===logLines.length-1?'new':''}">${l}</div>`).join('');
   }
-  function renderTug(clash){
-    const p = Game.battleProgress();
-    $('b-tug').style.width = Math.max(8, Math.min(92, Math.round(p*50)))+'%';
-    $('b-adv').textContent = advWord(p);
-    if (clash){ const t=$('b-meicon').parentElement; t.classList.remove('clash'); void t.offsetWidth; t.classList.add('clash'); }
+  // 実況を1行ずつ流す（早送り中は高速）
+  function cast(lines, done){
+    let i = 0;
+    (function next(){
+      if (i >= lines.length){ if (done) castT.push(setTimeout(done, castWait(450))); return; }
+      addLog(lines[i++]);
+      castT.push(setTimeout(next, castWait(1050)));
+    })();
+  }
+  function fmtArmy(n){ return n.toLocaleString('ja-JP'); }
+  function renderArmies(){
+    const B = Game.B;
+    $('b-mehp').textContent = fmtArmy(B.meHP);
+    $('b-foehp').textContent = fmtArmy(B.foeHP);
+    const units = (hp, max, icon)=> icon.repeat(Math.max(1, Math.ceil(hp/max*6)));
+    $('b-meunits').textContent = units(B.meHP, B.ev.army.me, B.ev.meUnit||'🛡️');
+    $('b-foeunits').textContent = units(B.foeHP, B.ev.army.foe, B.ev.foeUnit||'🗡️');
+    $('b-tug').style.width = Math.max(8, Math.min(92, Math.round(Game.battleProgress()*50)))+'%';
+  }
+  // 兵力のカウントダウン演出
+  function tickHP(side, to, done){
+    const el = $(side==='me' ? 'b-mehp' : 'b-foehp');
+    const from = parseInt(el.textContent.replace(/,/g,'')) || to;
+    const steps = 16, d = (to-from)/steps;
+    let i = 0;
+    (function t(){
+      i++;
+      el.textContent = fmtArmy(Math.round(from + d*i));
+      if (i < steps) castT.push(setTimeout(t, castWait(800)/steps));
+      else { el.textContent = fmtArmy(to); if (done) castT.push(setTimeout(done, castWait(250))); }
+    })();
   }
   function openBattle(ev){
+    castFast = false; logLines = [];
+    clearCast();
     $('b-year').textContent = `${ev.year}年`;
     $('b-title').textContent = ev.title;
-    $('b-intro').textContent = ev.intro;
-    $('b-terrain').innerHTML = `${ev.terrain.icon} <b>${ev.terrain.label}</b> — ${ev.terrain.hint}`;
-    $('b-foe').textContent = ev.enemyName;
-    $('b-foeicon').textContent = ev.enemyIcon || '👹';
-    renderTug(false);
-    $('b-log').textContent = '⚠️ 負ければ育成終了！ 地形を読んで戦術を選び、軍配（クイズ）で戦況を動かせ——';
-    $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleGo()">⚔️ 開戦！</button>`;
+    $('b-intro').textContent = ev.intro || '';
+    $('b-intro').style.display = ev.intro ? 'block' : 'none';
+    $('b-sky').textContent = `${ev.terrain.icon} ${ev.terrain.label}`.trim();
+    $('b-foename').textContent = `${ev.enemyIcon || '🔴'} ${ev.enemyName}`;
+    $('b-castername').textContent = L.caster;
+    $('b-log').innerHTML = ''; $('b-actions').innerHTML = '';
+    $('b-cutin').className = 'bCutin';
+    $('b-field').className = 'bField';
+    renderArmies();
     $('ovl-battle').classList.add('on');
+    const opening = ev.skirmish ? ev.open : [L.casterIntro, ...ev.open, '⚠️ 負ければ育成終了の大一番だ！'];
+    cast(opening, showRound);
   }
-  // 開戦／次の軍配 → 戦術4択を表示（戦術がそのまま出題ジャンルになる）
-  function battleGo(){
-    $('b-actions').innerHTML =
-      `<div class="note" style="text-align:center; color:#f0e6cd;">軍配${Game.B.q+1}/${Game.B.max} — 戦術を選べ！（◎=地形と相性ばつぐん）</div>`
-      + tacticHtml(Game.B.terrain, 'UI.pickBattleTactic');
-  }
-  function pickBattleTactic(tid){
-    $('ovl-battle').classList.remove('on');
-    Game.setTactic(tid);
-  }
-  function battleStep(){
+  // 戦況を実況→采配ボタン（参照ステ数値・堅実/博打/搦め手チップを明記）
+  function showRound(){
     const B = Game.B;
+    const round = B.ev.rounds[B.round];
+    cast([`📯 軍配${B.round+1}本目！ ${round.situ}`], ()=>{
+      const chips = { safe:['堅実','#2e8b57'], risky:['博打','#b3362a'], trick:['搦め手','#7a4f9d'] };
+      $('b-actions').innerHTML =
+        `<div class="note" style="text-align:center;">どう采配する？（クイズに正解すれば采配が実行される）</div>` +
+        round.opts.map((o,i)=>{
+          const g = D.GENRES[o.stat];
+          const c = chips[o.style];
+          return `<button class="saihai" onclick="UI.pickSaihai(${i})">
+            <span class="ti">${o.icon}</span>
+            <span class="tb"><b>${o.label}</b><small>${g.icon}${g.label} ${Game.S[o.stat]} で実行 ／ ${g.quizLabel}の問題が出る</small></span>
+            <span class="chip" style="background:${c[1]}">${c[0]}</span></button>`;
+        }).join('');
+    });
+  }
+  function pickSaihai(i){
+    $('b-actions').innerHTML = '';
+    clearCast();
+    $('ovl-battle').classList.remove('on');
+    Game.battlePick(i);
+  }
+  // クイズから戻ったら、結果を4階調エフェクトで絵巻に反映
+  function battleResolve(){
+    const B = Game.B;
+    castFast = false;
     $('ovl-battle').classList.add('on');
-    renderTug(true);
-    $('b-log').textContent = `軍配 ${B.q}/${B.max} ── ${B.lastText}`;
-    if (B.q < B.max){
-      battleGo();
-    } else {
-      $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着！</button>`;
+    const { tier, opt } = B.last;
+    const field = $('b-field');
+    field.className = 'bField';
+    void field.offsetWidth;
+    field.classList.add({ kaishin:'fxBig', yuko:'fxMid', fuhatsu:'fxSmall', shikujiri:'fxBad' }[tier]);
+    if (tier==='kaishin'){
+      const c = $('b-cutin');
+      c.textContent = opt.hist ? '⚡ 史実の一手！' : '⚡ 会心！';
+      c.className = 'bCutin on';
+      castT.push(setTimeout(()=>{ c.className = 'bCutin'; }, castWait(1300)));
     }
+    const lines = [];
+    if (tier==='kaishin' || tier==='yuko') lines.push(`${opt.icon} ${opt.ok}`);
+    if (tier==='kaishin' && opt.hist) lines.push(L.hist);
+    lines.push(L[tier][Math.floor(Math.random()*L[tier].length)]);
+    cast(lines, ()=>{
+      tickHP('foe', B.foeHP, null);
+      tickHP('me', B.meHP, ()=>{
+        renderArmies();
+        if (B.round < B.max){
+          cast([L.mid[Math.floor(Math.random()*L.mid.length)]], showRound);
+        } else {
+          $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着！</button>`;
+        }
+      });
+    });
   }
   function battleFinish(){
+    $('b-actions').innerHTML = '';
     const r = Game.battleResult();
-    $('ovl-battle').classList.remove('on');
-    if (r.win){
-      showEvent({ year:Game.B.ev.year, title:'🎉 勝利！', text:r.text },
-        ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); }, Game.B.ev.winFx);
-    } else {
-      showEvent({ year:Game.B.ev.year, title:'💀 敗北……', text:r.text },
-        ()=>Game.defeatEnd());
+    const B = Game.B;
+    if (r.skirmish){
+      cast([r.win ? '🚩 敵を蹴散らしたーっ！ 見事な小競り合いだった！' : '🌀 痛み分け…ここは兵を退こう。'], ()=>{
+        $('ovl-battle').classList.remove('on');
+        showEvent({ year:Game.S.year, title: r.win ? '🚩 小競り合いに勝利！' : '🌀 退却…', text:r.text },
+          ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); });
+      });
+      return;
     }
+    // 決着シーケンス: 勝ち=敵兵力が崩壊 / 負け=自軍が崩壊
+    if (r.win) B.foeHP = Math.round(B.ev.army.foe*0.04);
+    else B.meHP = Math.round(B.ev.army.me*0.05);
+    tickHP(r.win ? 'foe' : 'me', r.win ? B.foeHP : B.meHP, null);
+    cast(r.win ? L.winSeq : L.loseSeq, ()=>{
+      renderArmies();
+      $('ovl-battle').classList.remove('on');
+      if (r.win){
+        showEvent({ year:B.ev.year, title:'🎉 勝利！', text:r.text },
+          ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); }, B.ev.winFx);
+      } else {
+        showEvent({ year:B.ev.year, title:'💀 敗北……', text:r.text }, ()=>Game.defeatEnd());
+      }
+    });
   }
 
   /* ---- 結果 ---- */
@@ -1288,14 +1370,14 @@ const UI = (function(){
       ❤️ <b>体力が減ると失敗率が上がる</b>。😴休息でしっかり回復しよう（まちがえた問題の復習チャンスもある）。<br><br>
       🤝 家臣がいる鍛錬は伸びやすく<b>絆</b>も深まる。絆80以上の家臣が得意鍛錬で輝いていたら<b>🌈友情特訓</b>で超成長！<br><br>
       🚩 <b>小競り合い</b>は腕試しのミニ合戦。勝てば石高（こくだか）と✨スキルPが稼げるぞ。<br><br>
-      🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。<b>地形を読んで戦術（突撃・奇襲・鉄砲隊・調略）を選べ</b>。◎の戦術＋クイズ正解で戦況は大きく傾く。史実と同じ戦術を選ぶと…？ <b>負けたらそこで育成終了</b>——まずは32年の完走を目指せ！<br><br>
+      🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。合戦は<b>「合戦絵巻」</b>——物見の佐助の実況で戦いが流れ、戦況が動いた瞬間にきみが<b>采配</b>を振る！ 選択肢には<b>堅実・博打・搦め手</b>の色がある。<b>戦況の文章をよく読み、自分の強いステータスと相談して選べ</b>。クイズに正解すれば采配は実行され、結果は会心⚡〜しくじり💢の4段階。史実と同じ采配を見抜けたら…？ <b>負けたらそこで育成終了</b>——まずは32年の完走を目指せ！<br><br>
       🔥 そして1582年、本能寺の変——<b>知略と人望を高く育てておくと、「もしも」の歴史</b>が見られるかもしれない…。</div>`;
     $('ovl-list').classList.add('on');
   }
 
   return { show, preStart, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone,
-    showEvent, eventDone, showChoiceEvent, openBattle, battleGo, battleFinish, showResult,
-    openTrain, pickTrain, closeTrain, openSkill, pickBattleTactic, showSkirmish, pickSkirmishTactic,
+    showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, battleFast, pickSaihai, showResult,
+    openTrain, pickTrain, closeTrain, openSkill,
     openHall, openBook, closeList, openHowto, openRoster };
 })();
 
