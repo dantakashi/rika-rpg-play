@@ -50,12 +50,22 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 
 /* ===== §S3 育成メイン ===== */
 .board{background:var(--paper); border-radius:18px; border:3px solid var(--line); overflow:hidden;}
-.gHead{display:flex; align-items:center; justify-content:space-between; padding:8px 12px;
+.gHead{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px;
   background:linear-gradient(180deg,var(--indigo2),var(--indigo)); color:var(--paper);}
 .gYear{font-weight:900; font-size:19px;} .gYear small{font-weight:600; font-size:12px; color:#bfc8e0; margin-left:6px;}
 .gKoku{font-weight:800; font-size:14px; color:var(--gold2);}
-.charRow{display:flex; gap:10px; padding:10px 12px 4px; align-items:center;}
-.charFace{font-size:44px; line-height:1; filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));}
+.gSkill{font-weight:800; font-size:13px; color:#d9c7ff; cursor:pointer;}
+/* 中央ステージ: 信長＋石高で育つ居城（ウマ娘の中央モデル相当・絵文字代用） */
+.stage{display:flex; align-items:flex-end; justify-content:center; gap:30px; padding:12px 12px 4px; min-height:84px;
+  background:linear-gradient(180deg,#cfe2f2 0%,#ece9d4 72%,var(--paper) 100%);}
+.stageCastle{text-align:center;}
+.stageCastle .ce{display:block; line-height:1; transition:filter .4s;}
+.stageCastle.t1 .ce{font-size:34px;} .stageCastle.t2 .ce{font-size:42px;} .stageCastle.t3 .ce{font-size:50px;}
+.stageCastle.t4 .ce{font-size:58px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
+.stageCastle.t5 .ce{font-size:62px; filter:drop-shadow(0 0 10px rgba(243,207,93,.95)) saturate(1.7);}
+.castleLbl{font-size:10.5px; font-weight:800; color:#5d6c52;}
+.stageChar{font-size:54px; line-height:1; filter:drop-shadow(0 3px 3px rgba(0,0,0,.25));}
+.charRow{display:flex; gap:10px; padding:8px 12px 4px; align-items:center;}
 .charInfo{flex:1;}
 .charName{font-weight:900; font-size:17px;}
 .moodTag{display:inline-block; margin-left:8px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#ddd;}
@@ -65,26 +75,44 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bar i{display:block; height:100%; border-radius:8px; background:linear-gradient(90deg,#7fd49a,#2e8b57); transition:width .3s;}
 .bar i.low{background:linear-gradient(90deg,#f0b35e,#d96f30);}
 .bar i.crit{background:linear-gradient(90deg,#e0533d,#b3362a);}
-.statGrid{display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; padding:8px 12px;}
-.stat{display:flex; align-items:center; gap:6px; background:var(--paper2); border-radius:10px; padding:5px 9px;}
-.stat .si{font-size:18px;} .stat .sl{font-size:12px; font-weight:700; color:#7a6845; flex:1;}
-.stat .sv{font-weight:900; font-size:18px;}
+/* ステータスは下部1列（ウマ娘式・2026-06-11 ユーザー要望） */
+.statGrid{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:8px 12px 4px;}
+.stat{display:flex; flex-direction:column; align-items:center; background:var(--paper2); border-radius:10px; padding:4px 2px;}
+.stat .si{font-size:16px;} .stat .sl{font-size:10.5px; font-weight:700; color:#7a6845;}
+.stat .sv{font-weight:900; font-size:17px;}
 .stat .sv.up{color:var(--green); animation:pop .5s;}
 @keyframes pop{0%{transform:scale(1.6)}100%{transform:scale(1)}}
+/* コマンドは3×2（ウマ娘式・2026-06-11 ユーザー要望） */
 .cmdArea{padding:8px 10px 12px;}
-.cmdGrid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
-.cmd{position:relative; padding:10px 8px 8px; border-radius:14px; border:3px solid var(--line);
+.cmdGrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.cmd{position:relative; padding:10px 4px 8px; border-radius:14px; border:3px solid var(--line);
   background:#fffdf4; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;}
 .cmd:active{transform:translateY(2px);}
-.cmd .ci{font-size:24px;} .cmd .cl{font-weight:800; font-size:14px;}
-.cmd .fail{font-size:11px; font-weight:800; color:#999;}
+.cmd.dim{opacity:.45; pointer-events:none;}
+.cmd .ci{font-size:24px;} .cmd .cl{font-weight:800; font-size:13px;}
+.cmd .fail{font-size:10.5px; font-weight:800; color:#999;}
 .cmd .fail.warn{color:#d96f30;} .cmd .fail.danger{color:var(--red);}
 .cmd .mates{position:absolute; top:-10px; right:-4px; display:flex; gap:1px;}
-.cmd .mates span{font-size:17px; background:var(--paper); border:2px solid var(--line); border-radius:999px;
-  width:27px; height:27px; display:flex; align-items:center; justify-content:center;}
+.cmd .mates span{font-size:13px; background:var(--paper); border:2px solid var(--line); border-radius:999px;
+  width:22px; height:22px; display:flex; align-items:center; justify-content:center;}
 .cmd .mates span.fr{border-color:var(--gold); background:#fff3c8; box-shadow:0 0 8px 2px rgba(243,207,93,.9); animation:glow 1.2s infinite alternate;}
 @keyframes glow{from{box-shadow:0 0 4px 1px rgba(243,207,93,.6)}to{box-shadow:0 0 10px 3px rgba(243,207,93,1)}}
 .cmd.rest{background:#eef6ff;} .cmd.trip{background:#f3ecff;}
+.cmd.train{background:#fff3c8; border-color:var(--gold);}
+.cmd.skill{background:#f3ecff;} .cmd.care{background:#eafbe9;} .cmd.skirmish{background:#ffeede;}
+/* 鍛錬選択ポップアップ（家臣がいる選択肢は輝く） */
+.trainOpt{display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border-radius:12px;
+  border:3px solid var(--line); background:#fffdf4; text-align:left; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;}
+.trainOpt:active{transform:translateY(2px);}
+.trainOpt .toIcon{font-size:26px;}
+.trainOpt .toBody{flex:1; line-height:1.35;} .trainOpt .toBody b{font-size:15.5px;}
+.trainOpt .toBody small{display:block; font-size:11.5px; color:#7a6845;}
+.trainOpt .toMates{display:flex; gap:2px;}
+.trainOpt .toMates span{font-size:15px; background:var(--paper); border:2px solid var(--line); border-radius:999px;
+  width:26px; height:26px; display:flex; align-items:center; justify-content:center;}
+.trainOpt .toMates span.fr{border-color:var(--gold); background:#fff3c8; animation:glow 1.2s infinite alternate;}
+.trainOpt.glowOpt{border-color:var(--gold); background:#fff8dc;
+  box-shadow:0 0 10px 2px rgba(243,207,93,.65), 0 3px 0 rgba(0,0,0,.12);}
 .subRow{display:flex; gap:8px; margin-top:8px;}
 .subBtn{flex:1; padding:8px; border-radius:10px; border:2px solid var(--line); background:var(--paper2); font-size:12.5px; font-weight:700;}
 .bondRow{display:flex; gap:8px; padding:0 12px 10px; flex-wrap:wrap;}
@@ -104,6 +132,9 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 @keyframes rise{from{transform:translateY(24px); opacity:0}to{transform:none; opacity:1}}
 .box h2{margin:0 0 8px; font-size:20px;}
 .evYear{font-size:13px; font-weight:800; color:var(--red); letter-spacing:.15em;}
+/* イベントの絵文字アート（画像は将来差し替え・2026-06-11 ユーザー要望） */
+.evArt{text-align:center; font-size:52px; line-height:1.25; letter-spacing:.1em; padding:10px 0 6px;
+  background:linear-gradient(180deg,var(--paper2),transparent); border-radius:12px; margin:6px 0;}
 .evText{font-size:15px; line-height:1.85; white-space:pre-wrap; margin:8px 0 14px;}
 .fxLine{display:none; margin:-4px 0 12px; padding:8px 12px; border-radius:10px; background:#e8f6ec;
   border:2px solid var(--green); font-size:14px; font-weight:800; color:#1d6b40; line-height:1.7;}
@@ -148,6 +179,18 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .btBar .me{background:linear-gradient(90deg,#7fb6ff,#3a6ea5); border-right:3px solid #ffe9a8;}
 .btVs{text-align:center; font-size:15px; font-weight:900; color:#cdbb88; margin:2px 0 6px;}
 .btLog{font-size:13.5px; line-height:1.7; color:#f0e6cd; min-height:40px; white-space:pre-wrap;}
+/* 地形バッジと戦術選択（2026-06-11 合戦刷新） */
+.terrainTag{margin:0 0 10px; padding:8px 10px; border-radius:10px; background:#f3ecff; border:2px solid var(--purple);
+  font-size:13px; line-height:1.6;}
+.tactic{display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:12px;
+  border:3px solid var(--line); background:#fffdf4; text-align:left; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;}
+.tactic:active{transform:translateY(2px);}
+.tactic .ti{font-size:22px;}
+.tactic .tb{flex:1; line-height:1.3;} .tactic .tb b{font-size:14.5px;}
+.tactic .tb small{display:block; font-size:11px; color:#7a6845;}
+.tactic .tm{font-size:20px; font-weight:900;}
+.tactic.c2{border-color:var(--gold); background:#fff3c8;} .tactic.c2 .tm{color:#a87d12;}
+.tactic.c1 .tm{color:var(--blue);} .tactic.c0 .tm{color:#999;}
 
 /* ===== §S6 結果・殿堂 ===== */
 .rankBig{text-align:center; margin:8px 0;}
@@ -198,12 +241,16 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div class="board">
       <div class="gHead">
         <div class="gYear serif" id="g-year">1551年<small></small></div>
+        <div class="gSkill" id="g-skill" onclick="UI.openSkill()">✨0</div>
         <div class="gKoku" id="g-koku">🌾 10万石</div>
       </div>
+      <div class="stage">
+        <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">居城: 陣屋</div></div>
+        <div class="stageChar" id="g-face">🙂</div>
+      </div>
       <div class="charRow">
-        <div class="charFace" id="g-face">👺</div>
         <div class="charInfo">
-          <div class="charName">織田信長 <span class="moodTag" id="g-mood">ふつう</span></div>
+          <div class="charName">織田信長 <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span></div>
           <div class="barWrap">
             <div class="barLbl"><span>体力</span><span id="g-stam-n">100/100</span></div>
             <div class="bar"><i id="g-stam" style="width:100%"></i></div>
@@ -246,9 +293,17 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div id="q-after"></div>
   </div></div>
 
+  <!-- ===== 鍛錬選択（4種をまとめたポップアップ） ===== -->
+  <div id="ovl-train" class="ovl"><div class="box">
+    <button class="closeX" onclick="UI.closeTrain()">✕</button>
+    <h2 class="serif">⚔️ 鍛錬を選ぶ</h2>
+    <div id="t-list" style="display:grid; gap:8px;"></div>
+  </div></div>
+
   <!-- ===== イベント ===== -->
   <div id="ovl-event" class="ovl"><div class="box">
     <div class="evYear serif" id="e-year"></div>
+    <div class="evArt" id="e-art" style="display:none"></div>
     <h2 class="serif" id="e-title"></h2>
     <div class="evText" id="e-text"></div>
     <div class="fxLine" id="e-fx"></div>
@@ -260,6 +315,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div class="evYear serif" id="b-year"></div>
     <h2 class="serif" id="b-title"></h2>
     <div class="evText" id="b-intro" style="margin-bottom:8px;"></div>
+    <div class="terrainTag" id="b-terrain"></div>
     <div class="btField">
       <div class="tugIcons">
         <span class="tugMe" id="b-meicon">😤</span>
@@ -325,6 +381,7 @@ const Game = (function(){
     const s = {
       year:START_YEAR, buyu:20, chiryaku:24, seiji:14, ninbo:8,
       stamina:100, mood:2, koku:100, wins:0, battles:0,
+      injury:null, skillPt:0,
       bonds:{}, bondMaxDone:{}, usedQ:[], placement:{}, correctTotal:0, answerTotal:0,
       pendingEventDone:{},
     };
@@ -355,7 +412,13 @@ const Game = (function(){
   function hasRun(){ const r=loadRaw(); return !!(r && r.run); }
   function resume(){
     const raw = loadRaw();
-    if (raw && raw.run){ S = raw.run; UI.show('game'); turnStart(true); }
+    if (raw && raw.run){
+      S = raw.run;
+      // 旧セーブの欠損補完（ケガ・スキルPは2026-06-11追加）
+      S.injury = S.injury || null;
+      S.skillPt = S.skillPt || 0;
+      UI.show('game'); turnStart(true);
+    }
   }
   function clearRun(){ S=null; saveAll(); }
 
@@ -428,10 +491,44 @@ const Game = (function(){
   /* ===== §5 トレーニング解決 ===== */
   let cur = null; // 現在のクイズ文脈 {mode:'train'|'battle'|'review', genre, sel, sh, ...}
 
-  function doCommand(k){
-    // 未消化の年表イベントがあれば先にそれを処理（連打・先行クリック対策）
+  // 未消化の年表イベントがあれば先に処理（連打・先行クリック対策）。発火したら true
+  function guardEvent(){
     const ev = timelineEvent();
-    if (ev && !S.pendingEventDone[ev.year]){ fireEvent(ev); return; }
+    if (ev && !S.pendingEventDone[ev.year]){ fireEvent(ev); return true; }
+    return false;
+  }
+  function doCommand(k){
+    if (guardEvent()) return;
+    // ケガ中は治療が最優先（2026-06-11 ユーザー要望: ケガを直さないと次に進めない）
+    if (S.injury && k!=='care'){ toast('🤕 ケガの体では無理はできぬ…。🌿薬師に診てもらおう'); return; }
+    if (k==='care'){
+      if (!S.injury){ toast('🌿 いまは元気そのものだ！'); return; }
+      S.injury = null;
+      const heal = 40 + Math.floor(Math.random()*11);
+      S.stamina = Math.min(100, S.stamina+heal);
+      // 塞翁が馬: 治療が思わぬ福を呼ぶことがある（保健室を「ただの1回休み」にしない）
+      if (Math.random() < 0.25){
+        const lucks = [
+          { t:'寝込んでいる間に『孫子』を読み込んだ！', fx:{chiryaku:12} },
+          { t:'見舞いに来た家臣たちと、夜通し天下を語り合った。', fx:{ninbo:8}, bond:12 },
+          { t:'療養先の湯の里で、豊かな米どころを見つけた！', fx:{koku:40} },
+          { t:'体の芯から力がみなぎってきた。完全復活だ！', fx:{stamina:60, mood:2} },
+        ];
+        const l = lucks[Math.floor(Math.random()*lucks.length)];
+        if (l.bond) D.RETAINERS.forEach(r=>S.bonds[r.id]=Math.min(100, S.bonds[r.id]+l.bond));
+        applyFx(l.fx);
+        saveAll();
+        UI.showEvent({ year:S.year, type:'story', title:'🌿 塞翁（さいおう）が馬！', art:'🌿🐴',
+          text:`薬師（くすし）の手当てで、ケガはすっかり治った。\nそれどころか——\n\n${l.t}${l.bond?'\n（家臣みんなの絆もアップ！）':''}` },
+          ()=>nextTurn(), l.fx);
+        return;
+      }
+      S.mood = Math.min(4, S.mood+1);
+      saveAll();
+      toast(`🌿 薬師の手当てでケガが治った！ 体力+${heal}・やる気UP`);
+      nextTurn(); return;
+    }
+    if (k==='skirmish'){ startSkirmish(); return; }
     if (k==='rest'){
       const heal = 45 + Math.floor(Math.random()*11);
       S.stamina = Math.min(100, S.stamina+heal);
@@ -505,8 +602,9 @@ const Game = (function(){
         if (fx.stamina) S.stamina = Math.min(100, S.stamina+fx.stamina);
         if (fx.koku) S.koku += fx.koku;
         if (fx.mood) S.mood = Math.min(4, S.mood+fx.mood);
-        UI.showEvent({ year:S.year, type:'story', title:`${r.icon} ${r.name}・絆MAX！`,
-          text:r.maxText + '\n\n（ボーナスを獲得した！）' }, ()=>UI.renderGame(), fx);
+        S.skillPt += 5;
+        UI.showEvent({ year:S.year, type:'story', title:`${r.icon} ${r.name}・絆MAX！`, art:`${r.icon}💖`,
+          text:r.maxText + '\n\n（ボーナスを獲得した！ ✨スキルP+5）' }, ()=>UI.renderGame(), fx);
         saveAll();
         return;
       }
@@ -518,6 +616,7 @@ const Game = (function(){
     const correct = (choiceIdx === cur.sh.a);
     cur.lastCorrect = correct;
     if (cur.mode==='battle'){ return battleAnswer(correct); }
+    if (cur.mode==='skirmish'){ return skirmishAnswer(correct); }
     if (cur.mode==='review'){
       if (correct){
         const item = P.book[cur.bookIdx];
@@ -535,7 +634,8 @@ const Game = (function(){
       const res = trainGain(cur.sel.q, {correct:true});
       cur.res = res;
       applyTraining(res, false);
-      let t = `${D.GENRES[cur.genre].label}+${res.gain}！`;
+      S.skillPt += 2;
+      let t = `${D.GENRES[cur.genre].label}+${res.gain}！ ✨スキルP+2`;
       if (res.crit) t = `🌟大成功！ ${t}`;
       if (res.friend) t = `🌈友情特訓！ ${t}`;
       return { correct, text:t, done:'next' };
@@ -557,7 +657,10 @@ const Game = (function(){
     const failed = Math.random()*100 < fr;
     if (failed){
       applyTraining(null, true);
-      return { failed:true, text:`💥 大失敗！ 無理がたたって倒れてしまった…\n体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2` };
+      // 大失敗＝ケガ。薬師で治すまで鍛錬・視察・小競り合い不可（2026-06-11 ユーザー要望）
+      S.injury = 1;
+      saveAll();
+      return { failed:true, text:`💥 大失敗！ 無理がたたって倒れ、ケガをしてしまった……\n体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2\n\n🌿 まずは薬師（くすし）に診てもらおう` };
     }
     const res = trainGain(cur.sel.q, {correct:false});
     applyTraining(res, false);
@@ -596,44 +699,108 @@ const Game = (function(){
     return ch;
   }
 
-  /* ===== §7 合戦 ===== */
+  /* ===== §7 合戦（地形×戦術×軍配＝2026-06-11 ユーザー要望でコア刷新） =====
+     毎問の前に戦術4択（突撃/奇襲/鉄砲隊/調略）を選ぶ。
+     正解時の戦果 = 地形相性（◎1.3/○1.0/△0.6）× ステ補正（0.85〜1.2）× 史実戦術1.15 */
   let B = null;
   function playerPower(){
     return Math.round(S.buyu*2.2 + S.chiryaku*1.6 + S.ninbo*0.6 + S.koku/15);
   }
   function startBattle(ev){
-    B = { ev, q:0, correct:0, max:3 };
+    B = { ev, terrain:ev.terrain, q:0, score:0, max:3, tactic:null, lastText:'' };
     UI.openBattle(ev);
   }
-  function battleNextQuestion(){
+  // 戦術を選ぶと、その戦術に対応するジャンルから出題される
+  function setTactic(tid){
+    B.tactic = tid;
     B.q++;
-    const genre = Math.random()<0.5 ? 'buyu' : 'chiryaku';
-    cur = { mode:'battle', genre };
-    const sel = pickQuestion(genre, 'battle');
+    const t = D.TACTICS[tid];
+    cur = { mode:'battle', genre:t.genre };
+    const sel = pickQuestion(t.genre, 'battle');
     cur.sel = sel;
     UI.openQuiz(sel.q, cur);
+  }
+  function tacticPower(tid, compat, hist){
+    const mul = compat===2 ? 1.3 : compat===1 ? 1.0 : 0.6;
+    const st = D.TACTICS[tid].stat;
+    const sb = Math.max(0.85, Math.min(1.2, 1 + (S[st]-60)/400));
+    return mul * sb * (hist ? 1.15 : 1);
   }
   // 押し合いゲージ用: 現在の戦況（1.0=勝敗ライン）
   function battleProgress(){
     const ratio = playerPower()/B.ev.enemyPower;
-    return (ratio*0.6 + 0.62*(B.correct/B.max)) / 0.9;
+    return (ratio*0.6 + 0.62*(B.score/B.max)) / 0.9;
   }
   function battleAnswer(correct){
     S.answerTotal++;
-    if (correct){ S.correctTotal++; B.correct++; }
-    else addToBook(cur.sel.q);
+    const t = D.TACTICS[B.tactic];
+    const compat = B.terrain.compat[B.tactic];
+    const hist = (B.ev.bestTactic===B.tactic);
+    let text;
+    if (correct){
+      S.correctTotal++;
+      B.score += tacticPower(B.tactic, compat, hist);
+      text = `${t.icon} ${t.ok}`;
+      if (hist) text += '\n📜 史実と同じ戦術がぴたりとはまった！';
+      else if (compat===2) text += '\n🗺️ 地の利を活かした！';
+      else if (compat===0) text += '\n（この地形では戦果はいまひとつ…）';
+    } else {
+      addToBook(cur.sel.q);
+      text = `${t.icon} ${t.ng}`;
+    }
+    B.lastText = text;
     const last = (B.q>=B.max);
-    return { correct, battle:true, last,
-      text: correct ? '⚔️ 軍配的中！ わが軍が敵勢を切り崩した！' : '🌀 軍配が乱れた…！ 敵に押し返される！' };
+    return { correct, battle:true, last, text };
   }
   function battleResult(){
     S.battles++;
     const ratio = playerPower()/B.ev.enemyPower;
-    const score = ratio*0.6 + (B.correct/B.max)*0.62;
+    const score = ratio*0.6 + (B.score/B.max)*0.62;
     const win = score >= 0.9;
-    if (win){ S.wins++; applyFx(B.ev.winFx); }
+    if (win){ S.wins++; S.skillPt += 8; applyFx(B.ev.winFx); }
     saveAll();
     return { win, text: win? B.ev.winText : B.ev.loseText };
+  }
+
+  /* ===== §7.5 小競り合い（任意参加のミニ合戦＝レース枠。石高とスキルPを稼ぐ） ===== */
+  function startSkirmish(){
+    const terrain = D.SKIRMISH_TERRAINS[Math.floor(Math.random()*D.SKIRMISH_TERRAINS.length)];
+    const foe = D.SKIRMISH_FOES[Math.floor(Math.random()*D.SKIRMISH_FOES.length)];
+    cur = { mode:'skirmish', terrain, foe };
+    UI.showSkirmish(terrain, foe);
+  }
+  function skirmishPick(tid){
+    S.stamina = Math.max(0, S.stamina-14);
+    cur.tactic = tid;
+    cur.genre = D.TACTICS[tid].genre;
+    const sel = pickQuestion(cur.genre);
+    cur.sel = sel;
+    UI.openQuiz(sel.q, cur);
+  }
+  function skirmishAnswer(correct){
+    S.answerTotal++;
+    const t = D.TACTICS[cur.tactic];
+    const compat = cur.terrain.compat[cur.tactic];
+    if (correct){
+      S.correctTotal++;
+      const mul = compat===2 ? 1.5 : compat===1 ? 1.0 : 0.7;
+      const k = Math.round((12 + (S.year-START_YEAR) + Math.random()*8) * mul);
+      S.koku += k; S.skillPt += 3;
+      if (compat===2) S.mood = Math.min(4, S.mood+1);
+      saveAll();
+      let txt = `${t.icon} ${t.ok}\n🚩 勝利！ 石高+${fmtKoku(k)}・✨スキルP+3`;
+      if (compat===2) txt += '・やる気UP（地の利を突いた！）';
+      return { correct, text:txt, done:'next' };
+    }
+    addToBook(cur.sel.q);
+    S.mood = Math.max(0, S.mood-1);
+    // 敗走中は低確率でケガ（体力が低いほど危ない）
+    if (Math.random()*100 < failRate()/2 + 8){
+      S.injury = 1; saveAll();
+      return { correct, text:`${t.icon} ${t.ng}\n💥 敗走の途中でケガをしてしまった……（🌿薬師で治療しよう）`, done:'next' };
+    }
+    saveAll();
+    return { correct, text:`${t.icon} ${t.ng}\n🌀 小競り合いに敗れた……やる気DOWN`, done:'next' };
   }
   // 敗北＝育成終了（パワプロ/ウマ娘式・2026-06-11 教師FB）
   function defeatEnd(){
@@ -691,9 +858,9 @@ const Game = (function(){
 
   return { get S(){return S;}, get P(){return P;}, D, MOODS, STAT_KEYS, RANKS,
     newRun:(lg)=>{S=newRun(lg); saveAll();}, hasRun, resume, clearRun,
-    failRate, doCommand, answer, pushThrough, learnSafe, checkBondMax,
+    failRate, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
-    battleNextQuestion, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
+    setTactic, skirmishPick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
     get cur(){return cur;}, get B(){return B;}, START_YEAR, END_YEAR, saveAll };
 })();
 
@@ -747,9 +914,18 @@ const UI = (function(){
     const age = S.year - 1534;
     $('g-year').innerHTML = `${S.year}年 <small>信長 ${age}歳 ／ ${S.year-Game.START_YEAR+1}/32ターン</small>`;
     $('g-koku').textContent = `🌾 ${Game.fmtKoku(S.koku)}`;
+    $('g-skill').textContent = `✨${S.skillPt||0}`;
     const m = Game.MOODS[S.mood];
     const mt = $('g-mood'); mt.textContent = m.icon+' '+m.label; mt.style.background = m.cls;
-    $('g-face').textContent = S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂');
+    const injured = !!S.injury;
+    $('g-inj').style.display = injured? 'inline-block' : 'none';
+    // 中央ステージ: 石高が増えるほど居城が立派になる
+    const tier = S.koku>=1500?5 : S.koku>=900?4 : S.koku>=500?3 : S.koku>=250?2 : 1;
+    const castles = {1:['⛺','陣屋'], 2:['🏘️','館'], 3:['🏯','城'], 4:['🏯','大天守'], 5:['🏯','黄金の天守']};
+    $('g-castlebox').className = 'stageCastle t'+tier;
+    $('g-castle').textContent = castles[tier][0];
+    $('g-castlelbl').textContent = `居城: ${castles[tier][1]}`;
+    $('g-face').textContent = injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'));
     // 体力
     const st = $('g-stam');
     st.style.width = S.stamina+'%';
@@ -769,34 +945,78 @@ const UI = (function(){
       br.insertAdjacentHTML('beforeend',
         `<div class="bondChip ${v>=80?'mx':''}">${r.icon} ${r.name.slice(0,5)} <span class="bg"><i style="width:${v}%"></i></span></div>`);
     });
-    // コマンド
+    // コマンド3×2: 休息/鍛錬/スキル ・ 薬師/視察/小競り合い（ウマ娘式・2026-06-11）
     const fr = Game.failRate();
-    const cg = $('g-cmds'); cg.innerHTML='';
+    const fcls = fr>=30?'danger':(fr>=12?'warn':'');
+    // 鍛錬ボタンには配置中の家臣をまとめて表示（友情特訓が狙えるなら光る）
+    let mateIcons = '';
     Game.STAT_KEYS.forEach(k=>{
-      const g = D.GENRES[k];
-      const mates = (S.placement[k]||[]);
-      const mateHtml = mates.length?
-        `<div class="mates">${mates.map(id=>{
-          const r = D.RETAINERS.find(x=>x.id===id);
-          const fri = (r.fav===k && S.bonds[id]>=80);
-          return `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
-        }).join('')}</div>` : '';
-      const fcls = fr>=30?'danger':(fr>=12?'warn':'');
-      cg.insertAdjacentHTML('beforeend',
-        `<button class="cmd" onclick="Game.doCommand('${k}')">${mateHtml}
-          <div class="ci">${g.icon}</div><div class="cl">${g.train}</div>
-          <div class="fail ${fcls}">体力-18 / 失敗率${fr}%</div></button>`);
+      (S.placement[k]||[]).forEach(id=>{
+        const r = D.RETAINERS.find(x=>x.id===id);
+        const fri = (r.fav===k && S.bonds[id]>=80);
+        mateIcons += `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
+      });
     });
-    cg.insertAdjacentHTML('beforeend',
-      `<button class="cmd rest" onclick="Game.doCommand('rest')"><div class="ci">😴</div><div class="cl">休息</div>
-        <div class="fail">体力+45〜 ${Game.P.book.length?'/ 📖復習':''}</div></button>`);
-    cg.insertAdjacentHTML('beforeend',
-      `<button class="cmd trip" onclick="Game.doCommand('trip')"><div class="ci">🏯</div><div class="cl">視察</div>
-        <div class="fail">体力+25 / やる気UP</div></button>`);
+    const dimIf = c=>c?' dim':'';
+    const cg = $('g-cmds');
+    cg.innerHTML =
+      `<button class="cmd rest${dimIf(injured)}" onclick="Game.doCommand('rest')"><div class="ci">😴</div><div class="cl">休息</div>
+        <div class="fail">体力+45〜${Game.P.book.length?' 📖復習':''}</div></button>
+      <button class="cmd train${dimIf(injured)}" onclick="UI.openTrain()">${mateIcons?`<div class="mates">${mateIcons}</div>`:''}
+        <div class="ci">⚔️</div><div class="cl">鍛錬</div>
+        <div class="fail ${fcls}">体力-18 失敗率${fr}%</div></button>
+      <button class="cmd skill" onclick="UI.openSkill()"><div class="ci">✨</div><div class="cl">スキル</div>
+        <div class="fail">P: ${S.skillPt||0}</div></button>
+      <button class="cmd care${dimIf(!injured)}" onclick="Game.doCommand('care')"><div class="ci">🌿</div><div class="cl">薬師</div>
+        <div class="fail ${injured?'danger':''}">${injured?'ケガを治療！':'ケガのときに'}</div></button>
+      <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')"><div class="ci">🏯</div><div class="cl">視察</div>
+        <div class="fail">体力+25 やる気UP</div></button>
+      <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><div class="ci">🚩</div><div class="cl">小競り合い</div>
+        <div class="fail">体力-14 石高を稼ぐ</div></button>`;
     $('g-bookn').textContent = Game.P.book.length? `(${Game.P.book.length})` : '';
     // 次イベント予告
     const next = D.TIMELINE.find(e=>e.year>S.year);
     $('g-next').textContent = next? `📅 次の歴史イベント: ${next.year}年「${next.title.split(' — ')[0]}」` : '';
+  }
+
+  /* ---- 鍛錬選択ポップアップ（4種集約・家臣付きは輝く） ---- */
+  function openTrain(){
+    if (Game.guardEvent()) return;
+    const S = Game.S;
+    if (S.injury){ Game.toast('🤕 ケガを治すのが先だ！'); return; }
+    const list = $('t-list'); list.innerHTML='';
+    Game.STAT_KEYS.forEach(k=>{
+      const g = D.GENRES[k];
+      let glow = false;
+      const mateHtml = (S.placement[k]||[]).map(id=>{
+        const r = D.RETAINERS.find(x=>x.id===id);
+        const fri = (r.fav===k && S.bonds[id]>=80);
+        if (fri) glow = true;
+        return `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
+      }).join('');
+      list.insertAdjacentHTML('beforeend',
+        `<button class="trainOpt ${glow?'glowOpt':''}" onclick="UI.pickTrain('${k}')">
+           <span class="toIcon">${g.icon}</span>
+           <span class="toBody"><b>${g.train}</b><small>${g.label} ${S[k]} ／ ${g.quizLabel}の問題</small></span>
+           <span class="toMates">${mateHtml}</span></button>`);
+    });
+    list.insertAdjacentHTML('beforeend',
+      `<div class="note" style="text-align:center">体力-18 ／ 失敗率${Game.failRate()}% ／ 輝く家臣がいると🌈友情特訓のチャンス！</div>`);
+    $('ovl-train').classList.add('on');
+  }
+  function pickTrain(k){ $('ovl-train').classList.remove('on'); Game.doCommand(k); }
+  function closeTrain(){ $('ovl-train').classList.remove('on'); }
+
+  /* ---- スキル（βはポイント蓄積のみ・割り振りはCOMING SOON） ---- */
+  function openSkill(){
+    $('l-title').textContent = '✨ スキル';
+    $('l-body').innerHTML = `
+      <div class="bookItem" style="text-align:center; font-size:15px;">いま持っているスキルP<br>
+        <b style="font-size:34px; color:#8a6605;">✨ ${Game.S? (Game.S.skillPt||0) : 0}</b></div>
+      <div class="note">⚒️ <b>武将固有スキル — ただいま支度中！</b><br>
+      スキルPは「鍛錬の正解」「合戦の勝利」「小競り合いの勝利」「家臣の絆MAX」で貯まる。<br>
+      近いうちに「ここぞの一撃」「鉄砲三段撃ち」など、武将ならではのスキルと交換できるようになるぞ。<b>Pは貯めておいて損なし！</b></div>`;
+    $('ovl-list').classList.add('on');
   }
 
   /* ---- クイズ ---- */
@@ -868,8 +1088,15 @@ const UI = (function(){
     return parts.join('　');
   }
   let evCb = null;
+  // 絵文字アート（将来は画像に差し替え予定。2026-06-11 ユーザー要望「イベントに絵を」）
+  function setArt(art){
+    const el = $('e-art');
+    if (art){ el.textContent = art; el.style.display='block'; }
+    else el.style.display='none';
+  }
   function showEvent(ev, cb, fx){
     $('e-year').textContent = `${ev.year}年`;
+    setArt(ev.art);
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
     const fl = $('e-fx'); const t = fxText(fx);
@@ -886,8 +1113,10 @@ const UI = (function(){
   }
   function showChoiceEvent(ev){
     $('e-year').textContent = `${ev.year}年`;
+    setArt(ev.art);
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
+    $('e-fx').classList.remove('on');
     const act = $('e-actions'); act.innerHTML='';
     ev.choices.forEach((ch,i)=>{
       const b = document.createElement('button');
@@ -895,11 +1124,40 @@ const UI = (function(){
       b.textContent = ch.label;
       b.onclick = ()=>{
         const c = Game.choiceFx(ev, i);
-        showEvent({year:ev.year, title:ev.title, text:c.text}, ()=>renderGame(), c.fx);
+        showEvent({year:ev.year, title:ev.title, art:ev.art, text:c.text}, ()=>renderGame(), c.fx);
       };
       act.appendChild(b);
     });
     $('ovl-event').classList.add('on');
+  }
+
+  /* ---- 小競り合い（戦術を選んで1問勝負。「やめておく」ならターン消費なし） ---- */
+  function tacticHtml(terrain, picker){
+    const marks = ['△','○','◎'];
+    return Object.keys(D.TACTICS).map(id=>{
+      const t = D.TACTICS[id];
+      const c = terrain.compat[id];
+      const st = D.GENRES[t.stat];
+      return `<button class="tactic c${c}" onclick="${picker}('${id}')">
+        <span class="ti">${t.icon}</span>
+        <span class="tb"><b>${t.label}</b><small>${st.icon}${st.label}が効く ／ ${st.quizLabel}の問題</small></span>
+        <span class="tm">${marks[c]}</span></button>`;
+    }).join('');
+  }
+  function showSkirmish(ter, foe){
+    $('e-year').textContent = `${Game.S.year}年`;
+    setArt('🚩'+foe.icon);
+    $('e-title').textContent = `🚩 ${foe.name}`;
+    $('e-text').textContent = `${foe.text}\n\n${ter.icon} 戦場: ${ter.label} — ${ter.hint}\n（体力-14。勝てば石高と✨スキルP！ ◎=地形と相性ばつぐん）`;
+    $('e-fx').classList.remove('on');
+    evCb = null;
+    $('e-actions').innerHTML = tacticHtml(ter, 'UI.pickSkirmishTactic')
+      + `<button class="btn" onclick="UI.eventDone()">やめておく（ターンは進まない）</button>`;
+    $('ovl-event').classList.add('on');
+  }
+  function pickSkirmishTactic(tid){
+    $('ovl-event').classList.remove('on');
+    Game.skirmishPick(tid);
   }
 
   /* ---- 合戦（数値は見せず、押し合いゲージと形勢ことばで暗示） ---- */
@@ -920,24 +1178,31 @@ const UI = (function(){
     $('b-year').textContent = `${ev.year}年`;
     $('b-title').textContent = ev.title;
     $('b-intro').textContent = ev.intro;
+    $('b-terrain').innerHTML = `${ev.terrain.icon} <b>${ev.terrain.label}</b> — ${ev.terrain.hint}`;
     $('b-foe').textContent = ev.enemyName;
     $('b-foeicon').textContent = ev.enemyIcon || '👹';
     renderTug(false);
-    $('b-log').textContent = '⚠️ 負ければ育成終了！ 軍配（クイズ3問）が戦況を動かす。いざ——';
+    $('b-log').textContent = '⚠️ 負ければ育成終了！ 地形を読んで戦術を選び、軍配（クイズ）で戦況を動かせ——';
     $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleGo()">⚔️ 開戦！</button>`;
     $('ovl-battle').classList.add('on');
   }
+  // 開戦／次の軍配 → 戦術4択を表示（戦術がそのまま出題ジャンルになる）
   function battleGo(){
+    $('b-actions').innerHTML =
+      `<div class="note" style="text-align:center; color:#f0e6cd;">軍配${Game.B.q+1}/${Game.B.max} — 戦術を選べ！（◎=地形と相性ばつぐん）</div>`
+      + tacticHtml(Game.B.terrain, 'UI.pickBattleTactic');
+  }
+  function pickBattleTactic(tid){
     $('ovl-battle').classList.remove('on');
-    Game.battleNextQuestion();
+    Game.setTactic(tid);
   }
   function battleStep(){
     const B = Game.B;
     $('ovl-battle').classList.add('on');
     renderTug(true);
-    $('b-log').textContent = `軍配 ${B.q}/${B.max} ── ${'🚩'.repeat(B.correct)}${'・'.repeat(B.q-B.correct)}`;
+    $('b-log').textContent = `軍配 ${B.q}/${B.max} ── ${B.lastText}`;
     if (B.q < B.max){
-      $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleGo()">次の軍配へ（${B.q+1}問目）</button>`;
+      battleGo();
     } else {
       $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着！</button>`;
     }
@@ -1016,18 +1281,21 @@ const UI = (function(){
     $('l-title').textContent = '❓ 遊び方';
     $('l-body').innerHTML = `<div class="bookItem" style="font-size:14px;">
       <b style="color:#8a6605">⚔️ 織田信長の人生32年（32ターン）を一緒に駆け抜けるゲームだ。</b><br><br>
-      🎯 <b>毎ターン、コマンドを1つ選ぶ</b>と歴史クイズが出る。<b>時間制限なし・調べてOK！</b><br><br>
-      ⭕ 正解するとステータスが大きく成長。<br>
+      🎯 <b>毎ターン、コマンドを1つ選ぶ</b>。⚔️鍛錬を選ぶと歴史クイズが出る。<b>時間制限なし・調べてOK！</b><br><br>
+      ⭕ 正解するとステータスが大きく成長＋✨スキルPゲット。<br>
       ❌ 不正解でも「気合で押し切る」と同じだけ成長できる。ただし<b>失敗率</b>のぶんだけ大失敗のリスクが…！<br><br>
+      🤕 大失敗すると<b>ケガ</b>をする。ケガをしたら<b>🌿薬師（くすし）</b>で治療！ たまに「塞翁が馬」——ケガが思わぬ福を呼ぶことも…。<br><br>
       ❤️ <b>体力が減ると失敗率が上がる</b>。😴休息でしっかり回復しよう（まちがえた問題の復習チャンスもある）。<br><br>
-      🤝 家臣がいるコマンドで特訓すると<b>絆</b>が深まる。絆80以上の家臣が得意コマンドにいると<b>🌈友情特訓</b>で超成長！<br><br>
-      🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。決戦は手ごわい問題が出るぞ。<b>負けたらそこで育成終了</b>——まずは32年の完走を目指せ！<br><br>
+      🤝 家臣がいる鍛錬は伸びやすく<b>絆</b>も深まる。絆80以上の家臣が得意鍛錬で輝いていたら<b>🌈友情特訓</b>で超成長！<br><br>
+      🚩 <b>小競り合い</b>は腕試しのミニ合戦。勝てば石高（こくだか）と✨スキルPが稼げるぞ。<br><br>
+      🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。<b>地形を読んで戦術（突撃・奇襲・鉄砲隊・調略）を選べ</b>。◎の戦術＋クイズ正解で戦況は大きく傾く。史実と同じ戦術を選ぶと…？ <b>負けたらそこで育成終了</b>——まずは32年の完走を目指せ！<br><br>
       🔥 そして1582年、本能寺の変——<b>知略と人望を高く育てておくと、「もしも」の歴史</b>が見られるかもしれない…。</div>`;
     $('ovl-list').classList.add('on');
   }
 
   return { show, preStart, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone,
     showEvent, eventDone, showChoiceEvent, openBattle, battleGo, battleFinish, showResult,
+    openTrain, pickTrain, closeTrain, openSkill, pickBattleTactic, showSkirmish, pickSkirmishTactic,
     openHall, openBook, closeList, openHowto, openRoster };
 })();
 

@@ -3,6 +3,8 @@
    ------------------------------------------------------------
    §1 ジャンル定義（育成コマンド⇔クイズジャンル対応）
    §2 家臣（サポートカード簡易版）
+   §2.5 武将ロスター
+   §2.6 戦術と地形（合戦・小競り合い用）
    §3 年表イベント（織田信長 1551-1582）
    §4 クイズDB（シード問題。Codex生成分は QUESTIONS_EXTRA に追記）
    ------------------------------------------------------------
@@ -56,15 +58,53 @@ const SENGOKU_DATA = (function(){
       buff:'合戦の軍配がはずれにくい', playable:false },
   ];
 
+  /* ===== §2.6 戦術と地形 =====
+     合戦・小競り合いで毎回「戦術」を選ぶ。stat: 効くステ / genre: 出題ジャンル。
+     地形の compat（2=◎ 1=○ 0=△）×ステ×史実戦術ボーナスで戦況が動く */
+  const TACTICS = {
+    totsugeki: { label:'突撃',   icon:'⚔️', stat:'buyu',     genre:'buyu',
+      ok:'全軍突撃！ 敵の陣形を正面から打ち破った！',
+      ng:'突撃が読まれていた…敵に押し返される！' },
+    kishu:     { label:'奇襲',   icon:'🌫️', stat:'chiryaku', genre:'chiryaku',
+      ok:'敵の裏をかいた！ 敵本陣が大混乱に陥る！',
+      ng:'奇襲を見破られた…罠にかかったのはこちらだ！' },
+    teppo:     { label:'鉄砲隊', icon:'💥', stat:'seiji',    genre:'seiji',
+      ok:'三段撃ちの轟音！ 敵兵が次々と倒れていく！',
+      ng:'火縄が湿って不発…敵の突進を許してしまう！' },
+    chouryaku: { label:'調略',   icon:'🤝', stat:'ninbo',    genre:'ninbo',
+      ok:'敵将が寝返った！ 敵軍に動揺が走る！',
+      ng:'調略は失敗…かえって敵の結束を固めてしまった！' },
+  };
+
+  /* 小競り合い（任意参加のミニ合戦＝石高稼ぎ）用のランダム戦場と相手 */
+  const SKIRMISH_TERRAINS = [
+    { icon:'🌾', label:'開けた野原',   hint:'正面からの突撃が決まりやすい',
+      compat:{ totsugeki:2, kishu:1, teppo:1, chouryaku:1 } },
+    { icon:'⛰️', label:'険しい山道',   hint:'待ち伏せ・奇襲に向いた地形だ',
+      compat:{ totsugeki:0, kishu:2, teppo:1, chouryaku:1 } },
+    { icon:'🌫️', label:'夜霧の里',     hint:'視界が悪い。忍び寄った方が勝つ',
+      compat:{ totsugeki:1, kishu:2, teppo:0, chouryaku:1 } },
+    { icon:'🏞️', label:'川辺の浅瀬',   hint:'渡河中の敵を撃てる。鉄砲が有利',
+      compat:{ totsugeki:1, kishu:1, teppo:2, chouryaku:0 } },
+    { icon:'🏘️', label:'宿場の町なか', hint:'戦わずに話をつける手もある',
+      compat:{ totsugeki:0, kishu:1, teppo:1, chouryaku:2 } },
+  ];
+  const SKIRMISH_FOES = [
+    { icon:'👹', name:'野盗の討伐',       text:'領内を荒らす野盗の群れが現れた。民を守り、武名を上げる好機だ。' },
+    { icon:'🏴', name:'国境の小競り合い', text:'隣国の兵が国境の村に手を出してきた。すばやく追い払え！' },
+    { icon:'🗼', name:'敵方の砦攻め',     text:'敵方の小さな砦が街道をふさいでいる。落とせば領地が広がるぞ。' },
+    { icon:'⛵', name:'川筋の水賊退治',   text:'川の水運を荒らす水賊ども。商人たちが討伐を願い出ている。' },
+  ];
+
   /* ===== §3 年表イベント =====
      type: story（読み物）/ choice（選択肢）/ battle（合戦）/ final（本能寺）
      effects: {buyu,chiryaku,seiji,ninbo,stamina,mood,koku} 省略可 */
   const TIMELINE = [
-    { year:1551, type:'story', title:'家督相続 — うつけと呼ばれた男',
+    { year:1551, type:'story', title:'家督相続 — うつけと呼ばれた男', art:'🏯👺',
       text:'父・織田信秀が亡くなり、あなた（織田信長・18歳）が家督を継いだ。だが葬儀で位牌に抹香を投げつけたあなたを、家臣たちは「尾張の大うつけ（大ばか者）」と呼ぶ。\n\n戦国時代——実力さえあれば、身分が下の者でも上の者に取って代われる「下剋上」の世。ここから、天下統一への32年が始まる。',
       effects:{ mood:1 } },
 
-    { year:1553, type:'choice', title:'聖徳寺の会見 — まむしの道三',
+    { year:1553, type:'choice', title:'聖徳寺の会見 — まむしの道三', art:'🐍🍵',
       text:'妻・帰蝶の父であり「美濃のまむし」と恐れられる斎藤道三が、会見を求めてきた。道三はうつけと噂のあなたを値踏みするつもりだ。さて、どんな姿で行く？',
       choices:[
         { label:'正装で堂々と現れ、度肝を抜く', text:'いつものうつけ姿で道中を歩き、会見の場では一転、立派な正装で現れた。道三は「わしの息子たちは、いずれあのうつけの門前に馬をつなぐ（家来になる）だろう」とうなったという。', fx:{ ninbo:8, chiryaku:5, mood:1 } },
@@ -72,6 +112,8 @@ const SENGOKU_DATA = (function(){
       ] },
 
     { year:1556, type:'battle', title:'稲生の戦い — 家中をまとめろ',
+      terrain:{ icon:'🌾', label:'尾張の野原', hint:'開けた平地。正面からの突撃が決まりやすい',
+        compat:{ totsugeki:2, kishu:1, teppo:1, chouryaku:1 } }, bestTactic:'totsugeki',
       intro:'弟・信行（信勝）を担ぐ家臣団が反旗を翻した。相手は柴田勝家ら織田家の重臣たち。まずは身内との戦いに勝ち、尾張をまとめなければ天下どころではない。',
       enemyName:'弟・信行派の軍勢', enemyIcon:'🛡️', enemyPower:100,
       winText:'勝利！ 反乱は鎮圧された。母の取りなしで弟を許し、柴田勝家はこの戦いを境にあなたの忠実な家臣となった。尾張統一へ大きく前進。',
@@ -79,24 +121,28 @@ const SENGOKU_DATA = (function(){
       winFx:{ koku:80, buyu:5 } },
 
     { year:1560, type:'battle', title:'桶狭間の戦い — 運命の十倍の敵',
+      terrain:{ icon:'🌧️', label:'豪雨の窪地', hint:'豪雨で視界が利かない。奇襲の絶好機！ ただし火縄は湿って使えない',
+        compat:{ totsugeki:1, kishu:2, teppo:0, chouryaku:1 } }, bestTactic:'kishu',
       intro:'駿河の大大名・今川義元が、約2万5千の大軍で尾張に攻め込んできた。こちらはわずか数千。家臣は籠城を勧めるが、あなたは「敦盛」を舞い、夜明けに出陣を決意する。狙うは、桶狭間で休む義元の本陣ただ一点——。',
       enemyName:'今川義元の大軍', enemyIcon:'👑', enemyPower:240,
       winText:'豪雨に紛れた奇襲が成功！ 今川義元を討ち取った！ この「桶狭間の戦い」で、無名だった織田信長の名は一気に全国へ轟いた。',
       loseText:'【敗北】奇襲は読まれていた。今川の大軍の前に織田軍は壊滅……。\n\n（育成終了。格上との決戦だ。それまでに体力を整え、軍配＝クイズを確実に当てられる力をつけよう！）',
       winFx:{ koku:150, buyu:8, ninbo:5 } },
 
-    { year:1562, type:'story', title:'清洲同盟 — 生涯の盟友',
+    { year:1562, type:'story', title:'清洲同盟 — 生涯の盟友', art:'🤝🦅',
       text:'今川家から独立した三河の松平元康（のちの徳川家康）と、清洲城で同盟を結んだ。背後の心配がなくなり、美濃攻めに集中できる。\n\nこの同盟は本能寺の変まで約20年間守られ、戦国時代でもまれな「裏切られなかった同盟」として知られる。',
       effects:{ ninbo:5, koku:30 } },
 
     { year:1567, type:'battle', title:'稲葉山城の戦い — 天下布武',
+      terrain:{ icon:'⛰️', label:'山上の堅城', hint:'力攻めは通じない山城。敵の家臣を調略で切り崩せ（史実では美濃三人衆が寝返った）',
+        compat:{ totsugeki:0, kishu:1, teppo:1, chouryaku:2 } }, bestTactic:'chouryaku',
       intro:'美濃の斎藤龍興（道三の孫）との長い戦いも大詰め。木下藤吉郎が敵の城下に一夜で砦を築いた（墨俣一夜城の伝説）。決戦のときだ。',
       enemyName:'斎藤龍興の美濃勢', enemyIcon:'🐍', enemyPower:280,
       winText:'稲葉山城を攻め落とした！ 城を「岐阜」と改名し、「天下布武」（武力で天下を統一する）の印を使い始める。あなたの目は、もう京の都を見ている。',
       loseText:'【敗北】美濃の堅城はあまりに固かった……。天下布武の夢、ここまで。\n\n（育成終了。鍛錬の積み重ねが軍の強さになる。次はもっと育ててから挑もう！）',
       winFx:{ koku:150, chiryaku:5, seiji:5 } },
 
-    { year:1568, type:'choice', title:'上洛 — 将軍を奉じて京へ',
+    { year:1568, type:'choice', title:'上洛 — 将軍を奉じて京へ', art:'⛩️🏇',
       text:'室町幕府13代将軍の弟・足利義昭が「兄の仇を討ち、自分を将軍にしてほしい」と頼ってきた。京に上る大義名分になるが……。',
       choices:[
         { label:'義昭を奉じて上洛する', text:'義昭を15代将軍に立て、堂々と京へ入った。「将軍を助ける織田」の名分はあなたの力を一気に高めた。ただし義昭はやがて、あなたの言いなりになるのを嫌がり始める……。', fx:{ seiji:8, koku:100, ninbo:3 } },
@@ -104,46 +150,50 @@ const SENGOKU_DATA = (function(){
       ] },
 
     { year:1570, type:'battle', title:'姉川の戦い — 裏切りの代償',
+      terrain:{ icon:'🏞️', label:'姉川の河原', hint:'浅瀬を挟んだ正面決戦。押し合いの力勝負だ',
+        compat:{ totsugeki:2, kishu:1, teppo:1, chouryaku:1 } }, bestTactic:'totsugeki',
       intro:'妹・お市の方を嫁がせた浅井長政が、よりによって朝倉攻めの最中に裏切った！ 挟み撃ちの危機を辛くも脱出（金ヶ崎の退き口）。徳川家康と共に、姉川で浅井・朝倉連合軍と決着をつける。',
       enemyName:'浅井・朝倉連合軍', enemyIcon:'💔', enemyPower:360,
       winText:'徳川軍の奮戦もあり勝利！ 浅井・朝倉に大打撃を与えた。だが包囲網はまだ続く。武田・本願寺・将軍義昭……敵は四方にいる。',
       loseText:'【敗北】裏切りの代償はあまりに大きく、姉川で織田軍は崩れ去った……。\n\n（育成終了。軍学帳でまちがえた問題を復習して、リベンジだ！）',
       winFx:{ koku:120, buyu:5 } },
 
-    { year:1571, type:'choice', title:'比叡山焼き討ち — 鬼か、王か',
+    { year:1571, type:'choice', title:'比叡山焼き討ち — 鬼か、王か', art:'🔥⛰️',
       text:'比叡山延暦寺は浅井・朝倉をかくまい、仏の権威を盾に織田軍に立ちはだかる。家臣の中にも「寺を攻めるなど罰当たり」とためらう声があるが……。',
       choices:[
         { label:'容赦なく焼き討ちする（史実）', text:'全山を焼き払った。「仏敵」と恐れられ人望は下がったが、「織田に逆らえば寺社も容赦しない」という意思は天下に轟き、宗教勢力の武装に大きな楔を打ち込んだ。', fx:{ buyu:8, chiryaku:5, ninbo:-8, koku:50 } },
         { label:'包囲して兵糧攻めにする（IF）', text:'時間はかかったが、戦わずして延暦寺を降伏させた。「うつけ、存外慈悲深し」と民の評判は上々。ただし浅井・朝倉に立て直しの時間を与えてしまった。', fx:{ ninbo:8, seiji:5, koku:-20 } },
       ] },
 
-    { year:1573, type:'story', title:'室町幕府、滅ぶ',
+    { year:1573, type:'story', title:'室町幕府、滅ぶ', art:'🏯💨',
       text:'ついに将軍・足利義昭を京から追放した。1338年の足利尊氏から約240年続いた室町幕府は、ここに滅亡。\n\n同じ年、浅井長政・朝倉義景も滅ぼした。お市の方と三人の娘（茶々・初・江）は保護した。この三姉妹がのちに歴史を大きく動かすことになる。',
       effects:{ seiji:8, koku:100 } },
 
     { year:1575, type:'battle', title:'長篠の戦い — 鉄砲三千挺',
+      terrain:{ icon:'🛡️', label:'馬防柵の平野', hint:'柵が敵の騎馬を防ぐ。銭で揃えた鉄砲隊の出番だ！',
+        compat:{ totsugeki:1, kishu:1, teppo:2, chouryaku:0 } }, bestTactic:'teppo',
       intro:'「戦国最強」と謳われた武田の騎馬軍団が、後継者・武田勝頼に率いられ長篠城に迫る。あなたの答えは——大量の鉄砲と馬防柵。戦の常識を変えるときだ。',
       enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyPower:470,
       winText:'鉄砲隊の一斉射撃が騎馬隊を打ち砕いた！ 「長篠の戦い」は、鉄砲が戦の主役になったことを天下に示した。武田家はこの敗北から立ち直れない。',
       loseText:'【敗北】雨に濡れた鉄砲は火を噴かず、戦国最強の騎馬隊が柵を破った……。\n\n（育成終了。ここまで来たきみなら、次はきっと勝てる！）',
       winFx:{ koku:180, buyu:8, chiryaku:5 } },
 
-    { year:1576, type:'story', title:'安土城 — 天下統一の本拠地',
+    { year:1576, type:'story', title:'安土城 — 天下統一の本拠地', art:'🏯✨',
       text:'琵琶湖のほとりに、五層七階・金箔瓦の壮大な安土城を築き始めた。山頂にそびえる豪華な天主（天守）は、城が「戦いの砦」から「権力を見せつける宮殿」へ変わったことを象徴している。\n\nこの時代の豪華で力強い文化を、安土城と桃山（伏見城）の名から「桃山文化」と呼ぶ。',
       effects:{ seiji:5, ninbo:5, koku:80 } },
 
-    { year:1577, type:'choice', title:'楽市・楽座 — 銭が天下を回す',
+    { year:1577, type:'choice', title:'楽市・楽座 — 銭が天下を回す', art:'💰🏪',
       text:'安土の城下町をどう栄えさせるか。これまでの町では「座」（商工業者の組合）が営業を独占し、市場には税がかかっていた。あなたの方針は？',
       choices:[
         { label:'楽市・楽座！ 税を免除し座を廃止（史実）', text:'「誰でも自由に商売してよし、市の税は取らぬ」——楽市令を出した。関所も廃止して人と物の流れを促すと、安土は爆発的に栄え、莫大な銭が織田家に流れ込むようになった。', fx:{ seiji:10, koku:150 } },
         { label:'座を保護して確実に税を取る', text:'手堅く税収を確保した。だが商人たちは自由な堺や他の町へ流れ、安土の市はいまひとつ栄えない。「銭は囲うより回せ、だったか……」', fx:{ seiji:3, koku:50, mood:-1 } },
       ] },
 
-    { year:1580, type:'story', title:'石山本願寺との和睦',
+    { year:1580, type:'story', title:'石山本願寺との和睦', art:'🕊️🏯',
       text:'10年にわたり戦い続けた石山本願寺（大阪）と、ついに和睦。各地の一向一揆に苦しめられた長い戦いだった。\n\n跡地にはのちに豊臣秀吉が大坂城を築く。残る大敵は中国地方の毛利、関東の北条、そして……。',
       effects:{ ninbo:5, koku:100 } },
 
-    { year:1582, type:'final', title:'本能寺の変 — 敵は本能寺にあり',
+    { year:1582, type:'final', title:'本能寺の変 — 敵は本能寺にあり', art:'🔥🏯',
       text:'天下統一は目前。中国地方で毛利と戦う羽柴（木下）秀吉を助けるため、あなたはわずかな供回りと京の本能寺に泊まった。\n\nその夜——明智光秀の軍勢1万3千が、本能寺を包囲する。',
       // 判定はエンジン側: 知略・人望が閾値以上なら変を察知するIFルート
       survive:{
@@ -227,5 +277,5 @@ const SENGOKU_DATA = (function(){
       desc:'阿国のかぶき踊りはのちの歌舞伎のもとになった。能・狂言は室町時代に観阿弥・世阿弥らが大成したもので、時代の区別がよく問われる。' },
   ];
 
-  return { GENRES, RETAINERS, WARLORDS, TIMELINE, QUESTIONS };
+  return { GENRES, RETAINERS, WARLORDS, TACTICS, SKIRMISH_TERRAINS, SKIRMISH_FOES, TIMELINE, QUESTIONS };
 })();
