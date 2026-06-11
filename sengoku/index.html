@@ -55,17 +55,25 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .gYear{font-weight:900; font-size:19px;} .gYear small{font-weight:600; font-size:12px; color:#bfc8e0; margin-left:6px;}
 .gKoku{font-weight:800; font-size:14px; color:var(--gold2);}
 .gSkill{font-weight:800; font-size:13px; color:#d9c7ff; cursor:pointer;}
-/* 中央ステージ: 信長＋石高で育つ居城（ウマ娘の中央モデル相当・絵文字代用） */
-.stage{display:flex; align-items:flex-end; justify-content:center; gap:30px; padding:12px 12px 4px; min-height:84px;
-  background:linear-gradient(180deg,#cfe2f2 0%,#ece9d4 72%,var(--paper) 100%);}
-.stageCastle{text-align:center;}
+/* 中央ステージ: ビジュアル主役の大型表示（ウマ娘式・2026-06-12 生徒FB「写真枠が小さい」対応。
+   絵は当面絵文字。将来ここを立ち絵画像に差し替える */
+.stage{position:relative; height:212px; overflow:hidden;
+  background:linear-gradient(180deg,#8fc0e6 0%,#cfe2f2 45%,#ece9d4 80%,var(--paper) 100%);}
+.stageDeco{position:absolute; top:8px; left:12px; right:12px; display:flex; justify-content:space-between;
+  font-size:24px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));}
+.stageCastle{position:absolute; left:12px; bottom:46px; text-align:center;}
 .stageCastle .ce{display:block; line-height:1; transition:filter .4s;}
-.stageCastle.t1 .ce{font-size:34px;} .stageCastle.t2 .ce{font-size:42px;} .stageCastle.t3 .ce{font-size:50px;}
-.stageCastle.t4 .ce{font-size:58px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
-.stageCastle.t5 .ce{font-size:62px; filter:drop-shadow(0 0 10px rgba(243,207,93,.95)) saturate(1.7);}
-.castleLbl{font-size:10.5px; font-weight:800; color:#5d6c52;}
-.stageChar{font-size:54px; line-height:1; filter:drop-shadow(0 3px 3px rgba(0,0,0,.25));}
-.charRow{display:flex; gap:10px; padding:8px 12px 4px; align-items:center;}
+.stageCastle.t1 .ce{font-size:46px;} .stageCastle.t2 .ce{font-size:56px;} .stageCastle.t3 .ce{font-size:66px;}
+.stageCastle.t4 .ce{font-size:76px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
+.stageCastle.t5 .ce{font-size:84px; filter:drop-shadow(0 0 12px rgba(243,207,93,.95)) saturate(1.7);}
+.castleLbl{font-size:11px; font-weight:800; color:#4a5a44; background:rgba(245,234,211,.78); border-radius:999px; padding:1px 7px; margin-top:3px;}
+.stageChar{position:absolute; left:55%; bottom:42px; transform:translateX(-50%); font-size:108px; line-height:1;
+  filter:drop-shadow(0 6px 7px rgba(0,0,0,.3)); animation:charSway 3.2s ease-in-out infinite;}
+@keyframes charSway{0%,100%{margin-bottom:0}50%{margin-bottom:7px}}
+.stageName{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:8px; padding:16px 14px 6px;
+  background:linear-gradient(180deg,transparent,rgba(245,234,211,.96) 62%);}
+.stageName .charName{font-size:19px;}
+.charRow{display:flex; gap:10px; padding:4px 12px 4px; align-items:center;}
 .charInfo{flex:1;}
 .charName{font-weight:900; font-size:17px;}
 .moodTag{display:inline-block; margin-left:8px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#ddd;}
@@ -75,11 +83,15 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bar i{display:block; height:100%; border-radius:8px; background:linear-gradient(90deg,#7fd49a,#2e8b57); transition:width .3s;}
 .bar i.low{background:linear-gradient(90deg,#f0b35e,#d96f30);}
 .bar i.crit{background:linear-gradient(90deg,#e0533d,#b3362a);}
-/* ステータスは下部1列（ウマ娘式・2026-06-11 ユーザー要望） */
+/* ステータスは下部1列＋ランク表記F〜SS（ウマ娘式・2026-06-12 生徒FB対応） */
 .statGrid{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:8px 12px 4px;}
-.stat{display:flex; flex-direction:column; align-items:center; background:var(--paper2); border-radius:10px; padding:4px 2px;}
-.stat .si{font-size:16px;} .stat .sl{font-size:10.5px; font-weight:700; color:#7a6845;}
-.stat .sv{font-weight:900; font-size:17px;}
+.stat{display:flex; flex-direction:column; align-items:center; background:var(--paper2); border-radius:10px; padding:4px 2px 5px;}
+.stat .si{font-size:15px;} .stat .sl{font-size:10.5px; font-weight:700; color:#7a6845;}
+.stat .srk{font-size:21px; font-weight:900; line-height:1.15;}
+.stat .sv2{font-size:11px; font-weight:800; color:#7a6845;} .stat .sv2 small{font-weight:600; color:#a09068;}
+.rkF{color:#9aa0a6;} .rkE{color:#7f8aa8;} .rkD{color:#3a6ea5;} .rkC{color:#2e8b57;}
+.rkB{color:#6b8e23;} .rkA{color:#d8a823;} .rkS{color:#e0533d;}
+.rkSS{background:linear-gradient(90deg,#e0533d,#d8a823,#7a4f9d); -webkit-background-clip:text; background-clip:text; color:transparent;}
 .stat .sv.up{color:var(--green); animation:pop .5s;}
 @keyframes pop{0%{transform:scale(1.6)}100%{transform:scale(1)}}
 /* コマンドは3×2（ウマ娘式・2026-06-11 ユーザー要望） */
@@ -235,11 +247,6 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div class="titleCrest">⚔️</div>
     <div class="titleName serif">戦国トレーナー</div>
     <div class="titleSub serif">〜 天下統一への道 〜</div>
-    <div class="titlePolicy">
-      📖 <b>このゲームは「調べてOK」！</b><br>
-      問題に時間制限はありません。教科書・資料集・ネットで調べてから答えても大丈夫。
-      「調べて、わかって、強くなる」が武将育成の極意です。
-    </div>
     <div class="titleBtns">
       <button class="btn gold" onclick="UI.preStart()">⚔️ 育成開始（織田信長）</button>
       <button id="btn-resume" class="btn" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
@@ -260,12 +267,16 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="gKoku" id="g-koku">🌾 10万石</div>
       </div>
       <div class="stage">
+        <div class="stageDeco"><span>🚩</span><span id="g-season">🌸</span></div>
         <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">居城: 陣屋</div></div>
         <div class="stageChar" id="g-face">🙂</div>
+        <div class="stageName">
+          <span class="charName serif">織田信長</span>
+          <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span>
+        </div>
       </div>
       <div class="charRow">
         <div class="charInfo">
-          <div class="charName">織田信長 <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span></div>
           <div class="barWrap">
             <div class="barLbl"><span>体力</span><span id="g-stam-n">100/100</span></div>
             <div class="bar"><i id="g-stam" style="width:100%"></i></div>
@@ -302,7 +313,6 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   <!-- ===== クイズ ===== -->
   <div id="ovl-quiz" class="ovl"><div class="box">
     <span class="qBadge" id="q-badge">武勇</span>
-    <div class="qHint">📖 時間制限なし。調べてもOK！（それも勉強のうち）</div>
     <div class="qText" id="q-text"></div>
     <div class="choices" id="q-choices"></div>
     <div id="q-after"></div>
@@ -931,6 +941,17 @@ const UI = (function(){
     Game.toast('💾 セーブしました。「つづきから」で再開できます');
   }
 
+  /* ステータスのランク表記（F〜SS・最大300表記。高い/低いを一目で・2026-06-12 生徒FB対応） */
+  const STAT_MAX = 300;
+  function statRank(v){
+    return v>=300?'SS' : v>=240?'S' : v>=180?'A' : v>=130?'B' : v>=90?'C' : v>=60?'D' : v>=30?'E' : 'F';
+  }
+  function statCell(k, v){
+    const g = D.GENRES[k], r = statRank(v);
+    return `<div class="stat"><span class="si">${g.icon}</span><span class="sl">${g.label}</span>
+      <span class="srk rk${r}">${r}</span><span class="sv2">${v}<small>/${STAT_MAX}</small></span></div>`;
+  }
+
   /* ---- §9 育成画面の描画 ---- */
   function renderGame(){
     const S = Game.S; if (!S) return;
@@ -948,19 +969,15 @@ const UI = (function(){
     $('g-castlebox').className = 'stageCastle t'+tier;
     $('g-castle').textContent = castles[tier][0];
     $('g-castlelbl').textContent = `居城: ${castles[tier][1]}`;
+    $('g-season').textContent = ['🌸','☀️','🍂','⛄'][(S.year-1551)%4];
     $('g-face').textContent = injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'));
     // 体力
     const st = $('g-stam');
     st.style.width = S.stamina+'%';
     st.className = S.stamina<25? 'crit' : (S.stamina<45? 'low' : '');
     $('g-stam-n').textContent = `${S.stamina}/100`;
-    // ステ
-    const sg = $('g-stats'); sg.innerHTML='';
-    Game.STAT_KEYS.forEach(k=>{
-      const g = D.GENRES[k];
-      sg.insertAdjacentHTML('beforeend',
-        `<div class="stat"><span class="si">${g.icon}</span><span class="sl">${g.label}</span><span class="sv" id="sv-${k}">${S[k]}</span></div>`);
-    });
+    // ステ（ランク表記）
+    $('g-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, S[k])).join('');
     // 絆
     const br = $('g-bonds'); br.innerHTML='';
     D.RETAINERS.forEach(r=>{
@@ -1230,7 +1247,7 @@ const UI = (function(){
           const c = chips[o.style];
           return `<button class="saihai" onclick="UI.pickSaihai(${i})">
             <span class="ti">${o.icon}</span>
-            <span class="tb"><b>${o.label}</b><small>${g.icon}${g.label} ${Game.S[o.stat]} で実行 ／ ${g.quizLabel}の問題が出る</small></span>
+            <span class="tb"><b>${o.label}</b><small>${g.icon}${g.label} ${Game.S[o.stat]}</small></span>
             <span class="chip" style="background:${c[1]}">${c[0]}</span></button>`;
         }).join('');
     });
@@ -1306,12 +1323,7 @@ const UI = (function(){
     show('result');
     $('r-rank').textContent = sum.rank[1];
     $('r-sub').textContent = `評価点 ${sum.total} ／ ${sum.rank[2]}`;
-    const rs = $('r-stats'); rs.innerHTML='';
-    Game.STAT_KEYS.forEach(k=>{
-      const g = D.GENRES[k];
-      rs.insertAdjacentHTML('beforeend',
-        `<div class="stat"><span class="si">${g.icon}</span><span class="sl">${g.label}</span><span class="sv">${sum.stats[k]}</span></div>`);
-    });
+    $('r-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, sum.stats[k])).join('');
     $('r-summary').innerHTML =
       `🌾 石高 <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 合戦 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
       (sum.fell? `💀 <b>${sum.fell}に敗れ、育成終了……</b><br>📖 軍学帳でまちがいを復習して、もう一度天下を目指そう！`
@@ -1363,7 +1375,7 @@ const UI = (function(){
     $('l-title').textContent = '❓ 遊び方';
     $('l-body').innerHTML = `<div class="bookItem" style="font-size:14px;">
       <b style="color:#8a6605">⚔️ 織田信長の人生32年（32ターン）を一緒に駆け抜けるゲームだ。</b><br><br>
-      🎯 <b>毎ターン、コマンドを1つ選ぶ</b>。⚔️鍛錬を選ぶと歴史クイズが出る。<b>時間制限なし・調べてOK！</b><br><br>
+      🎯 <b>毎ターン、コマンドを1つ選ぶ</b>。⚔️鍛錬を選ぶと歴史クイズが出る。<b>時間制限はない</b>、じっくり考えよう。<br><br>
       ⭕ 正解するとステータスが大きく成長＋✨スキルPゲット。<br>
       ❌ 不正解でも「気合で押し切る」と同じだけ成長できる。ただし<b>失敗率</b>のぶんだけ大失敗のリスクが…！<br><br>
       🤕 大失敗すると<b>ケガ</b>をする。ケガをしたら<b>🌿薬師（くすし）</b>で治療！ たまに「塞翁が馬」——ケガが思わぬ福を呼ぶことも…。<br><br>
