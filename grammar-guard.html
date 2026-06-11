@@ -9256,6 +9256,8 @@ const Game = (()=>{
   let cleared = {};        // {area:true}
   let heroCleared = {};    // 👑英雄級のクリア {area:true}（2026-06-11・2周目モード）
   let heroView = false;    // あそぶ画面で英雄級タブ表示中か（非保存）
+  let ironCleared = {};    // ⚔鉄の試練のクリア {area:true}（2026-06-12・章ボスの制約チャレンジ）
+  let ironView = false;    // あそぶ画面で鉄の試練タブ表示中か（非保存）
   let autoSummon = false;  // 苦手な子向け（操作を問題に集中）
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
   let owned = {};          // 入手済み {key:count}
@@ -9291,7 +9293,7 @@ const Game = (()=>{
   let soundOn = true;
   function load(){
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
-      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; heroCleared=(s.heroCleared&&typeof s.heroCleared==='object')?s.heroCleared:{}; autoSummon=!!s.autoSummon; /* slowMode廃止: 常にfalse */
+      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; heroCleared=(s.heroCleared&&typeof s.heroCleared==='object')?s.heroCleared:{}; ironCleared=(s.ironCleared&&typeof s.ironCleared==='object')?s.ironCleared:{}; autoSummon=!!s.autoSummon; /* slowMode廃止: 常にfalse */
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
@@ -9316,7 +9318,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -10125,6 +10127,7 @@ const Game = (()=>{
         +'<div class="muted" style="font-weight:800">🎖️ 英語ランク</div>'
         +'<div style="font-size:22px;font-weight:800;color:#c77b1a;line-height:1.15">'+tr.e+' '+tr.n+'</div>'
         +'<div style="font-size:12px;font-weight:700">単語 <b style="color:var(--ally)">'+wl+'</b> ／ 文法 <b style="color:var(--ally)">'+gl+'</b></div>'
+        +(Object.keys(ironCleared).length?'<div style="font-size:12px;font-weight:800;color:#5a6670">⚔ 鉄の試練 '+Object.keys(ironCleared).length+'章制覇</div>':'')
         +'</div>'
         +'<button class="btn" id="rankAssessBtn" style="flex:0 0 auto;width:auto;padding:9px 12px;font-size:13px;white-space:nowrap">📊 実力測定</button>'
         +'</div>';
@@ -10243,27 +10246,36 @@ const Game = (()=>{
       if(__sc)__sc.style.display='block'; if(__spc)__spc.style.display='none';
       var __title=$('chapTitle'); if(__title){ var __th=CHAPTER_THEMES[playTab-1]||''; var __ba=playTab*5; __title.innerHTML='🗺️ '+playTab+'章 '+__th+' <span class="muted">（エリア'+__ba+'＝ボス：'+(GIM_LABEL[BOSS_GIMMICK[__ba]]||'強敵')+'）</span>'; }
       const grid=$('stageGrid'); grid.innerHTML='';
-      // 👑英雄級（2周目・2026-06-11）: 章ボス撃破でその章の英雄級が解禁。敵HP×2.2/ATK×1.6＋新ギミック敵が乱入・報酬2.5倍
-      if(heroView && !cleared[playTab*5]) heroView=false; // ボス未撃破の章へ移動したら通常へ戻す
+      // 👑英雄級（2周目・2026-06-11）/ ⚔鉄の試練（2026-06-12）: 章ボス撃破でその章の英雄級と鉄の試練が解禁
+      if((heroView||ironView) && !cleared[playTab*5]){ heroView=false; ironView=false; } // ボス未撃破の章へ移動したら通常へ戻す
       if(cleared[playTab*5]){
-        var __hv=document.createElement('div'); __hv.style.cssText='display:flex;gap:8px;margin-bottom:8px';
-        var __bn=document.createElement('button'); __bn.className='btn'+(heroView?' ghost':''); __bn.style.cssText='flex:1;padding:8px 0'; __bn.textContent='通常'; __bn.onclick=function(){ heroView=false; renderHome(); };
-        var __bh=document.createElement('button'); __bh.className='btn'+(heroView?'':' ghost'); __bh.style.cssText='flex:1;padding:8px 0'; __bh.textContent='👑 英雄級'; __bh.onclick=function(){ heroView=true; renderHome(); };
-        __hv.appendChild(__bn); __hv.appendChild(__bh); grid.appendChild(__hv);
+        var __hv=document.createElement('div'); __hv.style.cssText='display:flex;gap:6px;margin-bottom:8px';
+        function __mkTab(label,on,fn){ var b=document.createElement('button'); b.className='btn'+(on?'':' ghost'); b.style.cssText='flex:1;padding:8px 0;font-size:13px'; b.textContent=label; b.onclick=fn; __hv.appendChild(b); }
+        __mkTab('通常', !heroView&&!ironView, function(){ heroView=false; ironView=false; renderHome(); });
+        __mkTab('👑 英雄級', heroView, function(){ heroView=true; ironView=false; renderHome(); });
+        __mkTab('⚔ 鉄の試練', ironView, function(){ ironView=true; heroView=false; renderHome(); });
+        grid.appendChild(__hv);
         if(heroView){
           var __hi=document.createElement('div'); __hi.className='muted'; __hi.style.cssText='font-size:12px;line-height:1.5;margin-bottom:8px;text-align:center';
           __hi.innerHTML='👑 同じステージの<b>強化版</b>。🛡シールド兵（正解でシールドブレイク！）と🔮術師が乱入。<b>報酬2.5倍</b>';
           grid.appendChild(__hi);
         }
+        if(ironView){
+          var __ii=document.createElement('div'); __ii.className='muted'; __ii.style.cssText='font-size:12px;line-height:1.6;margin-bottom:8px;text-align:center;border:2px solid #5a6670;border-radius:10px;padding:8px;background:#f4f6f8';
+          __ii.innerHTML='⚔ <b>章ボスに腕前だけで挑む試練</b><br>・出撃できるのは<b>編成の先頭3体</b>だけ<br>・<b>まちがえるたびに自城がくずれる</b>（最大HPの8%）<br>・初クリアで <b>⚔バッジ＋💎500</b>（たいせんカードに表示）';
+          grid.appendChild(__ii);
+        }
       }
-      STAGES.filter(function(s){return s.world===playTab;}).forEach(s=>{
-        const lock = heroView ? false : s.area>unlocked; // 英雄級は章ボス撃破済みが前提＝章内全開放
+      STAGES.filter(function(s){return s.world===playTab && (!ironView || s.boss);}).forEach(s=>{ // 鉄の試練はボスのみ
+        const lock = (heroView||ironView) ? false : s.area>unlocked; // 英雄級/鉄の試練は章ボス撃破済みが前提＝章内全開放
         const d=document.createElement('button');
         d.className='stage'+(s.boss?' boss':'')+(lock?' lock':'');
-        d.innerHTML=`<span class="no">${heroView?'👑':''}エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
-          +((heroView?heroCleared[s.area]:cleared[s.area])?`<span class="flag">${heroView?'👑':'🚩'}</span>`:'')
+        var __pfx=heroView?'👑':ironView?'⚔':'';
+        var __clr=heroView?heroCleared[s.area]:ironView?ironCleared[s.area]:cleared[s.area];
+        d.innerHTML=`<span class="no">${__pfx}エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
+          +(__clr?`<span class="flag">${heroView?'👑':ironView?'⚔':'🚩'}</span>`:'')
           +(lock?`<span class="lockmark">🔒</span>`:'');
-        if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(heroView?heroicStage(s):s); }
+        if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(heroView?heroicStage(s):ironView?ironStage(s):s); }
         grid.appendChild(d);
       });
       // 最終章(ゲーム内に存在する最後の章)に到達したら、続きは準備中だと案内（要望#12）。
@@ -10288,6 +10300,14 @@ const Game = (()=>{
     h.name='👑'+s.name;
     return h;
   }
+  // ⚔鉄の試練ステージ生成（2026-06-12・Kingdom Rush Iron式）: 敵は通常ボス戦と同じ。制約=編成3体＋誤答で自城ダメージ
+  function ironStage(s){
+    var h=Object.assign({}, s);
+    h.iron=true; h.name='⚔'+s.name;
+    return h;
+  }
+  const IRON_MISS_PCT = 0.08;  // 誤答1回で自城最大HPの8%が崩れる
+  const IRON_DECK_MAX = 3;     // 出撃できるのは編成の先頭3体
   const FIELD_W = 940; // 論理幅(px相当)。castle間。
   function fieldW(){ return $('field').clientWidth; }
   function enterBattle(stage){
@@ -10296,7 +10316,8 @@ const Game = (()=>{
     // ④survive：敵城は無い(実質無敵)＝攻撃で削れて勝ってしまわないよう巨大HPに。勝ちはtimeLimit耐久のみ(要望#1)。
     if(stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ B.castleE=B.castleEMax=1e9; }
     B.hero = !!stage.hero; B.heroNext = 14; // 👑英雄級: 新ギミック敵の乱入タイマー
-    B.wasCleared = stage.hero ? !!heroCleared[stage.area] : !!cleared[stage.area];
+    B.wasCleared = stage.hero ? !!heroCleared[stage.area] : stage.iron ? !!ironCleared[stage.area] : !!cleared[stage.area];
+    if(stage.iron){ try{ fxBanner('⚔ 鉄の試練！誤答は城がくずれる・出撃は3体','#5a6670'); }catch(e){} }
     $('castleAsvg').innerHTML = castleSkinSVG(); // 🏯装備中の城スキンで自城を描画
     $('castleEsvg').innerHTML = SVG.get('castleE');
     $('crackA').innerHTML = CRACK_SVG; $('crackE').innerHTML = CRACK_SVG;
@@ -10334,6 +10355,8 @@ const Game = (()=>{
       else if(B.stage.dailyRule==='cost60') d=d.filter(function(k){return ROSTER[k].cost<=60;});
       if(!d.length) d=['guardTurtle','dashFox'];
     }
+    // ⚔鉄の試練: 出撃は編成の先頭3体だけ（編成順がそのまま戦略になる）
+    if(B&&B.stage&&B.stage.iron){ d=d.slice(0,IRON_DECK_MAX); if(!d.length) d=['guardTurtle']; }
     return d; }
   function cdLeft(key){ return (B&&B.cd&&B.cd[key])||0; }
   function unitWeight(key){ return ROSTER[key].weight||10; }
@@ -10816,6 +10839,13 @@ const Game = (()=>{
       Sound.play('wrong');
       B.missStreak++;
       if(!B.stage.learn && !B.pvp) B.feverT=EN_FEVER_S; // ⚡フィーバーは「答え続けること」で維持（不正解でもOK。コンボ半減で加速倍率は自然に下がる＝弱い子の保護）
+      // ⚔鉄の試練: 誤答1回ごとに自城がくずれる（最大HPの8%・コンボ保護でも防げない＝正答率そのものが試される）
+      if(B.stage.iron){
+        var __id=Math.round(B.castleAMax*IRON_MISS_PCT);
+        B.castleA-=__id; castleHit('castleA');
+        floatText(70, 30, '⚔-'+__id, 'var(--bad)');
+        try{ fxBanner('⚔ 誤答！城がくずれた','#c0392b'); }catch(e){}
+      }
       if(B.stage.learn){
         // 🎓学習の塔：コンボは途切れない（減らさない）。代わりにエネルギーが増えない＝間違えると召喚が止まる
         $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
@@ -11245,7 +11275,9 @@ const Game = (()=>{
     var __firstLimitBreak = win && !B.stage.hero && B.stage.area===75 && !cleared[75]; // 🔓限界突破の初回解放検知
     var __dailyWin = win && B.stage.daily && !dailyChalDoneToday(); // 📅きょうのチャレンジ（1日1回）
     if(__dailyWin){ dailyChalDone=todayStr(); gems+=150; gold+=300; }
-    if(win){ if(B.stage.hero){ heroCleared[B.stage.area]=true; } else { cleared[B.stage.area]=true; } }
+    var __ironFirst = win && B.stage.iron && !ironCleared[B.stage.area]; // ⚔鉄の試練の初制覇＝バッジ＋💎500
+    if(__ironFirst){ gems+=500; }
+    if(win){ if(B.stage.hero){ heroCleared[B.stage.area]=true; } else if(B.stage.iron){ ironCleared[B.stage.area]=true; } else { cleared[B.stage.area]=true; } }
     save();
     if(__firstLimitBreak){ try{ fxBanner('🔓 限界突破！キャラLv上限45・城Lv上限30に解放','#e0a93b'); }catch(e){} }
     $('resMedals').innerHTML =
@@ -11254,7 +11286,8 @@ const Game = (()=>{
       (B.reviewWins?`<span class="medal">🔁 復習成功 ${B.reviewWins}</span>`:'')+
       `<span class="medal">💰 +${reward}</span>`+
       (gemReward?`<span class="medal">💎 +${gemReward}</span>`:'')+
-      (__dailyWin?`<span class="medal">📅 チャレンジ達成! 💎+150 💰+300</span>`:'');
+      (__dailyWin?`<span class="medal">📅 チャレンジ達成! 💎+150 💰+300</span>`:'')+
+      (__ironFirst?`<span class="medal">⚔ 鉄の試練 制覇! バッジ＋💎500</span>`:'');
     $('resLearn').textContent = !win
       ? 'コンボが切れると加速が鈍ります。でもベース加速は残るので立て直せます。やさしいレンジで再挑戦も◎'
       : '正解し続けるほどエネルギーが加速して召喚ラッシュ！この「解く→強くなる」が火力源です。';
@@ -11427,7 +11460,7 @@ const Game = (()=>{
   function pvpSnap(){ return {deck:deck.slice(),owned:Object.assign({},owned),unitLv:Object.assign({},unitLv),castleLv:castleLv,regenLv:regenLv,enMaxLv:enMaxLv,freezeDurLv:freezeDurLv,freezeCostLv:freezeCostLv,comboGuardLv:comboGuardLv,equippedSkin:equippedSkin,ownedSkins:Object.assign({},ownedSkins),equippedParts:Object.assign({},equippedParts),ownedParts:Object.assign({},ownedParts),learnBest:Object.assign({},learnBest),autoSummon:autoSummon}; }
   function pvpRestore(s){ deck=s.deck;owned=s.owned;unitLv=s.unitLv;castleLv=s.castleLv;regenLv=s.regenLv;enMaxLv=s.enMaxLv;freezeDurLv=s.freezeDurLv;freezeCostLv=s.freezeCostLv;comboGuardLv=s.comboGuardLv;equippedSkin=s.equippedSkin;ownedSkins=s.ownedSkins;equippedParts=s.equippedParts;ownedParts=s.ownedParts;learnBest=s.learnBest;autoSummon=s.autoSummon; }
   function pvpMakeCardObj(name){
-    var c={v:1,name:(name||'プレイヤー').toString().slice(0,12)||'プレイヤー',deck:deck.slice(0,5),lv:{},stars:{},parts:{},cas:castleLv,reg:regenLv,enm:enMaxLv,fzd:freezeDurLv,fzc:freezeCostLv,cg:comboGuardLv,skin:equippedSkin,learn:Object.assign({},learnBest)};
+    var c={v:1,name:(name||'プレイヤー').toString().slice(0,12)||'プレイヤー',deck:deck.slice(0,5),lv:{},stars:{},parts:{},cas:castleLv,reg:regenLv,enm:enMaxLv,fzd:freezeDurLv,fzc:freezeCostLv,cg:comboGuardLv,skin:equippedSkin,learn:Object.assign({},learnBest),iron:Object.keys(ironCleared).length}; // iron=⚔鉄の試練バッジ数（読み取り専用の自慢用）
     c.deck.forEach(function(k){ c.lv[k]=unitLv[k]||0; c.stars[k]=owned[k]||1; if(equippedParts[k])c.parts[k]=equippedParts[k]; });
     return c;
   }
@@ -11504,11 +11537,11 @@ const Game = (()=>{
       var opBrokeMe  = r1.bBroke || r2.aBroke;   // 相手が自分の城を落とした
       var draw = Math.abs(meRem-opRem) < 1.5;
       var win = !draw && (meRem > opRem);
-      function castleLine(nm,rem,broke,me){ return '<div style="border:2px solid var(--line);border-radius:10px;padding:8px;margin-top:6px;background:#fff"><b>'+esc(nm)+'</b>'+(me?'（あなた）':'')+'：🏯 城 '+Math.round(rem)+'％ のこり'+(broke?' <span style="color:var(--enemy)">(一部の対戦で陥落)</span>':'')+'</div>'; }
+      function castleLine(nm,rem,broke,me,ironN){ return '<div style="border:2px solid var(--line);border-radius:10px;padding:8px;margin-top:6px;background:#fff"><b>'+esc(nm)+'</b>'+(ironN?' <span style="color:#5a6670;font-weight:800" title="鉄の試練 制覇数">⚔'+ironN+'</span>':'')+(me?'（あなた）':'')+'：🏯 城 '+Math.round(rem)+'％ のこり'+(broke?' <span style="color:var(--enemy)">(一部の対戦で陥落)</span>':'')+'</div>'; }
       var verdict=draw?'🤝 引き分け！':(win?'🎉 あなたの勝ち！':'💧 相手の勝ち…');
       if(res)res.innerHTML='<div style="font-weight:800;font-size:18px;text-align:center;margin-bottom:4px">'+verdict+'</div>'
-        +castleLine(myName, meRem, opBrokeMe, true)
-        +castleLine(opp.name||'あいて', opRem, meBrokeOpp, false)
+        +castleLine(myName, meRem, opBrokeMe, true, myCard.iron)
+        +castleLine(opp.name||'あいて', opRem, meBrokeOpp, false, opp.iron)
         +'<div class="muted" style="font-size:11px;margin-top:8px">⚔️ あなたの編成と相手の編成が直接対戦（コンボ20想定・攻守を入れ替えて2回判定）。育成が強いほど有利です。</div>';
       try{ Sound.play(win?'win':'lose'); }catch(e){}
     }
