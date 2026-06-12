@@ -7,6 +7,7 @@
    §2.6 合戦絵巻（実況セリフ・采配・小競り合い）
    §2.7 勢力図（領地マップ）
    §2.8 スキル定義
+   §2.85 追憶の章（全偉人共通のクリア後ボーナス）
    §2.9 偉人パック（エンジンが参照する単位。偉人追加=パック追加）
    §3 年表イベント（織田信長 1551-1582）
    §4 クイズDB（シード問題。Codex生成分は QUESTIONS_EXTRA に追記）
@@ -513,6 +514,34 @@ const SENGOKU_DATA = (function(){
       desc:'阿国のかぶき踊りはのちの歌舞伎のもとになった。能・狂言は室町時代に観阿弥・世阿弥らが大成したもので、時代の区別がよく問われる。' },
   ];
 
+  /* ===== §2.85 追憶の章（全偉人共通のクリア後ボーナスゾーン） =====
+     ウマ娘のURAファイナルズ（全キャラ共通の最終章・勝つと全ステ+30〜40）に相当。
+     完走者だけが入れる。この周の記憶（解いた問題・まちがい帳）から5問の回想クイズ →
+     正解数（人生の輝き）で総括が変わり、ポジティブなほど全ステ大幅アップ → ランクに反映 */
+  const EPILOGUE = {
+    intro:{ title:'📜 追憶の章 — 人生をふり返る', art:'🕯️📜',
+      text:'すべての戦いが終わった。\n\n静かな夜、あなたは歩んできた長い道のりを、ゆっくりとふり返る——あの戦。あの出会い。あの決断。\n\nこれより記憶を一つずつ確かめる（全5問）。鮮やかに思い出せるほど、人生の輝きが増していく。' },
+    okLines:[
+      '✨ 記憶が鮮やかによみがえった！ 人生の輝きが増した！',
+      '✨ あの日の決断は、まちがっていなかった。',
+      '✨ 思い出が、誇りに変わっていく。',
+    ],
+    ngLines:[
+      '…ほろ苦い記憶も、また人生だ。（解説を読んで確かめておこう）',
+      '…思い出せないこともある。それもまた人生よ。',
+    ],
+    tiers:[
+      { min:5, title:'🌟 大成功の人生！', boost:30, koku:100,
+        text:'「——何ひとつ悔いはない。大成功の人生であった！」\n\nあなたは満ち足りた笑みを浮かべ、静かに目を閉じた。\n\nその生き様は伝説となり、子から孫へ、永遠に語り継がれていく。' },
+      { min:4, title:'🎉 成功の人生', boost:20, koku:50,
+        text:'「胸を張って言える。成功の人生だった」\n\n多くを成し、多くを学んだ。あなたは穏やかな顔で目を閉じ、物語は幕を下ろした。' },
+      { min:2, title:'😊 良い人生', boost:12, koku:20,
+        text:'「良い人生だった…心からそう思える」\n\n勝った日も負けた日も、すべてがあなたの宝物だ。物語は静かに幕を下ろした。' },
+      { min:0, title:'🍵 まあまあの人生', boost:5, koku:0,
+        text:'「まあまあの人生…いや、それで十分よ」\n\n思い出せない記憶もあった。だが、確かに駆け抜けた。物語は幕を下ろした——次は、もっと鮮やかに。' },
+    ],
+  };
+
   /* ===== §2.9 偉人パック =====
      エンジンはシナリオ固有データをすべて「偉人パック」経由で参照する（偉人トレーナー構想・PLAN §9）。
      偉人を追加するとき＝このパックを1つ書くだけ（年表・側近・勢力図・小競り合い・開始ステ・IF条件） */
@@ -520,6 +549,8 @@ const SENGOKU_DATA = (function(){
     nobunaga: {
       id:'nobunaga', name:'織田信長', armyIcon:'🔵', armyName:'織田軍',
       crest:'⚡', subtitle:'尾張のうつけ、天下布武へ',
+      img:'assets/hero_nobunaga.png',
+      castleImgs:['assets/castle_1.png','assets/castle_2.png','assets/castle_3.png','assets/castle_4.png','assets/castle_5.png'],
       startYear:1551, endYear:1582,
       start:{ buyu:20, chiryaku:24, seiji:14, ninbo:8, koku:100 },
       finalReq:{ chiryaku:95, ninbo:80 },  // 最終イベントのIF生存条件（本能寺を察知）
@@ -538,6 +569,7 @@ const SENGOKU_DATA = (function(){
     hideyoshi: {
       id:'hideyoshi', name:'豊臣秀吉', armyIcon:'🟡', armyName:'羽柴軍',
       crest:'🐒', subtitle:'草履取りから天下人へ・史上最大の成り上がり',
+      img:'assets/hero_hideyoshi.png',
       startYear:1554, endYear:1590,
       start:{ buyu:8, chiryaku:20, seiji:16, ninbo:26, koku:5 },
       finalReq:{ seiji:140, ninbo:120 },  // IF: 唐入り（朝鮮出兵）を思いとどまる（37ターン分強気の閾値）
@@ -857,5 +889,5 @@ const SENGOKU_DATA = (function(){
     },
   };
 
-  return { GENRES, WARLORDS, SKILLS, BATTLE_LINES, HEROES, QUESTIONS };
+  return { GENRES, WARLORDS, SKILLS, BATTLE_LINES, EPILOGUE, HEROES, QUESTIONS };
 })();

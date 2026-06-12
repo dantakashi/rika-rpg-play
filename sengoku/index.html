@@ -69,8 +69,15 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .stageCastle.t4 .ce{font-size:76px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
 .stageCastle.t5 .ce{font-size:84px; filter:drop-shadow(0 0 12px rgba(243,207,93,.95)) saturate(1.7);}
 .castleLbl{font-size:11px; font-weight:800; color:#4a5a44; background:rgba(245,234,211,.78); border-radius:999px; padding:1px 7px; margin-top:3px;}
-.stageChar{position:absolute; left:55%; bottom:42px; transform:translateX(-50%); font-size:108px; line-height:1;
+.stageChar{position:absolute; left:55%; bottom:40px; transform:translateX(-50%); font-size:108px; line-height:1;
   filter:drop-shadow(0 6px 7px rgba(0,0,0,.3)); animation:charSway 3.2s ease-in-out infinite;}
+.stageChar img{display:block; height:165px; width:auto;}
+.stageChar img.hurt{filter:grayscale(.75) brightness(.9);}
+.stageChar .injBadge{position:absolute; top:-4px; right:-16px; font-size:30px;}
+.stageCastle .ce img{display:block; margin:0 auto; width:auto;}
+.stageCastle.t1 .ce img{height:62px;} .stageCastle.t2 .ce img{height:78px;} .stageCastle.t3 .ce img{height:94px;}
+.stageCastle.t4 .ce img{height:110px;}
+.stageCastle.t5 .ce img{height:120px; filter:drop-shadow(0 0 12px rgba(243,207,93,.9));}
 @keyframes charSway{0%,100%{margin-bottom:0}50%{margin-bottom:7px}}
 .stageName{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:8px; padding:16px 14px 6px;
   background:linear-gradient(180deg,transparent,rgba(245,234,211,.96) 62%);}
@@ -421,13 +428,13 @@ const Game = (function(){
     const mates = (S.placement[genre]||[]).length;
     return Math.max(15, TRAIN_COST - mates*2);
   }
-  const RANKS = [ // [必要評価点, ランク名, ひとこと]
+  const RANKS = [ // [必要評価点, ランク名, ひとこと]（追憶の章ボーナス込み前提・2026-06-13改定）
     [0,'足軽','まだまだこれから。次はもっと学んでみよう！'],
-    [190,'侍大将','戦場で名が知られ始めた。'],
-    [320,'城主','一城のあるじ。家臣たちが頼りにしている。'],
-    [450,'国主','一国を治める大名。天下が見えてきた。'],
-    [590,'大大名','天下にその名を轟かす大大名！'],
-    [720,'天下人','見事、天下統一！ 歴史にきみの名が刻まれた！'],
+    [210,'侍大将','戦場で名が知られ始めた。'],
+    [360,'城主','一城のあるじ。側近たちが頼りにしている。'],
+    [500,'国主','一国を治める大名。天下が見えてきた。'],
+    [660,'大大名','天下にその名を轟かす大大名！'],
+    [820,'天下人','見事、天下統一！ 歴史にきみの名が刻まれた！'],
   ];
 
   let S = null;        // 育成中の状態（runState）
@@ -484,7 +491,9 @@ const Game = (function(){
       S.skills = S.skills || {};
       S.trainStreak = S.trainStreak || 0;
       H.retainers.forEach(r=>{ if (S.bonds[r.id]==null) S.bonds[r.id]=20; });
-      UI.show('game'); turnStart(true);
+      UI.show('game');
+      if (S.epi){ UI.renderGame(); epilogueNext(); return; }
+      turnStart(true);
     }
   }
   function clearRun(){ S=null; saveAll(); }
@@ -708,6 +717,19 @@ const Game = (function(){
     const correct = (choiceIdx === cur.sh.a);
     cur.lastCorrect = correct;
     if (cur.mode==='battle'){ return battleAnswer(correct); }
+    if (cur.mode==='epilogue'){
+      const E = S.epi;
+      let text;
+      if (correct){
+        E.glow++;
+        text = D.EPILOGUE.okLines[Math.floor(Math.random()*D.EPILOGUE.okLines.length)] + `（輝き ${E.glow}/5）`;
+        if (cur.bookIdx!=null && P.book[cur.bookIdx]){ P.book.splice(cur.bookIdx,1); text += '\n📖 軍学帳から1ページ卒業！'; savePersist(); }
+      } else {
+        text = D.EPILOGUE.ngLines[Math.floor(Math.random()*D.EPILOGUE.ngLines.length)];
+      }
+      saveAll();
+      return { correct, text, done:'next' };
+    }
     if (cur.mode==='review'){
       if (correct){
         const item = P.book[cur.bookIdx];
@@ -943,8 +965,47 @@ const Game = (function(){
       const branch = survive? ev.survive : ev.fall;
       if (survive){ S.koku += 500; S.wins++; S.battles++; }
       S.survived = survive;
-      UI.showEvent({year:1582, type:'story', title:branch.title, text:branch.text}, ()=>endRun(survive), survive? {koku:500}:null);
+      // 完走者は全偉人共通の「追憶の章」へ（ご褒美ゾーン）。敗北での育成終了は対象外
+      UI.showEvent({year:H.endYear, type:'story', title:branch.title, text:branch.text}, ()=>startEpilogue(survive), survive? {koku:500}:null);
     });
+  }
+
+  /* ===== §7.9 追憶の章 — 全偉人共通のクリア後ボーナス（D.EPILOGUE・設計はウマ娘URAファイナルズ参照） ===== */
+  function startEpilogue(survived){
+    S.epi = { n:0, glow:0, survived:!!survived };
+    saveAll();
+    UI.showEvent(Object.assign({ year:S.year }, D.EPILOGUE.intro), epilogueNext);
+  }
+  function epilogueNext(){
+    const E = S.epi;
+    if (!E) return;
+    if (E.n >= 5){ finishEpilogue(); return; }
+    E.n++;
+    saveAll();
+    // 「自分の記憶」を優先して出題: まちがい帳 → この周で出会った問題 → 全問
+    if (P.book.length){
+      const bi = Math.floor(Math.random()*P.book.length);
+      cur = { mode:'epilogue', bookIdx:bi };
+      UI.openQuiz(P.book[bi], cur);
+      return;
+    }
+    const pool = S.usedQ.length ? S.usedQ : D.QUESTIONS.map((q,i)=>i);
+    const qi = pool[Math.floor(Math.random()*pool.length)];
+    cur = { mode:'epilogue', qi };
+    UI.openQuiz(D.QUESTIONS[qi], cur);
+  }
+  function finishEpilogue(){
+    const E = S.epi;
+    const tier = D.EPILOGUE.tiers.find(t=>E.glow>=t.min);
+    const fx = { buyu:tier.boost, chiryaku:tier.boost, seiji:tier.boost, ninbo:tier.boost };
+    if (tier.koku) fx.koku = tier.koku;
+    applyFx(fx);
+    S.epi = null;
+    saveAll();
+    UI.showEvent({ year:S.year, title:`人生の総括 — ${tier.title}`, art:'🌅🕊️',
+      text:`（人生の輝き ${E.glow}/5）
+
+${tier.text}` }, ()=>endRun(E.survived), fx);
   }
 
   /* ===== §8 終了評価 ===== fellLabel: 敗北で育成終了した合戦名（nullなら完走） */
@@ -987,7 +1048,7 @@ const Game = (function(){
 
   return { get S(){return S;}, get P(){return P;}, D, MOODS, STAT_KEYS, RANKS,
     newRun:(lg)=>{S=newRun(lg); saveAll();}, hasRun, resume, clearRun,
-    failRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill, setHero,
+    failRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill, setHero, epilogueNext,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
     battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
     get cur(){return cur;}, get B(){return B;}, get H(){return H;}, saveAll };
@@ -1010,8 +1071,9 @@ const UI = (function(){
     const body = $('l-body'); body.innerHTML='';
     Object.values(D.HEROES).forEach(h=>{
       body.insertAdjacentHTML('beforeend',
-        `<button class="btn" onclick="UI.pickHero('${h.id}')">${h.crest} <b>${h.name}</b><br>
-         <small style="font-weight:600">${h.subtitle}（${h.startYear}〜${h.endYear}年・${h.endYear-h.startYear+1}ターン）</small></button>`);
+        `<button class="btn" style="display:flex; align-items:center; gap:10px; text-align:left;" onclick="UI.pickHero('${h.id}')">
+         ${h.img? `<img src="${h.img}" alt="" style="height:72px; flex:none;">` : `<span style="font-size:40px;">${h.crest}</span>`}
+         <span><b>${h.name}</b><br><small style="font-weight:600">${h.subtitle}<br>（${h.startYear}〜${h.endYear}年・${h.endYear-h.startYear+1}ターン）</small></span></button>`);
     });
     $('ovl-list').classList.add('on');
   }
@@ -1104,11 +1166,18 @@ const UI = (function(){
     let tier = 0;
     cs.forEach((c,i)=>{ if (S.koku>=c[0]) tier=i; });
     $('g-castlebox').className = 'stageCastle t'+(tier+1);
-    $('g-castle').textContent = cs[tier][1];
+    const cimg = Game.H.castleImgs && Game.H.castleImgs[tier];
+    $('g-castle').innerHTML = cimg ? `<img src="${cimg}" alt="${cs[tier][2]}">` : cs[tier][1];
     $('g-castlelbl').textContent = `居城: ${cs[tier][2]}`;
     $('g-heroname').textContent = Game.H.name;
     $('g-season').textContent = Game.H.seasons[(S.year-Game.H.startYear)%Game.H.seasons.length];
-    $('g-face').textContent = injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'));
+    // 立ち絵（画像があれば使用・なければ絵文字。ケガ中はグレー＋🤕バッジ）
+    if (Game.H.img){
+      $('g-face').innerHTML = `<img src="${Game.H.img}" alt="${Game.H.name}" class="${injured?'hurt':''}">`
+        + (injured? '<span class="injBadge">🤕</span>' : '');
+    } else {
+      $('g-face').textContent = injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'));
+    }
     // 体力
     const st = $('g-stam');
     st.style.width = S.stamina+'%';
@@ -1250,6 +1319,7 @@ const UI = (function(){
     $('ovl-quiz').classList.remove('on');
     const ctx = Game.cur;
     if (ctx.mode==='battle'){ battleResolve(); return; }
+    if (ctx.mode==='epilogue'){ Game.epilogueNext(); return; }
     renderGame();
     Game.checkBondMax();
     setTimeout(()=>Game.nextTurn(), 250);
@@ -1524,7 +1594,8 @@ const UI = (function(){
       🤝 側近（そっきん）がいる鍛錬は伸びやすく・体力消耗も軽く・<b>絆</b>も深まる。絆80以上の側近が得意鍛錬で輝いていたら<b>🌈友情特訓</b>で超成長！<br><br>
       🚩 <b>小競り合い</b>は腕試しのミニ合戦。勝てば石高（こくだか）と✨スキルPが稼げるぞ。<br><br>
       🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。合戦は<b>「合戦絵巻」</b>——物見の佐助の実況で戦いが流れ、戦況が動いた瞬間にきみが<b>采配</b>を振る！ 選択肢には<b>堅実・博打・搦め手</b>の色がある。<b>戦況の文章をよく読み、自分の強いステータスと相談して選べ</b>。クイズに正解すれば采配は実行され、結果は会心⚡〜しくじり💢の4段階。史実と同じ采配を見抜けたら…？ <b>負けたらそこで育成終了</b>——まずは32年の完走を目指せ！<br><br>
-      🔥 そして最終年——<b>ステータスを高く育てておくと、「もしも」の歴史（IFエンド）</b>が見られるかもしれない…。信長なら本能寺、秀吉なら天下統一のその先で…。</div>`;
+      🔥 そして最終年——<b>ステータスを高く育てておくと、「もしも」の歴史（IFエンド）</b>が見られるかもしれない…。<br><br>
+      📜 最後まで完走すると<b>「追憶の章」</b>へ！ 人生をふり返る5問に正解するほど総括がポジティブになり、<b>全ステータスが大幅アップ</b>してランクに上乗せされるぞ！信長なら本能寺、秀吉なら天下統一のその先で…。</div>`;
     $('ovl-list').classList.add('on');
   }
 
