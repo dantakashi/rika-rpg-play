@@ -19,11 +19,13 @@
 const SENGOKU_DATA = (function(){
 
   /* ===== §1 ジャンル定義 ===== */
+  // 表示名は偉人をまたぐ普遍名（武力/知力/政治/人望・2026-06-14決定）。内部キーは不変。
+  // sub: 鍛錬の副次上昇先（主100%+副30%・特化育成の詰み対策）。seijiの副次は石高（経済）
   const GENRES = {
-    buyu:     { label:'武勇', icon:'⚔️', train:'武勇の鍛錬', quizLabel:'合戦・戦乱' },
-    chiryaku: { label:'知略', icon:'🧠', train:'知略の鍛錬', quizLabel:'流れ・因果' },
-    seiji:    { label:'政治', icon:'🏛️', train:'政務',       quizLabel:'政策・制度' },
-    ninbo:    { label:'人望', icon:'🤝', train:'交流',       quizLabel:'文化・人物' },
+    buyu:     { label:'武力', icon:'⚔️', train:'武力の鍛錬', quizLabel:'合戦・戦乱', sub:'ninbo' },
+    chiryaku: { label:'知力', icon:'🧠', train:'知力の鍛錬', quizLabel:'流れ・因果', sub:'seiji' },
+    seiji:    { label:'政治', icon:'🏛️', train:'政務',       quizLabel:'政策・制度', sub:'koku' },
+    ninbo:    { label:'人望', icon:'🤝', train:'交流',       quizLabel:'文化・人物', sub:'chiryaku' },
   };
 
   /* ===== §2 家臣 =====
@@ -521,6 +523,12 @@ const SENGOKU_DATA = (function(){
   const EPILOGUE = {
     intro:{ title:'📜 追憶の章 — 人生をふり返る', art:'🕯️📜',
       text:'すべての戦いが終わった。\n\n静かな夜、あなたは歩んできた長い道のりを、ゆっくりとふり返る——あの戦。あの出会い。あの決断。\n\nこれより記憶を一つずつ確かめる（全5問）。鮮やかに思い出せるほど、人生の輝きが増していく。' },
+    memories:{
+      buyu:     { label:'⚔️ いくさ場の記憶', flavor:'土煙、馬のいななき、軍配の重み——あの戦場の朝がよみがえる。' },
+      chiryaku: { label:'🧠 策をめぐらせた夜の記憶', flavor:'地図を広げ、敵の動きを読み続けた、眠れない夜々を思い出す。' },
+      seiji:    { label:'🏛️ 国づくりの記憶', flavor:'検地の帳面、市場のにぎわい、銭の流れ——築き上げた仕組みを思い出す。' },
+      ninbo:    { label:'🤝 人びとの記憶', flavor:'側近たちの顔、交わした言葉、結んだ縁——出会った人びとを思い出す。' },
+    },
     okLines:[
       '✨ 記憶が鮮やかによみがえった！ 人生の輝きが増した！',
       '✨ あの日の決断は、まちがっていなかった。',
@@ -553,7 +561,7 @@ const SENGOKU_DATA = (function(){
       castleImgs:['assets/castle_1.png','assets/castle_2.png','assets/castle_3.png','assets/castle_4.png','assets/castle_5.png'],
       startYear:1551, endYear:1582,
       start:{ buyu:20, chiryaku:24, seiji:14, ninbo:8, koku:100 },
-      finalReq:{ chiryaku:95, ninbo:80 },  // 最終イベントのIF生存条件（本能寺を察知）
+      finalReq:{ chiryaku:115, ninbo:100 },  // 最終イベントのIF生存条件（本能寺を察知）
       legacyNames:{ buyu:'攻めてこそ道は開ける', chiryaku:'敵を知り己を知れば百戦危うからず',
         seiji:'銭は囲うより回せ', ninbo:'人は城、人は石垣' },
       endTexts:{
@@ -572,7 +580,7 @@ const SENGOKU_DATA = (function(){
       img:'assets/hero_hideyoshi.png',
       startYear:1554, endYear:1590,
       start:{ buyu:8, chiryaku:20, seiji:16, ninbo:26, koku:5 },
-      finalReq:{ seiji:140, ninbo:120 },  // IF: 唐入り（朝鮮出兵）を思いとどまる（37ターン分強気の閾値）
+      finalReq:{ seiji:155, ninbo:135 },  // IF: 唐入り（朝鮮出兵）を思いとどまる（37ターン分強気の閾値）
       legacyNames:{ buyu:'戦は数と速さよ', chiryaku:'敵の城は頭で落とせ',
         seiji:'検地と算盤が国を作る', ninbo:'人たらしこそ最強の武器' },
       endTexts:{
