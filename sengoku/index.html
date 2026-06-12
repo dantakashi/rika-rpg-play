@@ -263,6 +263,21 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .toast.on{display:block; animation:tin 2.4s forwards;}
 @keyframes tin{0%{opacity:0; transform:translate(-50%,12px)}10%,80%{opacity:1; transform:translate(-50%,0)}100%{opacity:0}}
 .closeX{position:sticky; top:0; float:right; font-size:20px; font-weight:900; color:#9a8660; padding:0 4px;}
+
+/* ===== 画像第2便（2026-06-14配線）: 側近の顔・佐助・家紋・タイトル絵・戦場背景 ===== */
+.titleArt{display:block; width:min(300px,82%); margin:26px auto 0; border-radius:18px;
+  border:2px solid rgba(216,168,35,.55); box-shadow:0 8px 30px rgba(0,0,0,.45);}
+.bondC img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:999px;}
+.bondC i{z-index:1;}
+.mates img, .toMates img{height:20px; width:20px; object-fit:cover; border-radius:999px;
+  vertical-align:-4px; border:1px solid var(--line); background:#fff;}
+.rFaceBig{display:block; width:96px; height:96px; object-fit:cover; border-radius:999px;
+  margin:0 auto 6px; border:3px solid var(--gold); background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.25);}
+.kamonImg{height:24px; width:24px; object-fit:contain; margin-left:auto; opacity:.9;}
+.bCaster .sasukeImg{height:30px; width:30px; object-fit:cover; border-radius:999px;
+  border:1.5px solid var(--gold); background:#fff8e4; vertical-align:middle; margin-right:5px;}
+.evArt img{display:block; width:100%; border-radius:10px;}
+.evArt.imgMode{padding:0; background:none;}
 </style>
 </head>
 <body>
@@ -270,7 +285,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 
   <!-- ===== タイトル ===== -->
   <div id="scr-title" class="scr on">
-    <div class="titleCrest">⚔️</div>
+    <img class="titleArt" src="assets/title_keyart.jpg" alt="" onerror="this.outerHTML='&lt;div class=&quot;titleCrest&quot;&gt;⚔️&lt;/div&gt;'">
     <div class="titleName serif">戦国トレーナー</div>
     <div class="titleSub serif">〜 天下統一への道 〜</div>
     <div style="display:inline-block; margin:2px auto 6px; padding:3px 14px; border-radius:999px;
@@ -304,6 +319,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="stageName">
           <span class="charName serif" id="g-heroname">織田信長</span>
           <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span>
+          <img class="kamonImg" id="g-kamon" alt="" style="display:none">
         </div>
       </div>
       <div class="charRow">
@@ -386,7 +402,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <div class="btBar"><i class="me" id="b-tug" style="width:50%"></i></div>
       <div class="bCutin" id="b-cutin"></div>
     </div>
-    <div class="bCaster"><span id="b-castername"></span><span class="bFastTip">戦場をタップで早送り⏩</span></div>
+    <div class="bCaster"><span><img class="sasukeImg" src="assets/sasuke.png" alt="" onerror="this.style.display='none'"><span id="b-castername"></span></span><span class="bFastTip">戦場をタップで早送り⏩</span></div>
     <div class="bLog" id="b-log"></div>
     <div id="b-actions" style="display:grid; gap:8px;"></div>
   </div></div>
@@ -995,7 +1011,7 @@ const Game = (function(){
     S.stamina = Math.max(0, S.stamina-14);
     startBattle({
       skirmish:true, year:S.year, title:`🚩 ${foe.name}`, intro:'',
-      terrain:{ icon:'', label:situ.sky },
+      terrain:{ icon:'', label:situ.sky }, bg:situ.bg,
       enemyName:foe.name, enemyIcon:foe.icon, enemyPower:Math.max(40, playerPower()),
       army:{ me:Math.min(2500, 400+Math.round(S.koku)), foe:foe.army },
       meUnit:'🛡️', foeUnit:'🗡️',
@@ -1101,7 +1117,7 @@ const Game = (function(){
     applyFx(fx);
     S.epi = null;
     saveAll();
-    UI.showEvent({ year:S.year, title:`人生の総括 — ${tier.title}`, art:'🌅🕊️',
+    UI.showEvent({ year:S.year, title:`人生の総括 — ${tier.title}`, art:'🌅🕊️', artImg:D.EPILOGUE.intro.artImg,
       text:`（人生の輝き ${E.glow}/5）
 
 ${tier.text}` }, ()=>endRun(E.survived), fx);
@@ -1271,6 +1287,9 @@ const UI = (function(){
     $('ovl-list').classList.add('on');
   }
 
+  /* 側近の顔（画像があればimg・なければ絵文字。◯枠/鍛錬バッジ共用） */
+  function rFace(r){ return r.img ? `<img src="${r.img}" alt="${r.name}">` : r.icon; }
+
   /* ---- §9 育成画面の描画 ---- */
   function renderGame(){
     const S = Game.S; if (!S) return;
@@ -1291,6 +1310,8 @@ const UI = (function(){
     $('g-castle').innerHTML = cimg ? `<img src="${cimg}" alt="${cs[tier][2]}">` : cs[tier][1];
     $('g-castlelbl').textContent = `居城: ${cs[tier][2]}`;
     $('g-heroname').textContent = Game.H.name;
+    const km = $('g-kamon');
+    if (Game.H.kamon){ km.src = Game.H.kamon; km.style.display='inline-block'; } else km.style.display='none';
     $('g-season').textContent = tpy===2 ? (S.half? '🍂':'🌸')
       : Game.H.seasons[(S.year-Game.H.startYear)%Game.H.seasons.length];
     // 立ち絵（画像があれば使用・なければ絵文字。ケガ中はグレー＋🤕バッジ）
@@ -1311,10 +1332,10 @@ const UI = (function(){
     $('g-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, S[k], tpy)).join('') +
       `<div class="stat" onclick="UI.openSkill()"><span class="sl">スキルP</span>
         <span class="srow"><b class="srk" style="color:#7a4f9d">${S.skillPt||0}</b></span></div>`;
-    // 側近（◯枠アイコンのみ・絆ゲージ付き）
+    // 側近（◯枠・顔画像があれば使用・絆ゲージ付き）
     $('g-bonds').innerHTML = Game.H.retainers.map(r=>{
       const v = S.bonds[r.id];
-      return `<span class="bondC ${v>=80?'mx':''}" title="${r.name}" onclick="UI.openRetainer('${r.id}')">${r.icon}<i><b style="width:${v}%"></b></i></span>`;
+      return `<span class="bondC ${v>=80?'mx':''}" title="${r.name}" onclick="UI.openRetainer('${r.id}')">${rFace(r)}<i><b style="width:${v}%"></b></i></span>`;
     }).join('');
     // コマンド3×2・文字のみ（2026-06-12 生徒FB）。鍛錬の側近バッジだけ残す（友情特訓の合図）
     let mateIcons = '';
@@ -1322,7 +1343,7 @@ const UI = (function(){
       (S.placement[k]||[]).forEach(id=>{
         const r = Game.H.retainers.find(x=>x.id===id);
         const fri = (r.fav===k && S.bonds[id]>=80);
-        mateIcons += `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
+        mateIcons += `<span class="${fri?'fr':''}" title="${r.name}">${rFace(r)}</span>`;
       });
     });
     const dimIf = c=>c?' dim':'';
@@ -1352,7 +1373,7 @@ const UI = (function(){
         const r = Game.H.retainers.find(x=>x.id===id);
         const fri = (r.fav===k && S.bonds[id]>=80);
         if (fri) glow = true;
-        return `<span class="${fri?'fr':''}" title="${r.name}">${r.icon}</span>`;
+        return `<span class="${fri?'fr':''}" title="${r.name}">${rFace(r)}</span>`;
       }).join('');
       list.insertAdjacentHTML('beforeend',
         `<button class="trainOpt ${glow?'glowOpt':''}" onclick="UI.pickTrain('${k}')">
@@ -1373,6 +1394,7 @@ const UI = (function(){
     const g = D.GENRES[r.fav];
     $('l-title').textContent = `${r.icon} ${r.name}`;
     $('l-body').innerHTML = `
+      ${r.img? `<img class="rFaceBig" src="${r.img}" alt="${r.name}">` : ''}
       <div class="bookItem">${r.intro}</div>
       <div class="bookItem">得意: <b>${g.icon}${g.train}</b>（得意な鍛錬に現れやすい）<br>
         絆: <b>${v}</b>/100 ${v>=80?'🌈友情特訓圏内！':''}<br>
@@ -1481,15 +1503,17 @@ const UI = (function(){
     return parts.join('　');
   }
   let evCb = null;
-  // 絵文字アート（将来は画像に差し替え予定。2026-06-11 ユーザー要望「イベントに絵を」）
-  function setArt(art){
+  // イベントの絵: artImg（画像）優先・なければ絵文字アート
+  function setArt(art, img){
     const el = $('e-art');
-    if (art){ el.textContent = art; el.style.display='block'; }
+    el.classList.toggle('imgMode', !!img);
+    if (img){ el.innerHTML = `<img src="${img}" alt="">`; el.style.display='block'; }
+    else if (art){ el.textContent = art; el.style.display='block'; }
     else el.style.display='none';
   }
   function showEvent(ev, cb, fx){
     $('e-year').textContent = `${ev.year}年`;
-    setArt(ev.art);
+    setArt(ev.art, ev.artImg);
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
     const fl = $('e-fx'); const t = fxText(fx);
@@ -1506,7 +1530,7 @@ const UI = (function(){
   }
   function showChoiceEvent(ev){
     $('e-year').textContent = `${ev.year}年`;
-    setArt(ev.art);
+    setArt(ev.art, ev.artImg);
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
     $('e-fx').classList.remove('on');
@@ -1527,7 +1551,7 @@ const UI = (function(){
   /* ---- 追憶の章: 回想するステータスを選ぶ（2026-06-14 生徒FBで選択式に） ---- */
   function showEpilogueChoice(n){
     $('e-year').textContent = '追憶';
-    setArt('🕯️📜');
+    setArt('🕯️📜', D.EPILOGUE.intro.artImg);
     $('e-title').textContent = `回想 その${n} — 何をふり返る？`;
     $('e-text').textContent = '選んだ思い出の問いに正解すると、そのステータスが晩年の鍛錬で上がり、人生の輝きが増す。';
     $('e-fx').classList.remove('on');
@@ -1604,6 +1628,11 @@ const UI = (function(){
     $('b-log').innerHTML = ''; $('b-actions').innerHTML = '';
     $('b-cutin').className = 'bCutin';
     $('b-field').className = 'bField';
+    // 戦場背景（画像第2便・2026-06-14）: 暗めのオーバーレイで実況テキストの可読性を確保
+    $('b-field').style.backgroundImage = ev.bg
+      ? `linear-gradient(180deg, rgba(26,18,30,.55), rgba(26,18,30,.78)), url('${ev.bg}')` : '';
+    $('b-field').style.backgroundSize = 'cover';
+    $('b-field').style.backgroundPosition = 'center';
     renderArmies();
     $('ovl-battle').classList.add('on');
     const opening = ev.skirmish ? ev.open : [L.casterIntro, ...ev.open, '⚠️ 負ければ育成終了の大一番だ！'];
