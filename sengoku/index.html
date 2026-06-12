@@ -775,10 +775,11 @@ const Game = (function(){
   function answer(choiceIdx){
     const correct = (choiceIdx === cur.sh.a);
     cur.lastCorrect = correct;
-    // 学習レポート用: ジャンル別の解答数・正答数（全モード共通）
+    // 学習レポート用: ジャンル別＋総数（全モード共通。学びのきろくのジャンル別%と総数のズレ防止）
     if (cur.genre && S && S.gstat){
       const gs = S.gstat[cur.genre] = S.gstat[cur.genre] || { a:0, c:0 };
       gs.a++; if (correct) gs.c++;
+      S.answerTotal++; if (correct) S.correctTotal++;
     }
     if (cur.mode==='battle'){ return battleAnswer(correct); }
     if (cur.mode==='epilogue'){
@@ -807,9 +808,7 @@ const Game = (function(){
       return { correct, text:'まだ覚えきれていないようだ。解説を読んでおこう。\n（軍学帳に残しておくね）', done:'next' };
     }
     // train
-    S.answerTotal++;
     if (correct){
-      S.correctTotal++;
       const res = trainGain(cur.sel.q, {correct:true});
       cur.res = res;
       applyTraining(res, false);
@@ -915,13 +914,11 @@ const Game = (function(){
     UI.openQuiz(sel.q, cur);
   }
   function battleAnswer(correct){
-    S.answerTotal++;
     const opt = B.opt;
     // 搦め手（trick）は参照ステ90以上で合致が1段「化ける」
     const fit = Math.min(2, opt.fit + ((opt.style==='trick' && S[opt.stat]>=90) ? 1 : 0));
     let tier, kokozo = false;
     if (correct){
-      S.correctTotal++;
       tier = (opt.hist || fit===2) ? 'kaishin' : (fit===1 ? 'yuko' : 'fuhatsu');
     } else {
       addToBook(cur.sel.q);
