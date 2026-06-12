@@ -227,10 +227,18 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bField.fxBig::after{content:''; position:absolute; inset:0; background:rgba(255,235,160,.45); animation:flashOut .6s forwards; pointer-events:none;}
 @keyframes flashOut{from{opacity:1}to{opacity:0}}
 .bCutin{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
-  font-size:32px; font-weight:900; color:#fff3c8; text-shadow:0 0 18px rgba(243,207,93,1), 0 2px 4px rgba(0,0,0,.6);
-  opacity:0; transform:scale(.6);}
-.bCutin.on{animation:cutin 1.2s forwards;}
-@keyframes cutin{0%{opacity:0; transform:scale(.5)}20%{opacity:1; transform:scale(1.15)}35%{transform:scale(1)}85%{opacity:1}100%{opacity:0; transform:scale(1.05)}}
+  font-size:36px; font-weight:900; color:#fff3c8; letter-spacing:.04em;
+  text-shadow:0 0 22px rgba(243,207,93,1), 0 0 6px rgba(255,255,255,.9), 0 3px 6px rgba(0,0,0,.7);
+  opacity:0; transform:scale(.6); z-index:3;}
+/* 会心カットイン: 集中線バースト＋スラムイン（演出強化第1弾・2026-06-14夜） */
+.bCutin.on{animation:cutinSlam 1.3s forwards;}
+.bCutin.on::before{content:''; position:absolute; inset:-40%; z-index:-1;
+  background:repeating-conic-gradient(rgba(255,235,160,.30) 0deg 5deg, transparent 5deg 13deg);
+  mask:radial-gradient(circle, transparent 18%, #000 42%, transparent 72%);
+  -webkit-mask:radial-gradient(circle, transparent 18%, #000 42%, transparent 72%);
+  animation:burstSpin 1.3s ease-out forwards;}
+@keyframes cutinSlam{0%{opacity:0; transform:scale(2.6) rotate(-5deg)}22%{opacity:1; transform:scale(.92) rotate(1.5deg)}36%{transform:scale(1.08)}50%{transform:scale(1)}82%{opacity:1}100%{opacity:0; transform:scale(1.06)}}
+@keyframes burstSpin{0%{opacity:0; transform:rotate(0) scale(.5)}18%{opacity:1}100%{opacity:0; transform:rotate(35deg) scale(1.3)}}
 .bCaster{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; color:#8a6605;}
 .bCaster .bFastTip{font-weight:600; color:#9a8660; font-size:11px;}
 .bLog{min-height:70px; font-size:13.5px; line-height:1.65; background:#fff8e4; border:2px solid var(--gold);
@@ -278,6 +286,22 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   border:1.5px solid var(--gold); background:#fff8e4; vertical-align:middle; margin-right:5px;}
 .evArt img{display:block; width:100%; border-radius:10px;}
 .evArt.imgMode{padding:0; background:none;}
+
+/* ===== 演出強化第1弾（2026-06-14夜・G1）: 友情特訓/大成功・ステ上昇フロート・タイトル ===== */
+.titleArt{animation:keyArtFloat 6s ease-in-out infinite;}
+@keyframes keyArtFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.resLine .big{display:inline-block;}
+.resLine.crit .big{color:#b3801a; text-shadow:0 0 16px rgba(243,207,93,.95), 0 1px 0 #fff; animation:popBig .65s;}
+.resLine.friend .big{background:linear-gradient(90deg,#e0533d,#d8a823,#2e8b57,#3a6ea5,#7a4f9d);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 8px rgba(243,207,93,.65)); animation:popBig .65s;}
+@keyframes popBig{0%{transform:scale(.35)}55%{transform:scale(1.28)}75%{transform:scale(.96)}100%{transform:scale(1)}}
+.stat{position:relative;}
+.statPop{position:absolute; left:50%; top:-4px; font-size:15px; font-weight:900; color:#1d6b40;
+  text-shadow:0 1px 0 #fff, 0 0 6px rgba(255,255,255,.9); pointer-events:none; white-space:nowrap;
+  animation:floatUp 1.15s ease-out forwards; z-index:5;}
+@keyframes floatUp{0%{opacity:0; transform:translate(-50%,8px) scale(.5)}22%{opacity:1; transform:translate(-50%,-2px) scale(1.2)}100%{opacity:0; transform:translate(-50%,-26px) scale(1)}}
+.box.shaken{animation:shakeBad .45s;}
 </style>
 </head>
 <body>
@@ -319,7 +343,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="stageName">
           <span class="charName serif" id="g-heroname">織田信長</span>
           <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span>
-          <img class="kamonImg" id="g-kamon" alt="" style="display:none">
+          <img class="kamonImg" id="g-kamon" alt="" style="display:none" onerror="this.style.display='none'">
         </div>
       </div>
       <div class="charRow">
@@ -453,6 +477,8 @@ const Game = (function(){
     const mates = (S.placement[genre]||[]).length;
     let c = TRAIN_COST - mates*2;
     matePerks(genre,'cost').forEach(r=>{ c -= r.perk.v; });
+    // 偉人固有スキル等の全鍛錬コスト軽減（家康「忍耐」fx.costAll・2026-06-14夜）
+    if (S.skills) Object.keys(S.skills).forEach(id=>{ const fx=skillFx(id); if (fx && fx.costAll) c -= fx.costAll; });
     return Math.max(12, c);
   }
   const RANKS = [ // [必要評価点, ランク名, ひとこと]（追憶の章ボーナス込み前提・2026-06-13改定）
@@ -624,7 +650,7 @@ const Game = (function(){
      ターン2倍でも評価点は約1.35倍・最終ステは約1.5倍にしか伸びない。
      HALF_SCORE で評価点を割って年制とランク基準を共有し、HALF_REQ でIF条件を引き上げる */
   const HALF_SCORE = 1.38;
-  function scoreScale(){ return (S.tpy||1)===2 ? HALF_SCORE : 1; }
+  function scoreScale(){ return (S.tpy||1)===2 ? (H.halfScoreScale || HALF_SCORE) : 1; }
   // IF条件の倍率は成長余地が偉人ごとに違うため偉人パックで個別校正できる（既定1.75）
   function reqScale(){ return (S.tpy||1)===2 ? (H.halfReqScale || 1.75) : 1; }
 
@@ -830,6 +856,7 @@ const Game = (function(){
       if (correct){
         const item = P.book[cur.bookIdx];
         S[item.genre] = (S[item.genre]||0) + 5;
+        cur.res = { gain:5 };
         P.book.splice(cur.bookIdx,1);
         savePersist();
         return { correct, text:`復習成功！ ${D.GENRES[item.genre].label}+5\n軍学帳から1ページ卒業！`, done:'next' };
@@ -884,6 +911,7 @@ const Game = (function(){
       return { failed:true, text:t };
     }
     const res = trainGain(cur.sel.q, {correct:false, push:true});
+    cur.res = res;
     applyTraining(res, false);
     let t = `気合で押し切った！ ${D.GENRES[cur.genre].label}+${res.gain}・${res.subLabel}！`;
     if (res.friend) t = `🌈友情特訓！ ${t}`;
@@ -891,6 +919,7 @@ const Game = (function(){
   }
   function learnSafe(){
     const res = trainGain(cur.sel.q, {correct:false, half:true});
+    cur.res = res;
     applyTraining(res, false);
     return { text:`解説をじっくり読んで学び直した。${D.GENRES[cur.genre].label}+${res.gain}・${res.subLabel}（軍学帳に記録）` + takeMoodMsg() };
   }
@@ -1126,9 +1155,10 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
   /* ===== §8 終了評価 ===== fellLabel: 敗北で育成終了した合戦名（nullなら完走） */
   function endRun(survived, fellLabel){
     // 評価点はターン数で正規化（偉人ごとに育成期間が違ってもランク基準を共通にする）
-    // 半年制（v1.5）はさらに HALF_SCORE で割り、年制と同じランク基準を共有する
+    // 半年制（v1.5）はさらに HALF_SCORE で割り、年制と同じランク基準を共有する。
+    // H.scoreNorm = 偉人別の校正係数（成長は育成年数に比例しないため、長い偉人は単純な年数割りだと不利。simで校正）
     let total = S.buyu + S.chiryaku + S.seiji + S.ninbo + Math.round(S.koku/12) + S.wins*25;
-    total = Math.round(total * 32 / (H.endYear - H.startYear + 1) / scoreScale());
+    total = Math.round(total * 32 / (H.endYear - H.startYear + 1) / scoreScale() * (H.scoreNorm||1));
     let rank = RANKS[0];
     for (const r of RANKS){ if (total>=r[0]) rank = r; }
     if (survived && rank[0]<590) rank = RANKS[4]; // IF生存は最低でも大大名
@@ -1469,16 +1499,22 @@ const UI = (function(){
       after.innerHTML = html;
       return;
     }
-    html += `<div class="resLine ${r.correct?'':'fail'}">${r.correct?'⭕ 正解！':'❌ ざんねん…'}<br><span class="${r.correct?'big':''}">${r.text}</span></div>`;
+    html += `<div class="resLine ${r.correct?'':'fail'} ${fxClass(r.text)}">${r.correct?'⭕ 正解！':'❌ ざんねん…'}<br><span class="${r.correct?'big':''}">${r.text}</span></div>`;
     html += `<div class="pushRow"><button class="btn gold" onclick="UI.quizDone()">つぎへ</button></div>`;
     after.innerHTML = html;
     after.scrollIntoView({behavior:'smooth', block:'end'});
   }
+  // 友情特訓=虹文字・大成功=金文字（結果テキストから判定・演出強化第1弾）
+  function fxClass(t){ return t.includes('友情特訓')? 'friend' : (t.includes('大成功')? 'crit' : ''); }
   function resolvePush(push){
     const r = push? Game.pushThrough() : Game.learnSafe();
     const after = $('q-after');
-    after.innerHTML = `<div class="resLine ${r.failed?'fail':''}">${r.text}</div>
+    after.innerHTML = `<div class="resLine ${r.failed?'fail':''} ${fxClass(r.text)}"><span class="${r.failed?'':'big'}">${r.text}</span></div>
       <div class="pushRow"><button class="btn gold" onclick="UI.quizDone()">つぎへ</button></div>`;
+    if (r.failed){ // 大失敗はモーダルごと揺らす
+      const box = document.querySelector('#ovl-quiz .box');
+      box.classList.remove('shaken'); void box.offsetWidth; box.classList.add('shaken');
+    }
     after.scrollIntoView({behavior:'smooth', block:'end'});
   }
   function quizDone(){
@@ -1487,8 +1523,18 @@ const UI = (function(){
     if (ctx.mode==='battle'){ battleResolve(); return; }
     if (ctx.mode==='epilogue'){ Game.epilogueNext(); return; }
     renderGame();
+    if (ctx.res && ctx.res.gain) statPop(ctx.genre, ctx.res.gain); // ステ上昇を盤面にフロート表示
     Game.checkBondMax();
     setTimeout(()=>Game.nextTurn(), 250);
+  }
+  function statPop(genre, gain){
+    const i = Game.STAT_KEYS.indexOf(genre);
+    const cell = document.querySelectorAll('#g-stats .stat')[i];
+    if (!cell) return;
+    const s = document.createElement('span');
+    s.className = 'statPop'; s.textContent = `+${gain}`;
+    cell.appendChild(s);
+    setTimeout(()=>s.remove(), 1250);
   }
 
   /* ---- イベント表示 ---- */
