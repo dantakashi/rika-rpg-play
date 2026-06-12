@@ -81,8 +81,11 @@
   .ic-merge{background:linear-gradient(160deg,#60a5fa,#1e40af)}
   .ic-data {background:linear-gradient(160deg,#34e0f0,#0e7490)}
   .ic-soon {background:linear-gradient(160deg,#5b667c,#2f3a4f)}
+  .ic-sengoku{background:linear-gradient(160deg,#fb923c,#9a3412)}
   .app.soon{cursor:default}
   .app.soon:active{transform:none}
+  .badge-beta{position:absolute; right:-3px; top:-3px; background:#f87171; color:#fff; font-size:8px; font-weight:800;
+    padding:2px 5px; border-radius:999px; letter-spacing:.05em;}
   .badge-soon{position:absolute; right:-3px; top:-3px; background:#facc15; color:#3b2c00; font-size:8px; font-weight:800;
     padding:1px 5px; border-radius:999px; box-shadow:0 2px 6px rgba(0,0,0,.4); z-index:2}
 
@@ -224,6 +227,7 @@
     {key:'run',   label:'割れる数ラン',    icon:'🏃', cls:'ic-run',   href:'math-run/index.html',     cat:'math'},
     {key:'merge', label:'そすうマージ',    icon:'🔢', cls:'ic-merge', href:MERGE,                     cat:'math'},
     {key:'eng',   label:'グラマー・ガード', icon:'🛡️', cls:'ic-eng',   href:ENG,                       cat:'english'},
+    {key:'sengoku', label:'戦国トレーナー',  icon:'🗾', cls:'ic-sengoku', href:'sengoku/index.html',    cat:'social', beta:true},
     {key:'rika',  label:'理科RPG',        icon:'🧪', cls:'ic-rika',  href:RIKA,                      cat:'science'},
     {key:'data',  label:'データ',          icon:'💾', cls:'ic-data',  action:'data',                  cat:'tool'},
   ];
@@ -246,7 +250,7 @@
     var btn = document.createElement('button');
     btn.className = 'app' + (a.soon ? ' soon' : '');
     btn.innerHTML =
-      '<div class="icon '+a.cls+'"><span class="em">'+a.icon+'</span>'+(a.soon?'<span class="badge-soon">準備中</span>':'')+'</div>'+
+      '<div class="icon '+a.cls+'"><span class="em">'+a.icon+'</span>'+(a.soon?'<span class="badge-soon">準備中</span>':'')+(a.beta?'<span class="badge-beta">β版</span>':'')+'</div>'+
       '<div class="label">'+a.label+'</div>';
     if(a.action==='data'){ btn.addEventListener('click', function(){ document.getElementById('dataOverlay').style.display='flex'; }); }
     else if(!a.soon){ btn.addEventListener('click', function(){ location.href = a.href; }); }
