@@ -601,6 +601,7 @@ const SENGOKU_DATA = (function(){
       startYear:1554, endYear:1590,
       start:{ buyu:8, chiryaku:20, seiji:16, ninbo:26, koku:5 },
       finalReq:{ seiji:155, ninbo:135 },  // IF: 唐入り（朝鮮出兵）を思いとどまる（37ターン分強気の閾値）
+      halfReqScale:1.6, // 半年制のIF倍率（既定1.75。元の閾値が強気なぶん低め・simで校正 2026-06-14）
       legacyNames:{ buyu:'戦は数と速さよ', chiryaku:'敵の城は頭で落とせ',
         seiji:'検地と算盤が国を作る', ninbo:'人たらしこそ最強の武器' },
       endTexts:{

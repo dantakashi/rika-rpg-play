@@ -451,9 +451,10 @@ const Game = (function(){
   let S = null;        // 育成中の状態（runState）
   let P = loadPersist(); // 永続データ {hall:[], legacy:[], book:[]}
 
-  function newRun(legacyIdx){
+  function newRun(legacyIdx, tpy){
     const s = {
       hero:H.id, year:H.startYear,
+      tpy: tpy===2?2:1, half:0, // v1.5 半年制（春/秋）。tpy=2でターン倍増・年表イベントは春に発火
       buyu:H.start.buyu, chiryaku:H.start.chiryaku, seiji:H.start.seiji, ninbo:H.start.ninbo,
       stamina:100, mood:2, koku:H.start.koku, wins:0, battles:0,
       injury:null, skillPt:0, skills:{}, trainStreak:0, chronicle:[], gstat:{},
@@ -518,6 +519,8 @@ const Game = (function(){
       S.chronicle = S.chronicle || [];
       S.gstat = S.gstat || {};
       S.bondMidDone = S.bondMidDone || {};
+      S.tpy = S.tpy===2 ? 2 : 1; S.half = S.half||0; // 半年制（v1.5）以前のセーブは年制
+
       if (H.uniqueSkill && S.skills[H.uniqueSkill.id]==null) S.skills[H.uniqueSkill.id] = true;
       H.retainers.forEach(r=>{ if (S.bonds[r.id]==null) S.bonds[r.id]=20; });
       UI.show('game');
@@ -593,11 +596,21 @@ const Game = (function(){
     }
   }
   function nextTurn(){
-    S.year++;
+    // 半年制: 春→秋→翌年の春。年表イベントは春（年の最初のターン）にだけ発火する
+    if ((S.tpy||1)===2 && !S.half){ S.half = 1; }
+    else { S.half = 0; S.year++; }
     if (S.year > H.endYear){ endRun(false); return; } // 保険（finalで終わるはず）
     placeRetainers();
     turnStart();
   }
+  /* v1.5 半年制の補正係数（_sim_test.js で経験校正・2026-06-14）。
+     成長の多く（開始値・イベントfx・絆MAX・追憶・合戦の石高/勝利点）は固定値のため、
+     ターン2倍でも評価点は約1.35倍・最終ステは約1.5倍にしか伸びない。
+     HALF_SCORE で評価点を割って年制とランク基準を共有し、HALF_REQ でIF条件を引き上げる */
+  const HALF_SCORE = 1.38;
+  function scoreScale(){ return (S.tpy||1)===2 ? HALF_SCORE : 1; }
+  // IF条件の倍率は成長余地が偉人ごとに違うため偉人パックで個別校正できる（既定1.75）
+  function reqScale(){ return (S.tpy||1)===2 ? (H.halfReqScale || 1.75) : 1; }
 
   /* ===== §5 トレーニング解決 ===== */
   let cur = null; // 現在のクイズ文脈 {mode:'train'|'battle'|'review', genre, sel, sh, ...}
@@ -1035,7 +1048,7 @@ const Game = (function(){
   /* ===== 最終イベント（本能寺） ===== */
   function startFinal(ev){
     UI.showEvent(ev, ()=>{
-      const survive = Object.entries(H.finalReq).every(([k,v])=>S[k]>=v);
+      const survive = Object.entries(H.finalReq).every(([k,v])=>S[k]>=Math.round(v*reqScale()));
       const branch = survive? ev.survive : ev.fall;
       if (survive){ S.koku += 500; S.wins++; S.battles++; }
       S.survived = survive;
@@ -1097,8 +1110,9 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
   /* ===== §8 終了評価 ===== fellLabel: 敗北で育成終了した合戦名（nullなら完走） */
   function endRun(survived, fellLabel){
     // 評価点はターン数で正規化（偉人ごとに育成期間が違ってもランク基準を共通にする）
+    // 半年制（v1.5）はさらに HALF_SCORE で割り、年制と同じランク基準を共有する
     let total = S.buyu + S.chiryaku + S.seiji + S.ninbo + Math.round(S.koku/12) + S.wins*25;
-    total = Math.round(total * 32 / (H.endYear - H.startYear + 1));
+    total = Math.round(total * 32 / (H.endYear - H.startYear + 1) / scoreScale());
     let rank = RANKS[0];
     for (const r of RANKS){ if (total>=r[0]) rank = r; }
     if (survived && rank[0]<590) rank = RANKS[4]; // IF生存は最低でも大大名
@@ -1108,13 +1122,13 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
     const legacy = { stat:bestK, val:Math.min(15, 5+Math.floor(S[bestK]/20)), name:H.legacyNames[bestK] };
     P.legacy.push(legacy); if (P.legacy.length>5) P.legacy.shift();
     // 殿堂入り
-    P.hall.push({ name:H.name, rank:rank[1], total,
+    P.hall.push({ name:H.name, rank:rank[1], total, tpy:S.tpy||1,
       stats:{buyu:S.buyu, chiryaku:S.chiryaku, seiji:S.seiji, ninbo:S.ninbo},
       koku:S.koku, wins:S.wins, battles:S.battles, survived:!!survived, fell:fellLabel||null,
       acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
       date:new Date().toLocaleDateString('ja-JP') });
     if (P.hall.length>30) P.hall.shift();
-    const summary = { rank, total, legacy, survived:!!survived, fell:fellLabel||null,
+    const summary = { rank, total, legacy, survived:!!survived, fell:fellLabel||null, tpy:S.tpy||1,
       koku:S.koku, wins:S.wins, battles:S.battles,
       acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
       answered:S.answerTotal, gstat:S.gstat||{}, bookLeft:P.book.length,
@@ -1134,7 +1148,7 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
   }
 
   return { get S(){return S;}, get P(){return P;}, D, MOODS, STAT_KEYS, RANKS,
-    newRun:(lg)=>{S=newRun(lg); saveAll();}, hasRun, resume, clearRun,
+    newRun:(lg,tpy)=>{S=newRun(lg,tpy); saveAll();}, hasRun, resume, clearRun,
     failRate, pushRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill, setHero, epilogueNext, pickEpilogue, skillInfo,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
     battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
@@ -1167,8 +1181,25 @@ const UI = (function(){
   function pickHero(id){
     closeList();
     Game.setHero(id);
-    chooseLegacy();
+    chooseMode();
   }
+  /* ---- v1.5 半年制の選択（一度でも完走していれば解放。初回は年制=実質チュートリアル） ---- */
+  let runTpy = 1;
+  function chooseMode(){
+    runTpy = 1;
+    const unlocked = Game.P.hall.some(h=>!h.fell);
+    if (!unlocked){ chooseLegacy(); return; }
+    const span = Game.H.endYear - Game.H.startYear + 1;
+    $('l-title').textContent = '⏳ 育成の長さを選ぶ';
+    $('l-body').innerHTML = `
+      <button class="btn" onclick="UI.pickMode(1)">⚡ かけ足の生涯<br>
+        <small style="font-weight:600">1ターン=1年・全${span}ターン（いままで通り）</small></button>
+      <button class="btn gold" onclick="UI.pickMode(2)">🌗 じっくりの生涯<br>
+        <small style="font-weight:600">1ターン=半年（🌸春/🍂秋）・全${span*2}ターン。育成も絆もスケール2倍！</small></button>
+      <div class="note" style="text-align:center">🌗は完走経験者だけが選べる、たっぷり育成モード。ランクの基準はどちらも同じだ</div>`;
+    $('ovl-list').classList.add('on');
+  }
+  function pickMode(t){ runTpy = t===2?2:1; closeList(); chooseLegacy(); }
   function chooseLegacy(){
     const lg = Game.P.legacy;
     if (!lg.length){ startRun(null); return; }
@@ -1189,7 +1220,7 @@ const UI = (function(){
     $('ovl-list').classList.add('on');
   }
   function startRun(legacyIdx){
-    Game.newRun(legacyIdx);
+    Game.newRun(legacyIdx, runTpy);
     show('game');
     Game.turnStart();
   }
@@ -1203,13 +1234,15 @@ const UI = (function(){
 
   /* ステータスのランク表記（F〜SS・最大300表記・ランクと数値は横並び。2026-06-12 生徒FB対応） */
   const STAT_MAX = 300;
-  function statRank(v){
-    return v>=300?'SS' : v>=240?'S' : v>=180?'A' : v>=130?'B' : v>=90?'C' : v>=60?'D' : v>=30?'E' : 'F';
+  // 半年制（tpy=2）は成長量が約2倍になるため、ランク閾値と上限表記も2倍スケールで表示する
+  function statRank(v, tpy){
+    const m = tpy===2 ? 2 : 1;
+    return v>=300*m?'SS' : v>=240*m?'S' : v>=180*m?'A' : v>=130*m?'B' : v>=90*m?'C' : v>=60*m?'D' : v>=30*m?'E' : 'F';
   }
-  function statCell(k, v){
-    const g = D.GENRES[k], r = statRank(v);
+  function statCell(k, v, tpy){
+    const g = D.GENRES[k], r = statRank(v, tpy);
     return `<div class="stat"><span class="sl">${g.label}</span>
-      <span class="srow"><b class="srk rk${r}">${r}</b><span class="sv2">${v}<small>/${STAT_MAX}</small></span></span></div>`;
+      <span class="srow"><b class="srk rk${r}">${r}</b><span class="sv2">${v}<small>/${STAT_MAX*(tpy===2?2:1)}</small></span></span></div>`;
   }
 
   /* 勢力図（mini=立ち絵の右下用 / 拡大はリスト overlay） */
@@ -1241,8 +1274,9 @@ const UI = (function(){
   /* ---- §9 育成画面の描画 ---- */
   function renderGame(){
     const S = Game.S; if (!S) return;
-    $('g-year').textContent = `${S.year}年`;
-    $('g-turn').textContent = `${S.year-Game.H.startYear+1}/${Game.H.endYear-Game.H.startYear+1}`;
+    const tpy = S.tpy||1, span = Game.H.endYear-Game.H.startYear+1;
+    $('g-year').textContent = `${S.year}年` + (tpy===2 ? (S.half? '・秋':'・春') : '');
+    $('g-turn').textContent = `${(S.year-Game.H.startYear)*tpy + (S.half||0) + 1}/${span*tpy}`;
     $('g-koku').textContent = `🌾 ${Game.fmtKoku(S.koku)}`;
     const m = Game.MOODS[S.mood];
     const mt = $('g-mood'); mt.textContent = m.icon+' '+m.label; mt.style.background = m.cls;
@@ -1257,7 +1291,8 @@ const UI = (function(){
     $('g-castle').innerHTML = cimg ? `<img src="${cimg}" alt="${cs[tier][2]}">` : cs[tier][1];
     $('g-castlelbl').textContent = `居城: ${cs[tier][2]}`;
     $('g-heroname').textContent = Game.H.name;
-    $('g-season').textContent = Game.H.seasons[(S.year-Game.H.startYear)%Game.H.seasons.length];
+    $('g-season').textContent = tpy===2 ? (S.half? '🍂':'🌸')
+      : Game.H.seasons[(S.year-Game.H.startYear)%Game.H.seasons.length];
     // 立ち絵（画像があれば使用・なければ絵文字。ケガ中はグレー＋🤕バッジ）
     if (Game.H.img){
       $('g-face').innerHTML = `<img src="${Game.H.img}" alt="${Game.H.name}" class="${injured?'hurt':''}">`
@@ -1273,7 +1308,7 @@ const UI = (function(){
     // 勢力図ミニ（タップで拡大）
     $('g-minimap').innerHTML = mapHtml(true) + `<span class="mlbl">🗾 領地</span>`;
     // ステ（ランク表記）＋スキルP枠
-    $('g-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, S[k])).join('') +
+    $('g-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, S[k], tpy)).join('') +
       `<div class="stat" onclick="UI.openSkill()"><span class="sl">スキルP</span>
         <span class="srow"><b class="srk" style="color:#7a4f9d">${S.skillPt||0}</b></span></div>`;
     // 側近（◯枠アイコンのみ・絆ゲージ付き）
@@ -1663,7 +1698,7 @@ const UI = (function(){
     show('result');
     $('r-rank').textContent = sum.rank[1];
     $('r-sub').textContent = `評価点 ${sum.total} ／ ${sum.rank[2]}`;
-    $('r-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, sum.stats[k])).join('');
+    $('r-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, sum.stats[k], sum.tpy)).join('');
     $('r-summary').innerHTML =
       `🌾 石高 <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 合戦 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
       (sum.fell? `💀 <b>${sum.fell}に敗れ、育成終了……</b><br>📖 軍学帳でまちがいを復習して、もう一度天下を目指そう！`
@@ -1736,11 +1771,12 @@ const UI = (function(){
       🚩 <b>小競り合い</b>は腕試しのミニ合戦。勝てば石高（こくだか）と✨スキルPが稼げるぞ。<br><br>
       🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。合戦は<b>「合戦絵巻」</b>——物見の佐助の実況で戦いが流れ、戦況が動いた瞬間にきみが<b>采配</b>を振る！ 選択肢には<b>堅実・博打・搦め手</b>の色がある。<b>戦況の文章をよく読み、自分の強いステータスと相談して選べ</b>。クイズに正解すれば采配は実行され、結果は会心⚡〜しくじり💢の4段階。史実と同じ采配を見抜けたら…？ <b>負けたらそこで育成終了</b>——まずは32年の完走を目指せ！<br><br>
       🔥 そして最終年——<b>ステータスを高く育てておくと、「もしも」の歴史（IFエンド）</b>が見られるかもしれない…。<br><br>
-      📜 最後まで完走すると<b>「追憶の章」</b>へ！ 人生をふり返る5問に正解するほど総括がポジティブになり、<b>全ステータスが大幅アップ</b>してランクに上乗せされるぞ！信長なら本能寺、秀吉なら天下統一のその先で…。</div>`;
+      📜 最後まで完走すると<b>「追憶の章」</b>へ！ 人生をふり返る5問に正解するほど総括がポジティブになり、<b>全ステータスが大幅アップ</b>してランクに上乗せされるぞ！信長なら本能寺、秀吉なら天下統一のその先で…。<br><br>
+      🌗 一度でも完走すると、育成開始時に<b>「じっくりの生涯」（1ターン=半年・ターン数2倍）</b>が選べるようになる。たっぷり鍛えて、もっと高みを目指せ！</div>`;
     $('ovl-list').classList.add('on');
   }
 
-  return { show, preStart, pickHero, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone, openMap,
+  return { show, preStart, pickHero, pickMode, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone, openMap,
     showEpilogueChoice, pickEpilogueMem, openRetainer,
     showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, battleFast, pickSaihai, showResult,
     openTrain, pickTrain, closeTrain, openSkill,
