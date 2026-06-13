@@ -105,6 +105,25 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .stage.scene{height:360px; background:#1d2438 center 32%/cover no-repeat;}
 .sceneCastleLbl{position:absolute; top:38px; left:10px; z-index:2; font-size:11px; font-weight:800; color:#fff;
   background:rgba(20,24,40,.6); border-radius:999px; padding:2px 10px; backdrop-filter:blur(2px);}
+/* ===== レイアウトA（全画面オーバーレイ・2026-06-13）: 城シーンを盤面全体の背景にしUIを半透明で重ねる ===== */
+.board.aLayout{background-size:cover; background-position:center top; background-repeat:no-repeat;}
+.board.aLayout .stage.sceneA{height:330px; background:transparent;}
+.board.aLayout .gHead{background:linear-gradient(180deg,rgba(20,24,40,.72),rgba(20,24,40,.38));}
+.board.aLayout .stageName{background:none;}
+.board.aLayout .stageName .charName{color:#fff; text-shadow:0 2px 7px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.8);}
+.board.aLayout .charRow{padding-top:2px;}
+.board.aLayout .barLbl{color:#f3ead4; text-shadow:0 1px 3px rgba(0,0,0,.85);}
+.board.aLayout .bondCap{color:#f3ead4; text-shadow:0 1px 3px rgba(0,0,0,.85);}
+.board.aLayout .stat{background:rgba(245,234,211,.88);}
+.board.aLayout .bondC{background:rgba(245,234,211,.9);}
+.board.aLayout .cmd{background:rgba(255,253,244,.92);}
+.board.aLayout .cmd.train{background:rgba(255,243,200,.95);}
+.board.aLayout .cmd.rest{background:rgba(238,246,255,.93);}
+.board.aLayout .cmd.skill{background:rgba(243,236,255,.93);}
+.board.aLayout .cmd.care{background:rgba(234,251,233,.93);}
+.board.aLayout .cmd.trip{background:rgba(243,236,255,.93);}
+.board.aLayout .cmd.skirmish{background:rgba(255,238,222,.93);}
+.board.aLayout .subBtn{background:rgba(239,224,192,.9);}
 .stage.bgt2{background:linear-gradient(180deg,#8fc0e6 0%,#cfe2f2 45%,#ece9d4 80%,var(--paper) 100%);}
 .stage.bgt3{background:linear-gradient(180deg,#7eb4e0 0%,#cde4ee 40%,#f0ead2 80%,var(--paper) 100%);}
 .stage.bgt4{background:linear-gradient(180deg,#6d9fd4 0%,#d8e3da 38%,#f3e2b8 78%,var(--paper) 100%);}
@@ -235,13 +254,21 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   box-shadow:0 0 10px 2px rgba(243,207,93,.65), 0 3px 0 rgba(0,0,0,.12);}
 .subRow{display:flex; gap:8px; margin-top:8px;}
 .subBtn{flex:1; padding:8px; border-radius:10px; border:2px solid var(--line); background:var(--paper2); font-size:14px; font-weight:800;}
-/* 側近: ◯枠にアイコンのみ＋下に絆ゲージ（2026-06-12 生徒FBで名前省略） */
-.bondRow{display:flex; gap:14px; padding:4px 12px 8px; justify-content:center;}
-.bondC{position:relative; width:46px; height:46px; border-radius:999px; display:flex; align-items:center; justify-content:center;
-  font-size:24px; background:var(--paper2); border:3px solid #cdbfa0;}
-.bondC i{position:absolute; left:5px; right:5px; bottom:-2px; height:5px; border-radius:3px; background:#ddd0b0; overflow:hidden;}
-.bondC i b{display:block; height:100%; background:linear-gradient(90deg,#f5b0c0,#e0533d);}
-.bondC.mx{border-color:var(--gold); background:#fff3c8; box-shadow:0 0 8px 2px rgba(243,207,93,.7);}
+/* 側近＝サポートカード風（改善#4・2026-06-13）。顔＋名前＋絆バー、配置中は青枠・友情は🌈 */
+.bondCap{font-size:10.5px; font-weight:800; color:#9a8660; text-align:center; margin:2px 0 0;}
+.bondRow{display:flex; gap:6px; padding:3px 10px 8px; justify-content:center;}
+.bondC{position:relative; flex:1; max-width:58px; display:flex; flex-direction:column; align-items:center; gap:2px;
+  background:var(--paper2); border:2px solid #cdbfa0; border-radius:10px; padding:4px 2px 5px; cursor:pointer;
+  box-shadow:0 2px 0 rgba(0,0,0,.1); transition:transform .06s;}
+.bondC:active{transform:translateY(2px);}
+.bondC .bf{width:38px; height:38px; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:22px; background:#fff;}
+.bondC .bf img{width:100%; height:100%; object-fit:cover;}
+.bondC .bn{font-size:9px; font-weight:800; color:#6b5a3e; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.bondC .bg2{width:100%; height:5px; border-radius:3px; background:#ddd0b0; overflow:hidden;}
+.bondC .bg2 b{display:block; height:100%; background:linear-gradient(90deg,#f5b0c0,#e0533d);}
+.bondC.mx{border-color:var(--gold); background:#fff3c8; box-shadow:0 0 7px 1px rgba(243,207,93,.6);}
+.bondC.placed{border-color:var(--blue);}
+.bondC .pin{position:absolute; top:-7px; right:-3px; font-size:14px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3));}
 /* 次の歴史イベント（体力バーの上） */
 .nextEv2{font-size:11.5px; font-weight:800; color:#8a6605; margin-bottom:3px;}
 /* 次イベント予告カード（改善#5・2026-06-13）。合戦は赤く緊張感 */
@@ -511,6 +538,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         </div>
       </div>
       <div class="statGrid" id="g-stats"></div>
+      <div class="bondCap">🤝 側近（タップで絆・スキル）</div>
       <div class="bondRow" id="g-bonds"></div>
       <div class="cmdArea">
         <div class="cmdGrid" id="g-cmds"></div>
@@ -1652,12 +1680,17 @@ const UI = (function(){
     // レイアウトB: 城の全画面背景(scene)があればそれを使い、城スプライトは隠す（2026-06-13）
     const scene = Game.H.sceneImgs && Game.H.sceneImgs[tier];
     const stage = $('g-stage');
+    const board = stage.closest('.board');
     if (scene){
-      stage.className = 'stage scene';
-      stage.style.backgroundImage = `url('${scene}')`;
+      // レイアウトA: 城シーンを盤面全体の背景に。上下にスクリムを敷いて文字の可読性を確保
+      board.classList.add('aLayout');
+      board.style.backgroundImage = `linear-gradient(180deg, rgba(20,24,40,.5) 0%, rgba(20,24,40,.05) 17%, rgba(20,24,40,0) 40%, rgba(20,24,40,.32) 68%, rgba(20,24,40,.6) 100%), url('${scene}')`;
+      stage.className = 'stage sceneA';
+      stage.style.backgroundImage = '';
       $('g-castlebox').style.display = 'none';
       const sl = $('g-scenelbl'); sl.style.display = 'block'; sl.textContent = `🏯 ${cs[tier][2]}`;
     } else {
+      board.classList.remove('aLayout'); board.style.backgroundImage = '';
       stage.className = 'stage bgt'+(tier+1);
       stage.style.backgroundImage = '';
       $('g-castlebox').style.display = '';
@@ -1691,15 +1724,20 @@ const UI = (function(){
     st.className = S.stamina<25? 'crit' : (S.stamina<45? 'low' : '');
     $('g-stam-n').textContent = `${S.stamina}/100`;
     // 勢力図ミニ（タップで拡大）
-    $('g-minimap').innerHTML = mapHtml(true) + `<span class="mlbl">🗾 領地</span>`;
+    $('g-minimap').innerHTML = mapHtml(true) + `<span class="mlbl">🗾 領地 🔍</span>`;
     // ステ（ランク表記）＋スキルP枠
     $('g-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, S[k], tpy)).join('') +
       `<div class="stat" onclick="UI.openSkill()"><span class="sl">スキルP</span>
         <span class="srow"><b class="srk" style="color:#7a4f9d">${S.skillPt||0}</b></span></div>`;
-    // 側近（◯枠・顔画像があれば使用・絆ゲージ付き）
+    // 側近＝サポートカード（顔＋名前＋絆バー・配置中マーク／改善#4・#6 タップ導線）
     $('g-bonds').innerHTML = Game.H.retainers.map(r=>{
       const v = S.bonds[r.id];
-      return `<span class="bondC ${v>=80?'mx':''}" title="${r.name}" onclick="UI.openRetainer('${r.id}')">${rFace(r)}<i><b style="width:${v}%"></b></i></span>`;
+      const placed = Game.STAT_KEYS.some(k=>(S.placement[k]||[]).includes(r.id));
+      const fri = placed && (S.placement[r.fav]||[]).includes(r.id) && v>=80;
+      const pin = fri ? '<span class="pin">🌈</span>' : (placed ? '<span class="pin">⚔️</span>' : '');
+      return `<button class="bondC ${v>=80?'mx':''} ${placed?'placed':''}" title="${r.name}" onclick="UI.openRetainer('${r.id}')">
+        ${pin}<span class="bf">${rFace(r)}</span><span class="bn">${r.name}</span>
+        <span class="bg2"><b style="width:${v}%"></b></span></button>`;
     }).join('');
     // コマンド3×2・文字のみ（2026-06-12 生徒FB）。鍛錬の側近バッジだけ残す（友情特訓の合図）
     let mateIcons = '';
