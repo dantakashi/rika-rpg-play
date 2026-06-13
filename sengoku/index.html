@@ -48,6 +48,44 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .titleBtns{width:min(360px,92%); margin:0 auto; display:grid; gap:10px;}
 .verTag{margin-top:18px; font-size:11px; color:#7f8aa8;}
 
+/* ===== §S2.5 ホーム画面（G1第2弾・2026-06-13 ウマ娘式ホーム） ===== */
+#scr-home{color:var(--paper);}
+.homeHead{display:flex; align-items:center; gap:8px; padding:4px 2px 10px;}
+.homeHead .hTitle{font-weight:900; font-size:17px; letter-spacing:.08em; color:var(--gold2); flex:1;}
+.homeRes{display:flex; align-items:center; gap:5px; font-weight:800; font-size:13.5px; color:#ffe9a8;
+  background:rgba(245,234,211,.1); border:1px solid rgba(216,168,35,.45); border-radius:999px; padding:4px 12px;}
+/* 育てた武将の展示（自慢要素）。タップで殿堂へ */
+.showcase{position:relative; border-radius:18px; border:2px solid rgba(216,168,35,.55); overflow:hidden;
+  background:linear-gradient(180deg,#1d2438 0%,#2a3450 55%,#3a4666 100%); text-align:center; padding:16px 12px 0; width:100%;}
+.showcase::before{content:''; position:absolute; inset:-20%;
+  background:repeating-conic-gradient(rgba(216,168,35,.07) 0deg 6deg, transparent 6deg 16deg); pointer-events:none;}
+.showcase .scChar{display:block; height:215px; width:auto; margin:6px auto 0;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.55)); animation:charSway 3.4s ease-in-out infinite;}
+.showcase .scCrest{font-size:120px; line-height:215px; display:block;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.55));}
+.showcase .scRank{position:absolute; top:10px; left:12px; text-align:left;}
+.showcase .scRank .rk{display:block; font-size:30px; font-weight:900; line-height:1.1;
+  background:linear-gradient(180deg,#f7e7ae,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.showcase .scRank small{font-size:10.5px; font-weight:800; color:#9aa7c7;}
+.showcase .scPower{position:absolute; top:10px; right:12px; text-align:right; font-weight:900;}
+.showcase .scPower .pv{display:block; font-size:24px; color:#ffe9a8; line-height:1.1;}
+.showcase .scPower small{font-size:10.5px; font-weight:800; color:#9aa7c7;}
+.showcase .scName{position:absolute; left:0; right:0; bottom:0; padding:26px 12px 8px;
+  background:linear-gradient(180deg,transparent,rgba(13,17,30,.92) 60%);}
+.showcase .scName b{font-size:19px; letter-spacing:.1em;}
+.showcase .scName small{display:block; font-size:11px; color:#bfc8e0; font-weight:700; margin-top:2px;}
+/* お知らせ枠（他ゲーム連携のための常設枠） */
+.noticeBox{margin:10px 0; background:rgba(245,234,211,.08); border:1px solid rgba(216,168,35,.4);
+  border-radius:12px; padding:8px 12px; font-size:12.5px; line-height:1.65; color:#e8dcbb; text-align:left;}
+.noticeBox b{color:var(--gold2);}
+.homeBtns{display:grid; gap:10px; margin-top:10px;}
+.homeBtns .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.homeBtns .btn{font-size:15.5px; padding:13px 8px;}
+.homeBtns .btn.main{font-size:18px; padding:15px;}
+/* セーブ＆ロード */
+.saveTa{width:100%; min-height:84px; border-radius:10px; border:2px solid var(--line); background:#fffdf4;
+  font-size:11px; padding:8px; word-break:break-all; color:var(--ink);}
+
 /* ===== §S3 育成メイン ===== */
 .board{background:var(--paper); border-radius:18px; border:3px solid var(--line); overflow:hidden;}
 .gHead{display:flex; align-items:center; gap:10px; padding:7px 10px 7px 12px;
@@ -57,45 +95,65 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .gTurn{font-weight:800; font-size:14px; color:#bfc8e0; flex:1;}
 .gKoku{font-weight:800; font-size:14px; color:var(--gold2);}
 .gPause{font-size:18px; padding:2px 8px; border-radius:8px; border:1px solid #5a647f; color:#bfc8e0;}
-/* 中央ステージ: ビジュアル主役の大型表示（ウマ娘式・2026-06-12 生徒FB「写真枠が小さい」対応。
-   絵は当面絵文字。将来ここを立ち絵画像に差し替える */
-.stage{position:relative; height:212px; overflow:hidden;
-  background:linear-gradient(180deg,#8fc0e6 0%,#cfe2f2 45%,#ece9d4 80%,var(--paper) 100%);}
-.stageDeco{position:absolute; top:8px; left:12px; right:12px; display:flex; justify-content:space-between;
-  font-size:24px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));}
-.stageCastle{position:absolute; left:12px; bottom:46px; text-align:center;}
+/* 中央ステージ: ビジュアル主役の大型表示（ウマ娘式）。
+   G1第2弾(2026-06-13): 城を「背景」に昇格＝住んでいる感。石高tierで空も豪華になる */
+.stage{position:relative; height:250px; overflow:hidden;
+  background:linear-gradient(180deg,#9db8cc 0%,#cfdde8 45%,#ece9d4 80%,var(--paper) 100%);}
+.stage.bgt2{background:linear-gradient(180deg,#8fc0e6 0%,#cfe2f2 45%,#ece9d4 80%,var(--paper) 100%);}
+.stage.bgt3{background:linear-gradient(180deg,#7eb4e0 0%,#cde4ee 40%,#f0ead2 80%,var(--paper) 100%);}
+.stage.bgt4{background:linear-gradient(180deg,#6d9fd4 0%,#d8e3da 38%,#f3e2b8 78%,var(--paper) 100%);}
+.stage.bgt5{background:linear-gradient(180deg,#4a5f96 0%,#c2a96b 45%,#f3d999 75%,var(--paper) 100%);}
+.stage.bgt5::before{content:''; position:absolute; inset:-30%;
+  background:repeating-conic-gradient(rgba(255,240,190,.16) 0deg 7deg, transparent 7deg 18deg); pointer-events:none;}
+.stageDeco{position:absolute; top:8px; left:12px; display:flex; gap:8px;
+  font-size:24px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.15)); z-index:2;}
+/* 居城＝背景の主役。画面右奥にどっしり構える */
+.stageCastle{position:absolute; right:-14px; bottom:30px; text-align:center; z-index:0;}
 .stageCastle .ce{display:block; line-height:1; transition:filter .4s;}
-.stageCastle.t1 .ce{font-size:46px;} .stageCastle.t2 .ce{font-size:56px;} .stageCastle.t3 .ce{font-size:66px;}
-.stageCastle.t4 .ce{font-size:76px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
-.stageCastle.t5 .ce{font-size:84px; filter:drop-shadow(0 0 12px rgba(243,207,93,.95)) saturate(1.7);}
-.castleLbl{font-size:11px; font-weight:800; color:#4a5a44; background:rgba(245,234,211,.78); border-radius:999px; padding:1px 7px; margin-top:3px;}
-.stageChar{position:absolute; left:55%; bottom:40px; transform:translateX(-50%); font-size:108px; line-height:1;
-  filter:drop-shadow(0 6px 7px rgba(0,0,0,.3)); animation:charSway 3.2s ease-in-out infinite;}
-.stageChar img{display:block; height:165px; width:auto;}
-.stageChar img.hurt{filter:grayscale(.75) brightness(.9);}
-.stageChar .injBadge{position:absolute; top:-4px; right:-16px; font-size:30px;}
+.stageCastle.t1 .ce{font-size:90px;} .stageCastle.t2 .ce{font-size:110px;} .stageCastle.t3 .ce{font-size:130px;}
+.stageCastle.t4 .ce{font-size:150px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
+.stageCastle.t5 .ce{font-size:165px; filter:drop-shadow(0 0 14px rgba(243,207,93,.95)) saturate(1.4);}
+.castleLbl{position:absolute; left:50%; transform:translateX(-50%); bottom:-22px; white-space:nowrap;
+  font-size:11px; font-weight:800; color:#4a5a44; background:rgba(245,234,211,.82); border-radius:999px; padding:1px 8px;}
 .stageCastle .ce img{display:block; margin:0 auto; width:auto;}
-.stageCastle.t1 .ce img{height:62px;} .stageCastle.t2 .ce img{height:78px;} .stageCastle.t3 .ce img{height:94px;}
-.stageCastle.t4 .ce img{height:110px;}
-.stageCastle.t5 .ce img{height:120px; filter:drop-shadow(0 0 12px rgba(243,207,93,.9));}
+.stageCastle.t1 .ce img{height:130px;} .stageCastle.t2 .ce img{height:155px;} .stageCastle.t3 .ce img{height:175px;}
+.stageCastle.t4 .ce img{height:195px;}
+.stageCastle.t5 .ce img{height:210px; filter:drop-shadow(0 0 14px rgba(243,207,93,.9));}
+/* 立ち絵＝手前の主役。前面左寄りで大きく */
+.stageChar{position:absolute; left:33%; bottom:34px; transform:translateX(-50%); font-size:120px; line-height:1;
+  filter:drop-shadow(0 6px 7px rgba(0,0,0,.3)); animation:charSway 3.2s ease-in-out infinite; z-index:1;}
+.stageChar img{display:block; height:190px; width:auto; transition:filter .4s;}
+.stageChar img.hurt{filter:grayscale(.75) brightness(.9) !important;}
+/* 調子が立ち絵で見てわかる（表情差分が来るまでのCSS差分・G1第2弾） */
+.stageChar img.m0{filter:grayscale(.6) brightness(.88);}
+.stageChar img.m1{filter:grayscale(.3) brightness(.95);}
+.stageChar img.m3{filter:saturate(1.12);}
+.stageChar img.m4{filter:saturate(1.25) drop-shadow(0 0 10px rgba(243,207,93,.85));}
+.stageChar .injBadge{position:absolute; top:-4px; right:-16px; font-size:30px;}
+.stageChar .moodFx{position:absolute; top:-10px; left:-20px; font-size:26px;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.3)); animation:moodBob 1.6s ease-in-out infinite;}
+@keyframes moodBob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-5px) rotate(6deg)}}
 @keyframes charSway{0%,100%{margin-bottom:0}50%{margin-bottom:7px}}
 .stageName{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:8px; padding:16px 14px 6px;
   background:linear-gradient(180deg,transparent,rgba(245,234,211,.96) 62%);}
 .stageName .charName{font-size:19px;}
-/* 勢力図: ミニ版は立ち絵の右下・タップで拡大（2026-06-12 生徒FB「今どこの領地か見たい」） */
-.miniMapBtn{position:absolute; right:8px; bottom:44px; padding:0; text-align:center;}
+/* 勢力図: 日本地図SVG（G1第2弾・2026-06-13「社会科なので明確な地図必須」）。ミニ版は左上・タップで拡大 */
+.miniMapBtn{position:absolute; right:8px; top:30px; padding:0; text-align:center; z-index:2;}
 .miniMapBtn .mlbl{display:block; font-size:9.5px; font-weight:800; color:#4a5a44;
   background:rgba(245,234,211,.78); border-radius:999px; padding:0 6px; margin-top:2px;}
-.mapGrid{display:grid; grid-template-columns:repeat(6,1fr); gap:3px;
-  background:#d4e5f0; border:2px solid var(--line); border-radius:10px; padding:8px;}
-.mapCell{min-height:36px; border-radius:6px; background:#cfc8b4; display:flex; align-items:center; justify-content:center;
-  font-size:12.5px; font-weight:800; color:#6f6648; line-height:1.1;}
-.mapCell.own{background:#3a6ea5; color:#fff;}
-.mapCell.ally{background:#2e8b57; color:#fff;}
-.mapCell.war{box-shadow:0 0 0 2.5px var(--red);}
-.mapGrid.mini{width:104px; padding:4px; gap:2px; border-radius:8px; opacity:.96; box-shadow:0 2px 5px rgba(0,0,0,.25);}
-.mapGrid.mini .mapCell{min-height:11px; font-size:8px; border-radius:2px;}
-.mapGrid.mini .mapCell.war{box-shadow:0 0 0 1.5px var(--red);}
+.jmap{display:block; width:100%; height:auto; background:#bcd6e8; border:2px solid var(--line); border-radius:10px;}
+.jmap .sea{fill:#bcd6e8;}
+.jmap .land{fill:#e9e2c8; stroke:#b9a87e; stroke-width:1.4; stroke-linejoin:round;}
+.jmap .prov{fill:#cfc8b4; stroke:#9d9070; stroke-width:.8;}
+.jmap .prov.own{fill:#3a6ea5; stroke:#274d77;}
+.jmap .prov.ally{fill:#2e8b57; stroke:#1d6b40;}
+.jmap .pname{font-size:10px; font-weight:800; fill:#6f6648; text-anchor:middle; dominant-baseline:central;
+  font-family:inherit; pointer-events:none;}
+.jmap .prov.own + .pname, .jmap .pname.lit{fill:#fff;}
+.jmap .warMark{font-size:13px; text-anchor:middle; dominant-baseline:central;}
+.jmap .warRing{fill:none; stroke:var(--red); stroke-width:2; animation:warPulse 1.4s infinite;}
+@keyframes warPulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.25}}
+.jmap.mini{width:112px; border-radius:8px; opacity:.96; box-shadow:0 2px 5px rgba(0,0,0,.25);}
 .charRow{display:flex; gap:10px; padding:4px 12px 4px; align-items:center;}
 .charInfo{flex:1;}
 .charName{font-weight:900; font-size:17px;}
@@ -119,12 +177,13 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .rkSS{background:linear-gradient(90deg,#e0533d,#d8a823,#7a4f9d); -webkit-background-clip:text; background-clip:text; color:transparent;}
 .stat .sv.up{color:var(--green); animation:pop .5s;}
 @keyframes pop{0%{transform:scale(1.6)}100%{transform:scale(1)}}
-/* コマンドは3×2・文字のみのシンプル表記（2026-06-12 生徒FBで絵文字・説明を削除） */
+/* コマンドは3×2・文字のみのシンプル表記（2026-06-12 生徒FBで絵文字・説明を削除）
+   G1第2弾: 枠の大きさに対し文字が小さい → 17.5pxに拡大 */
 .cmdArea{padding:6px 10px 10px;}
 .cmdGrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
-.cmd{position:relative; padding:15px 4px; border-radius:14px; border:3px solid var(--line);
+.cmd{position:relative; padding:13px 4px; border-radius:14px; border:3px solid var(--line);
   background:#fffdf4; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;
-  font-weight:900; font-size:15.5px;}
+  font-weight:900; font-size:17.5px;}
 .cmd:active{transform:translateY(2px);}
 .cmd.dim{opacity:.45; pointer-events:none;}
 .cmd.urgent{animation:glow 1.2s infinite alternate; border-color:var(--red);}
@@ -150,7 +209,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .trainOpt.glowOpt{border-color:var(--gold); background:#fff8dc;
   box-shadow:0 0 10px 2px rgba(243,207,93,.65), 0 3px 0 rgba(0,0,0,.12);}
 .subRow{display:flex; gap:8px; margin-top:8px;}
-.subBtn{flex:1; padding:8px; border-radius:10px; border:2px solid var(--line); background:var(--paper2); font-size:12.5px; font-weight:700;}
+.subBtn{flex:1; padding:8px; border-radius:10px; border:2px solid var(--line); background:var(--paper2); font-size:14px; font-weight:800;}
 /* 側近: ◯枠にアイコンのみ＋下に絆ゲージ（2026-06-12 生徒FBで名前省略） */
 .bondRow{display:flex; gap:14px; padding:4px 12px 8px; justify-content:center;}
 .bondC{position:relative; width:46px; height:46px; border-radius:999px; display:flex; align-items:center; justify-content:center;
@@ -204,18 +263,31 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bField{position:relative; background:linear-gradient(180deg,#3a2430,#1d1622); border-radius:14px;
   padding:10px 12px 12px; color:var(--paper); margin:8px 0 10px; overflow:hidden; cursor:pointer;}
 .bSky{text-align:center; font-size:12.5px; font-weight:800; color:#cdbb88; margin-bottom:6px;}
-.bArmies{display:flex; align-items:center; justify-content:space-between; gap:6px;}
-.bSide{text-align:left;} .bSide.foe{text-align:right;}
+/* G1第2弾(2026-06-13): 自軍/敵軍を「カード」化し兵力数値を最重要情報に。Codexレイアウト診断を反映 */
+.bArmies{display:flex; align-items:stretch; justify-content:space-between; gap:6px;}
+.bSide{text-align:left; flex:0 0 41%; padding:5px 9px; border-radius:10px;
+  background:rgba(13,17,30,.42); border-bottom:3px solid #3a6ea5;}
+.bSide.foe{text-align:right; border-bottom-color:var(--red);}
 .bName{font-weight:900; font-size:13px;} .bName.en{color:#ff9d8a;}
-.bHP{font-size:21px; font-weight:900; font-variant-numeric:tabular-nums;}
+/* 敵将の肖像（第3便・2026-06-13）。敵カードの名前の右に円形バストアップ */
+.bFoeHead{display:flex; align-items:center; justify-content:flex-end; gap:6px;}
+.bFoeFace{display:none; width:50px; height:50px; border-radius:999px; object-fit:cover; object-position:top center;
+  border:2px solid var(--red); background:#2a1820; box-shadow:0 2px 7px rgba(0,0,0,.55); flex:none;}
+.bHP{font-size:25px; font-weight:900; font-variant-numeric:tabular-nums;
+  text-shadow:0 2px 3px rgba(0,0,0,.9), 1px 0 0 rgba(0,0,0,.6), -1px 0 0 rgba(0,0,0,.6);}
+.bHP::after{content:'兵'; font-size:11px; font-weight:700; margin-left:2px; opacity:.7;}
 .bSide.foe .bHP{color:#ff9d8a;}
-.bVsTag{font-size:14px; font-weight:900; color:var(--gold2);}
+.bVsTag{display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; color:var(--gold2);
+  background:rgba(13,17,30,.7); border:1.5px solid var(--gold); border-radius:999px; width:34px; height:34px; align-self:center; flex:none;}
 .bStrip{display:flex; align-items:center; justify-content:space-between; font-size:20px; margin:6px 0 4px; min-height:28px;}
-.bStrip .bUnits{filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); letter-spacing:-3px;}
-.bStrip .bUnits.foe{transform:scaleX(-1);}
+.bStrip .bUnits{flex:0 0 42%; filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); letter-spacing:-3px; white-space:nowrap; overflow:hidden;}
+.bStrip .bUnits.foe{transform:scaleX(-1); text-align:left;}
 .bClash{font-size:22px; animation:clashPulse 1.6s infinite;}
 @keyframes clashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25) rotate(10deg)}}
-.btBar{height:14px; background:linear-gradient(90deg,#ff8d76,#b3362a); border-radius:9px; overflow:hidden; border:1px solid #5a4458;}
+/* 押し合いゲージ: 中央に金の「戦線」マーカー＝どちらが押しているか一目で */
+.btBar{position:relative; height:15px; background:linear-gradient(90deg,#ff8d76,#b3362a); border-radius:9px; overflow:hidden; border:1px solid #5a4458;}
+.btBar::after{content:''; position:absolute; left:50%; top:-2px; bottom:-2px; width:2px; transform:translateX(-50%);
+  background:rgba(255,233,168,.55); z-index:2;}
 .btBar .me{display:block; height:100%; background:linear-gradient(90deg,#7fb6ff,#3a6ea5); border-right:3px solid #ffe9a8; transition:width .8s;}
 /* 結果エフェクト4階調: 会心=大シェイク+フラッシュ / 有効=中 / 不発=小 / しくじり=被弾 */
 .bField.fxBig{animation:shakeBig .6s;} .bField.fxMid{animation:shakeMid .45s;}
@@ -239,11 +311,16 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   animation:burstSpin 1.3s ease-out forwards;}
 @keyframes cutinSlam{0%{opacity:0; transform:scale(2.6) rotate(-5deg)}22%{opacity:1; transform:scale(.92) rotate(1.5deg)}36%{transform:scale(1.08)}50%{transform:scale(1)}82%{opacity:1}100%{opacity:0; transform:scale(1.06)}}
 @keyframes burstSpin{0%{opacity:0; transform:rotate(0) scale(.5)}18%{opacity:1}100%{opacity:0; transform:rotate(35deg) scale(1.3)}}
-.bCaster{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; color:#8a6605;}
+/* G1第2弾: 実況者行＋ログを1枚の「実況パネル」に統合（Codex診断）。佐助＝パネル見出し */
+.bCaster{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; color:#8a6605;
+  background:#fff8e4; border:2px solid var(--gold); border-bottom:none; border-radius:10px 10px 0 0; padding:6px 10px 4px;}
 .bCaster .bFastTip{font-weight:600; color:#9a8660; font-size:11px;}
-.bLog{min-height:70px; font-size:13.5px; line-height:1.65; background:#fff8e4; border:2px solid var(--gold);
-  border-radius:10px; padding:8px 10px; margin:4px 0 10px;}
-.bLog div{opacity:.5;} .bLog div.new{opacity:1; font-weight:700; animation:rise .3s;}
+.bLog{min-height:66px; font-size:13px; line-height:1.55; background:#fff8e4; border:2px solid var(--gold); border-top:1px solid #e8d28a;
+  border-radius:0 0 10px 10px; padding:6px 10px 8px; margin:0 0 10px;}
+.bLog div{opacity:.5; padding-left:8px;}
+/* 最新行: 金の縦線＋金→藍のフェードで「今しゃべっている一文」を明確に */
+.bLog div.new{opacity:1; font-weight:800; font-size:14px; border-left:3px solid var(--gold); animation:logIn .32s ease-out;}
+@keyframes logIn{from{opacity:0; transform:translateY(5px); color:#b48622}to{opacity:1; transform:none; color:var(--ink)}}
 /* 采配ボタン（堅実/博打/搦め手のチップつき・参照ステ数値明記） */
 .saihai{display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:12px;
   border:3px solid var(--line); background:#fffdf4; text-align:left; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;}
@@ -252,6 +329,15 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .saihai .tb{flex:1; line-height:1.3;} .saihai .tb b{font-size:14.5px;}
 .saihai .tb small{display:block; font-size:11px; color:#7a6845;}
 .saihai .chip{font-size:11px; font-weight:800; color:#fff; border-radius:999px; padding:3px 9px; white-space:nowrap;}
+.saihai .tb b{font-size:15px;}
+/* 采配が出たとき「読む→選ぶ」の切替を金の幕開け線＋見出しで伝える（Codex診断） */
+.saihaiHead{text-align:center; font-weight:900; font-size:13px; color:#8a6605; margin:2px 0 2px;}
+.saihaiHead::before, .saihaiHead::after{content:''; display:inline-block; width:30px; height:2px; vertical-align:middle; margin:0 8px;
+  background:linear-gradient(90deg,transparent,var(--gold));}
+.saihaiHead::after{background:linear-gradient(90deg,var(--gold),transparent);}
+.cmdReveal{height:2px; width:100%; margin:0 0 8px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent); animation:revealLine .34s ease-out;}
+@keyframes revealLine{from{opacity:0; transform:scaleX(0)}to{opacity:1; transform:scaleX(1)}}
 
 /* ===== §S6 結果・殿堂 ===== */
 .rankBig{text-align:center; margin:8px 0;}
@@ -315,15 +401,35 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div style="display:inline-block; margin:2px auto 6px; padding:3px 14px; border-radius:999px;
       background:rgba(248,113,113,.18); border:1px solid #f87171; color:#fca5a5; font-size:12px; font-weight:800;">
       βテスト版 — 不具合・ご意見は先生まで！</div>
+    <!-- G1第2弾(2026-06-13): タイトルは3ボタンだけに整理。メニューはホーム画面へ -->
     <div class="titleBtns">
-      <button class="btn gold" onclick="UI.preStart()">⚔️ 育成開始（偉人を選ぶ）</button>
-      <button id="btn-resume" class="btn" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
-      <button class="btn" onclick="UI.openHowto()">❓ 遊び方</button>
-      <button class="btn" onclick="UI.openRoster()">🎴 武将編成</button>
-      <button class="btn" onclick="UI.openHall()">🏯 殿堂（育てた武将）</button>
-      <button class="btn" onclick="UI.openBook()">📖 軍学帳（まちがい帳）</button>
+      <button id="btn-resume" class="btn gold" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
+      <button id="btn-title-home" class="btn" onclick="UI.goHome()">🏠 ホーム画面へ</button>
+      <button class="btn" onclick="UI.openSaveIO()">💾 セーブ＆ロード</button>
     </div>
-    <div class="verTag">β版 / 社会科・歴史（戦国〜安土桃山） / セーブはこの端末に保存</div>
+    <div class="verTag">β版 / 社会科・歴史（戦国〜江戸開幕） / セーブはこの端末に保存</div>
+  </div>
+
+  <!-- ===== ホーム画面（G1第2弾: 育てた武将の展示・小判・お知らせ・メニュー） ===== -->
+  <div id="scr-home" class="scr">
+    <div class="homeHead">
+      <div class="hTitle serif">⚔️ 戦国トレーナー</div>
+      <button class="homeRes" onclick="UI.openCoinInfo()">🪙 <span id="h-coins">0</span></button>
+    </div>
+    <button class="showcase" id="h-showcase" onclick="UI.openHall()"></button>
+    <div class="noticeBox" id="h-notice"></div>
+    <div class="homeBtns">
+      <button class="btn gold main" onclick="UI.preStart()">⚔️ 育成開始（偉人を選ぶ）</button>
+      <button id="btn-resume2" class="btn" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
+      <div class="row2">
+        <button class="btn" onclick="UI.openRoster()">🎴 武将編成</button>
+        <button class="btn" onclick="UI.openHall()">🏯 殿堂</button>
+        <button class="btn" onclick="UI.openBook()">📖 軍学帳</button>
+        <button class="btn" onclick="UI.openHowto()">❓ 遊び方</button>
+      </div>
+      <button class="btn" onclick="UI.openSaveIO()">💾 セーブ＆ロード（機種変更）</button>
+    </div>
+    <div class="verTag">タイトルへは ⏸ → 🏠 から戻れます</div>
   </div>
 
   <!-- ===== 育成メイン ===== -->
@@ -335,7 +441,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="gKoku" id="g-koku">🌾 10万石</div>
         <button class="gPause" onclick="UI.pauseToTitle()" title="セーブして中断">⏸</button>
       </div>
-      <div class="stage">
+      <div class="stage" id="g-stage">
         <div class="stageDeco"><span>🚩</span><span id="g-season">🌸</span></div>
         <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">居城: 陣屋</div></div>
         <div class="stageChar" id="g-face">🙂</div>
@@ -376,7 +482,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <div class="descBox" id="r-legacy" style="margin-top:8px; background:#f0e6ff; border-color:var(--purple);"></div>
       <div class="descBox" id="r-report" style="margin-top:8px; background:#e8f4fb; border-color:var(--blue);"></div>
       <div style="display:grid; gap:8px; margin-top:14px;">
-        <button class="btn gold" onclick="UI.toTitle()">🏠 タイトルへ</button>
+        <button class="btn gold" onclick="UI.goHome()">🏠 ホームへ（武将をかざる）</button>
       </div>
     </div>
   </div>
@@ -416,7 +522,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <div class="bArmies">
         <div class="bSide"><div class="bName" id="b-mename">🔵 織田軍</div><div class="bHP" id="b-mehp"></div></div>
         <div class="bVsTag serif">VS</div>
-        <div class="bSide foe"><div class="bName en" id="b-foename"></div><div class="bHP" id="b-foehp"></div></div>
+        <div class="bSide foe"><div class="bFoeHead"><div class="bName en" id="b-foename"></div><img class="bFoeFace" id="b-foeface" alt="" onerror="this.style.display='none'"></div><div class="bHP" id="b-foehp"></div></div>
       </div>
       <div class="bStrip">
         <span class="bUnits" id="b-meunits"></span>
@@ -543,9 +649,26 @@ const Game = (function(){
   function loadPersist(){
     const raw = loadRaw();
     const p = (raw && raw.persist) || {};
-    return { hall:p.hall||[], legacy:p.legacy||[], book:p.book||[] };
+    return { hall:p.hall||[], legacy:p.legacy||[], book:p.book||[], coins:p.coins||0 };
   }
   function savePersist(){ saveAll(); }
+
+  /* セーブの書出/読込（機種変更・バックアップ用・G1第2弾 2026-06-13）。理科RPGのRIKA1:方式と同型 */
+  const IO_PREFIX = 'SGK1:';
+  function exportSave(){
+    const raw = loadRaw() || { run:S, persist:P };
+    return IO_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify(raw))));
+  }
+  function importSave(text){
+    const t = (text||'').trim();
+    if (!t.startsWith(IO_PREFIX)) return { ok:false, msg:'コードが「SGK1:」で始まっていません' };
+    try{
+      const data = JSON.parse(decodeURIComponent(escape(atob(t.slice(IO_PREFIX.length)))));
+      if (!data || typeof data!=='object' || !data.persist) return { ok:false, msg:'コードの中身が読めませんでした' };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      return { ok:true };
+    }catch(e){ return { ok:false, msg:'コードが壊れているようです（コピーが途中で切れていないか確認）' }; }
+  }
   function hasRun(){ const r=loadRaw(); return !!(r && r.run); }
   function resume(){
     const raw = loadRaw();
@@ -593,9 +716,20 @@ const Game = (function(){
     for (const d of [1,2,3]){ acc += w[d]; if (r < acc){ want = d; break; } }
     let cand = pool.filter(o=>o.q.diff===want);
     if (!cand.length) cand = pool;
-    const sel = cand[Math.floor(Math.random()*cand.length)];
+    // era（時代）の重み: 偉人の生きた時代の問題が優先して出る（G2-② 2026-06-13）
+    // q.era 省略時は 'sengoku'。H.eraPref が無い偉人は全時代等価
+    const ep = H.eraPref;
+    const sel = ep ? weightedPick(cand, o=>ep[o.q.era||'sengoku'] ?? 1)
+                   : cand[Math.floor(Math.random()*cand.length)];
     S.usedQ.push(sel.i);
     return sel;
+  }
+  function weightedPick(arr, wf){
+    let sum = 0; const ws = arr.map(a=>{ const w = Math.max(0, wf(a)); sum += w; return w; });
+    if (!sum) return arr[Math.floor(Math.random()*arr.length)];
+    let r = Math.random()*sum;
+    for (let i=0;i<arr.length;i++){ r -= ws[i]; if (r<0) return arr[i]; }
+    return arr[arr.length-1];
   }
   // 選択肢シャッフル（出題ごとに正解位置をランダム化）
   function shuffled(q){
@@ -1167,14 +1301,17 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
     STAT_KEYS.forEach(k=>{ if(S[k]>S[bestK]) bestK=k; });
     const legacy = { stat:bestK, val:Math.min(15, 5+Math.floor(S[bestK]/20)), name:H.legacyNames[bestK] };
     P.legacy.push(legacy); if (P.legacy.length>5) P.legacy.shift();
+    // 小判（永続通貨・G1第2弾 2026-06-13。つかいみちはv2ガチャ＝DESIGN_INFLATION.md）
+    const coins = Math.max(5, Math.round(total/10)) + (survived?20:0);
+    P.coins = (P.coins||0) + coins;
     // 殿堂入り
-    P.hall.push({ name:H.name, rank:rank[1], total, tpy:S.tpy||1,
+    P.hall.push({ name:H.name, hero:H.id, rank:rank[1], total, tpy:S.tpy||1,
       stats:{buyu:S.buyu, chiryaku:S.chiryaku, seiji:S.seiji, ninbo:S.ninbo},
       koku:S.koku, wins:S.wins, battles:S.battles, survived:!!survived, fell:fellLabel||null,
       acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
       date:new Date().toLocaleDateString('ja-JP') });
     if (P.hall.length>30) P.hall.shift();
-    const summary = { rank, total, legacy, survived:!!survived, fell:fellLabel||null, tpy:S.tpy||1,
+    const summary = { rank, total, legacy, coins, survived:!!survived, fell:fellLabel||null, tpy:S.tpy||1,
       koku:S.koku, wins:S.wins, battles:S.battles,
       acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
       answered:S.answerTotal, gstat:S.gstat||{}, bookLeft:P.book.length,
@@ -1194,7 +1331,7 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
   }
 
   return { get S(){return S;}, get P(){return P;}, D, MOODS, STAT_KEYS, RANKS,
-    newRun:(lg,tpy)=>{S=newRun(lg,tpy); saveAll();}, hasRun, resume, clearRun,
+    newRun:(lg,tpy)=>{S=newRun(lg,tpy); saveAll();}, hasRun, resume, clearRun, exportSave, importSave,
     failRate, pushRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill, setHero, epilogueNext, pickEpilogue, skillInfo,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
     battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
@@ -1207,8 +1344,72 @@ const UI = (function(){
   const $ = id=>document.getElementById(id);
 
   function show(name){
-    ['title','game','result'].forEach(n=>$('scr-'+n).classList.toggle('on', n===name));
-    if (name==='title') $('btn-resume').style.display = Game.hasRun()? 'block':'none';
+    ['title','home','game','result'].forEach(n=>$('scr-'+n).classList.toggle('on', n===name));
+    if (name==='title'){
+      const has = Game.hasRun();
+      $('btn-resume').style.display = has? 'block':'none';
+      $('btn-title-home').textContent = has? '🏠 ホーム画面へ' : '🏠 はじめる（ホーム画面へ）';
+    }
+    if (name==='home') renderHome();
+  }
+
+  /* ---- ホーム画面（G1第2弾・育てた武将の展示／小判／お知らせ） ---- */
+  function goHome(){ show('home'); }
+  function renderHome(){
+    $('btn-resume2').style.display = Game.hasRun()? 'block':'none';
+    $('h-coins').textContent = Game.P.coins||0;
+    // 展示する武将＝直近の殿堂入り（無ければプレースホルダ）
+    const hall = Game.P.hall;
+    const sc = $('h-showcase');
+    if (hall.length){
+      const h = hall[hall.length-1];
+      const hero = D.HEROES[h.hero];
+      const power = (h.stats.buyu*2.2 + h.stats.chiryaku*1.6 + h.stats.ninbo*0.6 + h.koku/15)|0;
+      sc.innerHTML = `
+        <div class="scRank"><span class="rk serif">${h.rank}</span><small>最高位</small></div>
+        <div class="scPower"><span class="pv">${power.toLocaleString('ja-JP')}</span><small>⚔️戦闘力</small></div>
+        ${hero&&hero.img ? `<img class="scChar" src="${hero.img}" alt="">` : `<span class="scCrest">${hero?hero.crest:'🏯'}</span>`}
+        <div class="scName"><b class="serif">${h.name}</b><small>${h.survived?'🌟IFルート達成':h.fell?'💀'+h.fell:'🏁完走'}　育成数 ${hall.length}人</small></div>`;
+    } else {
+      sc.innerHTML = `
+        <span class="scCrest">🏯</span>
+        <div class="scName"><b class="serif">まだ武将がいません</b><small>育成を完了すると、ここに自慢の武将が飾られる！</small></div>`;
+    }
+    // お知らせ枠（他ゲーム連携の常設枠・今は告知文）
+    $('h-notice').innerHTML = `📣 <b>お知らせ</b>　徳川家康パックを公開しました（人質→江戸幕府・全44ターン）。`
+      + `育てた武将は将来「戦争モード」で対戦できる予定です。`;
+  }
+  function openCoinInfo(){
+    $('l-title').textContent = '🪙 小判（こばん）';
+    $('l-body').innerHTML = `<div class="bookItem">育成を完了するともらえる、この道場の通貨だ。いま <b>${Game.P.coins||0} 枚</b>。<br><br>
+      <span class="note">つかいみち（準備中）: 偉人や側近を仲間にする「登用（ガチャ）」・育成の上限を広げる「限界突破」など、エンドコンテンツで使えるようにする予定だ。いまは貯めておこう！</span></div>`;
+    $('ovl-list').classList.add('on');
+  }
+  /* ---- セーブ＆ロード（書出/読込・機種変更用） ---- */
+  function openSaveIO(){
+    $('l-title').textContent = '💾 セーブ＆ロード';
+    $('l-body').innerHTML = `
+      <div class="bookItem"><b>📤 書き出し（バックアップ／機種変更）</b><br>
+        <span class="note">下のコードを丸ごとコピーして、メモやLINEの自分宛てに保存してください。</span><br>
+        <textarea class="saveTa" id="io-out" readonly onclick="this.select()">${Game.exportSave()}</textarea>
+        <button class="btn gold" style="margin-top:6px" onclick="UI.copySave()">📋 コピーする</button></div>
+      <div class="bookItem" style="margin-top:10px"><b>📥 読み込み（別の端末から移す）</b><br>
+        <span class="note" style="color:var(--red)">⚠ いまのこの端末のデータは上書きされます。</span><br>
+        <textarea class="saveTa" id="io-in" placeholder="SGK1: で始まるコードを貼り付け"></textarea>
+        <button class="btn" style="margin-top:6px" onclick="UI.doImport()">📥 読み込む</button></div>`;
+    $('ovl-list').classList.add('on');
+  }
+  function copySave(){
+    const ta = $('io-out'); ta.select();
+    try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
+    Game.toast('📋 コピーしました！ 安全な場所に保存してね');
+  }
+  function doImport(){
+    const v = $('io-in').value;
+    if (!confirm('いまのこの端末のデータを上書きします。よろしいですか？')) return;
+    const r = Game.importSave(v);
+    if (r.ok){ Game.toast('📥 読み込み成功！ 画面を更新します'); setTimeout(()=>location.reload(), 800); }
+    else Game.toast('❌ '+r.msg);
   }
 
   /* ---- 育成開始（偉人選択 → 遺訓選択） ---- */
@@ -1291,19 +1492,44 @@ const UI = (function(){
       <span class="srow"><b class="srk rk${r}">${r}</b><span class="sv2">${v}<small>/${STAT_MAX*(tpy===2?2:1)}</small></span></span></div>`;
   }
 
-  /* 勢力図（mini=立ち絵の右下用 / 拡大はリスト overlay） */
+  /* 勢力図（mini=立ち絵の右上用 / 拡大はリスト overlay）
+     G1第2弾(2026-06-13): グリッド→簡略日本地図SVG。社会科として「地形にのっとった明確な地図」。
+     provincesの c(1-6)/r(1-3) を日本列島の座標に写像（西=左/南=下）。data側の変更は不要 */
+  const JMAP_W = 360, JMAP_H = 200;
+  // 列島シルエット（西南→東北に伸びる帯。中学地図帳の簡略形）。viewBox 360x200
+  const JLAND = 'M22,150 C30,120 60,118 78,126 C96,110 120,116 138,120 '
+    + 'C150,96 180,92 198,104 C214,86 244,82 262,96 C280,72 312,66 330,82 '
+    + 'C346,96 344,120 326,128 C336,146 318,162 298,156 C286,176 256,178 240,164 '
+    + 'C222,180 192,178 178,162 C160,176 130,174 116,160 C98,172 64,170 50,156 '
+    + 'C40,160 26,160 22,150 Z';
+  function provXY(p){ // c:1..6(西→東) r:1..3(北→南) → 帯に沿って配置
+    const x = 30 + (p.c-1)/5 * 300;
+    const baseY = 150 - (p.c-1)/5 * 86;       // 西は下・東は上に伸びる列島の傾き
+    const y = baseY + (p.r-2) * 30;
+    return { x, y:Math.max(96, Math.min(168, y)) };
+  }
   function mapHtml(mini){
     const S = Game.S; if (!S) return '';
     const H = Game.H;
     const next = H.timeline.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
     const warLoc = next? H.map.battleLoc[next.year] : null;
-    return `<span class="mapGrid ${mini?'mini':''}">` + H.map.provinces.map(p=>{
+    const provs = H.map.provinces.map(p=>{
       const own = p.own && S.year>=p.own;
       const ally = p.ally && S.year>=p.ally;
       const war = (p.n===warLoc);
-      return `<span class="mapCell ${own?'own':ally?'ally':''} ${war?'war':''}"
-        style="grid-column:${p.c}; grid-row:${p.r}">${mini? (war?'⚔':'') : p.n+(war?'⚔️':'')}</span>`;
-    }).join('') + `</span>`;
+      const {x,y} = provXY(p);
+      const cls = own?'own':ally?'ally':'';
+      const lit = own||ally? ' lit':'';
+      const rx = mini?15:24, ry = mini?9:14;
+      let s = `<ellipse class="prov ${cls}" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/>`;
+      if (!mini) s += `<text class="pname${lit}" x="${x}" y="${y}">${p.n}</text>`;
+      if (war){ s += `<circle class="warRing" cx="${x}" cy="${y}" r="${mini?13:22}"/>`;
+                if (!mini) s += `<text class="warMark" x="${x}" y="${y-22}">⚔️</text>`; }
+      return s;
+    }).join('');
+    return `<svg class="jmap ${mini?'mini':''}" viewBox="0 0 ${JMAP_W} ${JMAP_H}" xmlns="http://www.w3.org/2000/svg">
+      <rect class="sea" x="0" y="0" width="${JMAP_W}" height="${JMAP_H}"/>
+      <path class="land" d="${JLAND}"/>${provs}</svg>`;
   }
   function openMap(){
     const S = Game.S; if (!S) return;
@@ -1312,7 +1538,7 @@ const UI = (function(){
     const next = H.timeline.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
     $('l-title').textContent = '🗾 勢力図';
     $('l-body').innerHTML = mapHtml(false) +
-      `<div class="note" style="margin-top:8px;">🟦 織田領（いま${ownN}か国） ／ 🟩 同盟（徳川） ／ ⚔️ 次の合戦の地` +
+      `<div class="note" style="margin-top:8px;">🟦 ${Game.H.armyName.replace('軍','')}領（いま${ownN}か国） ／ 🟩 同盟 ／ ⚔️ 次の合戦の地` +
       (next? `<br>📅 次の合戦: ${next.year}年「${next.title.split(' — ')[0]}」（${H.map.battleLoc[next.year]||'—'}）` : '<br>🎌 残る合戦はない') + `</div>`;
     $('ovl-list').classList.add('on');
   }
@@ -1331,10 +1557,11 @@ const UI = (function(){
     const mt = $('g-mood'); mt.textContent = m.icon+' '+m.label; mt.style.background = m.cls;
     const injured = !!S.injury;
     $('g-inj').style.display = injured? 'inline-block' : 'none';
-    // 中央ステージ: 石高が増えるほど居城が立派になる
+    // 中央ステージ: 石高が増えるほど居城が立派になる＋空（背景）も豪華に（G1第2弾）
     const cs = Game.H.castles;
     let tier = 0;
     cs.forEach((c,i)=>{ if (S.koku>=c[0]) tier=i; });
+    $('g-stage').className = 'stage bgt'+(tier+1);
     $('g-castlebox').className = 'stageCastle t'+(tier+1);
     const cimg = Game.H.castleImgs && Game.H.castleImgs[tier];
     $('g-castle').innerHTML = cimg ? `<img src="${cimg}" alt="${cs[tier][2]}">` : cs[tier][1];
@@ -1345,11 +1572,17 @@ const UI = (function(){
     $('g-season').textContent = tpy===2 ? (S.half? '🍂':'🌸')
       : Game.H.seasons[(S.year-Game.H.startYear)%Game.H.seasons.length];
     // 立ち絵（画像があれば使用・なければ絵文字。ケガ中はグレー＋🤕バッジ）
+    // 調子が立ち絵で見てわかる（G1第2弾・表情差分が来るまでのCSSフィルタ＋気分エフェクト）
+    const moodFx = injured? '' : (S.mood>=4? '<span class="moodFx">🔥</span>'
+      : S.mood>=3? '<span class="moodFx">✨</span>'
+      : S.mood<=0? '<span class="moodFx">💢</span>'
+      : S.mood<=1? '<span class="moodFx">💧</span>' : '');
     if (Game.H.img){
-      $('g-face').innerHTML = `<img src="${Game.H.img}" alt="${Game.H.name}" class="${injured?'hurt':''}">`
-        + (injured? '<span class="injBadge">🤕</span>' : '');
+      const moodCls = injured? 'hurt' : 'm'+S.mood;
+      $('g-face').innerHTML = `<img src="${Game.H.img}" alt="${Game.H.name}" class="${moodCls}">`
+        + (injured? '<span class="injBadge">🤕</span>' : moodFx);
     } else {
-      $('g-face').textContent = injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'));
+      $('g-face').innerHTML = (injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'))) + moodFx;
     }
     // 体力
     const st = $('g-stam');
@@ -1385,9 +1618,13 @@ const UI = (function(){
       <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')">視察</button>
       <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')">小競り合い</button>`;
     $('g-bookn').textContent = Game.P.book.length? `(${Game.P.book.length})` : '';
-    // 次イベント予告
+    // 次イベント予告＋のこりNターン（G1第2弾「次の歴史イベントまで のこり〇ターン」）
     const next = Game.H.timeline.find(e=>e.year>S.year);
-    $('g-next').textContent = next? `📅 次の歴史イベント: ${next.year}年「${next.title.split(' — ')[0]}」` : '';
+    if (next){
+      // 残りターン = (次イベント年 - 今年)×tpy - 経過した半期。春発火なので半期ぶんを差し引く
+      const rem = Math.max(1, (next.year - S.year)*tpy - (S.half||0));
+      $('g-next').textContent = `📅 次の歴史イベント: ${next.year}年「${next.title.split(' — ')[0]}」（のこり${rem}ターン）`;
+    } else $('g-next').textContent = '';
   }
 
   /* ---- 鍛錬選択ポップアップ（4種集約・家臣付きは輝く） ---- */
@@ -1670,6 +1907,9 @@ const UI = (function(){
     $('b-sky').textContent = `${ev.terrain.icon} ${ev.terrain.label}`.trim();
     $('b-mename').textContent = `${Game.H.armyIcon} ${Game.H.armyName}`;
     $('b-foename').textContent = `${ev.enemyIcon || '🔴'} ${ev.enemyName}`;
+    // 敵将の肖像（第3便・あれば表示）
+    const ff = $('b-foeface');
+    if (ev.enemyImg){ ff.src = ev.enemyImg; ff.style.display = 'inline-block'; } else ff.style.display = 'none';
     $('b-castername').textContent = L.caster;
     $('b-log').innerHTML = ''; $('b-actions').innerHTML = '';
     $('b-cutin').className = 'bCutin';
@@ -1691,7 +1931,9 @@ const UI = (function(){
     cast([`📯 軍配${B.round+1}本目！ ${round.situ}`], ()=>{
       const chips = { safe:['堅実','#2e8b57'], risky:['博打','#b3362a'], trick:['搦め手','#7a4f9d'] };
       $('b-actions').innerHTML =
-        `<div class="note" style="text-align:center;">どう采配する？（クイズに正解すれば采配が実行される）</div>` +
+        `<div class="cmdReveal"></div>` +
+        `<div class="saihaiHead">⚔️ 軍配 ${B.round+1}本目 — どう采配する？</div>` +
+        `<div class="note" style="text-align:center; margin-bottom:6px;">クイズに正解すれば采配が実行される</div>` +
         round.opts.map((o,i)=>{
           const g = D.GENRES[o.stat];
           const c = chips[o.style];
@@ -1776,6 +2018,7 @@ const UI = (function(){
     $('r-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, sum.stats[k], sum.tpy)).join('');
     $('r-summary').innerHTML =
       `🌾 石高 <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 合戦 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
+      (sum.coins? `🪙 小判を <b>${sum.coins}枚</b> 獲得！（ホームでたまっていく）<br>` : '') +
       (sum.fell? `💀 <b>${sum.fell}に敗れ、育成終了……</b><br>📖 軍学帳でまちがいを復習して、もう一度天下を目指そう！`
        : sum.survived? Game.H.endTexts.survived
        : Game.H.endTexts.completed);
@@ -1853,6 +2096,7 @@ const UI = (function(){
 
   return { show, preStart, pickHero, pickMode, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone, openMap,
     showEpilogueChoice, pickEpilogueMem, openRetainer,
+    goHome, openCoinInfo, openSaveIO, copySave, doImport,
     showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, battleFast, pickSaihai, showResult,
     openTrain, pickTrain, closeTrain, openSkill,
     openHall, openBook, closeList, openHowto, openRoster };

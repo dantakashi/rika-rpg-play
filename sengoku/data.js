@@ -206,7 +206,7 @@ const SENGOKU_DATA = (function(){
     { year:1556, type:'battle', title:'稲生の戦い — 家中をまとめろ',
       terrain:{ icon:'🌾', label:'尾張・稲生の野原' }, bg:'assets/bg_inou.jpg',
       intro:'弟・信行（信勝）を担ぐ家臣団が反旗を翻した。相手は柴田勝家ら織田家の重臣たち。まずは身内との戦いに勝ち、尾張をまとめなければ天下どころではない。',
-      enemyName:'弟・信行派の軍勢', enemyIcon:'🛡️', enemyPower:100,
+      enemyName:'弟・信行派の軍勢', enemyIcon:'🛡️', enemyImg:'assets/foe_nobuyuki.png', enemyPower:100,
       army:{ me:700, foe:1700 }, meUnit:'🛡️', foeUnit:'⚔️',
       open:[
         'さあ始まりました、家督を懸けた身内の決戦・稲生の戦い！',
@@ -248,7 +248,7 @@ const SENGOKU_DATA = (function(){
     { year:1560, type:'battle', title:'桶狭間の戦い — 運命の十倍の敵',
       terrain:{ icon:'🌧️', label:'桶狭間 — 豪雨の窪地' }, bg:'assets/bg_okehazama.jpg',
       intro:'駿河の大大名・今川義元が、約2万5千の大軍で尾張に攻め込んできた。こちらはわずか数千。家臣は籠城を勧めるが、あなたは「敦盛」を舞い、夜明けに出陣を決意する。狙うは、桶狭間で休む義元の本陣ただ一点——。',
-      enemyName:'今川義元の大軍', enemyIcon:'👑', enemyPower:240,
+      enemyName:'今川義元の大軍', enemyIcon:'👑', enemyImg:'assets/foe_yoshimoto.png', enemyPower:240,
       army:{ me:3000, foe:25000 }, meUnit:'🛡️', foeUnit:'🗡️',
       open:[
         'さあ大一番！ 駿河の太守・今川義元、2万5千の大軍で尾張へ侵攻ーっ！',
@@ -287,14 +287,14 @@ const SENGOKU_DATA = (function(){
       loseText:'【敗北】奇襲は読まれていた。今川の大軍の前に織田軍は壊滅……。\n\n（育成終了。格上との決戦だ。それまでに体力を整え、軍配＝クイズを確実に当てられる力をつけよう！）',
       winFx:{ koku:150, buyu:8, ninbo:5 } },
 
-    { year:1562, type:'story', title:'清洲同盟 — 生涯の盟友', art:'🤝🦅',
+    { year:1562, type:'story', title:'清洲同盟 — 生涯の盟友', art:'🤝🦅', artImg:'assets/ev_kiyosu.jpg',
       text:'今川家から独立した三河の松平元康（のちの徳川家康）と、清洲城で同盟を結んだ。背後の心配がなくなり、美濃攻めに集中できる。\n\nこの同盟は本能寺の変まで約20年間守られ、戦国時代でもまれな「裏切られなかった同盟」として知られる。',
       effects:{ ninbo:5, koku:30 } },
 
     { year:1567, type:'battle', title:'稲葉山城の戦い — 天下布武',
       terrain:{ icon:'⛰️', label:'稲葉山 — 山上の堅城' }, bg:'assets/bg_inabayama.jpg',
       intro:'美濃の斎藤龍興（道三の孫）との長い戦いも大詰め。木下藤吉郎が敵の城下に一夜で砦を築いた（墨俣一夜城の伝説）。決戦のときだ。',
-      enemyName:'斎藤龍興の美濃勢', enemyIcon:'🐍', enemyPower:280,
+      enemyName:'斎藤龍興の美濃勢', enemyIcon:'🐍', enemyImg:'assets/foe_tatsuoki.png', enemyPower:280,
       army:{ me:10000, foe:7000 }, meUnit:'🛡️', foeUnit:'🏹',
       open:[
         '美濃攻め、ついに最終局面！ 舞台は天下の堅城・稲葉山城だあーっ！',
@@ -343,7 +343,7 @@ const SENGOKU_DATA = (function(){
     { year:1570, type:'battle', title:'姉川の戦い — 裏切りの代償',
       terrain:{ icon:'🏞️', label:'姉川 — 浅瀬の河原' }, bg:'assets/bg_anegawa.jpg',
       intro:'妹・お市の方を嫁がせた浅井長政が、よりによって朝倉攻めの最中に裏切った！ 挟み撃ちの危機を辛くも脱出（金ヶ崎の退き口）。徳川家康と共に、姉川で浅井・朝倉連合軍と決着をつける。',
-      enemyName:'浅井・朝倉連合軍', enemyIcon:'💔', enemyPower:360,
+      enemyName:'浅井・朝倉連合軍', enemyIcon:'💔', enemyImg:'assets/foe_nagamasa.png', enemyPower:360,
       army:{ me:28000, foe:18000 }, meUnit:'🛡️', foeUnit:'🗡️',
       open:[
         '裏切りの清算、姉川の戦い！ 織田・徳川連合2万8千、対する浅井・朝倉連合1万8千！',
@@ -396,7 +396,7 @@ const SENGOKU_DATA = (function(){
     { year:1575, type:'battle', title:'長篠の戦い — 鉄砲三千挺',
       terrain:{ icon:'🛡️', label:'設楽原 — 馬防柵の平野' }, bg:'assets/bg_nagashino.jpg',
       intro:'「戦国最強」と謳われた武田の騎馬軍団が、後継者・武田勝頼に率いられ長篠城に迫る。あなたの答えは——大量の鉄砲と馬防柵。戦の常識を変えるときだ。',
-      enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyPower:470,
+      enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyImg:'assets/foe_katsuyori.png', enemyPower:470,
       army:{ me:38000, foe:15000 }, meUnit:'🛡️', foeUnit:'🐴',
       open:[
         '決戦・長篠！ 織田・徳川連合3万8千、対する武田勝頼1万5千！',
@@ -435,11 +435,11 @@ const SENGOKU_DATA = (function(){
       loseText:'【敗北】雨に濡れた鉄砲は火を噴かず、戦国最強の騎馬隊が柵を破った……。\n\n（育成終了。ここまで来たきみなら、次はきっと勝てる！）',
       winFx:{ koku:180, buyu:8, chiryaku:5 } },
 
-    { year:1576, type:'story', title:'安土城 — 天下統一の本拠地', art:'🏯✨',
+    { year:1576, type:'story', title:'安土城 — 天下統一の本拠地', art:'🏯✨', artImg:'assets/ev_azuchi.jpg',
       text:'琵琶湖のほとりに、五層七階・金箔瓦の壮大な安土城を築き始めた。山頂にそびえる豪華な天主（天守）は、城が「戦いの砦」から「権力を見せつける宮殿」へ変わったことを象徴している。\n\nこの時代の豪華で力強い文化を、安土城と桃山（伏見城）の名から「桃山文化」と呼ぶ。',
       effects:{ seiji:5, ninbo:5, koku:80 } },
 
-    { year:1577, type:'choice', title:'楽市・楽座 — 銭が天下を回す', art:'💰🏪',
+    { year:1577, type:'choice', title:'楽市・楽座 — 銭が天下を回す', art:'💰🏪', artImg:'assets/ev_rakuichi.jpg',
       text:'安土の城下町をどう栄えさせるか。これまでの町では「座」（商工業者の組合）が営業を独占し、市場には税がかかっていた。あなたの方針は？',
       choices:[
         { label:'楽市・楽座！ 税を免除し座を廃止（史実）', text:'「誰でも自由に商売してよし、市の税は取らぬ」——楽市令を出した。関所も廃止して人と物の流れを促すと、安土は爆発的に栄え、莫大な銭が織田家に流れ込むようになった。', fx:{ seiji:10, koku:150 } },
@@ -450,7 +450,7 @@ const SENGOKU_DATA = (function(){
       text:'10年にわたり戦い続けた石山本願寺（大阪）と、ついに和睦。各地の一向一揆に苦しめられた長い戦いだった。\n\n跡地にはのちに豊臣秀吉が大坂城を築く。残る大敵は中国地方の毛利、関東の北条、そして……。',
       effects:{ ninbo:5, koku:100 } },
 
-    { year:1582, type:'final', title:'本能寺の変 — 敵は本能寺にあり', art:'🔥🏯',
+    { year:1582, type:'final', title:'本能寺の変 — 敵は本能寺にあり', art:'🔥🏯', artImg:'assets/ev_honnoji.jpg',
       text:'天下統一は目前。中国地方で毛利と戦う羽柴（木下）秀吉を助けるため、あなたはわずかな供回りと京の本能寺に泊まった。\n\nその夜——明智光秀の軍勢1万3千が、本能寺を包囲する。',
       // 判定はエンジン側: 知略・人望が閾値以上なら変を察知するIFルート
       survive:{
@@ -579,6 +579,8 @@ const SENGOKU_DATA = (function(){
       kamon:'assets/kamon_oda.png',
       uniqueSkill:{ id:'uq_tenkafubu', icon:'⚡', name:'天下布武', desc:'合戦で「博打」の采配が決まったとき、戦果がさらに増す（偉人固有）', fx:{ riskyBoost:1.15 } },
       castleImgs:['assets/castle_1.png','assets/castle_2.png','assets/castle_3.png','assets/castle_4.png','assets/castle_5.png'],
+      // era出題バイアス（G2-②）: その偉人の生きた時代を優先。省略eraは'sengoku'扱い
+      eraPref:{ sengoku:3, azuchi:2, edo:0.4 },
       startYear:1551, endYear:1582,
       start:{ buyu:20, chiryaku:24, seiji:14, ninbo:8, koku:100 },
       finalReq:{ chiryaku:115, ninbo:100 },  // 最終イベントのIF生存条件（本能寺を察知）
@@ -601,6 +603,7 @@ const SENGOKU_DATA = (function(){
       kamon:'assets/kamon_toyotomi.png',
       castleImgs:['assets/castle_h1.png','assets/castle_h2.png','assets/castle_h3.png','assets/castle_h4.png','assets/castle_h5.png'],
       uniqueSkill:{ id:'uq_hitotarashi', icon:'🐒', name:'人たらし', desc:'側近との絆がふつうより早く深まる（偉人固有）', fx:{ bondPlus:2 } },
+      eraPref:{ sengoku:2, azuchi:3, edo:0.8 },
       startYear:1554, endYear:1590,
       start:{ buyu:8, chiryaku:20, seiji:16, ninbo:26, koku:5 },
       finalReq:{ seiji:155, ninbo:135 },  // IF: 唐入り（朝鮮出兵）を思いとどまる（37ターン分強気の閾値）
@@ -883,7 +886,7 @@ const SENGOKU_DATA = (function(){
         { year:1587, type:'battle', title:'九州平定 — 太閤流・兵站の戦',
           terrain:{ icon:'🌋', label:'九州 — 島津の本領へ' }, bg:'assets/bg_kyushu.jpg',
           intro:'天下統一へ残る大物、九州の島津義久を討つ。動員兵力はなんと20万。これだけの大軍を飢えさせず動かすこと自体が、史上最大級の挑戦だ。',
-          enemyName:'島津義久の軍勢', enemyIcon:'🌋', enemyPower:540,
+          enemyName:'島津義久の軍勢', enemyIcon:'🌋', enemyImg:'assets/foe_yoshihisa.png', enemyPower:540,
           army:{ me:200000, foe:50000 }, meUnit:'🛡️', foeUnit:'🗡️',
           open:[
             '天下統一へ最後の大物、九州の島津義久を討つ！ 動員兵力、なんと20万！',
@@ -922,11 +925,11 @@ const SENGOKU_DATA = (function(){
           loseText:'【敗北】広い九州に、大軍が飲み込まれていった……。\n\n（育成終了。大軍は政治力＝兵站が命。政務を鍛えて出直そう！）',
           winFx:{ koku:300, seiji:8 } },
 
-        { year:1588, type:'story', title:'刀狩令 — 新しい世の土台', art:'⚔️🚫',
+        { year:1588, type:'story', title:'刀狩令 — 新しい世の土台', art:'⚔️🚫', artImg:'assets/ev_kenchi.jpg',
           text:'刀狩令を出した。「百姓は耕し、武士は守る」——身分の役割をはっきり分け、一揆と戦乱の芽を摘む。全国で進める太閤検地とあわせて、戦のない世の土台づくりだ。\n\n百姓出身のあなたが、百姓から刀を取り上げる。その複雑な気持ちは、胸の奥にしまった。',
           effects:{ seiji:8, koku:100 } },
 
-        { year:1590, type:'final', title:'小田原平定 — 天下統一、そして', art:'🏯🚩',
+        { year:1590, type:'final', title:'小田原平定 — 天下統一、そして', art:'🏯🚩', artImg:'assets/ev_tenka.jpg',
           text:'20万の大軍が小田原城を囲んだ。北条方は籠城を選んだが、城内の評定は何も決められないまま（世にいう「小田原評定」）。落城は時間の問題だ。\n\n天下統一を目前に、あなたは「その先」を考え始める——この巨大な力を、次にどこへ向けるのか。',
           survive:{
             title:'【IF】太閤の平和',
@@ -945,6 +948,8 @@ const SENGOKU_DATA = (function(){
       img:'assets/hero_ieyasu.png',
       kamon:'assets/kamon_tokugawa.png',
       uniqueSkill:{ id:'uq_nintai', icon:'🦅', name:'忍耐', desc:'すべての鍛錬の体力消耗が少ない（偉人固有）', fx:{ costAll:3 } },
+      castleImgs:['assets/castle_i1.png','assets/castle_i2.png','assets/castle_i3.png','assets/castle_i4.png','assets/castle_i5.png'],
+      eraPref:{ sengoku:1.5, azuchi:2, edo:3 },
       startYear:1560, endYear:1603,
       start:{ buyu:14, chiryaku:16, seiji:12, ninbo:18, koku:30 },
       finalReq:{ seiji:165, ninbo:150 },  // IF: 豊臣家と共存し、戦なき泰平を早める（44ターン分の強気閾値）
@@ -960,42 +965,42 @@ const SENGOKU_DATA = (function(){
       seasons:['🌸','☀️','🍂','⛄'],
       skirmishFoes:SKIRMISH_FOES, skirmishSitus:SKIRMISH_SITUS,
       retainers:[
-        { id:'tadakatsu', name:'本多忠勝', icon:'🦌', fav:'buyu',
+        { id:'tadakatsu', name:'本多忠勝', icon:'🦌', fav:'buyu', img:'assets/r_tadakatsu.png',
           perk:{ type:'gain', v:2, label:'同席した鍛錬の上昇+2' },
           skill:{ id:'sk_tonbokiri', icon:'🦌', name:'蜻蛉切', desc:'合戦の武力の采配が強くなる', fx:{ battleStat:'buyu' } },
           midText:'「殿、戦場ではそれがしの後ろにお立ちくだされ」（57度の戦でかすり傷ひとつ負わぬ男の言葉だ）',
           intro:'鹿角の兜の最強武者。生涯57回の戦でかすり傷ひとつ負わなかったという。',
           maxText:'「家康に過ぎたるものが二つあり、唐の頭に本多平八」（敵にまで讃えられた豪傑が、あなたの矛となる）',
           maxFx:{ buyu:10, stamina:20 } },
-        { id:'naomasa', name:'井伊直政', icon:'🔴', fav:'buyu',
+        { id:'naomasa', name:'井伊直政', icon:'🔴', fav:'buyu', img:'assets/r_naomasa.png',
           perk:{ type:'skillpt', v:1, label:'同席正解でスキルP+1' },
           skill:{ id:'sk_akazonae', icon:'🔴', name:'赤備えの誉', desc:'すべての鍛錬の上昇が少し増える', fx:{ trainAll:1 } },
           midText:'「武田の赤を、徳川の誇りに変えてみせまする」（若き猛将の目は燃えている）',
           intro:'「井伊の赤鬼」。武田の赤備えを受け継いだ、最年少の重臣。',
           maxText:'「先陣はいつでもこの直政に！」（赤き軍団が、あなたのために駆ける）',
           maxFx:{ buyu:10, mood:1 } },
-        { id:'yasumasa', name:'榊原康政', icon:'🚩', fav:'chiryaku',
+        { id:'yasumasa', name:'榊原康政', icon:'🚩', fav:'chiryaku', img:'assets/r_yasumasa.png',
           perk:{ type:'gain', v:2, label:'同席した鍛錬の上昇+2' },
           skill:{ id:'sk_munohata', icon:'🚩', name:'無の旗', desc:'合戦の知力の采配が強くなる', fx:{ battleStat:'chiryaku' } },
           midText:'「敵を知るには、まず敵の身になって考えることです」（筆も立てば槍も立つ、頼れる男だ）',
           intro:'「無」の旗印を掲げる知勇兼備の将。文章の名手でもある。',
           maxText:'「殿の天下取りの絵図、それがしが清書いたしましょう」（戦も政も任せられる柱だ）',
           maxFx:{ chiryaku:10, seiji:5 } },
-        { id:'hanzo', name:'服部半蔵', icon:'🥷', fav:'chiryaku',
+        { id:'hanzo', name:'服部半蔵', icon:'🥷', fav:'chiryaku', img:'assets/r_hanzo.png',
           perk:{ type:'cost', v:5, label:'同席した鍛錬の体力-5' },
           skill:{ id:'sk_igamichi', icon:'🥷', name:'伊賀の抜け道', desc:'視察で得る石高が4割増える', fx:{ tripKoku:1.4 } },
           midText:'「……影は、語りませぬ」（多くを語らないが、いつも一番危ない場所にいる）',
           intro:'伊賀忍びを束ねる「鬼半蔵」。情報こそ最大の武器と知る男。',
           maxText:'「殿の影として、地の果てまで」（闇のすべてが、あなたの味方になった）',
           maxFx:{ chiryaku:8, stamina:25 } },
-        { id:'tadatsugu', name:'酒井忠次', icon:'🍶', fav:'ninbo',
+        { id:'tadatsugu', name:'酒井忠次', icon:'🍶', fav:'ninbo', img:'assets/r_sakai.png',
           perk:{ type:'mood', label:'同席時、やる気低下を半分防ぐ' },
           skill:{ id:'sk_ebisukui', icon:'🍶', name:'海老すくいの宴', desc:'休息の回復量が増える', fx:{ restPlus:12 } },
           midText:'「殿、たまには宴でも。ほれ、海老すくい！」（重臣筆頭の踊りに、家中が笑いに包まれた）',
           intro:'徳川四天王の筆頭格。宴会芸「海老すくい」で家中の心をほぐす盛り上げ役。',
           maxText:'「殿が生まれる前から、わしは松平家の家臣ですぞ」（苦労時代をすべて知る、最古参の支え）',
           maxFx:{ ninbo:10, mood:2 } },
-        { id:'acha', name:'阿茶局', icon:'🍵', fav:'seiji',
+        { id:'acha', name:'阿茶局', icon:'🍵', fav:'seiji', img:'assets/r_acha.png',
           perk:{ type:'kokuSub', label:'同席した政務の石高2倍' },
           skill:{ id:'sk_waginocha', icon:'🍵', name:'和議の茶', desc:'合戦の人望の采配（調略）が強くなる', fx:{ battleStat:'ninbo' } },
           midText:'「戦の前に、まず茶を一服。話はそれからにございます」（聡明な側室は、交渉の達人でもある）',
@@ -1126,7 +1131,7 @@ const SENGOKU_DATA = (function(){
         { year:1575, type:'battle', title:'長篠の戦い — 織田徳川連合、武田を破る',
           terrain:{ icon:'🛡️', label:'設楽原 — 馬防柵の平野' }, bg:'assets/bg_nagashino.jpg',
           intro:'信玄亡きあとの武田勝頼が、長篠城に襲いかかった。織田の援軍3万と合流し、設楽原に馬防柵を築いて決戦に臨む。三方ヶ原の借りを返すときだ！',
-          enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyPower:305,
+          enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyImg:'assets/foe_katsuyori.png', enemyPower:305,
           army:{ me:38000, foe:15000 }, meUnit:'🛡️', foeUnit:'🐴',
           open:[
             '織田徳川連合軍3万8千、設楽原に布陣！ 対する武田の騎馬軍団1万5千！',
