@@ -244,6 +244,21 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bondC.mx{border-color:var(--gold); background:#fff3c8; box-shadow:0 0 8px 2px rgba(243,207,93,.7);}
 /* 次の歴史イベント（体力バーの上） */
 .nextEv2{font-size:11.5px; font-weight:800; color:#8a6605; margin-bottom:3px;}
+/* 次イベント予告カード（改善#5・2026-06-13）。合戦は赤く緊張感 */
+.nextEv{display:flex; align-items:center; gap:9px; margin-bottom:6px; padding:5px 10px;
+  background:#fff8e4; border:2px solid var(--gold); border-radius:12px;}
+.nextEv .neIcon{font-size:22px; line-height:1;}
+.nextEv .neBody{flex:1; line-height:1.25; min-width:0;}
+.nextEv .neBody b{font-size:13.5px; color:#6b4e0a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.nextEv .neBody small{font-size:10.5px; color:#9a8660; font-weight:700;}
+.nextEv .neCount{flex:none; text-align:center; font-size:10px; font-weight:800; color:#8a6605;
+  background:rgba(243,207,93,.3); border-radius:8px; padding:2px 8px; line-height:1.2;}
+.nextEv .neCount b{display:block; font-size:17px; color:#6b4e0a;}
+.nextEv.war{background:#fbe7e2; border-color:var(--red);}
+.nextEv.war .neBody b, .nextEv.war .neCount, .nextEv.war .neCount b{color:#b3362a;}
+.nextEv.war .neCount{background:rgba(179,54,42,.16);}
+.nextEv.war.soon{animation:warSoon 1.3s infinite;}
+@keyframes warSoon{0%,100%{box-shadow:0 0 0 0 rgba(179,54,42,.0)}50%{box-shadow:0 0 0 3px rgba(179,54,42,.35)}}
 
 /* ===== §S4 モーダル共通・クイズ ===== */
 .ovl{position:fixed; inset:0; z-index:40; background:rgba(10,14,26,.78); display:none;
@@ -408,10 +423,18 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   filter:drop-shadow(0 0 8px rgba(243,207,93,.65)); animation:popBig .65s;}
 @keyframes popBig{0%{transform:scale(.35)}55%{transform:scale(1.28)}75%{transform:scale(.96)}100%{transform:scale(1)}}
 .stat{position:relative;}
-.statPop{position:absolute; left:50%; top:-4px; font-size:15px; font-weight:900; color:#1d6b40;
-  text-shadow:0 1px 0 #fff, 0 0 6px rgba(255,255,255,.9); pointer-events:none; white-space:nowrap;
-  animation:floatUp 1.15s ease-out forwards; z-index:5;}
-@keyframes floatUp{0%{opacity:0; transform:translate(-50%,8px) scale(.5)}22%{opacity:1; transform:translate(-50%,-2px) scale(1.2)}100%{opacity:0; transform:translate(-50%,-26px) scale(1)}}
+.statPop{position:absolute; left:50%; top:-6px; font-size:21px; font-weight:900; color:#1d6b40;
+  text-shadow:0 1px 0 #fff, 0 0 8px rgba(255,255,255,.95); pointer-events:none; white-space:nowrap;
+  animation:floatUp 1.3s ease-out forwards; z-index:6;}
+@keyframes floatUp{0%{opacity:0; transform:translate(-50%,10px) scale(.4)}18%{opacity:1; transform:translate(-50%,-4px) scale(1.5)}34%{transform:translate(-50%,-8px) scale(1.05)}100%{opacity:0; transform:translate(-50%,-40px) scale(1)}}
+/* 大成功/友情特訓は金のフロート＋特大（改善#3・2026-06-13） */
+.statPop.big{font-size:25px; background:linear-gradient(90deg,#e0533d,#d8a823,#2e8b57);
+  -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 6px rgba(243,207,93,.8));}
+/* ステ枠が一瞬はずむ */
+.stat.bump{animation:statBump .5s ease-out;}
+@keyframes statBump{0%{transform:scale(1)}30%{transform:scale(1.18); background:#fff3c8}100%{transform:scale(1)}}
+.stat .srk.flash{animation:rkFlash .6s ease-out;}
+@keyframes rkFlash{0%{filter:brightness(2)}100%{filter:brightness(1)}}
 .box.shaken{animation:shakeBad .45s;}
 </style>
 </head>
@@ -1697,13 +1720,21 @@ const UI = (function(){
       <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')"><span class="ci">🏯</span><span class="cl">視察</span></button>
       <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><span class="ci">🚩</span><span class="cl">小競り合い</span></button>`;
     $('g-bookn').textContent = Game.P.book.length? `(${Game.P.book.length})` : '';
-    // 次イベント予告＋のこりNターン（G1第2弾「次の歴史イベントまで のこり〇ターン」）
+    // 次イベント予告カード（改善#5・2026-06-13）。合戦は赤く緊張感・残り少ないと脈動
     const next = Game.H.timeline.find(e=>e.year>S.year);
     if (next){
       // 残りターン = (次イベント年 - 今年)×tpy - 経過した半期。春発火なので半期ぶんを差し引く
       const rem = Math.max(1, (next.year - S.year)*tpy - (S.half||0));
-      $('g-next').textContent = `📅 次の歴史イベント: ${next.year}年「${next.title.split(' — ')[0]}」（のこり${rem}ターン）`;
-    } else $('g-next').textContent = '';
+      const isWar = (next.type==='battle' || next.type==='final');
+      const cls = 'nextEv' + (isWar?' war':'') + (isWar && rem<=2 ?' soon':'');
+      const icon = isWar ? '⚔️' : '📅';
+      $('g-next').className = cls;
+      $('g-next').innerHTML =
+        `<span class="neIcon">${icon}</span>
+         <span class="neBody"><b>${next.title.split(' — ')[0]}</b><small>${next.year}年${isWar?' ・ 合戦':''}</small></span>
+         <span class="neCount">のこり<b>${rem}</b>ターン</span>`;
+      $('g-next').style.display = 'flex';
+    } else { $('g-next').style.display = 'none'; }
   }
 
   /* ---- 鍛錬選択ポップアップ（4種集約・家臣付きは輝く） ---- */
@@ -1839,18 +1870,22 @@ const UI = (function(){
     if (ctx.mode==='battle'){ battleResolve(); return; }
     if (ctx.mode==='epilogue'){ Game.epilogueNext(); return; }
     renderGame();
-    if (ctx.res && ctx.res.gain) statPop(ctx.genre, ctx.res.gain); // ステ上昇を盤面にフロート表示
+    if (ctx.res && ctx.res.gain) statPop(ctx.genre, ctx.res.gain, ctx.res); // ステ上昇を盤面にフロート表示
     Game.checkBondMax();
     setTimeout(()=>Game.nextTurn(), 250);
   }
-  function statPop(genre, gain){
+  // ステ上昇の演出（改善#3・2026-06-13）。大成功/友情特訓は金の特大フロート＋枠はずみ
+  function statPop(genre, gain, res){
     const i = Game.STAT_KEYS.indexOf(genre);
     const cell = document.querySelectorAll('#g-stats .stat')[i];
     if (!cell) return;
+    const big = !!(res && (res.crit || res.friend));
     const s = document.createElement('span');
-    s.className = 'statPop'; s.textContent = `+${gain}`;
+    s.className = 'statPop' + (big?' big':''); s.textContent = `+${gain}`;
     cell.appendChild(s);
-    setTimeout(()=>s.remove(), 1250);
+    cell.classList.remove('bump'); void cell.offsetWidth; cell.classList.add('bump');
+    const rk = cell.querySelector('.srk'); if (rk){ rk.classList.remove('flash'); void rk.offsetWidth; rk.classList.add('flash'); }
+    setTimeout(()=>{ s.remove(); cell.classList.remove('bump'); }, 1350);
   }
 
   /* ---- イベント表示 ---- */
