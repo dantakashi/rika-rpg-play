@@ -101,6 +101,10 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
    ※真の全画面背景化は縦長の城画像(第4便)納品後に board 背景として実装予定 */
 .stage{position:relative; height:300px; overflow:hidden;
   background:linear-gradient(180deg,#9db8cc 0%,#cfdde8 45%,#ece9d4 80%,var(--paper) 100%);}
+/* レイアウトB(2026-06-13): 城の全画面背景(縦長scene画像)。城スプライトは隠し、立ち絵が手前に立つ */
+.stage.scene{height:360px; background:#1d2438 center 32%/cover no-repeat;}
+.sceneCastleLbl{position:absolute; top:38px; left:10px; z-index:2; font-size:11px; font-weight:800; color:#fff;
+  background:rgba(20,24,40,.6); border-radius:999px; padding:2px 10px; backdrop-filter:blur(2px);}
 .stage.bgt2{background:linear-gradient(180deg,#8fc0e6 0%,#cfe2f2 45%,#ece9d4 80%,var(--paper) 100%);}
 .stage.bgt3{background:linear-gradient(180deg,#7eb4e0 0%,#cde4ee 40%,#f0ead2 80%,var(--paper) 100%);}
 .stage.bgt4{background:linear-gradient(180deg,#6d9fd4 0%,#d8e3da 38%,#f3e2b8 78%,var(--paper) 100%);}
@@ -200,9 +204,11 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
    G1第2弾: 枠の大きさに対し文字が小さい → 17.5pxに拡大 */
 .cmdArea{padding:6px 10px 10px;}
 .cmdGrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
-.cmd{position:relative; padding:13px 4px; border-radius:14px; border:3px solid var(--line);
+.cmd{position:relative; padding:9px 4px 8px; border-radius:14px; border:3px solid var(--line);
   background:#fffdf4; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;
-  font-weight:900; font-size:17.5px;}
+  font-weight:900; display:flex; flex-direction:column; align-items:center; gap:1px;}
+.cmd .ci{font-size:22px; line-height:1.1; filter:drop-shadow(0 1px 1px rgba(0,0,0,.15));}
+.cmd .cl{font-size:15px; line-height:1.1;}
 .cmd:active{transform:translateY(2px);}
 .cmd.dim{opacity:.45; pointer-events:none;}
 .cmd.urgent{animation:glow 1.2s infinite alternate; border-color:var(--red);}
@@ -462,6 +468,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       </div>
       <div class="stage" id="g-stage">
         <div class="stageDeco"><span>🚩</span><span id="g-season">🌸</span></div>
+        <div class="sceneCastleLbl" id="g-scenelbl" style="display:none"></div>
         <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">居城: 陣屋</div></div>
         <div class="stageChar" id="g-face">🙂</div>
         <button class="miniMapBtn" id="g-minimap" onclick="UI.openMap()"></button>
@@ -1619,11 +1626,24 @@ const UI = (function(){
     const cs = Game.H.castles;
     let tier = 0;
     cs.forEach((c,i)=>{ if (S.koku>=c[0]) tier=i; });
-    $('g-stage').className = 'stage bgt'+(tier+1);
-    $('g-castlebox').className = 'stageCastle t'+(tier+1);
-    const cimg = Game.H.castleImgs && Game.H.castleImgs[tier];
-    $('g-castle').innerHTML = cimg ? `<img src="${cimg}" alt="${cs[tier][2]}">` : cs[tier][1];
-    $('g-castlelbl').textContent = `居城: ${cs[tier][2]}`;
+    // レイアウトB: 城の全画面背景(scene)があればそれを使い、城スプライトは隠す（2026-06-13）
+    const scene = Game.H.sceneImgs && Game.H.sceneImgs[tier];
+    const stage = $('g-stage');
+    if (scene){
+      stage.className = 'stage scene';
+      stage.style.backgroundImage = `url('${scene}')`;
+      $('g-castlebox').style.display = 'none';
+      const sl = $('g-scenelbl'); sl.style.display = 'block'; sl.textContent = `🏯 ${cs[tier][2]}`;
+    } else {
+      stage.className = 'stage bgt'+(tier+1);
+      stage.style.backgroundImage = '';
+      $('g-castlebox').style.display = '';
+      $('g-scenelbl').style.display = 'none';
+      $('g-castlebox').className = 'stageCastle t'+(tier+1);
+      const cimg = Game.H.castleImgs && Game.H.castleImgs[tier];
+      $('g-castle').innerHTML = cimg ? `<img src="${cimg}" alt="${cs[tier][2]}">` : cs[tier][1];
+      $('g-castlelbl').textContent = `居城: ${cs[tier][2]}`;
+    }
     $('g-heroname').textContent = Game.H.name;
     const km = $('g-kamon');
     if (Game.H.kamon){ km.src = Game.H.kamon; km.style.display='inline-block'; } else km.style.display='none';
@@ -1668,13 +1688,14 @@ const UI = (function(){
       });
     });
     const dimIf = c=>c?' dim':'';
+    // コマンドはアイコン＋色分け（改善#1・2026-06-13）。一目で選べるように
     $('g-cmds').innerHTML =
-      `<button class="cmd rest${dimIf(injured)}" onclick="Game.doCommand('rest')">休息</button>
-      <button class="cmd train${dimIf(injured)}" onclick="UI.openTrain()">${mateIcons?`<div class="mates">${mateIcons}</div>`:''}鍛錬</button>
-      <button class="cmd skill" onclick="UI.openSkill()">スキル</button>
-      <button class="cmd care${injured?' urgent':' dim'}" onclick="Game.doCommand('care')">薬師</button>
-      <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')">視察</button>
-      <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')">小競り合い</button>`;
+      `<button class="cmd rest${dimIf(injured)}" onclick="Game.doCommand('rest')"><span class="ci">💤</span><span class="cl">休息</span></button>
+      <button class="cmd train${dimIf(injured)}" onclick="UI.openTrain()">${mateIcons?`<div class="mates">${mateIcons}</div>`:''}<span class="ci">⚔️</span><span class="cl">鍛錬</span></button>
+      <button class="cmd skill" onclick="UI.openSkill()"><span class="ci">✨</span><span class="cl">スキル</span></button>
+      <button class="cmd care${injured?' urgent':' dim'}" onclick="Game.doCommand('care')"><span class="ci">🌿</span><span class="cl">薬師</span></button>
+      <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')"><span class="ci">🏯</span><span class="cl">視察</span></button>
+      <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><span class="ci">🚩</span><span class="cl">小競り合い</span></button>`;
     $('g-bookn').textContent = Game.P.book.length? `(${Game.P.book.length})` : '';
     // 次イベント予告＋のこりNターン（G1第2弾「次の歴史イベントまで のこり〇ターン」）
     const next = Game.H.timeline.find(e=>e.year>S.year);

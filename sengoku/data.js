@@ -579,6 +579,8 @@ const SENGOKU_DATA = (function(){
       kamon:'assets/kamon_oda.png',
       uniqueSkill:{ id:'uq_tenkafubu', icon:'⚡', name:'天下布武', desc:'合戦で「博打」の采配が決まったとき、戦果がさらに増す（偉人固有）', fx:{ riskyBoost:1.15 } },
       castleImgs:['assets/castle_1.png','assets/castle_2.png','assets/castle_3.png','assets/castle_4.png','assets/castle_5.png'],
+      // 全画面の城背景（第4便・縦長9:16）。石高tierで切替。立ち絵はこの手前に立つ（レイアウトB）
+      sceneImgs:['assets/scene_n1.jpg','assets/scene_n2.jpg','assets/scene_n3.jpg','assets/scene_n4.jpg','assets/scene_n5.jpg'],
       // era出題バイアス（G2-②）: その偉人の生きた時代を優先。省略eraは'sengoku'扱い
       eraPref:{ sengoku:3, azuchi:2, edo:0.4 },
       startYear:1551, endYear:1582,
