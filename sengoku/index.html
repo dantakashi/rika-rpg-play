@@ -106,7 +106,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .sceneCastleLbl{position:absolute; top:38px; left:10px; z-index:2; font-size:11px; font-weight:800; color:#fff;
   background:rgba(20,24,40,.6); border-radius:999px; padding:2px 10px; backdrop-filter:blur(2px);}
 /* ===== レイアウトA（全画面オーバーレイ・2026-06-13）: 城シーンを盤面全体の背景にしUIを半透明で重ねる ===== */
-.board.aLayout{background-size:cover; background-position:center top; background-repeat:no-repeat;}
+.board.aLayout{position:relative; background-size:cover; background-position:center top; background-repeat:no-repeat;}
 .board.aLayout .stage.sceneA{height:330px; background:transparent;}
 .board.aLayout .gHead{background:linear-gradient(180deg,rgba(20,24,40,.72),rgba(20,24,40,.38));}
 .board.aLayout .stageName{background:none;}
@@ -124,6 +124,22 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .board.aLayout .cmd.trip{background:rgba(243,236,255,.93);}
 .board.aLayout .cmd.skirmish{background:rgba(255,238,222,.93);}
 .board.aLayout .subBtn{background:rgba(239,224,192,.9);}
+/* A: 省スペース化（2026-06-13 ユーザーFB「見切れる」）。側近を左縦列・キャラ大型化・足はパネルに重なる */
+.board.aLayout .stage.sceneA{height:250px; overflow:visible; z-index:1;}
+.board.aLayout .sceneCastleLbl{left:50%; transform:translateX(-50%); top:6px;} /* 居城ラベルは中央上（左の側近列を避ける） */
+.board.aLayout .stageDeco{display:none;}              /* 🚩季節デコは省略（季節はgHead年号で十分） */
+.board.aLayout .stageChar{bottom:-46px;}            /* 立ち絵を下げて次の枠に重ねる */
+.board.aLayout .stageChar img{height:300px;}        /* キャラ大型化 */
+.board.aLayout .stageName{bottom:40px; padding-left:58px;} /* 名前を右に寄せ左の側近列と重ねない */
+.board.aLayout .bondCap{display:none;}
+.board.aLayout .bondRow{position:absolute; left:5px; top:48px; z-index:3; flex-direction:column; gap:2px; width:40px; padding:0; justify-content:flex-start;}
+.board.aLayout .bondC{width:40px; max-width:40px; padding:2px;}
+.board.aLayout .bondC .bn,.board.aLayout .bondC .bg2{display:none;} /* 縦列では名前・絆バー省略（タップで詳細・枠色で状態表示） */
+.board.aLayout .bondC .bf{width:30px; height:30px;}
+.board.aLayout .bondC .pin{top:-5px; right:-3px; font-size:12px;}
+/* 次イベント枠・体力・ステ・コマンドは立ち絵の足の上(z:2)に重ねる */
+.board.aLayout .charRow,.board.aLayout .statGrid,.board.aLayout .cmdArea{position:relative; z-index:2;}
+.board.aLayout .charRow{margin-top:0;}
 .stage.bgt2{background:linear-gradient(180deg,#8fc0e6 0%,#cfe2f2 45%,#ece9d4 80%,var(--paper) 100%);}
 .stage.bgt3{background:linear-gradient(180deg,#7eb4e0 0%,#cde4ee 40%,#f0ead2 80%,var(--paper) 100%);}
 .stage.bgt4{background:linear-gradient(180deg,#6d9fd4 0%,#d8e3da 38%,#f3e2b8 78%,var(--paper) 100%);}
@@ -207,13 +223,14 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bar i.low{background:linear-gradient(90deg,#f0b35e,#d96f30);}
 .bar i.crit{background:linear-gradient(90deg,#e0533d,#b3362a);}
 /* ステータスは下部1列×5枠（4ステ＋スキルP）。ランクと数値を横並び（ウマ娘式・2026-06-12 生徒FB） */
-.statGrid{display:grid; grid-template-columns:repeat(5,1fr); gap:5px; padding:6px 10px 2px;}
+/* ステータスは省スペースの1行（ラベル＋ランク＋値を横並び・2026-06-13 ユーザー要望「細く」） */
+.statGrid{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; padding:4px 10px 2px;}
 #r-stats{grid-template-columns:repeat(4,1fr);}
-.stat{display:flex; flex-direction:column; align-items:center; background:var(--paper2); border-radius:10px; padding:3px 2px 4px;}
-.stat .sl{font-size:11px; font-weight:800; color:#7a6845;}
-.stat .srow{display:flex; align-items:baseline; gap:3px;}
-.stat .srk{font-size:19px; font-weight:900; line-height:1.15;}
-.stat .sv2{font-size:11px; font-weight:800; color:#7a6845;} .stat .sv2 small{font-weight:600; color:#a09068;}
+.stat{display:flex; flex-direction:row; align-items:center; justify-content:center; gap:3px; background:var(--paper2); border-radius:8px; padding:3px 2px;}
+.stat .sl{font-size:10px; font-weight:800; color:#7a6845;}
+.stat .srow{display:flex; align-items:baseline; gap:2px;}
+.stat .srk{font-size:15px; font-weight:900; line-height:1.1;}
+.stat .sv2{font-size:10px; font-weight:800; color:#7a6845;} .stat .sv2 small{font-weight:600; color:#a09068; font-size:8px;}
 .rkF{color:#9aa0a6;} .rkE{color:#7f8aa8;} .rkD{color:#3a6ea5;} .rkC{color:#2e8b57;}
 .rkB{color:#6b8e23;} .rkA{color:#d8a823;} .rkS{color:#e0533d;}
 .rkSS{background:linear-gradient(90deg,#e0533d,#d8a823,#7a4f9d); -webkit-background-clip:text; background-clip:text; color:transparent;}
@@ -223,11 +240,12 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
    G1第2弾: 枠の大きさに対し文字が小さい → 17.5pxに拡大 */
 .cmdArea{padding:6px 10px 10px;}
 .cmdGrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
-.cmd{position:relative; padding:9px 4px 8px; border-radius:14px; border:3px solid var(--line);
+/* コマンドは1行（絵文字を背景に大きく薄く、文字を上に重ねる＝省スペース・2026-06-13） */
+.cmd{position:relative; padding:10px 4px; border-radius:13px; border:3px solid var(--line);
   background:#fffdf4; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;
-  font-weight:900; display:flex; flex-direction:column; align-items:center; gap:1px;}
-.cmd .ci{font-size:22px; line-height:1.1; filter:drop-shadow(0 1px 1px rgba(0,0,0,.15));}
-.cmd .cl{font-size:15px; line-height:1.1;}
+  font-weight:900; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+.cmd .ci{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:34px; opacity:.2; pointer-events:none;}
+.cmd .cl{position:relative; font-size:16px; line-height:1.1;}
 .cmd:active{transform:translateY(2px);}
 .cmd.dim{opacity:.45; pointer-events:none;}
 .cmd.urgent{animation:glow 1.2s infinite alternate; border-color:var(--red);}
