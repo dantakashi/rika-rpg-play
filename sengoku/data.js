@@ -24,7 +24,7 @@ const SENGOKU_DATA = (function(){
   const GENRES = {
     buyu:     { label:'武力', icon:'⚔️', train:'武力の鍛錬', quizLabel:'合戦・戦乱', sub:'ninbo' },
     chiryaku: { label:'知力', icon:'🧠', train:'知力の鍛錬', quizLabel:'流れ・因果', sub:'seiji' },
-    seiji:    { label:'政治', icon:'🏛️', train:'政務',       quizLabel:'政策・制度', sub:'koku' },
+    seiji:    { label:'政治力', icon:'🏛️', train:'政務',       quizLabel:'政策・制度', sub:'koku' },
     ninbo:    { label:'人望', icon:'🤝', train:'交流',       quizLabel:'文化・人物', sub:'chiryaku' },
   };
 

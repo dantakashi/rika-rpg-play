@@ -126,11 +126,14 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .board.aLayout .subBtn{background:rgba(239,224,192,.9);}
 /* A: 省スペース化（2026-06-13 ユーザーFB「見切れる」）。側近を左縦列・キャラ大型化・足はパネルに重なる */
 .board.aLayout .stage.sceneA{height:250px; overflow:visible; z-index:1;}
-.board.aLayout .sceneCastleLbl{left:50%; transform:translateX(-50%); top:6px;} /* 居城ラベルは中央上（左の側近列を避ける） */
+.board.aLayout .sceneCastleLbl{display:none;}         /* ④城名は省略（城は背景に見えている） */
 .board.aLayout .stageDeco{display:none;}              /* 🚩季節デコは省略（季節はgHead年号で十分） */
+.board.aLayout .kamonImg{display:none !important;}    /* ②家紋は軍学帳ボタンに置換 */
+/* ⑤側近の顔をアップに（バストアップ画像の上部=顔を拡大表示） */
+.board.aLayout .bondC .bf img{object-position:center top; transform:scale(1.5); transform-origin:center 20%;}
 .board.aLayout .stageChar{bottom:-46px;}            /* 立ち絵を下げて次の枠に重ねる */
 .board.aLayout .stageChar img{height:300px;}        /* キャラ大型化 */
-.board.aLayout .stageName{bottom:40px; padding-left:58px;} /* 名前を右に寄せ左の側近列と重ねない */
+.board.aLayout .stageName{bottom:6px; padding-left:58px; padding-right:62px;} /* ①名前を下に寄せる・左右の列/ボタンを避ける */
 .board.aLayout .bondCap{display:none;}
 .board.aLayout .bondRow{position:absolute; left:5px; top:48px; z-index:3; flex-direction:column; gap:2px; width:40px; padding:0; justify-content:flex-start;}
 .board.aLayout .bondC{width:40px; max-width:40px; padding:2px;}
@@ -184,6 +187,15 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .miniMapBtn{position:absolute; right:8px; top:30px; padding:0; text-align:center; z-index:2;}
 .miniMapBtn .mlbl{display:block; font-size:9.5px; font-weight:800; color:#4a5a44;
   background:rgba(245,234,211,.78); border-radius:999px; padding:0 6px; margin-top:2px;}
+/* 軍学帳ボタン（②家紋の位置・正方形角丸・問題数を通知バッジ） */
+.bookBtn{position:absolute; right:10px; bottom:14px; z-index:3; width:48px; height:48px; border-radius:14px;
+  background:rgba(245,234,211,.92); border:2px solid var(--line); box-shadow:0 3px 0 rgba(0,0,0,.18);
+  display:flex; align-items:center; justify-content:center; transition:transform .06s;}
+.bookBtn:active{transform:translateY(2px);}
+.bookBtn .bbIcon{font-size:26px; line-height:1;}
+.bookBtn .bbBadge{position:absolute; top:-7px; right:-7px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+  background:var(--red); color:#fff; font-size:11px; font-weight:900; display:flex; align-items:center; justify-content:center;
+  border:2px solid var(--paper); box-shadow:0 1px 2px rgba(0,0,0,.3);}
 /* 令制国マップ（japan_map.js・出典 Esri ジャパン「令制国の地図」を改変） */
 .jmap{display:block; width:100%; height:auto; background:#bcd6e8; border:2px solid var(--line); border-radius:10px;}
 .jmap .sea{fill:#bcd6e8;}
@@ -216,10 +228,13 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .charInfo{flex:1;}
 .charName{font-weight:900; font-size:17px;}
 .moodTag{display:inline-block; margin-left:8px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; background:#ddd;}
-.barWrap{margin-top:5px;}
+.barWrap{margin-top:4px;}
 .barLbl{display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#7a6845;}
-.bar{height:13px; background:#ddd0b0; border-radius:8px; overflow:hidden; border:1px solid var(--line);}
-.bar i{display:block; height:100%; border-radius:8px; background:linear-gradient(90deg,#7fd49a,#2e8b57); transition:width .3s;}
+/* 体力バー: 文字をバー内に重ねる（③視認性が背景に左右されず省スペース） */
+.bar{position:relative; height:18px; background:#ddd0b0; border-radius:9px; overflow:hidden; border:1px solid var(--line);}
+.bar i{display:block; height:100%; border-radius:9px; background:linear-gradient(90deg,#7fd49a,#2e8b57); transition:width .3s;}
+.bar .barTxt{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;
+  color:#234; text-shadow:0 1px 0 rgba(255,255,255,.6);}
 .bar i.low{background:linear-gradient(90deg,#f0b35e,#d96f30);}
 .bar i.crit{background:linear-gradient(90deg,#e0533d,#b3362a);}
 /* ステータスは下部1列×5枠（4ステ＋スキルP）。ランクと数値を横並び（ウマ娘式・2026-06-12 生徒FB） */
@@ -290,15 +305,15 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 /* 次の歴史イベント（体力バーの上） */
 .nextEv2{font-size:11.5px; font-weight:800; color:#8a6605; margin-bottom:3px;}
 /* 次イベント予告カード（改善#5・2026-06-13）。合戦は赤く緊張感 */
-.nextEv{display:flex; align-items:center; gap:9px; margin-bottom:6px; padding:5px 10px;
-  background:#fff8e4; border:2px solid var(--gold); border-radius:12px;}
-.nextEv .neIcon{font-size:22px; line-height:1;}
-.nextEv .neBody{flex:1; line-height:1.25; min-width:0;}
-.nextEv .neBody b{font-size:13.5px; color:#6b4e0a; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.nextEv .neBody small{font-size:10.5px; color:#9a8660; font-weight:700;}
-.nextEv .neCount{flex:none; text-align:center; font-size:10px; font-weight:800; color:#8a6605;
-  background:rgba(243,207,93,.3); border-radius:8px; padding:2px 8px; line-height:1.2;}
-.nextEv .neCount b{display:block; font-size:17px; color:#6b4e0a;}
+/* ⑦次イベントは1行（アイコン＋年/題＋のこりN） */
+.nextEv{display:flex; align-items:center; gap:7px; margin-bottom:5px; padding:4px 10px;
+  background:#fff8e4; border:2px solid var(--gold); border-radius:10px;}
+.nextEv .neIcon{font-size:17px; line-height:1; flex:none;}
+.nextEv .neBody{flex:1; min-width:0;}
+.nextEv .neBody b{font-size:13px; color:#6b4e0a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;}
+.nextEv .neCount{flex:none; font-size:11px; font-weight:800; color:#8a6605; white-space:nowrap;
+  background:rgba(243,207,93,.3); border-radius:8px; padding:2px 8px; line-height:1.3;}
+.nextEv .neCount b{font-size:15px; color:#6b4e0a;}
 .nextEv.war{background:#fbe7e2; border-color:var(--red);}
 .nextEv.war .neBody b, .nextEv.war .neCount, .nextEv.war .neCount b{color:#b3362a;}
 .nextEv.war .neCount{background:rgba(179,54,42,.16);}
@@ -452,6 +467,9 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   vertical-align:-4px; border:1px solid var(--line); background:#fff;}
 .rFaceBig{display:block; width:96px; height:96px; object-fit:cover; border-radius:999px;
   margin:0 auto 6px; border:3px solid var(--gold); background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.25);}
+/* ⑥側近タップで全身（バストアップ）を大きく表示 */
+.rFaceFull{display:block; width:min(240px,72%); height:auto; object-fit:contain; border-radius:14px;
+  margin:0 auto 8px; border:3px solid var(--gold); background:#1d2438; box-shadow:0 4px 12px rgba(0,0,0,.35);}
 .kamonImg{height:24px; width:24px; object-fit:contain; margin-left:auto; opacity:.9;}
 .bCaster .sasukeImg{height:30px; width:30px; object-fit:cover; border-radius:999px;
   border:1.5px solid var(--gold); background:#fff8e4; vertical-align:middle; margin-right:5px;}
@@ -540,6 +558,8 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">居城: 陣屋</div></div>
         <div class="stageChar" id="g-face">🙂</div>
         <button class="miniMapBtn" id="g-minimap" onclick="UI.openMap()"></button>
+        <!-- 軍学帳ボタン（②家紋の位置に正方形・問題数を通知バッジ表示。下の専用行を廃止） -->
+        <button class="bookBtn" id="g-bookbtn" onclick="UI.openBook()" aria-label="軍学帳"><span class="bbIcon">📖</span><span class="bbBadge" id="g-bookn" style="display:none">0</span></button>
         <div class="stageName">
           <span class="charName serif" id="g-heroname">織田信長</span>
           <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span>
@@ -550,8 +570,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="charInfo">
           <div class="nextEv2" id="g-next"></div>
           <div class="barWrap">
-            <div class="barLbl"><span>体力</span><span id="g-stam-n">100/100</span></div>
-            <div class="bar"><i id="g-stam" style="width:100%"></i></div>
+            <div class="bar"><i id="g-stam" style="width:100%"></i><span class="barTxt" id="g-stam-n">体力 100/100</span></div>
           </div>
         </div>
       </div>
@@ -560,9 +579,6 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <div class="bondRow" id="g-bonds"></div>
       <div class="cmdArea">
         <div class="cmdGrid" id="g-cmds"></div>
-        <div class="subRow">
-          <button class="subBtn" onclick="UI.openBook()">📖 軍学帳 <span id="g-bookn"></span></button>
-        </div>
       </div>
     </div>
   </div>
@@ -1582,9 +1598,15 @@ const UI = (function(){
     const m = tpy===2 ? 2 : 1;
     return v>=300*m?'SS' : v>=240*m?'S' : v>=180*m?'A' : v>=130*m?'B' : v>=90*m?'C' : v>=60*m?'D' : v>=30*m?'E' : 'F';
   }
+  // 偉人ごとにステ表示名を変えられる（⑧偉人トレーナー化・2026-06-13）。
+  // hero pack に statLabels:{buyu,chiryaku,seiji,ninbo} があれば優先、なければGENRES既定（戦国=武力/知力/政治力/人望）
+  function genreLabel(k){
+    const H = Game.H;
+    return (H && H.statLabels && H.statLabels[k]) || D.GENRES[k].label;
+  }
   function statCell(k, v, tpy){
-    const g = D.GENRES[k], r = statRank(v, tpy);
-    return `<div class="stat"><span class="sl">${g.label}</span>
+    const r = statRank(v, tpy);
+    return `<div class="stat"><span class="sl">${genreLabel(k)}</span>
       <span class="srow"><b class="srk rk${r}">${r}</b><span class="sv2">${v}<small>/${STAT_MAX*(tpy===2?2:1)}</small></span></span></div>`;
   }
 
@@ -1706,7 +1728,7 @@ const UI = (function(){
       stage.className = 'stage sceneA';
       stage.style.backgroundImage = '';
       $('g-castlebox').style.display = 'none';
-      const sl = $('g-scenelbl'); sl.style.display = 'block'; sl.textContent = `🏯 ${cs[tier][2]}`;
+      $('g-scenelbl').style.display = 'none'; // ④城名は省略（A）。城は背景に見えている
     } else {
       board.classList.remove('aLayout'); board.style.backgroundImage = '';
       stage.className = 'stage bgt'+(tier+1);
@@ -1740,7 +1762,7 @@ const UI = (function(){
     const st = $('g-stam');
     st.style.width = S.stamina+'%';
     st.className = S.stamina<25? 'crit' : (S.stamina<45? 'low' : '');
-    $('g-stam-n').textContent = `${S.stamina}/100`;
+    $('g-stam-n').textContent = `体力 ${S.stamina}/100`;
     // 勢力図ミニ（タップで拡大）
     $('g-minimap').innerHTML = mapHtml(true) + `<span class="mlbl">🗾 領地 🔍</span>`;
     // ステ（ランク表記）＋スキルP枠
@@ -1775,7 +1797,8 @@ const UI = (function(){
       <button class="cmd care${injured?' urgent':' dim'}" onclick="Game.doCommand('care')"><span class="ci">🌿</span><span class="cl">薬師</span></button>
       <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')"><span class="ci">🏯</span><span class="cl">視察</span></button>
       <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><span class="ci">🚩</span><span class="cl">小競り合い</span></button>`;
-    $('g-bookn').textContent = Game.P.book.length? `(${Game.P.book.length})` : '';
+    const bn = Game.P.book.length;
+    const bnEl = $('g-bookn'); bnEl.textContent = bn; bnEl.style.display = bn? 'flex':'none';
     // 次イベント予告カード（改善#5・2026-06-13）。合戦は赤く緊張感・残り少ないと脈動
     const next = Game.H.timeline.find(e=>e.year>S.year);
     if (next){
@@ -1785,10 +1808,11 @@ const UI = (function(){
       const cls = 'nextEv' + (isWar?' war':'') + (isWar && rem<=2 ?' soon':'');
       const icon = isWar ? '⚔️' : '📅';
       $('g-next').className = cls;
+      // ⑦1行表示: アイコン＋年＋タイトル ……… のこりN
       $('g-next').innerHTML =
         `<span class="neIcon">${icon}</span>
-         <span class="neBody"><b>${next.title.split(' — ')[0]}</b><small>${next.year}年${isWar?' ・ 合戦':''}</small></span>
-         <span class="neCount">のこり<b>${rem}</b>ターン</span>`;
+         <span class="neBody"><b>${next.year}年 ${next.title.split(' — ')[0]}</b></span>
+         <span class="neCount">のこり<b>${rem}</b></span>`;
       $('g-next').style.display = 'flex';
     } else { $('g-next').style.display = 'none'; }
   }
@@ -1827,7 +1851,7 @@ const UI = (function(){
     const g = D.GENRES[r.fav];
     $('l-title').textContent = `${r.icon} ${r.name}`;
     $('l-body').innerHTML = `
-      ${r.img? `<img class="rFaceBig" src="${r.img}" alt="${r.name}">` : ''}
+      ${r.img? `<img class="rFaceFull" src="${r.img}" alt="${r.name}">` : `<div style="font-size:64px;text-align:center">${r.icon}</div>`}
       <div class="bookItem">${r.intro}</div>
       <div class="bookItem">得意: <b>${g.icon}${g.train}</b>（得意な鍛錬に現れやすい）<br>
         絆: <b>${v}</b>/100 ${v>=80?'🌈友情特訓圏内！':''}<br>
