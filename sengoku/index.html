@@ -129,8 +129,9 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .board.aLayout .sceneCastleLbl{display:none;}         /* ④城名は省略（城は背景に見えている） */
 .board.aLayout .stageDeco{display:none;}              /* 🚩季節デコは省略（季節はgHead年号で十分） */
 .board.aLayout .kamonImg{display:none !important;}    /* ②家紋は軍学帳ボタンに置換 */
-/* ⑤側近の顔をアップに（バストアップ画像の上部=顔を拡大表示） */
-.board.aLayout .bondC .bf img{object-position:center top; transform:scale(1.5); transform-origin:center 20%;}
+/* ⑤側近の顔をアップに（②iOS対策: transformは使わず画像を拡大＋上寄せ。overflow:hiddenで確実にクリップ） */
+.board.aLayout .bondC .bf{overflow:hidden;}
+.board.aLayout .bondC .bf img{width:150%; height:150%; max-width:none; flex:none; object-fit:cover; object-position:center top;}
 .board.aLayout .stageChar{bottom:-46px;}            /* 立ち絵を下げて次の枠に重ねる */
 .board.aLayout .stageChar img{height:300px;}        /* キャラ大型化 */
 .board.aLayout .stageName{bottom:6px; padding-left:58px; padding-right:62px;} /* ①名前を下に寄せる・左右の列/ボタンを避ける */
@@ -1604,10 +1605,15 @@ const UI = (function(){
     const H = Game.H;
     return (H && H.statLabels && H.statLabels[k]) || D.GENRES[k].label;
   }
+  // ステ枠は1文字表示（武/知/政/人）・上限/300は省略（ランク英字で十分・2026-06-13）
+  function statShort(k){
+    const H = Game.H;
+    return (H && H.statLabels && H.statLabels[k]) || D.GENRES[k].short || D.GENRES[k].label;
+  }
   function statCell(k, v, tpy){
     const r = statRank(v, tpy);
-    return `<div class="stat"><span class="sl">${genreLabel(k)}</span>
-      <span class="srow"><b class="srk rk${r}">${r}</b><span class="sv2">${v}<small>/${STAT_MAX*(tpy===2?2:1)}</small></span></span></div>`;
+    return `<div class="stat"><span class="sl">${statShort(k)}</span>
+      <span class="srow"><b class="srk rk${r}">${r}</b><span class="sv2">${v}</span></span></div>`;
   }
 
   /* 勢力図（mini=立ち絵の右上用 / 拡大はリスト overlay）

@@ -21,11 +21,12 @@ const SENGOKU_DATA = (function(){
   /* ===== §1 ジャンル定義 ===== */
   // 表示名は偉人をまたぐ普遍名（武力/知力/政治/人望・2026-06-14決定）。内部キーは不変。
   // sub: 鍛錬の副次上昇先（主100%+副30%・特化育成の詰み対策）。seijiの副次は石高（経済）
+  // label=文中の正式名 / short=ステ枠の1文字表示（2026-06-13 ユーザー要望でステ枠は1文字に）
   const GENRES = {
-    buyu:     { label:'武力', icon:'⚔️', train:'武力の鍛錬', quizLabel:'合戦・戦乱', sub:'ninbo' },
-    chiryaku: { label:'知力', icon:'🧠', train:'知力の鍛錬', quizLabel:'流れ・因果', sub:'seiji' },
-    seiji:    { label:'政治力', icon:'🏛️', train:'政務',       quizLabel:'政策・制度', sub:'koku' },
-    ninbo:    { label:'人望', icon:'🤝', train:'交流',       quizLabel:'文化・人物', sub:'chiryaku' },
+    buyu:     { label:'武力', short:'武', icon:'⚔️', train:'武力の鍛錬', quizLabel:'合戦・戦乱', sub:'ninbo' },
+    chiryaku: { label:'知力', short:'知', icon:'🧠', train:'知力の鍛錬', quizLabel:'流れ・因果', sub:'seiji' },
+    seiji:    { label:'政治力', short:'政', icon:'🏛️', train:'政務',       quizLabel:'政策・制度', sub:'koku' },
+    ninbo:    { label:'人望', short:'人', icon:'🤝', train:'交流',       quizLabel:'文化・人物', sub:'chiryaku' },
   };
 
   /* ===== §2 家臣 =====
