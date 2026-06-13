@@ -96,8 +96,10 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .gKoku{font-weight:800; font-size:14px; color:var(--gold2);}
 .gPause{font-size:18px; padding:2px 8px; border-radius:8px; border:1px solid #5a647f; color:#bfc8e0;}
 /* 中央ステージ: ビジュアル主役の大型表示（ウマ娘式）。
-   G1第2弾(2026-06-13): 城を「背景」に昇格＝住んでいる感。石高tierで空も豪華になる */
-.stage{position:relative; height:250px; overflow:hidden;
+   G1第2弾(2026-06-13): 城を「背景」に昇格＝住んでいる感。石高tierで空も豪華になる
+   2026-06-13改: 城・人物を大型化し重ねる（ユーザー要望「城も人物も大きく・被ってOK」）。
+   ※真の全画面背景化は縦長の城画像(第4便)納品後に board 背景として実装予定 */
+.stage{position:relative; height:300px; overflow:hidden;
   background:linear-gradient(180deg,#9db8cc 0%,#cfdde8 45%,#ece9d4 80%,var(--paper) 100%);}
 .stage.bgt2{background:linear-gradient(180deg,#8fc0e6 0%,#cfe2f2 45%,#ece9d4 80%,var(--paper) 100%);}
 .stage.bgt3{background:linear-gradient(180deg,#7eb4e0 0%,#cde4ee 40%,#f0ead2 80%,var(--paper) 100%);}
@@ -107,22 +109,23 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   background:repeating-conic-gradient(rgba(255,240,190,.16) 0deg 7deg, transparent 7deg 18deg); pointer-events:none;}
 .stageDeco{position:absolute; top:8px; left:12px; display:flex; gap:8px;
   font-size:24px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.15)); z-index:2;}
-/* 居城＝背景の主役。画面右奥にどっしり構える */
-.stageCastle{position:absolute; right:-14px; bottom:30px; text-align:center; z-index:0;}
+/* 居城＝背景の主役。画面右奥にどっしり大きく構える（人物と重なってよい） */
+.stageCastle{position:absolute; right:-22px; bottom:16px; text-align:center; z-index:0;}
 .stageCastle .ce{display:block; line-height:1; transition:filter .4s;}
-.stageCastle.t1 .ce{font-size:90px;} .stageCastle.t2 .ce{font-size:110px;} .stageCastle.t3 .ce{font-size:130px;}
-.stageCastle.t4 .ce{font-size:150px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
-.stageCastle.t5 .ce{font-size:165px; filter:drop-shadow(0 0 14px rgba(243,207,93,.95)) saturate(1.4);}
-.castleLbl{position:absolute; left:50%; transform:translateX(-50%); bottom:-22px; white-space:nowrap;
+.stageCastle.t1 .ce{font-size:120px;} .stageCastle.t2 .ce{font-size:150px;} .stageCastle.t3 .ce{font-size:180px;}
+.stageCastle.t4 .ce{font-size:205px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));}
+.stageCastle.t5 .ce{font-size:225px; filter:drop-shadow(0 0 14px rgba(243,207,93,.95)) saturate(1.4);}
+.castleLbl{position:absolute; left:50%; transform:translateX(-50%); bottom:-20px; white-space:nowrap;
   font-size:11px; font-weight:800; color:#4a5a44; background:rgba(245,234,211,.82); border-radius:999px; padding:1px 8px;}
 .stageCastle .ce img{display:block; margin:0 auto; width:auto;}
-.stageCastle.t1 .ce img{height:130px;} .stageCastle.t2 .ce img{height:155px;} .stageCastle.t3 .ce img{height:175px;}
-.stageCastle.t4 .ce img{height:195px;}
-.stageCastle.t5 .ce img{height:210px; filter:drop-shadow(0 0 14px rgba(243,207,93,.9));}
-/* 立ち絵＝手前の主役。前面左寄りで大きく */
-.stageChar{position:absolute; left:33%; bottom:34px; transform:translateX(-50%); font-size:120px; line-height:1;
-  filter:drop-shadow(0 6px 7px rgba(0,0,0,.3)); animation:charSway 3.2s ease-in-out infinite; z-index:1;}
-.stageChar img{display:block; height:190px; width:auto; transition:filter .4s;}
+.stageCastle.t1 .ce img{height:175px;} .stageCastle.t2 .ce img{height:210px;} .stageCastle.t3 .ce img{height:240px;}
+.stageCastle.t4 .ce img{height:265px;}
+.stageCastle.t5 .ce img{height:285px; filter:drop-shadow(0 0 14px rgba(243,207,93,.9));}
+/* 立ち絵＝主役。画面中央に大きく（城に重なる）。
+   z-index は名前/文字より下（2026-06-13 ユーザー要望「文字が前・人物が後ろ」） */
+.stageChar{position:absolute; left:50%; bottom:14px; transform:translateX(-50%); font-size:150px; line-height:1;
+  filter:drop-shadow(0 6px 9px rgba(0,0,0,.4)); animation:charSway 3.2s ease-in-out infinite; z-index:1;}
+.stageChar img{display:block; height:258px; width:auto; transition:filter .4s;}
 .stageChar img.hurt{filter:grayscale(.75) brightness(.9) !important;}
 /* 調子が立ち絵で見てわかる（表情差分が来るまでのCSS差分・G1第2弾） */
 .stageChar img.m0{filter:grayscale(.6) brightness(.88);}
@@ -134,26 +137,42 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.3)); animation:moodBob 1.6s ease-in-out infinite;}
 @keyframes moodBob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-5px) rotate(6deg)}}
 @keyframes charSway{0%,100%{margin-bottom:0}50%{margin-bottom:7px}}
-.stageName{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:8px; padding:16px 14px 6px;
-  background:linear-gradient(180deg,transparent,rgba(245,234,211,.96) 62%);}
-.stageName .charName{font-size:19px;}
+/* 名前/調子は立ち絵より前面（z-index:3）。文字が前・人物が後ろ（2026-06-13 ユーザー要望） */
+.stageName{position:absolute; left:0; right:0; bottom:0; z-index:3; display:flex; align-items:center; gap:8px; padding:24px 14px 6px;
+  background:linear-gradient(180deg,transparent,rgba(245,234,211,.55) 40%,rgba(245,234,211,.97) 78%);}
+.stageName .charName{font-size:19px; text-shadow:0 1px 3px rgba(255,255,255,.8);}
 /* 勢力図: 日本地図SVG（G1第2弾・2026-06-13「社会科なので明確な地図必須」）。ミニ版は左上・タップで拡大 */
 .miniMapBtn{position:absolute; right:8px; top:30px; padding:0; text-align:center; z-index:2;}
 .miniMapBtn .mlbl{display:block; font-size:9.5px; font-weight:800; color:#4a5a44;
   background:rgba(245,234,211,.78); border-radius:999px; padding:0 6px; margin-top:2px;}
+/* 令制国マップ（japan_map.js・出典 Esri ジャパン「令制国の地図」を改変） */
 .jmap{display:block; width:100%; height:auto; background:#bcd6e8; border:2px solid var(--line); border-radius:10px;}
 .jmap .sea{fill:#bcd6e8;}
-.jmap .land{fill:#e9e2c8; stroke:#b9a87e; stroke-width:1.4; stroke-linejoin:round;}
-.jmap .prov{fill:#cfc8b4; stroke:#9d9070; stroke-width:.8;}
-.jmap .prov.own{fill:#3a6ea5; stroke:#274d77;}
-.jmap .prov.ally{fill:#2e8b57; stroke:#1d6b40;}
-.jmap .pname{font-size:10px; font-weight:800; fill:#6f6648; text-anchor:middle; dominant-baseline:central;
-  font-family:inherit; pointer-events:none;}
-.jmap .prov.own + .pname, .jmap .pname.lit{fill:#fff;}
-.jmap .warMark{font-size:13px; text-anchor:middle; dominant-baseline:central;}
-.jmap .warRing{fill:none; stroke:var(--red); stroke-width:2; animation:warPulse 1.4s infinite;}
-@keyframes warPulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.25}}
-.jmap.mini{width:112px; border-radius:8px; opacity:.96; box-shadow:0 2px 5px rgba(0,0,0,.25);}
+/* 下地: 全令制国を land 色で塗り、境界線を描く */
+.jmap .land .bd{fill:#e9e2c8; stroke:#b6a884; stroke-width:.7; stroke-linejoin:round;}
+/* 自軍/同盟の国の塗り */
+.jmap .fl{stroke:#fff; stroke-width:.7; stroke-linejoin:round;}
+.jmap .fl.own{fill:#3a6ea5;} .jmap .fl.ally{fill:#2e8b57;}
+.jmap .pn{font-size:12px; font-weight:800; fill:#fff; text-anchor:middle; dominant-baseline:middle;
+  font-family:inherit; paint-order:stroke; stroke:rgba(20,22,32,.55); stroke-width:2.5px; pointer-events:none;}
+.jmap .warProv{fill:rgba(179,54,42,.55); stroke:var(--red); stroke-width:1; stroke-linejoin:round;}
+.jmap .warMark{font-size:18px; text-anchor:middle; dominant-baseline:central;}
+.jmap .warRing{fill:none; stroke:var(--red); stroke-width:2.5; animation:warPulse 1.4s infinite;}
+@keyframes warPulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.2}}
+/* ミニ地図は背景・枠なしで列島の形だけ（タップで拡大が前提なので小さくてよい・2026-06-13）。城背景の上に浮かせる */
+.jmap.mini{width:78px; background:none; border:none; border-radius:0; box-shadow:none;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));}
+.jmap.mini .land .bd{stroke:#7d6f4e; stroke-width:.7;}
+.mapCredit{font-size:9px; color:#9a8c6a; text-align:right; margin-top:3px;}
+/* 勢力図モーダルのズーム（＋/−＋スクロールでパン） */
+.mapTools{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;}
+.mapTools button{width:40px; height:40px; border-radius:10px; border:2px solid var(--line);
+  background:var(--paper2); font-size:22px; font-weight:900; line-height:1; color:var(--ink);}
+.mapTools button:active{transform:translateY(2px);}
+.mapTools .zl{font-size:13px; font-weight:800; color:#6b5a3e; min-width:52px; text-align:center;}
+.mapZoomWrap{width:100%; max-height:62vh; overflow:auto; -webkit-overflow-scrolling:touch;
+  border:2px solid var(--line); border-radius:10px; background:#cfe2f0; touch-action:pan-x pan-y;}
+.mapZoomWrap .jmap{border:none; border-radius:0; display:block;}
 .charRow{display:flex; gap:10px; padding:4px 12px 4px; align-items:center;}
 .charInfo{flex:1;}
 .charName{font-weight:900; font-size:17px;}
@@ -547,6 +566,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   <div id="toast" class="toast"></div>
 </div>
 
+<script src="japan_map.js"></script>
 <script src="data.js"></script>
 <script src="questions_extra.js"></script>
 <script>
@@ -1493,54 +1513,92 @@ const UI = (function(){
   }
 
   /* 勢力図（mini=立ち絵の右上用 / 拡大はリスト overlay）
-     G1第2弾(2026-06-13): グリッド→簡略日本地図SVG。社会科として「地形にのっとった明確な地図」。
-     provincesの c(1-6)/r(1-3) を日本列島の座標に写像（西=左/南=下）。data側の変更は不要 */
-  const JMAP_W = 360, JMAP_H = 200;
-  // 列島シルエット（西南→東北に伸びる帯。中学地図帳の簡略形）。viewBox 360x200
-  const JLAND = 'M22,150 C30,120 60,118 78,126 C96,110 120,116 138,120 '
-    + 'C150,96 180,92 198,104 C214,86 244,82 262,96 C280,72 312,66 330,82 '
-    + 'C346,96 344,120 326,128 C336,146 318,162 298,156 C286,176 256,178 240,164 '
-    + 'C222,180 192,178 178,162 C160,176 130,174 116,160 C98,172 64,170 50,156 '
-    + 'C40,160 26,160 22,150 Z';
-  function provXY(p){ // c:1..6(西→東) r:1..3(北→南) → 帯に沿って配置
-    const x = 30 + (p.c-1)/5 * 300;
-    const baseY = 150 - (p.c-1)/5 * 86;       // 西は下・東は上に伸びる列島の傾き
-    const y = baseY + (p.r-2) * 30;
-    return { x, y:Math.max(96, Math.min(168, y)) };
+     G1第2弾改(2026-06-13): 簡略図→本物の令制国地図(japan_map.js・出典Lincun/Wikimedia CC BY-SA)。
+     社会科として「地形にのっとった明確な地図」。data側の地名(関東/江戸/九州等)を令制国キーに対応づける。
+     mini=列島+色付きマーカーのみ / full=境界線+ラベルつき */
+  // 表示地名 → 令制国名(SENGOKU_MAP.prov のキー)。大半は同名・地域名/都市名だけ代表国にあてる
+  const MAPKEY = { '関東':'武蔵','江戸':'武蔵','大坂':'摂津','北陸':'加賀','九州':'筑前','四国':'讃岐','京':'山城' };
+  const provKey = n => MAPKEY[n] || n;
+  // 全令制国の下地（土地＋境界線）は不変なのでキャッシュ（毎ターンのミニ地図再構築を回避）
+  let _baseCache = '';
+  function mapBase(){
+    if (_baseCache) return _baseCache;
+    const M = SENGOKU_MAP;
+    _baseCache = Object.values(M.prov).map(d=>`<path class="bd" d="${d}"/>`).join('');
+    return _baseCache;
   }
   function mapHtml(mini){
-    const S = Game.S; if (!S) return '';
-    const H = Game.H;
+    const S = Game.S; if (!S || typeof SENGOKU_MAP==='undefined') return '';
+    const H = Game.H, M = SENGOKU_MAP;
     const next = H.timeline.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
-    const warLoc = next? H.map.battleLoc[next.year] : null;
-    const provs = H.map.provinces.map(p=>{
-      const own = p.own && S.year>=p.own;
-      const ally = p.ally && S.year>=p.ally;
-      const war = (p.n===warLoc);
-      const {x,y} = provXY(p);
-      const cls = own?'own':ally?'ally':'';
-      const lit = own||ally? ' lit':'';
-      const rx = mini?15:24, ry = mini?9:14;
-      let s = `<ellipse class="prov ${cls}" cx="${x}" cy="${y}" rx="${rx}" ry="${ry}"/>`;
-      if (!mini) s += `<text class="pname${lit}" x="${x}" y="${y}">${p.n}</text>`;
-      if (war){ s += `<circle class="warRing" cx="${x}" cy="${y}" r="${mini?13:22}"/>`;
-                if (!mini) s += `<text class="warMark" x="${x}" y="${y-22}">⚔️</text>`; }
-      return s;
-    }).join('');
-    return `<svg class="jmap ${mini?'mini':''}" viewBox="0 0 ${JMAP_W} ${JMAP_H}" xmlns="http://www.w3.org/2000/svg">
-      <rect class="sea" x="0" y="0" width="${JMAP_W}" height="${JMAP_H}"/>
-      <path class="land" d="${JLAND}"/>${provs}</svg>`;
+    const warLoc = next ? provKey(H.map.battleLoc[next.year]) : null;
+    // 同じ令制国に複数地名が来る場合は own>ally で集約
+    const state = {};
+    H.map.provinces.forEach(p=>{
+      const k = provKey(p.n); if (!M.prov[k]) return;
+      const own = p.own && S.year>=p.own, ally = p.ally && S.year>=p.ally;
+      const cur = state[k];
+      if (own) state[k] = {cls:'own', n:p.n};
+      else if (ally && (!cur || cur.cls!=='own')) state[k] = {cls:'ally', n:p.n};
+    });
+    // 自軍/同盟の国を色で塗る（下地の上に重ねる）
+    let fills = '', labels = '';
+    Object.entries(state).forEach(([k,v])=>{
+      fills += `<path class="fl ${v.cls}" d="${M.prov[k]}"/>`;
+      if (!mini && M.c[k]) labels += `<text class="pn" x="${M.c[k][0]}" y="${M.c[k][1]}">${v.n}</text>`;
+    });
+    // 次の合戦地: 国を強調 + ⚔️
+    let war = '';
+    if (warLoc && M.prov[warLoc]){
+      war += `<path class="warProv" d="${M.prov[warLoc]}"/>`;
+      if (M.c[warLoc]){ const [x,y]=M.c[warLoc];
+        war += `<circle class="warRing" cx="${x}" cy="${y}" r="${mini?9:13}"/>`;
+        if (!mini) war += `<text class="warMark" x="${x}" y="${y-15}">⚔️</text>`; }
+    }
+    // 背景(海)はミニでは描かない＝透過（2026-06-13 ユーザー要望「日本地図に背景いらない」）
+    const sea = mini ? '' : `<rect class="sea" x="0" y="0" width="${M.vb[2]}" height="${M.vb[3]}"/>`;
+    return `<svg class="jmap ${mini?'mini':''}" viewBox="${M.vb.join(' ')}" xmlns="http://www.w3.org/2000/svg">
+      ${sea}<g class="land">${mapBase()}</g>${fills}${war}${labels}</svg>`;
   }
+  let mapZoomLv = 1;  // 1=100% 〜 4=400%
   function openMap(){
     const S = Game.S; if (!S) return;
     const H = Game.H;
     const ownN = H.map.provinces.filter(p=>p.own && S.year>=p.own).length;
     const next = H.timeline.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
-    $('l-title').textContent = '🗾 勢力図';
-    $('l-body').innerHTML = mapHtml(false) +
-      `<div class="note" style="margin-top:8px;">🟦 ${Game.H.armyName.replace('軍','')}領（いま${ownN}か国） ／ 🟩 同盟 ／ ⚔️ 次の合戦の地` +
-      (next? `<br>📅 次の合戦: ${next.year}年「${next.title.split(' — ')[0]}」（${H.map.battleLoc[next.year]||'—'}）` : '<br>🎌 残る合戦はない') + `</div>`;
+    mapZoomLv = 1;
+    $('l-title').textContent = '🗾 勢力図（令制国）';
+    $('l-body').innerHTML =
+      `<div class="mapTools">
+        <button onclick="UI.mapZoom(-1)" aria-label="縮小">−</button>
+        <span class="zl" id="map-zl">100%</span>
+        <button onclick="UI.mapZoom(1)" aria-label="拡大">＋</button>
+       </div>
+       <div class="mapZoomWrap" id="map-wrap">${mapHtml(false)}</div>
+       <div class="note" style="margin-top:8px;">🔵 ${Game.H.armyName.replace('軍','')}領（いま${ownN}か国） ／ 🟢 同盟 ／ ⚔️ 次の合戦の地` +
+      (next? `<br>📅 次の合戦: ${next.year}年「${next.title.split(' — ')[0]}」（${H.map.battleLoc[next.year]||'—'}）` : '<br>🎌 残る合戦はない') +
+      `<br><span style="color:#9a8660">＋/−で拡大・指でなぞって移動</span></div>` +
+      `<div class="mapCredit">地図データ: Esri ジャパン「令制国の地図」を改変</div>`;
+    applyMapZoom();
     $('ovl-list').classList.add('on');
+  }
+  function applyMapZoom(){
+    const wrap = $('map-wrap'); if (!wrap) return;
+    const svg = wrap.querySelector('svg');
+    if (svg){ svg.style.width = (mapZoomLv*100)+'%'; svg.style.height = 'auto'; }
+    const lbl = $('map-zl'); if (lbl) lbl.textContent = (mapZoomLv*100)+'%';
+  }
+  function mapZoom(d){
+    const prev = mapZoomLv;
+    mapZoomLv = Math.max(1, Math.min(4, mapZoomLv + d));
+    if (mapZoomLv===prev) return;
+    const wrap = $('map-wrap');
+    // ズーム時に中心を保つようスクロール位置を補正
+    const cx = wrap ? (wrap.scrollLeft + wrap.clientWidth/2) : 0;
+    const cy = wrap ? (wrap.scrollTop + wrap.clientHeight/2) : 0;
+    const ratio = mapZoomLv/prev;
+    applyMapZoom();
+    if (wrap){ wrap.scrollLeft = cx*ratio - wrap.clientWidth/2; wrap.scrollTop = cy*ratio - wrap.clientHeight/2; }
   }
 
   /* 側近の顔（画像があればimg・なければ絵文字。◯枠/鍛錬バッジ共用） */
@@ -2094,7 +2152,7 @@ const UI = (function(){
     $('ovl-list').classList.add('on');
   }
 
-  return { show, preStart, pickHero, pickMode, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone, openMap,
+  return { show, preStart, pickHero, pickMode, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone, openMap, mapZoom,
     showEpilogueChoice, pickEpilogueMem, openRetainer,
     goHome, openCoinInfo, openSaveIO, copySave, doImport,
     showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, battleFast, pickSaihai, showResult,
