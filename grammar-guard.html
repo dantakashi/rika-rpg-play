@@ -32,6 +32,7 @@
     box-shadow:0 8px 30px rgba(0,0,0,.18); overflow:hidden}
   .screen{position:absolute; inset:0; display:none; flex-direction:column}
   .screen.on{display:flex}
+  #result{overflow-y:auto}  /* 結果画面：まちがえ多数で内容が伸びてもボタンが画面外で押せなくならないようスクロール */
   h1{font-size:30px; margin:0 0 4px}
   .muted{color:#7a7060; font-size:13px}
   button{font-family:inherit; cursor:pointer}
@@ -280,6 +281,8 @@
   .meteor-warn{position:absolute; bottom:36px; width:130px; height:44px; margin-left:-65px; border:3px dashed #c0392b; border-radius:50%; background:rgba(192,57,43,.16); z-index:26; animation:mwarn .4s steps(2) infinite; pointer-events:none}
   @keyframes mwarn{50%{opacity:.35}}
   .meteor-rock{position:absolute; width:34px; height:34px; margin-left:-17px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ffd27a, #e0683b 60%, #7a2d16); box-shadow:0 0 18px 6px rgba(224,104,59,.7); z-index:27; pointer-events:none}
+  /* 隕石オーバーフロー(味方の余剰エネ)＝青い隕石が上空から落下。敵の赤い隕石(meteor-rock)と色で区別 */
+  .meteor-shot{position:absolute; width:28px; height:28px; margin-left:-14px; border-radius:50%; background:radial-gradient(circle at 35% 28%, #f2ffff, #5aa0d6 55%, #234d70); box-shadow:0 0 16px 6px rgba(90,160,214,.75), 0 -12px 16px 2px rgba(190,224,245,.55); z-index:27; pointer-events:none; transition:top .3s cubic-bezier(.5,.1,.9,.5)}
   .homebtn{position:absolute; top:8px; left:10px; z-index:9999; border:2px solid var(--line); background:#fff; border-radius:999px; height:34px; padding:0 12px; font-size:13px; font-weight:800; color:var(--ink); box-shadow:0 2px 8px rgba(0,0,0,.35); pointer-events:auto}
   #dailyPop{position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:24px}
   #dailyPop.on{display:flex}
@@ -9383,6 +9386,7 @@ const Game = (()=>{
   let ownedSkins = {default:1}; // 🏯所有城スキン {key:1}（defaultは最初から所有・要望#15）
   let equippedSkin = 'default'; // 装備中の城スキン（1つだけバフ有効＝ユーザー確定）
   let mistakes = {};       // 永続誤答SRS {srcKey:{key,genre,level,need,ts}}。need回正解でマーク消去＆リスト除去（要望2026-06-08）
+  let mistakesListOpen = false; // 📚まちがえた問題の一覧：既定は折りたたみ（多すぎて画面が埋まる対策2026-06-16）。開くとスクロール
   let favorites = {};      // ⭐お気に入り {srcKey:1}。誤答SRSと独立(消えない)。練習/図鑑で★登録(要望#14)
   let lastWasReview=false, lastMistakeKey=null; // 復習/誤答を2連続で出さないための直近フラグ（非保存）
   function isFav(k){ return !!(k && favorites[k]); }
@@ -9663,7 +9667,7 @@ const Game = (()=>{
   const EN_WRONG=6;            // 誤答の最低保証エネルギー(答えれば必ず前進＝苦手な子の保護)
   const EN_CORRECT=20;         // 正解で得る主燃料(×実効倍率)。解答を主エネルギー源にして放置を無効化
   const PASSIVE_MULT=0.30;     // 時間回復(放置エネ)を抑える係数。放置だけでは召喚が続かない＝解くのが必須
-  const METEOR_FLOOR_PCT=0.40, METEOR_COST_PCT=0.12, METEOR_INT=0.55, METEOR_DMG_PCT=0.38; // 隕石: 満タンで開始→残40%まで降る。威力=着弾点の敵HP%
+  const METEOR_FLOOR_PCT=0.40, METEOR_COST_PCT=0.12, METEOR_INT=0.55, METEOR_DMG_PCT=0.15; // 隕石: 満タンで開始→残40%まで降る。威力=着弾点の敵max HP%。0.38→0.15(2026-06-16・敵狙い化で命中するようになり強すぎ＝味方より隕石が主役化→補助に戻す)
   function regenMaxed(){ return regenLv >= REGEN_MAX_LV; }
   function regenCost(){ return 300*(regenLv+1); }
   function enMaxVal(){ return 200 + enMaxLv*30; }
@@ -9818,21 +9822,33 @@ const Game = (()=>{
     var favHead=document.createElement('div'); favHead.style.cssText='font-weight:800;font-size:15px;margin:4px 0 6px'; favHead.textContent='⭐ お気に入り（'+fav.length+'問）'; body.appendChild(favHead);
     if(!fav.length){ var fe=document.createElement('div'); fe.className='muted'; fe.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; fe.innerHTML='れんしゅう中に「☆ お気に入りに追加」でここに保存。いつでも答え・解説・音声を確認できます（消えません）。'; body.appendChild(fe); }
     else { fav.forEach(function(k){ var r=mkRow(k,{favSection:true}); if(r) body.appendChild(r); }); }
-    // 📚 まちがえた問題（ジャンル別）
+    // 📚 まちがえた問題（折りたたみ＝多すぎで画面が埋まる対策2026-06-16。開くと max-height 内でスクロール）
     var keys=Object.keys(mistakes).filter(function(k){ return QuizEngine.byKey(k); });
-    var mHead=document.createElement('div'); mHead.style.cssText='font-weight:800;font-size:15px;margin:16px 0 6px'; mHead.textContent='📚 まちがえた問題（'+keys.length+'問）'; body.appendChild(mHead);
-    if(!keys.length){ var me=document.createElement('div'); me.className='muted'; me.style.cssText='text-align:center;padding:12px;line-height:1.7'; me.innerHTML='🎉 まちがえた問題はありません。<br>問題をまちがえると ここに たまり、<b>2回正解</b>すると消えます。'; body.appendChild(me); return; }
-    var sub=document.createElement('div'); sub.className='muted'; sub.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; sub.innerHTML='ステージや れんしゅうで <b>時々もう一度</b>出ます。<b>2回正解</b>で消えます（右の「あと○回」）。'; body.appendChild(sub);
+    if(!keys.length){
+      var mHead0=document.createElement('div'); mHead0.style.cssText='font-weight:800;font-size:15px;margin:16px 0 6px'; mHead0.textContent='📚 まちがえた問題（0問）'; body.appendChild(mHead0);
+      var me=document.createElement('div'); me.className='muted'; me.style.cssText='text-align:center;padding:12px;line-height:1.7'; me.innerHTML='🎉 まちがえた問題はありません。<br>問題をまちがえると ここに たまり、<b>2回正解</b>すると消えます。'; body.appendChild(me); return;
+    }
+    var mHead=document.createElement('button'); mHead.className='btn ghost'; mHead.style.cssText='width:100%;margin:16px 0 6px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px;text-align:left';
+    mHead.innerHTML='<span>📚 まちがえた問題（'+keys.length+'問）</span><span style="font-size:13px;color:var(--ally)">'+(mistakesListOpen?'▲ とじる':'▼ ひらく')+'</span>';
+    mHead.onclick=function(){ mistakesListOpen=!mistakesListOpen; renderMistakes(); };
+    body.appendChild(mHead);
+    if(!mistakesListOpen){
+      var hint=document.createElement('div'); hint.className='muted'; hint.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; hint.innerHTML='タップで開きます。ステージや れんしゅうで <b>時々もう一度</b>出て、<b>2回正解</b>で消えます。';
+      body.appendChild(hint); return;
+    }
+    var listBox=document.createElement('div'); listBox.style.cssText='max-height:48vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;padding:8px 8px 2px;background:rgba(0,0,0,.03)';
+    var sub=document.createElement('div'); sub.className='muted'; sub.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; sub.innerHTML='ステージや れんしゅうで <b>時々もう一度</b>出ます。<b>2回正解</b>で消えます（右の「あと○回」）。'; listBox.appendChild(sub);
     var GROUPS=[{g:'word',label:'📕 単語'},{g:'idiom',label:'📗 熟語'},{g:'grammar',label:'📘 文法'}];
     var known={word:1,idiom:1,grammar:1};
     GROUPS.forEach(function(grp){
       var gkeys=keys.filter(function(k){ var q=QuizEngine.byKey(k); return q && q.genre===grp.g; });
       if(!gkeys.length) return;
-      var gh=document.createElement('div'); gh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px;color:var(--ink)'; gh.textContent=grp.label+'（'+gkeys.length+'問）'; body.appendChild(gh);
-      gkeys.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) body.appendChild(r); });
+      var gh=document.createElement('div'); gh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px;color:var(--ink)'; gh.textContent=grp.label+'（'+gkeys.length+'問）'; listBox.appendChild(gh);
+      gkeys.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) listBox.appendChild(r); });
     });
     var others=keys.filter(function(k){ var q=QuizEngine.byKey(k); return q && !known[q.genre]; });
-    if(others.length){ var oh=document.createElement('div'); oh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px'; oh.textContent='📦 その他（'+others.length+'問）'; body.appendChild(oh); others.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) body.appendChild(r); }); }
+    if(others.length){ var oh=document.createElement('div'); oh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px'; oh.textContent='📦 その他（'+others.length+'問）'; listBox.appendChild(oh); others.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) listBox.appendChild(r); }); }
+    body.appendChild(listBox);
   }
 
   /* ---- ✏️ れんしゅうモード（戦闘なし・問題だけ・💎が貯まる。まちがえたら2タップで次へ＝ゆっくり確認） ---- */
@@ -10959,7 +10975,8 @@ const Game = (()=>{
     // ===== 隕石オーバーフロー(2026-06-15): 満タンで降り始め、残40%まで一定量ずつ消費して降り続ける(満タン放置不可＝漏れバケツ＋押している感) =====
     if(!B.pvp && !B.stage.learn){
       if(B.energy>=B.energyMax-0.001) B.meteorOn=true;
-      if(B.meteorOn){ B.mTimer=(B.mTimer||0)-dt; if(B.mTimer<=0){ dropOffenseMeteor(); B.energy-=B.energyMax*METEOR_COST_PCT; B.mTimer=METEOR_INT; } if(B.energy<=B.energyMax*METEOR_FLOOR_PCT) B.meteorOn=false; }
+      // 隕石は「解いている人」への報酬＝鮮度0(放置)では降らせない（放置でエネルギーが溜まって隕石で勝つ抜け道を封じる）。
+      if(B.meteorOn){ B.mTimer=(B.mTimer||0)-dt; if(B.mTimer<=0){ if((B.fresh||0)>0){ dropOffenseMeteor(); B.energy-=B.energyMax*METEOR_COST_PCT; } B.mTimer=METEOR_INT; } if(B.energy<=B.energyMax*METEOR_FLOOR_PCT) B.meteorOn=false; }
     }
     // ❄フリーズ砲：効果＆クールダウンの消化（効果が切れたら凍結表示を解除）
     if(B.freezeCd>0){ B.freezeCd-=dt; if(B.freezeCd<0) B.freezeCd=0; }
@@ -10991,12 +11008,25 @@ const Game = (()=>{
     if(B.running) B.raf=requestAnimationFrame(loop);
   }
 
-  // 隕石オーバーフロー(2026-06-15): 余剰エネルギーをランダムゾーンへの隕石に変換。着弾点の敵にダメージ＝押している感。
+  // 隕石オーバーフロー(2026-06-15・2026-06-16修正): 余剰エネルギーを隕石に変換。
+  //  ・着弾点は「敵がいる所」を狙う（旧:全幅ランダム→空き地に落ちて当たらず“効いてない”バグ）。敵がいなければ敵城前。
+  //  ・上空から落ちる青い隕石＋着弾爆発＋ダメージ数値で“見える/効いてる”ように（旧:fxFrag数粒だけで不可視）。
+  //  ・ダメージは即時適用（経済/バランスはsim検証済の挙動を維持）。見た目だけ0.3s遅れて爆発。
   function dropOffenseMeteor(){
-    const W=fieldW(); const x=80 + Math.random()*Math.max(1,(W-160)); const R=72;
-    try{ fxFrag(x, fieldFloorY(), '#5aa0d6'); fxFrag(x, fieldFloorY()-28, '#bfe0f5'); }catch(e){}
-    B.enemies.forEach(function(e){ if(e && Math.abs(e.x-x)<=R){ damage(e, Math.round((e.hpMax||e.hp||0)*METEOR_DMG_PCT)); } });
-    if(Math.abs((W-70)-x)<=R){ B.castleE-=Math.round(B.castleEMax*0.01); castleHit('castleE'); } // 敵城近接なら城も少し
+    const W=fieldW(); const R=72;
+    var tx;
+    if(B.enemies.length){ var te=B.enemies[Math.floor(Math.random()*B.enemies.length)]; tx=te.x + (Math.random()*36-18); }
+    else { tx=(W-78); }
+    tx=Math.max(56, Math.min(W-46, tx));
+    var dealt=0, hit=0;
+    B.enemies.forEach(function(e){ if(e && Math.abs(e.x-tx)<=R){ var d=Math.round((e.hpMax||e.hp||0)*METEOR_DMG_PCT); damage(e,d); dealt+=d; hit++; } });
+    if(Math.abs((W-70)-tx)<=R){ B.castleE-=Math.round(B.castleEMax*0.01); castleHit('castleE'); } // 敵城近接なら城も少し
+    try{
+      var fy=fieldFloorY();
+      var r=document.createElement('div'); r.className='meteor-shot'; r.style.left=tx+'px'; r.style.top='-34px'; $('field').appendChild(r);
+      requestAnimationFrame(function(){ if(r){ r.style.top=(fy-8)+'px'; } });
+      setTimeout(function(){ try{ if(r) r.remove(); fxSparks(tx, fy-6, 16, '#bfe0f5'); fxFrag(tx, fy, '#5aa0d6'); fxFrag(tx, fy-24, '#bfe0f5'); if(hit>0) floatText(tx, 30, '-'+dealt, '#5aa0d6'); }catch(_){ } }, 300);
+    }catch(e){}
   }
   function stepUnits(dt){
     const W=fieldW();
@@ -11336,11 +11366,14 @@ const Game = (()=>{
     var el=$('resMistakes'); if(!el) return; el.innerHTML='';
     var ms=(B&&B.mistakes)||[];
     if(!ms.length){ el.innerHTML='<div style="margin-top:8px;color:var(--good);font-weight:800">🎉 ぜんぶ正解！</div>'; return; }
-    var h='<div style="margin-top:10px;font-weight:800;text-align:left">📝 まちがえた問題（復習）</div>';
+    var rows='';
     ms.slice(0,12).forEach(function(m){
-      h+='<div style="text-align:left;border:2px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:6px;background:#fff"><div style="font-weight:700">'+m.prompt+' → <span style="color:var(--good)">'+m.correct+'</span></div>'+(m.desc?'<div class="muted" style="font-size:12px">'+m.desc+'</div>':'')+'</div>';
+      rows+='<div style="text-align:left;border:2px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:6px;background:#fff"><div style="font-weight:700">'+m.prompt+' → <span style="color:var(--good)">'+m.correct+'</span></div>'+(m.desc?'<div class="muted" style="font-size:12px">'+m.desc+'</div>':'')+'</div>';
     });
-    el.innerHTML=h;
+    var more = ms.length>12 ? '<div class="muted" style="font-size:12px;margin-top:6px">…ほか '+(ms.length-12)+'問（ホームの「まちがえた問題」で確認できます）</div>' : '';
+    // 高さ制限＋スクロール＝結果画面でボタンが押せなくなる対策(2026-06-16)
+    el.innerHTML='<div style="margin-top:10px;font-weight:800;text-align:left">📝 まちがえた問題（復習）</div>'
+      +'<div style="max-height:34vh;overflow-y:auto;-webkit-overflow-scrolling:touch">'+rows+more+'</div>';
   }
   // 敗北時の強化ガイド：負けた原因を推定し「次に何を強くすればよいか」を提示（中盤の心理的詰まり対策）
   function lossGuidanceHTML(){
