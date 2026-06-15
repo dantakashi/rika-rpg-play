@@ -128,7 +128,33 @@ const GameUI = (function() {
         }
       }
 
-      // 進捗ヒント
+      // ⚡ #21③ 今のゲリラ問題カード（ホーム・3時間ごと全員共通・3問＋範囲）
+      const _gCard = document.getElementById('guerrilla-home-card');
+      if (_gCard) {
+        const _gl = GameEngine.getCurrentGuerrillaQuestions();
+        if (_gl && _gl.length) {
+          const _done = GameEngine.guerrillaClaimedCount();
+          const _ms = GameEngine.getGuerrillaMsLeft();
+          const _h = Math.floor(_ms / 3600000), _m = Math.floor((_ms % 3600000) / 60000);
+          const _dl = { elementary: '小学校', junior: '基礎', mid: '応用', senior: '発展', supreme: '受験' };
+          const _rangeLabel = function(q) { const g = GameData.GENRES.find(function(x){ return x.key === q.genre; }); return (g ? g.icon + g.label : q.genre) + '・' + (_dl[q.diff] || q.diff); };
+          _gCard.classList.remove('hidden');
+          const _items = _gl.map(function(q, i) {
+            const ok = i < _done;
+            return '<div class="flex items-start gap-1.5 mt-1.5 ' + (ok ? 'opacity-60' : '') + '">'
+              + '<span class="text-[11px] mt-0.5">' + (ok ? '✅' : '⚡') + '</span>'
+              + '<div class="min-w-0"><div class="text-[8px] text-amber-300 font-bold">' + _rangeLabel(q) + '</div>'
+              + '<div class="text-[11px] text-white leading-snug">' + (q.q || q.name || '') + '</div></div></div>';
+          }).join('');
+          _gCard.innerHTML = '<div class="flex items-center gap-1.5"><span class="text-base">⚡</span>'
+            + '<span class="font-black text-amber-300 text-[11px]">今のゲリラ問題（' + _done + '/' + _gl.length + '）</span>'
+            + '<span class="ml-auto text-[8px] text-slate-400">あと' + _h + '時間' + _m + '分で更新</span></div>'
+            + _items
+            + '<div class="text-[9px] text-amber-200 mt-1.5">' + (_done >= _gl.length ? '✅ 全部クリア！次の更新までお楽しみに' : '🥋 道場で出会えるよ。範囲は問題検索の「⚡ゲリラ範囲」ボタンで一発選択。') + '</div>';
+        } else { _gCard.classList.add('hidden'); }
+      }
+
+            // 進捗ヒント
       const hintBox = document.getElementById('progress-hint-box');
       if (hintBox) {
         const def2 = GameEngine.player.defeatedBosses || [];
@@ -1117,6 +1143,16 @@ const GameUI = (function() {
       _rwGrades = new Set(_rangeGrades);
       renderRangeDiffTabs(); renderRangeGradeRow(); renderRangeTypeRow(); renderRangeBody(); renderRangePreview();
       document.getElementById('range-window').classList.remove('hidden');
+    }
+
+    // ⚡ #21③ 「今のゲリラ問題」を含む範囲を一発選択（道場で確実に出会える）
+    function selectGuerrillaRange() {
+      const list = GameEngine.getCurrentGuerrillaQuestions();
+      if (!list || !list.length) return;
+      _rwDiffs = new Set(); _rwGenres = new Set();
+      list.forEach(function(q){ _rwDiffs.add(q.diff); _rwGenres.add(q.genre); });
+      _rwType = 'choice'; _rwGrades = new Set();
+      renderRangeDiffTabs(); renderRangeGradeRow(); renderRangeTypeRow(); renderRangeBody(); renderRangePreview();
     }
 
     function closeRangeWindow(confirm) {
@@ -3042,7 +3078,7 @@ const GameUI = (function() {
     selectDojoPopupDifficulty, updateDojoPopupLevel, updateDojoLevelUI,
     renderDojoPopupFilters, setDojoSubject, toggleDojoGenre, setDojoType,
     // 出題範囲フルウィンドウ（道場・難易度複数選択）
-    openRangeWindow, closeRangeWindow, toggleRangeDiff, toggleRangeGenre, setRangeType, toggleRangeGrade,
+    openRangeWindow, closeRangeWindow, selectGuerrillaRange, toggleRangeDiff, toggleRangeGenre, setRangeType, toggleRangeGrade,
     // 学年: 設定モーダル・警告ポップ・メニュー表示
     openGradeModal, closeGradeModal, setPlayerGradeFromModal, renderPlayerGradeLabel,
     closeGradeWarn, challengeKeepingOverGrade, challengeRemovingOverGrade,

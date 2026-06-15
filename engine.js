@@ -43,7 +43,9 @@ let player = {
       stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
       equipped: { weapon:null, head:null, body:null, feet:null, accessory:null },
       inventory: [],
-      quizStats: {}   // 学習進捗: キー "genre|diff" → {c:正解数, t:出題数}
+      quizStats: {},   // 学習進捗: キー "genre|diff" → {c:正解数, t:出題数}
+      guerrillaWindow: -1,    // ⚡ #21③ 今のゲリラ問題のクリア数が属する3時間窓
+      guerrillaClaimedCount: 0 // ⚡ #21③ この窓でクリアしたゲリラ数（0〜3）
     };
 
     // ==========================================
@@ -810,6 +812,7 @@ let player = {
       battle.dojoEnemyLevel = player.dojoEnemyLevel || 1;
       battle.playerDefeated = false; // #21 道場の負け(戦闘不能)を撤退と区別するため毎戦リセット
       battle.practiceMode = !!practice; // #21② やさしい練習（敵の行動を大幅に遅く・報酬控えめ）
+      battle._gCD = 2; // ⚡ #21③ ゲリラは道場入場から数問後に出す
       battle.enemySlowTimeLeft = 0;
       battle.currentCombo = 0;
       battle.comboBuffs = [];
@@ -966,21 +969,25 @@ let player = {
       const rm = (battle.difficulty === 'elementary' || battle.difficulty === 'junior') ? 1 : (battle.difficulty === 'mid' ? 1.5 : (battle.difficulty === 'senior' ? 2 : 3));
       return Math.floor(900 * rm * (battle.practiceMode ? 0.5 : 1));
     }
-    // ⚡ #21③ 範囲内の選択式から「苦手(正答率が低い)/未挑戦」を優先して1問選ぶ＝丸暗記周回を崩す。
-    function _pickGuerrillaQuestion() {
-      const pool = GameData.getQuestions({ diffs: battle.diffs || [battle.difficulty], genres: battle.filterGenres, type: 'choice', grades: battle.filterGrades });
-      if (!pool || pool.length === 0) return null;
-      const qs = player.quizStats || {};
-      const acc = (q) => { const st = qs[q.genre + '|' + q.diff]; return (st && st.t > 0) ? (st.c / st.t) : -1; }; // 未挑戦=-1(最優先)
-      let best = null, bestAcc = 2;
-      for (let i = 0; i < Math.min(8, pool.length); i++) {
-        const cand = pool[Math.floor(Math.random() * pool.length)];
-        if (cand === _lastQuestion) continue;
-        const a = acc(cand);
-        if (a < bestAcc) { bestAcc = a; best = cand; }
+    // ⚡ #21③ 「今のゲリラ問題」: 3時間ごとに全員共通で3問を決定的に選ぶ（時計ベース・ホーム表示）。
+    const GUERRILLA_WINDOW_MS = 3 * 60 * 60 * 1000;
+    const GUERRILLA_COUNT = 3;
+    function getGuerrillaWindow() { return Math.floor(Date.now() / GUERRILLA_WINDOW_MS); }
+    function getGuerrillaMsLeft() { return GUERRILLA_WINDOW_MS - (Date.now() % GUERRILLA_WINDOW_MS); }
+    function getCurrentGuerrillaQuestions() {
+      // 全教科のやさしめ選択式(小〜中基礎)から窓番号で決定的に3問。範囲を越えて出すことで丸暗記周回を崩す。
+      const pool = GameData.getQuestions({ diffs: ['elementary', 'junior', 'mid'], type: 'choice' });
+      if (!pool || pool.length === 0) return [];
+      const win = getGuerrillaWindow(), out = [], used = {};
+      for (let k = 0; k < GUERRILLA_COUNT && k < pool.length; k++) {
+        let idx = (win * 1000003 + k * 7919) % pool.length, g = 0;
+        while (used[idx] && g < pool.length) { idx = (idx + 1) % pool.length; g++; }
+        used[idx] = true; out.push(pool[idx]);
       }
-      return best || pool[Math.floor(Math.random() * pool.length)];
+      return out;
     }
+    function _guerrillaSync() { const w = getGuerrillaWindow(); if (player.guerrillaWindow !== w) { player.guerrillaWindow = w; player.guerrillaClaimedCount = 0; } }
+    function guerrillaClaimedCount() { _guerrillaSync(); return player.guerrillaClaimedCount || 0; }
 
     function renderQuestion(prob, showHint) {
       const typingArea = document.getElementById('typing-area');
@@ -1576,9 +1583,11 @@ let player = {
         if (buttons[selectedIdx]) buttons[selectedIdx].className =
           'choice-btn bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm text-left border border-emerald-400';
         recordQuizResult(true);
-        if (battle._guerrillaNow) { // ⚡ #21③ ゲリラ正解＝コイン大当たり
+        if (battle._guerrillaNow) { // ⚡ #21③ ゲリラ正解＝コイン大当たり（この窓をクリア）
           const _gb = _guerrillaBaseGold() * 2;
-          player.gold += _gb; battle.goldEarnedInSession += _gb; saveUserDataLocal();
+          player.gold += _gb; battle.goldEarnedInSession += _gb;
+          player.guerrillaClaimedCount = (player.guerrillaClaimedCount || 0) + 1;
+          saveUserDataLocal();
           if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('<b>⚡ 大当たり！</b> +' + _gb.toLocaleString() + '🪙', 2200);
         }
         processCorrectAnswer();
@@ -1590,11 +1599,15 @@ let player = {
           'choice-btn bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm text-left border border-emerald-400';
         battle.missCount++;
         recordQuizResult(false);
-        // ⚡ #21③ ゲリラのはずれ保護: 1.2秒以上考えたなら挑戦ボーナス＋解説。即答(あてずっぽう)は対象外＝ズル防止。
-        if (battle._guerrillaNow && (Date.now() - (battle._gShownAt || 0) >= 1200)) {
-          const _gp = Math.floor(_guerrillaBaseGold() * 0.3);
-          player.gold += _gp; battle.goldEarnedInSession += _gp; saveUserDataLocal();
-          if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('おしい！正解は<b>緑</b>のところ。' + (prob.desc ? '<br>💡 ' + prob.desc : '') + '<br>挑戦ボーナス +' + _gp.toLocaleString() + '🪙', 4200);
+        // ⚡ #21③ ゲリラのはずれ: この窓は挑戦済みにする（再挑戦ファーム防止）。1.2秒以上考えていれば挑戦ボーナス＋解説（即答は対象外＝ズル防止）。
+        if (battle._guerrillaNow) {
+          player.guerrillaClaimedCount = (player.guerrillaClaimedCount || 0) + 1;
+          if (Date.now() - (battle._gShownAt || 0) >= 1200) {
+            const _gp = Math.floor(_guerrillaBaseGold() * 0.3);
+            player.gold += _gp; battle.goldEarnedInSession += _gp;
+            if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('おしい！正解は<b>緑</b>のところ。' + (prob.desc ? '<br>💡 ' + prob.desc : '') + '<br>挑戦ボーナス +' + _gp.toLocaleString() + '🪙', 4200);
+          }
+          saveUserDataLocal();
         }
         playSound('wrong');
         flashPanel('miss');
@@ -2038,16 +2051,21 @@ let player = {
         battle.currentQuestion = getWeightedQuestion(_nqTier, _genres, _type, _grades);
       }
       if (battle.mode === 'dojo') battle.currentQuestion = _reduceDojoChoices(battle.currentQuestion); // 道場のみ2択
-      // ⚡ #21③ ゲリラ問題（道場のみ）: クールダウン明け＆確率で、範囲内の苦手な選択式に差し替える。
+      // ⚡ #21③ 今のゲリラ問題（3時間ごと・全員共通・3問）: この窓の未クリア分を数問おきに1問ずつ出す。
       battle._guerrillaNow = false;
       if (battle.mode === 'dojo' && !battle.tutEnemyHp) {
-        battle._gCD = (battle._gCD || 0) - 1;
-        if (battle._gCD <= 0 && Math.random() < 0.28) {
-          const _gq = _pickGuerrillaQuestion();
-          if (_gq) {
-            battle.currentQuestion = _reduceDojoChoices(_gq);
-            battle._guerrillaNow = true; battle._gShownAt = Date.now(); battle._gCD = 4;
-            if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('<b>⚡ ゲリラ問題！</b><br>正解でコイン大当たり・はずれても挑戦ボーナス', 2200);
+        _guerrillaSync();
+        const _done = player.guerrillaClaimedCount || 0;
+        if (_done < GUERRILLA_COUNT) {
+          battle._gCD = (battle._gCD || 0) - 1;
+          if (battle._gCD <= 0) {
+            const _gl = getCurrentGuerrillaQuestions();
+            const _gq = _gl[_done];
+            if (_gq) {
+              battle.currentQuestion = _reduceDojoChoices(_gq);
+              battle._guerrillaNow = true; battle._gShownAt = Date.now(); battle._gCD = 3;
+              if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('<b>⚡ 今のゲリラ問題！</b>（残り' + (GUERRILLA_COUNT - _done) + '問）<br>正解で大当たり・はずれても挑戦ボーナス', 2200);
+            }
           }
         }
       }
@@ -2316,6 +2334,8 @@ let player = {
       if (typeof player.seenWelcome !== 'boolean') player.seenWelcome = true;
       // 初回チュートリアル: 既存セーブ（onboardStep 未定義）は完了扱い(9)＝スキップ。新規は 0 のまま進める。
       if (typeof player.onboardStep !== 'number') player.onboardStep = 9;
+      if (typeof player.guerrillaWindow !== 'number') player.guerrillaWindow = -1;
+      if (typeof player.guerrillaClaimedCount !== 'number') player.guerrillaClaimedCount = 0;
       if (typeof player.tutGachaUsed !== 'boolean') player.tutGachaUsed = false; // 無料11連の消費フラグ（欠損補完）
       // ランク報酬の各種券（欠損補完・加算的＝既存セーブ安全）
       if (!player.tickets || typeof player.tickets !== 'object') player.tickets = { statReroll: 0, gachaGold10: 0, selectUR: 0 };
@@ -2595,7 +2615,7 @@ let player = {
     get battle() { return battle; },
     getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar, getRankInfo,
     getRecommendedDojoLevel, getBossRecommendedPower, getBossReadiness,
-    startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion,
+    startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion, getCurrentGuerrillaQuestions, getGuerrillaMsLeft, guerrillaClaimedCount,
     processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, pauseGame, resumeGame,
     tutorialForceUlt,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,
