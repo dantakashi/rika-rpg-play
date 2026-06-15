@@ -246,7 +246,7 @@ const SENGOKU_DATA = (function(){
       loseText:'【敗北】家中の反乱を抑えきれなかった……。「尾張のうつけ」の夢は、ここで潰えた。\n\n（育成終了。序盤から武勇や知略をしっかり鍛えて、もう一度挑もう！）',
       winFx:{ koku:80, buyu:5 } },
 
-    { year:1560, type:'battle', title:'桶狭間の戦い — 運命の十倍の敵',
+    { year:1560, type:'battle', presentMode:'toki-atarashii', title:'桶狭間の戦い — 運命の十倍の敵',
       terrain:{ icon:'🌧️', label:'桶狭間 — 豪雨の窪地' }, bg:'assets/bg_okehazama.jpg',
       intro:'駿河の大大名・今川義元が、約2万5千の大軍で尾張に攻め込んできた。こちらはわずか数千。家臣は籠城を勧めるが、あなたは「敦盛」を舞い、夜明けに出陣を決意する。狙うは、桶狭間で休む義元の本陣ただ一点——。',
       enemyName:'今川義元の大軍', enemyIcon:'👑', enemyImg:'assets/foe_yoshimoto.png', enemyPower:240,
@@ -394,7 +394,7 @@ const SENGOKU_DATA = (function(){
       text:'ついに将軍・足利義昭を京から追放した。1338年の足利尊氏から約240年続いた室町幕府は、ここに滅亡。\n\n同じ年、浅井長政・朝倉義景も滅ぼした。お市の方と三人の娘（茶々・初・江）は保護した。この三姉妹がのちに歴史を大きく動かすことになる。',
       effects:{ seiji:8, koku:100 } },
 
-    { year:1575, type:'battle', title:'長篠の戦い — 鉄砲三千挺',
+    { year:1575, type:'battle', presentMode:'teppo-atarashii', title:'長篠の戦い — 鉄砲三千挺',
       terrain:{ icon:'🛡️', label:'設楽原 — 馬防柵の平野' }, bg:'assets/bg_nagashino.jpg',
       intro:'「戦国最強」と謳われた武田の騎馬軍団が、後継者・武田勝頼に率いられ長篠城に迫る。あなたの答えは——大量の鉄砲と馬防柵。戦の常識を変えるときだ。',
       enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyImg:'assets/foe_katsuyori.png', enemyPower:470,
@@ -1136,7 +1136,7 @@ const SENGOKU_DATA = (function(){
           loseText:'【敗北】三方ヶ原の雪に、徳川の旗が沈んだ……。\n\n（育成終了。格上との戦いは知力＝引き際がすべて。無理は禁物！）',
           winFx:{ koku:30, chiryaku:8, ninbo:5 } },
 
-        { year:1575, type:'battle', title:'長篠の戦い — 織田徳川連合、武田を破る',
+        { year:1575, type:'battle', presentMode:'teppo-atarashii', title:'長篠の戦い — 織田徳川連合、武田を破る',
           terrain:{ icon:'🛡️', label:'設楽原 — 馬防柵の平野' }, bg:'assets/bg_nagashino.jpg',
           intro:'信玄亡きあとの武田勝頼が、長篠城に襲いかかった。織田の援軍3万と合流し、設楽原に馬防柵を築いて決戦に臨む。三方ヶ原の借りを返すときだ！',
           enemyName:'武田勝頼の騎馬軍団', enemyIcon:'🐴', enemyImg:'assets/foe_katsuyori.png', enemyPower:305,

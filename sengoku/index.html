@@ -16,6 +16,7 @@
   --ink:#2b1d0e; --paper:#f5ead3; --paper2:#efe0c0; --line:#c9b282;
   --indigo:#1d2438; --indigo2:#2a3450; --gold:#d8a823; --gold2:#f3cf5d;
   --red:#b3362a; --green:#2e8b57; --blue:#3a6ea5; --purple:#7a4f9d;
+  --goldhi:#f3cf5d; --bluehi:#6fa3ff; --redhi:#ff7a6a;   /* 合戦シーン演出の高輝度色（②⑤⑦・proto移植） */
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{margin:0; padding:0;}
@@ -186,7 +187,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 @keyframes moodBob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-5px) rotate(6deg)}}
 @keyframes charSway{0%,100%{margin-bottom:0}50%{margin-bottom:7px}}
 /* 名前/調子は立ち絵より前面（z-index:3）。文字が前・人物が後ろ（2026-06-13 ユーザー要望） */
-.stageName{position:absolute; left:0; right:0; bottom:0; z-index:3; display:flex; align-items:center; gap:8px; padding:24px 14px 6px;
+.stageName{position:absolute; left:0; right:0; bottom:0; z-index:3; pointer-events:none; display:flex; align-items:center; gap:8px; padding:24px 14px 6px;
   background:linear-gradient(180deg,transparent,rgba(245,234,211,.55) 40%,rgba(245,234,211,.97) 78%);}
 .stageName .charName{font-size:19px; text-shadow:0 1px 3px rgba(255,255,255,.8);}
 /* 勢力図: 日本地図SVG（G1第2弾・2026-06-13「社会科なので明確な地図必須」）。ミニ版は左上・タップで拡大 */
@@ -194,7 +195,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .miniMapBtn .mlbl{display:block; font-size:9.5px; font-weight:800; color:#4a5a44;
   background:rgba(245,234,211,.78); border-radius:999px; padding:0 6px; margin-top:2px;}
 /* 軍学帳ボタン（②家紋の位置・正方形角丸・問題数を通知バッジ） */
-.bookBtn{position:absolute; right:10px; bottom:14px; z-index:3; width:48px; height:48px; border-radius:14px;
+.bookBtn{position:absolute; right:10px; bottom:14px; z-index:5; cursor:pointer; width:48px; height:48px; border-radius:14px;
   background:rgba(245,234,211,.92); border:2px solid var(--line); box-shadow:0 3px 0 rgba(0,0,0,.18);
   display:flex; align-items:center; justify-content:center; transition:transform .06s;}
 .bookBtn:active{transform:translateY(2px);}
@@ -592,6 +593,152 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .stat .srk.flash{animation:rkFlash .6s ease-out;}
 @keyframes rkFlash{0%{filter:brightness(2)}100%{filter:brightness(1)}}
 .box.shaken{animation:shakeBad .45s;}
+
+/* ============================================================
+   §合戦シーン演出（②⑤⑦の新フォーマット・proto battle_proto2.html より移植・2026-06-15）
+   押し合いバー方式 → 画面まるごと「場面」方式へ刷新。fillは Game.battleProgress()
+   （地力寄り0.68/0.42）に連動＝低ステは派手でも押し負ける。旧 .bField/.btBar 系は休眠。
+   ============================================================ */
+#b-stage{position:relative; height:328px; margin:8px 0; border-radius:14px; overflow:hidden;
+  background:linear-gradient(180deg,#3a4a63,#26303f 60%,#1c2430); border:2px solid #000;}
+.bHeadline{display:flex; justify-content:space-between; gap:8px; font-size:11.5px; color:#cdbfa6; padding:2px 4px 0; flex-wrap:wrap;}
+.bHeadline .bArmyCt{font-weight:800;} .bHeadline .bArmyCt .me{color:#9fc0ff;} .bHeadline .bArmyCt .foe{color:#ff9d8a;}
+/* ---- 共有fx ---- */
+@keyframes bshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
+#b-stage.shake{animation:bshake .4s;}
+#b-stage.flash{animation:bflash .5s;} @keyframes bflash{0%{filter:brightness(2.2)}100%{filter:brightness(1)}}
+#b-stage .cutin{position:absolute; left:0; right:0; top:42%; text-align:center; font-size:30px; font-weight:900; color:#fff;
+  text-shadow:0 0 16px var(--goldhi),0 2px 4px #000; opacity:0; pointer-events:none; z-index:20;}
+#b-stage .cutin.on{animation:bcutin 1.1s;} @keyframes bcutin{0%{opacity:0; transform:scale(.6) rotate(-6deg)}20%{opacity:1; transform:scale(1.12)}70%{opacity:1; transform:scale(1)}100%{opacity:0;}}
+#b-stage .spark{position:absolute; font-size:20px; pointer-events:none; z-index:18; will-change:transform,opacity;}
+@keyframes bsparkfly{0%{opacity:1; transform:translate(0,0) scale(.6)}100%{opacity:0; transform:translate(var(--dx),var(--dy)) scale(1.3) rotate(var(--r))}}
+@keyframes swingt{0%{opacity:0; transform:translateY(8px)}18%{opacity:1; transform:translateY(0)}80%{opacity:1}100%{opacity:0}}
+#b-stage.reach::after{content:''; position:absolute; inset:0; z-index:9; pointer-events:none; animation:reachIn 1s ease-out;}
+@keyframes reachIn{0%{box-shadow:inset 0 0 0 0 rgba(8,5,10,0)}55%{box-shadow:inset 0 0 80px 38px rgba(8,5,10,.8)}100%{box-shadow:inset 0 0 64px 26px rgba(8,5,10,.45)}}
+/* 問題ごとの押し合いカットイン（味方=白＋信頼度色／敵=紫） */
+.clash{position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:space-between; padding:0 4px; pointer-events:none;}
+.clash-card{width:43%; padding:12px 4px; border-radius:13px; text-align:center; opacity:0; transition:transform .42s cubic-bezier(.4,1.3,.5,1), opacity .3s; transform:translateX(var(--from));}
+.clash-card.ally{--from:-130%; background:linear-gradient(180deg,#fff,#dbe4f2); color:#1a2030; border:3px solid #fff; box-shadow:0 0 18px var(--g);}
+.clash-card.foe{--from:130%; background:linear-gradient(180deg,#7a4fae,#3c2362); color:#fff; border:3px solid #c79ae8; box-shadow:0 0 18px #a56fd6;}
+.clash.in .clash-card{opacity:1; transform:translateX(0);}
+.clash-spark{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(0); font-size:34px; z-index:2; opacity:0; transition:all .3s;}
+.clash.in .clash-spark{opacity:1; transform:translate(-50%,-50%) scale(1);}
+.clash.ally-win .clash-card.ally{transform:translateX(42%);} .clash.ally-win .clash-card.foe{transform:translateX(135%); opacity:.2;}
+.clash.foe-win .clash-card.foe{transform:translateX(-42%);} .clash.foe-win .clash-card.ally{transform:translateX(-135%); opacity:.2;}
+.clash.ally-win .clash-spark{transform:translate(20%,-50%) scale(1.3);} .clash.foe-win .clash-spark{transform:translate(-120%,-50%) scale(1.1);}
+.clash.out{opacity:0; transition:opacity .25s;}
+.clash .ci-ic{font-size:36px; display:block; line-height:1;} .clash .ci-nm{font-weight:900; font-size:14px;}
+/* 決着のカットイン（ためる→暗転→勝者→敗者崩壊） */
+.fclash{position:fixed; inset:0; z-index:90; max-width:520px; margin:0 auto; display:flex; align-items:center; justify-content:center; background:rgba(8,5,10,0); transition:background .5s;}
+.fclash.charge{background:rgba(8,5,10,.5);} .fclash.black{background:#050308;}
+.revive-bubble{position:absolute; left:14px; right:14px; bottom:24px; z-index:55; display:flex; align-items:center; gap:9px;
+  background:#fbf4e2; color:#2a2018; border:3px solid var(--goldhi); border-radius:14px; padding:11px 13px;
+  box-shadow:0 6px 20px rgba(0,0,0,.55); opacity:0; transform:translateY(24px) scale(.92); transition:opacity .3s, transform .35s cubic-bezier(.34,1.4,.5,1);}
+.revive-bubble.in{opacity:1; transform:translateY(0) scale(1);}
+.revive-bubble.out{opacity:0; transition:opacity .25s;}
+.revive-bubble::after{content:''; position:absolute; left:30px; bottom:-12px; border:10px solid transparent; border-top-color:#fbf4e2; filter:drop-shadow(0 2px 0 var(--goldhi));}
+.revive-bubble .rb-ic{font-size:34px; line-height:1; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
+.revive-bubble .rb-tx{font-size:14.5px; font-weight:900; line-height:1.4; color:#7a2e1f;}
+.fc-card{text-align:center; opacity:0;}
+.fc-card.on{animation:fcIn .5s ease-out forwards;}
+@keyframes fcIn{0%{opacity:0; transform:translateY(40px) scale(1.5)}55%{opacity:1; transform:translateY(0) scale(.94)}100%{opacity:1; transform:translateY(0) scale(1)}}
+.fc-card .fc-ic{display:block; font-size:78px; line-height:1;}
+.fc-card.ally .fc-ic{filter:drop-shadow(0 0 18px var(--g));}
+.fc-card.foe .fc-ic{filter:drop-shadow(0 0 18px #a56fd6);}
+.fc-card .fc-nm{display:block; font-size:24px; font-weight:900; letter-spacing:.12em; margin:6px 0;}
+.fc-card.ally .fc-nm{color:#fff;} .fc-card.foe .fc-nm{color:#c79ae8;}
+.fc-card .fc-ln{display:block; font-size:16px; font-weight:800; color:#f0e6d8; max-width:300px; margin:0 auto; line-height:1.5;}
+.fclash.crumble .fc-card{animation:fcCrumble .8s ease-in forwards;}
+@keyframes fcCrumble{0%{opacity:1; transform:none; filter:none}100%{opacity:0; transform:translateY(40px) rotate(8deg) scale(.7); filter:blur(2px)}}
+.fclash.out{background:rgba(8,5,10,0)!important; transition:background .3s;}
+/* 開幕の「ステータスボーナス」（地力が布陣に満ちる・初期値の明示） */
+.status-bonus{position:absolute; top:42%; left:0; right:0; transform:translateY(-50%); text-align:center; z-index:30; opacity:0; pointer-events:none;}
+.status-bonus.in{animation:sbIn .5s ease-out forwards;}
+.status-bonus.out{opacity:0; transition:opacity .4s;}
+@keyframes sbIn{0%{opacity:0; transform:translateY(-50%) scale(.6)}50%{opacity:1; transform:translateY(-50%) scale(1.12)}100%{opacity:1; transform:translateY(-50%) scale(1)}}
+.status-bonus .sb-h{display:block; font-size:23px; font-weight:900; color:var(--goldhi); text-shadow:0 0 14px rgba(243,207,93,.7),0 2px 4px #000;}
+.status-bonus .sb-s{display:block; font-size:12.5px; font-weight:800; color:#f0e6d8; margin-top:5px; text-shadow:0 1px 3px #000;}
+/* ============ ②領地拡大「天下分け目」(5×7・本部→中央の城) ============ */
+.terr-field{position:absolute; inset:0; background:#241c12 url('assets/bg_okehazama.jpg') center/cover;}
+.terr-field::after{content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 2px, transparent 2px 7px);}
+.terr-grid{position:absolute; top:34px; bottom:14px; left:10px; right:10px; display:grid; grid-template-columns:repeat(7,1fr); grid-template-rows:repeat(5,1fr); gap:3px; z-index:5;}
+.terr-cell{position:relative; border-radius:3px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); display:flex; align-items:center; justify-content:center; font-size:13px; transition:background .5s, box-shadow .4s, transform .3s;}
+.terr-cell.me{background:rgba(59,111,209,.5); border-color:rgba(111,163,255,.85); box-shadow:inset 0 0 8px rgba(111,163,255,.5);}
+.terr-cell.foe{background:rgba(122,79,174,.5); border-color:rgba(199,154,232,.85); box-shadow:inset 0 0 8px rgba(199,154,232,.5);}
+.terr-cell.cap{animation:terrCap .45s;}
+@keyframes terrCap{0%{transform:scale(.4); opacity:.3}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+.terr-hq{font-size:13px; font-weight:900; flex-direction:column; gap:1px;}
+.terr-hq.me{background:rgba(59,111,209,.7); border-color:#fff;}
+.terr-hq.foe{background:rgba(122,79,174,.7); border-color:#c79ae8;}
+.terr-hq .hqi{font-size:17px; line-height:1;} .terr-hq .hql{font-size:8px; color:#fff;}
+.terr-castle{font-size:20px; background:rgba(20,14,8,.55)!important; border:2px solid var(--goldhi)!important; box-shadow:0 0 10px rgba(243,207,93,.5);}
+.terr-castle.fall{filter:grayscale(1) brightness(.5);}
+.terr-tag{position:absolute; top:10px; left:0; right:0; text-align:center; font-weight:900; font-size:14px; color:#fff; text-shadow:0 2px 6px #000; opacity:0; z-index:7;}
+.terr-tag.show{animation:swingt 1.4s;}
+.terr-flood{position:absolute; inset:0; z-index:8; opacity:0; transition:opacity .7s; pointer-events:none;}
+.terr-flood.on{opacity:.82;}
+.terr-castle img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:2px;}
+.terr-hq .hqi img{width:22px; height:22px; object-fit:contain; display:block;}
+/* ============ ⑤遠距離「放て！」(左下射手×右上の敵が接近・暗転なし・別枠紙芝居) ============ */
+.rng-field{position:absolute; inset:0; background:#2b3647 url('assets/bg_nagashino.jpg') center/cover;}
+.rng-shooter{position:absolute; left:14px; bottom:16px; font-size:46px; z-index:6; filter:drop-shadow(0 2px 4px #000); transition:transform .3s;}
+.rng-shooterlbl{position:absolute; left:12px; bottom:8px; font-size:9px; color:var(--bluehi); z-index:6;}
+.rng-aim{position:absolute; left:58px; bottom:56px; width:38px; height:38px; border:2px solid var(--bluehi); border-radius:50%; z-index:6; opacity:.5; transition:opacity .4s, border-color .3s;}
+.rng-aim::before{content:''; position:absolute; left:50%; top:5px; bottom:5px; width:1px; transform:translateX(-50%); background:var(--bluehi);}
+.rng-aim::after{content:''; position:absolute; top:50%; left:5px; right:5px; height:1px; transform:translateY(-50%); background:var(--bluehi);}
+.rng-aim.steady{opacity:1;}
+.rng-aim.jit{animation:rngJit .35s infinite;}
+@keyframes rngJit{0%,100%{transform:translate(0,0)}25%{transform:translate(-3px,2px)}50%{transform:translate(2px,-2px)}75%{transform:translate(3px,1px)}}
+.rng-enemy{position:absolute; right:14px; top:14px; font-size:28px; letter-spacing:1px; z-index:6; transition:transform .6s ease-in, opacity .5s; filter:drop-shadow(0 2px 4px #000);}
+.rng-enemylbl{position:absolute; right:12px; top:46px; font-size:9px; color:var(--redhi); z-index:6; transition:transform .6s;}
+.rng-bullet{position:absolute; left:60px; bottom:58px; font-size:18px; z-index:8; opacity:0; will-change:transform;}
+.rng-tag{position:absolute; top:46%; left:0; right:0; transform:translateY(-50%); text-align:center; font-weight:900; font-size:18px; color:#fff; text-shadow:0 2px 8px #000; opacity:0; z-index:9;}
+.rng-tag.show{animation:swingt 1.5s;}
+.rng-tag.big{font-size:30px; color:var(--goldhi);}
+.rng-flood{position:absolute; inset:0; z-index:7; opacity:0; transition:opacity .7s; pointer-events:none;}
+.rng-flood.on{opacity:.82;}
+.rng-shooter img{width:86px; display:block; filter:drop-shadow(0 2px 5px #000);}
+.rng-enemy img{width:78px; display:block; filter:drop-shadow(0 2px 5px #000);}
+/* ⑤紙芝居（別枠・肩越し視点で敵が遠近法で巨大化・弾ズーム・案C） */
+.kami{position:absolute; inset:16px 12px; z-index:40; border:4px solid #2a1c10; border-radius:10px; overflow:hidden;
+  background:#0a0710; box-shadow:0 12px 32px rgba(0,0,0,.75), inset 0 0 0 2px #6b4a2a; opacity:0; transform:scale(.92); transition:opacity .22s, transform .28s; perspective:700px;}
+.kami.on{opacity:1; transform:scale(1);}
+.kami-bg{position:absolute; inset:0; background:url('assets/kami_bg.jpg') center/cover, radial-gradient(120% 90% at 50% 34%, #5a4a36, #2a2018 58%, #120c08);}
+.kami-bg::after{content:''; position:absolute; inset:0; background:repeating-linear-gradient(90deg, rgba(0,0,0,.18) 0 1px, transparent 1px 40px);}
+.kami-enemy{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%) scale(.5); font-size:54px; filter:drop-shadow(0 5px 9px #000); z-index:2; transition:transform .3s ease-in;}
+.kami-bullet{position:absolute; left:50%; bottom:80px; width:13px; height:13px; border-radius:50%; background:#fff; box-shadow:0 0 16px 6px var(--goldhi); transform:translateX(-50%); z-index:4; opacity:0;}
+.kami-shoulder{position:absolute; left:50%; bottom:-18px; transform:translateX(-50%); font-size:96px; line-height:1; z-index:5; filter:brightness(.18) drop-shadow(0 -2px 6px #000);}
+.kami-cap{position:absolute; top:8px; left:0; right:0; text-align:center; font-weight:900; font-size:19px; color:var(--goldhi); text-shadow:0 2px 7px #000; z-index:6;}
+.kami-frameno{position:absolute; bottom:6px; right:10px; font-size:9px; color:rgba(255,255,255,.45); z-index:6; letter-spacing:.1em;}
+.kami-flash{position:absolute; inset:0; background:#fff; opacity:0; z-index:7; pointer-events:none;}
+.kami-enemy img{width:104px; display:block; border-radius:4px;}
+.kami-shoulder img{width:220px; display:block;}
+/* ============ ⑦勢力押し「鬨の壁」(兵列が押し合い→暗転→押し出す・武力以外にも転用) ============ */
+.push-field{position:absolute; inset:0; background:#241a2c url('assets/bg_okehazama.jpg') center/cover;}
+.push-wall{position:absolute; top:30%; bottom:24%; display:flex; align-items:center; overflow:hidden; transition:width .5s cubic-bezier(.4,1.1,.6,1); z-index:5;}
+.push-wall.me{left:0; justify-content:flex-end; background:linear-gradient(90deg,rgba(59,111,209,.25),rgba(59,111,209,.5));}
+.push-wall.foe{right:0; justify-content:flex-start; background:linear-gradient(270deg,rgba(122,79,174,.25),rgba(122,79,174,.5));}
+.push-row{display:flex; gap:0; font-size:22px; line-height:1.1; white-space:nowrap;}
+.push-wall.me .push-row{text-shadow:0 0 7px var(--bluehi),0 1px 2px #000;}
+.push-wall.foe .push-row{text-shadow:0 0 7px #c79ae8,0 1px 2px #000;}
+.push-seam{position:absolute; top:27%; bottom:21%; width:4px; background:#fff; box-shadow:0 0 12px #fff; transform:translateX(-50%); z-index:6; transition:left .5s;}
+.push-lbl{position:absolute; top:10px; left:0; right:0; display:flex; justify-content:space-between; padding:0 14px; font-size:11px; font-weight:800; z-index:7;}
+.push-lbl .me{color:var(--bluehi);} .push-lbl .foe{color:var(--redhi);}
+.push-tag{position:absolute; bottom:28px; left:0; right:0; text-align:center; font-weight:900; font-size:15px; color:#fff; text-shadow:0 2px 6px #000; opacity:0; z-index:8;}
+.push-tag.show{animation:swingt 1.4s;}
+.push-quake{animation:pushQuake .16s infinite;}
+@keyframes pushQuake{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}75%{transform:translate(2px,-1px)}}
+.push-flood{position:absolute; inset:0; z-index:9; opacity:0; transition:opacity .7s; pointer-events:none;}
+.push-flood.on{opacity:.82;}
+.push-row img{height:62px; display:inline-block; vertical-align:bottom; margin:0 -2px;}
+@media (prefers-reduced-motion: reduce){
+  #b-stage.shake,#b-stage.flash,#b-stage .cutin.on,#b-stage .spark,#b-stage.reach::after,
+  .clash,.clash-card,.clash-spark,.fclash,.fc-card.on,.fclash.crumble .fc-card,.revive-bubble,.status-bonus.in,
+  .terr-cell,.terr-cell.cap,.terr-castle.fall,.terr-tag.show,.terr-flood,
+  .rng-shooter,.rng-enemy,.rng-enemylbl,.rng-aim.jit,.rng-bullet,.rng-tag.show,.rng-flood,
+  .kami,.kami-enemy,.kami-bullet,.kami-flash,
+  .push-wall,.push-seam,.push-row,.push-tag.show,.push-quake,.push-flood{animation:none !important; transition:none !important;}
+}
 </style>
 </head>
 <body>
@@ -716,26 +863,13 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div id="e-actions" style="display:grid; gap:8px;"></div>
   </div></div>
 
-  <!-- ===== 合戦絵巻（オート進行＋采配介入。実況: 物見の佐助。史実兵力を表示） ===== -->
+  <!-- ===== 合戦絵巻（②⑤⑦シーン方式・2026-06-15刷新。実況: 物見の佐助。史実兵力はヘッダに表示） ===== -->
   <div id="ovl-battle" class="ovl"><div class="box">
     <div class="evYear serif" id="b-year"></div>
     <h2 class="serif" id="b-title"></h2>
     <div class="evText" id="b-intro" style="margin-bottom:8px;"></div>
-    <div class="bField" id="b-field" onclick="UI.battleFast()">
-      <div class="bSky" id="b-sky"></div>
-      <div class="bArmies">
-        <div class="bSide"><div class="bName" id="b-mename">🔵 織田軍</div><div class="bHP" id="b-mehp"></div></div>
-        <div class="bVsTag serif">VS</div>
-        <div class="bSide foe"><div class="bFoeHead"><div class="bName en" id="b-foename"></div><img class="bFoeFace" id="b-foeface" alt="" onerror="this.style.display='none'"></div><div class="bHP" id="b-foehp"></div></div>
-      </div>
-      <div class="bStrip">
-        <span class="bUnits" id="b-meunits"></span>
-        <span class="bClash">💥</span>
-        <span class="bUnits foe" id="b-foeunits"></span>
-      </div>
-      <div class="btBar"><i class="me" id="b-tug" style="width:50%"></i></div>
-      <div class="bCutin" id="b-cutin"></div>
-    </div>
+    <div class="bHeadline" id="b-headline"></div>
+    <div id="b-stage" class="bStage" onclick="UI.battleFast()"></div>
     <div class="bCaster"><span><img class="sasukeImg" src="assets/sasuke.png" alt="" onerror="this.style.display='none'"><span id="b-castername"></span></span><button class="bFastTip" onclick="UI.battleFast()">⏩ 早送り</button></div>
     <div class="bLog" id="b-log"></div>
     <div id="b-actions" style="display:grid; gap:8px;"></div>
@@ -1296,6 +1430,9 @@ const Game = (function(){
     return Math.round(S.buyu*2.2 + S.chiryaku*1.6 + S.ninbo*0.6 + S.koku/15);
   }
   const TIER_VAL = { kaishin:1.4, yuko:1.0, fuhatsu:0.35, shikujiri:0 };
+  // 勝敗式の重み（地力寄り・2026-06-15 オーナー方針）。battleProgress と battleResult で共有＝係数が二度と食い違わない。
+  const W_RATIO = 0.68, W_QUIZ = 0.42; // 地力(ratio)を重く・采配クイズを軽く。win = ratio*W_RATIO + 加重クイズ*W_QUIZ >= 0.9
+
   // ラウンド加重: 決戦(終盤)ほど重い＝最後まで勝敗が決まらない(消化試合を防ぐ・2026-06-14)。
   // 期待値(平均)は重みの正規化で不変＝難度バランスは維持。変えるのは「どのラウンドが効くか」だけ
   function roundWeights(n){
@@ -1366,17 +1503,20 @@ const Game = (function(){
     if (kokozo) text += '\n⚡「ここぞの度胸」で踏みとどまった！';
     return { correct, battle:true, last:(B.round>=B.max), text };
   }
-  // 押し合いゲージ用: 現在の戦況（1.0=勝敗ライン）
+  // 戦況の現在値（1.0=勝敗ライン）。新合戦演出のシーン充填(renderMomentum)の唯一の供給源。
+  // 係数は battleResult と必ず一致させること（地力寄り 0.72/0.34・2026-06-15 オーナー方針）。
   function battleProgress(){
     const ratio = playerPower()/B.ev.enemyPower;
     // 加重スコアを「総加重」で割る＝終盤の重い采配が未消化のうちは勝ちゾーン(0.9)に届かない＝早期に勝敗が見えない
-    return (ratio*0.6 + 0.62*(B.wsum/B.wtot)) / 0.9;
+    return (ratio*W_RATIO + W_QUIZ*(B.wsum/B.wtot)) / 0.9;
   }
   function battleResult(){
     if (B.skirmish) return skirmishResult();
     S.battles++;
     const ratio = playerPower()/B.ev.enemyPower;
-    const score = ratio*0.6 + (B.wsum/B.wtot)*0.62; // 加重スコアで判定（期待値は従来と同じ＝バランス維持）
+    // 地力寄り（2026-06-15 オーナー方針）: 地力=ratio を重く、采配クイズを軽く。
+    // ステの低い偉人は全問正解でも地力が足りないと勝てない＝「運ゲーでなく鍛錬の勝利」を担保。
+    const score = ratio*W_RATIO + (B.wsum/B.wtot)*W_QUIZ;
     const win = score >= 0.9;
     if (win){ S.wins++; S.skillPt += 8; applyFx(B.ev.winFx); }
     S.chronicle.push({ y:B.ev.year, t:B.ev.title.split(' — ')[0], r: win?'⚔️勝利':'💀敗北' });
@@ -2175,231 +2315,463 @@ const UI = (function(){
 
   /* （小競り合いのUIは合戦絵巻に統合 — §合戦絵巻を参照） */
 
-  /* ---- 合戦絵巻（実況: 物見の佐助。タップ早送り・兵力カウントダウン・4階調エフェクト） ---- */
+  /* ---- §合戦シーン（②⑤⑦の新フォーマット・proto battle_proto2.html より移植・2026-06-15） ----
+     押し合いバー方式→画面まるごと「場面」方式へ刷新。エンジン(§7)は不変。
+     fillは Game.battleProgress()（地力寄り0.68/0.42）に連動＝低ステは派手でも押し負ける。
+     MODES[key] = { name, ownVeil, setup(), renderMomentum(), onResult({tier}), climax(win) }。
+     合戦eventの ev.presentMode で出し分け（既定=jin-atarashii＝②領地。⑤⑦は次コミットで追加）。 */
   const L = D.BATTLE_LINES;
-  let castT = [], castFast = false, logLines = [], casterIntroShown = false, fastPref = false;
-  function clearCast(){ castT.forEach(clearTimeout); castT = []; }
-  // 一度でも早送りしたら、その後の合戦もずっと速いまま（中学生FB「毎回押し直しが面倒」2026-06-14）
-  function battleFast(){ castFast = true; fastPref = true; }
-  function castWait(ms){ return castFast ? 90 : ms; }
-  function addLog(t){
-    logLines.push(t);
-    if (logLines.length > 3) logLines.shift();
-    $('b-log').innerHTML = logLines.map((l,i)=>`<div class="${i===logLines.length-1?'new':''}">${l}</div>`).join('');
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const reduceMotion = (typeof window!=='undefined' && window.matchMedia) ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+  let battleLog = [], casterIntroShown = false, fastFwd = false, fastPref = false;
+  let battleIntro = false, battleTiers = [], curMode = 'jin-atarashii', mst = {};
+  // 一度でも早送りしたら以後の合戦もずっと速いまま（中学生FB「毎回押し直しが面倒」）
+  function battleFast(){ fastFwd = true; fastPref = true; }
+  function wait(ms){ return new Promise(r=>setTimeout(r, (reduceMotion||fastFwd)?Math.min(ms,110):ms)); }
+  function log(t){ if(!t) return; battleLog.push(t); if(battleLog.length>3) battleLog.shift();
+    $('b-log').innerHTML = battleLog.map((l,i)=>`<div class="${i===battleLog.length-1?'new':''}">${l}</div>`).join(''); }
+  function clearLog(){ battleLog=[]; $('b-log').innerHTML=''; }
+  async function castLines(lines){ for(const ln of lines){ log(ln); await wait(reduceMotion?80:900); } }
+
+  /* 戦況の指標（1.0=勝敗ライン）。地力寄り係数は engine §7 の battleProgress に集約済 */
+  const FILLMAX = 1.3, WINLINE = 0.9;
+  function prog(){ return Game.battleProgress(); }            // 1.0 = 勝敗ライン
+  function liveScoreV(){ return prog()*WINLINE; }             // proto liveScore 相当（0.9=勝利ライン）
+  function curRatio(){ return Game.playerPower()/Game.B.ev.enemyPower; }  // 地力比
+  function playerFill(){ if(battleIntro) return 0; return clamp(liveScoreV()/FILLMAX,0,1.05); }
+  function enemyFillAt(r){ return (WINLINE/FILLMAX)*(r/Game.B.max); }     // 敵は決着まで「壁」へ受動チャージ
+  function meName(){ return Game.H.armyName; }
+  function foeName(){ return Game.B.ev.enemyName; }
+  function foeIcon(){ return Game.B.ev.enemyIcon || '🔴'; }
+
+  /* 偉人ごとの画像差し替え（普遍フォーマットの核）。assets/<base><_h|_i>.png → 無ければ信長(無印)→無ければ絵文字。
+     第7便スプライト未配置の間はすべて絵文字で表示（commit ④で assets/ へ取り込み）。 */
+  function heroSfx(){ return ({nobunaga:'',hideyoshi:'_h',ieyasu:'_i'})[Game.H.id] || ''; }
+  function gi(base, emoji){ const s=heroSfx();
+    return `<img class="bimg" src="assets/${base}${s}.png" alt="" onerror="UI.imgFallback(this,'${base}','${emoji||''}')">`; }
+  function imgFallback(img, base, emoji){
+    if(base && img.getAttribute('src').indexOf('/'+base+'.png')<0 && !img.dataset.fb){ img.dataset.fb='1'; img.src='assets/'+base+'.png'; return; }
+    if(emoji){ img.replaceWith(document.createTextNode(emoji)); } else { img.style.display='none'; }
   }
-  // 実況を1行ずつ流す（早送り中は高速）
-  function cast(lines, done){
-    let i = 0;
-    (function next(){
-      if (i >= lines.length){ if (done) castT.push(setTimeout(done, castWait(450))); return; }
-      addLog(lines[i++]);
-      castT.push(setTimeout(next, castWait(1050)));
-    })();
+
+  /* ---- 共有プリミティブ（火花・カットイン・揺れ・音・信頼度色） ---- */
+  function spawnSparks(tier){
+    if(reduceMotion) return;
+    const st=$('b-stage'); if(!st) return;
+    const set = tier==='kaishin' ? ['⚔️','✨','🔥','💥','⭐','✨'] : tier==='yuko' ? ['✨','💥'] : [];
+    set.forEach((e,k)=>{
+      const s=document.createElement('span'); s.className='spark'; s.textContent=e;
+      s.style.left='50%'; s.style.top='46%';
+      const ang=(k/set.length)*Math.PI*2+k*0.7, dist=60+(k%3)*22;
+      s.style.setProperty('--dx',Math.round(Math.cos(ang)*dist)+'px');
+      s.style.setProperty('--dy',Math.round(Math.sin(ang)*dist-16)+'px');
+      s.style.setProperty('--r',((k*47)%120-60)+'deg');
+      s.style.animation='bsparkfly .9s forwards';
+      s.addEventListener('animationend',()=>s.remove()); setTimeout(()=>s.remove(),1000);
+      st.appendChild(s);
+    });
   }
-  function fmtArmy(n){ return n.toLocaleString('ja-JP'); }
-  function renderArmies(){
-    const B = Game.B;
-    $('b-mehp').textContent = fmtArmy(B.meHP);
-    $('b-foehp').textContent = fmtArmy(B.foeHP);
-    const units = (hp, max, icon)=> icon.repeat(Math.max(1, Math.ceil(hp/max*6)));
-    $('b-meunits').textContent = units(B.meHP, B.ev.army.me, B.ev.meUnit||'🛡️');
-    $('b-foeunits').textContent = units(B.foeHP, B.ev.army.foe, B.ev.foeUnit||'🗡️');
-    $('b-tug').style.width = Math.max(8, Math.min(92, Math.round(Game.battleProgress()*50)))+'%';
+  function cutin(text){
+    if(reduceMotion){ log('⚡ '+text); return; }
+    const c=document.createElement('div'); c.className='cutin'; c.textContent=text;
+    $('b-stage').appendChild(c); requestAnimationFrame(()=>c.classList.add('on'));
+    setTimeout(()=>c.remove(),1200);
   }
-  // 兵力カウントダウン演出（損害が大きいほどゆっくり=重い／パルス＋落下ダメージ数で爪痕を残す）
-  function tickHP(side, to, done){
-    const B = Game.B;
-    const el = $(side==='me' ? 'b-mehp' : 'b-foehp');
-    const from = parseInt(el.textContent.replace(/,/g,'')) || to;
-    const maxHP = (side==='me' ? B.ev.army.me : B.ev.army.foe) || 1;
-    const delta = from - to;
-    if (delta > 0){ // 落下するダメージ数（lasting trace）
-      const f = document.createElement('span'); f.className='dmgFloat '+side; f.textContent='−'+fmtArmy(delta);
-      const sideEl = el.closest ? el.closest('.bSide') : null;
-      if (sideEl){ const kill=()=>f.remove(); f.addEventListener('animationend',kill); castT.push(setTimeout(kill,1300)); sideEl.appendChild(f); }
+  function fxHit(tier){ const st=$('b-stage'); if(!st) return;
+    if(tier==='kaishin') st.classList.add('shake'); st.classList.add('flash');
+    setTimeout(()=>st.classList.remove('shake','flash'),520); }
+  let actx=null;
+  function beep(tier){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const f={shikujiri:140,fuhatsu:260,yuko:440,kaishin:660}[tier]||330;
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.frequency.value=f; o.type=tier==='kaishin'?'sawtooth':'triangle';
+    g.gain.value=0.08; o.connect(g); g.connect(actx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+0.28); o.stop(actx.currentTime+0.3);
+  }catch(e){} }
+  const TRUST=[ {k:'blue',c:'#6fa3ff'},{k:'yellow',c:'#f3d24a'},{k:'green',c:'#67c98a'},
+    {k:'red',c:'#ff7a6a'},{k:'gold',c:'#f3cf5d'},{k:'rainbow',c:'#ffd86b'} ];
+  function trustStep(p){ return p>=1.42?5 : p>=1.12?4 : p>=1.0?3 : p>=0.8?2 : p>=0.58?1 : 0; }
+  function trustColor(p, phase){ const cap = phase==='start'?2 : phase==='final'?5 : 3;
+    const t=TRUST[Math.min(trustStep(p),cap)]; return { c:t.c, rainbow:t.k==='rainbow' }; }
+  const FOE_C='#a56fd6';
+  const RAINBOW_GRAD='conic-gradient(from 210deg, #ff6a6a, #f3cf5d, #67c98a, #6fa3ff, #f3cf5d, #ff6a6a)';
+  function trustFlood(t){ return t.rainbow ? RAINBOW_GRAD : `radial-gradient(circle, ${t.c}, transparent 76%)`; }
+
+  // 開幕の「ステータスボーナス」: 両軍とも空→地力ぶんが布陣に満ちる（初期値の明示）。信頼度メーターは廃止。
+  function showStatusBonus(){
+    const st=$('b-stage'); if(!st) return;
+    const el=document.createElement('div'); el.className='status-bonus';
+    el.innerHTML=`<span class="sb-h">⚔ ステータスボーナス！</span><span class="sb-s">日頃の鍛錬（戦闘力 ${Game.playerPower()}）が、開戦の布陣となる</span>`;
+    st.appendChild(el); requestAnimationFrame(()=>el.classList.add('in'));
+    setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),400); }, reduceMotion?500:1700);
+  }
+  async function statusBonusIntro(){
+    const m=MODES[curMode];
+    await wait(reduceMotion?80:480);
+    showStatusBonus(); battleIntro=false;
+    if(m && m.renderMomentum) m.renderMomentum();   // 空→地力ぶんへCSSトランジションで満ちる
+    await wait(reduceMotion?120:1300);
+  }
+  // 決戦リーチ突入の段差（四隅を絞る・酔わない・1つだけ）
+  function reachCue(){ beep('yuko');
+    if(!reduceMotion){ const st=$('b-stage'); st.classList.remove('reach'); void st.offsetWidth; st.classList.add('reach'); setTimeout(()=>st.classList.remove('reach'),1000); }
+    log('🔥 決戦——ここまでの鍛錬と采配、すべてが試される！'); }
+  // 問題ごとの押し合いカットイン（味方=白＋信頼度色／敵=紫）
+  function roundClash(tier, allyColor){
+    const good=(tier==='kaishin'||tier==='yuko');
+    if(reduceMotion){ log(good?'⚔️ 采配が通り、押し込んだ！':`🟣 ${foeName()}に押し返された…`); return wait(300); }
+    const w=document.createElement('div'); w.className='clash';
+    w.innerHTML=`<div class="clash-card ally" style="--g:${allyColor}"><span class="ci-ic">⚔️</span><span class="ci-nm">${meName()}</span></div>`+
+      `<div class="clash-spark">⚔</div>`+
+      `<div class="clash-card foe"><span class="ci-ic">${foeIcon()}</span><span class="ci-nm">${foeName()}</span></div>`;
+    $('b-stage').appendChild(w); requestAnimationFrame(()=>w.classList.add('in'));
+    return wait(440).then(()=>{ w.classList.add(good?'ally-win':'foe-win'); beep(tier); if(good) spawnSparks(tier); else fxHit('shikujiri'); return wait(720); })
+      .then(()=>{ w.classList.add('out'); return wait(260).then(()=>w.remove()); });
+  }
+  // 本物の復活=戦闘画面に佐助の吹き出し（暗転より前）
+  async function reviveBubble(){
+    if(reduceMotion){ log('🥷 佐助「まだ……まだ勝負は終わっておりませぬッ——！」'); return wait(fastFwd?120:600); }
+    const b=document.createElement('div'); b.className='revive-bubble';
+    b.innerHTML=`<span class="rb-ic">🥷</span><span class="rb-tx">まだ……まだ勝負は終わっておりませぬッ——！</span>`;
+    $('b-stage').appendChild(b); beep('yuko'); requestAnimationFrame(()=>b.classList.add('in'));
+    await wait(fastFwd?280:1500); b.classList.add('out'); await wait(260); b.remove();
+  }
+  // 決着のカットイン: ためる→暗転(中立・先バレ防止)→勝者の大カットイン→敗者崩壊
+  async function finalClash(win, allyColor, enemyLine, revived){
+    if(revived) await reviveBubble();
+    const ov=document.createElement('div'); ov.className='fclash'; document.body.appendChild(ov);
+    ov.classList.add('charge'); beep('yuko'); await wait(reduceMotion?120:650);
+    ov.classList.add('black'); await wait(reduceMotion?160:1050);
+    const card=document.createElement('div'); card.className='fc-card '+(win?'ally':'foe');
+    if(win){ card.style.setProperty('--g',allyColor); card.innerHTML=`<span class="fc-ic">⚔️</span><span class="fc-nm">${meName()}</span><span class="fc-ln">かかれぇッ——！</span>`; }
+    else   { card.innerHTML=`<span class="fc-ic">${foeIcon()}</span><span class="fc-nm">${foeName()}</span><span class="fc-ln">「${enemyLine}」</span>`; }
+    ov.appendChild(card); beep(win?'kaishin':'shikujiri'); if(win) spawnSparks('kaishin');
+    requestAnimationFrame(()=>card.classList.add('on'));
+    await wait(reduceMotion?160:1000);
+    ov.classList.add('crumble'); fxHit(win?'kaishin':'shikujiri');
+    await wait(reduceMotion?160:850);
+    ov.classList.add('out'); await wait(300); ov.remove();
+  }
+  // ⑤紙芝居（採用＝案C「時間停止→急接近」＋着弾の1.5秒スロー）。別枠・肩越し視点・敵が遠近法で巨大化・弾ズーム。
+  async function runKami(win){
+    const ov=document.createElement('div'); ov.className='kami';
+    ov.innerHTML=`
+      <div class="kami-bg"></div>
+      <div class="kami-enemy" id="kami-enemy">${gi('rng_enemy','🏇')}</div>
+      <div class="kami-bullet" id="kami-bullet">●</div>
+      <div class="kami-shoulder">${gi('kami_shoulder','🥷')}</div>
+      <div class="kami-cap" id="kami-cap">…狙い澄ます…</div>
+      <div class="kami-flash" id="kami-flash"></div>
+      <div class="kami-frameno" id="kami-frameno"></div>`;
+    $('b-stage').appendChild(ov);
+    requestAnimationFrame(()=>ov.classList.add('on'));
+    await wait(reduceMotion?80:260);
+    const fast=reduceMotion||fastFwd;
+    const enemy=ov.querySelector('#kami-enemy'), bullet=ov.querySelector('#kami-bullet'),
+          cap=ov.querySelector('#kami-cap'), flash=ov.querySelector('#kami-flash'), fno=ov.querySelector('#kami-frameno');
+    cap.textContent='…狙い澄ます…';
+    enemy.style.transition='transform .9s ease-out'; enemy.style.transform='translate(-50%,-50%) scale(.95)';
+    await wait(fast?120:900);
+    cap.textContent='放てッ！'; bullet.style.opacity='1'; beep('kaishin');
+    enemy.style.transition='transform .2s cubic-bezier(.6,0,.95,1)'; enemy.style.transform='translate(-50%,-50%) scale(3.4)';
+    bullet.style.transition='bottom .2s'; bullet.style.bottom='52%'; fno.textContent='急接近';
+    await wait(fast?70:220);
+    cap.textContent='——当たるか……！';
+    bullet.style.transition=`bottom ${fast?'.12s':'1.5s'} linear`; bullet.style.bottom='41%';   // 着弾の1.5秒スロー＝ヒリヒリ
+    beep('fuhatsu'); fno.textContent='着弾……';
+    await wait(fast?140:1500);
+    if(win){
+      cap.textContent='命中——！'; enemy.textContent='💥';
+      enemy.style.transition='transform .12s'; enemy.style.transform='translate(-50%,-50%) scale(4.4)';
+      flash.style.transition='opacity .07s'; flash.style.opacity='.92'; beep('kaishin'); fxHit('kaishin');
+      await wait(fast?100:220);
+      flash.style.transition='opacity .4s'; flash.style.opacity='0';
+      enemy.style.transition='transform .4s, opacity .4s'; enemy.style.opacity='0';
+      await wait(fast?80:340);
+    } else {
+      cap.textContent='弾、逸れたッ…！';
+      bullet.style.transition='transform .2s, opacity .2s'; bullet.style.transform='translate(44px,-34px)'; bullet.style.opacity='0';
+      await wait(fast?90:260);
+      cap.textContent='突撃——避けよッ！';
+      enemy.style.transition='transform .3s ease-in'; enemy.style.transform='translate(-50%,-46%) scale(6)';   // 肩越しに敵が迫る
+      fxHit('shikujiri'); beep('shikujiri');
+      await wait(fast?120:420);
     }
-    el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
-    const steps = 16, dur = castWait(420 + Math.min(820, Math.abs(delta)/maxHP*2400)); // 大損害ほどゆっくり=重い一撃
-    const d = (to-from)/steps;
-    let i = 0;
-    (function t(){
-      i++;
-      el.textContent = fmtArmy(Math.round(from + d*i));
-      if (i < steps) castT.push(setTimeout(t, dur/steps));
-      else { el.textContent = fmtArmy(to); if (done) castT.push(setTimeout(done, castWait(250))); }
-    })();
+    ov.classList.remove('on'); await wait(reduceMotion?80:260); ov.remove();
   }
-  function openBattle(ev){
-    castFast = fastPref; logLines = []; // 早送り設定を引き継ぐ
-    clearCast();
+
+  /* ---- モード定義（見せ方の差分のみ。②領地＋⑤遠距離＋⑦勢力押し） ---- */
+  const MODES = {};
+  MODES['jin-atarashii'] = {
+    name:'領地', ownVeil:true,
+    HQ_ME:14, HQ_FOE:20, CASTLE:17,   // (r2,c0)/(r2,c6)/(r2,c3)  index=r*7+c
+    buildSpread(hq, colMin, colMax){
+      const order=[], seen=new Set([hq, this.CASTLE]); let frontier=[hq];
+      while(frontier.length){ const next=[];
+        for(const cell of frontier){ const r=Math.floor(cell/7), c=cell%7;
+          [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr,nc])=>{
+            if(nr<0||nr>4||nc<colMin||nc>colMax) return; const ni=nr*7+nc;
+            if(seen.has(ni)) return; seen.add(ni); next.push(ni); }); }
+        for(let i=next.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [next[i],next[j]]=[next[j],next[i]]; }
+        order.push(...next); frontier=next; }
+      return order;
+    },
+    setup(){
+      const ev=Game.B.ev, cells=[];
+      for(let i=0;i<35;i++){
+        if(i===this.HQ_ME) cells.push(`<div class="terr-cell terr-hq me" data-i="${i}"><span class="hqi">${gi('terr_hq','🚩')}</span><span class="hql">本部</span></div>`);
+        else if(i===this.HQ_FOE) cells.push(`<div class="terr-cell terr-hq foe" data-i="${i}"><span class="hqi">${gi('terr_hq','🚩')}</span><span class="hql">本部</span></div>`);
+        else if(i===this.CASTLE) cells.push(`<div class="terr-cell terr-castle" data-i="${i}">${gi('terr_castle','🏯')}</div>`);
+        else cells.push(`<div class="terr-cell" data-i="${i}"></div>`);
+      }
+      $('b-stage').innerHTML = `
+        <div class="terr-field"></div>
+        <div class="terr-tag" id="terr-tag">${foeName()}との天下分け目</div>
+        <div class="terr-grid">${cells.join('')}</div>
+        <div class="terr-flood" id="terr-flood"></div>`;
+      mst.spreadMe=this.buildSpread(this.HQ_ME,0,2);   // 左本部→中央へ(col0-2)
+      mst.spreadFoe=this.buildSpread(this.HQ_FOE,4,6);  // 右本部→中央へ(col4-6)
+      this.renderMomentum();
+    },
+    renderMomentum(){
+      const meN=Math.round(clamp(playerFill(),0,1)*mst.spreadMe.length);
+      const foeN=Math.round(clamp(enemyFillAt(Game.B.round)/(WINLINE/FILLMAX),0,1)*mst.spreadFoe.length);
+      const apply=(order,n,cls)=>order.forEach((idx,k)=>{ const c=document.querySelector(`.terr-cell[data-i="${idx}"]`); if(!c)return;
+        const on=k<n;
+        if(on && !c.classList.contains(cls)){ c.classList.add(cls,'cap'); setTimeout(()=>c.classList.remove('cap'),450); }
+        else if(!on && c.classList.contains(cls)){ c.classList.remove(cls); } });
+      apply(mst.spreadMe, meN, 'me'); apply(mst.spreadFoe, foeN, 'foe');
+    },
+    async onResult(res){
+      const good=(res.tier==='kaishin'||res.tier==='yuko');
+      await roundClash(res.tier, trustColor(prog(),'round').c);
+      this.renderMomentum();
+      const tag=$('terr-tag');
+      if(good && curRatio()<0.7) tag.textContent='旗は進むが…兵力で押し返される、地力不足';
+      else if(res.tier==='shikujiri') tag.textContent='しくじり…領地を切り取られた';
+      else if(good) tag.textContent='本部より勢力を広げた！';
+      else tag.textContent='戦線が伸び悩む…';
+      tag.classList.remove('show'); void tag.offsetWidth; tag.classList.add('show');
+      await wait(650);
+    },
+    async climax(win){
+      const allyT=trustColor(prog(),'final');
+      const revived=win && !battleTiers.some(t=>t==='kaishin'||t==='yuko');
+      await finalClash(win, allyT.c, '本陣の囲いは固い。小僧の旗では届かぬわ', revived);
+      const cls=win?'me':'foe';
+      const owned=i=>document.querySelector(`.terr-cell[data-i="${i}"]`).classList.contains(cls);
+      const all=Array.from({length:35},(_,i)=>i).filter(i=>i!==this.HQ_ME && i!==this.HQ_FOE && i!==this.CASTLE && !owned(i));
+      all.sort((a,b)=> win ? (a%7-b%7) : (b%7-a%7));   // 自本部側から城へ向けて一掃
+      const path=[...all, this.CASTLE];
+      const seq=(reduceMotion||fastFwd)?[path]:path.map(x=>[x]);
+      for(const grp of seq){ for(const idx of grp){ const c=document.querySelector(`.terr-cell[data-i="${idx}"]`); if(!c)continue;
+          if(idx===this.CASTLE){ c.classList.add(cls); c.textContent = win?'🏯':'🏚️'; if(!win) c.classList.add('fall'); }
+          else { c.classList.remove('me','foe'); c.classList.add(cls,'cap'); } }
+        beep(win?'yuko':'shikujiri'); await wait((reduceMotion||fastFwd)?150:80); }
+      $('terr-tag').textContent = win?'中央の城を攻め落とした——天下分け目を制す！':'本城を明け渡した…無念！';
+      $('terr-tag').classList.add('show');
+      const flood=$('terr-flood'); flood.style.background = win ? trustFlood(allyT) : `radial-gradient(circle,${FOE_C},transparent 80%)`;
+      if(win) spawnSparks('kaishin');
+      fxHit(win?'kaishin':'shikujiri'); flood.classList.add('on');
+      await wait(900);
+    },
+  };
+
+  /* ---------- ⑤遠距離「放て！」(左下射手×右上の敵が接近・暗転なし・別枠紙芝居runKami) ---------- */
+  MODES['teppo-atarashii'] = {
+    name:'遠距離', ownVeil:true,
+    enemyAdvance(){ return clamp(enemyFillAt(Game.B.round)/(WINLINE/FILLMAX),0,1); },
+    setup(){
+      $('b-stage').innerHTML = `
+        <div class="rng-field"></div>
+        <div class="rng-enemy" id="rng-enemy">${gi('rng_enemy','🏇')}</div><div class="rng-enemylbl" id="rng-enemylbl">${foeName()} 本隊</div>
+        <div class="rng-shooter" id="rng-shooter">${gi('rng_shooter','🔫')}</div><div class="rng-shooterlbl">${meName()} 鉄砲隊</div>
+        <div class="rng-aim" id="rng-aim"></div>
+        <div class="rng-bullet" id="rng-bullet">●</div>
+        <div class="rng-tag" id="rng-tag"></div>
+        <div class="rng-flood" id="rng-flood"></div>`;
+      this.renderMomentum();
+    },
+    renderMomentum(){
+      const fill=clamp(playerFill(),0,1), adv=this.enemyAdvance();
+      $('rng-enemy').style.transform=`translate(${-adv*150}px, ${adv*150}px)`;
+      $('rng-enemylbl').style.transform=`translate(${-adv*150}px, ${adv*150}px)`;
+      const aim=$('rng-aim'), tight=fill>=(WINLINE/FILLMAX);
+      aim.classList.toggle('steady', tight);
+      aim.classList.toggle('jit', curRatio()<0.8 && !battleIntro);
+      aim.style.borderColor = tight?'#f3cf5d':(curRatio()<0.7?'#e0a020':'#6fa3ff');
+    },
+    async onResult(res){
+      const good=(res.tier==='kaishin'||res.tier==='yuko');
+      await roundClash(res.tier, trustColor(prog(),'round').c);
+      this.renderMomentum();
+      const tag=$('rng-tag');
+      if(good && curRatio()<0.7) tag.textContent='狙いは良いが…弾が足らぬ、地力不足';
+      else if(res.tier==='shikujiri') tag.textContent='照準が乱れた…';
+      else if(good) tag.textContent='狙い、定まってきた！';
+      else tag.textContent='敵が間合いを詰める…';
+      tag.classList.remove('show'); void tag.offsetWidth; tag.classList.add('show');
+      await wait(650);
+    },
+    async climax(win){
+      const allyT=trustColor(prog(),'final');
+      const revived=win && !battleTiers.some(t=>t==='kaishin'||t==='yuko');
+      if(revived) await reviveBubble();   // 暗転なし・戦闘画面に佐助の吹き出しだけ
+      const enemy=$('rng-enemy'), tag=$('rng-tag'), flood=$('rng-flood'), shooter=$('rng-shooter');
+      tag.className='rng-tag big'; tag.textContent='放てッ——！'; void tag.offsetWidth; tag.classList.add('show');
+      shooter.style.transform='translateX(-4px) rotate(-6deg)'; beep('kaishin');
+      await wait(reduceMotion?120:420);
+      await runKami(win);   // 別枠の紙芝居（案C＝時間停止→急接近＋着弾1.5秒スロー）
+      if(win){
+        enemy.style.opacity='0'; flood.style.background=trustFlood(allyT); spawnSparks('kaishin'); fxHit('kaishin');
+        tag.className='rng-tag big'; tag.textContent='命中——敵本隊を撃ち崩した！'; void tag.offsetWidth; tag.classList.add('show');
+        log('🗣️ 佐助「見事な一発！ 勝ち鬨——！」');
+      } else {
+        enemy.style.transition='transform .45s'; enemy.style.transform='translate(-235px,205px) scale(1.4)';
+        shooter.style.transform='translateX(10px) rotate(12deg)'; fxHit('shikujiri');
+        flood.style.background=`radial-gradient(circle,${FOE_C},transparent 80%)`;
+        tag.className='rng-tag'; tag.textContent='弾それて…突撃を受けた！'; void tag.offsetWidth; tag.classList.add('show');
+        log('🗣️ 佐助「間合いを詰められた…。鍛えて出直しましょうぞ」');
+      }
+      flood.classList.add('on');
+      await wait(900);
+    },
+  };
+
+  /* ---------- ⑦勢力押し「鬨の壁」(兵列が押し合い→暗転→押し出す・武力以外にも転用) ---------- */
+  MODES['toki-atarashii'] = {
+    name:'勢力押し', ownVeil:true,
+    // seam=50% ⟺ 勝利ライン。開幕は敵の大軍の壁、地力(ステータスボーナス)で押し返す
+    share(){ const mf=playerFill(); return clamp(mf/(mf+(WINLINE/FILLMAX)), 0.06, 0.94); },
+    setup(){
+      const ev=Game.B.ev;
+      $('b-stage').innerHTML = `
+        <div class="push-field"></div>
+        <div class="push-lbl"><span class="me">${meName()} ${ev.army.me.toLocaleString()}</span><span class="foe">${foeName()} ${ev.army.foe.toLocaleString()}</span></div>
+        <div class="push-wall me" id="push-me"><div class="push-row" id="push-merow"></div></div>
+        <div class="push-wall foe" id="push-foe"><div class="push-row" id="push-foerow"></div></div>
+        <div class="push-seam" id="push-seam"></div>
+        <div class="push-tag" id="push-tag"></div>
+        <div class="push-flood" id="push-flood"></div>`;
+      this.renderMomentum();
+    },
+    renderMomentum(){
+      const sh=this.share(), mf=clamp(playerFill(),0,1);
+      $('push-me').style.width=(sh*100)+'%';
+      $('push-foe').style.width=((1-sh)*100)+'%';
+      $('push-seam').style.left=(sh*100)+'%';
+      $('push-merow').innerHTML=gi('push_sol_me','🛡️').repeat(clamp(Math.round(2+mf*10),2,12));        // 自軍＝地力ぶんの厚み
+      $('push-foerow').innerHTML=gi('push_sol_foe','🗡️').repeat(clamp(Math.round(3+(1-sh)*11),3,14));   // 敵＝押している側ほど厚い大軍
+    },
+    async onResult(res){
+      const good=(res.tier==='kaishin'||res.tier==='yuko');
+      await roundClash(res.tier, trustColor(prog(),'round').c);
+      this.renderMomentum();
+      if(!reduceMotion && good){ const st=$('b-stage'); st.classList.add('push-quake'); setTimeout(()=>st.classList.remove('push-quake'), res.tier==='kaishin'?440:250); }
+      const tag=$('push-tag');
+      if(good && curRatio()<0.7) tag.textContent='押し返すが…数で劣る、地力不足！';
+      else if(res.tier==='shikujiri') tag.textContent='列が乱れ、押し込まれた…';
+      else if(good) tag.textContent=`${meName()}の列、押し込む！`;
+      else tag.textContent='押し合い、互角…';
+      tag.classList.remove('show'); void tag.offsetWidth; tag.classList.add('show');
+      await wait(650);
+    },
+    async climax(win){
+      const allyT=trustColor(prog(),'final');
+      const revived=win && !battleTiers.some(t=>t==='kaishin'||t==='yuko');
+      await finalClash(win, allyT.c, '数の壁は厚いぞ。押し負けて引け', revived);   // 暗転あり
+      const me=$('push-me'), foe=$('push-foe'), seam=$('push-seam'), flood=$('push-flood');
+      if(win){ me.style.width='100%'; foe.style.width='0%'; seam.style.left='100%'; }
+      else   { me.style.width='0%'; foe.style.width='100%'; seam.style.left='0%'; }
+      if(!reduceMotion){ const st=$('b-stage'); st.classList.add('push-quake'); setTimeout(()=>st.classList.remove('push-quake'),600); }
+      fxHit(win?'kaishin':'shikujiri'); beep(win?'kaishin':'shikujiri');
+      await wait(reduceMotion?150:600);
+      $('push-tag').textContent = win?'敵を押し出した——勝ち鬨！':'押し出された…無念！';
+      $('push-tag').classList.add('show');
+      flood.style.background = win ? trustFlood(allyT) : `radial-gradient(circle,${FOE_C},transparent 80%)`;
+      if(win) spawnSparks('kaishin'); flood.classList.add('on');
+      await wait(900);
+    },
+  };
+
+  /* ---- フロー制御（engine §7 が openBattle を呼ぶ→采配→クイズ→battleResolve→battleFinish） ---- */
+  function headlineHTML(ev){
+    const sky = `${(ev.terrain&&ev.terrain.icon)||''} ${(ev.terrain&&ev.terrain.label)||''}`.trim();
+    const ct = ev.army ? `<span class="bArmyCt"><span class="me">${meName()} ${ev.army.me.toLocaleString()}</span> 対 <span class="foe">${ev.enemyName} ${ev.army.foe.toLocaleString()}</span></span>` : '';
+    return `<span>${sky}</span>${ct}`;
+  }
+  async function openBattle(ev){
+    fastFwd = fastPref; battleIntro = true; battleTiers = []; mst = {};
+    curMode = (ev.presentMode && MODES[ev.presentMode]) ? ev.presentMode : 'jin-atarashii';
     $('b-year').textContent = `${ev.year}年`;
     $('b-title').textContent = ev.title;
     $('b-intro').innerHTML = ev.intro ? `<details class="fold dim"><summary>📜 いくさのいきさつ</summary><div class="foldBody">${ev.intro}</div></details>` : '';
     $('b-intro').style.display = ev.intro ? 'block' : 'none';
-    $('b-sky').textContent = `${ev.terrain.icon} ${ev.terrain.label}`.trim();
-    $('b-mename').textContent = `${Game.H.armyIcon} ${Game.H.armyName}`;
-    $('b-foename').textContent = `${ev.enemyIcon || '🔴'} ${ev.enemyName}`;
-    // 敵将の肖像（第3便・あれば表示）
-    const ff = $('b-foeface');
-    if (ev.enemyImg){ ff.src = ev.enemyImg; ff.style.display = 'inline-block'; } else ff.style.display = 'none';
+    $('b-headline').innerHTML = headlineHTML(ev);
     $('b-castername').textContent = L.caster;
-    $('b-log').innerHTML = ''; $('b-actions').innerHTML = '';
-    $('b-cutin').className = 'bCutin';
-    $('b-field').className = 'bField';
-    // 戦場背景（画像第2便・2026-06-14）: 暗めのオーバーレイで実況テキストの可読性を確保
-    $('b-field').style.backgroundImage = ev.bg
-      ? `linear-gradient(180deg, rgba(26,18,30,.55), rgba(26,18,30,.78)), url('${ev.bg}')` : '';
-    $('b-field').style.backgroundSize = 'cover';
-    $('b-field').style.backgroundPosition = 'center';
-    renderArmies();
+    clearLog(); $('b-actions').innerHTML = '';
+    MODES[curMode].setup();                 // intro=true → 両軍とも空
     $('ovl-battle').classList.add('on');
-    // 開幕の前口上を短縮（佐助の自己紹介は1セッション1回だけ・2026-06-14「文字が多い」対策）
-    const intro1 = (ev.skirmish || casterIntroShown) ? [] : [L.casterIntro]; casterIntroShown = true;
-    const opening = ev.skirmish ? ev.open : [...intro1, ...ev.open, '⚠️ 負ければ育成終了の大一番だ！'];
-    cast(opening, showRound);
+    const introLines = (ev.skirmish || casterIntroShown) ? [] : [L.casterIntro]; casterIntroShown = true;
+    const opening = ev.skirmish ? ev.open : [...introLines, ...ev.open, '⚠️ 負ければ育成終了の大一番だ！'];
+    await castLines(opening);
+    await statusBonusIntro();               // ステータスボーナス→地力ぶんが満ちる
+    showRound();
   }
   // 戦況を実況→采配ボタン（参照ステ数値・堅実/博打/搦め手チップを明記）
   function showRound(){
-    const B = Game.B;
-    const round = B.ev.rounds[B.round];
+    const B=Game.B, round=B.ev.rounds[B.round];
     const isFinal = (!B.skirmish && B.max>1 && B.round===B.max-1);
-    if (isFinal) $('b-field').classList.add('lastSpurt');
-    const situLine = isFinal ? `🔥 決戦！ ${round.situ}` : `📯 軍配${B.round+1}本目！ ${round.situ}`;
-    cast([situLine], ()=>{
-      const chips = { safe:['堅実','#2e8b57'], risky:['博打','#b3362a'], trick:['搦め手','#7a4f9d'] };
-      const head = isFinal
-        ? `<div class="lastSpurtBanner">🔥 決着の采配！ ここが正念場だ</div>`
-        : `<div class="saihaiHead">⚔️ 軍配 ${B.round+1}本目 — どう采配する？</div>`;
-      $('b-actions').innerHTML =
-        `<div class="cmdReveal"></div>` + head +
+    if(isFinal) reachCue();
+    log((isFinal?'🔥 決戦！ ':`📯 軍配${B.round+1}本目！ `)+round.situ);
+    const chips={ safe:['堅実','#2e8b57'], risky:['博打','#b3362a'], trick:['搦め手','#7a4f9d'] };
+    setTimeout(()=>{
+      const head = isFinal ? `<div class="saihaiHead">🔥 決着の采配！ ここが正念場だ</div>` : `<div class="saihaiHead">⚔️ 軍配 ${B.round+1}本目 — どう采配する？</div>`;
+      $('b-actions').innerHTML = head +
         `<div class="note" style="text-align:center; margin-bottom:6px;">正解で采配が実行 ／ <b style="color:#2e8b57">堅実</b>=安定 <b style="color:#b3362a">博打</b>=一か八か <b style="color:#7a4f9d">搦め手</b>=高ステで化ける</div>` +
-        round.opts.map((o,i)=>{
-          const g = D.GENRES[o.stat];
-          const c = chips[o.style];
-          return `<button class="saihai" onclick="UI.pickSaihai(${i})">
-            <span class="ti">${o.icon}</span>
-            <span class="tb"><b>${o.label}</b><small>${g.icon}${g.label} ${Game.S[o.stat]}</small></span>
-            <span class="chip" style="background:${c[1]}">${c[0]}</span></button>`;
+        round.opts.map((o,i)=>{ const g=D.GENRES[o.stat], c=chips[o.style];
+          return `<button class="saihai" onclick="UI.pickSaihai(${i})"><span class="ti">${o.icon}</span><span class="tb"><b>${o.label}</b><small>${g.icon}${g.label} ${Game.S[o.stat]}</small></span><span class="chip" style="background:${c[1]}">${c[0]}</span></button>`;
         }).join('');
-    });
+    }, fastFwd?60:600);
   }
-  function pickSaihai(i){
-    $('b-actions').innerHTML = '';
-    clearCast();
-    $('ovl-battle').classList.remove('on');
-    Game.battlePick(i);
-  }
-  // 演出強化（2026-06-14夜）: ラウンド逓増の強さ（R1=1 → 決戦=1.6）。終盤ほど派手に
-  function roundIntensity(){
-    const B = Game.B;
-    return B.max>1 ? 1 + 0.6*((B.round-1)/(B.max-1)) : 1;
-  }
-  // 会心の火花（≤8・transform/opacityのみ。animationend＋保険timeoutで必ず除去） */
-  function spawnSparks(tier){
-    const field = $('b-field');
-    const set = tier==='kaishin' ? ['⚔️','✨','🔥','💥','⭐','⚔️','✨','💥']
-              : tier==='yuko' ? ['✨','💥','✨'] : [];
-    set.forEach((e,k)=>{
-      const s = document.createElement('span'); s.className='bSpark'; s.textContent=e;
-      const ang = (k/set.length)*Math.PI*2 + (k*0.7);
-      const dist = 58 + (k%3)*22;
-      s.style.setProperty('--dx', Math.round(Math.cos(ang)*dist)+'px');
-      s.style.setProperty('--dy', Math.round(Math.sin(ang)*dist - 18)+'px');
-      s.style.setProperty('--r', ((k*47)%120-60)+'deg');
-      const kill = ()=>s.remove();
-      s.addEventListener('animationend', kill); castT.push(setTimeout(kill, 950));
-      field.appendChild(s);
-    });
-  }
-  // 押し合いの実況タグ（数値でなく「変化」を語る・research: narrate the delta）
-  function showSwingTag(){
-    const p = Game.battleProgress();
-    const msg = p>=1.18 ? '押し切ったあ！' : p>=1.0 ? '押している！' : p>=0.82 ? '五分五分だ！' : p>=0.62 ? 'あと一押し…！' : '押し返された…！';
-    const bar = document.querySelector('#ovl-battle .btBar'); if (!bar) return;
-    const t = document.createElement('span'); t.className='swingTag'; t.textContent=msg;
-    const kill=()=>t.remove(); t.addEventListener('animationend',kill); castT.push(setTimeout(kill,1450));
-    bar.appendChild(t);
-  }
-  function ensureKessenVeil(){
-    let v = document.getElementById('kessen-veil');
-    if (!v){ v = document.createElement('div'); v.id='kessen-veil'; v.className='kessenVeil'; document.body.appendChild(v); }
-    return v;
-  }
-  // クイズから戻ったら、結果を4階調エフェクトで絵巻に反映（タメ→インパクト→着地）
-  function battleResolve(){
-    const B = Game.B;
-    castFast = fastPref; // 早送り設定を引き継ぐ
+  function pickSaihai(i){ $('b-actions').innerHTML=''; $('ovl-battle').classList.remove('on'); Game.battlePick(i); }
+  // クイズから戻る（engineが B.last を確定済）→ tier POP→モード演出→次/決着
+  async function battleResolve(){
+    const B=Game.B; fastFwd = fastPref;
     $('ovl-battle').classList.add('on');
-    const { tier, opt } = B.last;
-    const field = $('b-field');
-    const lastSpurt = (!B.skirmish && B.round>=B.max && B.max>1) ? ' lastSpurt' : '';
-    field.style.setProperty('--fx', roundIntensity());
-    field.className = 'bField'+lastSpurt;
-    // ① ワインドアップ（タメ）: 結果直前に一拍沈める＝衝撃の予兆（hit-stop/anticipation）
-    field.classList.add('windup');
-    castT.push(setTimeout(()=>{
-      field.classList.remove('windup'); void field.offsetWidth;
-      // ② インパクト: tier別fx＋会心カットイン＋火花
-      field.classList.add({ kaishin:'fxBig', yuko:'fxMid', fuhatsu:'fxSmall', shikujiri:'fxBad' }[tier]);
-      spawnSparks(tier);
-      if (tier==='kaishin'){
-        const c = $('b-cutin');
-        c.textContent = (B.round>=B.max && opt.hist) ? '⚡ 史実の一手ーっ！！' : opt.hist ? '⚡ 史実の一手！' : '⚡ 会心！';
-        c.className = 'bCutin on';
-        castT.push(setTimeout(()=>{ c.className = 'bCutin'; }, castWait(1300)));
-      }
-      // ③ 結果ライン→兵力tick（爪痕）→押し合いタグ→次/決着
-      const lines = [];
-      if (tier==='kaishin' || tier==='yuko') lines.push(`${opt.icon} ${opt.ok}`);
-      if (tier==='kaishin' && opt.hist) lines.push(L.hist);
-      lines.push(L[tier][Math.floor(Math.random()*L[tier].length)]);
-      cast(lines, ()=>{
-        tickHP('foe', B.foeHP, null);
-        tickHP('me', B.meHP, ()=>{
-          renderArmies(); showSwingTag();
-          if (B.round < B.max){
-            cast([L.mid[Math.floor(Math.random()*L.mid.length)]], showRound);
-          } else {
-            $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着をつける！</button>`;
-          }
-        });
-      });
-    }, castWait(tier==='fuhatsu'?70:150)));
+    const tier=B.last.tier, opt=B.last.opt;
+    battleTiers.push(tier);
+    await wait(reduceMotion?120:520);
+    beep(tier); fxHit(tier); spawnSparks(tier);
+    const head={ kaishin: opt.hist?'⚡ 史実の一手で会心！':'⚡ 会心！', yuko:'⭕ 有効打！', fuhatsu:'😶 不発…', shikujiri:'💢 しくじり！' }[tier];
+    if(tier==='kaishin') cutin(opt.hist?'史実の一手ーっ！！':'会心！');
+    log(`${head} ${(tier==='kaishin'||tier==='yuko')?opt.ok : tier==='fuhatsu'?`「${opt.label}」は戦況に響かなかった…` : `「${opt.label}」が裏目に…！`}`);
+    await wait(reduceMotion?120:460);
+    await MODES[curMode].onResult({tier});
+    if(B.round < B.max){ setTimeout(showRound, fastFwd?120:300); }
+    else { $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着をつける！</button>`; }
   }
-  function battleFinish(){
+  async function battleFinish(){
     $('b-actions').innerHTML = '';
     const r = Game.battleResult();
     const B = Game.B;
-    if (r.skirmish){
-      cast([r.win ? '🚩 敵を蹴散らしたーっ！ 見事な小競り合いだった！' : '🌀 痛み分け…ここは兵を退こう。'], ()=>{
-        $('ovl-battle').classList.remove('on');
-        showEvent({ year:Game.S.year, title: r.win ? '🚩 小競り合いに勝利！' : '🌀 退却…', text:r.text },
-          ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); });
-      });
+    if(r.skirmish){   // 小競り合いは大げさにしない（軽い決着）
+      if(r.win){ spawnSparks('kaishin'); beep('kaishin'); } else { fxHit('shikujiri'); beep('shikujiri'); }
+      log(r.win ? '🚩 敵を蹴散らした！ 見事な小競り合い！' : '🌀 痛み分け…兵を退こう。');
+      await wait(reduceMotion?160:750);
+      $('ovl-battle').classList.remove('on');
+      showEvent({ year:Game.S.year, title: r.win ? '🚩 小競り合いに勝利！' : '🌀 退却…', text:r.text },
+        ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); });
       return;
     }
-    // 決着の全画面タメ（peak-end＝最後の一拍を最も印象的に）→ 崩壊シーケンス
-    const veil = ensureKessenVeil();
-    veil.textContent = r.win ? '決着——' : '無念——';
-    veil.className = 'kessenVeil on';
-    castT.push(setTimeout(()=>{ veil.className='kessenVeil'; }, castWait(1100)));
-    castT.push(setTimeout(()=>{
-      const field = $('b-field'); field.style.setProperty('--fx', 1.6);
-      field.className = 'bField'; void field.offsetWidth; field.classList.add(r.win?'fxBig':'fxBad');
-      if (r.win){ spawnSparks('kaishin'); B.foeHP = Math.round(B.ev.army.foe*0.04); }
-      else B.meHP = Math.round(B.ev.army.me*0.05);
-      tickHP(r.win ? 'foe' : 'me', r.win ? B.foeHP : B.meHP, null);
-      cast(r.win ? L.winSeq : L.loseSeq, ()=>{
-        renderArmies();
-        $('ovl-battle').classList.remove('on');
-        if (r.win){
-          showEvent({ year:B.ev.year, title:'🎉 勝利！', text:r.text },
-            ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); }, B.ev.winFx);
-        } else {
-          showEvent({ year:B.ev.year, title:'💀 敗北……', text:r.text }, ()=>Game.defeatEnd());
-        }
-      });
-    }, castWait(700)));
+    await MODES[curMode].climax(r.win);
+    $('ovl-battle').classList.remove('on');
+    if(r.win){
+      showEvent({ year:B.ev.year, title:'🎉 勝利！', text:r.text },
+        ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); }, B.ev.winFx);
+    } else {
+      showEvent({ year:B.ev.year, title:'💀 敗北……', text:r.text }, ()=>Game.defeatEnd());
+    }
   }
 
   /* ---- 結果 ---- */
@@ -2489,7 +2861,7 @@ const UI = (function(){
   return { show, preStart, pickHero, pickMode, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone, openMap, mapZoom,
     showEpilogueChoice, pickEpilogueMem, openRetainer,
     goHome, openCoinInfo, openSaveIO, copySave, doImport,
-    showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, battleFast, pickSaihai, showResult,
+    showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, battleFast, pickSaihai, imgFallback, showResult,
     openTrain, pickTrain, closeTrain, openSkill,
     openHall, openBook, closeList, openHowto, openRoster };
 })();
