@@ -1771,16 +1771,51 @@ const UI = (function(){
     else Game.toast('❌ '+r.msg);
   }
 
-  /* ---- 育成開始（偉人選択 → 遺訓選択） ---- */
+  /* ---- 偉人の年代情報（選択UIの並び・表示用＝歴史の実年代。育成尺(圧縮した startYear〜endYear)とは別物） ---- */
+  const ERA_INFO = {
+    jomon:{label:'縄文時代（〜紀元前300年ごろ）', region:'jp', sort:-10000},
+    yayoi:{label:'弥生時代（紀元前300〜紀元300年ごろ）', region:'jp', sort:-300},
+    asuka:{label:'古墳・飛鳥時代（〜710年）', region:'jp', sort:574},
+    nara:{label:'奈良時代（710〜794年）', region:'jp', sort:710},
+    heian:{label:'平安時代（794〜1185年）', region:'jp', sort:794},
+    kamakura:{label:'鎌倉時代（1185〜1333年）', region:'jp', sort:1185},
+    muromachi:{label:'室町時代（1336〜1573年）', region:'jp', sort:1336},
+    nobunaga:{label:'戦国時代（1551〜1582年）', region:'jp', sort:1551},
+    hideyoshi:{label:'安土桃山時代（1554〜1590年）', region:'jp', sort:1554},
+    ieyasu:{label:'安土桃山〜江戸（1560〜1603年）', region:'jp', sort:1560},
+    edo:{label:'江戸時代前期（1603〜1700年ごろ）', region:'jp', sort:1603},
+    edo_late:{label:'江戸時代中後期（1700〜1853年）', region:'jp', sort:1716},
+    bakumatsu:{label:'幕末（1853〜1868年）', region:'jp', sort:1853},
+    meiji:{label:'明治時代（1868〜1912年）', region:'jp', sort:1868},
+    taisho_showa:{label:'大正〜昭和戦前（1912〜1945年）', region:'jp', sort:1912},
+    gendai:{label:'戦後〜現代（1945年〜）', region:'jp', sort:1945},
+    sekai_kodai:{label:'世界の古代文明（〜紀元後）', region:'world', sort:-3000},
+    daikoukai:{label:'大航海時代・ルネサンス（15〜16世紀）', region:'world', sort:1400},
+    shimin_kakumei:{label:'市民革命の時代（17〜19世紀）', region:'world', sort:1640},
+    sangyo_teikoku:{label:'産業革命と帝国主義（18〜20世紀）', region:'world', sort:1760},
+    ww1:{label:'第一次世界大戦（20世紀初め）', region:'world', sort:1900},
+  };
+  // 地図（勢力図）を出す偉人＝令制国マップが意味を持つ戦国3名のみ。他は地図なし
+  const MAP_HEROES = { nobunaga:1, hideyoshi:1, ieyasu:1 };
+  const eraInfo = h => ERA_INFO[h.id] || {label:`${h.startYear}〜${h.endYear}年`, region:'jp', sort:h.startYear};
+
+  /* ---- 育成開始（偉人選択 → 遺訓選択）。年代順（古い順）に日本史／世界史で分けて表示 ---- */
   function preStart(){
     if (Game.hasRun() && !confirm('育成中のデータがあります。最初からはじめると消えますが、よろしいですか？')) return;
     $('l-title').textContent = '⚔️ 育成する偉人を選ぶ';
     const body = $('l-body'); body.innerHTML='';
-    Object.values(D.HEROES).forEach(h=>{
+    const all = Object.values(D.HEROES);
+    [{key:'jp', title:'🗾 日本の歴史（古い順）'}, {key:'world', title:'🌍 世界の歴史（古い順）'}].forEach(sec=>{
+      const list = all.filter(h=>eraInfo(h).region===sec.key).sort((a,b)=>eraInfo(a).sort-eraInfo(b).sort);
+      if (!list.length) return;
       body.insertAdjacentHTML('beforeend',
-        `<button class="btn" style="display:flex; align-items:center; gap:10px; text-align:left;" onclick="UI.pickHero('${h.id}')">
-         ${h.img? `<img src="${h.img}" alt="" style="height:72px; flex:none;">` : `<span style="font-size:40px;">${h.crest}</span>`}
-         <span><b>${h.name}</b><br><small style="font-weight:600">${h.subtitle}<br>（${h.startYear}〜${h.endYear}年・${h.endYear-h.startYear+1}ターン）</small></span></button>`);
+        `<div style="font-weight:900; color:var(--gold2); margin:14px 4px 6px; border-bottom:2px solid var(--line); padding-bottom:4px; letter-spacing:.05em;">${sec.title}</div>`);
+      list.forEach(h=>{
+        body.insertAdjacentHTML('beforeend',
+          `<button class="btn" style="display:flex; align-items:center; gap:10px; text-align:left;" onclick="UI.pickHero('${h.id}')">
+           ${h.img? `<img src="${h.img}" alt="" style="height:72px; flex:none; border-radius:8px;">` : `<span style="font-size:40px;">${h.crest}</span>`}
+           <span><b>${h.name}</b><br><small style="font-weight:600">${h.subtitle}<br><span style="color:#8a6605; font-weight:800">${eraInfo(h).label}</span>・${h.endYear-h.startYear+1}ターン</small></span></button>`);
+      });
     });
     $('ovl-list').classList.add('on');
   }
@@ -1914,6 +1949,7 @@ const UI = (function(){
   function openMap(){
     const S = Game.S; if (!S) return;
     const H = Game.H;
+    if (!MAP_HEROES[H.id]) return;  // 地図は戦国3偉人のみ
     const ownN = H.map.provinces.filter(p=>p.own && S.year>=p.own).length;
     const next = H.timeline.find(e=>e.year>=S.year && (e.type==='battle'||e.type==='final'));
     mapZoomLv = 1;
@@ -2021,8 +2057,10 @@ const UI = (function(){
     st.style.width = S.stamina+'%';
     st.className = S.stamina<25? 'crit' : (S.stamina<45? 'low' : '');
     $('g-stam-n').textContent = `体力 ${S.stamina}/100`;
-    // 勢力図ミニ（タップで拡大）
-    $('g-minimap').innerHTML = mapHtml(true) + `<span class="mlbl">🗾 領地 🔍</span>`;
+    // 勢力図ミニ（タップで拡大）。地図は戦国3偉人のみ（令制国マップが意味を持つ偉人だけ・他は非表示）
+    const mm = $('g-minimap');
+    if (MAP_HEROES[Game.H.id]) { mm.style.display=''; mm.innerHTML = mapHtml(true) + `<span class="mlbl">🗾 領地 🔍</span>`; }
+    else { mm.style.display='none'; mm.innerHTML=''; }
     // ステ（ランク表記）＋スキルP枠
     $('g-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, S[k], tpy)).join('') +
       `<div class="stat${(S.skillPt||0)>0?' hasPt':''}" onclick="UI.openSkill()"><span class="sl">スキルP</span>
