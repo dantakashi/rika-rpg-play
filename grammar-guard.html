@@ -8953,12 +8953,17 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
       speak:q.answer, dir:dirEnToJp?'enjp':'jpen', srcKey:keyOf(q) }; // speak=英語(正答)・dir=出題方向(英→日は表示時に自動再生)・srcKey=誤答SRS用
   }
   function buildGrammar(q, choiceCount){
-    let choices = q.choices.slice();
-    let correct = choices[q.answer];
+    const correct = q.choices[q.answer];
+    let choices;
     if(choiceCount===2){
-      const wrong = choices.filter((c,i)=>i!==q.answer);
-      choices = [correct, rnd(wrong)].sort(()=>Math.random()-0.5);
+      const wrong = q.choices.filter((c,i)=>i!==q.answer);
+      choices = [correct, rnd(wrong)];
+    } else {
+      choices = q.choices.slice();
     }
+    // 正解の表示位置を毎回ランダム化する（元データのanswer位置に依存しない）。
+    // これをしないと「正解が常に先頭(answer:0)」のデータが入ったとき答えが全て左上に固定されてしまう。
+    shuf(choices);
     const qtext = q.question.replace("( )", '<span class="blank">(&nbsp;&nbsp;)</span>');
     return { genre:"grammar", level:q.level, qtext, choices,
       answerIndex:choices.indexOf(correct), desc:q.desc, choiceCount, srcKey:keyOf(q) };
