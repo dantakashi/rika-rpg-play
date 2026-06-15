@@ -3052,6 +3052,38 @@ const GameData = (function() {
     }
 
     // ==========================================
+    //   §5b-2  ARENA_RANKS  闘技場（ランク制 昇格バトル）
+    // ==========================================
+    // ラスボス撃破後の「やり込み」コンテンツ。全教科横断の出題でNPC闘士を1段ずつ昇格していく。
+    //  ・敵ステは固定（このテーブルが唯一の真実＝実機で微調整する数値）。中位を厚くして「壁」で離脱させない。
+    //  ・tiers = この階の出題難易度帯（elementary/junior/mid/senior/supreme から）。全教科・両形式。
+    //  ・gold = 勝利報酬の基準（×ゴールド倍率）。負けても与えたダメージ割合×0.3 は貰える（負けても学習が進む）。
+    //  ・title = この階を突破で解禁する称号id（マイルストーンのみ）。恒久バフは無し＝中盤バランスを壊さない。
+    //  ※ 頂点(絶対王者 hp210000)はオメガ(base hp160000・最大スケールはそれ以上)未満＝オメガが最高峰のまま。
+    const ARENA_RANKS = [
+      { idx:0, name:'木の闘士 リグナ',   avatar:'🪵', tiers:['junior','mid'],     gold:8000,
+        base:{ hp:38000,  atk:950,  speed:1.8, ultSpeed:0.40, stanDef:2.0, evade:0.18 } },
+      { idx:1, name:'石の闘士 グラン',   avatar:'🪨', tiers:['junior','mid'],     gold:11000,
+        base:{ hp:50000,  atk:1050, speed:1.9, ultSpeed:0.40, stanDef:2.1, evade:0.20 } },
+      { idx:2, name:'青銅の闘士 ブロン', avatar:'🛡️', tiers:['mid'],              gold:15000, title:'a_bronze',
+        base:{ hp:65000,  atk:1150, speed:2.0, ultSpeed:0.42, stanDef:2.2, evade:0.22 } },
+      { idx:3, name:'鉄の闘士 フェロ',   avatar:'⚙️', tiers:['mid','senior'],     gold:20000,
+        base:{ hp:80000,  atk:1250, speed:2.0, ultSpeed:0.43, stanDef:2.3, evade:0.24 } },
+      { idx:4, name:'白銀の闘士 アルジェ', avatar:'⚔️', tiers:['mid','senior'],   gold:27000, title:'a_silver',
+        base:{ hp:95000,  atk:1350, speed:2.1, ultSpeed:0.45, stanDef:2.4, evade:0.26 } },
+      { idx:5, name:'黄金の闘士 オーリ', avatar:'🥇', tiers:['senior'],           gold:36000,
+        base:{ hp:110000, atk:1450, speed:2.2, ultSpeed:0.46, stanDef:2.5, evade:0.28 } },
+      { idx:6, name:'白金の闘士 プラチ', avatar:'💠', tiers:['senior'],           gold:48000, title:'a_platinum',
+        base:{ hp:130000, atk:1550, speed:2.3, ultSpeed:0.48, stanDef:2.6, evade:0.30 } },
+      { idx:7, name:'宝玉の闘士 ジェム', avatar:'💎', tiers:['senior','supreme'], gold:64000,
+        base:{ hp:150000, atk:1700, speed:2.4, ultSpeed:0.50, stanDef:2.7, evade:0.33 } },
+      { idx:8, name:'紫電の闘士 ライザ', avatar:'⚡', tiers:['supreme'],          gold:85000, title:'a_master',
+        base:{ hp:175000, atk:1850, speed:2.5, ultSpeed:0.52, stanDef:2.8, evade:0.36 } },
+      { idx:9, name:'絶対王者 アレス',   avatar:'👑', tiers:['supreme'],          gold:120000, title:'a_champion',
+        base:{ hp:210000, atk:2050, speed:2.6, ultSpeed:0.55, stanDef:3.0, evade:0.38 } }
+    ];
+
+    // ==========================================
     //   §5c  TITLES_DB  称号（名前フレーム）
     // ==========================================
     // frame = index.html の CSS クラス（豪華さの段階）。unlock で解禁条件を判定。
@@ -3075,7 +3107,13 @@ const GameData = (function() {
       { id:'t_earth_land', name:'大地の巨神',     frame:'frame-endgame', unlock:{type:'endgame', boss:'tr_earth_land'}, desc:'裏ボス「大地の巨神テラ」を撃破。' },
       { id:'t_earth_weather', name:'嵐の支配者',  frame:'frame-endgame', unlock:{type:'endgame', boss:'tr_earth_weather'}, desc:'裏ボス「嵐の支配者テンペスト」を撃破。' },
       { id:'t_earth_space', name:'天空の覇者',    frame:'frame-endgame', unlock:{type:'endgame', boss:'tr_earth_space'}, desc:'裏ボス「天空の覇者コスモス」を撃破。' },
-      { id:'t_omega',      name:'理科の頂',       frame:'frame-omega',   unlock:{type:'endgame', boss:'tr_omega'},      desc:'最強の裏ボス「理科の化身オメガ」を撃破。' }
+      { id:'t_omega',      name:'理科の頂',       frame:'frame-omega',   unlock:{type:'endgame', boss:'tr_omega'},      desc:'最強の裏ボス「理科の化身オメガ」を撃破。' },
+      // 闘技場称号（昇格マイルストーン）。unlock.rank = 突破済み(到達)が必要な最低ランクidx。
+      { id:'a_bronze',     name:'青銅の闘士',     frame:'frame-bronze',  unlock:{type:'arena', rank:2},  desc:'闘技場で青銅ランクを突破。' },
+      { id:'a_silver',     name:'白銀の闘士',     frame:'frame-silver',  unlock:{type:'arena', rank:4},  desc:'闘技場で白銀ランクを突破。' },
+      { id:'a_platinum',   name:'白金の闘士',     frame:'frame-gold',    unlock:{type:'arena', rank:6},  desc:'闘技場で白金ランクを突破。' },
+      { id:'a_master',     name:'紫電の闘士',     frame:'frame-endgame', unlock:{type:'arena', rank:8},  desc:'闘技場で紫電ランクを突破。' },
+      { id:'a_champion',   name:'闘技場の覇者',   frame:'frame-arena',   unlock:{type:'arena', rank:9},  desc:'闘技場の絶対王者を撃破＝全ランク制覇。' }
     ];
 
     // 称号が解禁済みか判定（player を渡す）。
@@ -3085,6 +3123,7 @@ const GameData = (function() {
       if (u.type === 'bossCount') return (player.defeatedBosses || []).length >= u.n;
       if (u.type === 'clear') return !!player.hasClearedOnce;
       if (u.type === 'endgame') return (player.defeatedEndgame || []).indexOf(u.boss) >= 0;
+      if (u.type === 'arena') return ((typeof player.arenaRank === 'number') ? player.arenaRank : -1) >= u.rank;
       return false;
     }
 
@@ -3504,6 +3543,7 @@ const GameData = (function() {
       GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
       GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,
       BOSSES_DB, ENDGAME_BOSSES_DB, getEndgameBossStats, PERMA_BUFF_CAP, getPermaBuffTotals,
+      ARENA_RANKS,
       TITLES_DB, isTitleUnlocked, AVATARS_DB,
       GACHA_DB, GACHA_MILESTONE_BOSSES, getGachaPrice, gachaDiscountPct, RARITY_DB, CYAN_GLOW_CLASS,
       BASE_EQUIP_TEMPLATES, UNIQUE_EQUIP_TEMPLATES, SKILL_DESC, BUILD_GUIDE, STAT_CAPS, STAT_NAMES_JP, STAT_META,

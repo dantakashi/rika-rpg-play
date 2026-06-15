@@ -2053,6 +2053,53 @@ const GameUI = (function() {
       GameEngine.startEndgameBoss(bossId, 1); // 範囲ボスは固定（Lv1相当）
     }
 
+    // ── 🏛️ 闘技場（ランク制 昇格バトル）ポップアップ ──
+    function openArenaPopup() {
+      renderArenaLadder();
+      document.getElementById('arena-popup').classList.remove('hidden');
+    }
+    function closeArenaPopup() { document.getElementById('arena-popup').classList.add('hidden'); }
+    const _ARENA_TIER_LABEL = { elementary:'小学', junior:'入門', mid:'基礎', senior:'応用', supreme:'受験' };
+    function renderArenaLadder() {
+      const box = document.getElementById('arena-body');
+      if (!box) return;
+      if (!GameEngine.player.hasClearedOnce) {
+        box.innerHTML = '<div class="text-center text-slate-400 text-xs py-6">🔒 ラスボス「アポカリプス」を撃破すると解禁されます。</div>';
+        return;
+      }
+      const ranks = GameData.ARENA_RANKS;
+      const cleared = (typeof GameEngine.player.arenaRank === 'number') ? GameEngine.player.arenaRank : -1;
+      let html = `<div class="text-center text-[10px] text-slate-400 mb-2">いま到達: <span class="text-amber-300 font-bold">${cleared < 0 ? '未挑戦' : (cleared + 1) + '位 突破'}</span> ／ 全${ranks.length}ランク</div>`;
+      html += '<div class="flex flex-col gap-2">';
+      // 高ランク→低ランクの順（上が頂点）で描画
+      for (let i = ranks.length - 1; i >= 0; i--) {
+        const r = ranks[i];
+        const done = i <= cleared;
+        const isNext = i === cleared + 1;
+        const locked = i > cleared + 1;
+        const tiers = (r.tiers || []).map(t => _ARENA_TIER_LABEL[t] || t).join('・');
+        const t = r.title ? GameData.TITLES_DB.find(x => x.id === r.title) : null;
+        let right;
+        if (done) right = '<span class="text-[10px] text-emerald-400 font-bold shrink-0">✓ 突破済</span>';
+        else if (isNext) right = `<button onclick="GameUI.startArenaFromList(${i})" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] shrink-0 transition-all active:scale-95">⚔️ 挑戦</button>`;
+        else right = '<span class="text-base text-slate-600 shrink-0">🔒</span>';
+        html += `<div class="bg-slate-950/70 border ${isNext ? 'border-amber-500/70' : 'border-slate-800'} rounded-xl p-2.5 flex items-center gap-2 ${locked ? 'opacity-50' : ''}">
+          <span class="text-2xl shrink-0">${r.avatar}</span>
+          <div class="flex-1 min-w-0">
+            <div class="font-black text-white text-xs">${i + 1}. ${r.name}</div>
+            <div class="text-[9px] text-slate-400">出題: ${tiers}（全教科）・報酬 ${(r.gold || 0).toLocaleString()}G${t ? ` ・称号「${t.name}」` : ''}</div>
+          </div>
+          ${right}
+        </div>`;
+      }
+      html += '</div>';
+      box.innerHTML = html;
+    }
+    function startArenaFromList(rankIdx) {
+      closeArenaPopup();
+      GameEngine.startArenaBattle(rankIdx);
+    }
+
     // ── 最強の試練（エンドコンテンツボス=オメガ）ポップアップ ── ステ別に1〜20で調整
     const _OMEGA_STATS = [['hp','💗 HP'],['atk','⚔️ 攻撃力'],['speed','💨 行動速度'],['ult','🌀 必殺技の頻度']];
     function openOmegaPopup() {
@@ -2851,6 +2898,57 @@ const GameUI = (function() {
 
       banner.classList.add('hidden');
 
+      if (GameEngine.battle.isArena) {
+        // ── 🏛️ 闘技場（ランク制 昇格バトル）──
+        const ranks = GameData.ARENA_RANKS;
+        const ri = GameEngine.battle.arenaRank;
+        const rank = ranks[ri];
+        const _gm = GameEngine.getEffectiveStats().goldMul || 1.0;
+        if (isVictory) {
+          const prevRank = (typeof GameEngine.player.arenaRank === 'number') ? GameEngine.player.arenaRank : -1;
+          const promoted = ri > prevRank;
+          const goldReward = Math.floor((rank.gold || 8000) * _gm);
+          GameEngine.player.gold += goldReward;
+          emoji.textContent = '🏛️';
+          title.textContent = promoted ? `${ri + 1}位に昇格！` : '勝利！';
+          earnedG.textContent = goldReward.toLocaleString();
+          let titleMsg = '';
+          if (promoted) {
+            GameEngine.player.arenaRank = ri;
+            if (rank.title) {
+              const t = GameData.TITLES_DB.find(x => x.id === rank.title);
+              if (t) titleMsg = `称号「${t.name}」を獲得！`;
+            }
+          }
+          const next = ranks[ri + 1];
+          const nextMsg = next
+            ? `次は <span class="text-amber-300 font-bold">${next.name}</span> に挑戦できる！`
+            : '<span class="text-yellow-300 font-bold">🎉 全ランク制覇！君が闘技場の頂点だ。</span>';
+          detail.innerHTML = `
+            撃破: <span class="text-amber-300 font-bold">${rank.name}</span><br>
+            ${titleMsg ? '<span class="text-yellow-300 font-bold">' + titleMsg + '</span><br>' : ''}
+            ${nextMsg}
+          `;
+        } else {
+          // 負けても学習が進む: 与えたダメージ割合に応じた参加コイン＋降格なし
+          const dealt = Math.max(0, GameEngine.battle.enemyMaxHp - GameEngine.battle.enemyHp);
+          const ratio = GameEngine.battle.enemyMaxHp > 0 ? dealt / GameEngine.battle.enemyMaxHp : 0;
+          const partial = Math.floor((rank.gold || 8000) * 0.3 * ratio * _gm);
+          GameEngine.player.gold += partial;
+          emoji.textContent = '🥋';
+          title.textContent = 'あと一歩…';
+          earnedG.textContent = partial.toLocaleString();
+          detail.innerHTML = `
+            <span class="text-amber-300 font-bold">${rank.name}</span> に挑戦（HPを${Math.round(ratio * 100)}%削った）<br>
+            ランクは下がらないよ。装備とレベルを鍛えて再挑戦しよう。<br>
+            <span class="text-yellow-400 font-bold">参加コイン +${partial.toLocaleString()}G🪙</span>
+          `;
+        }
+        GameEngine.saveUserDataLocal();
+        updateMenuUI();
+        return;
+      }
+
       if (GameEngine.battle.isEndgame) {
         // ── 裏ボス（専科の試練）──
         const boss = GameData.ENDGAME_BOSSES_DB.find(b => b.id === GameEngine.battle.bossId);
@@ -3055,6 +3153,7 @@ const GameUI = (function() {
     showMenu, showBattleScreen,
     openBossSelection, openBossRangePopup, toggleBossRangeGenre, setBossRangeType, closeBossRangePopup, startBossFromRange,
     openEndgamePopup, closeEndgamePopup, startEndgameFromList,
+    openArenaPopup, closeArenaPopup, startArenaFromList,
     openOmegaPopup, closeOmegaPopup, setOmegaStatLevel, setOmegaAll, startOmega,
     openTitlePopup, closeTitlePopup, equipTitle, openAvatarPopup, closeAvatarPopup, equipAvatar,
     openGachaScreen, openLibraryScreen, renderLibraryTabs, renderLibraryContent,

@@ -40,6 +40,7 @@ let player = {
       tutGachaUsed: false, // チュートリアルの無料11連を引いたか（リロードによる再付与を防ぐ）
       defeatedBosses: [],
       hasClearedOnce: false,
+      arenaRank: -1,    // 🏛️ 闘技場で突破済みの最高ランクidx（-1=未挑戦）。次に挑めるのは arenaRank+1。
       stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
       equipped: { weapon:null, head:null, body:null, feet:null, accessory:null },
       inventory: [],
@@ -1210,6 +1211,76 @@ let player = {
       return GameData.ENDGAME_BOSSES_DB.find(b => b.id === battle.bossId) || null;
     }
 
+    // 🏛️ 闘技場（ランク制 昇格バトル）。rankIdx の NPC闘士と戦う。裏ボスと同じ戦闘機構（mode='boss'）を流用。
+    //  挑戦できるのは「突破済みの1つ上」まで（飛び級不可）。勝てば昇格、負けても降格しない（負けても学習が進む）。
+    //  恒久バフは付かない＝中盤バランスを壊さない。報酬はゴールド＋称号（マイルストーンのみ）。
+    function startArenaBattle(rankIdx) {
+      if (!player.hasClearedOnce) { alert('闘技場はラスボス撃破後に解禁されます。'); return; }
+      const ranks = GameData.ARENA_RANKS;
+      rankIdx = Math.max(0, Math.min(ranks.length - 1, rankIdx | 0));
+      const cleared = (typeof player.arenaRank === 'number') ? player.arenaRank : -1;
+      if (rankIdx > cleared + 1) { alert('まだ挑戦できません。1つずつ昇格しよう。'); return; }
+      const rank = ranks[rankIdx];
+      const st = rank.base;
+
+      battle.active = true;
+      battle.mode = 'boss';          // 戦闘ループ・出題機構をボスと共用（bossDataはnullになるが裏ボスと同じく安全）
+      battle.isArena = true;
+      battle.isEndgame = false;      // ← 裏ボス用フェーズ/恒久バフ判定を確実に切る
+      battle.arenaRank = rankIdx;
+      battle.arenaTiers = (rank.tiers && rank.tiers.length) ? rank.tiers.slice() : ['mid'];
+      battle.bossId = rank.id;
+      battle.filterGenres = null;    // 全教科横断
+      battle.filterType = null;      // タイピング・選択 両方
+      battle.subject = null;
+      battle.currentCombo = 0;
+      battle.comboBuffs = [];
+      battle.isStunned = false;
+      battle.enemyIsStunned = false;
+      battle.goldEarnedInSession = 0;
+      battle.missCount = 0;
+      battle.isRaged = false;
+      battle.playerDefeated = false;
+      battle.endgamePhase2 = false;  // ← 古い裏ボス戦の覚醒フラグが残らないように
+      battle.bossAtkMult = 1;        // ← 覚醒(×1.6)の残留を防ぐ
+      battle.tutTier = null;         // ← チュートリアル難易度上書きの残留を防ぐ
+      battle.tutForcedQ = null;
+      battle.tutEnemyHp = null;
+      usedIndices = [];
+
+      document.getElementById('rage-warning-badge').classList.add('hidden');
+      document.getElementById('battle-left-panel').classList.remove('rage-active');
+      document.getElementById('enemy-avatar').classList.remove('scale-150', 'text-red-500');
+
+      const stats = getEffectiveStats();
+      battle.playerMaxHp = stats.hp;
+      battle.playerHp = stats.hp;
+      initBattleSkillState(stats);
+
+      battle.enemyEvade = st.evade;
+      battle.isBonus = false;
+      battle.enemyMaxHp = st.hp;
+      battle.enemyHp = st.hp;
+      battle.enemyActionGauge = 0;
+      battle.enemyUltGauge = 0;
+      battle.bossAtk = st.atk;
+      battle.bossSpeed = st.speed;
+      battle.bossUltSpeed = st.ultSpeed;
+      battle.bossStanDef = st.stanDef;
+
+      const _avEl = document.getElementById('enemy-avatar');
+      setVisualImg(_avEl, 'assets/arena/rank_' + rankIdx + '.png', rank.avatar);
+      _avEl.style.filter = 'drop-shadow(0 0 22px #fbbf24) drop-shadow(0 0 40px #ef4444)';
+      setBattleBackground('supreme');
+      document.getElementById('enemy-name').textContent = rank.name + '  [闘技場 ' + (rankIdx + 1) + '/' + ranks.length + ']';
+      document.getElementById('battle-mode-title').textContent = '🏛️ 闘技場';
+      playBossEnter();
+
+      nextQuestion();
+      GameUI.showBattleScreen();
+      startBattleLoop();
+    }
+
     // 裏ボスのHP30%フェーズ移行ガード。30%到達で1度だけ：HPを30%で止め・攻撃強化・必殺3連を予約。
     //  戻り値 true = フェーズ発動（呼び出し側は以降の撃破処理をスキップ）
     function checkEndgamePhase() {
@@ -2029,7 +2100,11 @@ let player = {
       //  通常ボス: 通常攻撃は必ずタイピング（暗記勝負）。
       //  裏ボス: 難易度は専用def、出題形式はそのジャンルにあるもの（typing/choice両方可。実験・光音は選択式のみ）。
       let _nqTier, _type;
-      if (battle.isEndgame) {
+      if (battle.isArena) {
+        // 🏛️ 闘技場: このランクの難易度帯（全教科・両形式）。mode='boss' なのでヒント無し。
+        _nqTier = battle.arenaTiers || ['mid'];
+        _type = null;
+      } else if (battle.isEndgame) {
         const eb = GameData.ENDGAME_BOSSES_DB.find(b => b.id === battle.bossId);
         _nqTier = eb ? eb.diff : 'supreme';
         _type = null;
@@ -2348,6 +2423,7 @@ let player = {
       // エンドボス(オメガ)のステータス別レベル（HP/ATK/行動速度/必殺頻度を各1〜20。既定10）
       if (!player.endgameStatLevels || typeof player.endgameStatLevels !== 'object') player.endgameStatLevels = { hp:10, atk:10, speed:10, ult:10 };
       ['hp','atk','speed','ult'].forEach(k => { if (typeof player.endgameStatLevels[k] !== 'number') player.endgameStatLevels[k] = 10; });
+      if (typeof player.arenaRank !== 'number') player.arenaRank = -1; // 🏛️ 闘技場の到達ランク（既存セーブは未挑戦）
       if (typeof player.equippedTitle !== 'string') player.equippedTitle = 'none';
       if (typeof player.equippedAvatar !== 'string') player.equippedAvatar = 'default';
       if (typeof player.autoSellRarity !== 'string') player.autoSellRarity = ''; // ''=自動売却OFF
@@ -2417,6 +2493,7 @@ let player = {
         defeatedEndgame: [],
         endgameLevel: 1,
         endgameStatLevels: { hp:10, atk:10, speed:10, ult:10 },
+        arenaRank: -1,
         equippedTitle: 'none',
         equippedAvatar: 'default',
         autoSellRarity: '',
@@ -2615,7 +2692,7 @@ let player = {
     get battle() { return battle; },
     getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar, getRankInfo,
     getRecommendedDojoLevel, getBossRecommendedPower, getBossReadiness,
-    startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion, getCurrentGuerrillaQuestions, getGuerrillaMsLeft, guerrillaClaimedCount,
+    startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, startArenaBattle, spawnNextDojoEnemy, nextQuestion, getCurrentGuerrillaQuestions, getGuerrillaMsLeft, guerrillaClaimedCount,
     processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, pauseGame, resumeGame,
     tutorialForceUlt,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,
