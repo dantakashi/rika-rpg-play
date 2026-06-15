@@ -1045,6 +1045,8 @@ const Game = (function(){
     return {1:50,2:40,3:10};
   }
   function pickQuestion(genre, kind){
+    const ep = H.eraPref;
+    const top = ep ? Object.keys(ep).filter(k=>ep[k]>=1) : [];  // 自時代(重み>=1)＝その偉人が生きた時代群。新偉人は自時代のみ(他0.01)、家康はsengoku/azuchi/edoを含む
     const w = diffWeights(kind);
     let pool = D.QUESTIONS.map((q,i)=>({q,i})).filter(o=>o.q.genre===genre && !S.usedQ.includes(o.i));
     if (!pool.length){ // 使い切ったらこのジャンルの使用済みをリセット
@@ -1056,9 +1058,21 @@ const Game = (function(){
     for (const d of [1,2,3]){ acc += w[d]; if (r < acc){ want = d; break; } }
     let cand = pool.filter(o=>o.q.diff===want);
     if (!cand.length) cand = pool;
-    // era（時代）の重み: 偉人の生きた時代の問題が優先して出る（G2-② 2026-06-13）
-    // q.era 省略時は 'sengoku'。H.eraPref が無い偉人は全時代等価
-    const ep = H.eraPref;
+    // 自分の時代を最優先（「自分の時代の問題が出ない」対策の本命）:
+    // 候補に自時代問が1問でもあれば候補をそれだけに絞る。←重み0.01でも他時代問が大量(100問超)に
+    //   あると合計が効いてしまい、自時代の未使用が残り少ないと他時代へ流れる現象を断つ。
+    // 候補に自時代問が無ければ、自時代×ジャンル×難易度(無ければ難易度不問)の使用済みを回収して使う。
+    // その時代にそのジャンルの問が全く無いときだけ、従来どおり他時代へフォールバックする。
+    if (top.length){
+      let own = cand.filter(o=>top.includes(o.q.era||'sengoku'));
+      if (!own.length){
+        let recyc = D.QUESTIONS.map((q,i)=>({q,i})).filter(o=>o.q.genre===genre && o.q.diff===want && top.includes(o.q.era||'sengoku'));
+        if (!recyc.length) recyc = D.QUESTIONS.map((q,i)=>({q,i})).filter(o=>o.q.genre===genre && top.includes(o.q.era||'sengoku'));
+        if (recyc.length){ const ids=new Set(recyc.map(o=>o.i)); S.usedQ=S.usedQ.filter(i=>!ids.has(i)); own=recyc; }
+      }
+      if (own.length) cand = own;
+    }
+    // 同一時代内は eraPref 重み（基本は均等）で抽選。eraPref が無い偉人は全時代等価
     const sel = ep ? weightedPick(cand, o=>ep[o.q.era||'sengoku'] ?? 1)
                    : cand[Math.floor(Math.random()*cand.length)];
     S.usedQ.push(sel.i);
@@ -1361,7 +1375,7 @@ const Game = (function(){
   }
   function addToBook(q){
     if (!P.book.some(b=>b.q===q.q)){
-      P.book.push({ genre:q.genre, diff:q.diff, q:q.q, c:q.c, a:q.a, desc:q.desc });
+      P.book.push({ genre:q.genre, diff:q.diff, era:q.era, q:q.q, c:q.c, a:q.a, desc:q.desc });
       if (P.book.length>40) P.book.shift();
       savePersist();
     }
