@@ -9061,17 +9061,17 @@ const ROSTER = {
   guardTurtle:{name:"ガードガメ", sprite:"guardTurtle", rar:"N",  rarColor:"#7a7a7a", cost:20,  hp:130, atk:12, speed:30, range:42, atkCd:0.9, weight:46, scd:1.5},
   arrowBird:  {name:"アローバード", sprite:"arrowBird",  rar:"R",  rarColor:"#2f7dd1", cost:42,  hp:70,  atk:20, speed:46, range:120, atkCd:0.75, pierce:true, weight:26, scd:2.0},
   moaiAlly:   {name:"モアイ兵",    sprite:"moaiAlly",   rar:"SR", rarColor:"#8e44ad", cost:92,  hp:320, atk:26, speed:22, range:48, atkCd:1.3, knockback:16, weight:14, scd:5.0},
-  dragonTurtle:{name:"ワイバーン",  sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:145, hp:240, atk:44, speed:32, range:96, atkCd:1.8, scale:1.4, weight:8, scd:7.0},
+  dragonTurtle:{name:"ワイバーン",  sprite:"dragonTurtle",rar:"SSR",rarColor:"#e0683b", cost:145, hp:250, atk:46, speed:32, range:115, atkCd:0.95, pierce:true, scale:1.4, weight:8, scd:7.0}, // 長射程ライン貫通(竜のブレス=range内の敵を貫く)。2026-06-15再調整(単体range96で死にSSR→pierce付与): atk44→46,range96→115,atkCd1.8→0.95,hp240→250
   dashFox:{name:"ダッシュギツネ", sprite:"dashFox", rar:"N", rarColor:"#7a7a7a", cost:12, hp:60, atk:11, speed:64, range:38, atkCd:0.7, weight:34, scd:1.0},
   bombFrog:{name:"バクダンガエル", sprite:"bombFrog", rar:"R", rarColor:"#2f7dd1", cost:55, hp:90, atk:22, speed:34, range:74, atkCd:1.2, splash:true, weight:16, scd:3.0},
   healSprite:{name:"いやしの精", sprite:"healSprite", rar:"SR", rarColor:"#3a9d57", cost:85, hp:140, atk:5, speed:28, range:64, atkCd:1.4, heal:12, weight:9, scd:4.5},
   shieldBear:{name:"盾グマ", sprite:"shieldBear", rar:"R", rarColor:"#2f7dd1", cost:60, hp:280, atk:14, speed:24, range:46, atkCd:1.0, def:8, weight:20, scd:3.5},
   owlSage:{name:"フクロウ博士", sprite:"owlSage", rar:"SR", rarColor:"#8e44ad", cost:88, hp:120, atk:28, speed:30, range:140, atkCd:0.9, slow:true, weight:11, scd:4.5},
-  orcaKnight:{name:"シャチ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:260, atk:38, speed:30, range:80, atkCd:1.6, splash:true, weight:7, scd:6.5},
+  orcaKnight:{name:"シャチ", sprite:"orcaKnight", rar:"SSR", rarColor:"#e0683b", cost:130, hp:290, atk:47, speed:30, range:112, atkCd:0.95, splash:true, weight:7, scd:6.2}, // 中射程AoE bruiser。2026-06-15バランス再調整(はずれ救済・sim検証済): atk38→47,range80→112,atkCd1.6→0.95,hp260→290,scd6.5→6.2
   cheerTanuki:{name:"応援タヌキ", sprite:"cheerTanuki", rar:"SR", rarColor:"#8e44ad", cost:78, hp:150, atk:8, speed:30, range:120, atkCd:1.5, buff:0.3, weight:10, scd:4.0},
   ninjaFrog:{name:"忍びガエル", sprite:"ninjaFrog", rar:"R", rarColor:"#2f7dd1", cost:48, hp:85, atk:26, speed:60, range:42, atkCd:0.6, weight:18, scd:2.5},
   steelBull:{name:"鋼の猛牛", sprite:"steelBull", rar:"SR", rarColor:"#8e44ad", cost:96, hp:340, atk:36, speed:24, range:46, atkCd:1.3, knockback:18, weight:10, scd:5.0},
-  crystalGolem:{name:"水晶ゴーレム", sprite:"crystalGolem", rar:"SSR", rarColor:"#e0683b", cost:150, hp:780, atk:8, speed:16, range:50, atkCd:0.22, def:14, scale:1.5, weight:6, scd:8.0},
+  crystalGolem:{name:"水晶ゴーレム", sprite:"crystalGolem", rar:"SSR", rarColor:"#e0683b", cost:150, hp:780, atk:22, speed:16, range:60, atkCd:0.7, def:14, splash:true, scale:1.5, weight:6, scd:8.0}, // 硬いAoEアンビル。2026-06-15再調整: 旧atk8/atkCd0.22はPvEで死に値(全味方atkCd0.7固定のためDPS約11)→atk22/atkCd0.7でDPS約31化+splash付与(PvP DPSはほぼ不変)。hp780据置
   thunderDragon:{name:"雷竜キング", sprite:"thunderDragon", rar:"SSR", rarColor:"#e0683b", cost:170, hp:380, atk:54, speed:22, range:150, atkCd:2.0, splash:true, scale:1.5, weight:5, scd:9.0},
   // ===== 新キャラ5体（2026-06-11夜間バッチ・課題5「味方が少ない」対応。役割の穴埋め） =====
   togeHedge:{name:"トゲハリン", sprite:"togeHedge", rar:"N", rarColor:"#7a7a7a", cost:22, hp:150, atk:14, speed:30, range:40, atkCd:0.8, def:4, weight:40, scd:1.5},
@@ -9087,7 +9087,7 @@ const ROSTER = {
   shadowCat:{name:"かげろうネコ", sprite:"shadowCat", rar:"SR", rarColor:"#8e44ad", cost:95, hp:130, atk:40, speed:70, range:42, atkCd:0.7, weight:10, scd:5.0},  // 高速アサシン
   magmaTurtle:{name:"マグマガメ", sprite:"magmaTurtle", rar:"SR", rarColor:"#8e44ad", cost:100, hp:360, atk:24, speed:20, range:48, atkCd:1.2, splash:true, weight:10, scd:5.5}, // 範囲攻撃の壁
   timeMage:{name:"時の魔導士", sprite:"timeMage", rar:"SSR", rarColor:"#e0683b", cost:160, hp:220, atk:36, speed:24, range:160, atkCd:1.8, slow:true, splash:true, weight:5, scd:8.5}, // 範囲スロー（コントロール）
-  goldLion:{name:"黄金ライオン", sprite:"goldLion", rar:"SSR", rarColor:"#e0683b", cost:165, hp:420, atk:48, speed:30, range:50, atkCd:1.1, buff:0.2, scale:1.3, weight:5, scd:8.0} // 前線の王（周囲を強化しつつ殴る）
+  goldLion:{name:"黄金ライオン", sprite:"goldLion", rar:"SSR", rarColor:"#e0683b", cost:158, hp:420, atk:48, speed:30, range:120, atkCd:0.85, buff:0.35, scale:1.3, weight:5, scd:7.5} // 将器バッファー＝周囲の味方を+35%/120pxで強化しつつ420hp/48atkで殴る前線の王。2026-06-15再調整(はずれ救済・sim検証済): range50→120(オーラ拡大),buff0.2→0.35,cost165→158,atkCd1.1→0.85,scd8.0→7.5
 };
 const ROSTER_KEYS = Object.keys(ROSTER);
 
