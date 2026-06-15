@@ -18,7 +18,7 @@
   .stage{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
     background:radial-gradient(1200px 800px at 50% -10%, #16203f 0%, #070a16 60%, #04060e 100%);}
   /* スマホ枠 */
-  .phone{position:relative; width:100%; height:100%; max-width:372px; max-height:740px;
+  .phone{position:relative; display:flex; flex-direction:column; width:100%; height:100%; max-width:372px; max-height:740px;
     overflow:hidden; border-radius:0;
     --blob1:#4f7cff; --blob2:#b14bff;
     background:linear-gradient(170deg,var(--bg1),var(--bg2) 55%,var(--bg3));
@@ -49,9 +49,13 @@
   .date{font-size:12px; color:var(--muted); margin-top:4px; font-weight:600}
 
   /* ページャ（横スワイプ領域） */
-  .pager{position:relative; z-index:3; flex:1; display:flex; overflow:hidden;}
+  .pager{position:relative; z-index:3; flex:1; min-height:0; display:flex; overflow:hidden;}
   .track{display:flex; width:200%; flex:0 0 200%; height:100%; transform:translateX(0); transition:transform .32s cubic-bezier(.22,.61,.36,1); touch-action:pan-y; will-change:transform;}
-  .page{width:50%; height:100%; padding:14px 15px 0; display:flex; flex-direction:column; overflow-y:auto;}
+  .page{width:50%; height:100%; padding:14px 15px 0; display:flex; flex-direction:column; overflow-y:auto;
+    -webkit-overflow-scrolling:touch; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.25) transparent;}
+  .page::-webkit-scrollbar, .news-list::-webkit-scrollbar{width:5px;}
+  .page::-webkit-scrollbar-thumb, .news-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25); border-radius:99px;}
+  .page{padding-bottom:14px;}  /* 末尾アプリ(社会)が下端でも見切れないよう余白 */
 
   /* アプリ：教科フレーム */
   .greet{font-size:13px; color:var(--muted); font-weight:700; margin:2px 4px 10px;}
@@ -525,6 +529,10 @@
   // ★運用ルール: ポータルやゲームを更新して生徒に配信したら、必ず UPDATES の
   //   先頭に1件追加すること（date=配信日 / title / body=やさしい言葉の箇条書き）。
   var UPDATES = [
+    { date:'2026-06-16', title:'ポータルが下までスクロールできるようになったよ', body:[
+      '📱 アプリが増えて<b>下のほう（社会など）が見えにくかった</b>のを直しました。',
+      '👇 アプリの画面を<b>上下にスクロール</b>すると、ぜんぶのアプリが見られます。',
+    ]},
     { date:'2026-06-16', title:'グラマー・ガード：隕石が見えるように＆まちがえた問題が見やすく', body:[
       '☄️ <b>グラマー・ガード</b>：エネルギーが満タンのとき降る<b>「隕石」が見えるように</b>直しました。青い隕石が<b>敵にしっかり当たって</b>ダメージの数字も出ます（問題を解き続けている間だけ降ります）。',
       '📚 <b>まちがえた問題</b>が多くてもだいじょうぶ。一覧は<b>たたんで表示</b>され、開くと<b>その中でスクロール</b>できるようにしました（画面が問題でうまって押せなくなる不具合を修正）。',
