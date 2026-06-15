@@ -505,6 +505,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bCaster .bFastTip{font-weight:800; color:#8a6605; font-size:11px; cursor:pointer;
   border:1.5px solid var(--gold); background:#fff3c8; border-radius:999px; padding:2px 11px;}
 .bCaster .bFastTip:active{transform:translateY(1px);}
+.bCaster .bFastTip.on{background:var(--gold); color:#3a2a05; box-shadow:0 0 8px rgba(243,207,93,.6);}
 .bLog{min-height:66px; font-size:13px; line-height:1.55; background:#fff8e4; border:2px solid var(--gold); border-top:1px solid #e8d28a;
   border-radius:0 0 10px 10px; padding:6px 10px 8px; margin:0 0 10px;}
 .bLog div{opacity:.5; padding-left:8px;}
@@ -869,8 +870,8 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <h2 class="serif" id="b-title"></h2>
     <div class="evText" id="b-intro" style="margin-bottom:8px;"></div>
     <div class="bHeadline" id="b-headline"></div>
-    <div id="b-stage" class="bStage" onclick="UI.battleFast()"></div>
-    <div class="bCaster"><span><img class="sasukeImg" src="assets/sasuke.png" alt="" onerror="this.style.display='none'"><span id="b-castername"></span></span><button class="bFastTip" onclick="UI.battleFast()">⏩ 早送り</button></div>
+    <div id="b-stage" class="bStage"></div>
+    <div class="bCaster"><span><img class="sasukeImg" src="assets/sasuke.png" alt="" onerror="this.style.display='none'"><span id="b-castername"></span></span><button class="bFastTip" id="b-fastbtn" onclick="UI.toggleFast()">⏩ 早送り：OFF</button></div>
     <div class="bLog" id="b-log"></div>
     <div id="b-actions" style="display:grid; gap:8px;"></div>
   </div></div>
@@ -2326,7 +2327,10 @@ const UI = (function(){
   let battleLog = [], casterIntroShown = false, fastFwd = false, fastPref = false;
   let battleIntro = false, battleTiers = [], curMode = 'jin-atarashii', mst = {};
   // 一度でも早送りしたら以後の合戦もずっと速いまま（中学生FB「毎回押し直しが面倒」）
-  function battleFast(){ fastFwd = true; fastPref = true; }
+  // 早送りは佐助の横のボタン1つでON/OFF（画面タップでの早送りは廃止）。設定は次の合戦にも引き継ぐ。
+  function toggleFast(){ fastPref = !fastPref; fastFwd = fastPref; updateFastBtn(); }
+  function updateFastBtn(){ const b=$('b-fastbtn'); if(!b) return;
+    b.textContent = '⏩ 早送り：' + (fastFwd ? 'ON' : 'OFF'); b.classList.toggle('on', fastFwd); }
   function wait(ms){ return new Promise(r=>setTimeout(r, (reduceMotion||fastFwd)?Math.min(ms,110):ms)); }
   function log(t){ if(!t) return; battleLog.push(t); if(battleLog.length>3) battleLog.shift();
     $('b-log').innerHTML = battleLog.map((l,i)=>`<div class="${i===battleLog.length-1?'new':''}">${l}</div>`).join(''); }
@@ -2701,7 +2705,7 @@ const UI = (function(){
     return `<span>${sky}</span>${ct}`;
   }
   async function openBattle(ev){
-    fastFwd = fastPref; battleIntro = true; battleTiers = []; mst = {};
+    fastFwd = fastPref; updateFastBtn(); battleIntro = true; battleTiers = []; mst = {};
     curMode = (ev.presentMode && MODES[ev.presentMode]) ? ev.presentMode : 'jin-atarashii';
     $('b-year').textContent = `${ev.year}年`;
     $('b-title').textContent = ev.title;
@@ -2861,7 +2865,7 @@ const UI = (function(){
   return { show, preStart, pickHero, pickMode, toTitle, pauseToTitle, renderGame, openQuiz, resolvePush, quizDone, openMap, mapZoom,
     showEpilogueChoice, pickEpilogueMem, openRetainer,
     goHome, openCoinInfo, openSaveIO, copySave, doImport,
-    showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, battleFast, pickSaihai, imgFallback, showResult,
+    showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, toggleFast, pickSaihai, imgFallback, showResult,
     openTrain, pickTrain, closeTrain, openSkill,
     openHall, openBook, closeList, openHowto, openRoster };
 })();
