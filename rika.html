@@ -9,18 +9,6 @@
   <style>
     body { font-family: 'Noto Sans JP', 'JetBrains Mono', sans-serif; box-sizing: border-box; }
 
-    /* 🔰 初回オンボーディング: 誘導パネルのハイライト＆フキダシ */
-    @keyframes onboard-glow-pulse {
-      0%, 100% { box-shadow: 0 0 0 2px rgba(251,191,36,.55), 0 0 16px 2px rgba(251,191,36,.35); }
-      50%      { box-shadow: 0 0 0 3px rgba(251,191,36,.95), 0 0 26px 6px rgba(251,191,36,.55); }
-    }
-    .onboard-glow { animation: onboard-glow-pulse 1.4s ease-in-out infinite; }
-    @keyframes onboard-bubble-in {
-      0%   { transform: translateY(-6px) scale(.97); opacity: 0; }
-      100% { transform: translateY(0) scale(1); opacity: 1; }
-    }
-    .onboard-bubble { animation: onboard-bubble-in .35s ease-out both; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
-
     /* 🔰 チュートリアル: 正解の選択肢ハイライト（答えを教えてOK） */
     @keyframes tut-answer-pulse {
       0%,100% { box-shadow: 0 0 0 3px rgba(52,211,153,.55), 0 0 14px 2px rgba(52,211,153,.45); }

@@ -8,7 +8,7 @@
 //  §3  装備スロット表示 renderEquippedSlots   ～ line 106
 //  §4  インベントリ管理（開閉・グリッド）    ～ line 132
 //  §5  ステータスポップアップ                ～ line 164
-//  §6  ステータス強化UI upgradeStatWithGold  ～ line 209
+//  §6  ステータス強化UI renderStatList  ～ line 209
 //  §7  道場ポップアップ（開閉・難度選択）    ～ line 233
 //  §8  装備モーダル（装備・強化・売却）      ～ line 331
 //  §9  サウンド再生 playSound                ～ line 398
@@ -242,6 +242,7 @@ const GameUI = (function() {
     let _tutDimAlpha = 0.55;  // 暗幕の濃さ（戦闘を見せたいステップでは薄くする）
     let _tutCurTarget = null;   // 現在ハイライト中のターゲット（レイアウト確定後に位置を補正するため保持）
     let _tutRepoInterval = null; // 位置補正の繰り返しタイマー（画像読み込み等でモーダルが伸びるのに追従）
+    let _tutLockTarget = false; // true=説明だけのステップ。ハイライト枠自体でクリックを受け、誤タップでの脱線/詰みを防ぐ（B3範囲/B4レベル/D4強化）
 
     // ── ようこそモーダル ──
     function openWelcomeModal() { const m=document.getElementById('welcome-modal'); if(m) m.classList.remove('hidden'); }
@@ -295,6 +296,7 @@ const GameUI = (function() {
     function _tutBubble(html, opts) {
       opts = opts || {};
       _tutDimAlpha = (typeof opts.dim === 'number') ? opts.dim : 0.55;
+      _tutLockTarget = !!opts.block; // 説明専用（次へだけで進む）ステップは対象を操作不可にする
       _tutOverlay(true);
       document.getElementById('tut-text').innerHTML = html;
       const nextBtn = document.getElementById('tut-next-btn');
@@ -347,6 +349,8 @@ const GameUI = (function() {
         const x=Math.max(0,r.left-pad), y=Math.max(0,r.top-pad), w=r.width+pad*2, h=r.height+pad*2;
         ring.classList.remove('hidden');
         ring.style.left=x+'px'; ring.style.top=y+'px'; ring.style.width=w+'px'; ring.style.height=h+'px';
+        // 説明専用ステップは枠自体でクリックを受け、下の本物のボタン/スライダーを操作不可にする（誤タップ脱線・詰み防止）。操作させるステップは従来どおり穴を素通し。
+        ring.style.pointerEvents = _tutLockTarget ? 'auto' : 'none';
         _tutBlock(bt, 0, 0, '100%', y);              // 上
         _tutBlock(bb, 0, y+h, '100%', Math.max(0,vh-(y+h))); // 下
         _tutBlock(bl, 0, y, x, h);                   // 左
@@ -438,10 +442,10 @@ const GameUI = (function() {
       _tutWaitFor(function(){ return !document.getElementById('dojo-popup').classList.contains('hidden'); }, _tutB3);
     }
     function _tutB3() {
-      _tutBubble('ここで<b>問題のはんい</b>をえらべるよ。<br>今回は<b>小学校の復習</b>にしてあるね👍', { target:'button[onclick="openRangeWindow()"]', dim:0.4, next:_tutB4 });
+      _tutBubble('ここで<b>問題のはんい</b>をえらべるよ。<br>今回は<b>小学校の復習</b>にしてあるね👍', { target:'button[onclick="openRangeWindow()"]', dim:0.4, next:_tutB4, block:true });
     }
     function _tutB4() {
-      _tutBubble('これは<b>敵のレベル</b>。高いほど強いけど<br>コインもいっぱい。今は<b>Lv.1でOK</b>！', { target:'#dojo-popup-lv-slider', dim:0.4, next:_tutB5 });
+      _tutBubble('これは<b>敵のレベル</b>。高いほど強いけど<br>コインもいっぱい。今は<b>Lv.1でOK</b>！', { target:'#dojo-popup-lv-slider', dim:0.4, next:_tutB5, block:true });
     }
     function _tutB5() {
       _tutBubble('じゅんびOK！<br><b>「入場する」</b>を押して道場に入ろう。', { target:'#dojo-popup-enter-btn', dim:0.4 });
@@ -533,7 +537,7 @@ const GameUI = (function() {
     function _tutD4() {
       if (_tutEquipItem) openEquipModal(_tutEquipItem); // 同じ装備を開き直して「強化」を説明
       setTimeout(function(){
-        _tutBubble('そうびは<b>「強化」</b>でもっと強くできる！<br>（コインを使うよ）覚えておこう👍', { target:'#modal-upgrade-btn', dim:0.4, next:_tutD5 });
+        _tutBubble('そうびは<b>「強化」</b>でもっと強くできる！<br>（コインを使うよ）覚えておこう👍', { target:'#modal-upgrade-btn', dim:0.4, next:_tutD5, block:true });
       }, 280);
     }
     function _tutD5() {
@@ -584,7 +588,7 @@ const GameUI = (function() {
       _tutClearWatch();
       if (GameEngine.battle && GameEngine.battle.active) {
         GameEngine.battle.tutHpFloor = 0; GameEngine.battle.tutFreeze = false;
-        try { endBattle(false); } catch(e){} // ui.js側の正規endBattle（ポーズ解除・画面後始末込み。engine側は死にコード=Issue #9）
+        try { endBattle(false); } catch(e){} // ui.js側の正規endBattle（ポーズ解除・画面後始末込み。engine側の重複は削除済 #9）
       }
       _tutComplete();
     }
@@ -1043,22 +1047,7 @@ const GameUI = (function() {
       }
     }
 
-    function allocateStatPointCustom(key, amount) { /* 旧API: statPoints廃止 */ }
-
-    // ── コイン直接強化 ──
-    function upgradeStatWithGold(key) {
-      const lv = GameEngine.player.stats[key];
-      const cap = GameData.STAT_CAPS[key];
-      if (lv >= cap) { alert('このステータスは最大レベルに達しています！'); return; }
-      const cost = GameData.getStatUpgradeCost(GameData.getTotalStatLevels(GameEngine.player.stats));
-      if (GameEngine.player.gold < cost) { alert('ゴールドが不足しています！'); return; }
-      GameEngine.player.gold -= cost;
-      GameEngine.player.stats[key]++;
-      GameEngine.saveUserDataLocal();
-      playSound('skill');
-      renderStatList();
-      updateMenuUI();
-    }
+    // コイン直接強化は GameEngine.upgradeStatWithGold（engine.js §6）が実体。ui側の重複は削除（死にコード #69）
 
     // ── 道場入場ポップアップ ──
 
@@ -1447,15 +1436,6 @@ const GameUI = (function() {
       _set('dojo-reward-preview', '推定報酬: 🪙 ' + est.toLocaleString() + '/敵');
       _set('dojo-hp-preview', '敵HP: ' + (100 * Math.max(1, val)).toLocaleString());
       GameEngine.saveUserDataLocal();
-    }
-
-    function autoSortInventory() {
-      GameEngine.player.inventory.sort((a, b) => {
-        const rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Relic'];
-        return rarities.indexOf(b.rarity) - rarities.indexOf(a.rarity);
-      });
-      GameEngine.saveUserDataLocal();
-      updateMenuUI();
     }
 
     // ==========================================

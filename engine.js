@@ -14,7 +14,7 @@
 //  §8  メインループ startBattleLoop            ～ line 533
 //  §9  ボス攻撃・必殺技                        ～ line 620
 //  §10 タイピング入力処理 handleKeyInput        ～ line 704
-//  §11 戦闘終了 endBattle                      ～ line 906
+//  §11 ポーズ制御 pause/resume（旧endBattleはui.js §17が実体）                      ～ line 906
 //  §12 PvP・トーナメント                       ～ line 997
 //  §13 セーブ・ロード・初期化                  ～ line 1176
 //  §14 ユーティリティ（戦闘力・アバター）      ～ line 1258
@@ -1963,7 +1963,6 @@ let player = {
     }
 
     // 🔰 チュートリアル司令塔(ui.js)から戦闘の演出を1回だけ強制発火させるための公開ラッパー
-    function tutorialForceNormalAttack() { if (battle.active) triggerBossNormalAttack(); }
     function tutorialForceUlt() { if (battle.active) triggerBossUltimate(); }
 
     // showDamagePopup は GameUI.showDamagePopup を使用（ui.js §18）
@@ -2020,92 +2019,7 @@ let player = {
       renderQuestion(_q, !isBoss);
     }
 
-    function endBattle(isVictory) {
-      battle.active = false;
-      clearInterval(battleInterval);
-      
-      const bEl = document.getElementById('screen-battle');
-      bEl.classList.add('hidden'); bEl.style.display = 'none';
-      const rEl = document.getElementById('result-screen');
-      rEl.classList.remove('hidden'); rEl.style.display = 'flex';
-
-      const earnedG = document.getElementById('earned-points');
-      const detail = document.getElementById('result-detail');
-      const banner = document.getElementById('game-clear-banner');
-      const emoji = document.getElementById('result-emoji');
-      const title = document.getElementById('result-title');
-
-      banner.classList.add('hidden');
-
-      if (battle.mode === 'boss') {
-        const boss = GameData.BOSSES_DB.find(b => b.id === battle.bossId);
-        if (isVictory) {
-          emoji.textContent = '🏆';
-          title.textContent = '討伐成功！';
-          
-          let goldReward = boss.hp * 5;
-
-          // 🪙 コイン獲得補正（レベルボーナス廃止）
-          let goldBonus = 1.0;
-          Object.values(player.equipped).forEach(item => {
-            if (item) {
-              if (item.skill === 'コイン獲得量+50%') goldBonus += 0.5;
-              if (item.skill === 'コイン獲得量+100%') goldBonus += 1.0;
-            }
-          });
-          const finalGoldReward = Math.floor(goldReward * goldBonus);
-
-          player.gold += finalGoldReward;
-          
-          // 撃破フラグ登録
-          if (!player.defeatedBosses.includes(boss.id)) {
-            player.defeatedBosses.push(boss.id);
-          }
-
-          checkLevelUp();
-
-          earnedG.textContent = finalGoldReward.toLocaleString();
-          detail.innerHTML = `
-            撃破ボス: <span class="text-cyan-400 font-bold">${boss.name}</span><br>
-            強敵との実践に勝利しました！<br>
-            装備補正(+${Math.round((goldBonus - 1) * 100)}%) が適用されました。
-          `;
-
-          // 🏆 12体目完全撃破
-          if (boss.id === 'b4_3' && !player.hasClearedOnce) {
-            player.hasClearedOnce = true;
-            banner.classList.remove('hidden'); 
-          }
-        } else {
-          emoji.textContent = '💀';
-          title.textContent = '作戦失敗...';
-          earnedG.textContent = "0";
-          detail.innerHTML = `
-            ボスの猛攻の前にひれ伏しました。<br>
-            道場モードでステータスや装備を鍛え上げ、再挑戦しましょう。
-          `;
-        }
-      } else {
-        // 道場
-        emoji.textContent = '🥋';
-        title.textContent = '道場修行終了';
-        earnedG.textContent = battle.goldEarnedInSession.toLocaleString();
-
-        // 敵レベルに基づいた報酬倍率表示 (Lv.1=1.0倍, Lv.10=1.9倍)
-        const dojoLevelMult = 1.0 + (Math.max(1, battle.dojoEnemyLevel || 1) - 1) * 0.1;
-        detail.innerHTML = `
-          道場での特訓お疲れ様でした！<br>
-          <span class="text-yellow-400 font-bold">獲得ゴールド: +${battle.goldEarnedInSession.toLocaleString()}G</span> (敵レベル補正 ×${dojoLevelMult.toFixed(1)}倍込み)<br>
-          <span class="text-cyan-400 font-bold">敵レベル: Lv.${battle.dojoEnemyLevel} / 次の敵は Lv.${battle.dojoEnemyLevel + 1} の予定です</span>
-        `;
-      }
-
-      saveUserDataLocal();
-    }
-
-    function quitBattle() {
-      GameUI.endBattle(false);
-    }
+    // endBattle / quitBattle の実体は ui.js §17。engine側の重複（死にコード）は削除 #9
 
     // ⏸ ポーズ開閉。battle.paused を切り替え、UI側にポーズ画面の表示/非表示を依頼する。
     //   paused=true の間は battleInterval（敵の進行）も入力ハンドラも全て早期returnで止まる。
@@ -2631,8 +2545,8 @@ let player = {
     getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar, getRankInfo,
     getRecommendedDojoLevel, getBossRecommendedPower, getBossReadiness,
     startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, spawnNextDojoEnemy, nextQuestion,
-    processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, quitBattle, endBattle, pauseGame, resumeGame,
-    tutorialForceNormalAttack, tutorialForceUlt,
+    processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, pauseGame, resumeGame,
+    tutorialForceUlt,
     upgradeEquip, transcendEquip, sellEquip, bulkSellInventory,
     autoSortInventory, saveUserDataLocal, loadUserData, resetAllData,
     pullGacha, pullGachaMulti, pullUntilStat, gachaPrice, rerollEquipBonus, redeemGachaGold10, redeemSelectUR, exportSave, importSave, getSaveCode, applySaveCode, changePlayerName, closeNameEditModal, savePlayerName, setPlayerGrade,
