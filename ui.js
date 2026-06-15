@@ -1279,10 +1279,13 @@ const GameUI = (function() {
     function closeGradeWarn() { document.getElementById('grade-warn-popup').classList.add('hidden'); }
     function _doEnterDojo(gradesOverride) {
       closeGradeWarn();
-      closeDojoPopup();
       // 🔰 チュートリアル中（フェーズB）の道場は、弱い敵＆HP下限で入場（1体で倒せる練習）
       const tut = (_tutActive && GameEngine.player.onboardStep === 2) ? { hpFloor: 60, enemyHp: 40 } : undefined;
-      GameEngine.startDojo(_rangeDiffs.slice(), _rangeGenres.slice(), _rangeType || null, gradesOverride || _rangeGrades.slice(), tut);
+      // 🌱 #21② やさしい練習トグル（ポップアップを閉じる前に読む）。チュートリアル中は常にOFF。
+      const _pt = document.getElementById('dojo-practice-toggle');
+      const _practice = !tut && !!(_pt && _pt.checked);
+      closeDojoPopup();
+      GameEngine.startDojo(_rangeDiffs.slice(), _rangeGenres.slice(), _rangeType || null, gradesOverride || _rangeGrades.slice(), tut, _practice);
     }
     function challengeKeepingOverGrade() { _doEnterDojo(_rangeGrades.slice()); } // 外さずそのまま
     function challengeRemovingOverGrade() {
@@ -2896,14 +2899,14 @@ const GameUI = (function() {
         }
       } else {
         // 道場
-        emoji.textContent = '🥋';
-        title.textContent = '道場修行終了';
+        const _dojoLost = !!GameEngine.battle.playerDefeated; // #21 戦闘不能(true)か撤退(false)か
+        emoji.textContent = _dojoLost ? '💪' : '🥋';
+        title.textContent = _dojoLost ? '道場でダウン…' : '道場修行終了';
         earnedG.textContent = GameEngine.battle.goldEarnedInSession.toLocaleString();
         
-        detail.innerHTML = `
-          道場での特訓お疲れ様でした！<br>
-          <span class="text-yellow-400 font-bold">獲得ゴールド: +${GameEngine.battle.goldEarnedInSession.toLocaleString()}G</span>
-        `;
+        detail.innerHTML = _dojoLost
+          ? `敵の攻撃でHPが0に…あと少し！<br>「<b>レベルアップ</b>」でHP・攻撃力を強化したり、道場の<b>敵レベルを下げて</b>再挑戦しよう。<br><span class="text-yellow-400 font-bold">ここまでの獲得コイン +${GameEngine.battle.goldEarnedInSession.toLocaleString()}G はもらえるよ🪙</span>`
+          : `道場での特訓お疲れ様でした！<br><span class="text-yellow-400 font-bold">獲得ゴールド: +${GameEngine.battle.goldEarnedInSession.toLocaleString()}G</span>`;
       }
 
       GameEngine.saveUserDataLocal();
@@ -2926,6 +2929,23 @@ const GameUI = (function() {
       container.appendChild(el);
       setTimeout(() => el.remove(), 800);
     }
+
+      // ⚡ #21③ ゲリラ問題の通知トースト（動的生成・上部中央・amber）。HTML追加不要。
+      function guerrillaToast(html, ms) {
+        try {
+          var el = document.getElementById('guerrilla-toast');
+          if (!el) {
+            el = document.createElement('div');
+            el.id = 'guerrilla-toast';
+            el.className = 'fixed left-1/2 -translate-x-1/2 top-16 z-[80] max-w-[88vw] bg-amber-500/95 text-slate-900 font-bold text-[13px] leading-snug px-4 py-2.5 rounded-xl shadow-2xl text-center pointer-events-none';
+            document.body.appendChild(el);
+          }
+          el.innerHTML = html;
+          el.classList.remove('hidden');
+          clearTimeout(el._t);
+          el._t = setTimeout(function(){ el.classList.add('hidden'); }, ms || 2200);
+        } catch (e) {}
+      }
 
 
   // 現在の出題が「タップで答える」ものか（選択式 or ボス必殺技クイズ）。
@@ -3007,7 +3027,7 @@ const GameUI = (function() {
     // メニューUI
     updateMenuUI,
     // 戦闘UI
-    updateBattleUI, updateComboBadge, updateComboBurstButton, showDamagePopup, endBattle, quitBattle,
+    updateBattleUI, updateComboBadge, updateComboBurstButton, showDamagePopup, guerrillaToast, endBattle, quitBattle,
     showPauseScreen, hidePauseScreen, focusBattleInput, flashPanel,
     // ガチャ
     openGachaRateModal, closeGachaRateModal, showGachaResults, showGachaUntilResult,

@@ -770,7 +770,7 @@ let player = {
     //  difficulty : 難易度キー
     //  filterGenres : 出題ジャンル配列（null/空=全ジャンル）
     //  filterType   : 'typing'/'choice'/null（出題形式）
-    function startDojo(difficulty, filterGenres, filterType, filterGrades, tut) {
+    function startDojo(difficulty, filterGenres, filterType, filterGrades, tut, practice) {
       const order = ['elementary', 'junior', 'mid', 'senior', 'supreme'];
       // difficulty は配列（範囲選択）または文字列（図書館など旧経路）。配列に正規化。
       // 難易度のハードロックは廃止：全難易度を最初から選べる（案内は学年警告に一本化）。
@@ -808,6 +808,8 @@ let player = {
         return uniq.length === 1 ? uniq[0] : null;
       })();
       battle.dojoEnemyLevel = player.dojoEnemyLevel || 1;
+      battle.playerDefeated = false; // #21 道場の負け(戦闘不能)を撤退と区別するため毎戦リセット
+      battle.practiceMode = !!practice; // #21② やさしい練習（敵の行動を大幅に遅く・報酬控えめ）
       battle.enemySlowTimeLeft = 0;
       battle.currentCombo = 0;
       battle.comboBuffs = [];
@@ -832,7 +834,7 @@ let player = {
 
       const _dLbl = { elementary:'小学校の復習', junior:'基礎', mid:'応用', senior:'発展', supreme:'受験' };
       const _diffTitle = diffs.length > 1 ? `${_dLbl[topDiff]}まで` : _dLbl[topDiff];
-      document.getElementById('battle-mode-title').textContent = `道場特訓: ${_diffTitle} (敵Lv.${player.dojoEnemyLevel})`;
+      document.getElementById('battle-mode-title').textContent = (battle.practiceMode ? '🌱やさしい練習 ' : '') + `道場特訓: ${_diffTitle} (敵Lv.${player.dojoEnemyLevel})`;
       try {
         spawnNextDojoEnemy();
       } catch(e) {
@@ -861,6 +863,7 @@ let player = {
 
       let prob = getWeightedQuestion(battle.diffs || [battle.difficulty], battle.filterGenres, battle.filterType, battle.filterGrades);
       prob = _reduceDojoChoices(prob); // 道場の選択式は2択にやさしく
+      battle._guerrillaNow = false; // #21③ 新しい敵の初問はゲリラにしない
       battle.currentQuestion = prob;
       battle.qHadMiss = false; // 新しい問題＝ミスフラグをリセット（正答率用）
       battle.typedSoFar = '';
@@ -955,6 +958,28 @@ let player = {
         c: correctFirst ? [correct, distractor] : [distractor, correct],
         a: correctFirst ? 0 : 1
       });
+    }
+
+    // ⚡ #21③ ゲリラ報酬の基準＝難易度倍率のみ（練習補正込み）。敵レベルスケールは含めない＝
+    //   高レベル道場でゲリラだけ答えて敵を倒さず無双ファームするのを防ぐ（#21③ farm修正）。
+    function _guerrillaBaseGold() {
+      const rm = (battle.difficulty === 'elementary' || battle.difficulty === 'junior') ? 1 : (battle.difficulty === 'mid' ? 1.5 : (battle.difficulty === 'senior' ? 2 : 3));
+      return Math.floor(900 * rm * (battle.practiceMode ? 0.5 : 1));
+    }
+    // ⚡ #21③ 範囲内の選択式から「苦手(正答率が低い)/未挑戦」を優先して1問選ぶ＝丸暗記周回を崩す。
+    function _pickGuerrillaQuestion() {
+      const pool = GameData.getQuestions({ diffs: battle.diffs || [battle.difficulty], genres: battle.filterGenres, type: 'choice', grades: battle.filterGrades });
+      if (!pool || pool.length === 0) return null;
+      const qs = player.quizStats || {};
+      const acc = (q) => { const st = qs[q.genre + '|' + q.diff]; return (st && st.t > 0) ? (st.c / st.t) : -1; }; // 未挑戦=-1(最優先)
+      let best = null, bestAcc = 2;
+      for (let i = 0; i < Math.min(8, pool.length); i++) {
+        const cand = pool[Math.floor(Math.random() * pool.length)];
+        if (cand === _lastQuestion) continue;
+        const a = acc(cand);
+        if (a < bestAcc) { bestAcc = a; best = cand; }
+      }
+      return best || pool[Math.floor(Math.random() * pool.length)];
     }
 
     function renderQuestion(prob, showHint) {
@@ -1238,6 +1263,7 @@ let player = {
           // 🔰 チュートリアル中はHP下限を割らない
           if (battle.tutHpFloor && battle.playerHp < battle.tutHpFloor) battle.playerHp = battle.tutHpFloor;
           if (battle.playerHp <= 0) {
+            battle.playerDefeated = true; // #21 撤退でなく戦闘不能
             GameUI.endBattle(false);
             return;
           }
@@ -1279,7 +1305,7 @@ let player = {
           // ⚡ 怒り狂暴化時は行動速度100倍
           if (battle.isRaged) speedFactor *= 100;
 
-          battle.enemyActionGauge += (5 * speedFactor * 0.1);
+          battle.enemyActionGauge += (5 * speedFactor * 0.1) * ((battle.practiceMode && battle.mode === 'dojo') ? 0.1 : 1); // #21② 練習は敵の行動を大幅に遅く
 
           let ultSpeedFactor = battle.mode === 'boss' ? battle.bossUltSpeed : 0.05;
           battle.enemyUltGauge += (10 * ultSpeedFactor * 0.1);
@@ -1373,6 +1399,7 @@ let player = {
         GameUI.showDamagePopup('不死!', false, true);
       }
       if (battle.playerHp <= 0) {
+        battle.playerDefeated = true; // #21 撤退でなく戦闘不能
         GameUI.endBattle(false);
         return true;
       }
@@ -1549,6 +1576,11 @@ let player = {
         if (buttons[selectedIdx]) buttons[selectedIdx].className =
           'choice-btn bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm text-left border border-emerald-400';
         recordQuizResult(true);
+        if (battle._guerrillaNow) { // ⚡ #21③ ゲリラ正解＝コイン大当たり
+          const _gb = _guerrillaBaseGold() * 2;
+          player.gold += _gb; battle.goldEarnedInSession += _gb; saveUserDataLocal();
+          if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('<b>⚡ 大当たり！</b> +' + _gb.toLocaleString() + '🪙', 2200);
+        }
         processCorrectAnswer();
       } else {
         // 不正解: 押した選択肢を赤に、正解を緑に。ミスカウント加算。
@@ -1558,6 +1590,12 @@ let player = {
           'choice-btn bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs md:text-sm text-left border border-emerald-400';
         battle.missCount++;
         recordQuizResult(false);
+        // ⚡ #21③ ゲリラのはずれ保護: 1.2秒以上考えたなら挑戦ボーナス＋解説。即答(あてずっぽう)は対象外＝ズル防止。
+        if (battle._guerrillaNow && (Date.now() - (battle._gShownAt || 0) >= 1200)) {
+          const _gp = Math.floor(_guerrillaBaseGold() * 0.3);
+          player.gold += _gp; battle.goldEarnedInSession += _gp; saveUserDataLocal();
+          if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('おしい！正解は<b>緑</b>のところ。' + (prob.desc ? '<br>💡 ' + prob.desc : '') + '<br>挑戦ボーナス +' + _gp.toLocaleString() + '🪙', 4200);
+        }
         playSound('wrong');
         flashPanel('miss');
         if (battle.missCount >= 50 && !battle.isRaged) {
@@ -1923,7 +1961,7 @@ let player = {
             // 稼ぎの主役は敵レベル(=ボス撃破で上限解禁)。カーブを急に＝+20%/Lv。Lv.1=1.0/Lv.10=2.8/Lv.100=20.8倍。
             const enemyLvScale = 1.0 + (Math.max(1, battle.dojoEnemyLevel || 1) - 1) * 0.2;
             const bonusMult = battle.isBonus ? 20 : 1; // ボーナスモンスターは20倍ゴールド
-            const finalGoldEarn = Math.floor(baseGold * enemyLvScale * (goldMul || 1) * bonusMult);
+            const finalGoldEarn = Math.floor(baseGold * enemyLvScale * (goldMul || 1) * bonusMult * (battle.practiceMode ? 0.5 : 1)); // #21② 練習は報酬ひかえめ
 
             player.gold += finalGoldEarn;
             battle.goldEarnedInSession += finalGoldEarn;
@@ -2000,6 +2038,19 @@ let player = {
         battle.currentQuestion = getWeightedQuestion(_nqTier, _genres, _type, _grades);
       }
       if (battle.mode === 'dojo') battle.currentQuestion = _reduceDojoChoices(battle.currentQuestion); // 道場のみ2択
+      // ⚡ #21③ ゲリラ問題（道場のみ）: クールダウン明け＆確率で、範囲内の苦手な選択式に差し替える。
+      battle._guerrillaNow = false;
+      if (battle.mode === 'dojo' && !battle.tutEnemyHp) {
+        battle._gCD = (battle._gCD || 0) - 1;
+        if (battle._gCD <= 0 && Math.random() < 0.28) {
+          const _gq = _pickGuerrillaQuestion();
+          if (_gq) {
+            battle.currentQuestion = _reduceDojoChoices(_gq);
+            battle._guerrillaNow = true; battle._gShownAt = Date.now(); battle._gCD = 4;
+            if (typeof GameUI !== 'undefined' && GameUI.guerrillaToast) GameUI.guerrillaToast('<b>⚡ ゲリラ問題！</b><br>正解でコイン大当たり・はずれても挑戦ボーナス', 2200);
+          }
+        }
+      }
       battle.qHadMiss = false; // 新しい問題＝ミスフラグをリセット（正答率用）
       battle.typedSoFar = '';
 
