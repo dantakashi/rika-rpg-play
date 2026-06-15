@@ -193,11 +193,11 @@ const SENGOKU_DATA = (function(){
      type: story（読み物）/ choice（選択肢）/ battle（合戦）/ final（本能寺）
      effects: {buyu,chiryaku,seiji,ninbo,stamina,mood,koku} 省略可 */
   const TIMELINE = [
-    { year:1551, type:'story', title:'家督相続 — うつけと呼ばれた男', art:'🏯👺',
+    { year:1551, type:'story', title:'家督相続 — うつけと呼ばれた男', art:'🏯👺', artImg:'assets/ev_katoku.jpg',
       text:'父・織田信秀が亡くなり、あなた（織田信長・18歳）が家督を継いだ。だが葬儀で位牌に抹香を投げつけたあなたを、家臣たちは「尾張の大うつけ（大ばか者）」と呼ぶ。\n\n戦国時代——実力さえあれば、身分が下の者でも上の者に取って代われる「下剋上」の世。ここから、天下統一への32年が始まる。',
       effects:{ mood:1 } },
 
-    { year:1553, type:'choice', title:'聖徳寺の会見 — まむしの道三', art:'🐍🍵',
+    { year:1553, type:'choice', title:'聖徳寺の会見 — まむしの道三', art:'🐍🍵', artImg:'assets/ev_dosan.jpg',
       text:'妻・帰蝶の父であり「美濃のまむし」と恐れられる斎藤道三が、会見を求めてきた。道三はうつけと噂のあなたを値踏みするつもりだ。さて、どんな姿で行く？',
       choices:[
         { label:'正装で堂々と現れ、度肝を抜く', text:'いつものうつけ姿で道中を歩き、会見の場では一転、立派な正装で現れた。道三は「わしの息子たちは、いずれあのうつけの門前に馬をつなぐ（家来になる）だろう」とうなったという。', fx:{ ninbo:8, chiryaku:5, mood:1 } },
@@ -334,7 +334,7 @@ const SENGOKU_DATA = (function(){
       loseText:'【敗北】美濃の堅城はあまりに固かった……。天下布武の夢、ここまで。\n\n（育成終了。鍛錬の積み重ねが軍の強さになる。次はもっと育ててから挑もう！）',
       winFx:{ koku:150, chiryaku:5, seiji:5 } },
 
-    { year:1568, type:'choice', title:'上洛 — 将軍を奉じて京へ', art:'⛩️🏇',
+    { year:1568, type:'choice', title:'上洛 — 将軍を奉じて京へ', art:'⛩️🏇', artImg:'assets/ev_joraku.jpg',
       text:'室町幕府13代将軍の弟・足利義昭が「兄の仇を討ち、自分を将軍にしてほしい」と頼ってきた。京に上る大義名分になるが……。',
       choices:[
         { label:'義昭を奉じて上洛する', text:'義昭を15代将軍に立て、堂々と京へ入った。「将軍を助ける織田」の名分はあなたの力を一気に高めた。ただし義昭はやがて、あなたの言いなりになるのを嫌がり始める……。', fx:{ seiji:8, koku:100, ninbo:3 } },
@@ -383,14 +383,14 @@ const SENGOKU_DATA = (function(){
       loseText:'【敗北】裏切りの代償はあまりに大きく、姉川で織田軍は崩れ去った……。\n\n（育成終了。軍学帳でまちがえた問題を復習して、リベンジだ！）',
       winFx:{ koku:120, buyu:5 } },
 
-    { year:1571, type:'choice', title:'比叡山焼き討ち — 鬼か、王か', art:'🔥⛰️',
+    { year:1571, type:'choice', title:'比叡山焼き討ち — 鬼か、王か', art:'🔥⛰️', artImg:'assets/ev_hieizan.jpg',
       text:'比叡山延暦寺は浅井・朝倉をかくまい、仏の権威を盾に織田軍に立ちはだかる。家臣の中にも「寺を攻めるなど罰当たり」とためらう声があるが……。',
       choices:[
         { label:'容赦なく焼き討ちする（史実）', text:'全山を焼き払った。「仏敵」と恐れられ人望は下がったが、「織田に逆らえば寺社も容赦しない」という意思は天下に轟き、宗教勢力の武装に大きな楔を打ち込んだ。', fx:{ buyu:8, chiryaku:5, ninbo:-8, koku:50 } },
         { label:'包囲して兵糧攻めにする（IF）', text:'時間はかかったが、戦わずして延暦寺を降伏させた。「うつけ、存外慈悲深し」と民の評判は上々。ただし浅井・朝倉に立て直しの時間を与えてしまった。', fx:{ ninbo:8, seiji:5, koku:-20 } },
       ] },
 
-    { year:1573, type:'story', title:'室町幕府、滅ぶ', art:'🏯💨',
+    { year:1573, type:'story', title:'室町幕府、滅ぶ', art:'🏯💨', artImg:'assets/ev_muromachi.jpg',
       text:'ついに将軍・足利義昭を京から追放した。1338年の足利尊氏から約240年続いた室町幕府は、ここに滅亡。\n\n同じ年、浅井長政・朝倉義景も滅ぼした。お市の方と三人の娘（茶々・初・江）は保護した。この三姉妹がのちに歴史を大きく動かすことになる。',
       effects:{ seiji:8, koku:100 } },
 
@@ -447,7 +447,7 @@ const SENGOKU_DATA = (function(){
         { label:'座を保護して確実に税を取る', text:'手堅く税収を確保した。だが商人たちは自由な堺や他の町へ流れ、安土の市はいまひとつ栄えない。「銭は囲うより回せ、だったか……」', fx:{ seiji:3, koku:50, mood:-1 } },
       ] },
 
-    { year:1580, type:'story', title:'石山本願寺との和睦', art:'🕊️🏯',
+    { year:1580, type:'story', title:'石山本願寺との和睦', art:'🕊️🏯', artImg:'assets/ev_honganji.jpg',
       text:'10年にわたり戦い続けた石山本願寺（大阪）と、ついに和睦。各地の一向一揆に苦しめられた長い戦いだった。\n\n跡地にはのちに豊臣秀吉が大坂城を築く。残る大敵は中国地方の毛利、関東の北条、そして……。',
       effects:{ ninbo:5, koku:100 } },
 
@@ -577,6 +577,7 @@ const SENGOKU_DATA = (function(){
       id:'nobunaga', name:'織田信長', armyIcon:'🔵', armyName:'織田軍',
       crest:'⚡', subtitle:'尾張のうつけ、天下布武へ',
       img:'assets/hero_nobunaga.png',
+      faceImgs:{ up:'assets/hero_nobunaga_up.png', down:'assets/hero_nobunaga_down.png' },
       kamon:'assets/kamon_oda.png',
       uniqueSkill:{ id:'uq_tenkafubu', icon:'⚡', name:'天下布武', desc:'合戦で「博打」の采配が決まったとき、戦果がさらに増す（偉人固有）', fx:{ riskyBoost:1.15 } },
       castleImgs:['assets/castle_1.png','assets/castle_2.png','assets/castle_3.png','assets/castle_4.png','assets/castle_5.png'],
@@ -603,6 +604,7 @@ const SENGOKU_DATA = (function(){
       id:'hideyoshi', name:'豊臣秀吉', armyIcon:'🟡', armyName:'羽柴軍',
       crest:'🐒', subtitle:'草履取りから天下人へ・史上最大の成り上がり',
       img:'assets/hero_hideyoshi.png',
+      faceImgs:{ up:'assets/hero_hideyoshi_up.png', down:'assets/hero_hideyoshi_down.png' },
       kamon:'assets/kamon_toyotomi.png',
       castleImgs:['assets/castle_h1.png','assets/castle_h2.png','assets/castle_h3.png','assets/castle_h4.png','assets/castle_h5.png'],
       sceneImgs:['assets/scene_h1.jpg','assets/scene_h2.jpg','assets/scene_h3.jpg','assets/scene_h4.jpg','assets/scene_h5.jpg'],
@@ -681,18 +683,18 @@ const SENGOKU_DATA = (function(){
         battleLoc:{ 1566:'美濃', 1570:'北陸', 1582:'京', 1583:'近江', 1587:'九州', 1590:'関東' },
       },
       timeline:[
-        { year:1554, type:'story', title:'仕官 — 草履取りの猿', art:'🐒🩴',
+        { year:1554, type:'story', title:'仕官 — 草履取りの猿', art:'🐒🩴', artImg:'assets/ev_shikan.jpg',
           text:'尾張の百姓の子・日吉丸（あなた）は、織田信長に仕えることになった。冬の朝、懐で温めておいた草履を差し出すと、信長は「猿、気が利くわ」と笑った。\n\n名は木下藤吉郎。持ち物は、よく回る頭と人に好かれる才覚だけ。ここから、日本史上最大の成り上がりが始まる。',
           effects:{ mood:1 } },
 
-        { year:1558, type:'choice', title:'清洲城の三日普請', art:'🧱🔨',
+        { year:1558, type:'choice', title:'清洲城の三日普請', art:'🧱🔨', artImg:'assets/ev_kiyosufushin.jpg',
           text:'清洲城の塀が嵐で崩れた。奉行たちが20日かけても直らない。「猿、お前がやってみよ」——信長の目が試している。さて、どう直す？',
           choices:[
             { label:'組ごとに競わせ、早い組に褒美を弾む', text:'人足を10組に分け、持ち場を競わせた。褒美の銭が飛び交い、塀はわずか三日で直った。「銭は使うほど人を動かす」——あなたの工夫に城中が驚いた。', fx:{ seiji:8, koku:10, mood:1 } },
             { label:'自ら泥まみれで先頭に立つ', text:'親方が誰より働くなら、人足は休めない。塀は五日で直り、「木下様のためなら」という人足が増えた。あなたの名は下々の語り草になった。', fx:{ ninbo:8, buyu:3 } },
           ] },
 
-        { year:1561, type:'story', title:'寧々との祝言', art:'🌸🍶',
+        { year:1561, type:'story', title:'寧々との祝言', art:'🌸🍶', artImg:'assets/ev_nene.jpg',
           text:'足軽組頭の養女・寧々（ねね）と恋に落ち、祝言を挙げた。家同士が決めるのが当たり前のこの時代、身分の低い者同士の恋愛結婚はきわめて珍しい。\n\n寧々は生涯あなたを支え、子飼いの家臣たちの「母」となる。のちに天下人となっても、あなたは寧々に頭が上がらない。',
           effects:{ ninbo:5, mood:1 } },
 
@@ -780,11 +782,11 @@ const SENGOKU_DATA = (function(){
           loseText:'【敗北】追撃を支えきれず、殿軍は崩壊……。\n\n（育成終了。撤退戦は人望と知略がものを言う。側近との絆も大切に！）',
           winFx:{ koku:100, ninbo:8, buyu:5 } },
 
-        { year:1573, type:'story', title:'長浜城主 — 羽柴秀吉、誕生', art:'🏯✨',
+        { year:1573, type:'story', title:'長浜城主 — 羽柴秀吉、誕生', art:'🏯✨', artImg:'assets/ev_nagahama.jpg',
           text:'浅井攻めの功績で、近江長浜12万石の城主に大出世！ 名も「羽柴秀吉」と改めた。丹羽長秀の「羽」と柴田勝家の「柴」を一字ずつもらった、いかにも世渡り上手なあなたらしい名前だ。\n\n百姓の子が、ついに一国一城の主になった。',
           effects:{ seiji:8, koku:150 } },
 
-        { year:1577, type:'story', title:'中国方面軍司令官 — 大抜擢', art:'🗺️⚔️',
+        { year:1577, type:'story', title:'中国方面軍司令官 — 大抜擢', art:'🗺️⚔️', artImg:'assets/ev_chugoku.jpg',
           text:'信長から、中国地方の毛利攻めを一任された。方面軍司令官は織田家でも数人しかいない大役。竹中半兵衛・黒田官兵衛という二人の天才軍師も、あなたの下にいる。\n\n「いずれ毛利の領地はお前にやろう」——出世競争の先頭に立った。',
           effects:{ chiryaku:5, koku:80 } },
 
@@ -872,18 +874,18 @@ const SENGOKU_DATA = (function(){
           loseText:'【敗北】「かかれ柴田」の猛攻に屋台骨が砕けた……。\n\n（育成終了。大一番の前に、ステータスと体力を整えておこう！）',
           winFx:{ koku:250, buyu:8, seiji:5 } },
 
-        { year:1584, type:'choice', title:'小牧・長久手 — 家康との知恵比べ', art:'🦅🤝',
+        { year:1584, type:'choice', title:'小牧・長久手 — 家康との知恵比べ', art:'🦅🤝', artImg:'assets/ev_komaki.jpg',
           text:'信長の次男・信雄が、徳川家康と組んで兵を挙げた。戦上手の家康との全面対決は、長期戦の気配……。さて、どう決着をつける？',
           choices:[
             { label:'和睦し、政治で取り込む（史実）', text:'戦は引き分けたが、外交で勝った。信雄と単独講和して家康の戦う名分を消し、のちには妹と母を人質に送る思い切った手で家康を上洛・臣従させた。「戦わずして勝つ」の極みである。', fx:{ seiji:10, ninbo:5, koku:100 } },
             { label:'決戦で雌雄を決する', text:'長久手で手痛い敗北を喫し、損害がかさんだ。やはり家康と正面から戦うのは分が悪い……結局、和睦の道を探ることになった。', fx:{ buyu:8, koku:-50, mood:-1 } },
           ] },
 
-        { year:1585, type:'story', title:'関白就任 — 前例なき頂点', art:'👑🐒',
+        { year:1585, type:'story', title:'関白就任 — 前例なき頂点', art:'👑🐒', artImg:'assets/ev_kanpaku.jpg',
           text:'朝廷から関白に任じられた！ 武士として、そして百姓出身として、まったく前例のない頂点だ。翌年には「豊臣」の姓を賜り、太政大臣にも就く。\n\n刀ではなく官位と政治で天下に号令する——あなたが作る、新しい統一のかたちだ。',
           effects:{ seiji:10, ninbo:5, koku:200 } },
 
-        { year:1586, type:'story', title:'大坂城と黄金の茶室', art:'🏯✨',
+        { year:1586, type:'story', title:'大坂城と黄金の茶室', art:'🏯✨', artImg:'assets/ev_ogon.jpg',
           text:'石山本願寺の跡地に築いた大坂城が、ついに偉容を現した。本丸には組み立て式の黄金の茶室——成金趣味と笑う者もいるが、これは「新しい天下人の力」を誰の目にもわかる形で見せる演出だ。\n\n千利休を茶頭に迎え、茶の湯は政治の舞台にもなっていく。',
           effects:{ koku:150, ninbo:3 } },
 
@@ -950,6 +952,7 @@ const SENGOKU_DATA = (function(){
       id:'ieyasu', name:'徳川家康', armyIcon:'🟢', armyName:'徳川軍',
       crest:'🦅', subtitle:'人質の子、泰平の世を開く',
       img:'assets/hero_ieyasu.png',
+      faceImgs:{ up:'assets/hero_ieyasu_up.png', down:'assets/hero_ieyasu_down.png' },
       kamon:'assets/kamon_tokugawa.png',
       uniqueSkill:{ id:'uq_nintai', icon:'🦅', name:'忍耐', desc:'すべての鍛錬の体力消耗が少ない（偉人固有）', fx:{ costAll:3 } },
       castleImgs:['assets/castle_i1.png','assets/castle_i2.png','assets/castle_i3.png','assets/castle_i4.png','assets/castle_i5.png'],
@@ -1030,11 +1033,11 @@ const SENGOKU_DATA = (function(){
         battleLoc:{ 1563:'三河', 1572:'遠江', 1575:'三河', 1584:'尾張', 1600:'美濃' },
       },
       timeline:[
-        { year:1560, type:'story', title:'桶狭間の報 — 人質、故郷へ帰る', art:'🛖🌅',
+        { year:1560, type:'story', title:'桶狭間の報 — 人質、故郷へ帰る', art:'🛖🌅', artImg:'assets/ev_hitojichi.jpg',
           text:'駿府で人質として育ったあなた（松平元康・19歳）に、衝撃の報せが届いた。「今川義元殿、桶狭間にて討死」。\n\n今川の支配が揺らいだいま、誰の指図も受けず、生まれ故郷の岡崎城に入った。6歳から続いた人質生活は終わり。ここから、自分の足で立つ人生が始まる。',
           effects:{ mood:1, ninbo:3 } },
 
-        { year:1562, type:'story', title:'清洲同盟 — 信長と握手', art:'🤝⚡',
+        { year:1562, type:'story', title:'清洲同盟 — 信長と握手', art:'🤝⚡', artImg:'assets/ev_kiyosu.jpg',
           text:'尾張の織田信長と同盟を結んだ。かつて今川方として戦った相手だが、これからは背中を預け合う仲だ。\n\nこの同盟は信長が本能寺に倒れるまで約20年、戦国では奇跡的なほど長く守られる。「約束を守る男」——それがあなたの最初の看板になった。',
           effects:{ ninbo:5, koku:20 } },
 
@@ -1080,14 +1083,14 @@ const SENGOKU_DATA = (function(){
           loseText:'【敗北】家中の分裂を収めきれなかった……。\n\n（育成終了。内輪の戦いは人望がものを言う。側近との絆を大切に！）',
           winFx:{ koku:50, ninbo:8, buyu:3 } },
 
-        { year:1566, type:'choice', title:'徳川改姓 — 三河の国主へ', art:'🦅📜',
+        { year:1566, type:'choice', title:'徳川改姓 — 三河の国主へ', art:'🦅📜', artImg:'assets/ev_kaisei.jpg',
           text:'三河を平定し、朝廷から「徳川」への改姓を許された。松平元康あらため、徳川家康。名実ともに三河の国主だ。さて、国づくりの第一歩は？',
           choices:[
             { label:'家臣団を組み直し、結束を固める', text:'旗本を東西に分け、酒井忠次と石川数正に預けた。誰が何を守るのかが明確になり、三河武士団は戦国屈指の結束を誇る軍団へ育っていく。', fx:{ ninbo:8, buyu:3 } },
             { label:'検地と倹約で内政を固める', text:'田畑を調べ、城の台所を切り詰めた。地味だが、この「倹約と蓄え」こそ生涯の武器になる。三河の小さな国が、少しずつ豊かになっていく。', fx:{ seiji:8, koku:30 } },
           ] },
 
-        { year:1570, type:'story', title:'浜松移転 — 遠江への進出', art:'🏯🌊',
+        { year:1570, type:'story', title:'浜松移転 — 遠江への進出', art:'🏯🌊', artImg:'assets/ev_hamamatsu.jpg',
           text:'武田信玄と取り決めて今川領を切り取り、遠江（とおとうみ）を手に入れた。本拠も岡崎から浜松へ前進。\n\nだがこれで、最強と恐れられる武田と国境を接することになった。嵐の前の静けさが、浜松の城に漂っている。',
           effects:{ seiji:5, koku:80 } },
 
@@ -1175,7 +1178,7 @@ const SENGOKU_DATA = (function(){
           loseText:'【敗北】騎馬の突撃が柵を越えてきた……。\n\n（育成終了。新しい戦は政治力＝鉄砲と銭の戦。政務を鍛えよう！）',
           winFx:{ koku:120, buyu:8, seiji:5 } },
 
-        { year:1582, type:'story', title:'本能寺の変 — 決死の伊賀越え', art:'🥷🌙',
+        { year:1582, type:'story', title:'本能寺の変 — 決死の伊賀越え', art:'🥷🌙', artImg:'assets/ev_igagoe.jpg',
           text:'堺見物の最中、信長横死の報が届いた。供はわずか30余人、周りは落ち武者狩りだらけ。絶体絶命のあなたを救ったのは、服部半蔵が手引きする伊賀の山道だった。\n\n三日三晩、山を駆けて岡崎へ生還。この「神君伊賀越え」ののち、空白地帯となった甲斐・信濃を素早く切り取った。',
           effects:{ chiryaku:8, ninbo:5, koku:150 } },
 
@@ -1221,18 +1224,18 @@ const SENGOKU_DATA = (function(){
           loseText:'【敗北】4倍の兵力差は、やはり重かった……。\n\n（育成終了。格上との対決は知力と政治＝情報と引き際で勝つ！）',
           winFx:{ koku:150, chiryaku:8, ninbo:5 } },
 
-        { year:1586, type:'choice', title:'秀吉への臣従 — 耐える決断', art:'🐒🙇',
+        { year:1586, type:'choice', title:'秀吉への臣従 — 耐える決断', art:'🐒🙇', artImg:'assets/ev_shinju.jpg',
           text:'関白となった秀吉が、妹を嫁がせ、実の母まで人質に送ってきた。「ここまでされて上洛せねば、こちらが悪者よ」。大坂城で秀吉に頭を下げるか——三河武士たちは「殿、戦いましょうぞ」と息巻いているが…。',
           choices:[
             { label:'頭を下げ、時を待つ（史実）', text:'大坂城で諸大名の前で臣従の礼を取った。屈辱に見えるが、これで徳川は安泰のまま力を蓄えられる。「いまは負けるが、最後に勝つ」——忍耐こそ、あなたの戦い方だ。', fx:{ seiji:8, ninbo:8, mood:-1 } },
             { label:'断固拒否し、戦の構えを見せる', text:'三河武士の意地を見せたが、結局は周囲の説得で上洛することに。胸はすいたが、秀吉の心証はやや悪くなった……それでも徳川の結束は固い。', fx:{ buyu:8, ninbo:3, koku:-30 } },
           ] },
 
-        { year:1590, type:'story', title:'関東移封 — 江戸の街づくり', art:'🏗️🗾',
+        { year:1590, type:'story', title:'関東移封 — 江戸の街づくり', art:'🏗️🗾', artImg:'assets/ev_kanto.jpg',
           text:'小田原平定の後、秀吉に「関東250万石へ移れ」と命じられた。先祖代々の三河を離れる苦渋の国替え——だが、あなたは湿地だらけの寒村・江戸を見て言った。「ここを、日本一の町にする」。\n\n水路を掘り、台地を削り、家臣の屋敷を割り振る。のちの東京の原型が、いま生まれようとしている。',
           effects:{ seiji:10, koku:400 } },
 
-        { year:1598, type:'story', title:'秀吉、死す — 五大老筆頭として', art:'🌅⚖️',
+        { year:1598, type:'story', title:'秀吉、死す — 五大老筆頭として', art:'🌅⚖️', artImg:'assets/ev_taiko_shi.jpg',
           text:'太閤秀吉が伏見城に没した。「秀頼のこと、くれぐれも頼み申す」——遺された幼い秀頼を支える五大老の筆頭が、あなただ。\n\nだが天下は再び動き始めている。武断派と文治派の対立、諸大名の駆け引き。嵐の前の静けさの中、あなたは静かに、しかし着実に手を打っていく。',
           effects:{ seiji:8, chiryaku:5 } },
 

@@ -1,4 +1,4 @@
-/* Codex生成クイズ96問（2026-06-11 Claudeレビュー済） */
+/* Codex生成クイズ340問（2026-06-11〜 Claudeレビュー済。当初96問から増補。seed20問は data.js §4・合計360問が index.html:768 で結合される） */
 const SENGOKU_QUESTIONS_EXTRA = [
  {
   "genre": "buyu",

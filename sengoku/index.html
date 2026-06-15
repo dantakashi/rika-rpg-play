@@ -125,21 +125,26 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .board.aLayout .cmd.skirmish{background:rgba(255,238,222,.93);}
 .board.aLayout .subBtn{background:rgba(239,224,192,.9);}
 /* A: 省スペース化（2026-06-13 ユーザーFB「見切れる」）。側近を左縦列・キャラ大型化・足はパネルに重なる */
-.board.aLayout .stage.sceneA{height:250px; overflow:visible; z-index:1;}
+.board.aLayout .stage.sceneA{height:330px; overflow:visible; z-index:1;}
 .board.aLayout .sceneCastleLbl{display:none;}         /* ④城名は省略（城は背景に見えている） */
 .board.aLayout .stageDeco{display:none;}              /* 🚩季節デコは省略（季節はgHead年号で十分） */
 .board.aLayout .kamonImg{display:none !important;}    /* ②家紋は軍学帳ボタンに置換 */
-/* ⑤側近の顔をアップに（②iOS対策: transformは使わず画像を拡大＋上寄せ。overflow:hiddenで確実にクリップ） */
-.board.aLayout .bondC .bf{overflow:hidden;}
-.board.aLayout .bondC .bf img{width:150%; height:150%; max-width:none; flex:none; object-fit:cover; object-position:center top;}
-.board.aLayout .stageChar{bottom:-46px;}            /* 立ち絵を下げて次の枠に重ねる */
-.board.aLayout .stageChar img{height:300px;}        /* キャラ大型化 */
-.board.aLayout .stageName{bottom:6px; padding-left:58px; padding-right:62px;} /* ①名前を下に寄せる・左右の列/ボタンを避ける */
+/* ⑤側近の顔（②iOS対策の決定版・2026-06-13）: 画像を枠より大きくするとiOS Safariがクリップできず枠外へはみ出す。
+   → 拡大をやめ width/height:100% + object-fit:cover で枠ぴったり＝はみ出し原理的にゼロ。顔は object-position:top で上(顔)を見せる */
+.board.aLayout .bondC .bf{overflow:hidden; clip-path:inset(0 round 9px);}
+/* ⚠ 第2便CSS(.bondC img{position:absolute;inset:0;border-radius:999px})が枠.bfを飛び越えて.bondCいっぱいに広がる→aLayoutでは打ち消す。静的配置で.bf(枠)ぴったりに */
+.board.aLayout .bondC .bf img{position:static; inset:auto; width:100%; height:100%; object-fit:cover; object-position:center top; border-radius:0;}
+.board.aLayout .stageChar{bottom:-28px;}            /* 立ち絵を下げて次の枠に重ねる */
+.board.aLayout .stageChar img{height:370px;}        /* キャラ大型化（ダイナミックさUP・2026-06-13） */
+.board.aLayout .stageName{bottom:6px; padding-left:64px; padding-right:62px;} /* ①名前を下に寄せる・左右の列/ボタンを避ける */
 .board.aLayout .bondCap{display:none;}
-.board.aLayout .bondRow{position:absolute; left:5px; top:48px; z-index:3; flex-direction:column; gap:2px; width:40px; padding:0; justify-content:flex-start;}
-.board.aLayout .bondC{width:40px; max-width:40px; padding:2px;}
-.board.aLayout .bondC .bn,.board.aLayout .bondC .bg2{display:none;} /* 縦列では名前・絆バー省略（タップで詳細・枠色で状態表示） */
-.board.aLayout .bondC .bf{width:30px; height:30px;}
+/* 側近の縦列（2026-06-13・ダイナミック化）: 顔を大きく（42px）＋適度な隙間。scene高を増やし6人でもパネル非干渉 */
+.board.aLayout .bondRow{position:absolute; left:6px; top:52px; z-index:3; flex-direction:column; gap:3px; width:50px; padding:0; justify-content:flex-start;}
+.board.aLayout .bondC{width:50px; max-width:50px; padding:2px;}
+.board.aLayout .bondC .bn{display:none;} /* 縦列では名前は省略（タップで詳細） */
+/* 改善②（2026-06-14）: ミニ絆ゲージ復活＝顔の下端に細い帯をオーバーレイ（列の高さは増やさない） */
+.board.aLayout .bondC .bg2{position:absolute; left:5px; right:5px; bottom:4px; width:auto; height:4px; z-index:4; border:1px solid rgba(0,0,0,.5); box-shadow:0 1px 2px rgba(0,0,0,.55);}
+.board.aLayout .bondC .bf{width:42px; height:42px;}
 .board.aLayout .bondC .pin{top:-5px; right:-3px; font-size:12px;}
 /* 次イベント枠・体力・ステ・コマンドは立ち絵の足の上(z:2)に重ねる */
 .board.aLayout .charRow,.board.aLayout .statGrid,.board.aLayout .cmdArea{position:relative; z-index:2;}
@@ -237,7 +242,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .bar .barTxt{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;
   color:#234; text-shadow:0 1px 0 rgba(255,255,255,.6);}
 .bar i.low{background:linear-gradient(90deg,#f0b35e,#d96f30);}
-.bar i.crit{background:linear-gradient(90deg,#e0533d,#b3362a);}
+.bar i.crit{background:linear-gradient(90deg,#e0533d,#b3362a); animation:critBlink .9s ease-in-out infinite;}
 /* ステータスは下部1列×5枠（4ステ＋スキルP）。ランクと数値を横並び（ウマ娘式・2026-06-12 生徒FB） */
 /* ステータスは省スペースの1行（ラベル＋ランク＋値を横並び・2026-06-13 ユーザー要望「細く」） */
 .statGrid{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; padding:4px 10px 2px;}
@@ -252,6 +257,9 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .rkSS{background:linear-gradient(90deg,#e0533d,#d8a823,#7a4f9d); -webkit-background-clip:text; background-clip:text; color:transparent;}
 .stat .sv.up{color:var(--green); animation:pop .5s;}
 @keyframes pop{0%{transform:scale(1.6)}100%{transform:scale(1)}}
+/* 改善④(2026-06-14): 体力が危険域(<25)で赤点滅 / スキルPが貯まるとスキルP枠が金に光る */
+@keyframes critBlink{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}
+.stat.hasPt{border:1px solid var(--gold); box-shadow:0 0 8px 1px rgba(243,207,93,.7); animation:glow 1.4s infinite alternate;}
 /* コマンドは3×2・文字のみのシンプル表記（2026-06-12 生徒FBで絵文字・説明を削除）
    G1第2弾: 枠の大きさに対し文字が小さい → 17.5pxに拡大 */
 .cmdArea{padding:6px 10px 10px;}
@@ -261,7 +269,10 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   background:#fffdf4; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;
   font-weight:900; display:flex; align-items:center; justify-content:center; overflow:hidden;}
 .cmd .ci{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:34px; opacity:.2; pointer-events:none;}
-.cmd .cl{position:relative; font-size:16px; line-height:1.1;}
+/* 第6便: コマンドを画像ボタンに（改善①）。絵柄は薄く敷いて文字の可読性を優先 */
+.cmd .ci img{display:block; width:52px; height:52px; object-fit:contain;}
+.cmd .ci.cimg{opacity:.5;}
+.cmd .cl{position:relative; font-size:16px; line-height:1.1; text-shadow:0 1px 2px #fffdf4, 0 0 4px #fffdf4;}
 .cmd:active{transform:translateY(2px);}
 .cmd.dim{opacity:.45; pointer-events:none;}
 .cmd.urgent{animation:glow 1.2s infinite alternate; border-color:var(--red);}
@@ -273,6 +284,15 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .cmd.rest{background:#eef6ff;} .cmd.trip{background:#f3ecff;}
 .cmd.train{background:#fff3c8; border-color:var(--gold);}
 .cmd.skill{background:#f3ecff;} .cmd.care{background:#eafbe9;} .cmd.skirmish{background:#ffeede;}
+/* 改善③(2026-06-14): 「鍛錬」を主役ボタンに＝全幅・大型・金で目立たせる */
+.cmd.big{grid-column:1/-1; padding:15px 4px;}
+.cmd.big .cl{font-size:21px; letter-spacing:.06em;}
+.cmd.big .ci{font-size:48px; opacity:.26;}
+.cmd.big .ci img{width:78px; height:78px;}
+.cmd.big .ci.cimg{opacity:.55;}
+.cmd.train.big{box-shadow:0 3px 0 rgba(0,0,0,.12), 0 0 0 1px var(--gold) inset, 0 0 12px 1px rgba(243,207,93,.5);}
+/* 改善④(2026-06-14): スキルPが貯まったら スキルボタンが光る */
+.cmd.skill.ready{border-color:var(--gold); animation:glow 1.3s infinite alternate;}
 /* 鍛錬選択ポップアップ（家臣がいる選択肢は輝く） */
 .trainOpt{display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border-radius:12px;
   border:3px solid var(--line); background:#fffdf4; text-align:left; box-shadow:0 3px 0 rgba(0,0,0,.12); transition:transform .06s;}
@@ -354,6 +374,16 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .descBox{margin-top:12px; background:#fff8e4; border:2px solid var(--gold); border-radius:12px; padding:10px 12px;
   font-size:14px; line-height:1.75;}
 .descBox b{color:#8a6605;}
+/* 折りたたみ（2026-06-14「文字が多い」対策）。合戦の解説/いきさつをたたんでテンポ重視・タップで展開 */
+.fold{margin-top:12px; background:#fff8e4; border:2px solid var(--gold); border-radius:12px; overflow:hidden;}
+.fold.dim{background:rgba(245,238,212,.92); border-color:var(--line);}
+.fold>summary{list-style:none; cursor:pointer; padding:9px 12px; font-size:13.5px; font-weight:800; color:#8a6605;
+  display:flex; align-items:center; gap:6px;}
+.fold>summary::-webkit-details-marker{display:none;}
+.fold>summary::after{content:'ひらく ▾'; margin-left:auto; font-size:11px; color:#a9925a; transition:transform .2s;}
+.fold[open]>summary::after{content:'とじる ▴';}
+.fold>.foldBody{padding:0 12px 11px; font-size:14px; line-height:1.78;}
+.fold>.foldBody b{color:#8a6605;}
 .resLine{margin-top:12px; font-size:15.5px; font-weight:800; text-align:center; line-height:1.7; white-space:pre-wrap;}
 .resLine .big{font-size:21px; color:var(--green);}
 .resLine .fail{color:var(--red);}
@@ -389,15 +419,21 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .btBar{position:relative; height:15px; background:linear-gradient(90deg,#ff8d76,#b3362a); border-radius:9px; overflow:hidden; border:1px solid #5a4458;}
 .btBar::after{content:''; position:absolute; left:50%; top:-2px; bottom:-2px; width:2px; transform:translateX(-50%);
   background:rgba(255,233,168,.55); z-index:2;}
-.btBar .me{display:block; height:100%; background:linear-gradient(90deg,#7fb6ff,#3a6ea5); border-right:3px solid #ffe9a8; transition:width .8s;}
+.btBar .me{display:block; height:100%; background:linear-gradient(90deg,#7fb6ff,#3a6ea5); border-right:3px solid #ffe9a8;
+  transition:width .85s cubic-bezier(.34,1.56,.64,1);} /* overshoot lurch＝押し合いの「うねり」が見える(research: narrate the change) */
 /* 結果エフェクト4階調: 会心=大シェイク+フラッシュ / 有効=中 / 不発=小 / しくじり=被弾 */
-.bField.fxBig{animation:shakeBig .6s;} .bField.fxMid{animation:shakeMid .45s;}
-.bField.fxSmall{animation:dimSmall .5s;} .bField.fxBad{animation:shakeBad .5s;}
-@keyframes shakeBig{0%,100%{transform:none}15%{transform:translate(-7px,3px) rotate(-1deg)}30%{transform:translate(7px,-3px) rotate(1deg)}45%{transform:translate(-6px,2px)}60%{transform:translate(6px,-2px)}75%{transform:translate(-3px,1px)}}
+/* 強さ --fx でラウンド逓増（R1=1 → 決戦=1.6）。会心ほど・終盤ほど大きく揺れ光る */
+.bField.fxBig{animation:shakeBig calc(.46s + var(--fx,1)*.09s);} .bField.fxMid{animation:shakeMid .45s;}
+.bField.fxSmall{animation:dimSmall .5s;} .bField.fxBad{animation:shakeBad .52s;}
+@keyframes shakeBig{0%,100%{transform:none}
+  15%{transform:translate(calc(var(--fx,1)*-7px),calc(var(--fx,1)*3px)) rotate(-1deg)}
+  30%{transform:translate(calc(var(--fx,1)*7px),calc(var(--fx,1)*-3px)) rotate(1deg)}
+  45%{transform:translate(calc(var(--fx,1)*-6px),2px)}60%{transform:translate(calc(var(--fx,1)*6px),-2px)}75%{transform:translate(-3px,1px)}}
 @keyframes shakeMid{0%,100%{transform:none}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,1px)}}
-@keyframes dimSmall{0%,100%{filter:none}50%{filter:brightness(.7)}}
-@keyframes shakeBad{0%,100%{transform:none}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
-.bField.fxBig::after{content:''; position:absolute; inset:0; background:rgba(255,235,160,.45); animation:flashOut .6s forwards; pointer-events:none;}
+@keyframes dimSmall{0%,100%{filter:none}50%{filter:brightness(.78)}}
+@keyframes shakeBad{0%,100%{transform:none}20%{transform:translate(-5px,1px) rotate(.5deg)}40%{transform:translate(5px,-1px) rotate(-.5deg)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+.bField.fxBig::after{content:''; position:absolute; inset:0; mix-blend-mode:screen; background:rgba(255,235,160,.5);
+  animation:flashOut calc(.4s + var(--fx,1)*.12s) forwards; pointer-events:none;}
 @keyframes flashOut{from{opacity:1}to{opacity:0}}
 .bCutin{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
   font-size:36px; font-weight:900; color:#fff3c8; letter-spacing:.04em;
@@ -412,10 +448,62 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   animation:burstSpin 1.3s ease-out forwards;}
 @keyframes cutinSlam{0%{opacity:0; transform:scale(2.6) rotate(-5deg)}22%{opacity:1; transform:scale(.92) rotate(1.5deg)}36%{transform:scale(1.08)}50%{transform:scale(1)}82%{opacity:1}100%{opacity:0; transform:scale(1.06)}}
 @keyframes burstSpin{0%{opacity:0; transform:rotate(0) scale(.5)}18%{opacity:1}100%{opacity:0; transform:rotate(35deg) scale(1.3)}}
+/* ===== 合戦 演出強化 第2弾（2026-06-14夜・research: Vlambeer juice / Uma実況 / 栄冠采配 / comeback） ===== */
+/* ① ワインドアップ(タメ): 結果直前に画面を一瞬沈ませ「衝撃が来る」予兆を作る */
+.bField.windup{filter:brightness(.78) saturate(.85); transition:filter .12s;}
+/* ② しくじり=別レジスタの「被弾」: 赤ヴィネット */
+.bField.fxBad::after{content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(circle, transparent 36%, rgba(150,8,8,.55)); animation:vignetteOut .8s forwards;}
+@keyframes vignetteOut{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+/* ③ 兵力数のパルス＋落下するダメージ数（lasting trace＝爪痕を残す） */
+@keyframes hpPulse{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+.bHP.pulse{animation:hpPulse .22s;}
+.dmgFloat{position:absolute; top:2px; font-weight:900; font-size:17px; pointer-events:none; z-index:5;
+  text-shadow:0 1px 3px rgba(0,0,0,.85); animation:dmgUp 1.1s ease-out forwards;}
+.dmgFloat.foe{color:#ffd34d; right:8px;} .dmgFloat.me{color:#ff6b5a; left:8px;}
+@keyframes dmgUp{0%{opacity:0; transform:translateY(8px) scale(.7)}20%{opacity:1; transform:translateY(-2px) scale(1.12)}100%{opacity:0; transform:translateY(-26px) scale(1)}}
+/* ④ 勢いタグ: 押し合いの実況をバー上にふわっと（research: 数値でなく「変化」を語る） */
+.swingTag{position:absolute; left:50%; top:-23px; transform:translateX(-50%); white-space:nowrap;
+  font-size:13px; font-weight:900; color:#fff3c8; text-shadow:0 1px 4px rgba(0,0,0,.95); pointer-events:none; z-index:3;
+  animation:swingUp 1.25s ease-out forwards;}
+@keyframes swingUp{0%{opacity:0; transform:translate(-50%,7px) scale(.8)}25%{opacity:1; transform:translate(-50%,0) scale(1.12)}100%{opacity:0; transform:translate(-50%,-11px)}}
+/* ⑤ ラストスパート(最終ラウンド): 戦場が紅潮しバーが脈打つ＝決戦の空気 */
+.bField.lastSpurt{filter:saturate(1.32) brightness(.96) contrast(1.04);}
+.bField.lastSpurt .btBar{animation:barPulse 1.1s infinite;}
+@keyframes barPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,233,168,0)}50%{box-shadow:0 0 11px 2px rgba(255,233,168,.75)}}
+.lastSpurtBanner{text-align:center; font-weight:900; font-size:14.5px; color:#b3362a; letter-spacing:.06em; margin:0 0 6px;
+  background:#fbe7e2; border:2px solid var(--red); border-radius:10px; padding:5px; animation:logIn .4s ease-out;}
+/* ⑥ 決着の全画面タメ→解放（peak-end＝最後の一撃が一番記憶に残る） */
+.kessenVeil{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+  background:rgba(8,6,12,.86); color:#ffe9a8; font-size:34px; font-weight:900;
+  font-family:"Yu Mincho","Hiragino Mincho ProN",serif; opacity:0; pointer-events:none;}
+.kessenVeil.on{animation:kessen 1.1s ease-out forwards;}
+@keyframes kessen{0%{opacity:0; letter-spacing:.1em}22%{opacity:1}68%{opacity:1; letter-spacing:.45em}100%{opacity:0; letter-spacing:.55em}}
+/* ⑦ 会心パーティクル（≤8・transform/opacityのみ） */
+.bSpark{position:absolute; left:50%; top:46%; font-size:20px; pointer-events:none; z-index:4;
+  animation:spark .66s ease-out forwards;}
+@keyframes spark{0%{opacity:1; transform:translate(-50%,-50%) scale(.4)}100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.1) rotate(var(--r))}}
+/* ⑧ ノックバック: 殴られた側がのけぞる＝どちらが押したか一目 */
+.bSide.knock{animation:knockFx .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes knockFx{0%{transform:translateX(var(--kx,0))}100%{transform:translateX(0)}}
+@keyframes softFade{0%{opacity:0}14%{opacity:1}80%{opacity:1}100%{opacity:0}}
+/* アクセシビリティ(2026-06-14・Codexレビュー反映): モーション控えめ設定では揺れ・脈動・飛散・集中線まで止める
+   （色フラッシュ/数字変化/フェードは残す＝情報は伝わるが酔いの原因を除く。学校端末・混在デバイス対策） */
+@media (prefers-reduced-motion: reduce){
+  .bField.fxBig,.bField.fxMid,.bField.fxBad,.bField.windup{animation:none !important; filter:none !important;}
+  .btBar .me{transition:width .3s linear;}
+  .bField.lastSpurt .btBar,.bSide.knock,.bClash{animation:none !important;}
+  .bSpark{display:none !important;}              /* 火花の飛散を止める */
+  .bCutin.on::before{display:none !important;}    /* 回る集中線を止める */
+  .bCutin.on{animation:softFade .9s forwards !important;}
+  .swingTag,.dmgFloat,.kessenVeil.on{animation:softFade 1.1s forwards !important;} /* 移動なしのフェードのみ */
+}
 /* G1第2弾: 実況者行＋ログを1枚の「実況パネル」に統合（Codex診断）。佐助＝パネル見出し */
 .bCaster{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; color:#8a6605;
   background:#fff8e4; border:2px solid var(--gold); border-bottom:none; border-radius:10px 10px 0 0; padding:6px 10px 4px;}
-.bCaster .bFastTip{font-weight:600; color:#9a8660; font-size:11px;}
+.bCaster .bFastTip{font-weight:800; color:#8a6605; font-size:11px; cursor:pointer;
+  border:1.5px solid var(--gold); background:#fff3c8; border-radius:999px; padding:2px 11px;}
+.bCaster .bFastTip:active{transform:translateY(1px);}
 .bLog{min-height:66px; font-size:13px; line-height:1.55; background:#fff8e4; border:2px solid var(--gold); border-top:1px solid #e8d28a;
   border-radius:0 0 10px 10px; padding:6px 10px 8px; margin:0 0 10px;}
 .bLog div{opacity:.5; padding-left:8px;}
@@ -476,6 +564,10 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   border:1.5px solid var(--gold); background:#fff8e4; vertical-align:middle; margin-right:5px;}
 .evArt img{display:block; width:100%; border-radius:10px;}
 .evArt.imgMode{padding:0; background:none;}
+/* 側近イベントの顔（カード風に収める・Uma風キャラ立ち・2026-06-14） */
+.evArt.faceArt{padding:8px 0 4px; background:none; text-align:center;}
+.evArt.faceArt img{width:auto; height:148px; max-width:62%; object-fit:contain; border-radius:14px; margin:0 auto;
+  border:3px solid var(--gold); background:#1d2438; box-shadow:0 4px 12px rgba(0,0,0,.35);}
 
 /* ===== 演出強化第1弾（2026-06-14夜・G1）: 友情特訓/大成功・ステ上昇フロート・タイトル ===== */
 .titleArt{animation:keyArtFloat 6s ease-in-out infinite;}
@@ -644,7 +736,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <div class="btBar"><i class="me" id="b-tug" style="width:50%"></i></div>
       <div class="bCutin" id="b-cutin"></div>
     </div>
-    <div class="bCaster"><span><img class="sasukeImg" src="assets/sasuke.png" alt="" onerror="this.style.display='none'"><span id="b-castername"></span></span><span class="bFastTip">戦場をタップで早送り⏩</span></div>
+    <div class="bCaster"><span><img class="sasukeImg" src="assets/sasuke.png" alt="" onerror="this.style.display='none'"><span id="b-castername"></span></span><button class="bFastTip" onclick="UI.battleFast()">⏩ 早送り</button></div>
     <div class="bLog" id="b-log"></div>
     <div id="b-actions" style="display:grid; gap:8px;"></div>
   </div></div>
@@ -1048,8 +1140,9 @@ const Game = (function(){
       if (S.bonds[r.id]>=50 && S.bonds[r.id]<100 && !S.bondMidDone[r.id]){
         S.bondMidDone[r.id] = true;
         saveAll();
-        UI.showEvent({ year:S.year, type:'story', title:`${r.icon} ${r.name}との語らい`, art:`${r.icon}💬`,
-          text:r.midText || `${r.name}との絆が深まってきた。` }, ()=>UI.renderGame());
+        UI.showEvent({ year:S.year, type:'story', title:`🤝 側近 ${r.name}との語らい`, art:`${r.icon}💬`, faceImg:r.img,
+          text:(r.midText || `${r.name}との絆が深まってきた。`)
+            + (r.skill ? `\n\n💖 絆 ${S.bonds[r.id]}/100 — このまま深めれば、絆MAXで側近スキル「${r.skill.icon}${r.skill.name}」を授かれる！` : '') }, ()=>UI.renderGame());
         return;
       }
     }
@@ -1065,8 +1158,8 @@ const Game = (function(){
         S.chronicle.push({ y:S.year, t:r.name, r:'💖絆MAX' });
         let skillNote = '';
         if (r.skill){ S.skills[r.skill.id] = true; skillNote = `\n${r.skill.icon} 側近スキル「${r.skill.name}」を授かった！（${r.skill.desc}）`; }
-        UI.showEvent({ year:S.year, type:'story', title:`${r.icon} ${r.name}・絆MAX！`, art:`${r.icon}💖`,
-          text:r.maxText + '\n\n（ボーナスを獲得した！ ✨スキルP+5）' + skillNote }, ()=>UI.renderGame(), fx);
+        UI.showEvent({ year:S.year, type:'story', title:`💖 側近 ${r.name}・絆MAX！`, art:`${r.icon}💖`, faceImg:r.img,
+          text:r.maxText + '\n\n🎁 絆MAXのごほうび： ✨スキルP+5' + skillNote }, ()=>UI.renderGame(), fx);
         saveAll();
         return;
       }
@@ -1203,8 +1296,17 @@ const Game = (function(){
     return Math.round(S.buyu*2.2 + S.chiryaku*1.6 + S.ninbo*0.6 + S.koku/15);
   }
   const TIER_VAL = { kaishin:1.4, yuko:1.0, fuhatsu:0.35, shikujiri:0 };
+  // ラウンド加重: 決戦(終盤)ほど重い＝最後まで勝敗が決まらない(消化試合を防ぐ・2026-06-14)。
+  // 期待値(平均)は重みの正規化で不変＝難度バランスは維持。変えるのは「どのラウンドが効くか」だけ
+  function roundWeights(n){
+    if (n<=1) return [1];
+    const arr=[]; for(let i=0;i<n;i++) arr.push(0.88 + 0.28*(i/(n-1))); // 0.88 → 1.16 に逓増（決戦が最重・接戦は決戦で決まる／バランスへの影響は最小に・sim検証済 2026-06-14）
+    return arr;
+  }
   function startBattle(ev){
+    const weights = roundWeights(ev.rounds.length);
     B = { ev, round:0, max:ev.rounds.length, score:0,
+      weights, wtot:weights.reduce((a,b)=>a+b,0), wsum:0,
       meHP:ev.army.me, foeHP:ev.army.foe, opt:null, last:null, skirmish:!!ev.skirmish };
     UI.openBattle(ev);
   }
@@ -1247,6 +1349,7 @@ const Game = (function(){
       });
     }
     B.score += val;
+    B.wsum += val * (B.weights[B.round-1] || 1); // ラウンド加重スコア（決戦が最重＝勝敗判定の主役）
     // 兵力表示の増減（演出用マッピング。勝敗は内部スコアで判定）
     const E0 = B.ev.army.foe, M0 = B.ev.army.me;
     const foeCut = { kaishin:0.17, yuko:0.11, fuhatsu:0.05, shikujiri:0.02 }[tier];
@@ -1258,6 +1361,7 @@ const Game = (function(){
       yuko:'⭕ 有効打！', fuhatsu:'😶 不発…', shikujiri:'💢 しくじり！' }[tier];
     let text = (tier==='kaishin'||tier==='yuko') ? `${head}\n${opt.ok}`
       : tier==='fuhatsu' ? `${head}\n「${opt.label}」は戦況に響かなかった…`
+          + ((opt.style==='trick' && S[opt.stat]<90) ? `\n（搦め手は${D.GENRES[opt.stat].label}が高い(90+)ほど化ける。鍛えて再挑戦だ）` : '')
       : `${head}\n「${opt.label}」が裏目に出て、敵に押し込まれた！`;
     if (kokozo) text += '\n⚡「ここぞの度胸」で踏みとどまった！';
     return { correct, battle:true, last:(B.round>=B.max), text };
@@ -1265,13 +1369,14 @@ const Game = (function(){
   // 押し合いゲージ用: 現在の戦況（1.0=勝敗ライン）
   function battleProgress(){
     const ratio = playerPower()/B.ev.enemyPower;
-    return (ratio*0.6 + 0.62*(B.score/B.max)) / 0.9;
+    // 加重スコアを「総加重」で割る＝終盤の重い采配が未消化のうちは勝ちゾーン(0.9)に届かない＝早期に勝敗が見えない
+    return (ratio*0.6 + 0.62*(B.wsum/B.wtot)) / 0.9;
   }
   function battleResult(){
     if (B.skirmish) return skirmishResult();
     S.battles++;
     const ratio = playerPower()/B.ev.enemyPower;
-    const score = ratio*0.6 + (B.score/B.max)*0.62;
+    const score = ratio*0.6 + (B.wsum/B.wtot)*0.62; // 加重スコアで判定（期待値は従来と同じ＝バランス維持）
     const win = score >= 0.9;
     if (win){ S.wins++; S.skillPt += 8; applyFx(B.ev.winFx); }
     S.chronicle.push({ y:B.ev.year, t:B.ev.title.split(' — ')[0], r: win?'⚔️勝利':'💀敗北' });
@@ -1759,7 +1864,13 @@ const UI = (function(){
       : S.mood<=1? '<span class="moodFx">💧</span>' : '');
     if (Game.H.img){
       const moodCls = injured? 'hurt' : 'm'+S.mood;
-      $('g-face').innerHTML = `<img src="${Game.H.img}" alt="${Game.H.name}" class="${moodCls}">`
+      // 第6便: 立ち絵の表情差分（改善⑥）。好調=絶好調の顔/不調=肩を落とす顔。差分が無い偉人はCSSフィルタのみ
+      const fi = Game.H.faceImgs;
+      const faceSrc = injured ? Game.H.img
+        : (fi && fi.up   && S.mood>=3) ? fi.up
+        : (fi && fi.down && S.mood<=1) ? fi.down
+        : Game.H.img;
+      $('g-face').innerHTML = `<img src="${faceSrc}" alt="${Game.H.name}" class="${moodCls}">`
         + (injured? '<span class="injBadge">🤕</span>' : moodFx);
     } else {
       $('g-face').innerHTML = (injured? '🤕' : (S.mood>=3 ? '😎' : (S.mood<=1 ? '🥱' : '🙂'))) + moodFx;
@@ -1773,7 +1884,7 @@ const UI = (function(){
     $('g-minimap').innerHTML = mapHtml(true) + `<span class="mlbl">🗾 領地 🔍</span>`;
     // ステ（ランク表記）＋スキルP枠
     $('g-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, S[k], tpy)).join('') +
-      `<div class="stat" onclick="UI.openSkill()"><span class="sl">スキルP</span>
+      `<div class="stat${(S.skillPt||0)>0?' hasPt':''}" onclick="UI.openSkill()"><span class="sl">スキルP</span>
         <span class="srow"><b class="srk" style="color:#7a4f9d">${S.skillPt||0}</b></span></div>`;
     // 側近＝サポートカード（顔＋名前＋絆バー・配置中マーク／改善#4・#6 タップ導線）
     $('g-bonds').innerHTML = Game.H.retainers.map(r=>{
@@ -1796,13 +1907,14 @@ const UI = (function(){
     });
     const dimIf = c=>c?' dim':'';
     // コマンドはアイコン＋色分け（改善#1・2026-06-13）。一目で選べるように
+    // 改善③(2026-06-14): 「鍛錬」を主役に＝全幅・大型・金枠で最上段に。残り5つは下に3列で並ぶ
     $('g-cmds').innerHTML =
-      `<button class="cmd rest${dimIf(injured)}" onclick="Game.doCommand('rest')"><span class="ci">💤</span><span class="cl">休息</span></button>
-      <button class="cmd train${dimIf(injured)}" onclick="UI.openTrain()">${mateIcons?`<div class="mates">${mateIcons}</div>`:''}<span class="ci">⚔️</span><span class="cl">鍛錬</span></button>
-      <button class="cmd skill" onclick="UI.openSkill()"><span class="ci">✨</span><span class="cl">スキル</span></button>
-      <button class="cmd care${injured?' urgent':' dim'}" onclick="Game.doCommand('care')"><span class="ci">🌿</span><span class="cl">薬師</span></button>
-      <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')"><span class="ci">🏯</span><span class="cl">視察</span></button>
-      <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><span class="ci">🚩</span><span class="cl">小競り合い</span></button>`;
+      `<button class="cmd train big${dimIf(injured)}" onclick="UI.openTrain()">${mateIcons?`<div class="mates">${mateIcons}</div>`:''}<span class="ci cimg"><img src="assets/cmd_train.png" alt=""></span><span class="cl">鍛錬</span></button>
+      <button class="cmd rest${dimIf(injured)}" onclick="Game.doCommand('rest')"><span class="ci cimg"><img src="assets/cmd_rest.png" alt=""></span><span class="cl">休息</span></button>
+      <button class="cmd skill${(S.skillPt||0)>0?' ready':''}" onclick="UI.openSkill()"><span class="ci cimg"><img src="assets/cmd_skill.png" alt=""></span><span class="cl">スキル</span></button>
+      <button class="cmd care${injured?' urgent':' dim'}" onclick="Game.doCommand('care')"><span class="ci cimg"><img src="assets/cmd_care.png" alt=""></span><span class="cl">薬師</span></button>
+      <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')"><span class="ci cimg"><img src="assets/cmd_trip.png" alt=""></span><span class="cl">視察</span></button>
+      <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><span class="ci cimg"><img src="assets/cmd_skirmish.png" alt=""></span><span class="cl">小競り合い</span></button>`;
     const bn = Game.P.book.length;
     const bnEl = $('g-bookn'); bnEl.textContent = bn; bnEl.style.display = bn? 'flex':'none';
     // 次イベント予告カード（改善#5・2026-06-13）。合戦は赤く緊張感・残り少ないと脈動
@@ -1921,7 +2033,9 @@ const UI = (function(){
     if (i!==ctx.sh.a) btns[i].classList.add('bad');
     const r = Game.answer(i);
     const after = $('q-after');
-    let html = `<div class="descBox"><b>📖 解説</b><br>${q.desc}</div>`;
+    // 解説は折りたたみ（合戦中はテンポ優先で閉じる／鍛錬や誤答では開いて学ぶ・2026-06-14）
+    const dOpen = (ctx.mode!=='battle') || !r.correct;
+    let html = `<details class="fold${dOpen?'':' dim'}"${dOpen?' open':''}><summary>📖 解説</summary><div class="foldBody">${q.desc}</div></details>`;
     if (r.push){
       // 不正解 → 押し切る / 学び直す の2択
       const fr = Game.pushRate();
@@ -1989,14 +2103,21 @@ const UI = (function(){
   // イベントの絵: artImg（画像）優先・なければ絵文字アート
   function setArt(art, img){
     const el = $('e-art');
+    el.classList.remove('faceArt');
     el.classList.toggle('imgMode', !!img);
     if (img){ el.innerHTML = `<img src="${img}" alt="">`; el.style.display='block'; }
     else if (art){ el.textContent = art; el.style.display='block'; }
     else el.style.display='none';
   }
+  // 側近イベント用: 顔をカード風に収めて表示（Uma風のキャラ立ち・2026-06-14）
+  function setFace(img){
+    const el = $('e-art');
+    el.classList.remove('imgMode'); el.classList.add('faceArt');
+    el.innerHTML = `<img src="${img}" alt="">`; el.style.display='block';
+  }
   function showEvent(ev, cb, fx){
     $('e-year').textContent = `${ev.year}年`;
-    setArt(ev.art, ev.artImg);
+    if (ev.faceImg) setFace(ev.faceImg); else setArt(ev.art, ev.artImg);
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
     const fl = $('e-fx'); const t = fxText(fx);
@@ -2056,9 +2177,10 @@ const UI = (function(){
 
   /* ---- 合戦絵巻（実況: 物見の佐助。タップ早送り・兵力カウントダウン・4階調エフェクト） ---- */
   const L = D.BATTLE_LINES;
-  let castT = [], castFast = false, logLines = [];
+  let castT = [], castFast = false, logLines = [], casterIntroShown = false, fastPref = false;
   function clearCast(){ castT.forEach(clearTimeout); castT = []; }
-  function battleFast(){ castFast = true; }
+  // 一度でも早送りしたら、その後の合戦もずっと速いまま（中学生FB「毎回押し直しが面倒」2026-06-14）
+  function battleFast(){ castFast = true; fastPref = true; }
   function castWait(ms){ return castFast ? 90 : ms; }
   function addLog(t){
     logLines.push(t);
@@ -2084,25 +2206,35 @@ const UI = (function(){
     $('b-foeunits').textContent = units(B.foeHP, B.ev.army.foe, B.ev.foeUnit||'🗡️');
     $('b-tug').style.width = Math.max(8, Math.min(92, Math.round(Game.battleProgress()*50)))+'%';
   }
-  // 兵力のカウントダウン演出
+  // 兵力カウントダウン演出（損害が大きいほどゆっくり=重い／パルス＋落下ダメージ数で爪痕を残す）
   function tickHP(side, to, done){
+    const B = Game.B;
     const el = $(side==='me' ? 'b-mehp' : 'b-foehp');
     const from = parseInt(el.textContent.replace(/,/g,'')) || to;
-    const steps = 16, d = (to-from)/steps;
+    const maxHP = (side==='me' ? B.ev.army.me : B.ev.army.foe) || 1;
+    const delta = from - to;
+    if (delta > 0){ // 落下するダメージ数（lasting trace）
+      const f = document.createElement('span'); f.className='dmgFloat '+side; f.textContent='−'+fmtArmy(delta);
+      const sideEl = el.closest ? el.closest('.bSide') : null;
+      if (sideEl){ const kill=()=>f.remove(); f.addEventListener('animationend',kill); castT.push(setTimeout(kill,1300)); sideEl.appendChild(f); }
+    }
+    el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
+    const steps = 16, dur = castWait(420 + Math.min(820, Math.abs(delta)/maxHP*2400)); // 大損害ほどゆっくり=重い一撃
+    const d = (to-from)/steps;
     let i = 0;
     (function t(){
       i++;
       el.textContent = fmtArmy(Math.round(from + d*i));
-      if (i < steps) castT.push(setTimeout(t, castWait(800)/steps));
+      if (i < steps) castT.push(setTimeout(t, dur/steps));
       else { el.textContent = fmtArmy(to); if (done) castT.push(setTimeout(done, castWait(250))); }
     })();
   }
   function openBattle(ev){
-    castFast = false; logLines = [];
+    castFast = fastPref; logLines = []; // 早送り設定を引き継ぐ
     clearCast();
     $('b-year').textContent = `${ev.year}年`;
     $('b-title').textContent = ev.title;
-    $('b-intro').textContent = ev.intro || '';
+    $('b-intro').innerHTML = ev.intro ? `<details class="fold dim"><summary>📜 いくさのいきさつ</summary><div class="foldBody">${ev.intro}</div></details>` : '';
     $('b-intro').style.display = ev.intro ? 'block' : 'none';
     $('b-sky').textContent = `${ev.terrain.icon} ${ev.terrain.label}`.trim();
     $('b-mename').textContent = `${Game.H.armyIcon} ${Game.H.armyName}`;
@@ -2121,19 +2253,26 @@ const UI = (function(){
     $('b-field').style.backgroundPosition = 'center';
     renderArmies();
     $('ovl-battle').classList.add('on');
-    const opening = ev.skirmish ? ev.open : [L.casterIntro, ...ev.open, '⚠️ 負ければ育成終了の大一番だ！'];
+    // 開幕の前口上を短縮（佐助の自己紹介は1セッション1回だけ・2026-06-14「文字が多い」対策）
+    const intro1 = (ev.skirmish || casterIntroShown) ? [] : [L.casterIntro]; casterIntroShown = true;
+    const opening = ev.skirmish ? ev.open : [...intro1, ...ev.open, '⚠️ 負ければ育成終了の大一番だ！'];
     cast(opening, showRound);
   }
   // 戦況を実況→采配ボタン（参照ステ数値・堅実/博打/搦め手チップを明記）
   function showRound(){
     const B = Game.B;
     const round = B.ev.rounds[B.round];
-    cast([`📯 軍配${B.round+1}本目！ ${round.situ}`], ()=>{
+    const isFinal = (!B.skirmish && B.max>1 && B.round===B.max-1);
+    if (isFinal) $('b-field').classList.add('lastSpurt');
+    const situLine = isFinal ? `🔥 決戦！ ${round.situ}` : `📯 軍配${B.round+1}本目！ ${round.situ}`;
+    cast([situLine], ()=>{
       const chips = { safe:['堅実','#2e8b57'], risky:['博打','#b3362a'], trick:['搦め手','#7a4f9d'] };
+      const head = isFinal
+        ? `<div class="lastSpurtBanner">🔥 決着の采配！ ここが正念場だ</div>`
+        : `<div class="saihaiHead">⚔️ 軍配 ${B.round+1}本目 — どう采配する？</div>`;
       $('b-actions').innerHTML =
-        `<div class="cmdReveal"></div>` +
-        `<div class="saihaiHead">⚔️ 軍配 ${B.round+1}本目 — どう采配する？</div>` +
-        `<div class="note" style="text-align:center; margin-bottom:6px;">クイズに正解すれば采配が実行される</div>` +
+        `<div class="cmdReveal"></div>` + head +
+        `<div class="note" style="text-align:center; margin-bottom:6px;">正解で采配が実行 ／ <b style="color:#2e8b57">堅実</b>=安定 <b style="color:#b3362a">博打</b>=一か八か <b style="color:#7a4f9d">搦め手</b>=高ステで化ける</div>` +
         round.opts.map((o,i)=>{
           const g = D.GENRES[o.stat];
           const c = chips[o.style];
@@ -2150,37 +2289,82 @@ const UI = (function(){
     $('ovl-battle').classList.remove('on');
     Game.battlePick(i);
   }
-  // クイズから戻ったら、結果を4階調エフェクトで絵巻に反映
+  // 演出強化（2026-06-14夜）: ラウンド逓増の強さ（R1=1 → 決戦=1.6）。終盤ほど派手に
+  function roundIntensity(){
+    const B = Game.B;
+    return B.max>1 ? 1 + 0.6*((B.round-1)/(B.max-1)) : 1;
+  }
+  // 会心の火花（≤8・transform/opacityのみ。animationend＋保険timeoutで必ず除去） */
+  function spawnSparks(tier){
+    const field = $('b-field');
+    const set = tier==='kaishin' ? ['⚔️','✨','🔥','💥','⭐','⚔️','✨','💥']
+              : tier==='yuko' ? ['✨','💥','✨'] : [];
+    set.forEach((e,k)=>{
+      const s = document.createElement('span'); s.className='bSpark'; s.textContent=e;
+      const ang = (k/set.length)*Math.PI*2 + (k*0.7);
+      const dist = 58 + (k%3)*22;
+      s.style.setProperty('--dx', Math.round(Math.cos(ang)*dist)+'px');
+      s.style.setProperty('--dy', Math.round(Math.sin(ang)*dist - 18)+'px');
+      s.style.setProperty('--r', ((k*47)%120-60)+'deg');
+      const kill = ()=>s.remove();
+      s.addEventListener('animationend', kill); castT.push(setTimeout(kill, 950));
+      field.appendChild(s);
+    });
+  }
+  // 押し合いの実況タグ（数値でなく「変化」を語る・research: narrate the delta）
+  function showSwingTag(){
+    const p = Game.battleProgress();
+    const msg = p>=1.18 ? '押し切ったあ！' : p>=1.0 ? '押している！' : p>=0.82 ? '五分五分だ！' : p>=0.62 ? 'あと一押し…！' : '押し返された…！';
+    const bar = document.querySelector('#ovl-battle .btBar'); if (!bar) return;
+    const t = document.createElement('span'); t.className='swingTag'; t.textContent=msg;
+    const kill=()=>t.remove(); t.addEventListener('animationend',kill); castT.push(setTimeout(kill,1450));
+    bar.appendChild(t);
+  }
+  function ensureKessenVeil(){
+    let v = document.getElementById('kessen-veil');
+    if (!v){ v = document.createElement('div'); v.id='kessen-veil'; v.className='kessenVeil'; document.body.appendChild(v); }
+    return v;
+  }
+  // クイズから戻ったら、結果を4階調エフェクトで絵巻に反映（タメ→インパクト→着地）
   function battleResolve(){
     const B = Game.B;
-    castFast = false;
+    castFast = fastPref; // 早送り設定を引き継ぐ
     $('ovl-battle').classList.add('on');
     const { tier, opt } = B.last;
     const field = $('b-field');
-    field.className = 'bField';
-    void field.offsetWidth;
-    field.classList.add({ kaishin:'fxBig', yuko:'fxMid', fuhatsu:'fxSmall', shikujiri:'fxBad' }[tier]);
-    if (tier==='kaishin'){
-      const c = $('b-cutin');
-      c.textContent = opt.hist ? '⚡ 史実の一手！' : '⚡ 会心！';
-      c.className = 'bCutin on';
-      castT.push(setTimeout(()=>{ c.className = 'bCutin'; }, castWait(1300)));
-    }
-    const lines = [];
-    if (tier==='kaishin' || tier==='yuko') lines.push(`${opt.icon} ${opt.ok}`);
-    if (tier==='kaishin' && opt.hist) lines.push(L.hist);
-    lines.push(L[tier][Math.floor(Math.random()*L[tier].length)]);
-    cast(lines, ()=>{
-      tickHP('foe', B.foeHP, null);
-      tickHP('me', B.meHP, ()=>{
-        renderArmies();
-        if (B.round < B.max){
-          cast([L.mid[Math.floor(Math.random()*L.mid.length)]], showRound);
-        } else {
-          $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着！</button>`;
-        }
+    const lastSpurt = (!B.skirmish && B.round>=B.max && B.max>1) ? ' lastSpurt' : '';
+    field.style.setProperty('--fx', roundIntensity());
+    field.className = 'bField'+lastSpurt;
+    // ① ワインドアップ（タメ）: 結果直前に一拍沈める＝衝撃の予兆（hit-stop/anticipation）
+    field.classList.add('windup');
+    castT.push(setTimeout(()=>{
+      field.classList.remove('windup'); void field.offsetWidth;
+      // ② インパクト: tier別fx＋会心カットイン＋火花
+      field.classList.add({ kaishin:'fxBig', yuko:'fxMid', fuhatsu:'fxSmall', shikujiri:'fxBad' }[tier]);
+      spawnSparks(tier);
+      if (tier==='kaishin'){
+        const c = $('b-cutin');
+        c.textContent = (B.round>=B.max && opt.hist) ? '⚡ 史実の一手ーっ！！' : opt.hist ? '⚡ 史実の一手！' : '⚡ 会心！';
+        c.className = 'bCutin on';
+        castT.push(setTimeout(()=>{ c.className = 'bCutin'; }, castWait(1300)));
+      }
+      // ③ 結果ライン→兵力tick（爪痕）→押し合いタグ→次/決着
+      const lines = [];
+      if (tier==='kaishin' || tier==='yuko') lines.push(`${opt.icon} ${opt.ok}`);
+      if (tier==='kaishin' && opt.hist) lines.push(L.hist);
+      lines.push(L[tier][Math.floor(Math.random()*L[tier].length)]);
+      cast(lines, ()=>{
+        tickHP('foe', B.foeHP, null);
+        tickHP('me', B.meHP, ()=>{
+          renderArmies(); showSwingTag();
+          if (B.round < B.max){
+            cast([L.mid[Math.floor(Math.random()*L.mid.length)]], showRound);
+          } else {
+            $('b-actions').innerHTML = `<button class="btn gold" onclick="UI.battleFinish()">⚔️ 決着をつける！</button>`;
+          }
+        });
       });
-    });
+    }, castWait(tier==='fuhatsu'?70:150)));
   }
   function battleFinish(){
     $('b-actions').innerHTML = '';
@@ -2194,20 +2378,28 @@ const UI = (function(){
       });
       return;
     }
-    // 決着シーケンス: 勝ち=敵兵力が崩壊 / 負け=自軍が崩壊
-    if (r.win) B.foeHP = Math.round(B.ev.army.foe*0.04);
-    else B.meHP = Math.round(B.ev.army.me*0.05);
-    tickHP(r.win ? 'foe' : 'me', r.win ? B.foeHP : B.meHP, null);
-    cast(r.win ? L.winSeq : L.loseSeq, ()=>{
-      renderArmies();
-      $('ovl-battle').classList.remove('on');
-      if (r.win){
-        showEvent({ year:B.ev.year, title:'🎉 勝利！', text:r.text },
-          ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); }, B.ev.winFx);
-      } else {
-        showEvent({ year:B.ev.year, title:'💀 敗北……', text:r.text }, ()=>Game.defeatEnd());
-      }
-    });
+    // 決着の全画面タメ（peak-end＝最後の一拍を最も印象的に）→ 崩壊シーケンス
+    const veil = ensureKessenVeil();
+    veil.textContent = r.win ? '決着——' : '無念——';
+    veil.className = 'kessenVeil on';
+    castT.push(setTimeout(()=>{ veil.className='kessenVeil'; }, castWait(1100)));
+    castT.push(setTimeout(()=>{
+      const field = $('b-field'); field.style.setProperty('--fx', 1.6);
+      field.className = 'bField'; void field.offsetWidth; field.classList.add(r.win?'fxBig':'fxBad');
+      if (r.win){ spawnSparks('kaishin'); B.foeHP = Math.round(B.ev.army.foe*0.04); }
+      else B.meHP = Math.round(B.ev.army.me*0.05);
+      tickHP(r.win ? 'foe' : 'me', r.win ? B.foeHP : B.meHP, null);
+      cast(r.win ? L.winSeq : L.loseSeq, ()=>{
+        renderArmies();
+        $('ovl-battle').classList.remove('on');
+        if (r.win){
+          showEvent({ year:B.ev.year, title:'🎉 勝利！', text:r.text },
+            ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); }, B.ev.winFx);
+        } else {
+          showEvent({ year:B.ev.year, title:'💀 敗北……', text:r.text }, ()=>Game.defeatEnd());
+        }
+      });
+    }, castWait(700)));
   }
 
   /* ---- 結果 ---- */
@@ -2253,7 +2445,7 @@ const UI = (function(){
   function openBook(){
     $('l-title').textContent = `📖 軍学帳（まちがい帳）${Game.P.book.length}ページ`;
     const body = $('l-body'); body.innerHTML='';
-    if (!Game.P.book.length){ body.innerHTML='<div class="note">まちがえた問題がここに記録されます。育成中に「😴休息」すると復習できて、正解すると卒業＆ボーナス！</div>'; }
+    if (!Game.P.book.length){ body.innerHTML='<div class="bookItem" style="text-align:center;font-size:14px;line-height:1.95;">📖<br><b>軍学帳は「まちがい帳」だよ</b><br>鍛錬や合戦の問題を<b>まちがえると</b>、その問題が自動でここに記録される。<br><br>たまった問題は <b>「💤休息」</b> のときに復習でき、正解すれば<b>卒業＋ボーナス</b>！<br><br><span class="note">いまは まだ1問もないよ。鍛錬でどんどん挑戦してみよう。</span></div>'; }
     Game.P.book.forEach(b=>{
       const g = D.GENRES[b.genre];
       body.insertAdjacentHTML('beforeend',

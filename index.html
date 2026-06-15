@@ -134,6 +134,35 @@
 
   .hint{position:absolute; bottom:54px; left:0; right:0; text-align:center; font-size:11px; color:var(--muted); z-index:3; pointer-events:none}
   @media(min-width:480px){ .hint{display:none} }
+
+  /* 📢 アップデートのおしらせ（左からスライド・生徒向け） */
+  .news-handle{position:absolute; left:0; top:44%; z-index:18; transform:translateY(-50%);
+    background:linear-gradient(135deg,#4f7cff,#b14bff); color:#fff; border:0; cursor:pointer;
+    padding:12px 5px; border-radius:0 13px 13px 0; font-size:11px; font-weight:800; line-height:1.3;
+    writing-mode:vertical-rl; text-orientation:upright; letter-spacing:3px;
+    box-shadow:3px 4px 14px rgba(0,0,0,.45);}
+  .news-handle:active{transform:translateY(-50%) scale(.95)}
+  .news-handle .nh-dot{position:absolute; right:-3px; top:-3px; width:11px; height:11px; border-radius:50%;
+    background:#ff4d4d; box-shadow:0 0 0 2px #0b1026; display:none;}
+  .news-handle.has-new .nh-dot{display:block;}
+  .news-scrim{position:absolute; inset:0; z-index:24; background:rgba(4,6,14,.5); opacity:0; pointer-events:none; transition:opacity .28s;}
+  .news-scrim.open{opacity:1; pointer-events:auto;}
+  .news-drawer{position:absolute; top:0; bottom:0; left:0; width:86%; max-width:332px; z-index:25;
+    background:linear-gradient(165deg,#141a38,#0c1024); border-right:1px solid var(--line);
+    box-shadow:14px 0 40px rgba(0,0,0,.6); transform:translateX(-104%);
+    transition:transform .3s cubic-bezier(.22,.61,.36,1); display:flex; flex-direction:column;}
+  .news-drawer.open{transform:translateX(0);}
+  .news-top{display:flex; align-items:center; justify-content:space-between; padding:16px 16px 10px;}
+  .news-top .nt-title{font-size:17px; font-weight:800;}
+  .news-close{background:var(--glass); border:1px solid var(--line); color:inherit; border-radius:999px; width:32px; height:32px; font-size:15px; cursor:pointer;}
+  .news-list{flex:1; overflow-y:auto; padding:2px 16px 18px;}
+  .news-item{background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:14px; padding:11px 13px; margin-bottom:11px;}
+  .news-item .ni-date{font-size:11px; color:var(--muted); font-weight:700;}
+  .news-item .ni-title{font-size:14px; font-weight:800; margin:3px 0 7px;}
+  .news-item .ni-title .ni-new{background:#ff4d4d; color:#fff; font-size:9px; font-weight:800; padding:1px 6px; border-radius:999px; margin-left:6px; vertical-align:middle;}
+  .news-item .ni-body{font-size:12.5px; line-height:1.7; color:#dfe6ff;}
+  .news-item .ni-body div{margin:3px 0;}
+  .news-empty{color:var(--muted); font-size:12.5px; text-align:center; padding:30px 10px;}
 </style>
 </head>
 <body>
@@ -204,6 +233,15 @@
       <button id="dataImport" style="background:#4f7cff;color:#fff;border:0;border-radius:12px;padding:12px;font-weight:800;font-size:15px;cursor:pointer;margin-top:8px">📥 読み込む（両ゲームを上書き）</button>
       <div id="dataMsg" style="font-size:12px;margin-top:8px;min-height:18px"></div>
     </div>
+
+    <!-- 📢 アップデートのおしらせ（左はしのタブ or 左→右スワイプで開く・生徒向け） -->
+    <button class="news-handle" id="newsHandle" aria-label="おしらせを開く">おしらせ<span class="nh-dot"></span></button>
+    <div class="news-scrim" id="newsScrim"></div>
+    <aside class="news-drawer" id="newsDrawer" aria-hidden="true">
+      <div class="news-top"><div class="nt-title">📢 おしらせ</div>
+        <button class="news-close" id="newsClose" aria-label="閉じる">✕</button></div>
+      <div class="news-list" id="newsList"></div>
+    </aside>
   </div>
 </div>
 
@@ -481,6 +519,52 @@
     }
     document.getElementById('stSave').addEventListener('click', function(){ toast.style.display='none'; document.getElementById('dataOverlay').style.display='flex'; });
     document.getElementById('stLater').addEventListener('click', function(){ var h=hubLoad(); h.backupSnooze=Date.now(); hubSave(h); toast.style.display='none'; });
+  })();
+
+  // ---- 📢 アップデートのおしらせ（左からスライドで表示・生徒向け） -------
+  // ★運用ルール: ポータルやゲームを更新して生徒に配信したら、必ず UPDATES の
+  //   先頭に1件追加すること（date=配信日 / title / body=やさしい言葉の箇条書き）。
+  var UPDATES = [
+    { date:'2026-06-15', title:'はじめてガイド と 英語の改良', body:[
+      '🧪 <b>理科RPG</b>：はじめて遊ぶ人のために、手とり足とりの「はじめてガイド」がつきました。最初の1勝までやさしく案内します。',
+      '🛡️ <b>グラマー・ガード</b>：文法問題の正解の位置が毎回バラバラになりました。あてずっぽうが効かず、しっかり考える練習になります。',
+      '📢 この<b>おしらせ</b>がつきました。画面の左はしの「おしらせ」を押す（または左から右へスワイプ）と、新しい情報が読めます。',
+    ]},
+  ];
+  (function(){
+    var drawer=document.getElementById('newsDrawer'), scrim=document.getElementById('newsScrim'),
+        handle=document.getElementById('newsHandle'), listEl=document.getElementById('newsList'),
+        closeBtn=document.getElementById('newsClose');
+    if(!drawer||!handle) return;
+    var latest = UPDATES.length ? UPDATES[0].date : '';
+    function seenVal(){ return hubLoad().lastSeenUpdate; }
+    function refreshDot(){ handle.className='news-handle'+((latest && seenVal()!==latest)?' has-new':''); }
+    function render(){
+      if(!UPDATES.length){ listEl.innerHTML='<div class="news-empty">まだおしらせはありません。</div>'; return; }
+      var seen=seenVal();
+      listEl.innerHTML = UPDATES.map(function(u){
+        var isNew = (u.date===latest) && (seen!==latest);
+        var body = (u.body||[]).map(function(b){ return '<div>'+b+'</div>'; }).join('');
+        return '<div class="news-item"><div class="ni-date">'+String(u.date).replace(/-/g,'.')+'</div>'+
+          '<div class="ni-title">'+u.title+(isNew?'<span class="ni-new">NEW</span>':'')+'</div>'+
+          '<div class="ni-body">'+body+'</div></div>';
+      }).join('');
+    }
+    function open(){ render(); drawer.classList.add('open'); scrim.classList.add('open'); drawer.setAttribute('aria-hidden','false');
+      var h=hubLoad(); h.lastSeenUpdate=latest; hubSave(h); refreshDot(); }
+    function close(){ drawer.classList.remove('open'); scrim.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); }
+    handle.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    scrim.addEventListener('click', close);
+    // 左はし(26px以内)から右へスワイプで開く / 開いている時は左へスワイプで閉じる
+    var tsx=0, tsy=0, edge=false;
+    document.addEventListener('touchstart', function(e){ var t=e.touches[0]; tsx=t.clientX; tsy=t.clientY; edge=(tsx<=26); }, {passive:true});
+    document.addEventListener('touchend', function(e){ var t=e.changedTouches[0]; var dx=t.clientX-tsx, dy=t.clientY-tsy;
+      if(Math.abs(dx)<45 || Math.abs(dy)>Math.abs(dx)) return;
+      if(!drawer.classList.contains('open')){ if(edge && dx>0) open(); }
+      else if(dx<0){ close(); }
+    }, {passive:true});
+    refreshDot();
   })();
 })();
 </script>
