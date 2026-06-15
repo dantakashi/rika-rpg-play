@@ -7,14 +7,13 @@
 <title>グラマー・ガード</title>
 <script>window.__GGDEBUG=/[?&]debug=1/.test(location.search||'');window.addEventListener('error',function(e){if(!window.__GGDEBUG)return;try{var d=document.getElementById('__err')||document.createElement('div');d.id='__err';d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font:12px/1.4 monospace;padding:6px;white-space:pre-wrap';d.textContent='ERR: '+(e.message||(e.error&&e.error.stack)||e.type)+' @'+((e.filename||'').split('/').pop())+':'+(e.lineno||'');if(!d.parentNode)(document.body||document.documentElement).appendChild(d);}catch(_){}}, false);</script>
 <!--
-  グラマー・ガード v2 試作版
-  計画書: PLAN_GG_V2_AREA_COST_REDESIGN.md
-  この試作で見せるもの（手触りの芯）:
-   V2-1 問題とステージの分離（出題は「学習レンジ」で決まり、ステージは挑戦のみ）
-   V2-2 コンボ→エネルギー加速 / ミスでコンボ途切れ→ピンチ（ベース加速で即負けしない）
-   V2-3 Tetris式召喚キュー（次2体プレビュー）＋スペース/召喚ボタン＋レア×コスト＋コスパ枠
-   ＋ レーン防衛バトル / 緩急ウェーブ / 5エリア目=ボス / SVGアート（人間なし・動物/文化遺物）
-  本体(grammar_guard.html)とは別ファイル。検証OK後に家で統合する想定。
+  グラマー・ガード（英語＝文法タワーディフェンス）／公開済み本番
+  ・この1ファイル(HTML)に全部入り：問題DB・SVGアート・ゲーム本体・UI。外部<script src>なし。
+  ・配布: publish-grammarguard.ps1 で rika-rpg-play/grammar-guard.html へ同期（英語だけ別管理）。
+  ・テスト: URLに ?debug=1 を付けるとコンソールに GG_TEST（headlessはrAFシムが必要）。
+  ・設計/引き継ぎ: 同フォルダの HANDOFF_*・PLAN_GG_ENDGAME.md・PLAN_GG_SPLIT.md。
+  ・コード目次(§0〜§4)は最初の<script>の冒頭にある（問題DB配列はそれより前に展開）。
+  （フォルダ名 _english_draft は歴史的事情。もう「ドラフト」ではない）
 -->
 <style>
   :root{
@@ -99,7 +98,15 @@
   @keyframes floatUp{from{transform:translateY(0); opacity:1} to{transform:translateY(-34px); opacity:0}}
 
   /* 召喚キュー */
-  #queue{display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--panel); border-top:2px solid var(--line); min-height:64px; box-sizing:border-box}
+  #queue{display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--panel); border-top:2px solid var(--line); min-height:64px; box-sizing:border-box; position:relative}
+  /* 🤖 おまかせ（自動召喚）の初回ヒント吹き出し（要望2026-06-15・戦闘中に存在を気づかせる） */
+  #autoTip{position:absolute; right:8px; bottom:calc(100% + 8px); z-index:60; max-width:min(86vw,300px); background:#2b2620; color:#fff; border-radius:14px; padding:11px 13px; font-size:13px; font-weight:700; line-height:1.45; box-shadow:0 8px 22px rgba(0,0,0,.28); animation:autoTipPop .22s ease}
+  #autoTip:after{content:''; position:absolute; right:26px; top:100%; border:9px solid transparent; border-top-color:#2b2620}
+  #autoTip .row{display:flex; gap:8px; margin-top:9px}
+  #autoTip button{flex:1; border:0; border-radius:999px; padding:8px 10px; font-weight:800; font-size:13px; cursor:pointer}
+  #autoTip .yes{background:var(--good); color:#fff}
+  #autoTip .no{background:#ffffff2e; color:#fff}
+  @keyframes autoTipPop{from{transform:translateY(8px); opacity:0} to{transform:translateY(0); opacity:1}}
   .qslot{display:flex; flex-direction:column; align-items:center; border:2px solid var(--line); border-radius:12px; padding:4px 6px; min-width:62px; background:#fff; position:relative}
   .qslot.now{border-color:var(--ally); box-shadow:0 0 0 3px #2f7dd133}
   .qslot.ready{border-color:var(--good); box-shadow:0 0 0 3px #3a9d5733}
@@ -783,6 +790,8 @@
       <div class="qslot qnext" id="q2"></div>
       <button class="btn" id="summonBtn" onclick="Game.summon()">召喚 ⎵</button>
       <button class="btn" id="freezeBtn" onclick="Game.freeze()" style="display:none">❄ フリーズ ⏎</button>
+      <button class="toggle" id="tgAutoBattle" onclick="Game.toggleAuto()" title="自動召喚＝撃てるキャラを自動で出す。英語の問題に集中したい人向け">🤖 おまかせ</button>
+      <div id="autoTip" style="display:none"></div>
     </div>
 
     <div id="quiz">
@@ -9237,7 +9246,7 @@ const GIM_MODE = {plain:"destroy",charge:"destroy",trigger:"trigger",godhold:"fi
 const GIM_LABEL = {plain:"強敵",charge:"ためチャージ即死",trigger:"城トリガー大群",godhold:"神の一撃・耐久",survive:"両側なだれ込み耐久",rush:"ボスラッシュ"};
 // まだ挙動を実装していないギミックはこの集合に入るまで通常ボス(destroy)として遊べる
 const IMPLEMENTED_GIMMICKS = {charge:true, trigger:true, godhold:true, survive:true, rush:true}; // 段階実装：出来たギミックを true にしていく
-const ALLY_CAP = 16;   // 味方の画面上の同時上限（性能対策・Chromebook配慮で24→16＝合計32）
+const ALLY_CAP = 22;   // 味方の画面上の同時上限（性能対策で24→16にしていたが、実機FPSに余裕ありとオーナー確認(2026-06-15)→22に引上げ。敵ENEMY_CAPは据置=難易度を上げない）
 const ENEMY_CAP = 16;  // 敵の画面上の同時上限（沸き自体は無限。画面上はこの数まで・24→16）
 const ENEMY_MULT = 2;  // 敵の出現量倍率（難度UP：1ウェーブ/1バッチを2倍湧き）
 // 仮アート：3種のボス絵を使い回し（ステータス確定後に専用絵を作る）
@@ -9345,6 +9354,7 @@ const Game = (()=>{
   let ironCleared = {};    // ⚔鉄の試練のクリア {area:true}（2026-06-12・章ボスの制約チャレンジ）
   let ironView = false;    // あそぶ画面で鉄の試練タブ表示中か（非保存）
   let autoSummon = false;  // 苦手な子向け（操作を問題に集中）
+  let seenAutoTip = false; // 🤖おまかせ(自動召喚)の戦闘中・初回ヒントを見たか（1回だけ表示）
   let slowMode = false;    // ゆっくりモード（報酬は同じ）
   let owned = {};          // 入手済み {key:count}
   let deck = [];           // 編成(最大5)
@@ -9354,7 +9364,8 @@ const Game = (()=>{
   let enMaxLv = 0;         // エネルギー上限Lv
   let freezeDurLv = 0;     // ❄フリーズ砲 停止時間Lv（壁1の砲台対策）
   let freezeCostLv = 0;    // ❄フリーズ砲 消費エネルギー削減Lv
-  let comboGuardLv = 0;    // 🛡コンボ保護Lv（ミスしてもコンボ維持・最大2回／戦闘）
+  let comboGuardLv = 0;    // 🛡コンボ保護Lv（廃止・返金用に残置。誤答罰廃止で機能しない）
+  let cgRefunded = false;  // コンボ保護の購入ゴールドを返金済みか（二重返金防止）
   let ownedParts = {};     // 🔩コンボパーツ 入手済み {partId:個数}
   let equippedParts = {};  // 🔩コンボパーツ 装着 {rosterKey:partId}
   let choiceMode = 4;      // 2択/4択を固定(混ぜない)
@@ -9380,12 +9391,13 @@ const Game = (()=>{
   let soundOn = true;
   function load(){
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
-      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; heroCleared=(s.heroCleared&&typeof s.heroCleared==='object')?s.heroCleared:{}; ironCleared=(s.ironCleared&&typeof s.ironCleared==='object')?s.ironCleared:{}; autoSummon=!!s.autoSummon; /* slowMode廃止: 常にfalse */
+      gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; heroCleared=(s.heroCleared&&typeof s.heroCleared==='object')?s.heroCleared:{}; ironCleared=(s.ironCleared&&typeof s.ironCleared==='object')?s.ironCleared:{}; autoSummon=!!s.autoSummon; seenAutoTip=!!s.seenAutoTip; /* slowMode廃止: 常にfalse */
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
       freezeDurLv=s.freezeDurLv||0; freezeCostLv=s.freezeCostLv||0; comboGuardLv=s.comboGuardLv||0;
+      cgRefunded=!!s.cgRefunded; if(comboGuardLv>0 && !cgRefunded){ gold += COMBO_GUARD_COSTS.slice(0,Math.min(comboGuardLv,COMBO_GUARD_COSTS.length)).reduce(function(a,b){return a+b;},0); comboGuardLv=0; cgRefunded=true; } // 🛡コンボ保護 廃止に伴う購入ゴールドの返金(1回)
       ownedParts=(s.ownedParts&&typeof s.ownedParts==='object')?s.ownedParts:{}; equippedParts=(s.equippedParts&&typeof s.equippedParts==='object')?s.equippedParts:{};
       towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||''; dailyChalDone=s.dailyChalDone||''; treasures=(s.treasures&&typeof s.treasures==='object')?s.treasures:{};
       clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
@@ -9405,7 +9417,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -9643,8 +9655,15 @@ const Game = (()=>{
   // ⚡フィーバー方式（2026-06-11 課題1対応）: コンボによるエネルギー加速(×1〜4)は「正解から8秒間」だけ有効。
   // 旧仕様はコンボが残り続ける＝10コンボ貯めて放置すれば加速し続ける抜け道があった。
   // 解き続ける生徒は従来と同じ強さ（壁勝率はハーネスでベースライン一致を確認）・放置だけが等速に落ちる。敵ステは不変（鉄則）。
-  const EN_FEVER_S = 8;        // 正解後にコンボ加速が有効な秒数
-  const EN_ANSWER_INSTANT = 8; // 正解の即時エネルギー（旧+2。手応え強化）
+  const EN_FEVER_S = 8;        // (旧フィーバー秒・互換用に残置。鮮度メーターへ移行済)
+  const EN_ANSWER_INSTANT = 8; // 正解の即時エネルギー
+  // ===== 召喚再設計(2026-06-15): 鮮度メーター＋誤答罰廃止＋隕石オーバーフロー。敵ステは不変(鉄則)・味方/経済側で調整 =====
+  // 旧抜け道: コンボ貯金で放置加速＋誤答半減の恐怖で生徒が解かない。鮮度=「直近に解いているか」でボーナスをゲート＝貯金無効。隕石=満タンを攻撃に変換＝放置不可。
+  const FRESH_MAX=100, FRESH_ADD_C=34, FRESH_ADD_W=20, FRESH_GRACE=2.5, FRESH_DECAY=9; // 鮮度: 解答で上がり、答えた後の無操作でだけ減る(読む時間は猶予で守る)
+  const EN_WRONG=6;            // 誤答の最低保証エネルギー(答えれば必ず前進＝苦手な子の保護)
+  const EN_CORRECT=20;         // 正解で得る主燃料(×実効倍率)。解答を主エネルギー源にして放置を無効化
+  const PASSIVE_MULT=0.30;     // 時間回復(放置エネ)を抑える係数。放置だけでは召喚が続かない＝解くのが必須
+  const METEOR_FLOOR_PCT=0.40, METEOR_COST_PCT=0.12, METEOR_INT=0.55, METEOR_DMG_PCT=0.38; // 隕石: 満タンで開始→残40%まで降る。威力=着弾点の敵HP%
   function regenMaxed(){ return regenLv >= REGEN_MAX_LV; }
   function regenCost(){ return 300*(regenLv+1); }
   function enMaxVal(){ return 200 + enMaxLv*30; }
@@ -9696,7 +9715,7 @@ const Game = (()=>{
   }
   // コンボによる上昇倍率（攻撃=ライブ／HP=召喚時）。part無し→1.0
   function comboPartMul(part, combo){ if(!part) return 1; return 1 + Math.min(part.cap, part.per*Math.max(0,combo)); }
-  function comboPartAtkMul(a){ return (a.part && a.part.type==='atk') ? comboPartMul(a.part, B.combo) : 1; }
+  function comboPartAtkMul(a){ if(!(a.part && a.part.type==='atk')) return 1; var g=(B&&!B.pvpFixedCombo)?((B.fresh||0)/100):1; return 1 + (comboPartMul(a.part, B.combo)-1)*g; } // 🔩攻撃パーツのコンボ火力も鮮度ゲート＝貯金放置で火力温存できない
   function partHpBonusAtSummon(key){ const p=partOf(key); return (p && p.type==='hp') ? comboPartMul(p, B.combo) : 1; }
   function freeze(){
     if(!B||!B.running) return;
@@ -9769,7 +9788,7 @@ const Game = (()=>{
     const gnote=document.createElement('div'); gnote.className='muted'; gnote.style.cssText='font-size:12px;margin:10px 0 6px;line-height:1.5';
     gnote.innerHTML='🛡️ <b>コンボ保護</b>：まちがえても<b>コンボを失わない</b>お守り。<b>正解すると全回復</b>。1回=2連続ミス、2回=3連続ミスでコンボが減ります（最大2回）。膨大なゴールドが必要。';
     body.appendChild(gnote);
-    urow('🛡️','コンボ保護', comboGuardLv+'回', '+1回', comboGuardUpCost(), upgradeComboGuard, comboGuardMaxed());
+    // 🛡コンボ保護は廃止(2026-06-15・誤答罰廃止で不要)。購入済みゴールドはload()で返金。
   }
 
   /* ---- 📚 まちがえた問題の図書館（誤答SRSの一覧） ---- */
@@ -10099,6 +10118,16 @@ const Game = (()=>{
   }
   function confetti(){ const r=$('result'); for(let i=0;i<26;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.background=['#e0683b','#2f7dd1','#3a9d57','#e0a93b'][i%4]; c.style.animationDuration=(1.6+Math.random()*1.4)+'s'; c.style.animationDelay=(Math.random()*0.5)+'s'; r.appendChild(c); setTimeout(()=>c.remove(),3300); } }
   function toggleSound(){ const on=Sound.toggle(); $('soundBtn').textContent=on?'🔊':'🔇'; save(); }
+  // 🤖 おまかせ（自動召喚）：戦闘HUDのトグル＋初回ヒント（要望2026-06-15・機能の存在を気づかせる）
+  function syncAutoUI(){
+    var bb=$('tgAutoBattle'); if(bb){ bb.classList.toggle('on', autoSummon); bb.textContent = autoSummon?'🤖 おまかせ中':'🤖 おまかせ'; }
+    var hb=$('tgAuto'); if(hb) hb.classList.toggle('on', autoSummon); // ホーム側トグルとも同期
+  }
+  function toggleAuto(){ autoSummon=!autoSummon; seenAutoTip=true; hideAutoTip(); save(); syncAutoUI(); try{ fxBanner(autoSummon?'🤖 おまかせON！召喚は自動だよ':'🤖 おまかせOFF（手動）','#3a9d57'); }catch(e){} }
+  function showAutoTip(){ var t=$('autoTip'); if(!t) return; t.innerHTML='💡 召喚は<b>おまかせ</b>にできるよ！<br>英語の問題に集中したい人は…<div class="row"><button class="yes" onclick="Game.autoTipYes()">🤖 オンにする</button><button class="no" onclick="Game.autoTipNo()">あとで</button></div>'; t.style.display=''; seenAutoTip=true; save(); /* 吹き出しは1回だけ＝以後は常設トグルで発見 */ }
+  function hideAutoTip(){ var t=$('autoTip'); if(t) t.style.display='none'; }
+  function autoTipYes(){ autoSummon=true; seenAutoTip=true; save(); hideAutoTip(); syncAutoUI(); try{ fxBanner('🤖 おまかせON！召喚は自動だよ','#3a9d57'); }catch(e){} }
+  function autoTipNo(){ seenAutoTip=true; save(); hideAutoTip(); }
 
   // バトル状態
   let B = null;
@@ -10106,7 +10135,7 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:80, energyMax:enMaxVal(), baseRegen: stage.learn ? 0 : regenVal()*(recoBonusActive()?1.3:1), recoBonus:recoBonusActive(), softcap:12, maxMult:4, feverT:0, // 初期エネ30→80(cycle3)。feverT=コンボ加速の残り秒(正解で8sリチャージ・2026-06-11)
+      energy:80, energyMax:enMaxVal(), baseRegen: stage.learn ? 0 : regenVal()*(recoBonusActive()?1.3:1)*PASSIVE_MULT, recoBonus:recoBonusActive(), softcap:12, maxMult:4, feverT:0, fresh:0, lastAnsT:-99, meteorOn:false, mTimer:0, // 鮮度メーター(直近に解いているか)＋隕石オーバーフロー(2026-06-15再設計)
       combo:0, bestCombo:0, floor:1, // 🗼塔の階（修練/学習）
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
@@ -10426,6 +10455,9 @@ const Game = (()=>{
     lastWasReview=false; lastMistakeKey=null;
     renderQueue(); nextQuestion();
     syncHUD();
+    syncAutoUI();
+    // 🤖 おまかせの存在を知らない生徒が多い→自動召喚OFFの人に1回だけヒント（pvpシミュ中は出さない）
+    if(!seenAutoTip && !autoSummon && !window.__ggPvpActive){ showAutoTip(); } else { hideAutoTip(); }
     B.running=true; B.last=performance.now();
     B.raf=requestAnimationFrame(loop);
   }
@@ -10776,45 +10808,6 @@ const Game = (()=>{
     B.enemies.forEach(function(e){ try{ fxFrag(e.x, fieldFloorY(), '#9cc5d6'); if(e.el){ e.el.classList.add('vanish'); var __ee=e.el; setTimeout(function(){ if(__ee) __ee.remove(); }, 600); } }catch(_){ } });
     B.enemies.length=0;
   }
-  // survive専用の前後判定（dir方向にいる相手）
-  function survNearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(function(e){ const ahead=a.dir>0?(e.x>=a.x-4):(e.x<=a.x+4); if(ahead){ const d=Math.abs(e.x-a.x); if(d<bd){bd=d;best=e;} } }); return best; }
-  function survNearestAlly(e){ let best=null,bd=1e9; B.allies.forEach(function(a){ const ahead=e.dir>0?(a.x>=e.x-4):(a.x<=e.x+4); if(ahead){ const d=Math.abs(a.x-e.x); if(d<bd){bd=d;best=a;} } }); return best; }
-  function stepUnitsSurvive(dt){
-    const W=fieldW(); const center=W/2; const edge=56; // 味方は端からedge手前で停止（場外に出さない）
-    B.allies.forEach(function(a){
-      a.cd-=dt;
-      if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.dir*a.speed*dt; a.x=Math.max(edge,Math.min(W-edge,a.x)); place(a.el,a.x); return; }
-      const target=survNearestEnemy(a);
-      var __atk=a.atk*allyAtkMul(a)*comboPartAtkMul(a); // 🔩攻撃パーツ＝現コンボでライブ加算
-      if(target && Math.abs(target.x-a.x)<=a.range){
-        if(a.cd<=0){
-          if(a.splash||a.pierce){ B.enemies.forEach(function(e){ const ahead=a.dir>0?(e.x>=a.x-4):(e.x<=a.x+4); if(ahead && Math.abs(e.x-a.x)<=a.range){ damage(e,__atk); if(a.slow)e.slowT=2.0; if(a.knockback)e.x+=a.dir*a.knockback; } }); floatText(a.x,26,a.pierce?'⇶':'💥','var(--ally)'); }
-          else { damage(target,__atk); if(a.slow){ target.slowT=2.0; floatText(target.x,22,'❄','#5aa0d6'); } if(a.knockback) target.x+=a.dir*a.knockback; }
-          a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); hitFx(target);
-          { var __v=ALLY_VIS[a.key]; if(__v&&__v.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, target.x, (__v.projDelay||0)); } }
-        }
-      } else { a.x+=a.dir*a.speed*dt; a.x=Math.max(edge,Math.min(W-edge,a.x)); }
-      place(a.el,a.x);
-    });
-    B.enemies.forEach(function(e){
-      if(B.frozenT>0){ if(e.el) e.el.classList.add('frz'); return; } // ❄フリーズ中：敵は動かず攻撃もしない
-      if(e.el) e.el.classList.remove('frz');
-      e.cd-=dt;
-      if(e.dir==null) e.dir = (e.x<center?1:-1); // 分裂児など未設定の保険
-      if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
-      const target=survNearestAlly(e);
-      if(target && Math.abs(target.x-e.x)<=e.range){
-        if(e.cd<=0){ damage(target, e.atk); e.cd=0.8; flash(e.el); lunge(e.el); hitFx(target); }
-      } else if(!target && Math.abs(e.x-center)<=e.range+28){
-        if(e.cd<=0){ B.castleA-=e.atk; e.cd=0.8; flash(e.el); lunge(e.el); castleHit('castleA'); floatText(center,30,'-'+Math.round(e.atk),'var(--bad)'); }
-      } else {
-        e.x += e.dir*e.speed*(e.slowT>0?0.45:1)*dt;
-        if(e.dir>0) e.x=Math.min(e.x,center); else e.x=Math.max(e.x,center); // 中央を越えない
-      }
-      place(e.el,e.x);
-    });
-    cleanup();
-  }
 
   // ⑤rush（ボスラッシュ）：ボスを2〜3体連戦。1体倒すと少し間を置いて次が出る。全員倒せば勝ち（自城0で負け）
   function rushSpawnNext(){
@@ -10907,8 +10900,9 @@ const Game = (()=>{
       B.combo += gain; B.bestCombo=Math.max(B.bestCombo,B.combo);
       if(B.stage.learn){ B.energy=Math.min(B.energyMax, B.energy + LEARN_ENERGY_PER_CORRECT); } // 🎓学習の塔：従来どおり正解で大きく加算
       else if(!B.pvp){ // ⚡フィーバー: 正解でコンボ加速を8秒リチャージ＋即時エネルギー
-        B.feverT=EN_FEVER_S;
-        B.energy=Math.min(B.energyMax, B.energy+EN_ANSWER_INSTANT);
+        B.fresh=Math.min(FRESH_MAX,(B.fresh||0)+FRESH_ADD_C); B.lastAnsT=B.t; // 鮮度チャージ(解き続けるほど加速)
+        var __am=1+(B.maxMult-1)*Math.min(1,B.combo/B.softcap)*(B.fresh/100); // 実効倍率(コンボ×鮮度)
+        B.energy=Math.min(B.energyMax, B.energy+EN_ANSWER_INSTANT+EN_CORRECT*__am); // 解答が主燃料＝解き続けるほど湧く
         // 🛡シールド兵: 正解すると場の全シールドが砕ける（新ギミック・解くことが戦術になる）
         var __sbn=0; B.enemies.forEach(function(e){ if(e.shield>0){ e.shield=0; var b=e.el.querySelector('.shieldbadge'); if(b)b.remove(); flash(e.el); __sbn++; } });
         if(__sbn){ floatText($('field').clientWidth/2, 100, '🛡✨ シールドブレイク!', '#5aa0d6'); try{ Sound.play('hit'); }catch(e){} }
@@ -10926,7 +10920,7 @@ const Game = (()=>{
       buttons[curQ.answerIndex].classList.add('ok');
       Sound.play('wrong');
       B.missStreak++;
-      if(!B.stage.learn && !B.pvp) B.feverT=EN_FEVER_S; // ⚡フィーバーは「答え続けること」で維持（不正解でもOK。コンボ半減で加速倍率は自然に下がる＝弱い子の保護）
+      if(!B.stage.learn && !B.pvp){ B.fresh=Math.min(FRESH_MAX,(B.fresh||0)+FRESH_ADD_W); B.lastAnsT=B.t; B.energy=Math.min(B.energyMax,B.energy+EN_WRONG); } // 誤答でも鮮度UP＋最低エネ＝答えれば前進(罰でなく学習)
       // ⚔鉄の試練: 誤答1回ごとに自城がくずれる（最大HPの8%・コンボ保護でも防げない＝正答率そのものが試される）
       if(B.stage.iron){
         var __id=Math.round(B.castleAMax*IRON_MISS_PCT);
@@ -10937,12 +10931,8 @@ const Game = (()=>{
       if(B.stage.learn){
         // 🎓学習の塔：コンボは途切れない（減らさない）。代わりにエネルギーが増えない＝間違えると召喚が止まる
         $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
-      }else if(B.comboGuard>0){
-        B.comboGuard--; // 🛡コンボ保護を1回消費＝コンボを維持（半減させない）
-        floatText($('field').clientWidth/2, 30, '🛡️ コンボ保護！', '#4a90d0');
-        $('qfeedback').innerHTML = `<span style="color:#4a90d0">🛡️ コンボ保護！</span> ${curQ.desc||''}`;
       }else{
-        B.combo = Math.floor(B.combo * (B.slow?0.75:0.5)); // 途切れ→加速ダウン（ゼロにしない）
+        // 誤答罰廃止(2026-06-15): コンボは減らさない＝答える恐怖を除去。間違いはSRSで再出題して覚え直す。
         $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
       }
       QuizEngine.pushReview(curQ); // 間違えた問題は近いうち再出題（戦闘内）
@@ -10960,14 +10950,17 @@ const Game = (()=>{
     if(!B||!B.running) return;
     let dt=Math.min(0.05,(now-B.last)/1000); B.last=now; if((window.__GGDEBUG||B.pvp) && window.__timeScale>1) dt*=window.__timeScale; B.t+=dt*(B.slow?0.6:1);
     if(B.pvp) B.combo=20; // ⑱対戦は常にコンボ20想定(エネ速度・ダメージとも)
-    // エネルギー加速：通常戦はコンボで上昇(=1+combo/softcap)。対戦(自走シミュ)のみ
-    // コンボ20相当で固定(B.pvpFixedCombo)＝両者同条件で戦力差だけを比較するため(要望#8修正・2026-06-09)。
+    // ===== エネルギー加速 = コンボ × 鮮度(直近に解いているか)。鮮度は答えた後の猶予を過ぎてからだけ減る(読む時間は罰しない) =====
+    if(!B.pvp && !B.stage.learn && (B.t-(B.lastAnsT==null?-99:B.lastAnsT)) > FRESH_GRACE){ B.fresh=Math.max(0,(B.fresh||0) - FRESH_DECAY*dt*(B.slow?0.6:1)); }
+    const __freshGate = B.pvpFixedCombo ? 1 : ((B.fresh||0)/100); // 貯めたコンボも鮮度が無ければ効かない＝放置封じ
     const __comboForEnergy = B.pvpFixedCombo ? 20 : B.combo;
-    const mult=Math.min(B.maxMult, 1 + __comboForEnergy/B.softcap);
-    // ⚡フィーバー方式: コンボ加速は正解後8秒だけ有効（PvP自走シミュは回答が無いため常時有効=従来挙動）。
-    if(B.feverT>0){ B.feverT=Math.max(0, B.feverT-dt); if(B.feverT===0 && !B.stage.learn && !B.pvp){ floatText($('field').clientWidth/2, 100, '🐢 とまった… 解いて加速!', '#7a7060'); } }
-    var __fmult = (B.pvpFixedCombo || B.feverT>0) ? mult : 1;
+    const __fmult = 1 + (B.maxMult-1) * Math.min(1, __comboForEnergy/B.softcap) * __freshGate;
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*__fmult*dt);
+    // ===== 隕石オーバーフロー(2026-06-15): 満タンで降り始め、残40%まで一定量ずつ消費して降り続ける(満タン放置不可＝漏れバケツ＋押している感) =====
+    if(!B.pvp && !B.stage.learn){
+      if(B.energy>=B.energyMax-0.001) B.meteorOn=true;
+      if(B.meteorOn){ B.mTimer=(B.mTimer||0)-dt; if(B.mTimer<=0){ dropOffenseMeteor(); B.energy-=B.energyMax*METEOR_COST_PCT; B.mTimer=METEOR_INT; } if(B.energy<=B.energyMax*METEOR_FLOOR_PCT) B.meteorOn=false; }
+    }
     // ❄フリーズ砲：効果＆クールダウンの消化（効果が切れたら凍結表示を解除）
     if(B.freezeCd>0){ B.freezeCd-=dt; if(B.freezeCd<0) B.freezeCd=0; }
     if(B.frozenT>0){ B.frozenT-=dt; if(B.frozenT<=0){ B.frozenT=0; var __ff=$('field'); if(__ff) __ff.classList.remove('frozen'); } }
@@ -10998,6 +10991,13 @@ const Game = (()=>{
     if(B.running) B.raf=requestAnimationFrame(loop);
   }
 
+  // 隕石オーバーフロー(2026-06-15): 余剰エネルギーをランダムゾーンへの隕石に変換。着弾点の敵にダメージ＝押している感。
+  function dropOffenseMeteor(){
+    const W=fieldW(); const x=80 + Math.random()*Math.max(1,(W-160)); const R=72;
+    try{ fxFrag(x, fieldFloorY(), '#5aa0d6'); fxFrag(x, fieldFloorY()-28, '#bfe0f5'); }catch(e){}
+    B.enemies.forEach(function(e){ if(e && Math.abs(e.x-x)<=R){ damage(e, Math.round((e.hpMax||e.hp||0)*METEOR_DMG_PCT)); } });
+    if(Math.abs((W-70)-x)<=R){ B.castleE-=Math.round(B.castleEMax*0.01); castleHit('castleE'); } // 敵城近接なら城も少し
+  }
   function stepUnits(dt){
     const W=fieldW();
     const survive = B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive; // ④通常配置の耐久(敵城は無敵・timeLimitで勝ち)
@@ -11108,10 +11108,10 @@ const Game = (()=>{
     }
     $('enBar').style.width=(B.energy/B.energyMax*100)+'%';
     // ⚡フィーバー可視化: 加速中はバーを金色に＋実効倍率（狭幅画面のためコンパクト表記。切れた瞬間のナッジはloop側のfloatText）
-    var __fOn = B.pvpFixedCombo || B.feverT>0;
-    var __fm = Math.min(B.maxMult, 1 + (B.pvpFixedCombo?20:B.combo)/B.softcap);
-    $('enBar').style.background = __fOn ? 'linear-gradient(90deg,#e0a93b,#ffd24a)' : '';
-    $('enTxt').textContent = Math.round(B.energy) + (B.stage.learn ? '' : (__fOn ? ' ⚡×'+__fm.toFixed(1) : ' 🐢'));
+    var __fr = B.pvpFixedCombo ? 100 : (B.fresh||0); // 鮮度%(直近に解いているか)
+    var __fm = 1 + (B.maxMult-1)*Math.min(1,(B.pvpFixedCombo?20:B.combo)/B.softcap)*(__fr/100); // 実効倍率(コンボ×鮮度)
+    $('enBar').style.background = B.meteorOn ? 'linear-gradient(90deg,#5aa0d6,#bfe0f5)' : (__fr>=50 ? 'linear-gradient(90deg,#e0a93b,#ffd24a)' : '');
+    $('enTxt').textContent = Math.round(B.energy) + (B.stage.learn ? '' : (B.meteorOn ? ' 🌠隕石' : ' ⚡×'+__fm.toFixed(1)));
     $('comboTxt').textContent=B.combo;
     { var __g=$('guardTxt'); if(__g) __g.textContent = (comboGuardLv>0) ? (' '+'🛡️'.repeat(B.comboGuard)) : ''; }
     const big=$('combo-big'); big.style.color = B.combo>=15?'#e0683b':B.combo>=6?'#e0a93b':'#bbb';
@@ -11818,7 +11818,7 @@ const Game = (()=>{
     }
   };
   if(window.__GGDEBUG){ window.GG_TEST=_test; }
-  return { start, toHome, summon, freeze, toggleSound, replayAudio, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES, _answerForTest:(i,b)=>answer(i,b) };
+  return { start, toHome, summon, freeze, toggleSound, toggleAuto, autoTipYes, autoTipNo, replayAudio, startAssessment, assessSkip, closeDaily, openUnitPop, closeUnitPop, _stages:STAGES, _answerForTest:(i,b)=>answer(i,b) };
 })();
 
 Game.start();
