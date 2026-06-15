@@ -1211,15 +1211,15 @@ let player = {
       return GameData.ENDGAME_BOSSES_DB.find(b => b.id === battle.bossId) || null;
     }
 
-    // 🏛️ 闘技場（ランク制 昇格バトル）。rankIdx の NPC闘士と戦う。裏ボスと同じ戦闘機構（mode='boss'）を流用。
-    //  挑戦できるのは「突破済みの1つ上」まで（飛び級不可）。勝てば昇格、負けても降格しない（負けても学習が進む）。
-    //  恒久バフは付かない＝中盤バランスを壊さない。報酬はゴールド＋称号（マイルストーンのみ）。
+    // 🏛️ 闘技場の塔（200階・ランク制 昇格バトル）。rankIdx(=floor-1) の NPC闘士と戦う。裏ボスと同じ機構（mode='boss'）流用。
+    //  挑戦できるのは「突破済みの1つ上(=cleared+1)」まで（飛び級不可）。突破済みの階は再戦で周回可（ハクスラの金策）。
+    //  勝てば昇格、負けても降格しない（負けても学習が進む）。恒久バフ無し＝中盤バランスを壊さない。報酬はゴールド＋節目ボーナス＋称号。
     function startArenaBattle(rankIdx) {
-      if (!player.hasClearedOnce) { alert('闘技場はラスボス撃破後に解禁されます。'); return; }
-      const ranks = GameData.ARENA_RANKS;
+      if (!player.hasClearedOnce) { alert('闘技場の塔はラスボス撃破後に解禁されます。'); return; }
+      const ranks = GameData.ARENA_FLOORS;
       rankIdx = Math.max(0, Math.min(ranks.length - 1, rankIdx | 0));
       const cleared = (typeof player.arenaRank === 'number') ? player.arenaRank : -1;
-      if (rankIdx > cleared + 1) { alert('まだ挑戦できません。1つずつ昇格しよう。'); return; }
+      if (rankIdx > cleared + 1) { alert('まだ挑戦できません。1階ずつ登ろう。'); return; }
       const rank = ranks[rankIdx];
       const st = rank.base;
 
@@ -1229,7 +1229,7 @@ let player = {
       battle.isEndgame = false;      // ← 裏ボス用フェーズ/恒久バフ判定を確実に切る
       battle.arenaRank = rankIdx;
       battle.arenaTiers = (rank.tiers && rank.tiers.length) ? rank.tiers.slice() : ['mid'];
-      battle.bossId = rank.id;
+      battle.bossId = 'arena_f' + (rankIdx + 1);
       battle.filterGenres = null;    // 全教科横断
       battle.filterType = null;      // タイピング・選択 両方
       battle.subject = null;
@@ -1269,11 +1269,11 @@ let player = {
       battle.bossStanDef = st.stanDef;
 
       const _avEl = document.getElementById('enemy-avatar');
-      setVisualImg(_avEl, 'assets/arena/rank_' + rankIdx + '.png', rank.avatar);
+      setVisualImg(_avEl, 'assets/arena/arch_' + rank.archIdx + '.png', rank.avatar);
       _avEl.style.filter = 'drop-shadow(0 0 22px #fbbf24) drop-shadow(0 0 40px #ef4444)';
       setBattleBackground('supreme');
-      document.getElementById('enemy-name').textContent = rank.name + '  [闘技場 ' + (rankIdx + 1) + '/' + ranks.length + ']';
-      document.getElementById('battle-mode-title').textContent = '🏛️ 闘技場';
+      document.getElementById('enemy-name').textContent = rank.name + '  [塔 ' + (rankIdx + 1) + '/' + ranks.length + '階]';
+      document.getElementById('battle-mode-title').textContent = '🏛️ 闘技場の塔';
       playBossEnter();
 
       nextQuestion();

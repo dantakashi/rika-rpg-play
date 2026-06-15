@@ -2053,47 +2053,154 @@ const GameUI = (function() {
       GameEngine.startEndgameBoss(bossId, 1); // 範囲ボスは固定（Lv1相当）
     }
 
-    // ── 🏛️ 闘技場（ランク制 昇格バトル）ポップアップ ──
+    // ── 🏛️ 闘技場の塔（200階）ポップアップ ──
+    //  200件を全描画せず「窓スクロール＋帯ジャンプ＋現在挑戦階フォーカス」で表示（溢れ対策・モバイル対応）。
+    //  状態は _arenaView（閲覧中心floor。null=現在の挑戦階にスナップ）だけ。cleared は都度 player.arenaRank から読む。
+    let _arenaView = null;
+    const _ARENA_TIER_LABEL = { elementary:'小学', junior:'入門', mid:'基礎', senior:'応用', supreme:'受験' };
+    const _ARENA_BANDS = [
+      { key:0, label:'基礎', s:1,   e:30  },
+      { key:1, label:'応用', s:31,  e:75  },
+      { key:2, label:'受験', s:76,  e:130 },
+      { key:3, label:'深層', s:131, e:180 },
+      { key:4, label:'終焉', s:181, e:200 }
+    ];
     function openArenaPopup() {
-      renderArenaLadder();
+      _arenaView = null;
+      renderArenaTower();
       document.getElementById('arena-popup').classList.remove('hidden');
     }
     function closeArenaPopup() { document.getElementById('arena-popup').classList.add('hidden'); }
-    const _ARENA_TIER_LABEL = { elementary:'小学', junior:'入門', mid:'基礎', senior:'応用', supreme:'受験' };
-    function renderArenaLadder() {
+    function _arenaClearedRank() { return (typeof GameEngine.player.arenaRank === 'number') ? GameEngine.player.arenaRank : -1; }
+    function _arenaFocusFloor() { const total = GameData.ARENA_FLOORS.length; return Math.min(_arenaClearedRank() + 1, total - 1) + 1; }
+    function _arenaViewCenter() { return _arenaView || _arenaFocusFloor(); }
+    // fromFloor(含む)以上で最も近い壁(節目)の floorデータを返す。無ければ null。
+    function _arenaNextWall(fromFloor) {
+      const ranks = GameData.ARENA_FLOORS;
+      for (let i = fromFloor - 1; i < ranks.length; i++) { if (ranks[i] && ranks[i].isWall) return ranks[i]; }
+      return null;
+    }
+    // 表示する窓(floor配列): center±2 を [1,total] にクランプし、高層→低層の順で返す。
+    function _arenaWindow(centerFloor) {
+      const total = GameData.ARENA_FLOORS.length;
+      const c = Math.max(1, Math.min(total, centerFloor));
+      const lo = Math.max(1, c - 2), hi = Math.min(total, c + 2);
+      const arr = [];
+      for (let fl = hi; fl >= lo; fl--) arr.push(fl);
+      return arr;
+    }
+    function _arenaWallTag(kind) {
+      return kind === 'tier'  ? '<span class="text-rose-300 text-[8px] font-bold">⚑大壁</span>'
+           : kind === 'major' ? '<span class="text-amber-300 text-[8px] font-bold">🚩節目</span>'
+           : kind === 'minor' ? '<span class="text-amber-400/70 text-[8px]">▪壁</span>' : '';
+    }
+    function _arenaMiniRow(floor, cleared) {
+      const idx = floor - 1;
+      const r = GameData.ARENA_FLOORS[idx];
+      const isNext = idx === cleared + 1;
+      const done = idx <= cleared;
+      let right;
+      if (isNext) right = '<span class="text-[9px] text-amber-300 font-bold shrink-0">▲挑戦中</span>';
+      else if (done) right = `<button onclick="GameUI.startArenaFromList(${idx})" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-2 py-1 rounded-lg text-[9px] shrink-0 transition-all active:scale-95">🔁再戦</button>`;
+      else right = '<span class="text-sm text-slate-600 shrink-0">🔒</span>';
+      return `<div class="bg-slate-950/60 border ${isNext ? 'border-amber-500/60' : 'border-slate-800/70'} rounded-lg px-2 py-1 flex items-center gap-2 ${idx > cleared + 1 ? 'opacity-50' : ''}">
+        <span class="text-base shrink-0">${r.avatar}</span>
+        <div class="flex-1 min-w-0"><div class="text-[10px] font-bold text-white truncate">第${floor}階 ${r.name} ${_arenaWallTag(r.wallKind)}</div></div>
+        <span class="text-[8px] text-slate-500 shrink-0">${(r.gold || 0).toLocaleString()}G</span>
+        ${right}
+      </div>`;
+    }
+    function renderArenaTower() {
       const box = document.getElementById('arena-body');
       if (!box) return;
       if (!GameEngine.player.hasClearedOnce) {
         box.innerHTML = '<div class="text-center text-slate-400 text-xs py-6">🔒 ラスボス「アポカリプス」を撃破すると解禁されます。</div>';
         return;
       }
-      const ranks = GameData.ARENA_RANKS;
-      const cleared = (typeof GameEngine.player.arenaRank === 'number') ? GameEngine.player.arenaRank : -1;
-      let html = `<div class="text-center text-[10px] text-slate-400 mb-2">いま到達: <span class="text-amber-300 font-bold">${cleared < 0 ? '未挑戦' : (cleared + 1) + '位 突破'}</span> ／ 全${ranks.length}ランク</div>`;
-      html += '<div class="flex flex-col gap-2">';
-      // 高ランク→低ランクの順（上が頂点）で描画
-      for (let i = ranks.length - 1; i >= 0; i--) {
-        const r = ranks[i];
-        const done = i <= cleared;
-        const isNext = i === cleared + 1;
-        const locked = i > cleared + 1;
-        const tiers = (r.tiers || []).map(t => _ARENA_TIER_LABEL[t] || t).join('・');
-        const t = r.title ? GameData.TITLES_DB.find(x => x.id === r.title) : null;
-        let right;
-        if (done) right = '<span class="text-[10px] text-emerald-400 font-bold shrink-0">✓ 突破済</span>';
-        else if (isNext) right = `<button onclick="GameUI.startArenaFromList(${i})" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] shrink-0 transition-all active:scale-95">⚔️ 挑戦</button>`;
-        else right = '<span class="text-base text-slate-600 shrink-0">🔒</span>';
-        html += `<div class="bg-slate-950/70 border ${isNext ? 'border-amber-500/70' : 'border-slate-800'} rounded-xl p-2.5 flex items-center gap-2 ${locked ? 'opacity-50' : ''}">
-          <span class="text-2xl shrink-0">${r.avatar}</span>
+      const ranks = GameData.ARENA_FLOORS;
+      const total = ranks.length;
+      const cleared = _arenaClearedRank();              // 突破済みの最高idx (-1=未挑戦)
+      const reached = cleared + 1;                       // 到達階数 (0..200)
+      const isMaxed = cleared >= total - 1;
+      const focusIdx = Math.min(cleared + 1, total - 1); // 挑戦/再戦の対象
+      const focus = ranks[focusIdx];
+      const focusFloor = focusIdx + 1;
+      const pct = Math.round(reached / total * 100);
+
+      // 進捗バー＋節目🚩マーカー
+      let flags = '';
+      [50, 100, 150, 200].forEach(m => { flags += `<span class="absolute -top-1.5 text-[8px]" style="left:calc(${m / total * 100}% - 5px)">🚩</span>`; });
+      let html = `<div class="mb-2">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] text-slate-300 font-bold">到達 <span class="text-amber-300 font-black">${reached}</span> / ${total} 階</span>
+          <span class="text-[9px] text-slate-500">節目で称号＆ボーナス</span>
+        </div>
+        <div class="relative h-2 bg-slate-800 rounded-full">
+          <div class="h-2 bg-gradient-to-r from-amber-500 to-rose-500 rounded-full" style="width:${pct}%"></div>${flags}
+        </div>
+      </div>`;
+
+      // フォーカスカード（現在の挑戦階／制覇後はF200再戦）
+      const fTiers = (focus.tiers || []).map(t => _ARENA_TIER_LABEL[t] || t).join('・');
+      const fTitle = focus.title ? GameData.TITLES_DB.find(x => x.id === focus.title) : null;
+      const wallBadge = focus.wallKind === 'tier' ? '<span class="ml-1 text-rose-300 text-[9px] font-bold">⚑大壁(難易度UP)</span>'
+                      : focus.wallKind === 'major' ? '<span class="ml-1 text-amber-300 text-[9px] font-bold">🚩節目</span>'
+                      : focus.wallKind === 'minor' ? '<span class="ml-1 text-amber-400/80 text-[9px]">▪壁</span>' : '';
+      const fImg = `<img src="assets/arena/arch_${focus.archIdx}.png" class="w-14 h-14 object-contain shrink-0" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-4xl',textContent:'${focus.avatar}'}))">`;
+      html += `<div class="bg-slate-950/80 border-2 border-amber-500/70 rounded-2xl p-3 mb-2 shadow-lg shadow-amber-900/30">
+        <div class="text-[9px] text-amber-300 font-bold mb-1 animate-pulse">${isMaxed ? '🏆 塔を制覇！周回でコインを稼げる' : '▶ いま挑戦できる階'}</div>
+        <div class="flex items-center gap-3">
+          ${fImg}
           <div class="flex-1 min-w-0">
-            <div class="font-black text-white text-xs">${i + 1}. ${r.name}</div>
-            <div class="text-[9px] text-slate-400">出題: ${tiers}（全教科）・報酬 ${(r.gold || 0).toLocaleString()}G${t ? ` ・称号「${t.name}」` : ''}</div>
+            <div class="font-black text-white text-sm">第${focusFloor}階 ${focus.name}${wallBadge}</div>
+            <div class="text-[9px] text-slate-400 mt-0.5">出題: ${fTiers}（全教科）・報酬 <span class="text-yellow-300 font-bold">${(focus.gold || 0).toLocaleString()}G</span></div>
+            ${fTitle ? `<div class="text-[9px] text-fuchsia-300 mt-0.5">突破で称号「${fTitle.name}」</div>` : ''}
           </div>
-          ${right}
-        </div>`;
+        </div>
+        <button onclick="GameUI.startArenaFromList(${focusIdx})" class="w-full mt-2 bg-amber-600 hover:bg-amber-500 text-white font-black py-2.5 rounded-xl text-sm transition-all active:scale-95">${isMaxed ? '🔁 再戦（コイン稼ぎ）' : '⚔️ この階に挑戦！'}</button>
+      </div>`;
+
+      // 次の節目予告
+      const nw = _arenaNextWall(focusFloor);
+      if (nw) {
+        const kindLabel = nw.wallKind === 'tier' ? '大壁(難易度UP)' : (nw.wallKind === 'major' ? '節目' : '壁');
+        const dist = nw.floor - focusFloor;
+        html += dist <= 0
+          ? `<div class="text-[9px] text-rose-300 text-center mb-2">⚑ この階が${kindLabel}！踏ん張りどころ</div>`
+          : `<div class="text-[9px] text-slate-400 text-center mb-2">次の${kindLabel}: <span class="text-amber-300 font-bold">第${nw.floor}階</span> まであと ${dist} 階</div>`;
       }
+
+      // 難易度帯タブ（ジャンプ）
+      html += '<div class="flex gap-1 mb-2">';
+      _ARENA_BANDS.forEach(b => {
+        const active = focusFloor >= b.s && focusFloor <= b.e;
+        const reachedBand = reached >= b.s;
+        html += `<button onclick="GameUI.jumpArenaTier(${b.key})" class="flex-1 ${active ? 'bg-amber-700 text-white' : 'bg-slate-800 text-slate-400'} ${reachedBand ? '' : 'opacity-50'} font-bold py-1 rounded-lg text-[9px] leading-tight transition-all active:scale-95">${b.label}<br><span class="text-[7px]">${b.s}-${b.e}</span></button>`;
+      });
       html += '</div>';
+
+      // 階層ブラウザ（窓スクロール）＋ナビ
+      const viewCenter = _arenaViewCenter();
+      html += '<div class="text-[9px] text-slate-500 mb-1">塔の階層（🔁＝再戦で周回・コイン稼ぎ）</div>';
+      html += '<div class="flex flex-col gap-1">';
+      _arenaWindow(viewCenter).forEach(fl => { html += _arenaMiniRow(fl, cleared); });
+      html += '</div>';
+      html += `<div class="flex gap-2 mt-2">
+        <button onclick="GameUI.arenaScroll(-5)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-1.5 rounded-lg text-[10px] transition-all active:scale-95">▼ 下の階</button>
+        <button onclick="GameUI.arenaResetView()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-1.5 rounded-lg text-[10px] transition-all active:scale-95">↩ 挑戦階</button>
+        <button onclick="GameUI.arenaScroll(5)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-1.5 rounded-lg text-[10px] transition-all active:scale-95">▲ 上の階</button>
+      </div>`;
       box.innerHTML = html;
+    }
+    function arenaScroll(d) {
+      const total = GameData.ARENA_FLOORS.length;
+      _arenaView = Math.max(1, Math.min(total, _arenaViewCenter() + d));
+      renderArenaTower();
+    }
+    function arenaResetView() { _arenaView = null; renderArenaTower(); }
+    function jumpArenaTier(key) {
+      const b = _ARENA_BANDS.find(x => x.key === key);
+      if (b) { _arenaView = b.s; renderArenaTower(); }
     }
     function startArenaFromList(rankIdx) {
       closeArenaPopup();
@@ -2899,48 +3006,55 @@ const GameUI = (function() {
       banner.classList.add('hidden');
 
       if (GameEngine.battle.isArena) {
-        // ── 🏛️ 闘技場（ランク制 昇格バトル）──
-        const ranks = GameData.ARENA_RANKS;
+        // ── 🏛️ 闘技場の塔（200階）──
+        const ranks = GameData.ARENA_FLOORS;
         const ri = GameEngine.battle.arenaRank;
         const rank = ranks[ri];
+        const floor = ri + 1;
         const _gm = GameEngine.getEffectiveStats().goldMul || 1.0;
         if (isVictory) {
           const prevRank = (typeof GameEngine.player.arenaRank === 'number') ? GameEngine.player.arenaRank : -1;
-          const promoted = ri > prevRank;
-          const goldReward = Math.floor((rank.gold || 8000) * _gm);
-          GameEngine.player.gold += goldReward;
-          emoji.textContent = '🏛️';
-          title.textContent = promoted ? `${ri + 1}位に昇格！` : '勝利！';
-          earnedG.textContent = goldReward.toLocaleString();
+          const promoted = ri > prevRank;        // 初突破=昇格 / それ以外=突破済み階の再戦(周回)
+          let goldReward = Math.floor((rank.gold || 11000) * _gm);
+          let bonusMsg = '';
           let titleMsg = '';
           if (promoted) {
             GameEngine.player.arenaRank = ri;
+            const bonus = Math.floor((GameData.arenaMilestoneBonus(floor) || 0) * _gm); // 初突破のみ節目ボーナス
+            if (bonus > 0) { goldReward += bonus; bonusMsg = `🎁 節目ボーナス +${bonus.toLocaleString()}G！`; }
             if (rank.title) {
               const t = GameData.TITLES_DB.find(x => x.id === rank.title);
               if (t) titleMsg = `称号「${t.name}」を獲得！`;
             }
           }
+          GameEngine.player.gold += goldReward;
+          emoji.textContent = promoted ? '🏛️' : '🔁';
+          title.textContent = promoted ? `第${floor}階 突破！` : `第${floor}階 再戦勝利！`;
+          earnedG.textContent = goldReward.toLocaleString();
           const next = ranks[ri + 1];
-          const nextMsg = next
-            ? `次は <span class="text-amber-300 font-bold">${next.name}</span> に挑戦できる！`
-            : '<span class="text-yellow-300 font-bold">🎉 全ランク制覇！君が闘技場の頂点だ。</span>';
+          const nextMsg = !promoted
+            ? '周回でコインを稼いだ！（到達階はそのまま）'
+            : (next
+                ? `次は <span class="text-amber-300 font-bold">第${floor + 1}階 ${next.name}</span> に挑戦できる！`
+                : '<span class="text-yellow-300 font-bold">🎉 200階制覇！君が塔の頂点だ。</span>');
           detail.innerHTML = `
-            撃破: <span class="text-amber-300 font-bold">${rank.name}</span><br>
+            撃破: <span class="text-amber-300 font-bold">第${floor}階 ${rank.name}</span><br>
             ${titleMsg ? '<span class="text-yellow-300 font-bold">' + titleMsg + '</span><br>' : ''}
+            ${bonusMsg ? '<span class="text-emerald-300 font-bold">' + bonusMsg + '</span><br>' : ''}
             ${nextMsg}
           `;
         } else {
           // 負けても学習が進む: 与えたダメージ割合に応じた参加コイン＋降格なし
           const dealt = Math.max(0, GameEngine.battle.enemyMaxHp - GameEngine.battle.enemyHp);
           const ratio = GameEngine.battle.enemyMaxHp > 0 ? dealt / GameEngine.battle.enemyMaxHp : 0;
-          const partial = Math.floor((rank.gold || 8000) * 0.3 * ratio * _gm);
+          const partial = Math.floor((rank.gold || 11000) * 0.3 * ratio * _gm);
           GameEngine.player.gold += partial;
           emoji.textContent = '🥋';
           title.textContent = 'あと一歩…';
           earnedG.textContent = partial.toLocaleString();
           detail.innerHTML = `
-            <span class="text-amber-300 font-bold">${rank.name}</span> に挑戦（HPを${Math.round(ratio * 100)}%削った）<br>
-            ランクは下がらないよ。装備とレベルを鍛えて再挑戦しよう。<br>
+            <span class="text-amber-300 font-bold">第${floor}階 ${rank.name}</span> に挑戦（HPを${Math.round(ratio * 100)}%削った）<br>
+            到達階は下がらないよ。装備とレベルを鍛えて再挑戦しよう。<br>
             <span class="text-yellow-400 font-bold">参加コイン +${partial.toLocaleString()}G🪙</span>
           `;
         }
@@ -3153,7 +3267,7 @@ const GameUI = (function() {
     showMenu, showBattleScreen,
     openBossSelection, openBossRangePopup, toggleBossRangeGenre, setBossRangeType, closeBossRangePopup, startBossFromRange,
     openEndgamePopup, closeEndgamePopup, startEndgameFromList,
-    openArenaPopup, closeArenaPopup, startArenaFromList,
+    openArenaPopup, closeArenaPopup, startArenaFromList, jumpArenaTier, arenaScroll, arenaResetView,
     openOmegaPopup, closeOmegaPopup, setOmegaStatLevel, setOmegaAll, startOmega,
     openTitlePopup, closeTitlePopup, equipTitle, openAvatarPopup, closeAvatarPopup, equipAvatar,
     openGachaScreen, openLibraryScreen, renderLibraryTabs, renderLibraryContent,

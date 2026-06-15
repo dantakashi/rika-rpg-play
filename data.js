@@ -3052,36 +3052,116 @@ const GameData = (function() {
     }
 
     // ==========================================
-    //   §5b-2  ARENA_RANKS  闘技場（ランク制 昇格バトル）
+    //   §5b-2  闘技場の塔（ARENA TOWER・200階）
     // ==========================================
-    // ラスボス撃破後の「やり込み」コンテンツ。全教科横断の出題でNPC闘士を1段ずつ昇格していく。
-    //  ・敵ステは固定（このテーブルが唯一の真実＝実機で微調整する数値）。中位を厚くして「壁」で離脱させない。
-    //  ・tiers = この階の出題難易度帯（elementary/junior/mid/senior/supreme から）。全教科・両形式。
-    //  ・gold = 勝利報酬の基準（×ゴールド倍率）。負けても与えたダメージ割合×0.3 は貰える（負けても学習が進む）。
-    //  ・title = この階を突破で解禁する称号id（マイルストーンのみ）。恒久バフは無し＝中盤バランスを壊さない。
-    //  ※ 頂点(絶対王者 hp210000)はオメガ(base hp160000・最大スケールはそれ以上)未満＝オメガが最高峰のまま。
-    const ARENA_RANKS = [
-      { idx:0, name:'木の闘士 リグナ',   avatar:'🪵', tiers:['junior','mid'],     gold:8000,
-        base:{ hp:38000,  atk:950,  speed:1.8, ultSpeed:0.40, stanDef:2.0, evade:0.18 } },
-      { idx:1, name:'石の闘士 グラン',   avatar:'🪨', tiers:['junior','mid'],     gold:11000,
-        base:{ hp:50000,  atk:1050, speed:1.9, ultSpeed:0.40, stanDef:2.1, evade:0.20 } },
-      { idx:2, name:'青銅の闘士 ブロン', avatar:'🛡️', tiers:['mid'],              gold:15000, title:'a_bronze',
-        base:{ hp:65000,  atk:1150, speed:2.0, ultSpeed:0.42, stanDef:2.2, evade:0.22 } },
-      { idx:3, name:'鉄の闘士 フェロ',   avatar:'⚙️', tiers:['mid','senior'],     gold:20000,
-        base:{ hp:80000,  atk:1250, speed:2.0, ultSpeed:0.43, stanDef:2.3, evade:0.24 } },
-      { idx:4, name:'白銀の闘士 アルジェ', avatar:'⚔️', tiers:['mid','senior'],   gold:27000, title:'a_silver',
-        base:{ hp:95000,  atk:1350, speed:2.1, ultSpeed:0.45, stanDef:2.4, evade:0.26 } },
-      { idx:5, name:'黄金の闘士 オーリ', avatar:'🥇', tiers:['senior'],           gold:36000,
-        base:{ hp:110000, atk:1450, speed:2.2, ultSpeed:0.46, stanDef:2.5, evade:0.28 } },
-      { idx:6, name:'白金の闘士 プラチ', avatar:'💠', tiers:['senior'],           gold:48000, title:'a_platinum',
-        base:{ hp:130000, atk:1550, speed:2.3, ultSpeed:0.48, stanDef:2.6, evade:0.30 } },
-      { idx:7, name:'宝玉の闘士 ジェム', avatar:'💎', tiers:['senior','supreme'], gold:64000,
-        base:{ hp:150000, atk:1700, speed:2.4, ultSpeed:0.50, stanDef:2.7, evade:0.33 } },
-      { idx:8, name:'紫電の闘士 ライザ', avatar:'⚡', tiers:['supreme'],          gold:85000, title:'a_master',
-        base:{ hp:175000, atk:1850, speed:2.5, ultSpeed:0.52, stanDef:2.8, evade:0.36 } },
-      { idx:9, name:'絶対王者 アレス',   avatar:'👑', tiers:['supreme'],          gold:120000, title:'a_champion',
-        base:{ hp:210000, atk:2050, speed:2.6, ultSpeed:0.55, stanDef:3.0, evade:0.38 } }
+    // ラスボス撃破後の「やり込み(ハクスラ)」。全教科横断の出題でNPC闘士の塔を1階ずつ登る（ソシャゲの塔要素）。
+    //  ・全数値は floor(1..200) だけで決まる【決定的な式】（乱数・時刻に非依存）。実機で係数を微調整する前提。
+    //  ・壁の置き方（ユーザー要望: 200段で壁を感じにくく＋いくつかの節目に壁・特に問題難易度が変わる節目）:
+    //      通常階 … 約+1.6%/階（ほぼ気づかない滑らかな伸び）
+    //      25階ごと … 恒久ステップ ×1.06（中壁）
+    //      tier境界(31/76/131/181) … 恒久ステップ ×1.15（大壁＝出題難易度が一段上がる最重要の節目）
+    //    ※ステップは恒久（登るほど必ず強い＝単調増加。瞬間スパイクだと次の階が弱くなる不具合を避けた）。
+    //  ・報酬はハクスラなので大きい（F1≈11,000G→F200≈360,500G）＋初回突破ボーナス。ゴールドはガチャ専用シンクで
+    //    装備に直結しない＝インフレ安全（オメガ等のバランスを壊さない）。恒久バフは無し＝序盤・中盤も不変。
+    //  ・F200(hp≈298万/atk≈8810)はオメガ最大(hp≈213万/atk≈6360)を明確に超える“真の壁”。F1(hp34000/atk900)は必勝の入口。
+    const ARENA_FLOOR_COUNT = 200;
+    const ARENA_TIER_WALLS = [31, 76, 131, 181];   // 出題難易度が変わる大壁（恒久ステップ）
+
+    // 闘士アーキタイプ（10階ごとに素材がランクアップ＝昇格感）。画像は assets/arena/arch_<archIdx>.png（無ければ絵文字）。
+    const ARENA_ARCHETYPES = [
+      { name:'木の闘士',   avatar:'🪵' }, { name:'石の闘士',   avatar:'🪨' },
+      { name:'青銅の闘士', avatar:'🛡️' }, { name:'鉄の闘士',   avatar:'⚙️' },
+      { name:'鋼の闘士',   avatar:'🔩' }, { name:'白銀の闘士', avatar:'⚔️' },
+      { name:'黄金の闘士', avatar:'🥇' }, { name:'白金の闘士', avatar:'💠' },
+      { name:'翠玉の闘士', avatar:'💚' }, { name:'蒼玉の闘士', avatar:'🔷' },
+      { name:'紅玉の闘士', avatar:'♦️' }, { name:'金剛の闘士', avatar:'💎' },
+      { name:'黒鋼の闘士', avatar:'🗡️' }, { name:'紫電の闘士', avatar:'🟣' },
+      { name:'烈火の闘士', avatar:'🔥' }, { name:'蒼雷の闘士', avatar:'⚡' },
+      { name:'氷晶の闘士', avatar:'❄️' }, { name:'暴嵐の闘士', avatar:'🌪️' },
+      { name:'星辰の闘士', avatar:'🌟' }, { name:'覇王の闘士', avatar:'👑' }
     ];
+    // 節目の“門番/主”の特別名（大壁＋頂点＝強敵感を出す）。
+    const ARENA_GUARDIANS = {
+      31:{ name:'門番 ガルム',      avatar:'🐺' },
+      76:{ name:'門番 ベヒモス',    avatar:'🦏' },
+      131:{ name:'門番 ティアマト', avatar:'🐉' },
+      181:{ name:'門番 ラグナ',     avatar:'😈' },
+      200:{ name:'塔の主 アレス',   avatar:'👑' }
+    };
+    // 称号マイルストーン（floor→titleId）。詳細は TITLES_DB（unlock.type:'arena', floor:N）。
+    const ARENA_TITLE_FLOORS = { 30:'a_tower_30', 75:'a_tower_75', 100:'a_tower_100', 150:'a_tower_150', 180:'a_tower_180', 200:'a_tower_200' };
+
+    // floor → 難易度帯（出題difficulty）。tier境界が最重要の壁。band0..4。
+    function arenaTierOf(floor) {
+      if (floor <= 30)  return { band:0, diffs:['mid'] };
+      if (floor <= 75)  return { band:1, diffs:['senior'] };
+      if (floor <= 130) return { band:2, diffs:['supreme'] };
+      if (floor <= 180) return { band:3, diffs:['supreme','senior'] }; // たまに息継ぎ（難化はステ側に寄せる）
+      return               { band:4, diffs:['supreme'] };               // 終焉帯（全範囲）
+    }
+    // 恒久ステップ（壁）: tier境界×1.15、25階ごと×1.06。floor以下の壁が累積（単調増加）。
+    function _arenaStep(floor) {
+      let s = 1;
+      for (let i = 0; i < ARENA_TIER_WALLS.length; i++) if (floor >= ARENA_TIER_WALLS[i]) s *= 1.15;
+      for (let m = 25; m <= ARENA_FLOOR_COUNT; m += 25) if (floor >= m) s *= 1.06;
+      return s;
+    }
+    // 滑らかな基礎成長（緩い指数×二次）。F1=1.0 → F200≈16.6。
+    function _arenaGrowth(floor) {
+      const f = (floor - 1) / (ARENA_FLOOR_COUNT - 1);
+      return Math.pow(1.0142, floor - 1) * (1 + 0.9 * f * f);
+    }
+    function _arenaFactor(floor) { return _arenaGrowth(floor) * _arenaStep(floor); }
+    // 各ステータス（決定的・floorのみ）
+    function arenaHpOf(floor)     { return Math.round(34000 * _arenaFactor(floor) / 100) * 100; }
+    function arenaAtkOf(floor)    { return Math.round(900 * Math.pow(_arenaFactor(floor), 0.51) / 5) * 5; }
+    function arenaSpeedOf(floor)  { const f = (floor - 1) / (ARENA_FLOOR_COUNT - 1); return +(1.8 + 1.1 * Math.pow(f, 0.8)).toFixed(2); }
+    function arenaUltOf(floor)    { const f = (floor - 1) / (ARENA_FLOOR_COUNT - 1); return +(0.40 + 0.22 * Math.pow(f, 0.85)).toFixed(3); }
+    function arenaEvadeOf(floor)  { const f = (floor - 1) / (ARENA_FLOOR_COUNT - 1); return +Math.min(0.45, 0.16 + 0.32 * Math.pow(f, 0.7)).toFixed(3); }
+    function arenaStanDefOf(floor){ const f = (floor - 1) / (ARENA_FLOOR_COUNT - 1); return +(2.0 + 1.4 * f).toFixed(2); }
+    function arenaGoldOf(floor)   { return Math.round(11000 * Math.pow(_arenaFactor(floor), 0.78) / 500) * 500; }
+    // 節目(壁)種別: 'tier'(大壁), 'major'(50階ごと), 'minor'(25階ごと)。null=通常階。
+    function arenaWallKind(floor) {
+      if (ARENA_TIER_WALLS.indexOf(floor) >= 0) return 'tier';
+      if (floor % 50 === 0) return 'major';
+      if (floor % 25 === 0) return 'minor';
+      return null;
+    }
+    // 初回突破ボーナス（ゴールド）。昇格(初突破)時のみ＝再戦では付かない。
+    function arenaMilestoneBonus(floor) {
+      if (floor === ARENA_FLOOR_COUNT) return 1000000;
+      if (ARENA_TIER_WALLS.indexOf(floor) >= 0) return 100000;
+      if (floor % 50 === 0) return 80000;
+      if (floor % 25 === 0) return 30000;
+      return 0;
+    }
+    // 200階ぶんのデータを生成（描画・戦闘が読む唯一の配列）。idx=floor-1。
+    function buildArenaFloors() {
+      const out = [];
+      for (let floor = 1; floor <= ARENA_FLOOR_COUNT; floor++) {
+        const idx = floor - 1;
+        const archIdx = Math.min(ARENA_ARCHETYPES.length - 1, Math.floor((floor - 1) / 10));
+        const arche = ARENA_ARCHETYPES[archIdx];
+        const guard = ARENA_GUARDIANS[floor];
+        const wallKind = arenaWallKind(floor);
+        out.push({
+          idx, floor, archIdx,
+          name: guard ? guard.name : arche.name,
+          avatar: guard ? guard.avatar : arche.avatar,
+          tiers: arenaTierOf(floor).diffs,
+          base: {
+            hp: arenaHpOf(floor), atk: arenaAtkOf(floor), speed: arenaSpeedOf(floor),
+            ultSpeed: arenaUltOf(floor), stanDef: arenaStanDefOf(floor), evade: arenaEvadeOf(floor)
+          },
+          gold: arenaGoldOf(floor),
+          wallKind: wallKind,
+          isWall: wallKind !== null,
+          title: ARENA_TITLE_FLOORS[floor] || null
+        });
+      }
+      return out;
+    }
+    const ARENA_FLOORS = buildArenaFloors();
 
     // ==========================================
     //   §5c  TITLES_DB  称号（名前フレーム）
@@ -3108,12 +3188,13 @@ const GameData = (function() {
       { id:'t_earth_weather', name:'嵐の支配者',  frame:'frame-endgame', unlock:{type:'endgame', boss:'tr_earth_weather'}, desc:'裏ボス「嵐の支配者テンペスト」を撃破。' },
       { id:'t_earth_space', name:'天空の覇者',    frame:'frame-endgame', unlock:{type:'endgame', boss:'tr_earth_space'}, desc:'裏ボス「天空の覇者コスモス」を撃破。' },
       { id:'t_omega',      name:'理科の頂',       frame:'frame-omega',   unlock:{type:'endgame', boss:'tr_omega'},      desc:'最強の裏ボス「理科の化身オメガ」を撃破。' },
-      // 闘技場称号（昇格マイルストーン）。unlock.rank = 突破済み(到達)が必要な最低ランクidx。
-      { id:'a_bronze',     name:'青銅の闘士',     frame:'frame-bronze',  unlock:{type:'arena', rank:2},  desc:'闘技場で青銅ランクを突破。' },
-      { id:'a_silver',     name:'白銀の闘士',     frame:'frame-silver',  unlock:{type:'arena', rank:4},  desc:'闘技場で白銀ランクを突破。' },
-      { id:'a_platinum',   name:'白金の闘士',     frame:'frame-gold',    unlock:{type:'arena', rank:6},  desc:'闘技場で白金ランクを突破。' },
-      { id:'a_master',     name:'紫電の闘士',     frame:'frame-endgame', unlock:{type:'arena', rank:8},  desc:'闘技場で紫電ランクを突破。' },
-      { id:'a_champion',   name:'闘技場の覇者',   frame:'frame-arena',   unlock:{type:'arena', rank:9},  desc:'闘技場の絶対王者を撃破＝全ランク制覇。' }
+      // 闘技場の塔 称号（マイルストーン階）。unlock.floor = 突破(到達)が必要な階。判定は arenaRank >= floor-1。
+      { id:'a_tower_30',  name:'塔の挑戦者',   frame:'frame-bronze',  unlock:{type:'arena', floor:30},  desc:'闘技場の塔 30階を突破。' },
+      { id:'a_tower_75',  name:'塔の精鋭',     frame:'frame-silver',  unlock:{type:'arena', floor:75},  desc:'闘技場の塔 75階を突破。' },
+      { id:'a_tower_100', name:'百層の覇者',   frame:'frame-gold',    unlock:{type:'arena', floor:100}, desc:'闘技場の塔 100階を突破。' },
+      { id:'a_tower_150', name:'深層の探究者', frame:'frame-endgame', unlock:{type:'arena', floor:150}, desc:'闘技場の塔 150階を突破。' },
+      { id:'a_tower_180', name:'塔の覇王',     frame:'frame-arena',   unlock:{type:'arena', floor:180}, desc:'闘技場の塔 180階を突破。' },
+      { id:'a_tower_200', name:'理科塔の頂点', frame:'frame-omega',   unlock:{type:'arena', floor:200}, desc:'闘技場の塔 200階を制覇＝塔の頂点。' }
     ];
 
     // 称号が解禁済みか判定（player を渡す）。
@@ -3123,7 +3204,11 @@ const GameData = (function() {
       if (u.type === 'bossCount') return (player.defeatedBosses || []).length >= u.n;
       if (u.type === 'clear') return !!player.hasClearedOnce;
       if (u.type === 'endgame') return (player.defeatedEndgame || []).indexOf(u.boss) >= 0;
-      if (u.type === 'arena') return ((typeof player.arenaRank === 'number') ? player.arenaRank : -1) >= u.rank;
+      // 闘技場の塔: arenaRank(突破済みの最高floor idx) が必要floorのidx(floor-1)以上か。旧rank指定も後方互換で許容。
+      if (u.type === 'arena') {
+        const need = (typeof u.floor === 'number') ? (u.floor - 1) : (u.rank || 0);
+        return ((typeof player.arenaRank === 'number') ? player.arenaRank : -1) >= need;
+      }
       return false;
     }
 
@@ -3543,7 +3628,7 @@ const GameData = (function() {
       GENRE_GRADES, GENRE_EXAMPLES, getGenreGradeRange, getGenreGradeMax,
       GRADE_COLOR_STYLE, getGradeColorKey, getGradeBadgeClass,
       BOSSES_DB, ENDGAME_BOSSES_DB, getEndgameBossStats, PERMA_BUFF_CAP, getPermaBuffTotals,
-      ARENA_RANKS,
+      ARENA_FLOORS, ARENA_FLOOR_COUNT, ARENA_TIER_WALLS, arenaMilestoneBonus,
       TITLES_DB, isTitleUnlocked, AVATARS_DB,
       GACHA_DB, GACHA_MILESTONE_BOSSES, getGachaPrice, gachaDiscountPct, RARITY_DB, CYAN_GLOW_CLASS,
       BASE_EQUIP_TEMPLATES, UNIQUE_EQUIP_TEMPLATES, SKILL_DESC, BUILD_GUIDE, STAT_CAPS, STAT_NAMES_JP, STAT_META,
