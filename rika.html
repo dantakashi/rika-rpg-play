@@ -235,9 +235,9 @@
     .frame-endgame::before{content:'⚜';} .frame-endgame::after{content:'⚜';}
     .frame-arena { border:1px solid #f59e0b; background:linear-gradient(90deg,rgba(245,158,11,.32),rgba(220,38,38,.24)); color:#fde68a; box-shadow:0 0 14px rgba(245,158,11,.5); }
     .frame-arena::before{content:'⚔';} .frame-arena::after{content:'⚔';}
-    /* 📖 ストーリー: ふりがな(ruby)。既定ON、.ruby-off で隠す */
-    #story-body rt { font-size:.6em; color:#7dd3fc; font-weight:400; }
-    #story-body.ruby-off rt { display:none; }
+    /* 📖 ストーリー: ふりがな(ruby)。既定ON、.ruby-off(story-box)で隠す */
+    #screen-story rt { font-size:.6em; color:#7dd3fc; font-weight:400; }
+    #screen-story .ruby-off rt { display:none; }
     .frame-omega { border:1px solid transparent; color:#fff; font-weight:900;
       background:linear-gradient(90deg,rgba(0,0,0,.4),rgba(0,0,0,.4)) padding-box,
                  linear-gradient(270deg,#ff007f,#7f00ff,#00f0ff,#ffea00,#ff007f) border-box;
