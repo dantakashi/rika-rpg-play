@@ -11239,7 +11239,7 @@ const Game = (()=>{
     tx=Math.max(56, Math.min(W-46, tx));
     var dealt=0, hit=0;
     B.enemies.forEach(function(e){ if(e && Math.abs(e.x-tx)<=R){ var d=Math.round((e.hpMax||e.hp||0)*METEOR_DMG_PCT); damage(e,d); dealt+=d; hit++; } });
-    if(Math.abs((W-70)-tx)<=R){ B.castleE-=Math.round(B.castleEMax*0.01); castleHit('castleE'); } // 敵城近接なら城も少し
+    if(!B.stage.endless && B.stage.mode!=='survive' && Math.abs((W-70)-tx)<=R){ B.castleE-=Math.round(B.castleEMax*0.01); castleHit('castleE'); } // 敵城近接なら城も少し（塔/surviveは敵城無敵＝削らない）
     try{
       var fy=fieldFloorY();
       var r=document.createElement('div'); r.className='meteor-shot'; r.style.left=tx+'px'; r.style.top='-34px'; $('field').appendChild(r);
@@ -11265,8 +11265,8 @@ const Game = (()=>{
           { var __v=ALLY_VIS[a.key]; if(__v&&__v.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, target.x, (__v.projDelay||0)); } }
         }
       }else if(!target && a.x >= enemyCastleX-a.range){
-        // surviveは敵城が無い(無敵)＝攻撃せず右前線で待機。通常面は敵城を攻撃。
-        if(!survive && a.cd<=0){ B.castleE-=__atk; a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); { var __v2=ALLY_VIS[a.key]; if(__v2&&__v2.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, enemyCastleX, (__v2.projDelay||0)); } } }
+        // survive/塔(エンドレス)は敵城が無敵＝攻撃せず右前線で待機。通常面のみ敵城を攻撃。
+        if(!survive && !B.stage.endless && a.cd<=0){ B.castleE-=__atk; a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); { var __v2=ALLY_VIS[a.key]; if(__v2&&__v2.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, enemyCastleX, (__v2.projDelay||0)); } } }
       }else{
         a.x += a.speed*dt;
       }
@@ -11607,7 +11607,7 @@ const Game = (()=>{
       if(B.bossAlive) B.chargeBossSeen=true;
       if(B.chargeBossSeen && !B.bossAlive){ beginEnd(true); return; }
     }
-    if(B.castleE<=0){ beginEnd(true); }
+    if(B.castleE<=0 && !B.stage.endless && B.stage.mode!=='survive'){ beginEnd(true); } // 塔(エンドレス)/surviveは敵城が無敵＝勝利終了しない
     else if(B.castleA<=0){ beginEnd(false); }
   }
   // 城が壊れたら約2秒の爆発四散を見せてから結果画面へ（勝ち=敵城・負け=自城）。godholdは大ビーム/ボス消滅もこの間に見える
