@@ -2146,7 +2146,7 @@ const GameUI = (function() {
       const wallBadge = focus.wallKind === 'tier' ? '<span class="ml-1 text-rose-300 text-[9px] font-bold">⚑大壁(難易度UP)</span>'
                       : focus.wallKind === 'major' ? '<span class="ml-1 text-amber-300 text-[9px] font-bold">🚩節目</span>'
                       : focus.wallKind === 'minor' ? '<span class="ml-1 text-amber-400/80 text-[9px]">▪壁</span>' : '';
-      const fImg = `<img src="assets/arena/arch_${focus.archIdx}.png" class="w-14 h-14 object-contain shrink-0" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-4xl',textContent:'${focus.avatar}'}))">`;
+      const fImg = `<img src="assets/arena/floor_${focus.idx}.jpg" class="w-14 h-14 object-cover rounded-lg shrink-0" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-4xl',textContent:'${focus.avatar}'}))">`;
       html += `<div class="bg-slate-950/80 border-2 border-amber-500/70 rounded-2xl p-3 mb-2 shadow-lg shadow-amber-900/30">
         <div class="text-[9px] text-amber-300 font-bold mb-1 animate-pulse">${isMaxed ? '🏆 塔を制覇！周回でコインを稼げる' : '▶ いま挑戦できる階'}</div>
         <div class="flex items-center gap-3">

@@ -3067,7 +3067,7 @@ const GameData = (function() {
     const ARENA_FLOOR_COUNT = 200;
     const ARENA_TIER_WALLS = [31, 76, 131, 181];   // 出題難易度が変わる大壁（恒久ステップ）
 
-    // 闘士アーキタイプ（10階ごとに素材がランクアップ＝昇格感）。画像は assets/arena/arch_<archIdx>.png（無ければ絵文字）。
+    // 闘士アーキタイプ（10階ごとに素材がランクアップ＝名前/絵文字フォールバック用）。敵画像は階ごとの個別 assets/arena/floor_<idx>.jpg（200体・無ければ絵文字）。
     const ARENA_ARCHETYPES = [
       { name:'木の闘士',   avatar:'🪵' }, { name:'石の闘士',   avatar:'🪨' },
       { name:'青銅の闘士', avatar:'🛡️' }, { name:'鉄の闘士',   avatar:'⚙️' },

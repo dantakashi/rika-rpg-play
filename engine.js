@@ -1269,7 +1269,7 @@ let player = {
       battle.bossStanDef = st.stanDef;
 
       const _avEl = document.getElementById('enemy-avatar');
-      setVisualImg(_avEl, 'assets/arena/arch_' + rank.archIdx + '.png', rank.avatar);
+      setVisualImg(_avEl, 'assets/arena/floor_' + rankIdx + '.jpg', rank.avatar); // 階ごとの個別画像(200体)・無ければ絵文字
       _avEl.style.filter = 'drop-shadow(0 0 22px #fbbf24) drop-shadow(0 0 40px #ef4444)';
       setBattleBackground('supreme');
       document.getElementById('enemy-name').textContent = rank.name + '  [塔 ' + (rankIdx + 1) + '/' + ranks.length + '階]';
