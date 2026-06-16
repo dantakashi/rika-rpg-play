@@ -8921,6 +8921,19 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
   // バフ(推奨級加速)が乗るのは英検基準の出題のみ。文法の分野別=練習でバフ無し。
   function isBuffEligible(){ return !(selGenre==='grammar' && grammarMode==='field'); }
 
+  // ⤴背伸び(2026-06-16): やさしい級を選んでいても約25%で「1つ上の級(同ジャンル)」を出題＝推奨級へ自然に誘導。
+  function stretchLevelKey(){
+    if(selGenre==='grammar' && grammarMode==='field') return null; // 文法の分野別はレベル概念が薄いので対象外
+    var idxs=[]; selLevels.forEach(function(l){ var i=LV_ORDER.indexOf(l); if(i>=0) idxs.push(i); });
+    if(!idxs.length) return null;
+    var up=LV_ORDER[Math.max.apply(null,idxs)+1];
+    return up||null; // 最上位級(準1級)を含むなら背伸びなし
+  }
+  function stretchPool(){
+    var up=stretchLevelKey(); if(!up) return [];
+    return DB.filter(function(q){ return q.genre===selGenre && q.level===up && selTiers.has(q.tier); });
+  }
+
   const rnd = a=>a[Math.floor(Math.random()*a.length)];
 
   // 問題の安定キー（誤答SRS・定着用）。単語/熟語=正答英語、文法=問題文。
@@ -8996,6 +9009,8 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
       const __i=reviewQ.findIndex(r=>r.genre===selGenre);
       if(__i>=0){ return Object.assign({}, reviewQ.splice(__i,1)[0], {review:true, locked:false}); }
     }
+    // ⤴背伸び: 約25%で「1つ上の級(同ジャンル)」を差し込む(推奨級へ誘導・2026-06-16)。誤答罰なし＋復習行きなので安全な“ちょい上”の出会い。
+    if(Math.random()<0.25){ var __sp=stretchPool(); if(__sp.length){ var __b=buildOne(rnd(__sp), choiceCount); if(__b){ __b.stretch=true; return __b; } } }
     // ステージプールがあれば その n 問を巡回（尽きたら再シャッフルで反復＝定着）
     if(stagePool && stagePool.length){
       if(stageIdx>=stagePool.length){ shuf(stagePool); stageIdx=0; }
@@ -9349,6 +9364,7 @@ const Game = (()=>{
   let gems = 0;            // グラマージェム💎（ガチャ専用通貨。問題を解くと貯まる）
   let gemsGranted = false; // 初回のみ300💎を配る移行フラグ（既存セーブ救済）
   let placementReset1 = false; // 2026-06-11移行: 推奨級ロック導入に伴い実力試験を全員リセット（再測定・💎重複配布は許容＝ユーザー決定）
+  let placementResetUsed = false; // 2026-06-16: 推奨級の「1回だけやり直し」ボタンを使ったか。調べて高い級にロックした子の救済(💎再配布なし=bestScore保持)
   let homeChars = [];      // ホームに表示するキャラのキー配列（最大10・強化画面で選択）
   let homeCharIdx = 0;     // ホーム表示キャラの現在位置（矢印/スワイプで切替・非保存）
   let cleared = {};        // {area:true}
@@ -9410,7 +9426,7 @@ const Game = (()=>{
       ownedSkins=(s.ownedSkins&&typeof s.ownedSkins==='object')?s.ownedSkins:{default:1}; if(!ownedSkins.default) ownedSkins.default=1;
       equippedSkin=s.equippedSkin||'default'; if(!ownedSkins[equippedSkin]) equippedSkin='default';
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
-      placementReset1=!!s.placementReset1;
+      placementReset1=!!s.placementReset1; placementResetUsed=!!s.placementResetUsed;
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     if(!gemsGranted){ gems += 300; gemsGranted = true; } // 初回のみ1回ぶん(300💎)を配る（新規・既存セーブ救済）
@@ -9421,7 +9437,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -10271,8 +10287,10 @@ const Game = (()=>{
         +(Object.keys(ironCleared).length?'<div style="font-size:12px;font-weight:800;color:#5a6670">⚔ 鉄の試練 '+Object.keys(ironCleared).length+'章制覇</div>':'')
         +'</div>'
         +'<button class="btn" id="rankAssessBtn" style="flex:0 0 auto;width:auto;padding:9px 12px;font-size:13px;white-space:nowrap">📊 実力測定</button>'
-        +'</div>';
+        +'</div>'
+        +((!placementResetUsed && placement.doneAt)?'<button class="btn ghost" id="rankResetBtn" style="width:100%;margin-top:8px;font-size:12px;padding:7px;color:#8a6d3b">🔄 推奨級をやり直す（1回だけ・調べずに）</button>':'');
       var ab=$('rankAssessBtn'); if(ab) ab.onclick=function(){ startAssessment(); };
+      var rrb=$('rankResetBtn'); if(rrb) rrb.onclick=function(){ resetPlacement(); };
     }
     renderHomeChar();
     renderDailyWord();
@@ -10889,7 +10907,7 @@ const Game = (()=>{
     if(!curQ){ $('qtext').textContent='問題データが読めませんでした'; return; }
     if(B) B.readMul = qReadMul(curQ); // この問題の「読む時間」係数＝鮮度の猶予/減衰を難問ほど緩める(2026-06-16)
     lastWasReview = !!(curQ && curQ.review);
-    $('qtext').innerHTML = (curQ.review?'<span style="color:var(--gold)">🔁 </span>':'') + curQ.qtext;
+    $('qtext').innerHTML = (curQ.review?'<span style="color:var(--gold)">🔁 </span>':'') + (curQ.stretch?'<span style="color:#3aa6a0" title="ちょっと上の級">⤴ </span>':'') + curQ.qtext;
     const box=$('choices'); box.className = curQ.choiceCount===2?'c2':''; box.innerHTML='';
     curQ.choices.forEach((c,i)=>{
       const b=document.createElement('button'); b.className='choice'; b.textContent=c;
@@ -11491,6 +11509,29 @@ const Game = (()=>{
     var sk=$('assessSkipBtn'); if(sk) sk.style.display=q?'':'none';
   }
   // 入口：ゲーム説明＋「測定する / あとで」を選ばせる
+  // 推奨級の「1回だけやり直し」(2026-06-16): 調べて高い級にロックした子の救済。注意書きを必ず読ませてからリセット。
+  //   bestScoreは保持＝再測定しても💎は再配布されない(最高記録を超えない限りgain=0)。1回使うと以後ボタン非表示。
+  function resetPlacement(){
+    if(placementResetUsed) return;
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:24px';
+    ov.innerHTML='<div style="background:#fff;border:3px solid #e0a93b;border-radius:18px;max-width:360px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.4);color:#333">'
+      +'<div style="font-size:20px;font-weight:800;margin-bottom:10px">🔄 実力測定をやり直す</div>'
+      +'<div style="font-size:13.5px;line-height:1.8;text-align:left">推奨級をリセットして、もう一度ためせます。つぎの3つを読んでね：<br>'
+      +'① <b>調べずに、自分の力で</b>答えてね（調べて高い級にしても、あとで自分が苦しくなるだけだよ）。<br>'
+      +'② 使えるのは<b>1回だけ</b>。<br>'
+      +'③ リセットしても<b>💎ダイヤはもらえません</b>（前にもらった分の再配布はなし）。</div>'
+      +'<button class="btn" id="rsYes" style="width:100%;margin-top:14px;background:#c0392b;border-color:#c0392b">リセットして測定する（1回だけ）</button>'
+      +'<button class="btn ghost" id="rsNo" style="width:100%;margin-top:8px">やめる</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#rsNo').onclick=function(){ ov.remove(); };
+    ov.querySelector('#rsYes').onclick=function(){
+      placement.word=null; placement.grammar=null; placement.doneAt=''; // 推奨級ロック解除(bestScoreは保持＝💎再配布なし)
+      placementResetUsed=true; save();
+      ov.remove(); startAssessment();
+    };
+  }
   function startAssessment(){
     AS=null; show('assess'); assessView('intro');
     var html='<div style="font-size:25px;font-weight:800;margin-bottom:8px">📊 実力測定</div>';
@@ -11807,7 +11848,7 @@ const Game = (()=>{
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
-      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, partUnit:pu }; }
+      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), partUnit:pu }; }
     ,
     // 自動プレイ：area=ステージ, chapter=強化想定章, opts{acc正答率, scale倍速}。logは window.__ptlog、終了で window.__ptdone
     run(area, chapter, opts){
