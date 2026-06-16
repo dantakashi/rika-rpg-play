@@ -9365,6 +9365,7 @@ const Game = (()=>{
   let gemsGranted = false; // 初回のみ300💎を配る移行フラグ（既存セーブ救済）
   let placementReset1 = false; // 2026-06-11移行: 推奨級ロック導入に伴い実力試験を全員リセット（再測定・💎重複配布は許容＝ユーザー決定）
   let placementResetUsed = false; // 2026-06-16: 推奨級の「1回だけやり直し」ボタンを使ったか。調べて高い級にロックした子の救済(💎再配布なし=bestScore保持)
+  let assessRewardClaimed = false; // 2026-06-16: 実力測定の到達ボーナス(初回一律3000💎)を受け取ったか。級を盛っても得しない＝farm対策。既測定者は受取済み扱い
   let homeChars = [];      // ホームに表示するキャラのキー配列（最大10・強化画面で選択）
   let homeCharIdx = 0;     // ホーム表示キャラの現在位置（矢印/スワイプで切替・非保存）
   let cleared = {};        // {area:true}
@@ -9427,6 +9428,8 @@ const Game = (()=>{
       equippedSkin=s.equippedSkin||'default'; if(!ownedSkins[equippedSkin]) equippedSkin='default';
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
       placementReset1=!!s.placementReset1; placementResetUsed=!!s.placementResetUsed;
+      // 到達ボーナス(初回一律3000💎): 既に測定したことがある子(保存に推奨級/bestScore)は受取済み扱い＝再配布しない(オーナー指示2026-06-16)
+      assessRewardClaimed=!!s.assessRewardClaimed || !!(s.placement && (s.placement.doneAt || (s.placement.bestScore||0)>0));
       if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
     }}catch(e){}
     if(!gemsGranted){ gems += 300; gemsGranted = true; } // 初回のみ1回ぶん(300💎)を配る（新規・既存セーブ救済）
@@ -9437,7 +9440,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -11630,8 +11633,11 @@ const Game = (()=>{
     var d=new Date(); placement.doneAt=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
     var total=rankNum('word')+rankNum('grammar');
     var prev=placement.bestScore||0;
-    var gain=Math.max(0,total-prev), reward=gain*1500, up=gain>0;
-    if(up) placement.bestScore=total;
+    var up=total>prev; if(up) placement.bestScore=total; // bestScoreは称号/ランク表示用に更新
+    // 到達ボーナスは「級に応じた一括(旧 gain×1500)」をやめ、初回測定の一律3000💎に変更(2026-06-16・ファーム対策)。
+    // 級を盛っても得しない＝「到達ボーナスだけ取って低い級で遊ぶ」不合理を解消。実利は推奨級でプレイして得るrecoBonus(×2)へ。
+    var reward = assessRewardClaimed ? 0 : 3000;
+    if(!assessRewardClaimed) assessRewardClaimed=true;
     gems+=reward; updateGemUI(); save();
     assessView('result');
     var wlab=placement.word?QuizEngine.LV_LABEL[placement.word]:'未測定';
@@ -11641,8 +11647,8 @@ const Game = (()=>{
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">単語</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+wlab+'</div></div>';
     html+='<div style="border:2px solid var(--line);border-radius:14px;padding:10px 18px;background:#fff;text-align:center"><div class="muted">文法</div><div style="font-size:22px;font-weight:800;color:var(--ally)">'+glab+'</div></div>';
     html+='</div>';
-    if(reward>0) html+='<div style="font-weight:800;color:#a463f2;font-size:22px;margin:8px 0">🏅 '+gain+'ランクUP！ 💎 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+Math.floor(reward/GACHA_COST)+'回ぶん！）</div></div>';
-    else html+='<div class="muted" style="margin:8px 0">今回はランクアップなし（次はもっと上をめざそう！）</div>';
+    if(reward>0) html+='<div style="font-weight:800;color:#a463f2;font-size:22px;margin:8px 0">🎉 はじめての測定 完了！ 💎 +'+reward+'<div style="font-size:13px;font-weight:600;color:#888">（ガチャ'+Math.floor(reward/GACHA_COST)+'回ぶん！）</div></div>';
+    else html+='<div class="muted" style="margin:8px 0">推奨級を更新しました。'+(up?'ランクUP！🎉 ':'')+'（💎ボーナスは初回測定のときだけ）</div>';
     html+='<div class="muted" style="max-width:430px;margin:4px auto 12px;line-height:1.5">この級を「出題設定」で選ぶと、推奨級チャレンジで⚡エネルギー加速＋30%＆💎グラマージェム2倍。より高い級に挑むほどコンボ倍率も上がります。</div>';
     html+='<button class="btn" id="assessToReco" style="max-width:300px">出題設定をひらく ▶</button>';
     html+='<button class="btn ghost" id="assessHome" style="max-width:300px;margin-top:8px">ホームへ</button>';
