@@ -608,11 +608,12 @@
             <div class="scard" id="wordCard"></div>
           </div>
           <div id="homeMenuBtns">
+            <button class="menubtn" id="reviewBtn" style="display:none"></button>
             <button class="menubtn" id="dailyChalBtn" style="display:none"></button>
             <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
             <button class="menubtn" data-go="practice">✏️ れんしゅう<span class="sub">問題を解いて💎をためる（戦闘なし）</span></button>
             <button class="menubtn" data-go="grow">🎰 そだてる<span class="sub">ガチャ・編成・城強化</span></button>
-            <button class="menubtn" data-go="mistakes">⭐ お気に入り / まちがえた問題<span class="sub" id="mistakesSub">お気に入りはいつでも・誤答は2回正解で消える</span></button>
+            <button class="menubtn" data-go="mistakes">⭐ お気に入り / まちがえた問題<span class="sub" id="mistakesSub">お気に入りはいつでも見られます</span></button>
             <button class="menubtn" data-go="pvp">🆚 たいせん<span class="sub">編成・強化データで友だちと自動対戦</span></button>
           </div>
         </div>
@@ -9402,7 +9403,7 @@ const Game = (()=>{
   let curStage = null;
   let ownedSkins = {default:1}; // 🏯所有城スキン {key:1}（defaultは最初から所有・要望#15）
   let equippedSkin = 'default'; // 装備中の城スキン（1つだけバフ有効＝ユーザー確定）
-  let mistakes = {};       // 永続誤答SRS {srcKey:{key,genre,level,need,ts}}。need回正解でマーク消去＆リスト除去（要望2026-06-08）
+  let mistakes = {};       // 永続誤答SRS（Leitner式）{srcKey:{key,genre,level,box,due,ts}}。box=定着段階・due=次回復習時刻(ms)。詳細は recordMistake 付近
   let mistakesListOpen = false; // 📚まちがえた問題の一覧：既定は折りたたみ（多すぎて画面が埋まる対策2026-06-16）。開くとスクロール
   let favorites = {};      // ⭐お気に入り {srcKey:1}。誤答SRSと独立(消えない)。練習/図鑑で★登録(要望#14)
   let lastWasReview=false, lastMistakeKey=null; // 復習/誤答を2連続で出さないための直近フラグ（非保存）
@@ -9423,6 +9424,8 @@ const Game = (()=>{
       towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||''; dailyChalDone=s.dailyChalDone||''; treasures=(s.treasures&&typeof s.treasures==='object')?s.treasures:{};
       clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
       mistakes=(s.mistakes&&typeof s.mistakes==='object')?s.mistakes:{};
+      // 旧need方式→Leitner(box/due)移行: box/dueが無い項目は box0・due0(=今すぐ復習対象)に。need は無視。
+      for(var __mk in mistakes){ var __m=mistakes[__mk]; if(typeof __m.box!=='number') __m.box=0; if(typeof __m.due!=='number') __m.due=0; }
       favorites=(s.favorites&&typeof s.favorites==='object')?s.favorites:{};
       ownedSkins=(s.ownedSkins&&typeof s.ownedSkins==='object')?s.ownedSkins:{default:1}; if(!ownedSkins.default) ownedSkins.default=1;
       equippedSkin=s.equippedSkin||'default'; if(!ownedSkins[equippedSkin]) equippedSkin='default';
@@ -9444,12 +9447,36 @@ const Game = (()=>{
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
-  // ===== 永続誤答SRS（要望2026-06-08）：間違えたら need=2、正解ごとに need--、0でリスト除去 =====
-  function recordMistake(q){ if(!q||!q.srcKey) return; var m=mistakes[q.srcKey]||{key:q.srcKey}; m.need=2; m.genre=q.genre; m.level=q.level; m.ts=Date.now(); mistakes[q.srcKey]=m; }
-  function creditMistake(q){ if(!q||!q.srcKey) return; var m=mistakes[q.srcKey]; if(!m) return; m.need=(m.need||1)-1; if(m.need<=0) delete mistakes[q.srcKey]; }
-  function dueMistakeKeys(genre){ var a=[]; for(var k in mistakes){ if(!genre||mistakes[k].genre===genre) a.push(k); } return a; }
+  // ===== 永続誤答SRS：Leitner式 間隔反復（2026-06-16刷新・単語学習400時間の本丸） =====
+  // 「忘れかけた頃にもう一度」。間違えると box=0(今日復習)、復習で正解すると box++ して
+  // [今日,1,3,7,14,30,90]日後に再会。全段(box>SRS_MAX_BOX)を正解で抜けたら長期定着とみなし卒業(削除)。
+  // 旧 need方式(2回正解で消去)は廃止＝即卒業で長期保持を検証できなかった。旧セーブは load() で box0/due0(今すぐ復習)へ移行。
+  // box/due はセーブ保存。due<=今 のものだけが「復習対象(due)」＝間隔を尊重して再出題する。
+  const DAY_MS = 86400000;
+  const SRS_INTERVALS_D = [0, 1, 3, 7, 14, 30, 90]; // box→次回までの日数（box0=今日復習）
+  const SRS_MAX_BOX = SRS_INTERVALS_D.length - 1;    // 6（90日後の正解で卒業）
+  const SRS_INJECT_P = 0.35;                         // ステージ/練習中に due な誤答を差し込む確率
+  const SRS_SOFT_CAP = 1000;                         // mistakes の上限（超過時は due が遠い順に間引く）
+  function recordMistake(q){ if(!q||!q.srcKey) return; var now=guardedNow(); var m=mistakes[q.srcKey]||{key:q.srcKey, box:0};
+    m.genre=q.genre; m.level=q.level; m.box=Math.max(0,(m.box||0)-1); m.due=now; m.ts=now; mistakes[q.srcKey]=m; srsPrune(); }
+  function creditMistake(q){ if(!q||!q.srcKey) return; var m=mistakes[q.srcKey]; if(!m) return; var now=guardedNow();
+    // 間隔を尊重：復習(due)でない問題にたまたま正解しても box を進めない＝早すぎる卒業を防ぐ
+    if(!(q&&q.review) && (m.due||0)>now) return;
+    m.box=(m.box||0)+1; m.ts=now;
+    if(m.box>SRS_MAX_BOX){ delete mistakes[q.srcKey]; return; } // 全段クリア＝卒業
+    m.due=now + SRS_INTERVALS_D[m.box]*DAY_MS; }
+  function dueMistakeKeys(genre){ var now=guardedNow(); var a=[]; for(var k in mistakes){ var m=mistakes[k]; if(genre&&m.genre!==genre) continue; if((m.due||0)<=now) a.push(k); } return a; }
   function pickDueMistake(genre){ var a=dueMistakeKeys(genre).filter(function(k){return k!==lastMistakeKey;}); if(!a.length) a=dueMistakeKeys(genre); if(!a.length) return null; return a[Math.floor(Math.random()*a.length)]; }
   function mistakeCount(){ var n=0; for(var k in mistakes) n++; return n; }
+  function dueCount(genre){ return dueMistakeKeys(genre).length; } // 「今日の復習○問」用
+  // セーブ肥大対策：上限超過時は due が最も遠い(=緊急でない)項目から間引く
+  function srsPrune(){ var ks=Object.keys(mistakes); if(ks.length<=SRS_SOFT_CAP) return; ks.sort(function(a,b){ return (mistakes[b].due||0)-(mistakes[a].due||0); }); var drop=ks.length-SRS_SOFT_CAP; for(var i=0;i<drop;i++) delete mistakes[ks[i]]; }
+  // 定着メーター：box を 0..SRS_MAX_BOX+1 段の進み具合として返す（図書館の可視化用）
+  function srsBoxOf(k){ var m=mistakes[k]; return m?(m.box||0):0; }
+  // 学習の連続日数（manabi_hub_v1.days を読む＝全アプリ共通の「学習した日」。習慣化フック用）
+  function learnStreak(){ try{ var h=JSON.parse(localStorage.getItem('manabi_hub_v1'))||{}; var days=h.days||{}; var n=0, base=guardedNow();
+    for(var i=0;i<400;i++){ var d=new Date(base-i*DAY_MS); var key=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); if(days[key]) n++; else if(i>0) break; }
+    return n; }catch(e){ return 0; } }
 
   // ===== 🏯城スキン（要望#15）。装備中の1つだけバフ有効 =====
   const SKIN_GACHA_COST = 300; // 城スキンガチャ1回（💎共用）
@@ -9827,12 +9854,21 @@ const Game = (()=>{
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';}); }
   function renderMistakes(){
     var body=$('mistakesBody'); if(!body) return; body.innerHTML='';
-    // 共通の行ビルダー。opts.need で「あと○回」、opts.favSection でお気に入り欄からの★解除→即再描画。
+    // 🔁 今日の復習 CTA（due があるときだけ）＝「閲覧」と「再出題」の分断を解消（ワンタップでドリル起動）
+    { var __dueN=dueCount(null);
+      if(__dueN){ var rcta=document.createElement('button'); rcta.className='btn'; rcta.style.cssText='width:100%;padding:13px;font-size:16px;margin-bottom:12px';
+        rcta.innerHTML='🔁 今日の復習をはじめる（'+__dueN+'問）';
+        rcta.onclick=function(){ startReviewDrill(); }; body.appendChild(rcta); }
+    }
+    // 共通の行ビルダー。opts.meter で定着メーター、opts.favSection でお気に入り欄からの★解除→即再描画。
     function mkRow(k, opts){
       opts=opts||{}; var q=QuizEngine.byKey(k); if(!q) return null;
       var prompt, ans; if(q.genre==='grammar'){ prompt=q.question.replace('( )','(　)'); ans=q.choices[q.answer]; } else { prompt=q.name; ans=q.answer; }
       var row=document.createElement('div'); row.style.cssText='border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
-      var needBox = opts.need ? '<div style="flex:0 0 auto;text-align:center;min-width:42px"><div class="muted" style="font-size:11px">あと</div><div style="font-weight:800;color:#c77b1a">'+opts.need+'回</div></div>' : '';
+      // 定着メーター：box(0..SRS_MAX_BOX+1)を●で表示＋ due なら「今日復習」。何回か正解で間隔があき卒業。
+      var __mb=mistakes[k]; var __box=__mb?(__mb.box||0):0; var __isDue=__mb?((__mb.due||0)<=guardedNow()):false;
+      var needBox=''; if(opts.meter){ var __dots=''; for(var __di=0;__di<=SRS_MAX_BOX;__di++){ __dots+=(__di<__box?'●':'○'); }
+        needBox='<div style="flex:0 0 auto;text-align:center;min-width:56px"><div style="font-size:11px;letter-spacing:-1px;color:var(--ally)">'+__dots+'</div><div class="muted" style="font-size:10px;margin-top:1px">'+(__isDue?'<b style="color:#c77b1a">今日復習</b>':'定着中')+'</div></div>'; }
       row.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">'
         +'<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:14px">'+esc(prompt)+'</div>'
         +'<div style="font-size:13px;color:var(--ally);font-weight:700">→ '+esc(ans)+'</div>'
@@ -9854,28 +9890,28 @@ const Game = (()=>{
     var keys=Object.keys(mistakes).filter(function(k){ return QuizEngine.byKey(k); });
     if(!keys.length){
       var mHead0=document.createElement('div'); mHead0.style.cssText='font-weight:800;font-size:15px;margin:16px 0 6px'; mHead0.textContent='📚 まちがえた問題（0問）'; body.appendChild(mHead0);
-      var me=document.createElement('div'); me.className='muted'; me.style.cssText='text-align:center;padding:12px;line-height:1.7'; me.innerHTML='🎉 まちがえた問題はありません。<br>問題をまちがえると ここに たまり、<b>2回正解</b>すると消えます。'; body.appendChild(me); return;
+      var me=document.createElement('div'); me.className='muted'; me.style.cssText='text-align:center;padding:12px;line-height:1.7'; me.innerHTML='🎉 まちがえた問題はありません。<br>問題をまちがえると ここに たまり、<b>わすれた頃にもう一度</b>出ます。'; body.appendChild(me); return;
     }
     var mHead=document.createElement('button'); mHead.className='btn ghost'; mHead.style.cssText='width:100%;margin:16px 0 6px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px;text-align:left';
     mHead.innerHTML='<span>📚 まちがえた問題（'+keys.length+'問）</span><span style="font-size:13px;color:var(--ally)">'+(mistakesListOpen?'▲ とじる':'▼ ひらく')+'</span>';
     mHead.onclick=function(){ mistakesListOpen=!mistakesListOpen; renderMistakes(); };
     body.appendChild(mHead);
     if(!mistakesListOpen){
-      var hint=document.createElement('div'); hint.className='muted'; hint.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; hint.innerHTML='タップで開きます。ステージや れんしゅうで <b>時々もう一度</b>出て、<b>2回正解</b>で消えます。';
+      var hint=document.createElement('div'); hint.className='muted'; hint.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; hint.innerHTML='タップで開きます。<b>わすれた頃にもう一度</b>出ます（間隔をあけて復習＝定着）。';
       body.appendChild(hint); return;
     }
     var listBox=document.createElement('div'); listBox.style.cssText='max-height:48vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;padding:8px 8px 2px;background:rgba(0,0,0,.03)';
-    var sub=document.createElement('div'); sub.className='muted'; sub.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; sub.innerHTML='ステージや れんしゅうで <b>時々もう一度</b>出ます。<b>2回正解</b>で消えます（右の「あと○回」）。'; listBox.appendChild(sub);
+    var sub=document.createElement('div'); sub.className='muted'; sub.style.cssText='font-size:12px;margin-bottom:8px;line-height:1.6'; sub.innerHTML='<b>わすれた頃にもう一度</b>出ます。何回か正解すると間隔があき、●が進んで<b>卒業</b>します（右の定着メーター）。'; listBox.appendChild(sub);
     var GROUPS=[{g:'word',label:'📕 単語'},{g:'idiom',label:'📗 熟語'},{g:'grammar',label:'📘 文法'}];
     var known={word:1,idiom:1,grammar:1};
     GROUPS.forEach(function(grp){
       var gkeys=keys.filter(function(k){ var q=QuizEngine.byKey(k); return q && q.genre===grp.g; });
       if(!gkeys.length) return;
       var gh=document.createElement('div'); gh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px;color:var(--ink)'; gh.textContent=grp.label+'（'+gkeys.length+'問）'; listBox.appendChild(gh);
-      gkeys.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) listBox.appendChild(r); });
+      gkeys.forEach(function(k){ var r=mkRow(k,{meter:true}); if(r) listBox.appendChild(r); });
     });
     var others=keys.filter(function(k){ var q=QuizEngine.byKey(k); return q && !known[q.genre]; });
-    if(others.length){ var oh=document.createElement('div'); oh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px'; oh.textContent='📦 その他（'+others.length+'問）'; listBox.appendChild(oh); others.forEach(function(k){ var r=mkRow(k,{need:(mistakes[k].need||1)}); if(r) listBox.appendChild(r); }); }
+    if(others.length){ var oh=document.createElement('div'); oh.style.cssText='font-weight:800;font-size:13px;margin:10px 0 6px'; oh.textContent='📦 その他（'+others.length+'問）'; listBox.appendChild(oh); others.forEach(function(k){ var r=mkRow(k,{meter:true}); if(r) listBox.appendChild(r); }); }
     body.appendChild(listBox);
   }
 
@@ -9884,9 +9920,16 @@ const Game = (()=>{
   let pracAnsweredAt=0;    // 解答時刻：💎連打稼ぎ防止に「つぎへ」を2秒クールダウン
   const PRAC_NEXT_COOLDOWN=2000;
   let pracStarted=false;   // ②練習は「範囲設定→スタート」してから出題(要望#2)
+  let pracReview=false;    // 🔁今日の復習ドリル：due な誤答だけを全ジャンル横断で出す（範囲設定をスキップ）
+  // 🔁「今日の復習」をはじめる：due な誤答だけを出題するドリルへ。ホーム/図書館のボタンから呼ぶ。
+  function startReviewDrill(){ pracReview=true; pracStarted=true; pracQ=null; pracAnswered=false; lastWasReview=false; lastMistakeKey=null; homeView='practice'; renderHome(); show('home'); }
   function pracDraw(){
     var cc=choiceMode; pracQ=null; pracAnswered=false; pracPick=-1; QuizEngine.clearStagePool();
-    if(!lastWasReview){ var dk=pickDueMistake(QuizEngine.genre()); if(dk && Math.random()<0.30){ var mq=QuizEngine.buildFrom(dk,cc); if(mq){ mq.review=true; pracQ=mq; lastMistakeKey=dk; } } }
+    if(pracReview){ // due な誤答だけを全ジャンルから（尽きたら pracQ=null → renderPractice で「復習おわり」表示）
+      var rk=pickDueMistake(null); if(rk){ var rq=QuizEngine.buildFrom(rk,cc); if(rq){ rq.review=true; pracQ=rq; lastMistakeKey=rk; } }
+      lastWasReview=true; return;
+    }
+    if(!lastWasReview){ var dk=pickDueMistake(QuizEngine.genre()); if(dk && Math.random()<SRS_INJECT_P){ var mq=QuizEngine.buildFrom(dk,cc); if(mq){ mq.review=true; pracQ=mq; lastMistakeKey=dk; } } }
     if(!pracQ) pracQ=QuizEngine.next(cc);
     lastWasReview=!!(pracQ&&pracQ.review);
   }
@@ -9928,9 +9971,22 @@ const Game = (()=>{
     }
     if(!pracQ) pracDraw();
     body.innerHTML='';
-    if(!pracQ){ body.innerHTML='<div class="muted" style="padding:16px;text-align:center">出題できる問題がありません。<br>「あそぶ→出題設定」で範囲を確認してください。</div>'; return; }
+    if(!pracQ){
+      if(pracReview){ // 🔁 due な復習が尽きた＝今日ぶん完了
+        body.innerHTML='<div style="text-align:center;padding:18px 8px;line-height:1.7">'
+          +'<div style="font-size:42px">🎉</div>'
+          +'<div style="font-size:18px;font-weight:800;margin:6px 0">今日の復習、おわり！</div>'
+          +'<div class="muted" style="font-size:13px">よくがんばりました。また わすれた頃に出てきます。</div></div>';
+        var hb=document.createElement('button'); hb.className='btn'; hb.style.cssText='width:100%;margin-top:14px;padding:13px;font-size:16px'; hb.textContent='🏠 ホームへ';
+        hb.onclick=function(){ pracReview=false; pracStarted=false; homeView='menu'; renderHome(); }; body.appendChild(hb);
+        return;
+      }
+      body.innerHTML='<div class="muted" style="padding:16px;text-align:center">出題できる問題がありません。<br>「あそぶ→出題設定」で範囲を確認してください。</div>'; return;
+    }
     var head=document.createElement('div'); head.className='muted'; head.style.cssText='font-size:12px;margin-bottom:8px';
-    head.innerHTML='✏️ れんしゅう：正解で💎がたまります（戦闘なし）。'+(pracQ.review?'<span style="color:var(--gold);font-weight:800"> 🔁 復習</span>':'');
+    head.innerHTML=(pracReview
+      ? '🔁 <b>今日の復習</b>：まちがえた問題だけ。正解で💎＆だんだん間隔があきます。残り <b>'+dueCount(null)+'</b>問'
+      : '✏️ れんしゅう：正解で💎がたまります（戦闘なし）。'+(pracQ.review?'<span style="color:var(--gold);font-weight:800"> 🔁 復習</span>':''));
     body.appendChild(head);
     var qd=document.createElement('div'); qd.style.cssText='font-weight:800;font-size:17px;line-height:1.5;margin:6px 0 12px;text-align:center'; qd.innerHTML=pracQ.qtext; body.appendChild(qd);
     // ⭐お気に入りトグル(要望#14)：あとで図書館の「お気に入り」でゆっくり見れる
@@ -9957,17 +10013,27 @@ const Game = (()=>{
       var fb=document.createElement('div'); fb.style.cssText='margin-top:10px;font-size:14px;line-height:1.5';
       fb.innerHTML=(ok?'<span style="color:var(--good);font-weight:800">○ 正解！</span>':'<span style="color:var(--enemy);font-weight:800">× おしい！</span>')+' '+esc(pracQ.desc||'');
       body.appendChild(fb);
-      var nb=document.createElement('button'); nb.className='btn'; nb.style.cssText='width:100%;margin-top:12px;padding:12px;font-size:16px';
-      nb.onclick=function(){ if(nb.disabled) return; pracDraw(); renderPractice(); };
-      body.appendChild(nb);
-      // 💎連打稼ぎ防止：解答から2秒経つまで「つぎへ」を押せなくする（残り秒数を表示）
-      var __ggNextTick=function(){
-        if(homeView!=='practice'||!nb.isConnected){ return; }
-        var remain=PRAC_NEXT_COOLDOWN-(Date.now()-pracAnsweredAt);
-        if(remain>0){ nb.disabled=true; nb.style.opacity='.55'; nb.textContent='つぎへ ▶（'+Math.ceil(remain/1000)+'）'; setTimeout(__ggNextTick,200); }
-        else { nb.disabled=false; nb.style.opacity=''; nb.textContent='つぎへ ▶'; }
-      };
-      __ggNextTick();
+      if(pracReview && ok){
+        // 🔁復習で正解＝0.8秒後に自動で次へ（待たせない・要望2026-06-16）。💎farmはdue上限で自然に防がれる。
+        var note=document.createElement('div'); note.className='muted'; note.style.cssText='margin-top:12px;text-align:center;font-size:13px'; note.textContent='つぎへ…'; body.appendChild(note);
+        var __at=pracAnsweredAt;
+        setTimeout(function(){ if(homeView!=='practice'||!pracReview||!pracAnswered||pracAnsweredAt!==__at) return; pracDraw(); renderPractice(); }, 800);
+      } else {
+        var nb=document.createElement('button'); nb.className='btn'; nb.style.cssText='width:100%;margin-top:12px;padding:12px;font-size:16px';
+        nb.onclick=function(){ if(nb.disabled) return; pracDraw(); renderPractice(); };
+        body.appendChild(nb);
+        if(pracReview){ // 復習で誤答＝クールダウン無し（解説をゆっくり読んで自分のペースで進む）
+          nb.textContent='つぎへ ▶';
+        } else { // ✏️通常れんしゅう：💎連打稼ぎ防止に2秒クールダウン（残り秒数を表示）
+          var __ggNextTick=function(){
+            if(homeView!=='practice'||!nb.isConnected){ return; }
+            var remain=PRAC_NEXT_COOLDOWN-(Date.now()-pracAnsweredAt);
+            if(remain>0){ nb.disabled=true; nb.style.opacity='.55'; nb.textContent='つぎへ ▶（'+Math.ceil(remain/1000)+'）'; setTimeout(__ggNextTick,200); }
+            else { nb.disabled=false; nb.style.opacity=''; nb.textContent='つぎへ ▶'; }
+          };
+          __ggNextTick();
+        }
+      }
     } else {
       var hint=document.createElement('div'); hint.className='muted'; hint.style.cssText='font-size:12px;margin-top:10px;text-align:center'; hint.textContent='答えをタップ → 確認して「つぎへ」'; body.appendChild(hint);
     }
@@ -10309,6 +10375,16 @@ const Game = (()=>{
         dc.onclick=function(){ var st=dailyChalStage(); if(st) enterBattle(st); };
       }
     }
+    // 🔁 きょうの復習（due な誤答がある時だけ表示）＝SRSの主導線。連続日数も見せて習慣化フックに。
+    var rv=$('reviewBtn');
+    if(rv){ var __due=dueCount(null);
+      if(!__due){ rv.style.display='none'; }
+      else { rv.style.display=''; var __stk=learnStreak();
+        rv.innerHTML='🔁 きょうの復習 <span style="color:#a463f2;font-weight:800">'+__due+'問</span>'
+          +'<span class="sub">'+(__stk>1?('🔥'+__stk+'日連続学習中！　'):'')+'わすれた頃にもう一度。正解で💎</span>';
+        rv.onclick=function(){ startReviewDrill(); };
+      }
+    }
   }
 
   /* ---- ホーム描画 ---- */
@@ -10317,16 +10393,16 @@ const Game = (()=>{
     updateGemUI();
     renderHomeMenu();
     renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderPractice(); renderSkins();
-    { var __ms=$('mistakesSub'); if(__ms) __ms.textContent = mistakeCount()? ('復習リスト '+mistakeCount()+'問（2回正解で消える）') : '復習リスト（まちがえるとここに）'; }
+    { var __ms=$('mistakesSub'); if(__ms){ var __dc=dueCount(null), __mc=mistakeCount(); __ms.textContent = __mc? ('復習リスト '+__mc+'問'+(__dc?('・今日 '+__dc+'問'):'・今日ぶんは完了')) : 'お気に入りはいつでも見られます'; } }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
     const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', skins:'🏯 城スキン', pvp:'🆚 たいせん'};
     const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', skins:'grow', pvp:'menu'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
-    document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ var __v=b.getAttribute('data-go'); if(__v==='practice'){ pracStarted=false; pracQ=null; } homeView=__v; renderHome(); }; });
+    document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ var __v=b.getAttribute('data-go'); if(__v==='practice'){ pracStarted=false; pracReview=false; pracQ=null; } homeView=__v; renderHome(); }; });
     document.querySelectorAll('#home .homeview').forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-view')===homeView); });
-    const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ homeView=__parent[homeView]||'menu'; renderHome(); }; }
+    const __back=$('homeBack'); if(__back){ __back.style.display=(homeView==='menu')?'none':'inline-block'; __back.onclick=function(){ if(homeView==='practice'){ pracReview=false; pracStarted=false; } homeView=__parent[homeView]||'menu'; renderHome(); }; }
     // 出題設定（ジャンル/英検級/ティア＝複数選択・混在OK、選択肢=固定）
     function __seg(id, items, isOn, onToggle){
       const seg=$(id); if(!seg) return; seg.innerHTML='';
@@ -10899,11 +10975,11 @@ const Game = (()=>{
     } else if(B && B.stage && B.stage.learn){
       curQ = learnDraw(B.stage.learnField, learnLevelForFloor(B.floor||1), cc) || QuizEngine.next(cc); // 🎓階に応じた級・分野で出題
     } else {
-      // 永続誤答SRSの差し込み：2連続回避＋約30%で due な誤答を再出題（現ジャンル優先）。クリアまで時々出る。
+      // 永続誤答SRSの差し込み：2連続回避＋ SRS_INJECT_P で due な誤答を再出題（現ジャンル優先）。due は「復習時期が来た」ものだけ。
       curQ = null;
       if(!lastWasReview){
         var __dk = pickDueMistake(QuizEngine.genre());
-        if(__dk && Math.random()<0.30){ var __mq=QuizEngine.buildFrom(__dk, cc); if(__mq){ __mq.review=true; __mq.locked=false; curQ=__mq; lastMistakeKey=__dk; } }
+        if(__dk && Math.random()<SRS_INJECT_P){ var __mq=QuizEngine.buildFrom(__dk, cc); if(__mq){ __mq.review=true; __mq.locked=false; curQ=__mq; lastMistakeKey=__dk; } }
       }
       if(!curQ) curQ = QuizEngine.next(cc);
     }
@@ -11796,6 +11872,20 @@ const Game = (()=>{
     },
     // 検証用: 出題ジャンル/級/択数を固定（経済の問題種別検証用）。__ggTestQ=falseで実問題に切替。
     setQuiz(o){ o=o||{}; if(o.cc) choiceMode=o.cc; try{ QuizEngine.setSel({genre:o.genre||'word', levels:o.levels||['e4']}); }catch(e){} window.__ggTestQ=false; return {choiceMode:choiceMode, genre:o.genre||'word'}; },
+    // ===== SRS(Leitner)検証フック（debug専用・本番無害） =====
+    srs: {
+      reset(){ for(var k in mistakes) delete mistakes[k]; lastMistakeKey=null; lastWasReview=false; },
+      record(srcKey, genre, level){ recordMistake({srcKey:srcKey, genre:genre||'word', level:level||'e4'}); },
+      credit(srcKey, asReview){ creditMistake({srcKey:srcKey, review:!!asReview}); },
+      dueKeys(genre){ return dueMistakeKeys(genre||null); },
+      dueCount(genre){ return dueCount(genre||null); },
+      count(){ return mistakeCount(); },
+      box(srcKey){ var m=mistakes[srcKey]; return m?(m.box||0):-1; },
+      dump(srcKey){ return srcKey? mistakes[srcKey] : mistakes; },
+      // クロックを n 日進める（巻き戻し対策の clockTs を未来に固定＝guardedNow がこれを返す）
+      advanceDays(n){ clockTs = guardedNow() + (n||0)*DAY_MS; return clockTs; },
+      now(){ return guardedNow(); }, intervals(){ return SRS_INTERVALS_D.slice(); }, maxBox(){ return SRS_MAX_BOX; }
+    },
     // 現在の問題に対し、ペルソナの知識率で正誤を決めて回答（実問題・選択肢運込み）
     answerKnow(prof){
       if(!curQ||curQ.locked) return false;
