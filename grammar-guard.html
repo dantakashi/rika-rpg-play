@@ -8962,6 +8962,14 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
     }
     return { total:total, have:have, byLevel:byLevel };
   }
+  // 🗼修練の塔の「単語マラソン」用：現出題範囲のうち まだ覚えていない問題を優先して1問返す（全部覚えてたらnull→通常ドローへ）。
+  function nextUnlearned(cc, learnedSet){
+    learnedSet=learnedSet||{};
+    var p=pool(); if(!p.length) return null;
+    var un=p.filter(function(q){ return !learnedSet[keyOf(q)]; });
+    if(!un.length) return null;
+    return buildOne(rnd(un), cc);
+  }
 
   // ステージ出題プール：1戦の開始時に出題範囲から n 問だけ抽出して固定。戦闘中はこの n 問を巡回（尽きたら再シャッフル）＝同じ問題が繰り返し出て定着（要望2026-06-08）。
   let stagePool=null, stageIdx=0;
@@ -9086,7 +9094,7 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
   function setGrammarMode(m){ if(m==='eiken'||m==='field') grammarMode=m; }
 
   return { next, drawFor, comboGain, gemGain, dailyWords, pushReview, reviewCount, size:()=>DB.length,
-    keyOf, byKey, buildFrom, buildStagePool, clearStagePool, collectionStats,
+    keyOf, byKey, buildFrom, buildStagePool, clearStagePool, collectionStats, nextUnlearned,
     EIKEN, TIERS, GENRES, FIELDS, LV_LABEL, LV_ORDER,
     getSel, setSel, toggleLevel, toggleTier, toggleField, setGenre, setGrammarMode, poolCount, isBuffEligible,
     genre:()=>selGenre, gmode:()=>grammarMode,
@@ -9413,6 +9421,10 @@ const Game = (()=>{
   let homeView = 'menu';   // ホームの表示(menu/play/grow/settings/quiz)
   let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
   let towerBest = 0;       // 修練の塔の最高階
+  let towerMiles = {};     // 🗼受取済みの節目報酬 {floor:1}（セーブ・Phase2）
+  let towerWeekDone = '';  // 📅今週の塔の週間ボーナスを受け取った週（weekStr・セーブ）
+  let towerWeekBest = 0;   // 📅今週の塔の最高階（週が変わると0にリセット）
+  let towerWeekStamp = ''; // towerWeekBest が属する週（リセット判定用）
   let learnBest = {};      // 🗼学習の塔 分野ごとの到達最高階 {field:floor}（永久バフの元）
   let lastDaily = '';      // デイリー受取日(YYYY-M-D)
   let dailyChalDone = '';  // 📅きょうのチャレンジ達成日(YYYY-M-D・2026-06-11)
@@ -9443,6 +9455,7 @@ const Game = (()=>{
       cgRefunded=!!s.cgRefunded; if(comboGuardLv>0 && !cgRefunded){ gold += COMBO_GUARD_COSTS.slice(0,Math.min(comboGuardLv,COMBO_GUARD_COSTS.length)).reduce(function(a,b){return a+b;},0); comboGuardLv=0; cgRefunded=true; } // 🛡コンボ保護 廃止に伴う購入ゴールドの返金(1回)
       ownedParts=(s.ownedParts&&typeof s.ownedParts==='object')?s.ownedParts:{}; equippedParts=(s.equippedParts&&typeof s.equippedParts==='object')?s.equippedParts:{};
       towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||''; dailyChalDone=s.dailyChalDone||''; treasures=(s.treasures&&typeof s.treasures==='object')?s.treasures:{};
+      towerMiles=(s.towerMiles&&typeof s.towerMiles==='object')?s.towerMiles:{}; towerWeekDone=s.towerWeekDone||''; towerWeekBest=s.towerWeekBest||0; towerWeekStamp=s.towerWeekStamp||'';
       clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
       mistakes=(s.mistakes&&typeof s.mistakes==='object')?s.mistakes:{};
       // 旧need方式→Leitner(box/due)移行: box/dueが無い項目は box0・due0(=今すぐ復習対象)に。need は無視。
@@ -9465,7 +9478,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, learned, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, learned, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -10450,6 +10463,7 @@ const Game = (()=>{
 
   /* ---- ホーム描画 ---- */
   function renderHome(){
+    if(__towerSavedGenre!=null){ QuizEngine.setGenre(__towerSavedGenre); __towerSavedGenre=null; save(); } // 週替わりの塔を中断して帰home した時のジャンル復元(保険)
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
     renderHomeMenu();
@@ -11042,6 +11056,7 @@ const Game = (()=>{
         var __dk = pickDueMistake(QuizEngine.genre());
         if(__dk && Math.random()<SRS_INJECT_P){ var __mq=QuizEngine.buildFrom(__dk, cc); if(__mq){ __mq.review=true; __mq.locked=false; curQ=__mq; lastMistakeKey=__dk; } }
       }
+      if(!curQ && B.stage.endless){ curQ = QuizEngine.nextUnlearned(cc, learned); } // 🗼塔は未学習を優先＝単語マラソン(登るほど制覇率UP)
       if(!curQ) curQ = QuizEngine.next(cc);
     }
     if(!curQ){ $('qtext').textContent='問題データが読めませんでした'; return; }
@@ -11335,8 +11350,25 @@ const Game = (()=>{
 
   /* ---- 勝敗 ---- */
   /* ---- 修練の塔（エンドレス）＆デイリー ---- */
-  function enterTower(){
-    enterBattle({ id:'tower', area:0, boss:false, endless:true, name:'修練の塔', sprite:'castleE', world:9, enemyHpMul:1, enemyAtkMul:1, castleEHp:1e9, waves:[] });
+  // 🗼Phase2: 段位(称号・見た目)／節目報酬(💎)／週替わりの塔。報酬は戦力に乗せない＝敵ステ絶対と非衝突。
+  const TOWER_RANKS = [
+    {f:0,e:'🌱',n:'みならい'}, {f:10,e:'⛰️',n:'かけだし登山家'}, {f:20,e:'🧗',n:'クライマー'},
+    {f:35,e:'🏔️',n:'熟練クライマー'}, {f:50,e:'❄️',n:'雪山の勇者'}, {f:75,e:'🦅',n:'天空の覇者'},
+    {f:100,e:'👑',n:'登頂者'}, {f:150,e:'🌟',n:'伝説の登山家'}
+  ];
+  function towerRank(best){ var r=TOWER_RANKS[0]; for(var i=0;i<TOWER_RANKS.length;i++){ if((best||0)>=TOWER_RANKS[i].f) r=TOWER_RANKS[i]; } return r; }
+  function towerNextRank(best){ for(var i=0;i<TOWER_RANKS.length;i++){ if((best||0)<TOWER_RANKS[i].f) return TOWER_RANKS[i]; } return null; }
+  const TOWER_MILES = [ {f:10,gem:100},{f:25,gem:250},{f:50,gem:500},{f:75,gem:800},{f:100,gem:1500},{f:150,gem:3000} ];
+  function weekStr(){ var d=new Date(guardedNow()); var j=new Date(d.getFullYear(),0,1); var w=Math.ceil((((d-j)/86400000)+j.getDay()+1)/7); return d.getFullYear()+'-W'+w; }
+  const TOWER_WEEKLY = [ {id:'word',label:'単語の塔',genre:'word',emoji:'📕'}, {id:'idiom',label:'熟語の塔',genre:'idiom',emoji:'📗'}, {id:'grammar',label:'文法の塔',genre:'grammar',emoji:'📘'}, {id:'mixed',label:'ミックスの塔',genre:null,emoji:'🎏'} ];
+  function weeklyTowerRule(){ var s=weekStr(),h=0; for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return TOWER_WEEKLY[h%TOWER_WEEKLY.length]; }
+  const TOWER_WEEK_TARGET = 15, TOWER_WEEK_GEM = 300;   // 今週の塔：この階に初到達で週間ボーナス💎
+  function ensureTowerWeek(){ var w=weekStr(); if(towerWeekStamp!==w){ towerWeekStamp=w; towerWeekBest=0; } } // 週替わりで最高階リセット
+  let __towerSavedGenre = null;   // 週替わりの塔でジャンルを一時上書き→endTower/帰home で復元
+  function enterTower(weekly){
+    ensureTowerWeek();
+    if(weekly){ var r=weeklyTowerRule(); if(r.genre){ __towerSavedGenre=QuizEngine.genre(); QuizEngine.setGenre(r.genre); } }
+    enterBattle({ id:'tower', area:0, boss:false, endless:true, weekly:!!weekly, name:weekly?'📅 今週の塔':'修練の塔', sprite:'castleE', world:9, enemyHpMul:1, enemyAtkMul:1, castleEHp:1e9, waves:[] });
   }
   function towerStep(){
     B.floor = 1 + Math.floor(B.t/12);
@@ -11352,15 +11384,32 @@ const Game = (()=>{
   }
   function endTower(){
     B.ended=true; B.running=false; cancelAnimationFrame(B.raf); Sound.play('lose');
+    var weekly=!!(B.stage&&B.stage.weekly);
     var floor=B.floor||1, reward=floor*40; gold+=reward;
-    var isBest=floor>(towerBest||0); if(isBest) towerBest=floor; save();
+    var isBest=floor>(towerBest||0); if(isBest) towerBest=floor;
+    // 🗼節目報酬（初到達で1回）。称号(段位)は towerBest で自動更新＝戦力に乗らない見た目報酬。
+    var mileGems=0, mileHit=[];
+    TOWER_MILES.forEach(function(m){ if(floor>=m.f && !towerMiles[m.f]){ towerMiles[m.f]=1; mileGems+=m.gem; mileHit.push(m.f); } });
+    if(mileGems) gems+=mileGems;
+    // 📅今週の塔：週間ベスト更新＋初回ターゲット到達で週間ボーナス
+    var weekGem=0;
+    if(weekly){ ensureTowerWeek(); if(floor>towerWeekBest) towerWeekBest=floor;
+      if(floor>=TOWER_WEEK_TARGET && towerWeekDone!==weekStr()){ towerWeekDone=weekStr(); weekGem=TOWER_WEEK_GEM; gems+=weekGem; } }
+    if(__towerSavedGenre!=null){ QuizEngine.setGenre(__towerSavedGenre); __towerSavedGenre=null; } // ジャンル復元
+    save();
     $('firstBadge').classList.remove('show');
-    $('resTitle').textContent='🗼 '+floor+'階 到達！'; $('resTitle').style.color='var(--ally)';
-    $('resMedals').innerHTML='<span class="medal">到達 '+floor+'階</span>'+(isBest?'<span class="medal">🏆 自己ベスト！</span>':'<span class="medal">最高 '+towerBest+'階</span>')+'<span class="medal">💰 +'+reward+'</span><span class="medal">最大コンボ '+B.bestCombo+'</span>';
-    $('resLearn').textContent='修練の塔は無限。問題を解いて編成を強化し、より上の階へ！';
+    var rk=towerRank(towerBest), nr=towerNextRank(towerBest);
+    $('resTitle').textContent=(weekly?'📅 今週の塔 ':'🗼 ')+floor+'階 到達！'; $('resTitle').style.color='var(--ally)';
+    var medals='<span class="medal">到達 '+floor+'階</span>'+(isBest?'<span class="medal">🏆 自己ベスト！</span>':'<span class="medal">最高 '+towerBest+'階</span>')+'<span class="medal">'+rk.e+' '+rk.n+'</span><span class="medal">💰 +'+reward+'</span>';
+    if(mileGems) medals+='<span class="medal" style="background:#a463f2;color:#fff">🎉 節目 '+mileHit.join('・')+'階 💎+'+mileGems+'</span>';
+    if(weekGem) medals+='<span class="medal" style="background:#3aa6a0;color:#fff">📅 週間ボーナス 💎+'+weekGem+'</span>';
+    $('resMedals').innerHTML=medals;
+    var cs=QuizEngine.collectionStats(learned), pct=cs.total?Math.round(cs.have/cs.total*100):0;
+    $('resLearn').innerHTML='📚 おぼえた英語 <b>'+cs.have.toLocaleString()+' / '+cs.total.toLocaleString()+'</b>（'+pct+'%）— 塔は新しい問題を優先。登るほど制覇率UP！'
+      +(nr?('<br>'+rk.e+' <b>'+rk.n+'</b>　次の段位 '+nr.e+nr.n+' まであと '+Math.max(0,nr.f-towerBest)+'階'):('<br>'+rk.e+' <b>'+rk.n+'</b>（最高段位！）'));
     var nd=$('resNudge'); if(nd) nd.innerHTML='';
     renderResultMistakes();
-    var retry=$('resRetry'); retry.textContent='もう一度 🗼'; retry.onclick=function(){ enterTower(); };
+    var retry=$('resRetry'); retry.textContent=weekly?'もう一度 📅':'もう一度 🗼'; retry.onclick=function(){ enterTower(weekly); };
     show('result');
   }
 
@@ -11484,10 +11533,23 @@ const Game = (()=>{
   }
   function treasureLabel(ch){ var q=treasures[ch]||0, c=treasureCat(ch); return q? (TREASURE_Q[q]+' '+CHAPTER_THEMES[ch-1]+'の秘宝（'+c.icon+c.label+'+'+c.per[q]+'%）') : ('未発見（'+c.icon+c.label+'の秘宝がねむっている）'); }
   function renderTower(){
-    var body=$('towerBody'); if(!body) return; body.innerHTML='';
-    var t=document.createElement('div'); t.style.marginBottom='6px'; t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限ウェーブ・最高 '+(towerBest||0)+'階</span></div>';
+    var body=$('towerBody'); if(!body) return; body.innerHTML=''; ensureTowerWeek();
+    var rk=towerRank(towerBest), nr=towerNextRank(towerBest);
+    var cs=QuizEngine.collectionStats(learned), pct=cs.total?Math.round(cs.have/cs.total*100):0;
+    var t=document.createElement('div'); t.style.marginBottom='6px';
+    t.innerHTML='<div style="font-weight:800">🗼 修練の塔 <span class="muted">無限・最高 '+(towerBest||0)+'階</span></div>'
+      +'<div style="font-size:13px;margin-top:2px">段位 <b style="color:#c77b1a">'+rk.e+' '+rk.n+'</b>'+(nr?(' <span class="muted">／次は '+nr.e+nr.n+'（'+nr.f+'階）</span>'):' <span class="muted">（最高段位）</span>')+'</div>'
+      +'<div class="muted" style="font-size:12px;margin-top:2px">📚 おぼえた英語 '+cs.have.toLocaleString()+' / '+cs.total.toLocaleString()+'（'+pct+'%）＝塔は<b>新しい問題を優先</b>。登るほど制覇率UP</div>';
     body.appendChild(t);
-    var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:10px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',enterTower); body.appendChild(tb);
+    var nm=null; for(var i=0;i<TOWER_MILES.length;i++){ if(!towerMiles[TOWER_MILES[i].f]){ nm=TOWER_MILES[i]; break; } }
+    if(nm){ var mn=document.createElement('div'); mn.className='muted'; mn.style.cssText='font-size:12px;margin-bottom:6px'; mn.innerHTML='🎉 次の節目 <b>'+nm.f+'階</b> で 💎+'+nm.gem; body.appendChild(mn); }
+    var tb=document.createElement('button'); tb.className='btn'; tb.style.cssText='width:100%;margin-bottom:8px'; tb.textContent='🗼 挑戦する（エンドレス）'; tb.addEventListener('click',function(){ enterTower(false); }); body.appendChild(tb);
+    // 📅今週の塔（週替わりテーマ）
+    var wr=weeklyTowerRule(), wdone=(towerWeekDone===weekStr());
+    var wb=document.createElement('button'); wb.className='btn'; wb.style.cssText='width:100%;margin-bottom:10px;background:#3aa6a0';
+    wb.innerHTML='📅 今週の塔：'+wr.emoji+wr.label+(wdone?' <span style="font-size:12px">✅週間ボーナス済</span>':' <span style="font-size:12px">'+TOWER_WEEK_TARGET+'階で💎+'+TOWER_WEEK_GEM+'</span>')
+      +'<div style="font-size:11px;font-weight:600;opacity:.92">今週の最高 '+towerWeekBest+'階'+(wr.genre?('（'+({word:'単語',idiom:'熟語',grammar:'文法'}[wr.genre])+'しばり）'):'（全ジャンル）')+'</div>';
+    wb.addEventListener('click',function(){ enterTower(true); }); body.appendChild(wb);
     // 🎓学習の塔（壁3）：解禁後のみ
     if(learnUnlocked()){
       var lh=document.createElement('div'); lh.style.cssText='font-weight:800;margin:14px 0 6px;border-top:2px dashed var(--line);padding-top:12px';
@@ -11949,6 +12011,13 @@ const Game = (()=>{
       // 📚暗記コレクション検証
       learn(srcKey){ markLearned({srcKey:srcKey}); }, learnedCount(){ return Object.keys(learned).length; },
       collection(){ return QuizEngine.collectionStats(learned); }, resetLearned(){ for(var k in learned) delete learned[k]; }
+    },
+    // 🗼修練の塔(Phase2)検証フック
+    tower: {
+      enter(weekly){ enterTower(!!weekly); return {genre:QuizEngine.genre(), weekly:!!(B&&B.stage&&B.stage.weekly)}; },
+      endAt(floor){ if(B) B.floor=floor; endTower(); return {gems:gems, miles:Object.keys(towerMiles), weekBest:towerWeekBest, weekDone:towerWeekDone, genre:QuizEngine.genre()}; },
+      rank(b){ return towerRank(b); }, nextRank(b){ return towerNextRank(b); }, weeklyRule(){ return weeklyTowerRule(); },
+      resetTower(){ towerMiles={}; towerBest=0; towerWeekBest=0; towerWeekDone=''; towerWeekStamp=''; }
     },
     // 現在の問題に対し、ペルソナの知識率で正誤を決めて回答（実問題・選択肢運込み）
     answerKnow(prof){
