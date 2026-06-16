@@ -1289,7 +1289,7 @@ const Game = (function(){
       if (S.bonds[r.id]>=50 && S.bonds[r.id]<100 && !S.bondMidDone[r.id]){
         S.bondMidDone[r.id] = true;
         saveAll();
-        UI.showEvent({ year:S.year, type:'story', title:`🤝 側近 ${r.name}との語らい`, art:`${r.icon}💬`, faceImg:r.img,
+        UI.showEvent({ year:S.year, type:'story', title:`🤝 側近 ${r.name}との語らい`, art:`${r.icon}💬`, faceImg:(r.img||('assets/r_'+H.id+'_'+r.id+'.jpg')),
           text:(r.midText || `${r.name}との絆が深まってきた。`)
             + (r.skill ? `\n\n💖 絆 ${S.bonds[r.id]}/100 — このまま深めれば、絆MAXで側近スキル「${r.skill.icon}${r.skill.name}」を授かれる！` : '') }, ()=>UI.renderGame());
         return;
@@ -1307,7 +1307,7 @@ const Game = (function(){
         S.chronicle.push({ y:S.year, t:r.name, r:'💖絆MAX' });
         let skillNote = '';
         if (r.skill){ S.skills[r.skill.id] = true; skillNote = `\n${r.skill.icon} 側近スキル「${r.skill.name}」を授かった！（${r.skill.desc}）`; }
-        UI.showEvent({ year:S.year, type:'story', title:`💖 側近 ${r.name}・絆MAX！`, art:`${r.icon}💖`, faceImg:r.img,
+        UI.showEvent({ year:S.year, type:'story', title:`💖 側近 ${r.name}・絆MAX！`, art:`${r.icon}💖`, faceImg:(r.img||('assets/r_'+H.id+'_'+r.id+'.jpg')),
           text:r.maxText + '\n\n🎁 絆MAXのごほうび： ✨スキルP+5' + skillNote }, ()=>UI.renderGame(), fx);
         saveAll();
         return;
@@ -2001,8 +2001,9 @@ const UI = (function(){
     if (wrap){ wrap.scrollLeft = cx*ratio - wrap.clientWidth/2; wrap.scrollTop = cy*ratio - wrap.clientHeight/2; }
   }
 
-  /* 側近の顔（画像があればimg・なければ絵文字。◯枠/鍛錬バッジ共用） */
-  function rFace(r){ return r.img ? `<img src="${r.img}" alt="${r.name}">` : r.icon; }
+  /* 側近の顔。明示img → 無ければ規約パス(r_<偉人>_<側近id>.png) → 無ければ絵文字アイコン */
+  function rImg(r){ return r.img || `assets/r_${Game.H.id}_${r.id}.jpg`; }  /* 仮置きは軽量JPEG（既存3偉人の透過r.imgはそのまま） */
+  function rFace(r){ return `<img src="${rImg(r)}" alt="${r.name}" onerror="UI.imgToEmoji(this,'${r.icon}')">`; }
 
   /* ---- §9 育成画面の描画 ---- */
   function renderGame(){
@@ -2162,7 +2163,7 @@ const UI = (function(){
     const g = D.GENRES[r.fav];
     $('l-title').textContent = `${r.icon} ${r.name}`;
     $('l-body').innerHTML = `
-      ${r.img? `<img class="rFaceFull" src="${r.img}" alt="${r.name}">` : `<div style="font-size:64px;text-align:center">${r.icon}</div>`}
+      <img class="rFaceFull" src="${rImg(r)}" alt="${r.name}" onerror="UI.imgToBigEmoji(this,'${r.icon}')">
       <div class="bookItem">${r.intro}</div>
       <div class="bookItem">得意: <b>${g.icon}${g.train}</b>（得意な鍛錬に現れやすい）<br>
         絆: <b>${v}</b>/100 ${v>=80?'🌈友情特訓圏内！':''}<br>
@@ -2293,24 +2294,33 @@ const UI = (function(){
     return parts.join('　');
   }
   let evCb = null;
-  // イベントの絵: artImg（画像）優先・なければ絵文字アート
+  // イベントの絵: artImg(明示画像)優先 → 無ければ自時代の風景プレースホルダ(evsc_*) → 無ければ絵文字アート。
+  // 年表イベントだけ風景を割り当て、年表外(側近/追憶)は従来どおり絵文字。
+  function tlScene(ev){
+    if (ev.artImg) return ev.artImg;
+    const tl = (Game.H && Game.H.timeline) || []; const idx = tl.indexOf(ev);
+    if (idx < 0) return null;
+    return `assets/evsc_${Game.H.id}_${(idx%4)+1}.jpg`;
+  }
   function setArt(art, img){
     const el = $('e-art');
     el.classList.remove('faceArt');
     el.classList.toggle('imgMode', !!img);
-    if (img){ el.innerHTML = `<img src="${img}" alt="">`; el.style.display='block'; }
+    if (img){ el.dataset.fbart = art||''; el.innerHTML = `<img src="${img}" alt="" onerror="UI.artFallback(this)">`; el.style.display='block'; }
     else if (art){ el.textContent = art; el.style.display='block'; }
     else el.style.display='none';
   }
-  // 側近イベント用: 顔をカード風に収めて表示（Uma風のキャラ立ち・2026-06-14）
-  function setFace(img){
+  function artFallback(img){ const el=img.parentElement; const a=el.dataset.fbart||''; el.classList.remove('imgMode'); if(a){ el.textContent=a; } else { el.style.display='none'; } }
+  // 側近イベント用: 顔をカード風に収めて表示。画像が無ければ絵文字アートに戻す
+  function setFace(img, fbArt){
     const el = $('e-art');
     el.classList.remove('imgMode'); el.classList.add('faceArt');
-    el.innerHTML = `<img src="${img}" alt="">`; el.style.display='block';
+    el.dataset.fbart = fbArt||''; el.innerHTML = `<img src="${img}" alt="" onerror="UI.faceFallback(this)">`; el.style.display='block';
   }
+  function faceFallback(img){ const el=img.parentElement; const a=el.dataset.fbart||''; el.classList.remove('faceArt'); if(a){ el.textContent=a; } else { el.style.display='none'; } }
   function showEvent(ev, cb, fx){
     $('e-year').textContent = `${ev.year}年`;
-    if (ev.faceImg) setFace(ev.faceImg); else setArt(ev.art, ev.artImg);
+    if (ev.faceImg) setFace(ev.faceImg, ev.art); else setArt(ev.art, tlScene(ev));
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
     const fl = $('e-fx'); const t = fxText(fx);
@@ -2327,7 +2337,7 @@ const UI = (function(){
   }
   function showChoiceEvent(ev){
     $('e-year').textContent = `${ev.year}年`;
-    setArt(ev.art, ev.artImg);
+    setArt(ev.art, tlScene(ev));
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
     $('e-fx').classList.remove('on');
@@ -2402,13 +2412,18 @@ const UI = (function(){
 
   /* 偉人ごとの画像差し替え（普遍フォーマットの核）。assets/<base><_h|_i>.png → 無ければ信長(無印)→無ければ絵文字。
      第7便スプライト未配置の間はすべて絵文字で表示（commit ④で assets/ へ取り込み）。 */
-  function heroSfx(){ return ({nobunaga:'',hideyoshi:'_h',ieyasu:'_i'})[Game.H.id] || ''; }
+  function heroSfx(){ return ({nobunaga:'',hideyoshi:'_h',ieyasu:'_i'})[Game.H.id] ?? ('_'+Game.H.id); }
+  // 既存3偉人の合戦スプライトは透過PNG。新偉人の仮置きは軽量JPEG。無ければ信長(無印.png)→絵文字
+  function heroImgExt(){ return ({nobunaga:1,hideyoshi:1,ieyasu:1})[Game.H.id] ? '.png' : '.jpg'; }
   function gi(base, emoji){ const s=heroSfx();
-    return `<img class="bimg" src="assets/${base}${s}.png" alt="" onerror="UI.imgFallback(this,'${base}','${emoji||''}')">`; }
+    return `<img class="bimg" src="assets/${base}${s}${heroImgExt()}" alt="" onerror="UI.imgFallback(this,'${base}','${emoji||''}')">`; }
   function imgFallback(img, base, emoji){
     if(base && img.getAttribute('src').indexOf('/'+base+'.png')<0 && !img.dataset.fb){ img.dataset.fb='1'; img.src='assets/'+base+'.png'; return; }
     if(emoji){ img.replaceWith(document.createTextNode(emoji)); } else { img.style.display='none'; }
   }
+  // 規約パスの画像が無いとき絵文字に戻す（側近顔など）
+  function imgToEmoji(img, emoji){ if(emoji){ img.replaceWith(document.createTextNode(emoji)); } else { img.style.display='none'; } }
+  function imgToBigEmoji(img, emoji){ const d=document.createElement('div'); d.style.cssText='font-size:64px;text-align:center'; d.textContent=emoji||''; img.replaceWith(d); }
 
   /* ---- 共有プリミティブ（火花・カットイン・揺れ・音・信頼度色） ---- */
   function spawnSparks(tier){
@@ -2918,6 +2933,7 @@ const UI = (function(){
     showEpilogueChoice, pickEpilogueMem, openRetainer,
     goHome, openCoinInfo, openSaveIO, copySave, doImport,
     showEvent, eventDone, showChoiceEvent, openBattle, battleFinish, toggleFast, pickSaihai, imgFallback, showResult,
+    imgToEmoji, imgToBigEmoji, artFallback, faceFallback,
     openTrain, pickTrain, closeTrain, openSkill,
     openHall, openBook, closeList, openHowto, openRoster };
 })();
