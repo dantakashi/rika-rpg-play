@@ -9668,6 +9668,15 @@ const Game = (()=>{
   const EN_CORRECT=20;         // 正解で得る主燃料(×実効倍率)。解答を主エネルギー源にして放置を無効化
   const PASSIVE_MULT=0.30;     // 時間回復(放置エネ)を抑える係数。放置だけでは召喚が続かない＝解くのが必須
   const METEOR_FLOOR_PCT=0.40, METEOR_COST_PCT=0.12, METEOR_INT=0.55, METEOR_DMG_PCT=0.15; // 隕石: 満タンで開始→残40%まで降る。威力=着弾点の敵max HP%。0.38→0.15(2026-06-16・敵狙い化で命中するようになり強すぎ＝味方より隕石が主役化→補助に戻す)
+  // ===== 問題種ごとの経済の重み(2026-06-16・オーナー要望): 難問ほどエネ増＆「読む時間」を鮮度の猶予/減衰で保護。最小労力(単語2択)は抑制(強すぎ対策・最大~30%減) =====
+  const E_MUL_GRAMMAR=1.45, E_MUL_4CHOICE=1.15, E_MUL_2CHOICE=0.80; // エネ倍率の素(文法>単語・4択>2択)。文法1.45=読む遅さで毎秒スループットが負けないよう底上げ
+  const E_MUL_LV={e5:0.88,e4:1.0,e3:1.08,ep2:1.16,e2:1.24,ep1:1.32}; // 級が上ほどエネ増
+  const READ_MUL_GRAMMAR=1.7, READ_MUL_4CHOICE=1.5; // 鮮度の猶予を延ばし減衰を緩める係数(難問=長文ほど大)
+  const COMBO_SOFTCAP=36; // コンボ→エネ加速が最大に達するコンボ数。大=「緩やかに積んで最大→隕石」の登りが長く満足感UP(旧12は数問で最大に達して薄かった)
+  // 正解時のエネ倍率: 文法×4択×上級ほど大。range ~0.70(単語2択e5)〜~1.97(文法4択準1級)。復習(review)は等倍。
+  function qEnergyMul(q){ if(!q||q.review) return 1; var g=q.genre==='grammar'?E_MUL_GRAMMAR:1.0; var cc=(q.choiceCount===4)?E_MUL_4CHOICE:E_MUL_2CHOICE; var lv=E_MUL_LV[q.level]||1.0; return g*cc*lv; }
+  // 鮮度の猶予/減衰の難易度係数: 難問(長文)ほど大=猶予を延ばし減衰を緩めて「読む時間」を守る。range 1.0(単語2択)〜~2.55(文法4択)。
+  function qReadMul(q){ if(!q) return 1; var g=q.genre==='grammar'?READ_MUL_GRAMMAR:1.0; var cc=(q.choiceCount===4)?READ_MUL_4CHOICE:1.0; return g*cc; }
   function regenMaxed(){ return regenLv >= REGEN_MAX_LV; }
   function regenCost(){ return 300*(regenLv+1); }
   function enMaxVal(){ return 200 + enMaxLv*30; }
@@ -10151,7 +10160,7 @@ const Game = (()=>{
     return {
       stage,
       t:0, raf:0, last:0, running:false, ended:false,
-      energy:80, energyMax:enMaxVal(), baseRegen: stage.learn ? 0 : regenVal()*(recoBonusActive()?1.3:1)*PASSIVE_MULT, recoBonus:recoBonusActive(), softcap:12, maxMult:4, feverT:0, fresh:0, lastAnsT:-99, meteorOn:false, mTimer:0, // 鮮度メーター(直近に解いているか)＋隕石オーバーフロー(2026-06-15再設計)
+      energy:80, energyMax:enMaxVal(), baseRegen: stage.learn ? 0 : regenVal()*(recoBonusActive()?1.3:1)*PASSIVE_MULT, recoBonus:recoBonusActive(), softcap:COMBO_SOFTCAP, maxMult:4, feverT:0, fresh:0, lastAnsT:-99, readMul:1, meteorOn:false, mTimer:0, meteorCount:0, energyGen:0, // 鮮度メーター(直近に解いているか)＋隕石オーバーフロー(2026-06-15再設計)。softcap=登りの長さ・readMul=現問題の読む時間係数
       combo:0, bestCombo:0, floor:1, // 🗼塔の階（修練/学習）
       castleA:castleMaxHp(), castleAMax:castleMaxHp(),
       castleE:stage.castleEHp, castleEMax:stage.castleEHp,
@@ -10878,6 +10887,7 @@ const Game = (()=>{
       if(!curQ) curQ = QuizEngine.next(cc);
     }
     if(!curQ){ $('qtext').textContent='問題データが読めませんでした'; return; }
+    if(B) B.readMul = qReadMul(curQ); // この問題の「読む時間」係数＝鮮度の猶予/減衰を難問ほど緩める(2026-06-16)
     lastWasReview = !!(curQ && curQ.review);
     $('qtext').innerHTML = (curQ.review?'<span style="color:var(--gold)">🔁 </span>':'') + curQ.qtext;
     const box=$('choices'); box.className = curQ.choiceCount===2?'c2':''; box.innerHTML='';
@@ -10918,7 +10928,8 @@ const Game = (()=>{
       else if(!B.pvp){ // ⚡フィーバー: 正解でコンボ加速を8秒リチャージ＋即時エネルギー
         B.fresh=Math.min(FRESH_MAX,(B.fresh||0)+FRESH_ADD_C); B.lastAnsT=B.t; // 鮮度チャージ(解き続けるほど加速)
         var __am=1+(B.maxMult-1)*Math.min(1,B.combo/B.softcap)*(B.fresh/100); // 実効倍率(コンボ×鮮度)
-        B.energy=Math.min(B.energyMax, B.energy+EN_ANSWER_INSTANT+EN_CORRECT*__am); // 解答が主燃料＝解き続けるほど湧く
+        var __eg=(EN_ANSWER_INSTANT+EN_CORRECT*__am)*qEnergyMul(curQ); B.energyGen=(B.energyGen||0)+__eg; // 計測用:解答由来の総エネ収入(simのスループット計測)
+        B.energy=Math.min(B.energyMax, B.energy+__eg); // 解答が主燃料＝解き続けるほど湧く。難問(文法/4択/上級)ほど多く・単語2択は控えめ(2026-06-16)
         // 🛡シールド兵: 正解すると場の全シールドが砕ける（新ギミック・解くことが戦術になる）
         var __sbn=0; B.enemies.forEach(function(e){ if(e.shield>0){ e.shield=0; var b=e.el.querySelector('.shieldbadge'); if(b)b.remove(); flash(e.el); __sbn++; } });
         if(__sbn){ floatText($('field').clientWidth/2, 100, '🛡✨ シールドブレイク!', '#5aa0d6'); try{ Sound.play('hit'); }catch(e){} }
@@ -10967,7 +10978,9 @@ const Game = (()=>{
     let dt=Math.min(0.05,(now-B.last)/1000); B.last=now; if((window.__GGDEBUG||B.pvp) && window.__timeScale>1) dt*=window.__timeScale; B.t+=dt*(B.slow?0.6:1);
     if(B.pvp) B.combo=20; // ⑱対戦は常にコンボ20想定(エネ速度・ダメージとも)
     // ===== エネルギー加速 = コンボ × 鮮度(直近に解いているか)。鮮度は答えた後の猶予を過ぎてからだけ減る(読む時間は罰しない) =====
-    if(!B.pvp && !B.stage.learn && (B.t-(B.lastAnsT==null?-99:B.lastAnsT)) > FRESH_GRACE){ B.fresh=Math.max(0,(B.fresh||0) - FRESH_DECAY*dt*(B.slow?0.6:1)); }
+    // 鮮度の猶予と減衰は「いま出ている問題の難しさ(読む時間)」で緩める＝長文を読んでいる間に鮮度が落ちない(2026-06-16)
+    var __rm=(B.readMul||1), __grace=FRESH_GRACE*__rm;
+    if(!B.pvp && !B.stage.learn && (B.t-(B.lastAnsT==null?-99:B.lastAnsT)) > __grace){ B.fresh=Math.max(0,(B.fresh||0) - (FRESH_DECAY/__rm)*dt*(B.slow?0.6:1)); }
     const __freshGate = B.pvpFixedCombo ? 1 : ((B.fresh||0)/100); // 貯めたコンボも鮮度が無ければ効かない＝放置封じ
     const __comboForEnergy = B.pvpFixedCombo ? 20 : B.combo;
     const __fmult = 1 + (B.maxMult-1) * Math.min(1, __comboForEnergy/B.softcap) * __freshGate;
@@ -11014,6 +11027,7 @@ const Game = (()=>{
   //  ・ダメージは即時適用（経済/バランスはsim検証済の挙動を維持）。見た目だけ0.3s遅れて爆発。
   function dropOffenseMeteor(){
     const W=fieldW(); const R=72;
+    B.meteorCount=(B.meteorCount||0)+1; // 計測用カウンタ(simで隕石頻度を測る)
     var tx;
     if(B.enemies.length){ var te=B.enemies[Math.floor(Math.random()*B.enemies.length)]; tx=te.x + (Math.random()*36-18); }
     else { tx=(W-78); }
@@ -11733,6 +11747,8 @@ const Game = (()=>{
       autoSummon=true;
       return { deck:deck.slice(), atk:unitStats(roster[0]).atk, hp:unitStats(roster[0]).hp, learnBuffPct:Math.round(learnBuffPct()*100) };
     },
+    // 検証用: 出題ジャンル/級/択数を固定（経済の問題種別検証用）。__ggTestQ=falseで実問題に切替。
+    setQuiz(o){ o=o||{}; if(o.cc) choiceMode=o.cc; try{ QuizEngine.setSel({genre:o.genre||'word', levels:o.levels||['e4']}); }catch(e){} window.__ggTestQ=false; return {choiceMode:choiceMode, genre:o.genre||'word'}; },
     // 現在の問題に対し、ペルソナの知識率で正誤を決めて回答（実問題・選択肢運込み）
     answerKnow(prof){
       if(!curQ||curQ.locked) return false;
@@ -11791,7 +11807,7 @@ const Game = (()=>{
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
-      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), partUnit:pu }; }
+      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, partUnit:pu }; }
     ,
     // 自動プレイ：area=ステージ, chapter=強化想定章, opts{acc正答率, scale倍速}。logは window.__ptlog、終了で window.__ptdone
     run(area, chapter, opts){
