@@ -954,7 +954,7 @@ const Game = (function(){
     if (legacyIdx!=null && P.legacy[legacyIdx]){
       const lg = P.legacy[legacyIdx];
       s[lg.stat] += lg.val;
-      toast(`📜 遺訓「${lg.name}」発動！ ${D.GENRES[lg.stat].label}+${lg.val}`);
+      toast(`📜 遺訓「${lg.name}」発動！ ${statName(lg.stat)}+${lg.val}`);
       P.legacy.splice(legacyIdx,1); savePersist();
     }
     return s;
@@ -1208,7 +1208,7 @@ const Game = (function(){
       if (S.skills && S.skills.zeni) k2 = Math.round(k2*1.5);
       Object.keys(S.skills).forEach(id=>{ const fx=skillFx(id); if (fx && fx.tripKoku) k2 = Math.round(k2*fx.tripKoku); });
       S.koku += k2;
-      toast(`🏯 領内を視察した。やる気UP！ 石高+${fmtKoku(k2)}`);
+      toast(`🏯 領内を視察した。やる気UP！ ${rName()}+${fmtKoku(k2)}`);
       nextTurn(); return;
     }
     // 鍛錬: クイズへ
@@ -1267,7 +1267,7 @@ const Game = (function(){
       if (sub==='koku') S.koku += res.subGain;
       else S[sub] += res.subGain;
       if (cur.lastCorrect) matePerks(k,'skillpt').forEach(r=>{ S.skillPt += r.perk.v; });
-      res.subLabel = sub==='koku' ? `🌾石高+${fmtKoku(res.subGain)}` : `${D.GENRES[sub].label}+${res.subGain}`;
+      res.subLabel = sub==='koku' ? `${rIcon()}${rName()}+${fmtKoku(res.subGain)}` : `${statName(sub)}+${res.subGain}`;
       // 絆上昇（6人化に伴い1回あたりを減）
       const uq = (H.uniqueSkill && S.skills[H.uniqueSkill.id]) ? (H.uniqueSkill.fx.bondPlus||0) : 0;
       res.mates.forEach(id=>{
@@ -1333,7 +1333,7 @@ const Game = (function(){
         E.glow++;
         S[cur.genre] += 8; // 晩年の鍛錬（2026-06-14 生徒FB「選んだステの鍛錬効果」）
         text = D.EPILOGUE.okLines[Math.floor(Math.random()*D.EPILOGUE.okLines.length)]
-          + `\n${D.GENRES[cur.genre].label}+8（人生の輝き ${E.glow}/5）`;
+          + `\n${statName(cur.genre)}+8（人生の輝き ${E.glow}/5）`;
         if (cur.bookIdx!=null && P.book[cur.bookIdx]){ P.book.splice(cur.bookIdx,1); text += '\n📖 軍学帳から1ページ卒業！'; savePersist(); }
       } else {
         text = D.EPILOGUE.ngLines[Math.floor(Math.random()*D.EPILOGUE.ngLines.length)];
@@ -1348,7 +1348,7 @@ const Game = (function(){
         cur.res = { gain:5 };
         P.book.splice(cur.bookIdx,1);
         savePersist();
-        return { correct, text:`復習成功！ ${D.GENRES[item.genre].label}+5\n軍学帳から1ページ卒業！`, done:'next' };
+        return { correct, text:`復習成功！ ${statName(item.genre)}+5\n軍学帳から1ページ卒業！`, done:'next' };
       }
       return { correct, text:'まだ覚えきれていないようだ。解説を読んでおこう。\n（軍学帳に残しておくね）', done:'next' };
     }
@@ -1358,7 +1358,7 @@ const Game = (function(){
       cur.res = res;
       applyTraining(res, false);
       S.skillPt += 2;
-      let t = `${D.GENRES[cur.genre].label}+${res.gain}・${res.subLabel}！ ✨スキルP+2`;
+      let t = `${statName(cur.genre)}+${res.gain}・${res.subLabel}！ ✨スキルP+2`;
       if (res.crit) t = `🌟大成功！ ${t}`;
       if (res.friend) t = `🌈友情特訓！ ${t}`;
       // 大成功・友情特訓は気分も上がる（2026-06-13 やる気活性化）
@@ -1391,10 +1391,10 @@ const Game = (function(){
       // 大失敗＝ケガ。ただしスキル「丈夫な体」なら半分の確率で耐える
       let t;
       if (S.skills && S.skills.joubu && Math.random()<0.5){
-        t = `💥 大失敗！ 体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2\n🩹 だが「丈夫な体」のおかげでケガは免れた！`;
+        t = `💥 大失敗！ 体力ガタ落ち・やる気ダウン・${statName(cur.genre)}-2\n🩹 だが「丈夫な体」のおかげでケガは免れた！`;
       } else {
         S.injury = 1;
-        t = `💥 大失敗！ 無理がたたって倒れ、ケガをしてしまった……\n体力ガタ落ち・やる気ダウン・${D.GENRES[cur.genre].label}-2\n\n🌿 まずは薬師（くすし）に診てもらおう`;
+        t = `💥 大失敗！ 無理がたたって倒れ、ケガをしてしまった……\n体力ガタ落ち・やる気ダウン・${statName(cur.genre)}-2\n\n🌿 まずは薬師（くすし）に診てもらおう`;
       }
       saveAll();
       return { failed:true, text:t };
@@ -1402,7 +1402,7 @@ const Game = (function(){
     const res = trainGain(cur.sel.q, {correct:false, push:true});
     cur.res = res;
     applyTraining(res, false);
-    let t = `気合で押し切った！ ${D.GENRES[cur.genre].label}+${res.gain}・${res.subLabel}！`;
+    let t = `気合で押し切った！ ${statName(cur.genre)}+${res.gain}・${res.subLabel}！`;
     if (res.friend) t = `🌈友情特訓！ ${t}`;
     return { failed:false, text:t + takeMoodMsg() };
   }
@@ -1410,7 +1410,7 @@ const Game = (function(){
     const res = trainGain(cur.sel.q, {correct:false, half:true});
     cur.res = res;
     applyTraining(res, false);
-    return { text:`解説をじっくり読んで学び直した。${D.GENRES[cur.genre].label}+${res.gain}・${res.subLabel}（軍学帳に記録）` + takeMoodMsg() };
+    return { text:`解説をじっくり読んで学び直した。${statName(cur.genre)}+${res.gain}・${res.subLabel}（軍学帳に記録）` + takeMoodMsg() };
   }
 
   /* ===== §6 年表イベント ===== */
@@ -1513,7 +1513,7 @@ const Game = (function(){
       yuko:'⭕ 有効打！', fuhatsu:'😶 不発…', shikujiri:'💢 しくじり！' }[tier];
     let text = (tier==='kaishin'||tier==='yuko') ? `${head}\n${opt.ok}`
       : tier==='fuhatsu' ? `${head}\n「${opt.label}」は戦況に響かなかった…`
-          + ((opt.style==='trick' && S[opt.stat]<90) ? `\n（搦め手は${D.GENRES[opt.stat].label}が高い(90+)ほど化ける。鍛えて再挑戦だ）` : '')
+          + ((opt.style==='trick' && S[opt.stat]<90) ? `\n（搦め手は${statName(opt.stat)}が高い(90+)ほど化ける。鍛えて再挑戦だ）` : '')
       : `${head}\n「${opt.label}」が裏目に出て、敵に押し込まれた！`;
     if (kokozo) text += '\n⚡「ここぞの度胸」で踏みとどまった！';
     return { correct, battle:true, last:(B.round>=B.max), text };
@@ -1564,7 +1564,7 @@ const Game = (function(){
       if (S.skills && S.skills.zeni) k = Math.round(k*1.5);
       S.koku += k; S.skillPt += 3;
       if (tier==='kaishin') S.mood = Math.min(4, S.mood+1);
-      text = `🚩 勝利！ 石高+${fmtKoku(k)}・✨スキルP+3${tier==='kaishin' ? '・やる気UP' : ''}`;
+      text = `🚩 勝利！ ${rName()}+${fmtKoku(k)}・✨スキルP+3${tier==='kaishin' ? '・やる気UP' : ''}`;
     } else {
       S.mood = Math.max(0, S.mood-1);
       if (Math.random()*100 < failRate()/2 + 8){
@@ -1580,7 +1580,7 @@ const Game = (function(){
   // 敗北＝育成終了（パワプロ/ウマ娘式・2026-06-11 教師FB）
   function defeatEnd(){
     const ev = B.ev;
-    endRun(false, `${ev.year}年「${ev.title.split(' — ')[0]}」`);
+    endRun(false, `${ev.year<0?'':ev.year+'年'}「${ev.title.split(' — ')[0]}」`);
   }
 
   /* ===== §7.8 スキル習得（スキルP消費・その育成1周の間有効） ===== */
@@ -1694,7 +1694,12 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
   }
 
   /* 石高表示（内部値の1/10を万石として表示＝史実スケールに近づける） */
-  function fmtKoku(k){ const v = k/10; return (v%1===0? v : v.toFixed(1)) + '万石'; }
+  function fmtKoku(k){ const v = k/10, n=(v%1===0? v : v.toFixed(1)); return n + ((H && H.resourceUnit!==undefined) ? H.resourceUnit : '万石'); }
+  /* 偉人ごとのステ正式名（statLabelsがあれば優先・なければGENRES既定）＝UIのgenreLabelのGame版 */
+  function statName(k){ return (H && H.statLabels && H.statLabels[k]) || D.GENRES[k].label; }
+  /* 偉人ごとの資源名・アイコン（無ければ戦国既定＝石高/🌾） */
+  function rName(){ return (H && H.resourceName) || '石高'; }
+  function rIcon(){ return (H && H.resourceIcon) || '🌾'; }
 
   /* toast */
   function toast(msg){
@@ -1707,7 +1712,7 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
     newRun:(lg,tpy)=>{S=newRun(lg,tpy); saveAll();}, hasRun, resume, clearRun, exportSave, importSave,
     failRate, pushRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill, setHero, epilogueNext, pickEpilogue, skillInfo,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
-    battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku,
+    battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku, rName, rIcon,
     get cur(){return cur;}, get B(){return B;}, get H(){return H;}, saveAll };
 })();
 
@@ -1811,6 +1816,9 @@ const UI = (function(){
   };
   // 地図（勢力図）を出す偉人＝令制国マップが意味を持つ戦国3名のみ。他は地図なし
   const MAP_HEROES = { nobunaga:1, hideyoshi:1, ieyasu:1 };
+  /* 紀元前パックの年表示: 内部year=圧縮シリアル(実年代は表題に前置)。負なら数値を出さない */
+  function fmtYear(y){ return (y < 0) ? '' : (y + '年'); }
+  function eraShort(h){ return eraInfo(h).label.split('（')[0]; }
   const eraInfo = h => ERA_INFO[h.id] || {label:`${h.startYear}〜${h.endYear}年`, region:'jp', sort:h.startYear};
 
   /* ---- 育成開始（偉人選択 → 遺訓選択）。年代順（古い順）に日本史／世界史で分けて表示 ---- */
@@ -1864,7 +1872,7 @@ const UI = (function(){
     lg.forEach((g,i)=>{
       const b = document.createElement('button');
       b.className='btn';
-      b.innerHTML = `📜 ${g.name}<br><small style="font-weight:600">${D.GENRES[g.stat].icon} ${D.GENRES[g.stat].label}+${g.val} でスタート</small>`;
+      b.innerHTML = `📜 ${g.name}<br><small style="font-weight:600">${D.GENRES[g.stat].icon} ${genreLabel(g.stat)}+${g.val} でスタート</small>`;
       b.onclick = ()=>{ closeList(); startRun(i); };
       body.appendChild(b);
     });
@@ -2009,9 +2017,9 @@ const UI = (function(){
   function renderGame(){
     const S = Game.S; if (!S) return;
     const tpy = S.tpy||1, span = Game.H.endYear-Game.H.startYear+1;
-    $('g-year').textContent = `${S.year}年` + (tpy===2 ? (S.half? '・秋':'・春') : '');
+    $('g-year').textContent = (S.year<0 ? eraShort(Game.H) : `${S.year}年`) + (tpy===2 ? (S.half? '・秋':'・春') : '');
     $('g-turn').textContent = `${(S.year-Game.H.startYear)*tpy + (S.half||0) + 1}/${span*tpy}`;
-    $('g-koku').textContent = `🌾 ${Game.fmtKoku(S.koku)}`;
+    $('g-koku').textContent = `${Game.rIcon()} ${Game.fmtKoku(S.koku)}`;
     const m = Game.MOODS[S.mood];
     const mt = $('g-mood'); mt.textContent = m.icon+' '+m.label; mt.style.background = m.cls;
     const injured = !!S.injury;
@@ -2123,7 +2131,7 @@ const UI = (function(){
       // ⑦1行表示: アイコン＋年＋タイトル ……… のこりN
       $('g-next').innerHTML =
         `<span class="neIcon">${icon}</span>
-         <span class="neBody"><b>${next.year}年 ${next.title.split(' — ')[0]}</b></span>
+         <span class="neBody"><b>${next.year<0?'':next.year+'年 '}${next.title.split(' — ')[0]}</b></span>
          <span class="neCount">のこり<b>${rem}</b></span>`;
       $('g-next').style.display = 'flex';
     } else { $('g-next').style.display = 'none'; }
@@ -2287,9 +2295,9 @@ const UI = (function(){
   function fxText(fx){
     if (!fx) return '';
     const parts = [];
-    Game.STAT_KEYS.forEach(k=>{ if (fx[k]) parts.push(`${D.GENRES[k].icon}${D.GENRES[k].label}${fx[k]>0?'+':''}${fx[k]}`); });
+    Game.STAT_KEYS.forEach(k=>{ if (fx[k]) parts.push(`${D.GENRES[k].icon}${genreLabel(k)}${fx[k]>0?'+':''}${fx[k]}`); });
     if (fx.stamina) parts.push(`❤️体力${fx.stamina>0?'+':''}${fx.stamina}`);
-    if (fx.koku) parts.push(`🌾石高${fx.koku>0?'+':'-'}${Game.fmtKoku(Math.abs(fx.koku))}`);
+    if (fx.koku) parts.push(`${Game.rIcon()}${Game.rName()}${fx.koku>0?'+':'-'}${Game.fmtKoku(Math.abs(fx.koku))}`);
     if (fx.mood) parts.push(fx.mood>0? '😊やる気UP' : '😟やる気DOWN');
     return parts.join('　');
   }
@@ -2319,7 +2327,7 @@ const UI = (function(){
   }
   function faceFallback(img){ const el=img.parentElement; const a=el.dataset.fbart||''; el.classList.remove('faceArt'); if(a){ el.textContent=a; } else { el.style.display='none'; } }
   function showEvent(ev, cb, fx){
-    $('e-year').textContent = `${ev.year}年`;
+    $('e-year').textContent = fmtYear(ev.year);
     if (ev.faceImg) setFace(ev.faceImg, ev.art); else setArt(ev.art, tlScene(ev));
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
@@ -2336,7 +2344,7 @@ const UI = (function(){
     if (cb) cb(); else renderGame();
   }
   function showChoiceEvent(ev){
-    $('e-year').textContent = `${ev.year}年`;
+    $('e-year').textContent = fmtYear(ev.year);
     setArt(ev.art, tlScene(ev));
     $('e-title').textContent = ev.title;
     $('e-text').textContent = ev.text;
@@ -2366,7 +2374,7 @@ const UI = (function(){
     $('e-actions').innerHTML = Game.STAT_KEYS.map(k=>{
       const m = D.EPILOGUE.memories[k];
       return `<button class="btn" onclick="UI.pickEpilogueMem('${k}')">${m.label}<br>
-        <small style="font-weight:600">${D.GENRES[k].label} ${Game.S[k]} → 正解で+8</small></button>`;
+        <small style="font-weight:600">${genreLabel(k)} ${Game.S[k]} → 正解で+8</small></button>`;
     }).join('');
     $('ovl-event').classList.add('on');
   }
@@ -2774,7 +2782,7 @@ const UI = (function(){
   async function openBattle(ev){
     fastFwd = fastPref; updateFastBtn(); battleIntro = true; battleTiers = []; mst = {};
     curMode = (ev.presentMode && MODES[ev.presentMode]) ? ev.presentMode : 'jin-atarashii';
-    $('b-year').textContent = `${ev.year}年`;
+    $('b-year').textContent = fmtYear(ev.year);
     $('b-title').textContent = ev.title;
     $('b-intro').innerHTML = ev.intro ? `<details class="fold dim"><summary>📜 いくさのいきさつ</summary><div class="foldBody">${ev.intro}</div></details>` : '';
     $('b-intro').style.display = ev.intro ? 'block' : 'none';
@@ -2852,12 +2860,12 @@ const UI = (function(){
     $('r-sub').textContent = `評価点 ${sum.total} ／ ${sum.rank[2]}`;
     $('r-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, sum.stats[k], sum.tpy)).join('');
     $('r-summary').innerHTML =
-      `🌾 石高 <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 合戦 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
+      `${Game.rIcon()} ${Game.rName()} <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 合戦 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
       (sum.coins? `🪙 小判を <b>${sum.coins}枚</b> 獲得！（ホームでたまっていく）<br>` : '') +
       (sum.fell? `💀 <b>${sum.fell}に敗れ、育成終了……</b><br>📖 軍学帳でまちがいを復習して、もう一度天下を目指そう！`
        : sum.survived? Game.H.endTexts.survived
        : Game.H.endTexts.completed);
-    $('r-legacy').innerHTML = `📜 遺訓を獲得: <b>「${sum.legacy.name}」</b><br>次の育成で ${D.GENRES[sum.legacy.stat].icon}${D.GENRES[sum.legacy.stat].label}+${sum.legacy.val} できる！`;
+    $('r-legacy').innerHTML = `📜 遺訓を獲得: <b>「${sum.legacy.name}」</b><br>次の育成で ${D.GENRES[sum.legacy.stat].icon}${genreLabel(sum.legacy.stat)}+${sum.legacy.val} できる！`;
     // 📚 学びのきろく（塾ゲーの本懐: 何を学んだかが残る・2026-06-14）
     const gl = Game.STAT_KEYS.map(k=>{
       const g = (sum.gstat||{})[k];

@@ -162,6 +162,159 @@ const SENGOKU_DATA = (function(){
       ] },
   ];
 
+  /* ===== §2.6b 小競り合い・時代別セット（脱・戦国＝偉人トレーナー化・2026-06-16） =====
+     戦国/江戸の5偉人(信長/秀吉/家康/家光/吉宗)は上の既定セット SKIRMISH_FOES/SITUS を使う。
+     それ以外の16偉人は時代に合う下記セットを参照＝鉄砲・水賊・銭で揃えた傭兵等のアナクロを排除。
+     opt.genre は stat と同値（battlePick→pickQuestion が出題ジャンル絞りに使う既存規約）。 */
+  /* 古代(先史〜平安) */
+  const SKIRMISH_FOES_KODAI = [
+    { icon:"🐗", name:"田畑を荒らす獣", army:600, text:"実った稲や蓄えを荒らす獣の群れが里に下りてきた！" },
+    { icon:"🏞️", name:"水場と境の諍い", army:800, text:"となりのムラと水場の境をめぐっていさかいが起きた！" },
+    { icon:"🗡️", name:"まつろわぬ民の備え", army:1100, text:"山あいのまつろわぬ民が、こちらの里をうかがっている！" },
+    { icon:"👹", name:"野盗の押し込み", army:700, text:"蓄えをねらう盗賊の一団が、里の入口に迫った！" },
+  ];
+  const SKIRMISH_SITUS_KODAI = [
+    { sky:"🌾 開けた野原", bg:"assets/bg_field.jpg",
+      situ:"相手は野原のまん中に固まっている！ よく見ると守りが薄いぞ…！",
+      opts:[
+        { icon:"🏹", label:"薄いところへ弓と石つぶてを浴びせる", stat:"buyu", genre:"buyu", style:"safe", fit:2, ok:"弓と石つぶての雨だーっ！ 隊列がたちまち崩れていく！" },
+        { icon:"🌫️", label:"草むらに伏兵を置いて挟み込む", stat:"chiryaku", genre:"chiryaku", style:"risky", fit:1, ok:"草の中から伏兵がいっせいに躍り出た！ 相手は前後を取られて大混乱だ！" },
+        { icon:"🤝", label:"使いを送って話し合いに持ち込む", stat:"ninbo", genre:"ninbo", style:"trick", fit:1, ok:"相手が矛を収めた！ 刃を交えずに収めるのも立派な勝ちだ！" },
+      ] },
+    { sky:"⛰️ 険しい山道", bg:"assets/bg_mountain.jpg",
+      situ:"相手は細い山道を一列になって進んでいる。仕掛けるなら今だ！",
+      opts:[
+        { icon:"🪨", label:"崖の上から岩と矢を落とす", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"頭上から岩と矢が降りそそぐ！ 細い道では逃げ場がないーっ！" },
+        { icon:"💪", label:"道をふさいで力で押し返す", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"狭い道での揉み合い！ 一歩も引かぬ力比べを制したーっ！" },
+        { icon:"🔥", label:"見張りを立て、かがり火で隊列を束ねる", stat:"seiji", genre:"seiji", style:"trick", fit:1, ok:"段取りよく兵を配し、士気も高まった！ 隙のない構えで押し切った！" },
+      ] },
+    { sky:"🏞️ 川辺の浅瀬", bg:"assets/bg_river.jpg",
+      situ:"相手が川を渡り始めた！ 半分はまだ水の中…これは好機か!?",
+      opts:[
+        { icon:"🏹", label:"渡っている相手へ弓を射かける", stat:"buyu", genre:"buyu", style:"safe", fit:2, ok:"水の中では身動きが取れない！ 弓の的になるばかりだーっ！" },
+        { icon:"🧠", label:"上流をせき止め、一気に水を放つ", stat:"chiryaku", genre:"chiryaku", style:"risky", fit:2, ok:"せきを切った水がどっと押し寄せる！ 相手は丸ごと流された、大博打が当たった！" },
+        { icon:"🪶", label:"祭りの太鼓を鳴らし士気を一つにする", stat:"seiji", genre:"seiji", style:"safe", fit:1, ok:"太鼓の音に皆が奮い立った！ そろった気合で岸へ攻め上がる、手堅い勝ち筋だ！" },
+      ] },
+    { sky:"🌫️ 深い朝霧", bg:"assets/bg_fog.jpg",
+      situ:"朝霧が立ちこめてきた。相手はこちらの人数をつかめていない様子だ…！",
+      opts:[
+        { icon:"🌫️", label:"霧にまぎれて静かに忍び寄る", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"音もなく囲んでひと押し！ 相手は同士討ちを始めたぞ！" },
+        { icon:"🙏", label:"祈りを掲げ、和を説いて引かせる", stat:"ninbo", genre:"ninbo", style:"trick", fit:2, ok:"おごそかな祈りに相手の気がほぐれた！ 矛を収めて去っていく、人の和の勝ちだ！" },
+        { icon:"💪", label:"かがり火を目印に力で押し込む", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"火を頼りに押し込んだ！ 霧の中の揉み合いを制したのは構えの強さだ！" },
+      ] },
+  ];
+  /* 中世武家(鎌倉・室町) */
+  const SKIRMISH_FOES_CHUSEI = [
+    { icon:"👹", name:"野盗の討伐", army:600, text:"領内を荒らす野盗の群れが現れた！" },
+    { icon:"🏴", name:"悪党の押し込み", army:900, text:"掟に従わぬ悪党が、荘園の年貢を奪いにきたぞ！" },
+    { icon:"🏯", name:"隣領との所領争い", army:1100, text:"隣領の武士が境の田畑に兵を出してきた！" },
+    { icon:"⛵", name:"湊の海賊退治", army:700, text:"湊を荒らす海賊（水軍）の討伐を、浦の民が願い出てきた！" },
+  ];
+  const SKIRMISH_SITUS_CHUSEI = [
+    { sky:"🌾 開けた野原", bg:"assets/bg_field.jpg",
+      situ:"敵は野原のど真ん中で隊列を組んでいる！ よく見ると正面が薄いぞ…！",
+      opts:[
+        { icon:"🏹", label:"薄い正面へ騎馬で一点突破", stat:"buyu", genre:"buyu", style:"safe", fit:2, ok:"弓馬の勢いでまっすぐ貫いたーっ！ 敵の隊列が真っ二つだ！" },
+        { icon:"🌫️", label:"草むらに伏兵を置いて回り込む", stat:"chiryaku", genre:"chiryaku", style:"risky", fit:1, ok:"草陰から伏兵が飛び出した！ 敵は前後にはさまれて総崩れだ！" },
+        { icon:"🤝", label:"戦わず矛を収めるよう呼びかける", stat:"ninbo", genre:"ninbo", style:"trick", fit:1, ok:"敵が武具を置いた！ 義を説く言葉が、刃よりも先に届いたぞ！" },
+      ] },
+    { sky:"⛰️ 険しい山道", bg:"assets/bg_mountain.jpg",
+      situ:"敵は細い山道を一列になって進んでいる。仕掛けるなら今しかない！",
+      opts:[
+        { icon:"🌫️", label:"崖の上から矢を射かけて奇襲", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"頭上から矢の雨だーっ！ 細い道では楯も間に合わず、逃げ場がない！" },
+        { icon:"🗡️", label:"薙刀をふるい正面で道を塞ぐ", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"狭い道での白兵戦！ 薙刀ひとふりで一騎当千の働きだ！" },
+        { icon:"🏯", label:"郎党を配して退路を断つ段取り", stat:"seiji", genre:"seiji", style:"trick", fit:1, ok:"手勢を要所に伏せて袋の口を閉じる！ 抜かりない采配だーっ！" },
+      ] },
+    { sky:"🏞️ 川辺の浅瀬", bg:"assets/bg_river.jpg",
+      situ:"敵が川を渡り始めた！ 半分はまだ水の中…これは好機か!?",
+      opts:[
+        { icon:"🏹", label:"渡河中の敵へ矢を射かける", stat:"buyu", genre:"buyu", style:"safe", fit:2, ok:"水の中では身動きが取れない！ 浅瀬の敵を弓で射すくめる一方的な展開だーっ！" },
+        { icon:"🧠", label:"地の利を読み上流の堰を切る", stat:"chiryaku", genre:"chiryaku", style:"risky", fit:2, ok:"せき止めた水を一気に放つ！ 濁流に敵が押し流されていく、大博打が大成功だ！" },
+        { icon:"🤝", label:"浦の民に瀬の道案内を頼む", stat:"ninbo", genre:"ninbo", style:"trick", fit:1, ok:"地元の信を得て安全な瀬を教わった！ 人の和が確かな勝ち筋を開くーっ！" },
+      ] },
+    { sky:"🌫️ 深い夜霧", bg:"assets/bg_fog.jpg",
+      situ:"夜霧が出てきた。敵はこちらの兵の数をつかめていない様子だ…！",
+      opts:[
+        { icon:"🌫️", label:"霧にまぎれて夜討ちをかける", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"音もなく忍び寄って一斉に襲いかかる！ 敵は同士討ちを始めたぞ！" },
+        { icon:"🤝", label:"大軍と見せかけ降を呼びかける", stat:"ninbo", genre:"ninbo", style:"trick", fit:2, ok:"鬨の声を四方で上げて大軍を装う！ 敵が震え上がって矛を収めたーっ！" },
+        { icon:"🏯", label:"篝火を並べ手勢をまとめ直す", stat:"seiji", genre:"seiji", style:"risky", fit:1, ok:"篝火を目印に手勢を束ね直す！ 整った備えで霧の中の混戦を制したぞ！" },
+      ] },
+  ];
+  /* 近現代(幕末〜戦後) */
+  const SKIRMISH_FOES_KINGENDAI = [
+    { icon:"🗣️", name:"党派の対立", army:600, text:"会議が真っ二つ！ 党派の言い争いで物事が前に進まない！" },
+    { icon:"📰", name:"世論の分裂", army:900, text:"新聞も街の声も真っ向から対立、世の中が騒がしいぞ！" },
+    { icon:"🌍", name:"他国との外交摩擦", army:1100, text:"条約をめぐって相手国が強気に出てきた！ 一歩も引かぬ構えだ！" },
+    { icon:"⚒️", name:"民のもめごと", army:700, text:"暮らしへの不満から、人々の争議の声が高まってきた！" },
+  ];
+  const SKIRMISH_SITUS_KINGENDAI = [
+    { sky:"🌾 開けた広場", bg:"assets/bg_field.jpg",
+      situ:"広場に大勢が集まり、意見が真っ二つに割れている！ ここで流れを変えられるか…！",
+      opts:[
+        { icon:"📣", label:"壇上に立って演説で訴える", stat:"ninbo", genre:"ninbo", style:"safe", fit:2, ok:"言葉が人々の胸に届いた！ 割れていた声が一つにまとまっていく！" },
+        { icon:"🤝", label:"双方の代表と腹を割って交渉", stat:"seiji", genre:"seiji", style:"trick", fit:1, ok:"裏で根回しが効いた！ 対立していた両者が握手だーっ！" },
+        { icon:"🔥", label:"自ら矢面に立って押し切る", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"逃げずに正面から受け止めた！ その度胸に群衆が静まり返る！" },
+      ] },
+    { sky:"⛰️ 険しい峠道", bg:"assets/bg_mountain.jpg",
+      situ:"視察の道は険しい峠。先がどう転ぶか読みにくい局面だ…！",
+      opts:[
+        { icon:"📚", label:"情勢を調べ抜いて先を読む", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"資料を読み込んだ甲斐があった！ 相手の出方を完全に見切ったぞ！" },
+        { icon:"🧭", label:"現場まで自ら足を運ぶ", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"険しい道もものともせず現場へ！ 生の声をつかんで流れを変えた！" },
+        { icon:"📜", label:"新しい仕組みを設計して示す", stat:"seiji", genre:"seiji", style:"trick", fit:1, ok:"用意した制度の案が峠を越えるカギに！ 皆が納得して前へ進む！" },
+      ] },
+    { sky:"🏞️ 川辺の渡し場", bg:"assets/bg_river.jpg",
+      situ:"川向こうの相手国と、渡し場をはさんで交渉が始まる。一筋縄ではいかないぞ…！",
+      opts:[
+        { icon:"🌐", label:"粘り強く外交で落としどころを探る", stat:"seiji", genre:"seiji", style:"safe", fit:2, ok:"一歩も引かぬ交渉の末、双方が得をする落としどころに着地だーっ！" },
+        { icon:"🗣️", label:"堂々と渡り合って気迫で押す", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"物おじせず正面から渡り合った！ 気迫負けしない姿勢が実を結ぶ！" },
+        { icon:"🔍", label:"相手国の事情を調べて切り札を握る", stat:"chiryaku", genre:"chiryaku", style:"trick", fit:1, ok:"相手の足元を見抜いた！ こちらの言い分が通っていく！" },
+      ] },
+    { sky:"🌫️ 立ちこめる朝霧", bg:"assets/bg_fog.jpg",
+      situ:"先の見えない不況の朝霧。人々の不安が広がり、立て直しが急がれる…！",
+      opts:[
+        { icon:"🧠", label:"原因を見極めて立て直し策を練る", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"霧の正体を見抜いた！ 立て直しの道筋がくっきり見えてきたぞ！" },
+        { icon:"💬", label:"人々を励まし、心を一つにする", stat:"ninbo", genre:"ninbo", style:"trick", fit:1, ok:"温かい言葉が不安をやわらげた！ 人々が手を取り合って前を向く！" },
+        { icon:"🛠️", label:"自ら現場で陣頭指揮を執る", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"先頭に立って汗を流した！ そのうしろ姿が皆を動かしていく！" },
+      ] },
+  ];
+  /* 世界史 */
+  const SKIRMISH_FOES_SEKAI = [
+    { icon:"🌊", name:"あばれ大河の氾濫", army:600, text:"大河が水かさを増し、田畑と人々の暮らしをのみこもうとしている！" },
+    { icon:"🏕️", name:"近隣の部族と衝突", army:900, text:"境を接する部族が、こちらの土地に手を伸ばしてきた！" },
+    { icon:"🛡️", name:"旧勢力の抵抗", army:1100, text:"古い習わしを守る一派が、新しい流れに真っ向から立ちはだかる！" },
+    { icon:"🌫️", name:"未知の海の難所", army:700, text:"霧と暗礁にとざされた海路、その先へ進む手だてを求められている！" },
+  ];
+  const SKIRMISH_SITUS_SEKAI = [
+    { sky:"🌾 開けた平原", bg:"assets/bg_field.jpg",
+      situ:"相手は平原のまん中で群れをなしている！ よく見ると守りの薄いところがあるぞ…！",
+      opts:[
+        { icon:"💪", label:"薄いところへ一気に押し込む", stat:"buyu", genre:"buyu", style:"safe", fit:2, ok:"ひるまず押し切ったーっ！ 相手の構えが真っ二つに割れた！" },
+        { icon:"🧭", label:"地形を読んで遠回りに回り込む", stat:"chiryaku", genre:"chiryaku", style:"risky", fit:1, ok:"背後を取った！ 相手はあわてて向きを変えるが、もう遅い！" },
+        { icon:"🤝", label:"話し合いで歩み寄りを呼びかける", stat:"ninbo", genre:"ninbo", style:"trick", fit:1, ok:"相手が矛を収めた！ 人の和が力よりも強いこともある！" },
+      ] },
+    { sky:"⛰️ 険しい山道", bg:"assets/bg_mountain.jpg",
+      situ:"相手は細い山道を一列になって進んでいる。動くなら今のうちだ！",
+      opts:[
+        { icon:"💡", label:"高所から見下ろして先回りする", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"高い所から流れを読んだ！ 細い道では相手に逃げ場がないーっ！" },
+        { icon:"💪", label:"道をふさいで正面から受け止める", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"狭い道での真っ向勝負！ 一歩も引かず押し返したーっ！" },
+        { icon:"🏛️", label:"通行の取り決めを結んで道を開く", stat:"seiji", genre:"seiji", style:"trick", fit:1, ok:"話をまとめて道が開いた！ 力ずくより交渉が早いこともある！" },
+      ] },
+    { sky:"🏞️ 川辺の浅瀬", bg:"assets/bg_river.jpg",
+      situ:"相手が川を渡り始めた！ まだ半分は水の中…これは好機か!?",
+      opts:[
+        { icon:"🧠", label:"上流の流れを読んで先手を打つ", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"水の動きを見抜いた！ 川の理（ことわり）を味方につけたーっ！" },
+        { icon:"💪", label:"岸で待ち構えて押し返す", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"上がってくる相手を片っ端から押し戻す！ 手堅い勝ち筋だ！" },
+        { icon:"🙏", label:"人々の力を束ねて堤を固める", stat:"ninbo", genre:"ninbo", style:"trick", fit:1, ok:"皆が一つになって堤を守りぬいた！ 人の和が水をも制したーっ！" },
+      ] },
+    { sky:"🌫️ 深い夜霧", bg:"assets/bg_fog.jpg",
+      situ:"夜霧が立ちこめてきた。相手はこちらの構えをつかめずにいる様子だ…！",
+      opts:[
+        { icon:"🧭", label:"霧にまぎれて先手をしのばせる", stat:"chiryaku", genre:"chiryaku", style:"safe", fit:2, ok:"音もなく間合いをつめた！ 相手は霧の中で大混乱だーっ！" },
+        { icon:"🏛️", label:"落ち着いて相手と話をつける", stat:"seiji", genre:"seiji", style:"trick", fit:1, ok:"冷静に渡りをつけた！ 見えない夜だからこそ交渉が効いたーっ！" },
+        { icon:"💪", label:"灯りを頼りに一歩ずつ進む", stat:"buyu", genre:"buyu", style:"risky", fit:1, ok:"わずかな灯りを頼りに踏み込んだ！ 霧の中の混戦を制したのは胆力だ！" },
+      ] },
+  ];
+
   /* ===== §2.7 勢力図（信長シナリオ・支配国の変遷） =====
      own: その年以降は織田領（青）。ally: 同盟＝徳川（緑）。c/r: 地図グリッド位置（西=左） */
   const MAP = {
@@ -508,7 +661,7 @@ const SENGOKU_DATA = (function(){
       c:['田畑の面積や収穫量を調べ、耕作者に年貢を納めさせた','百姓から刀や鉄砲を取り上げた','大名を1年おきに江戸へ住まわせた','キリスト教の宣教師を国外追放した'], a:0,
       desc:'ものさしやますを統一して全国の田畑を測量し、収穫量を石高で表した。年貢を確実に取る仕組みで、武士と百姓の身分が分かれていく。' },
     { genre:'seiji', diff:2, q:'豊臣秀吉が刀狩を行った最大の目的は？',
-      c:['百姓の一揆を防ぎ、武士と百姓の身分をはっきり分けるため','鉄砲の生産を増やすため','大仏を作る鉄を集めるため（本当の狙い）','戦のない平和な世を作ると宣言するため'], a:0,
+      c:['百姓の一揆を防ぎ、武士と百姓の身分をはっきり分けるため','鉄砲の生産を増やすため','大仏を作る鉄を集めるため','戦のない平和な世を作ると宣言するため'], a:0,
       desc:'表向きは「大仏のくぎにする」だったが、本当の狙いは一揆防止と兵農分離。太閤検地とセットで身分制社会の土台を作った。' },
     { genre:'seiji', diff:2, q:'「石高（こくだか）」とは何を表すもの？',
       c:['土地の生産力を米の量（石）で表したもの','武士の位の高さ','城の大きさ','家臣の人数'], a:0,
@@ -1026,7 +1179,7 @@ const SENGOKU_DATA = (function(){
           { n:'尾張', c:4, r:2, ally:1562 },
           { n:'三河', c:5, r:2, own:1560 },
           { n:'江戸', c:6, r:2, own:1590 },
-          { n:'大坂', c:2, r:3, own:1600 },
+          { n:'大坂', c:2, r:3, own:1615 },
           { n:'遠江', c:4, r:3, own:1570 },
           { n:'駿河', c:5, r:3, own:1582 },
         ],
@@ -1304,7 +1457,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_asuka.png",
       uniqueSkill:{id:"uq_wagotoutoshi",icon:"☸️",name:"和をもって貴しと為す",desc:"側近との絆が深まると徳（人望）がさらに伸びる（偉人固有）",fx:{bondPlus:1,ninbo:2}},
       sceneImgs:["assets/scene_asuka.jpg","assets/scene_asuka.jpg","assets/scene_asuka.jpg","assets/scene_asuka.jpg","assets/scene_asuka.jpg"],
-      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"徳"},
+      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"徳"},      resourceName:"国力", resourceIcon:"🏛️", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:3,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:574,
       endYear:605,
@@ -1335,8 +1488,8 @@ const SENGOKU_DATA = (function(){
         {year:603,type:"story",title:"694年 藤原京 — 初の本格的な都",art:"🏛️🛣️",text:"天武天皇のあと、持統天皇は奈良盆地に藤原京を造った。中国の都にならって、道を碁盤の目のように区切った、初めての本格的な都である。\n\n天皇が住み、役人が働く立派な都——それは、整った国の仕組み（律令）を入れるための「うつわ」だった。あとは、その中身となる法を完成させるだけだ。",effects:{seiji:6,koku:15}},
         {year:605,type:"final",title:"701年 大宝律令 — 律令国家の完成",art:"📜🏛️",text:"白村江の敗戦から国づくりを急ぐこと数十年。ついに、唐の制度にならった本格的な法「大宝律令」が完成した。\n\n「律」は刑罰のきまり、「令」は政治の仕組みのきまり。天皇を頂点に、役所と役人が全国をきちんと治める——聖徳太子が夢見た「天皇中心の国」が、ここに形となった。\n\nあなた（語り部・聖徳太子）の志は、百年の時を越えて、確かに実を結んだ。",survive:{title:"【IF】太子の理想、そのままに",text:"もし——太子の「和」と「徳」の理想が、争いを最小限に抑えたまま受け継がれていたら。\n\n蘇我氏の専横も、白村江の悲劇も、肉親が殺し合う壬申の乱も、もっと小さくてすんだかもしれない。話し合いと学びで人を動かし、流血を避けながら、律令という新しい仕組みへ静かに移っていく——。\n\nあなたが育てた知略と徳は、そんな「もう一つの飛鳥」を描き出した。和をもって貴しと為す。太子の理想は、最も美しい形で実った。"},fall:{title:"史実どおり — 大宝律令の完成",text:"歴史は、けっして平らな道ではなかった。蘇我氏の専横、乙巳の変の血、白村江の大敗、そして壬申の乱。多くの人が倒れ、悩み、それでも国づくりの歩みは止まらなかった。\n\n聖徳太子のまいた「天皇中心の国」という種は、大化の改新を経て、701年の大宝律令でついに実を結ぶ。律令国家・日本の誕生である。\n\nその礎を最初に築いた人として、聖徳太子の名は今も教科書に刻まれている。"}}
       ],
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KODAI,
+      skirmishSitus:SKIRMISH_SITUS_KODAI
     },
     bakumatsu: {
       id:"bakumatsu",
@@ -1348,7 +1501,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_bakumatsu.png",
       uniqueSkill:{id:"uq_senchu",icon:"⚓",name:"船中八策",desc:"合戦で「搦め手」の采配が決まったとき、戦果がさらに増す（偉人固有）",fx:{trickBoost:1.15}},
       sceneImgs:["assets/scene_bakumatsu.jpg","assets/scene_bakumatsu.jpg","assets/scene_bakumatsu.jpg","assets/scene_bakumatsu.jpg","assets/scene_bakumatsu.jpg"],
-      statLabels:{buyu:"剣",chiryaku:"才",seiji:"政",ninbo:"和"},
+      statLabels:{buyu:"剣",chiryaku:"才",seiji:"政",ninbo:"和"},      resourceName:"資金", resourceIcon:"💰", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:3,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1853,
       endYear:1884,
@@ -1360,7 +1513,7 @@ const SENGOKU_DATA = (function(){
       seasons:["🌸","☀️","🍂","⛄"],
       retainers:[{id:"katsu",name:"勝海舟",icon:"⚓",fav:"chiryaku",perk:{type:"gain",v:2,label:"同席した鍛錬の上昇+2"},skill:{id:"sk_kaigun",icon:"⚓",name:"海軍の眼",desc:"合戦の才（知略）の采配が強くなる",fx:{battleStat:"chiryaku"}},midText:"「世界は広いぞ。井戸の中の蛙でいるな」（勝先生の話を聞くたび、見える景色が変わっていく）",intro:"幕臣でありながら開国・近代海軍を説いた大人物。あなたの考えを根本から変えた師。",maxText:"「龍馬、お前は日本のために働ける男だ」（時代を見通す師が、あなたを認めてくれた）",maxFx:{chiryaku:10,ninbo:5}},{id:"saigo",name:"西郷隆盛",icon:"🐗",fav:"buyu",perk:{type:"skillpt",v:1,label:"同席正解でスキルP+1"},skill:{id:"sk_satsuma",icon:"🐗",name:"薩摩隼人の胆",desc:"合戦の剣（武力）の采配が強くなる",fx:{battleStat:"buyu"}},midText:"「議論は無用。命を懸けるかどうか、それだけでごわす」（西郷どんの一言は山のように重い）",intro:"薩摩藩の中心人物。情に厚く器の大きい豪傑。のちに新政府軍を率いる。",maxText:"「坂本さぁ、あなたとなら新しか日本がつくれる」（巨人と呼ばれた男が、あなたを盟友と認めた）",maxFx:{buyu:8,ninbo:7}},{id:"kido",name:"木戸孝允（桂小五郎）",icon:"📜",fav:"seiji",perk:{type:"kokuSub",label:"同席した政務の石高2倍"},skill:{id:"sk_choshu",icon:"📜",name:"長州の理",desc:"合戦の政（外交・調略）の采配が強くなる",fx:{battleStat:"seiji"}},midText:"「逃げるも戦いのうち。生きてこそ、なすべきことができる」（冷静沈着な桂の判断は学ぶことが多い）",intro:"長州藩の俊才。理路整然とした交渉の達人。「逃げの小五郎」と呼ばれるほど慎重で生き延びた。",maxText:"「君がいなければ、薩摩と長州は手を結べなかった」（維新三傑の一人が、あなたに深く頭を下げた）",maxFx:{seiji:10,chiryaku:5}},{id:"oryo",name:"お龍（おりょう）",icon:"🌸",fav:"ninbo",perk:{type:"mood",label:"同席時、やる気低下を半分防ぐ"},skill:{id:"sk_yuduki",icon:"♨️",name:"湯けむりの安らぎ",desc:"休息の回復量が増える",fx:{restPlus:12}},midText:"「あなたは休むのが下手ですね」（お龍の入れた茶で、張りつめた心がほどける）",intro:"あなたの妻。寺田屋で入浴中に危機を察し、急いで階段を駆け上がってあなたに知らせ命を救った。",maxText:"「次はどこへ連れて行ってくれるの？」（霧島の旅は日本初の新婚旅行と呼ばれた。隣にいる人）",maxFx:{ninbo:10,mood:2}},{id:"yataro",name:"岩崎弥太郎",icon:"🧮",fav:"seiji",perk:{type:"cost",v:5,label:"同席した鍛錬の体力-5"},skill:{id:"sk_soroban",icon:"🧮",name:"算盤の才覚",desc:"視察で得る石高が4割増える",fx:{tripKoku:1.4}},midText:"「商いは戦と同じ。読みと度胸が銭を生む」（弥太郎の金勘定の速さには舌を巻く）",intro:"土佐の同郷で会計と商いの天才。海援隊の財政を支えた。のちに三菱を創業する。",maxText:"「あなたの夢の船、わたしが必ず動かしてみせます」（のちに海運王となる男が、あなたの志を継ぐ）",maxFx:{seiji:8,koku:30}},{id:"nakaoka",name:"中岡慎太郎",icon:"🗡️",fav:"buyu",perk:{type:"gain",v:2,label:"同席した鍛錬の上昇+2"},skill:{id:"sk_rikuentai",icon:"🗡️",name:"陸援隊の気骨",desc:"すべての鍛錬の上昇が少し増える",fx:{trainAll:1}},midText:"「言葉で動かぬなら、足で動く。それが志士というものだ」（同郷の盟友は行動の人だ）",intro:"同じ土佐の志士で薩長同盟に奔走した盟友。陸援隊を率いた。",maxText:"「龍馬、最後まで一緒だ」（近江屋でともに難に遭うことになる、生涯の友）",maxFx:{buyu:7,ninbo:6}}],
       timeline:[
-        {year:1853,type:"battle",title:"1853年 黒船来航 — 砲艦の前に立つ",presentMode:"teppo-atarashii",terrain:{icon:"🌊",label:"江戸湾・浦賀沖"},bg:"assets/scene_bakumatsu.jpg",intro:"剣術修行のため江戸にいたあなたは、浦賀沖に現れた4隻の黒い軍艦を見て言葉を失った。ペリー率いるアメリカ艦隊が開国を求めて来航したのだ。蒸気で動く巨艦と大砲の前に、刀は無力だった。この衝撃が、あなたの人生を動かす。",enemyName:"ペリー艦隊（黒船）",enemyIcon:"🚢",enemyPower:75,army:{me:0,foe:4},meUnit:"🗡️",foeUnit:"🚢",open:["出ました幕末の幕開け！ 浦賀沖にペリーの黒船4隻が姿を現したあーっ！","蒸気で進む鉄の巨艦と巨大な大砲——二百年眠った日本に、世界がこじ開けに来たーっ！"],rounds:[{situ:"轟音と黒煙を上げる巨艦。多くの者は逃げ惑うが、あなたはどう向き合う!?",opts:[{icon:"👀",label:"港へ駆け、艦の造りを見届ける",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"恐れより好奇心が勝った！ 「これが世界の力か」——龍馬の目が世界へ開かれた瞬間だーっ！"},{icon:"🗡️",label:"刀を握りしめ攘夷の覚悟を固める",stat:"buyu",genre:"buyu",style:"risky",fit:1,ok:"血が騒ぐ！ だが…あの大砲の前で刀が何をできる、と心の隅で問う声がする！"},{icon:"📜",label:"家族へ「異国船を見た」と書き送る",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"「日本は変わるかもしれん」——あなたの手紙が、土佐に時代の風を運んだ！"}]},{situ:"幕府は浦賀でペリーと交渉中。攘夷か開国か、世論は真っ二つだ…!?",opts:[{icon:"🧠",label:"まず世界の情勢を学ぼうと決める",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,ok:"「敵を知らねば話にならん」——あなたは蘭学や海外事情に耳を傾け始めた！"},{icon:"🤝",label:"同じ志を持つ者と語り合う",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"江戸の道場に集う若者たちと議論！ 人の輪こそ、あなたの最大の武器になる！"},{icon:"💥",label:"攘夷の檄文を町に貼る",stat:"seiji",genre:"seiji",style:"risky",fit:0,ok:"血気は伝わったが…大砲は言葉では退かない。現実の重さを思い知る！"}]},{situ:"黒船は「来年また来る」と告げ、悠々と去っていく。この衝撃をどう胸に刻む!?",opts:[{icon:"⚓",label:"「日本も船と海軍を持たねば」と志す",stat:"chiryaku",genre:"chiryaku",style:"risky",fit:2,ok:"のちの海援隊の原点だあーっ！ 海の向こうへ、龍馬の夢が走り出した！"},{icon:"🤝",label:"郷里へ帰り仲間に世界を伝える",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"土佐に持ち帰った世界の話が、次の志士たちを目覚めさせていく！"},{icon:"🗡️",label:"剣の腕をさらに磨き直す",stat:"buyu",genre:"buyu",style:"safe",fit:1,ok:"身を守る力は要る！ だが剣だけでは時代に勝てぬ、と心は次を見ている！"}]}],winText:"黒船来航——この一年で日本は変わった。翌1854年、幕府はペリーと日米和親条約を結び、下田と函館を開いて、二百年余り続いた鎖国は終わった。あなたの胸には「世界」という二文字が刻まれた。",loseText:"【敗北】時代の大波に飲み込まれ、ただ立ちすくむだけだった……。\n\n（育成終了。新しい時代は知ること（才）から。世界を学んで出直そう！）",winFx:{koku:40,chiryaku:8,ninbo:3}},
+        {year:1853,type:"battle",title:"1853年 黒船来航 — 砲艦の前に立つ",presentMode:"toki-atarashii",terrain:{icon:"🌊",label:"江戸湾・浦賀沖"},bg:"assets/scene_bakumatsu.jpg",intro:"剣術修行のため江戸にいたあなたは、浦賀沖に現れた4隻の黒い軍艦を見て言葉を失った。ペリー率いるアメリカ艦隊が開国を求めて来航したのだ。蒸気で動く巨艦と大砲の前に、刀は無力だった。この衝撃が、あなたの人生を動かす。",enemyName:"ペリー艦隊（黒船）",enemyIcon:"🚢",enemyPower:75,army:{me:0,foe:4},meUnit:"🗡️",foeUnit:"🚢",open:["出ました幕末の幕開け！ 浦賀沖にペリーの黒船4隻が姿を現したあーっ！","蒸気で進む鉄の巨艦と巨大な大砲——二百年眠った日本に、世界がこじ開けに来たーっ！"],rounds:[{situ:"轟音と黒煙を上げる巨艦。多くの者は逃げ惑うが、あなたはどう向き合う!?",opts:[{icon:"👀",label:"港へ駆け、艦の造りを見届ける",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"恐れより好奇心が勝った！ 「これが世界の力か」——龍馬の目が世界へ開かれた瞬間だーっ！"},{icon:"🗡️",label:"刀を握りしめ攘夷の覚悟を固める",stat:"buyu",genre:"buyu",style:"risky",fit:1,ok:"血が騒ぐ！ だが…あの大砲の前で刀が何をできる、と心の隅で問う声がする！"},{icon:"📜",label:"家族へ「異国船を見た」と書き送る",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"「日本は変わるかもしれん」——あなたの手紙が、土佐に時代の風を運んだ！"}]},{situ:"幕府は浦賀でペリーと交渉中。攘夷か開国か、世論は真っ二つだ…!?",opts:[{icon:"🧠",label:"まず世界の情勢を学ぼうと決める",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,ok:"「敵を知らねば話にならん」——あなたは蘭学や海外事情に耳を傾け始めた！"},{icon:"🤝",label:"同じ志を持つ者と語り合う",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"江戸の道場に集う若者たちと議論！ 人の輪こそ、あなたの最大の武器になる！"},{icon:"💥",label:"攘夷の檄文を町に貼る",stat:"seiji",genre:"seiji",style:"risky",fit:0,ok:"血気は伝わったが…大砲は言葉では退かない。現実の重さを思い知る！"}]},{situ:"黒船は「来年また来る」と告げ、悠々と去っていく。この衝撃をどう胸に刻む!?",opts:[{icon:"⚓",label:"「日本も船と海軍を持たねば」と志す",stat:"chiryaku",genre:"chiryaku",style:"risky",fit:2,ok:"のちの海援隊の原点だあーっ！ 海の向こうへ、龍馬の夢が走り出した！"},{icon:"🤝",label:"郷里へ帰り仲間に世界を伝える",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"土佐に持ち帰った世界の話が、次の志士たちを目覚めさせていく！"},{icon:"🗡️",label:"剣の腕をさらに磨き直す",stat:"buyu",genre:"buyu",style:"safe",fit:1,ok:"身を守る力は要る！ だが剣だけでは時代に勝てぬ、と心は次を見ている！"}]}],winText:"黒船来航——この一年で日本は変わった。翌1854年、幕府はペリーと日米和親条約を結び、下田と函館を開いて、二百年余り続いた鎖国は終わった。あなたの胸には「世界」という二文字が刻まれた。",loseText:"【敗北】時代の大波に飲み込まれ、ただ立ちすくむだけだった……。\n\n（育成終了。新しい時代は知ること（才）から。世界を学んで出直そう！）",winFx:{koku:40,chiryaku:8,ninbo:3}},
         {year:1855,type:"story",title:"1854年 日米和親条約 — 開国の始まり",art:"🤝🚢",text:"再来したペリーと幕府が日米和親条約を結んだ。下田と函館の二港を開き、二百年あまり続いた鎖国がついに終わった。\n\n「開国」——その言葉は、攘夷を叫ぶ志士たちには屈辱に映った。だがあなたは思う。鎖国のままで、あの黒船に勝てるはずがない。問題は「いかに開くか」だ、と。",effects:{chiryaku:5,seiji:3}},
         {year:1859,type:"story",title:"1856年 江戸の剣術修行 — 北辰一刀流",art:"🗡️🏯",text:"あなたは江戸の千葉道場で北辰一刀流を学び、塾頭を任されるほどの腕前になった。剣を通じて諸国の若者と交わり、世の動きが肌で分かるようになる。\n\nだが道場で交わす議論は、剣の技よりも「これからの日本」のことばかり。剣の道は、人と人をつなぐ道でもあった。",effects:{buyu:8,ninbo:4}},
         {year:1863,type:"battle",title:"1858年 日米修好通商条約 — 不平等の鎖",terrain:{icon:"📜",label:"江戸城・調印の場"},bg:"assets/scene_bakumatsu.jpg",intro:"大老・井伊直弼が、朝廷の許しを得ないまま日米修好通商条約を結んだ。神奈川など5港を開く貿易の条約だが、その中身は日本にとって不利なものだった——関税を自分で決められず（関税自主権がない）、外国人の罪を日本の法で裁けない（領事裁判権を認める）。この「不平等」と、どう向き合う!?",enemyName:"不平等条約の鎖",enemyIcon:"⛓️",enemyPower:216,army:{me:1,foe:5},meUnit:"🗡️",foeUnit:"📜",open:["事件です！ 大老・井伊直弼が朝廷の許可なく日米修好通商条約に調印ーっ！","関税自主権なし、領事裁判権あり——日本を縛る「不平等条約」が結ばれてしまったあーっ！"],rounds:[{situ:"「外国人の罪を日本で裁けぬ」「関税を自分で決められぬ」——この理不尽をどう捉える!?",opts:[{icon:"🧠",label:"なぜ不平等なのか仕組みを学ぶ",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"敵の正体を知れ！ 「関税自主権」と「領事裁判権」——この二つが鎖の正体だと見抜いたーっ！"},{icon:"🗡️",label:"怒りにまかせ攘夷を叫ぶ",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"血は熱いが…条約は刀で破れない。怒りだけでは前に進めないぞ！"},{icon:"📜",label:"条約の全文を写し取り研究する",stat:"seiji",genre:"seiji",style:"safe",fit:1,ok:"一条ずつ読み解いていく！ 不平等の中身を正確に掴むのが第一歩だ！"}]},{situ:"勅許なしの調印に、尊王攘夷の志士たちが激高している。あなたはどう動く!?",opts:[{icon:"🤝",label:"藩を超えて志士の輪をつくる",stat:"ninbo",genre:"ninbo",style:"safe",fit:2,ok:"土佐・薩摩・長州——藩の垣根を越えて人がつながる！ これが龍馬の戦い方だ！"},{icon:"📜",label:"幕府に頼らぬ「新しい国の形」を構想",stat:"seiji",genre:"seiji",style:"risky",fit:2,ok:"「幕府ひとつでは世界に立ち向かえぬ」——壮大な国家像が芽生えていくーっ！"},{icon:"🗡️",label:"実力をつけ、いつか対等の条約をと誓う",stat:"buyu",genre:"buyu",style:"trick",fit:1,ok:"「いつか必ず対等に直す」——その志は、のちの明治の宿題となる！"}]},{situ:"開港地には外国の品が流れ込み、物価も世も乱れ始めた。この激動をどう生かす!?",opts:[{icon:"⚓",label:"貿易と海運こそ国を富ますと見抜く",stat:"seiji",genre:"seiji",style:"safe",fit:2,ok:"攘夷ではなく交易で国を強く！ のちの亀山社中・海援隊の発想が固まったーっ！"},{icon:"🧠",label:"世界の国々の力関係を調べる",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"イギリス、アメリカ、ロシア…世界の地図が頭の中に広がっていく！"},{icon:"🤝",label:"開明派の幕臣に教えを請う",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"敵味方を越えて学ぶ姿勢が、やがて勝海舟との出会いを引き寄せる！"}]}],winText:"不平等条約は重い鎖となって日本に残った。だがあなたは怒りを学びに変えた——「攘夷では国は守れぬ。世界に伍する国を作るのだ」。この年から、井伊直弼は反対派を厳しく弾圧する安政の大獄を始める。",loseText:"【敗北】怒りに飲まれ、考えなしに突き進んで道を見失った……。\n\n（育成終了。不平等の正体を知る「才」と、人をつなぐ「和」を鍛えて出直そう！）",winFx:{koku:50,seiji:8,chiryaku:5}},
@@ -1376,8 +1529,8 @@ const SENGOKU_DATA = (function(){
         {year:1884,type:"final",title:"1867年 近江屋 — そして明治へ",art:"🌅⚓",text:"大政奉還の翌月、京の近江屋で、あなたは盟友・中岡慎太郎とともに何者かに襲われた。新しい国の夜明けを目前に、あなたの命の灯は消えようとしている。\n\nだが、あなたが結んだ薩長同盟、説いた大政奉還、描いた船中八策は、すでに時代を動かしていた。やがて旧幕府軍と新政府軍が戦う戊辰戦争を経て、日本は新しい「明治」の世へと進んでいく——。",survive:{title:"【IF】海の向こうへ — 龍馬、生きる",text:"近江屋の凶刃を、間一髪で逃れた——。\n\n戊辰戦争は新政府軍の勝利に終わり、日本は明治の世を迎えた。あなたは政府の役職には就かず、かねての夢だった海運と貿易の道へ進んだ。\n\n日本中の港を結ぶ船団を育て、若者を世界へ送り出し、不平等条約を対等に直す交渉に裏から力を貸した。「日本を今いちど洗濯いたし候」——少年の日に黒船を見上げて抱いた夢を、あなたは自分の手で叶えていった。これは、もしも龍馬が生き延びていたら、というもう一つの歴史である。"},fall:{title:"近江屋事件 — 夜明け前の凶刃",text:"近江屋で、あなたは33年の生涯を閉じた。大政奉還のわずか一か月後、明治という新しい夜明けを見ることはなかった。\n\nしかしあなたが残したもの——憎しみを越えて人を結んだ薩長同盟、血を流さずに時代を変えようとした大政奉還、未来を描いた船中八策は、確かに新しい日本の礎となった。\n\n戊辰戦争を経て成立した明治新政府には、あなたが結びつけた西郷隆盛や木戸孝允の姿があった。坂本龍馬の志は、時代を超えて生き続けている。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KINGENDAI,
+      skirmishSitus:SKIRMISH_SITUS_KINGENDAI
     },
     daikoukai: {
       id:"daikoukai",
@@ -1389,7 +1542,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_daikoukai.png",
       uniqueSkill:{id:"uq_seikoro",icon:"🧭",name:"西回りの賭け",desc:"航海（合戦）で「博打」の采配が決まると、戦果がさらに増す（偉人固有）",fx:{riskyBoost:1.15}},
       sceneImgs:["assets/scene_daikoukai.jpg","assets/scene_daikoukai.jpg","assets/scene_daikoukai.jpg","assets/scene_daikoukai.jpg","assets/scene_daikoukai.jpg"],
-      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"信"},
+      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"信"},      resourceName:"富", resourceIcon:"💰", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:3,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1400,
       endYear:1429,
@@ -1405,7 +1558,7 @@ const SENGOKU_DATA = (function(){
         {year:1407,type:"story",title:"1450年 活版印刷術 — 知識が世界に広がる",art:"📖🖨️",text:"ドイツのグーテンベルクが、金属の活字を組み合わせて何度も刷れる「活版印刷術」を実用化した。それまで本は人の手で一冊ずつ写すしかなく、とても高価だった。\n\n印刷のおかげで、聖書も学問の本も安く大量に作れるようになる。新しい考えが、海を越え国を越えて、すごい速さで広まっていく。ルネサンスも、のちの宗教改革も、この発明が背中を押した。知の革命の始まりだ。",effects:{chiryaku:6,ninbo:4,koku:30}},
         {year:1408,type:"choice",title:"1453年 東への道がふさがれた — どうする？",art:"🌶️🗺️",text:"ヨーロッパの人々は、インドや中国（東洋）の香辛料や絹を強く欲しがっていた。だが1453年、オスマン帝国がビザンツ帝国の都を落とし、東地中海の陸の交易路をおさえてしまう。\n\n陸の道が高くつくなら、海から東洋を目指すしかない。羅針盤（コンパス）も伝わり、海図も進んだ。さあ、どの道で東洋（アジア）を目指す？",choices:[{label:"アフリカの南をぐるりと回る「東回り」",text:"ポルトガルが進めてきた、アフリカ西岸を南下して東のインドを目指す道だ。確実だが、とにかく遠い。のちにバスコ・ダ・ガマがこの道でインドに着く。",fx:{seiji:5,chiryaku:3}},{label:"大西洋を西へ突っ切る「西回り」に賭ける",text:"「地球が丸いなら、西へ進んでも東洋に着くはずだ」——誰もやっていない大胆な賭け。距離の計算には甘さもあったが、この夢があなたを動かしていく。",fx:{chiryaku:6,ninbo:4}}]},
         {year:1412,type:"battle",title:"1486〜92 宮廷への売り込み — 王を口説き落とせ",presentMode:"toki-atarashii",terrain:{icon:"👑",label:"スペイン宮廷・グラナダ"},bg:"assets/scene_daikoukai.jpg",enemyName:"航海に反対する学者と重臣たち",enemyIcon:"🧐",enemyPower:251,army:{me:1,foe:20},meUnit:"🧭",foeUnit:"🧐",open:["夢を実現するには、船と費用を出してくれる王の後ろ盾がいる！ だが宮廷の学者は「西回りなど無謀だ」と猛反対！","刀でなく言葉の戦いだ。地球が丸いことを示し、女王イサベルを口説き落とせるか——大航海の運命がかかった論戦だーっ！"],rounds:[{situ:"まず「西へ進めば東洋に着く」という考えを、どう納得させる？",opts:[{icon:"🧠",label:"地球は丸いという学説と海図で理づめに説く",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"「丸い地球なら西からでも着く」——理屈の通った説明に、耳を傾ける者が出てきたーっ！"},{icon:"🤝",label:"女王の信仰心に訴え「布教の使命」を語る",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"「新しい土地にキリスト教を広めましょう」——女王の心が動いた！"},{icon:"⚔️",label:"無理にでも今すぐ船を出せと押し通す",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"熱意は伝わったが、準備不足の冒険と見られてしまう…！"}]},{situ:"反対派が「成功しても利益があるのか」と詰め寄る。どう答える？",opts:[{icon:"🌶️",label:"香辛料と黄金の交易でスペインが大きく富むと示す",stat:"seiji",genre:"seiji",style:"safe",fit:2,hist:true,ok:"「直接アジアと交易すれば莫大な富が」——王家の損得勘定が傾いたーっ！"},{icon:"🧠",label:"他国（ポルトガル）に先を越されると警告する",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"「ぐずぐずすればライバルに取られます」——焦りが味方になった！"},{icon:"🤝",label:"成功したら自分は総督でよいと欲を控えめに見せる",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"譲る姿勢が信用を生む…と見せかけて交渉を有利に運ぶ！"}]},{situ:"女王の決断を待つ。最後のひと押しは？",opts:[{icon:"👑",label:"女王イサベルに直接、熱意と計画を訴える",stat:"seiji",genre:"seiji",style:"safe",fit:2,hist:true,ok:"1492年、女王が支援を決定（最初の提案から6年越し）！ 3隻の船と費用を勝ち取ったあーっ！"},{icon:"🤝",label:"長年支えてくれた修道士らに口添えを頼む",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"味方の声が後押し！ 女王の周りが「やらせてみては」とまとまる！"},{icon:"🧠",label:"費用は最小限でよいと現実的な案を出す",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"「これなら出せる」——王家の負担を減らし、許可を引き寄せた！"}]}],winText:"長い説得の末、ついにイサベル女王の支援を勝ち取った！ サンタ・マリア号ほか3隻、約90人の船員。1492年、コロンブスは未知の大西洋へ船を出す。誰も成しえなかった「西回り」の大冒険が、いよいよ始まる。",loseText:"【敗北】学者たちの反対を覆せず、王の支援を得られなかった……。\n\n（育成終了。王を口説くのは知略と政治と信頼の戦い。しっかり鍛えて出直そう！）",winFx:{koku:80,seiji:8,ninbo:5}},
-        {year:1413,type:"battle",title:"1492年 大西洋横断 — 未知の海をゆく90人",presentMode:"teppo-atarashii",terrain:{icon:"🌊",label:"大西洋・西へ"},bg:"assets/scene_daikoukai.jpg",enemyName:"果てしない海と船員の不安",enemyIcon:"🌊",enemyPower:263,army:{me:90,foe:9999},meUnit:"⛵",foeUnit:"🌊",open:["陸はとうに見えなくなり、海また海。「もう引き返そう」「化け物がいる」と船員の不安がふくらむ！","相手は果てしない大海と、人の心の弱さ。羅針盤を信じ、90人を率いて西へ西へ——海の上の総力戦だーっ！"],rounds:[{situ:"何週間も陸が見えず、船員が反乱を起こしかけている。どう抑える？",opts:[{icon:"🤝",label:"「あと数日で陸が見える」と励まし信じさせる",stat:"ninbo",genre:"ninbo",style:"safe",fit:2,hist:true,ok:"船長の落ち着いた言葉に、ざわついた船員が踏みとどまったーっ！"},{icon:"🧠",label:"海藻や鳥の群れを「陸が近い証拠」と示す",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"「鳥が飛んでいる＝陸は近い」——希望が船にもどってきた！"},{icon:"⚔️",label:"反乱の首謀者を力でねじ伏せる",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"いったんは収まるが、船員の心は離れていく…！"}]},{situ:"羅針盤の針が少しずれて見える。船員がさらに怖がる。どう進む？",opts:[{icon:"🧭",label:"羅針盤と星の観測を合わせ、針路を保つ",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"道具と星を信じて西へ！ 進路はぶれない——航海術の勝利だーっ！"},{icon:"🤝",label:"針のずれを冷静に説明し動揺を抑える",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"「自然のことだ、心配ない」——船員の恐れがやわらいだ！"},{icon:"⚔️",label:"嵐をものともせず帆を張り続け突き進む",stat:"buyu",genre:"buyu",style:"risky",fit:1,ok:"船乗りの胆力で荒波を越える！ だが無理は禁物だ…！"}]},{situ:"食料も水も残りわずか。ここが正念場だ。最後の決断は？",opts:[{icon:"🌅",label:"もうあと三日だけ西へ進むと約束し賭ける",stat:"buyu",genre:"buyu",style:"risky",fit:2,hist:true,ok:"1492年10月、ついに見張りが「陸だーっ！」と叫んだ！ 西回りの賭けに勝ったあーっ！"},{icon:"🧠",label:"潮の流れと風を読んで最短で陸を探す",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"自然のサインを総動員！ 陸地の方角をしぼり込む！"},{icon:"🤝",label:"褒美を約束し船員の最後の力を引き出す",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"「陸を見つけた者に褒美を！」——見張りの目が光った！"}]}],winText:"1492年、コロンブス一行はついに陸地にたどり着いた。彼はそこを「サンサルバドル島」と名づけた（現在のカリブ海の島）。本人は最後までそこをインドの近くだと信じ、住民を「インディオ」と呼んだ。実はヨーロッパ人がほとんど知らなかったアメリカ大陸への到達——世界の歴史を変える「出会い」だった。",loseText:"【敗北】海の厳しさと船員の不安に押し切られ、引き返すことに……。\n\n（育成終了。長い航海は胆力・知略・信頼の総力戦。鍛えて出直そう！）",winFx:{koku:120,chiryaku:8,ninbo:5}},
+        {year:1413,type:"battle",title:"1492年 大西洋横断 — 未知の海をゆく90人",presentMode:"toki-atarashii",terrain:{icon:"🌊",label:"大西洋・西へ"},bg:"assets/scene_daikoukai.jpg",enemyName:"果てしない海と船員の不安",enemyIcon:"🌊",enemyPower:263,army:{me:90,foe:9999},meUnit:"⛵",foeUnit:"🌊",open:["陸はとうに見えなくなり、海また海。「もう引き返そう」「化け物がいる」と船員の不安がふくらむ！","相手は果てしない大海と、人の心の弱さ。羅針盤を信じ、90人を率いて西へ西へ——海の上の総力戦だーっ！"],rounds:[{situ:"何週間も陸が見えず、船員が反乱を起こしかけている。どう抑える？",opts:[{icon:"🤝",label:"「あと数日で陸が見える」と励まし信じさせる",stat:"ninbo",genre:"ninbo",style:"safe",fit:2,hist:true,ok:"船長の落ち着いた言葉に、ざわついた船員が踏みとどまったーっ！"},{icon:"🧠",label:"海藻や鳥の群れを「陸が近い証拠」と示す",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"「鳥が飛んでいる＝陸は近い」——希望が船にもどってきた！"},{icon:"⚔️",label:"反乱の首謀者を力でねじ伏せる",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"いったんは収まるが、船員の心は離れていく…！"}]},{situ:"羅針盤の針が少しずれて見える。船員がさらに怖がる。どう進む？",opts:[{icon:"🧭",label:"羅針盤と星の観測を合わせ、針路を保つ",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"道具と星を信じて西へ！ 進路はぶれない——航海術の勝利だーっ！"},{icon:"🤝",label:"針のずれを冷静に説明し動揺を抑える",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"「自然のことだ、心配ない」——船員の恐れがやわらいだ！"},{icon:"⚔️",label:"嵐をものともせず帆を張り続け突き進む",stat:"buyu",genre:"buyu",style:"risky",fit:1,ok:"船乗りの胆力で荒波を越える！ だが無理は禁物だ…！"}]},{situ:"食料も水も残りわずか。ここが正念場だ。最後の決断は？",opts:[{icon:"🌅",label:"もうあと三日だけ西へ進むと約束し賭ける",stat:"buyu",genre:"buyu",style:"risky",fit:2,hist:true,ok:"1492年10月、ついに見張りが「陸だーっ！」と叫んだ！ 西回りの賭けに勝ったあーっ！"},{icon:"🧠",label:"潮の流れと風を読んで最短で陸を探す",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"自然のサインを総動員！ 陸地の方角をしぼり込む！"},{icon:"🤝",label:"褒美を約束し船員の最後の力を引き出す",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"「陸を見つけた者に褒美を！」——見張りの目が光った！"}]}],winText:"1492年、コロンブス一行はついに陸地にたどり着いた。彼はそこを「サンサルバドル島」と名づけた（現在のカリブ海の島）。本人は最後までそこをインドの近くだと信じ、住民を「インディオ」と呼んだ。実はヨーロッパ人がほとんど知らなかったアメリカ大陸への到達——世界の歴史を変える「出会い」だった。",loseText:"【敗北】海の厳しさと船員の不安に押し切られ、引き返すことに……。\n\n（育成終了。長い航海は胆力・知略・信頼の総力戦。鍛えて出直そう！）",winFx:{koku:120,chiryaku:8,ninbo:5}},
         {year:1414,type:"story",title:"1498年 バスコ・ダ・ガマ、インド航路を開く",art:"⚓🌶️",text:"同じころ、ポルトガルのバスコ・ダ・ガマは「東回り」で本物のインドにたどり着いた。アフリカ南端の喜望峰を回り、1498年にインドのカリカットに到達したのだ。\n\nこれで香辛料を、アラブの商人を通さず直接ヨーロッパへ運べるようになった。コロンブスの西回りと、ガマの東回り——二つの新航路が、ヨーロッパとアジア・アメリカを海でつなぎ始める。「大航海時代」の本格的な幕開けだ。",effects:{seiji:6,chiryaku:4,koku:50}},
         {year:1417,type:"battle",title:"1517年 宗教改革 — ルター、95か条の論題",presentMode:"toki-atarashii",terrain:{icon:"⛪",label:"ドイツ・ヴィッテンベルク"},bg:"assets/scene_daikoukai.jpg",enemyName:"贖宥状（免罪符）を売る当時の教会",enemyIcon:"📜",enemyPower:320,army:{me:1,foe:99},meUnit:"✒️",foeUnit:"⛪",open:["舞台はドイツ。教会が「これを買えば罪が軽くなる」と贖宥状（しょくゆうじょう。俗に「免罪符」）を売り、お金を集めていた！","修道士ルターが「それはおかしい」と立ち上がる。刀ではなく、印刷された言葉で世界を動かす——宗教改革の論戦だーっ！"],rounds:[{situ:"教会の贖宥状（免罪符）販売に、ルターはまず何をすべきか？",opts:[{icon:"✒️",label:"「95か条の論題」を掲げ、堂々と問題点を示す",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"1517年、教会の扉に95か条を掲示！ 「信仰はお金で買えない」と問いを投げかけたーっ！"},{icon:"🤝",label:"まず仲間や民衆に静かに賛同を広げる",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"共感する人がじわじわ増える！ 改革の土台ができていく！"},{icon:"⚔️",label:"教会の建物を実力で占拠する",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"力では信仰は変えられない…かえって反発を招くぞ！"}]},{situ:"主張をドイツ中、ヨーロッパ中に広めたい。何の力を借りる？",opts:[{icon:"🖨️",label:"活版印刷でルターの文章を大量に刷って配る",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"グーテンベルクの印刷術が大活躍！ 改革の主張が一気に各地へ広がったーっ！"},{icon:"📖",label:"聖書をドイツ語に訳し、民が自分で読めるようにする",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"ラテン語が読めない人も聖書を読める！ 「信仰のよりどころは聖書」が広まる！"},{icon:"🤝",label:"改革に賛同する諸侯（領主）を味方につける",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"力を持つ領主が後ろ盾に！ 教会の圧力から改革者を守る！"}]},{situ:"教会はルターを破門し、撤回を迫る。改革をどう守り抜く？",opts:[{icon:"✒️",label:"「ここに立つ。撤回はしない」と信念を貫く",stat:"ninbo",genre:"ninbo",style:"safe",fit:2,hist:true,ok:"圧力に屈せず信念を貫いた！ 教会に「抗議する者＝プロテスタント」が生まれたーっ！"},{icon:"🤝",label:"カルバンら各地の改革者と思想を広げ合う",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"スイスのカルバンらも改革を進める！ 新しい教え（プロテスタント）が各地に根づく！"},{icon:"🧠",label:"「信仰のよりどころは聖書だけ」と筋を通す",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"教えの軸がはっきりした！ 改革はぶれずに前へ進む！"}]}],winText:"ルターの宗教改革は、活版印刷の力を借りてまたたく間に広がった。教会に「抗議する人々」はプロテスタントと呼ばれ、スイスではカルバンが「予定説」を説いて改革を進めた。ヨーロッパのキリスト教は、古くからのカトリックと新しいプロテスタントに大きく分かれていく。一方、カトリック側もイエズス会をつくって立て直しをはかり、海の向こうへ布教の使命を背負っていった。",loseText:"【敗北】教会の圧力に改革の声がかき消されてしまった……。\n\n（育成終了。考えを世に広めるのは知略と信念の戦い。鍛えて出直そう！）",winFx:{koku:120,chiryaku:8,ninbo:8}},
         {year:1418,type:"story",title:"1521年 アステカ・インカ — 出会いの光と影",art:"🌽⛓️",text:"新航路の先で、ヨーロッパ人はアメリカ大陸の進んだ文明と出会う。メキシコのアステカ帝国、南米アンデスのインカ帝国——どちらも壮大な都市と文化を築いていた。\n\nだがスペイン人（コルテスやピサロ）は、鉄砲・馬・そして持ちこんだ伝染病を背景に、これらの帝国を次々に征服してしまう。多くの先住民が命を落とし、奪われた金銀はヨーロッパへ流れ込んだ。「新しい世界との出会い」は、輝かしい発見であると同時に、征服と犠牲という重い影も伴っていた。",effects:{chiryaku:4,seiji:4,koku:40}},
@@ -1415,8 +1568,8 @@ const SENGOKU_DATA = (function(){
         {year:1429,type:"final",title:"1600年 時代の境目で — 世界がひとつになり始める",art:"🌍🧭",text:"15世紀から16世紀にかけて、世界は大きく姿を変えた。\n\nルネサンスが人間の力と美を見つめ直し、活版印刷が知識を世界へ広げ、宗教改革がキリスト教を問い直した。そして大航海が、ヨーロッパ・アジア・アメリカ・アフリカを初めて海でつないだ。種子島の鉄砲も、ザビエルのキリスト教も、その大きな流れの一部だった。\n\n中世が終わり、近代へと向かう世界——その入口に立つあなたは、ここから歴史がどう動くかを思い描く。",survive:{title:"【IF】出会いを、奪い合いでなく学び合いに",text:"もし、新しい航路と印刷術がもたらした「つながり」が、征服や奪い合いではなく、知と文化の学び合いへ向かっていたら——。\n\nアメリカの進んだ農作物や文明、アジアの技術、ヨーロッパの学問が、たがいに敬意をもって行き交う。先住民の文化は守られ、宗教の違いは争いではなく対話で受けとめられる。\n\n「西へ進めば、新しい世界に出会える」——あなたが切りひらいた航路は、人類が手をつなぐための道になった。これは、あなたが夢見たもう一つの歴史である。"},fall:{title:"大航海時代の達成と、その重い影",text:"新航路の発見は、世界を一つにつなぐ「大航海時代」を開いた。香辛料や銀が世界を巡り、商業の中心は地中海から大西洋へ移っていく（商業革命）。アメリカの銀が大量に流れ込んでヨーロッパの物価は大きく上がった（価格革命）。ルネサンス・印刷・宗教改革とあわせ、ヨーロッパは大きく近代へ踏み出した。\n\nだがその裏で、アメリカの帝国は滅ぼされ、多くの先住民が犠牲になり、やがてアフリカからの奴隷貿易という深い傷も生まれた。発見の光は、征服と搾取という影と分かちがたく結びついていた。\n\nそれでも、人々が初めて「丸い地球」を一つの世界として見渡した——その事実は、確かにこの時代に刻まれたのである。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_SEKAI,
+      skirmishSitus:SKIRMISH_SITUS_SEKAI
     },
     edo: {
       id:"edo",
@@ -1516,7 +1669,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_gendai.png",
       uniqueSkill:{id:"uq_wanman",icon:"🎩",name:"ワンマン宰相",desc:"合戦（交渉・国会）で「博打」の采配が決まったとき、戦果がさらに増す（偉人固有）",fx:{riskyBoost:1.15}},
       sceneImgs:["assets/scene_gendai.jpg","assets/scene_gendai.jpg","assets/scene_gendai.jpg","assets/scene_gendai.jpg","assets/scene_gendai.jpg"],
-      statLabels:{buyu:"産",chiryaku:"知",seiji:"政",ninbo:"民"},
+      statLabels:{buyu:"産",chiryaku:"知",seiji:"政",ninbo:"民"},      resourceName:"経済力", resourceIcon:"💴", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:3,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1945,
       endYear:1974,
@@ -1546,8 +1699,8 @@ const SENGOKU_DATA = (function(){
         {year:1974,type:"final",title:"1990年 戦後日本のゆくえ — 次の世代へ",art:"🗼🌅",text:"焼け跡からの歩みを、あなた（吉田茂）は心の中で振り返る。占領下の改革、独立の回復、そして高度経済成長——日本は世界有数の経済大国へと立ち直った。\n\nだが、平和をどう守り続けるのか。豊かさをどう分かち合い、少子高齢化や環境という新しい課題にどう答えるのか。バトンは、次の世代へと渡される。",survive:{title:"【IF】たしかな土台の上で",text:"独立を外交で勝ち取り、平和憲法のもとで経済を立て直す——あなたが据えた土台は、ぐらつくことがなかった。\n\n国民主権・基本的人権の尊重・平和主義という三つの原則は社会の隅々に根づき、教育を受けた世代が次々と国を担っていった。経済の繁栄は暮らしのすみずみに行きわたり、人々は誇りをもって世界とつき合った。\n\n少子高齢化も環境問題も、まだ答えは出ていない。だが、よく学び、よく話し合う国民であれば、きっと乗り越えられる。あなたが信じた「人こそ国の宝」という言葉は、次の世代へ確かに受け継がれた。これは、あなたが育てた「もう一つの戦後」である。"},fall:{title:"戦後を完走する",text:"あなたが首相として据えた礎の上で、日本は独立を回復し、世界有数の経済大国へと立ち直った。\n\n日本国憲法の三つの原則、サンフランシスコ平和条約による独立、高度経済成長——その一つひとつが、いまを生きる人々の暮らしを支えている。\n\nそして少子高齢化や環境問題という新しい課題は、これからの世代が答えを出していく宿題として残された。焼け跡から始まった戦後の歩みは、こうして次の時代へとつながっていく。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KINGENDAI,
+      skirmishSitus:SKIRMISH_SITUS_KINGENDAI
     },
     heian: {
       id:"heian",
@@ -1559,7 +1712,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_heian.png",
       uniqueSkill:{id:"uq_mochizuki",icon:"🌕",name:"望月の威",desc:"政務で得る石高がふつうより多い（偉人固有）",fx:{tripKoku:1.3}},
       sceneImgs:["assets/scene_heian.jpg","assets/scene_heian.jpg","assets/scene_heian.jpg","assets/scene_heian.jpg","assets/scene_heian.jpg"],
-      statLabels:{buyu:"詠",chiryaku:"才",seiji:"政",ninbo:"雅"},
+      statLabels:{buyu:"詠",chiryaku:"才",seiji:"政",ninbo:"雅"},      resourceName:"栄華", resourceIcon:"🌸", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:3,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:794,
       endYear:829,
@@ -1591,8 +1744,8 @@ const SENGOKU_DATA = (function(){
         {year:829,type:"final",title:"1185年 平安の終わり — みやびの世、武士の世",art:"🌙🚩",text:"壇ノ浦の戦いで平氏は滅び、源頼朝が武士による新しい政治のしくみを整えていく。四百年続いた平安の世——藤原氏の摂関政治、国風文化、院政、そして平氏政権を経て、ついに武士の世が始まろうとしている。\n\nあなた（藤原道長）が見届けた「みやびの都」は、その栄華をどんな形で歴史に残すのだろうか。",survive:{title:"【IF】栄華よ、永遠に",text:"娘たちを次々ときさきに送り、三代の天皇の外戚として、あなたは摂関政治の栄華を究めた。「この世はわが世」と詠んだその望月は、ついに欠けることがなかった。\n\n国風文化は爛熟し、『源氏物語』『枕草子』は千年を超えて読み継がれる。浄土の祈りは平等院鳳凰堂に結晶した。\n\nやがて時代は武士の世へ移っても、あなたの築いた「みやびの美」は、日本人の心の故郷として永遠に生き続けた——あなたが育てた、栄華の極みである。"},fall:{title:"平安の世、武士の世へ",text:"藤原氏の栄華は、あなたの時代に頂点を迎えた。だがその後、院政が始まり、武士が力を伸ばし、保元・平治の乱を経て、ついに平清盛が武士として初めて頂点に立った。\n\nそして源平の争乱の末、1185年に平氏は滅び、源頼朝が鎌倉に武士の政権を開く。四百年のみやびの世は終わり、武士が歴史の主役となる新しい時代が始まった。\n\nそれでも、平安が生んだ国風文化の美しさは、いまも日本人の心に静かに息づいている。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KODAI,
+      skirmishSitus:SKIRMISH_SITUS_KODAI
     },
     jomon: {
       id:"jomon",
@@ -1604,7 +1757,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_jomon.png",
       uniqueSkill:{id:"uq_megumi",icon:"🍂",name:"森の恵み",desc:"視察（採集）で得る「たくわえ」が増える（語り部固有）",fx:{tripKoku:1.4}},
       sceneImgs:["assets/scene_jomon.jpg","assets/scene_jomon.jpg","assets/scene_jomon.jpg","assets/scene_jomon.jpg","assets/scene_jomon.jpg"],
-      statLabels:{buyu:"狩",chiryaku:"工",seiji:"結",ninbo:"祈"},
+      statLabels:{buyu:"狩",chiryaku:"工",seiji:"結",ninbo:"祈"},      resourceName:"たくわえ", resourceIcon:"🛖", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:3,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:-10000,
       endYear:-9971,
@@ -1632,8 +1785,8 @@ const SENGOKU_DATA = (function(){
         {year:-9971,type:"final",title:"紀元前300年 縄文の終わり、弥生の始まり",art:"🍂🌾",text:"稲作と金属の道具が西から本格的に広まり、ムラの暮らしは大きく変わろうとしている。一万年以上続いた、森と海に生きる縄文の世が、静かに終わりを迎える。\n\nあなたが守り育てたムラは、この長い時代に何を残せるのか——。",survive:{title:"【IF】受け継がれる縄文の心",text:"あなたのムラは、新しい稲作をうまく取り入れながらも、自然を敬い、分け合い、助け合う縄文の心を手放さなかった。\n\nクリの林、貝塚、漆の器、土偶に込めた祈り——その暮らしの知恵と心は、次の弥生の世にも、そしてはるか遠い未来の人々にも、土の中から語りかけ続ける。あなたが育てた、もうひとつの長い物語である。"},fall:{title:"縄文の終わり — 土に刻まれた一万年",text:"稲作の広がりとともに、縄文の世は静かに幕を閉じ、人々は弥生の暮らしへと移っていった。\n\nだが、あなたのムラが残したたて穴住居のあと、貝塚、土器や土偶のかけらは、何千年も土の中で眠り、やがて未来の人々に掘り出される。\n\nそうして「縄文時代」は、日本のはじまりの物語として、いつまでも語り継がれていく。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KODAI,
+      skirmishSitus:SKIRMISH_SITUS_KODAI
     },
     kamakura: {
       id:"kamakura",
@@ -1645,7 +1798,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_kamakura.png",
       uniqueSkill:{id:"uq_goonhoko",icon:"🏹",name:"御恩と奉公",desc:"側近（御家人）との絆がふつうより深まりやすい（偉人固有）",fx:{bondPlus:2}},
       sceneImgs:["assets/scene_kamakura.jpg","assets/scene_kamakura.jpg","assets/scene_kamakura.jpg","assets/scene_kamakura.jpg","assets/scene_kamakura.jpg"],
-      statLabels:{buyu:"武",chiryaku:"略",seiji:"政",ninbo:"忠"},
+      statLabels:{buyu:"武",chiryaku:"略",seiji:"政",ninbo:"忠"},      resourceName:"所領", resourceIcon:"🏯", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:3,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1180,
       endYear:1213,
@@ -1677,8 +1830,8 @@ const SENGOKU_DATA = (function(){
         {year:1210,type:"story",title:"1318年 揺らぐ幕府 — 御恩と奉公のほころび",art:"⚖️💢",text:"元寇のあと、幕府はじわじわと弱っていった。最大の理由は、御家人に十分な「御恩」を与えられなくなったこと。土地を仲立ちにした主従の絆——御恩と奉公の仕組みそのものが、根元から揺らぎ始めたのだ。\n\n生活に困った御家人の中には、幕府に従わず勝手にふるまう「悪党（あくとう）」と呼ばれる武士も現れた。一方、京では後醍醐天皇が即位し、武士の世を終わらせて天皇みずから政治を行おうと、ひそかに動き始めていた。",effects:{seiji:-3,ninbo:-3}},
         {year:1213,type:"final",title:"1333年 鎌倉幕府の滅亡 — 武士の世、その先へ",art:"🏯🔥",text:"後醍醐天皇の倒幕の呼びかけに、有力御家人の足利尊氏が応じて京の六波羅探題を攻め落とし、新田義貞が鎌倉へ攻め込んだ。御恩と奉公の絆を失った幕府に、もはや御家人を引き止める力はなかった。\n\n1333年、約150年続いた鎌倉幕府は、ついに滅びる。最後の執権・北条氏の一族は、鎌倉で自害して果てた。あなたが見届けてきた武家政権は、ここで一つの幕を下ろす——だが「武士が政治を行う」という形そのものは、消えはしなかった。",survive:{title:"【IF】揺るがぬ武家の世",text:"もしも幕府が、元寇のあとも御家人にきちんと報い、御恩と奉公の絆を保てていたら——。\n\n泰時が遺した式目を物差しに、執権政治は公平さを取り戻す。困窮した御家人を救い、悪党を取り込み、朝廷ともうまく折り合う。武士たちは「いざ鎌倉」の心を失わず、幕府の旗のもとに結束し続けた。\n\n頼朝が開き、政子と北条が支えた武家政権は、内から崩れることなく長く日本を治め——あなたが育てた、もう一つの歴史である。"},fall:{title:"鎌倉幕府滅亡 — 受け継がれる武士の政",text:"約150年続いた鎌倉幕府は滅び、後醍醐天皇による「建武の新政」が始まる。だが武士をないがしろにしたこの政治は長く続かず、まもなく足利尊氏が新たな武家政権——室町幕府を開くことになる。\n\n頼朝が切りひらいた「武士が天下を治める世」は、鎌倉から室町、そして戦国・江戸へと、形を変えながら約700年もの間、受け継がれていった。武士の世の出発点——それが、この鎌倉時代である。"}}
       ],
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_CHUSEI,
+      skirmishSitus:SKIRMISH_SITUS_CHUSEI
     },
     meiji: {
       id:"meiji",
@@ -1690,7 +1843,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_meiji.png",
       uniqueSkill:{id:"uq_rikken",icon:"📜",name:"立憲の志",desc:"合戦（論戦）で「知略」の采配が決まると、戦果がさらに増す（偉人固有）",fx:{riskyBoost:1.15}},
       sceneImgs:["assets/scene_meiji.jpg","assets/scene_meiji.jpg","assets/scene_meiji.jpg","assets/scene_meiji.jpg","assets/scene_meiji.jpg"],
-      statLabels:{buyu:"武",chiryaku:"学",seiji:"政",ninbo:"外"},
+      statLabels:{buyu:"武",chiryaku:"学",seiji:"政",ninbo:"外"},      resourceName:"国力", resourceIcon:"🏭", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:3,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1868,
       endYear:1897,
@@ -1717,8 +1870,8 @@ const SENGOKU_DATA = (function(){
         {year:1897,type:"final",title:"1912年 明治の終わり — 受け継がれる国のかたち",art:"🌅📜",text:"1912年、明治天皇が崩御し、明治という時代が幕を閉じる。\n\n幕末の動乱を生き抜いた若者は、初代総理として憲法をつくり、議会を開き、不平等条約を改めた。富国強兵・殖産興業で国を富ませ、二つの大きな戦争もくぐり抜けた。光もあれば、犠牲という影もあった時代——あなたは、その全部を見届けた。\n\n築き上げた「近代国家・日本」のかたちを、次の世代はどう生かしていくのか。",survive:{title:"【IF】立憲の国、しかと根づく",text:"憲法と議会は、人々の暮らしにしっかり根を下ろした。\n\n選挙で選ばれた代表が政治を担い、言論で国の進む道を決める——五箇条の御誓文に記された「万機公論に決すべし」が、ようやく形になった。条約改正で得た対等な立場のもと、日本は無理な拡張に走らず、教育と産業で国を富ませる道を選んだ。\n\n「力ではなく、法と議論で国を治める」——あなたが一生をかけて植えた苗木は、大きな木に育っていった。これは、あなたが導いたもう一つの歴史である。"},fall:{title:"近代国家・日本の完成",text:"明治の44年で、日本は封建の世から近代の立憲国家へと姿を変えた。憲法・議会・教育・産業・対等な外交——その骨格は、まぎれもなくこの時代に築かれた。\n\nだがその先、日本は手にした力をどう使うかという難しい問いの前に立つことになる。大陸への進出と、やがて来る大きな戦争——明治の達成と課題は、ともに次の時代へ受け継がれていった。\n\nそれでも「伊藤博文」の名は、日本に憲法と議会をもたらした人として、歴史に深く刻まれている。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KINGENDAI,
+      skirmishSitus:SKIRMISH_SITUS_KINGENDAI
     },
     muromachi: {
       id:"muromachi",
@@ -1730,7 +1883,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_muromachi.png",
       uniqueSkill:{id:"uq_kitayama",icon:"🏯",name:"北山の威光",desc:"合戦で「人望（調略）」の采配が決まったとき、戦果がさらに増す（偉人固有）",fx:{ninboBoost:1.15}},
       sceneImgs:["assets/scene_muromachi.jpg","assets/scene_muromachi.jpg","assets/scene_muromachi.jpg","assets/scene_muromachi.jpg","assets/scene_muromachi.jpg"],
-      statLabels:{buyu:"武",chiryaku:"才",seiji:"政",ninbo:"雅"},
+      statLabels:{buyu:"武",chiryaku:"才",seiji:"政",ninbo:"雅"},      resourceName:"富", resourceIcon:"💰", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:3,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1336,
       endYear:1368,
@@ -1761,8 +1914,8 @@ const SENGOKU_DATA = (function(){
         {year:1368,type:"final",title:"1490年 金閣から銀閣へ — 室町の世の果てに",art:"🏯🌙",text:"金閣の黄金の輝きで始まったあなたの時代は、銀閣の静かな美へと移り変わった。華やかな北山文化、わびた東山文化——室町は、今の日本文化の多くを生んだ豊かな時代だった。\n\nだが応仁の乱が幕府の力を奪い、下剋上の波が全国に広がっていく。世は、長い戦国の乱世へと進もうとしていた。あなたが築いた「公武一体の天下」は、これからどうなるのか——。",survive:{title:"【IF】北山の平和",text:"もしあなたの「公武をまとめる力」が孫の代まで受け継がれていたら——。\n\n将軍が守護大名をしっかり抑え、跡継ぎ争いの火種を早めに消していれば、応仁の乱は起きなかったかもしれない。勘合貿易の富で国は栄え、金閣と銀閣の文化が戦火を逃れて静かに花開く。\n\n下剋上の混乱もなく、武家と公家が手を取り合う「北山の平和」が長く続いた——あなたが育てた、もう一つの室町である。"},fall:{title:"室町の終わりと、戦国への扉",text:"史実のあなたの死後、幕府の力は少しずつ衰えていった。応仁の乱で将軍の権威は地に落ち、下剋上の世となる。\n\nやがて全国の大名が天下を争う「戦国時代」が始まり、室町幕府は最後の将軍・足利義昭が織田信長に追放されて滅びる（1573年）。\n\nだが、あなたが愛した文化は生き続けた。金閣・銀閣、能、水墨画、書院造、茶の湯——室町が生んだ美は、今も日本人の暮らしの中に息づいている。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_CHUSEI,
+      skirmishSitus:SKIRMISH_SITUS_CHUSEI
     },
     nara: {
       id:"nara",
@@ -1774,7 +1927,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_nara.png",
       uniqueSkill:{id:"uq_chinkokukokka",icon:"☸️",name:"鎮護国家",desc:"合戦（建設・外交）で「人望」の采配が決まったとき、戦果がさらに増す（偉人固有）",fx:{ninboBoost:1.15}},
       sceneImgs:["assets/scene_nara.jpg","assets/scene_nara.jpg","assets/scene_nara.jpg","assets/scene_nara.jpg","assets/scene_nara.jpg"],
-      statLabels:{buyu:"武",chiryaku:"学",seiji:"政",ninbo:"仏"},
+      statLabels:{buyu:"武",chiryaku:"学",seiji:"政",ninbo:"仏"},      resourceName:"国力", resourceIcon:"🏛️", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:3,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:708,
       endYear:737,
@@ -1804,8 +1957,8 @@ const SENGOKU_DATA = (function(){
         {year:737,type:"final",title:"794年 長岡京から平安京へ — 都はめぐる",art:"🏛️🌸",text:"あなたの時代から数十年。寺院の力が強くなりすぎ、政治に口を出すようになった。これを嫌った桓武天皇は、ついに都を奈良の地から移すことを決める。\n\n長岡京をへて、794年、山背国（やましろのくに）に新しい都・平安京が開かれた。奈良の都の84年が、静かに幕を閉じる——。",survive:{title:"【IF】天平の都、永遠に",text:"あなたが仏の力で守り、文化を育てた奈良の都。大仏は焼けても再建され、東大寺・唐招提寺・正倉院は千年をこえて今に残った。\n\n古事記・日本書紀・万葉集は、日本人がはじめて自分たちの言葉と歴史を文字に刻んだ宝として読み継がれる。あなたが築いた天平の文化は、まさに日本という国の心の原点となったのだ。"},fall:{title:"平安京、開く — 新しい世へ",text:"都は平安京へと移り、ここから約400年つづく平安時代が始まる。\n\nあなたの大仏も国分寺も、仏教で国を守ろうとした壮大な試みだった。律令のしくみはやがて崩れ、墾田永年私財法で生まれた荘園が世を動かしていく。\n\nそれでも、平城京と大仏、そして天平の文化は、「日本」という国のかたちを後の世にはっきりと伝える土台となった。その名は、奈良の大仏とともに永遠に語り継がれている。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KODAI,
+      skirmishSitus:SKIRMISH_SITUS_KODAI
     },
     sangyo_teikoku: {
       id:"sangyo_teikoku",
@@ -1817,7 +1970,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_sangyo_teikoku.png",
       uniqueSkill:{id:"uq_steam",icon:"⚙️",name:"蒸気の福音",desc:"合戦（工業・経済の勝負）で「博打」の采配が決まったとき、戦果がさらに増す（偉人固有）",fx:{riskyBoost:1.15}},
       sceneImgs:["assets/scene_sangyo_teikoku.jpg","assets/scene_sangyo_teikoku.jpg","assets/scene_sangyo_teikoku.jpg","assets/scene_sangyo_teikoku.jpg","assets/scene_sangyo_teikoku.jpg"],
-      statLabels:{buyu:"工",chiryaku:"知",seiji:"政",ninbo:"民"},
+      statLabels:{buyu:"工",chiryaku:"知",seiji:"政",ninbo:"民"},      resourceName:"国力", resourceIcon:"🏭", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:3,ww1:0.01},
       startYear:1760,
       endYear:1789,
@@ -1846,8 +1999,8 @@ const SENGOKU_DATA = (function(){
         {year:1789,type:"final",title:"1910年 蒸気が変えた世界 — そして次の世紀へ",art:"🌍⚙️",text:"グラスゴーの修理工房で一台の壊れた機関をいじってから、150年。蒸気の力は工場を回し、鉄道と船で世界を結び、富と帝国を生み出し——同時に、労働問題と植民地支配という重い影も世界に刻んだ。\n\nあなたが灯した火は、もはや誰にも止められない。問題は、この巨大な力を「人のために」使えるかどうかだ。",survive:{title:"【IF】人のための技術",text:"あなたが示した道を、世界は少しずつ歩んだ。労働者を守る法が整い、教育が広がり、技術は一部の富者だけでなく多くの人の暮らしを支えるものになっていく。\n\n植民地支配や戦争への反省も、ゆっくりと根を張った。「機械は人の暮らしのためにある」——あなたの願いは、すぐには叶わなくとも、未来へ確かに受け継がれた。蒸気の世紀が残したのは、富だけでなく、「進歩とは何か」を問い続ける宿題でもあった。"},fall:{title:"産業革命 — 世界を作りかえた150年",text:"蒸気機関から始まった産業革命は、人類の暮らしを根底から変えた。生産力は爆発的に伸び、世界は一つに結ばれ、近代社会の土台ができあがった。\n\nだが歴史の現実では、富の偏りと帝国主義の競争は止まらず、列強の対立はやがて第一次世界大戦という未曾有の大戦争へとなだれ込んでいく。\n\nそれでも、あなたが灯した一台の機関の火が世界を変えたことは、永遠に語り継がれている。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_SEKAI,
+      skirmishSitus:SKIRMISH_SITUS_SEKAI
     },
     sekai_kodai: {
       id:"sekai_kodai",
@@ -1859,7 +2012,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_sekai_kodai.png",
       uniqueSkill:{id:"uq_kiroku",icon:"📜",name:"文字の力",desc:"視察（各地をめぐり記録する旅）で得る石高が増える（語り部固有）",fx:{tripKoku:1.4}},
       sceneImgs:["assets/scene_sekai_kodai.jpg","assets/scene_sekai_kodai.jpg","assets/scene_sekai_kodai.jpg","assets/scene_sekai_kodai.jpg","assets/scene_sekai_kodai.jpg"],
-      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"信"},
+      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"信"},      resourceName:"国力", resourceIcon:"🏛️", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:3,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:-3000,
       endYear:-2970,
@@ -1871,8 +2024,8 @@ const SENGOKU_DATA = (function(){
       seasons:["🌸","☀️","🍂","⛄"],
       retainers:[{id:"hammurabi",name:"ハンムラビ王",icon:"⚖️",fav:"seiji",perk:{type:"gain",v:2,label:"同席した鍛錬の上昇+2"},skill:{id:"sk_houten",icon:"⚖️",name:"法典の知恵",desc:"合戦（文明の試練）の政の采配が強くなる",fx:{battleStat:"seiji"}},midText:"「目には目を、歯には歯を。罰は身分や気分で決めてはならぬ」（成文法＝書かれた法律でムラを治める意味を学んだ）",intro:"メソポタミアのバビロニアをまとめた王。「ハンムラビ法典」を石柱に刻み、復讐をおさえる成文法で国を治めた。",maxText:"「法とは、弱き者を強き者から守るためにある」（成文法の本当の意味を授けてくれた）",maxFx:{seiji:10,koku:30}},{id:"khufu",name:"クフ王",icon:"🔺",fav:"chiryaku",perk:{type:"gain",v:2,label:"同席した鍛錬の上昇+2"},skill:{id:"sk_pyramid",icon:"🔺",name:"巨石の数学",desc:"すべての鍛錬の上昇が少し増える",fx:{trainAll:1}},midText:"「ナイルの増水を読み、暦を作り、石を積む。すべては測ることから始まる」（測量と太陽暦の知恵を教わった）",intro:"古代エジプトの王（ファラオ）。ギザに巨大なピラミッドを築いた。エジプトはナイル川の増水を暦で読み、象形文字を使った。",maxText:"「石は崩れても、測る知恵は残る」（数学と天文の力が文明を支えると示してくれた）",maxFx:{chiryaku:10,seiji:5}},{id:"shihuangdi",name:"始皇帝",icon:"🐉",fav:"seiji",perk:{type:"cost",v:5,label:"同席した鍛錬の体力-5"},skill:{id:"sk_touitsu",icon:"🐉",name:"天下統一",desc:"合戦（文明の試練）の政の采配が強くなる",fx:{battleStat:"seiji"}},midText:"「文字も、はかりも、車の道幅も、すべて一つに揃える。それが大きな国をまとめる道だ」（中央集権の仕組みを学んだ）",intro:"中国を史上初めて統一した秦の王。文字・度量衡を統一し、北方の遊牧民に備えて万里の長城を築いた。",maxText:"「一つにまとめた国は、わしが死んでも形をとどめる」（統一の重みと、急ぎすぎる政の危うさを示してくれた）",maxFx:{seiji:8,buyu:5}},{id:"perikles",name:"ペリクレス",icon:"🏛️",fav:"seiji",perk:{type:"skillpt",v:1,label:"同席して正解でスキルP+1"},skill:{id:"sk_minshu",icon:"🏛️",name:"民主政のことば",desc:"休息の回復量が増える",fx:{restPlus:12}},midText:"「政（まつりごと）は一部の者でなく、市民みなで決める。これがアテネのやり方だ」（民主政＝市民が政治に参加する仕組みを学んだ）",intro:"古代ギリシャの都市国家（ポリス）アテネの指導者。ペルシャ戦争のあとの黄金時代にアテネを率い、市民が直接政治に参加する民主政を発展させ、パルテノン神殿を建てた。",maxText:"「アテネは、ギリシャ全体の学校である」（市民が支える政治と文化の誇りを伝えてくれた）",maxFx:{seiji:8,ninbo:5}},{id:"alexandros",name:"アレクサンドロス大王",icon:"🐎",fav:"buyu",perk:{type:"gain",v:2,label:"同席した鍛錬の上昇+2"},skill:{id:"sk_ensei",icon:"🐎",name:"大遠征",desc:"合戦（文明の試練）の武の采配が強くなる",fx:{battleStat:"buyu"}},midText:"「東へ、東へ。ギリシャの文化を世界の果てまで広げるのだ」（ギリシャと東方が混ざるヘレニズム文化が生まれた）",intro:"マケドニアの王。ペルシャを破りインダス川まで遠征した。征服地にギリシャ文化が広まり、東西が融合したヘレニズム文化が生まれた。",maxText:"「剣で開いた道に、文化の種をまいた」（武力だけでなく、文化を運ぶ意味を示してくれた）",maxFx:{buyu:10,chiryaku:5}},{id:"caesar",name:"カエサル",icon:"🦅",fav:"buyu",perk:{type:"kokuSub",label:"同席した政務（記録の差配）の石高2倍"},skill:{id:"sk_gunzei",icon:"🦅",name:"ローマ軍団",desc:"合戦（文明の試練）の武の采配が強くなる",fx:{battleStat:"buyu"}},midText:"「来た、見た、勝った。だが共和政のローマで、力を持ちすぎる者は警戒される」（共和政から帝政へ移る転換点を学んだ）",intro:"共和政ローマの軍人・政治家。ガリア（今のフランス）を征服し絶大な力を得たが、独裁を恐れた者に暗殺された。帝政ローマの土台を作った。",maxText:"「賽（さい）は投げられた。前へ進むしかない」（決断のときの覚悟を見せてくれた）",maxFx:{buyu:8,seiji:5}}],
       timeline:[
-        {year:-3000,type:"story",title:"紀元前3000年 四大文明 — 大河のほとりに生まれる",art:"🌊🏛️",text:"あなた（古代世界の語り部）は、人類最古の文明を訪ねる旅に出た。文明はみな、水と豊かな土をもたらす大きな川のそばで生まれている。\n\nメソポタミア（チグリス・ユーフラテス川）、エジプト（ナイル川）、インダス（インダス川）、中国（黄河）——この四つを「四大文明」と呼ぶ。旅の最初の地は、王ハンムラビが治めるメソポタミアだ。",effects:{chiryaku:4}},
-        {year:-2998,type:"story",title:"紀元前2700年 メソポタミア — くさび形文字とハンムラビ法典",art:"⚖️📝",text:"チグリス・ユーフラテス川にはさまれたメソポタミアでは、ねん土板にあしのペンで「くさび形文字」を刻んでいた。月の満ち欠けをもとにした「太陰暦」も使われていた。\n\nやがてハンムラビ王が「ハンムラビ法典」を石柱に刻む。「目には目を」で知られるが、その本質は、罰を書かれた法律で決め、勝手な復讐をおさえることにあった。",effects:{chiryaku:6,seiji:6}},
+        {year:-3000,type:"story",title:"紀元前3000年 四大文明 — 大河のほとりに生まれる",art:"🌊🏛️",text:"あなた（古代世界の語り部）は、人類最古の文明を訪ねる旅に出た。文明はみな、水と豊かな土をもたらす大きな川のそばで生まれている。\n\nメソポタミア（チグリス・ユーフラテス川）、エジプト（ナイル川）、インダス（インダス川）、中国（黄河）——この四つを「四大文明」と呼ぶ。旅の最初の地は、都市文明が栄えるメソポタミアだ。",effects:{chiryaku:4}},
+        {year:-2998,type:"story",title:"メソポタミア — くさび形文字とハンムラビ法典",art:"⚖️📝",text:"チグリス・ユーフラテス川にはさまれたメソポタミアでは、ねん土板にあしのペンで「くさび形文字」を刻んでいた。月の満ち欠けをもとにした「太陰暦」も使われていた。\n\nそれから千年以上のち、紀元前1700年ごろ、ハンムラビ王が「ハンムラビ法典」を石柱に刻む。「目には目を」で知られるが、その本質は、罰を書かれた法律で決め、勝手な復讐をおさえることにあった。",effects:{chiryaku:6,seiji:6}},
         {year:-2996,type:"battle",title:"紀元前2500年 文明の試練・ナイルの増水 — エジプトを治めよ",terrain:{icon:"🌊",label:"氾濫するナイル川のほとり"},bg:"assets/scene_sekai_kodai.jpg",intro:"旅はエジプトへ。ナイル川は毎年あふれ、肥えた土を運ぶ恵みであると同時に、田畑を流す脅威でもある。クフ王とともに、増水を読み、人々を率いてピラミッドを築く大事業に挑む。",enemyName:"ナイルの増水と砂漠の試練",enemyIcon:"🌊",enemyImg:"assets/foe_nile.png",enemyPower:110,army:{me:2000,foe:0},meUnit:"👷",foeUnit:"🌊",open:["文明の試練！ ナイル川が今年も大増水、田畑も人ものみこむ勢いだあーっ！","クフ王のもと、2千の人々を率いてこの恵みと脅威を治められるか！？"],rounds:[{situ:"いつ川があふれるのか分からなければ、種まきも避難もできない。どうする？",opts:[{icon:"🔺",label:"天体を観測し太陽暦で増水を予測する",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,hist:true,ok:"太陽の動きから一年を365日と読んだーっ！ エジプトの太陽暦で増水の時期がぴたりと分かる！"},{icon:"⚔️",label:"力ずくで堤防を急いで積み上げる",stat:"buyu",genre:"buyu",style:"risky",fit:1,ok:"人海戦術で土を盛る！ なんとか持ちこたえたが、毎年これは続かないぞ！"},{icon:"🙏",label:"ナイルの神に祈り、人心を落ち着かせる",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"祈りで人々の不安がしずまる！ パニックを防ぐのも治水の一手だ！"}]},{situ:"増水が引いたあと、誰の畑がどこまでか境界が分からなくなった！ もめ事が起きそうだ。",opts:[{icon:"📐",label:"土地を測量し直して公平に区切る",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,ok:"測量の技で土地をきっちり区切った！ 数学はナイルの増水から生まれたのだ！"},{icon:"⚖️",label:"王の名で土地の決まりを定める",stat:"seiji",genre:"seiji",style:"safe",fit:1,ok:"王の権威で争いを裁いた！ 強い王のもとで国がまとまっていく！"},{icon:"🙏",label:"神官に調停をまかせる",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"神官のことばに人々が従う！ 信仰が社会の秩序を支えている！"}]},{situ:"増水のない農閑期、王は巨大な王の墓「ピラミッド」を築こうという。どう人々を動かす？",opts:[{icon:"🔺",label:"幾何学で石を正確に積ませる",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,ok:"巨石が寸分たがわず積み上がる！ ピラミッドはエジプトの数学と天文の結晶だ！"},{icon:"🌾",label:"働き手に食料を配って組織する",stat:"seiji",genre:"seiji",style:"safe",fit:1,ok:"食料を配って大勢を統率！ ピラミッドは奴隷でなく、報酬を得た働き手が築いたとも言われる！"},{icon:"⚔️",label:"監督を立ててどんどん突貫する",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"勢いはあるが事故が増えるぞ…！ 急ぎすぎは禁物だ！"}]}],winText:"ナイルの恵みを暦で読み、測量で土地を治め、ピラミッドを築き上げた！ エジプトは「ナイルのたまもの」と呼ばれ、象形文字と太陽暦の文明として栄えた。",loseText:"【敗北】増水を読みきれず、田畑も人心も荒れてしまった……。\n\n（育成終了。文明を治めるのは知＝暦と測量の力だ。知を鍛えて出直そう！）",winFx:{koku:90,chiryaku:8,seiji:3}},
         {year:-2994,type:"story",title:"紀元前2300年 インダス文明 — 計画都市モヘンジョ・ダロ",art:"🧱🚿",text:"旅はインダス川へ。ここには「モヘンジョ・ダロ」という、れんがで整然と区画された計画都市があった。広い道路、下水道、共同の大浴場まで整っている。\n\n文字（インダス文字）も使われたが、まだ解読されていない。大きな王の墓や宮殿が見当たらず、突出した支配者がいなかったらしいことも、この文明の特徴だ。",effects:{chiryaku:5,seiji:4}},
         {year:-2988,type:"story",title:"紀元前1500年 中国文明 — 甲骨文字と殷",art:"🐉🦴",text:"旅は東の黄河へ。中国最古の王朝とされる「殷（いん）」では、占いの結果を亀の甲や牛の骨に刻んでいた。これが「甲骨文字」で、今の漢字のもとになった。\n\n青銅器で立派な祭りの道具を作り、王は占いで政治を行った。四大文明はそれぞれ独自の文字をもち、知恵を後世に伝えていく。",effects:{chiryaku:6,ninbo:3,koku:20}},
@@ -1888,8 +2041,8 @@ const SENGOKU_DATA = (function(){
         {year:-2970,type:"final",title:"600年 古代の終わり — 世界が結ばれた三千年",art:"📜🌍",text:"四大文明から三大宗教まで——あなた（古代世界の語り部）は、人類三千年の歩みを見届けた。文字が知恵を伝え、暦が時を刻み、法が国をまとめ、宗教が心を支える。\n\nそして遠い東の島国・日本でも、ちょうどこのころ大陸から仏教や文字、制度が伝わり、新しい国づくりが始まろうとしていた（飛鳥時代）。世界の古代の知は、確かに次の時代へ、そして日本へとつながっていく。",survive:{title:"【IF】ひとつなぎに語り継がれる人類の知",text:"あなたは、メソポタミアのくさび形文字も、エジプトの太陽暦も、ギリシャの民主政も、ローマの法も、そして三つの世界宗教も、ひとつの大きな物語として書き残した。\n\nばらばらに見えた文明は、シルクロードや海でつながり、互いに影響し合いながら人類の知を積み上げてきた——その全体像を、あなたは初めてひとつなぎに語ってみせた。\n\nあなたの記録は時代をこえて読み継がれ、はるか未来の中学生が世界の歴史を学ぶときの、最初の道しるべになるだろう。"},fall:{title:"古代の終わり — 次の時代へ受け継がれる知",text:"語り部の長い旅が終わる。四大文明が築いた文字・暦・都市、ギリシャ・ローマが残した民主政と法、そしてアジアから広がる三大宗教。\n\nそのすべては、中世・近世、そして近代へと受け継がれていく。遠い東の日本もまた、大陸の文明を取り入れて自らの歴史を歩み始める。\n\nこうして「世界の古代文明」は、人類すべての出発点の物語として、いつまでも語り継がれていく。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_SEKAI,
+      skirmishSitus:SKIRMISH_SITUS_SEKAI
     },
     shimin_kakumei: {
       id:"shimin_kakumei",
@@ -1901,7 +2054,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_shimin_kakumei.png",
       uniqueSkill:{id:"uq_naporeon_houdai",icon:"🦅",name:"砲兵の天才",desc:"合戦で「正攻法」の采配が決まったとき、戦果がさらに増す（偉人固有）",fx:{safeBoost:1.15}},
       sceneImgs:["assets/scene_shimin_kakumei.jpg","assets/scene_shimin_kakumei.jpg","assets/scene_shimin_kakumei.jpg","assets/scene_shimin_kakumei.jpg","assets/scene_shimin_kakumei.jpg"],
-      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"民"},
+      statLabels:{buyu:"武",chiryaku:"知",seiji:"政",ninbo:"民"},      resourceName:"国力", resourceIcon:"🎖️", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:3,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1642,
       endYear:1671,
@@ -1927,8 +2080,8 @@ const SENGOKU_DATA = (function(){
         {year:1671,type:"final",title:"1870年 語り部ナポレオン — 市民の世を見つめて",art:"🌅🦅",text:"——私ナポレオンは、かつてワーテルローの戦いに敗れ、絶海の孤島セントヘレナに流された。皇帝の座も、広大な帝国も、すべて失った。そして1821年、その島で生涯を閉じた。\n\nだが私は、最期まで確信していた。私が広めたもの——法の前の平等、身分制度の打破、国民が主役だという考えは、もう誰にも消せない、と。イギリスの名誉革命、アメリカの独立、フランス革命、そして私の征服が広めた理念。それらは波となって世界に広がり、私が世を去ったのちも、アメリカの奴隷解放へとつながっていった。王の世は終わり、市民の世が始まったのだ。",survive:{title:"【IF】帰還の英雄 — ナポレオン、市民の世を見届ける",text:"絶海の孤島から、私は奇跡的に脱出した——。\n\n戻ったヨーロッパで、私はもう剣を取らなかった。代わりに、私が遺した「ナポレオン法典」が各国の近代法の土台となり、自由・平等の理念が国境を越えて根づいていくのを、静かに見守った。\n\nやがて世界各地で身分制度が崩れ、憲法が定められ、人々は自らの手で政治に参加するようになる。海の向こうのアメリカでは奴隷が解放され、独立宣言の「平等」が形になっていった。王の世は終わり、市民が主役の時代が来た。これは、もしも私が生き延びて、自ら蒔いた種が花開くのを見届けたなら、というもう一つの歴史である。"},fall:{title:"セントヘレナの最期 — されど理念は遺りて",text:"私はセントヘレナの島で、誰に看取られることもなく生涯を閉じた。皇帝として頂点を極め、そして地に落ちた。一人の人間の野心としては、敗北だったかもしれない。\n\nだが、私が世に遺したものは生き続けた。法の前の平等を定めた「ナポレオン法典」、私が各地に広めた自由と国民主権の理念。それらはイギリスの名誉革命、アメリカの独立宣言、フランスの人権宣言とともに、近代という時代の礎となった。\n\nのちにアメリカでリンカンが奴隷を解放し、世界各地で市民が政治の主役となっていく。「王の世を終わらせ、市民の世を開け」——その流れは、私という一人の人間を越えて、確かに前へ進み続けたのだ。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_SEKAI,
+      skirmishSitus:SKIRMISH_SITUS_SEKAI
     },
     taisho_showa: {
       id:"taisho_showa",
@@ -1940,7 +2093,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_taisho_showa.png",
       uniqueSkill:{id:"uq_heimin",icon:"🗳️",name:"平民宰相",desc:"「民」の采配（世論・人々の声）が決まったとき、得る信頼がさらに増す（偉人固有）",fx:{riskyBoost:1.12}},
       sceneImgs:["assets/scene_taisho_showa.jpg","assets/scene_taisho_showa.jpg","assets/scene_taisho_showa.jpg","assets/scene_taisho_showa.jpg","assets/scene_taisho_showa.jpg"],
-      statLabels:{buyu:"政",chiryaku:"知",seiji:"外",ninbo:"民"},
+      statLabels:{buyu:"政",chiryaku:"知",seiji:"外",ninbo:"民"},      resourceName:"国力", resourceIcon:"🏛️", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:3,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:1912,
       endYear:1948,
@@ -1973,8 +2126,8 @@ const SENGOKU_DATA = (function(){
         {year:1948,type:"final",title:"1945年 終戦 — 焼け跡から",art:"🕊️📻",text:"1945年8月、連合国は日本に無条件降伏を求めるポツダム宣言を出した。広島・長崎への原爆投下、ソ連の参戦を経て、日本はこれを受け入れた。\n\n8月15日、天皇のラジオ放送（玉音放送）で、戦争の終わりが国民に告げられた。約310万人の日本人が亡くなり、アジアの人々にも多大な犠牲を強いた長い戦争が、ようやく終わった。",survive:{title:"【IF】議会政治が守られた、もう一つの道",text:"——もし、原敬が遺した「議会で国を導く」という志が、時代の荒波に折れずに受け継がれていたなら。\n\n軍部の独走は議会と世論の力で抑えられ、国際協調の外交が貫かれた。満州事変も、五・一五も、二・二六も食い止められ、日本は戦争という破局を避けて、立憲政治の国として歩み続けた——。\n\nこれは実現しなかった「もしも」の歴史だ。だが、暴力ではなく言論で、独走ではなく話し合いで国を動かすという理想は、戦後の日本国憲法と民主主義の中に、確かに受け継がれていく。"},fall:{title:"終戦 — そして戦後へ",text:"長い戦争が終わった。焼け跡に立った人々は、深い悲しみと反省の中から、新しい国づくりを始める。\n\n軍部の暴走を許し、自由な言論が失われた末の破局——その教訓から、戦後の日本は「主権在民・平和主義・基本的人権の尊重」をかかげる日本国憲法を生み出した。男女平等の普通選挙も実現し、女性が初めて投票した。\n\n原敬が夢見た「民の声にもとづく政治」は、多くの犠牲という代償を払いながら、戦後にようやく根づいていく。歴史は、こうして次の時代へと受けつがれた。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KINGENDAI,
+      skirmishSitus:SKIRMISH_SITUS_KINGENDAI
     },
     ww1: {
       id:"ww1",
@@ -1986,7 +2139,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_ww1.png",
       uniqueSkill:{id:"uq_14points",icon:"🕊️",name:"十四か条",desc:"「外」の采配（国際協調・交渉）が決まったとき、得る信頼がさらに増す（偉人固有）",fx:{riskyBoost:1.12}},
       sceneImgs:["assets/scene_ww1.jpg","assets/scene_ww1.jpg","assets/scene_ww1.jpg","assets/scene_ww1.jpg","assets/scene_ww1.jpg"],
-      statLabels:{buyu:"政",chiryaku:"知",seiji:"外",ninbo:"民"},
+      statLabels:{buyu:"政",chiryaku:"知",seiji:"外",ninbo:"民"},      resourceName:"国力", resourceIcon:"🌐", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:0.01,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:3},
       startYear:1900,
       endYear:1931,
@@ -2017,8 +2170,8 @@ const SENGOKU_DATA = (function(){
         {year:1931,type:"final",title:"1930年 国際協調の灯 — 遺された理想",art:"🕊️🌍",text:"第一次世界大戦は数千万の命を奪い、世界の姿を一変させた。ロシアには社会主義国家が生まれ、アジアでは民族の独立運動が燃え広がり、世界には初めて「話し合いで平和を守る」国際連盟が誕生した。\n\nあなた（ウィルソン）の十四か条と国際協調の理想は、完全には実現しなかった。提唱国アメリカは連盟に加わらず、ベルサイユ条約の過酷さは新たな憎しみを残した。それでも、「戦いではなく対話で世界を結ぶ」という理想の灯は、確かにともされた。",survive:{title:"【IF】理想の連盟が、戦争を防いだ世界",text:"——もし、ウィルソンの掲げた国際協調の理想が、現実の壁に折れずに根づいていたなら。\n\nアメリカも国際連盟に加わり、連盟は大国そろって紛争を仲裁する力を持った。ベルサイユ条約の過酷さは見直され、ドイツの不満は和らぎ、ナチスの台頭も食い止められた。民族自決の理想は植民地にも公正に及び、世界は二度目の大戦という破局を避けて、対話で対立を解く道を歩み続けた——。\n\nこれは実現しなかった「もしも」の歴史だ。だが、力ではなく話し合いで世界を結ぶという理想は、第二次世界大戦後に生まれる国際連合へと、確かに受けつがれていく。"},fall:{title:"戦間期 — そして次の時代へ",text:"つかの間の平和の裏で、火種はくすぶり続けた。やがて世界恐慌が各国を襲い、ベルサイユ体制への不満からドイツではナチスが台頭し、世界はふたたび大きな戦争へと突き進んでいく。\n\nそれでも、ウィルソンが遺した「国際協調」「民族自決」「話し合いによる平和」という理想は、消えはしなかった。第二次世界大戦の惨禍を経て、人類はその理想をもう一度かかげ、国際連合を生み出すことになる。\n\nそして日本もまた、この時代と深くつながっていた。第一次世界大戦の好景気と大正デモクラシー、ワシントン体制への参加、やがて来る満州事変と連盟脱退——理想と現実のせめぎ合いは、海を越えて続いていく。歴史は、こうして次の時代へと受けつがれた。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_SEKAI,
+      skirmishSitus:SKIRMISH_SITUS_SEKAI
     },
     yayoi: {
       id:"yayoi",
@@ -2030,7 +2183,7 @@ const SENGOKU_DATA = (function(){
       img:"assets/hero_yayoi.png",
       uniqueSkill:{id:"uq_kitou",icon:"🔆",name:"鬼道（きどう）",desc:"合戦で「策略」の采配が決まったとき、まじないの力で戦果がさらに増す（偉人固有）",fx:{trickBoost:1.15}},
       sceneImgs:["assets/scene_yayoi.jpg","assets/scene_yayoi.jpg","assets/scene_yayoi.jpg","assets/scene_yayoi.jpg","assets/scene_yayoi.jpg"],
-      statLabels:{buyu:"戦",chiryaku:"稲",seiji:"政",ninbo:"祈"},
+      statLabels:{buyu:"戦",chiryaku:"稲",seiji:"政",ninbo:"祈"},      resourceName:"みのり", resourceIcon:"🌾", resourceUnit:"",
       eraPref:{sengoku:0.01,azuchi:0.01,edo:0.01,jomon:0.01,yayoi:3,asuka:0.01,nara:0.01,heian:0.01,kamakura:0.01,muromachi:0.01,edo_late:0.01,bakumatsu:0.01,meiji:0.01,taisho_showa:0.01,gendai:0.01,sekai_kodai:0.01,daikoukai:0.01,shimin_kakumei:0.01,sangyo_teikoku:0.01,ww1:0.01},
       startYear:-300,
       endYear:-270,
@@ -2053,14 +2206,14 @@ const SENGOKU_DATA = (function(){
         {year:-276,type:"story",title:"189年 女王・卑弥呼、立つ",art:"🔆👑",text:"こうしてあなた——卑弥呼は、倭の女王となった。まじない（鬼道・きどう）で神の意を聞き、人々を従えたという。\n\nめったに人前に姿を見せず、ただ一人の弟が政（まつりごと）を助けた。身のまわりの世話をする者が千人いたと『魏志倭人伝』は伝える。神に仕える者が、くにを束ねる——倭独自のまとめ方が形になった。",effects:{ninbo:8,seiji:5,koku:30}},
         {year:-275,type:"story",title:"200年 邪馬台国 — 三十国をまとめるくに",art:"🔆🗾",text:"卑弥呼のもとに、倭の三十あまりのくにがまとまった。これが邪馬台国を中心とする連合だ。人々には身分の差があり、税のしくみや市（いち）もあったと『魏志倭人伝』は伝える。\n\nまた、伊都国には大陸との行き来を見はる役人が置かれた。むらから始まった暮らしは、ついに「くに」のしくみをもつまでに育ったのだ。",effects:{seiji:8,koku:20}},
         {year:-274,type:"choice",title:"230年 狗奴国（くなこく）と対立 — どう備える？",art:"⚔️🗺️",text:"南の「狗奴国（くなこく）」が、邪馬台国に従わず、たびたび境をおびやかしてくる。男王・卑弥弓呼（ひみここ）とは、もともと仲が悪い。どう備える？",choices:[{label:"環濠と物見やぐらで守りを固める",text:"境のむらに濠と柵をめぐらせ、高い物見やぐらを建てた。敵の動きをいち早くつかむ備えだ。守りの固さが、かえって敵に攻めをためらわせた。",fx:{buyu:6,seiji:4}},{label:"海の向こうの大国に後ろ盾を求める",text:"倭だけで構えるより、大陸の大国とつながる道を選んだ。「魏に使いを送り、味方につけよう」——遠くの大国の権威が、近くの敵への備えになる。",fx:{seiji:8,ninbo:3}}]},
-        {year:-273,type:"battle",title:"239年 魏への朝貢 — 親魏倭王の称号を得よ",presentMode:"teppo-atarashii",terrain:{icon:"⛵",label:"帯方郡をへて、魏の都をめざす"},bg:"assets/scene_yayoi.jpg",enemyName:"はるかな海路と異国の都",enemyIcon:"🌊",enemyPower:363,army:{me:100,foe:9999},meUnit:"⛵",foeUnit:"🏯",open:["卑弥呼、決断！ 使者・難升米（なしめ）を魏へ送る大外交が始まるーっ！","相手は剣ではなく、荒れる海と、見たこともない大国の作法！ 言葉と贈り物で道を切り開け！"],rounds:[{situ:"まずは海をわたり、魏の出先・帯方郡（たいほうぐん）を目指す。荒れる玄界灘をどう越える？",opts:[{icon:"⛵",label:"潮と風を読み、慣れた水夫に舵を委ねる",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,ok:"潮目を捉えた！ 船はぶじ朝鮮半島の帯方郡へたどり着いたーっ！"},{icon:"🌾",label:"十分な米と水を積み、長い船旅に備える",stat:"seiji",genre:"seiji",style:"safe",fit:1,ok:"蓄えのおかげで誰も飢えず、士気を保ったまま渡海成功！"},{icon:"⚔️",label:"海賊を蹴散らしながら強引に進む",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"力で押し通ったが、船も人も傷だらけ…先は長いぞ！"}]},{situ:"帯方郡をへて、いよいよ魏へ使者の口上が伝わる。皇帝に認めてもらうには、ふさわしい贈り物と作法がいる…！",opts:[{icon:"🎁",label:"男女の生口（奴隷）と倭の布を献上する",stat:"seiji",genre:"seiji",style:"safe",fit:2,hist:true,ok:"生口と布をたてまつった！ 魏の朝廷が倭の使者を厚くもてなしたーっ！"},{icon:"🤝",label:"倭のくにぐにを束ねる女王の使いだと丁重に伝える",stat:"ninbo",genre:"ninbo",style:"safe",fit:2,ok:"「遠き倭の女王の使い、よくぞ参った」——魏の心証は上々だ！"},{icon:"🔆",label:"倭の珍しい風習として女王のまじないを使者が伝える",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"海の向こうの不思議なまじないの話に、魏の人々が耳をかたむけた！ 強い印象を残した！"}]},{situ:"皇帝が応えようとしている。この朝貢から、何を持ち帰る!?",opts:[{icon:"👑",label:"「親魏倭王」の称号と金印を願い出る",stat:"seiji",genre:"seiji",style:"safe",fit:2,hist:true,ok:"「親魏倭王」の称号と、その金印（紫のひも＝紫綬つき）を賜ったーっ！ 倭の女王が魏に認められた！"},{icon:"🥉",label:"銅鏡など先進の文物を求める",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"銅鏡百枚を賜った！ くにの威光を示す宝が手に入った！"},{icon:"🤝",label:"狗奴国との争いで後ろ盾を頼む",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"魏が味方についた！ 敵への大きな抑えとなる！"}]}],winText:"朝貢、成る！ 魏の皇帝から「親魏倭王」の称号と、その金印（＝親魏倭王の金印・紫綬つき）、さらに銅鏡百枚を授かった。これらは『魏志倭人伝』に記され、卑弥呼と邪馬台国の名は海の向こうの歴史書に永遠に刻まれた。\n\n（※57年に奴国の王が漢から授かった「漢委奴国王」の金印とは別の金印だよ。）",loseText:"【敗北】海路や作法を乗り越えられず、朝貢は実らなかった……。\n\n（育成終了。外交は政の力がものを言う。「政」を鍛えて出直そう！）",winFx:{koku:200,seiji:10,ninbo:5}},
+        {year:-273,type:"battle",title:"239年 魏への朝貢 — 親魏倭王の称号を得よ",presentMode:"toki-atarashii",terrain:{icon:"⛵",label:"帯方郡をへて、魏の都をめざす"},bg:"assets/scene_yayoi.jpg",enemyName:"はるかな海路と異国の都",enemyIcon:"🌊",enemyPower:363,army:{me:100,foe:9999},meUnit:"⛵",foeUnit:"🏯",open:["卑弥呼、決断！ 使者・難升米（なしめ）を魏へ送る大外交が始まるーっ！","相手は剣ではなく、荒れる海と、見たこともない大国の作法！ 言葉と贈り物で道を切り開け！"],rounds:[{situ:"まずは海をわたり、魏の出先・帯方郡（たいほうぐん）を目指す。荒れる玄界灘をどう越える？",opts:[{icon:"⛵",label:"潮と風を読み、慣れた水夫に舵を委ねる",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:2,ok:"潮目を捉えた！ 船はぶじ朝鮮半島の帯方郡へたどり着いたーっ！"},{icon:"🌾",label:"十分な米と水を積み、長い船旅に備える",stat:"seiji",genre:"seiji",style:"safe",fit:1,ok:"蓄えのおかげで誰も飢えず、士気を保ったまま渡海成功！"},{icon:"⚔️",label:"海賊を蹴散らしながら強引に進む",stat:"buyu",genre:"buyu",style:"risky",fit:0,ok:"力で押し通ったが、船も人も傷だらけ…先は長いぞ！"}]},{situ:"帯方郡をへて、いよいよ魏へ使者の口上が伝わる。皇帝に認めてもらうには、ふさわしい贈り物と作法がいる…！",opts:[{icon:"🎁",label:"男女の生口（奴隷）と倭の布を献上する",stat:"seiji",genre:"seiji",style:"safe",fit:2,hist:true,ok:"生口と布をたてまつった！ 魏の朝廷が倭の使者を厚くもてなしたーっ！"},{icon:"🤝",label:"倭のくにぐにを束ねる女王の使いだと丁重に伝える",stat:"ninbo",genre:"ninbo",style:"safe",fit:2,ok:"「遠き倭の女王の使い、よくぞ参った」——魏の心証は上々だ！"},{icon:"🔆",label:"倭の珍しい風習として女王のまじないを使者が伝える",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"海の向こうの不思議なまじないの話に、魏の人々が耳をかたむけた！ 強い印象を残した！"}]},{situ:"皇帝が応えようとしている。この朝貢から、何を持ち帰る!?",opts:[{icon:"👑",label:"「親魏倭王」の称号と金印を願い出る",stat:"seiji",genre:"seiji",style:"safe",fit:2,hist:true,ok:"「親魏倭王」の称号と、その金印（紫のひも＝紫綬つき）を賜ったーっ！ 倭の女王が魏に認められた！"},{icon:"🥉",label:"銅鏡など先進の文物を求める",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"銅鏡百枚を賜った！ くにの威光を示す宝が手に入った！"},{icon:"🤝",label:"狗奴国との争いで後ろ盾を頼む",stat:"ninbo",genre:"ninbo",style:"safe",fit:1,ok:"魏が味方についた！ 敵への大きな抑えとなる！"}]}],winText:"朝貢、成る！ 魏の皇帝から「親魏倭王」の称号と、その金印（＝親魏倭王の金印・紫綬つき）、さらに銅鏡百枚を授かった。これらは『魏志倭人伝』に記され、卑弥呼と邪馬台国の名は海の向こうの歴史書に永遠に刻まれた。\n\n（※57年に奴国の王が漢から授かった「漢委奴国王」の金印とは別の金印だよ。）",loseText:"【敗北】海路や作法を乗り越えられず、朝貢は実らなかった……。\n\n（育成終了。外交は政の力がものを言う。「政」を鍛えて出直そう！）",winFx:{koku:200,seiji:10,ninbo:5}},
         {year:-272,type:"battle",title:"247年 狗奴国との戦い — 邪馬台国を守れ",terrain:{icon:"⚔️",label:"邪馬台国の南境"},bg:"assets/scene_yayoi.jpg",enemyName:"狗奴国の軍勢",enemyIcon:"🔥",enemyPower:374,army:{me:7000,foe:8000},meUnit:"🛡️",foeUnit:"🗡️",open:["ついに南の狗奴国（くなこく）が攻め寄せた！ 男王・卑弥弓呼との宿命の対決！","卑弥呼は魏に救いを求め、魏は役人・張政（ちょうせい）を遣わした。後ろ盾を背に、くにを守れーっ！"],rounds:[{situ:"狗奴国の兵が境のむらに迫る。まず守りをどう固める？",opts:[{icon:"🛡️",label:"環濠集落に兵をまとめ、柵で迎え撃つ",stat:"buyu",genre:"buyu",style:"safe",fit:2,ok:"濠と柵が敵の足を止めた！ 環濠集落は、まさに守りの要塞だーっ！"},{icon:"🗡️",label:"鉄の武器をそろえた精鋭を前に立てる",stat:"buyu",genre:"buyu",style:"safe",fit:1,ok:"鉄の刃がきらめく！ 石の武器の敵を圧倒していく！"},{icon:"🌾",label:"倉の米を兵に配って力をつけさせる",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"腹を満たした兵は強い！ 高床倉庫の備えが効いている！"}]},{situ:"魏から役人・張政が来た。この後ろ盾をどう生かす？",opts:[{icon:"📜",label:"魏の旗（黄幢）を掲げ、権威を見せつける",stat:"seiji",genre:"seiji",style:"trick",fit:2,hist:true,ok:"「倭の女王は大国・魏の味方ぞ」——敵兵がひるんだーっ！ 権威もまた武器だ！"},{icon:"🔆",label:"まじないで味方の士気を高める",stat:"ninbo",genre:"ninbo",style:"trick",fit:1,ok:"「神は我らとともに！」——兵の目に火が宿った！"},{icon:"⚔️",label:"勢いに乗って一気に攻めかかる",stat:"buyu",genre:"buyu",style:"risky",fit:1,ok:"攻めの一手が刺さった！ だが深追いは禁物だぞ！"}]},{situ:"戦は一進一退。この長い争いを、どう収める!?",opts:[{icon:"🤝",label:"境を定め、これ以上の争いを避ける",stat:"ninbo",genre:"ninbo",style:"safe",fit:2,ok:"むやみに戦を広げぬ知恵！ くにの兵と田を守りぬいたーっ！"},{icon:"🌾",label:"守りを固めて田を荒らさせない",stat:"chiryaku",genre:"chiryaku",style:"safe",fit:1,ok:"田は守られ、来年の米も安泰だ！ くにの底力が削られない！"},{icon:"⚔️",label:"狗奴国の本拠まで攻め込む",stat:"buyu",genre:"buyu",style:"risky",fit:1,ok:"押し返したが、勝負はなお続く…戦いの行方は史書も語らない！"}]}],winText:"狗奴国の攻めを、ぎりぎりで支えきった！ 環濠の守り、鉄の武器、そして魏という後ろ盾——倭独自の力で、邪馬台国を守りぬいた。",loseText:"【敗北】南境が破られ、邪馬台国は大きく傷ついた……。\n\n（育成終了。守りには鉄と兵、そして人望が要る。鍛えて出直そう！）",winFx:{koku:120,buyu:8,ninbo:4}},
         {year:-271,type:"story",title:"248年 卑弥呼、世を去る",art:"🌙🔆",text:"狗奴国との争いのさなか、女王・卑弥呼はこの世を去った。『魏志倭人伝』は、大きな墓（径百余歩）が築かれ、多くの人がともに葬られた（殉葬）と伝える。\n\nその後、倭は男王を立てたが国は再び乱れた。そこで卑弥呼の一族の少女・壹与（いよ）が、わずか十三歳で女王となり、ようやく国はふたたび治まったという。",effects:{ninbo:5}},
         {year:-270,type:"final",title:"300年 倭の夜明け — その先の歴史へ",art:"🌅🗾",text:"稲作が変えた暮らし、青銅器と鉄器、むらからくにへ、そして女王・卑弥呼。倭は、大陸とつながりながら、ひとつにまとまる道を歩みはじめた。\n\nあなたが築いたこの土台の先に、どんな国の姿が待っているのだろうか。",survive:{title:"【IF】まじないが結んだ、長き平（たいら）",text:"魏という大国の後ろ盾を得て、狗奴国との争いもおさまり、邪馬台国は長く保たれた。\n\n卑弥呼の祈り（鬼道）と、弟の政（まつりごと）、難升米の外交、そして稲と鉄の力——それらが固く結び合い、倭のくにぐにに穏やかな日々が続いた。\n\n女王の名は『魏志倭人伝』に刻まれ、海の向こうの大国にまで知られた。神に仕える者がくにを束ねるという倭独自のかたちが、長く受け継がれていく——あなたが育てた、もう一つの夜明けである。"},fall:{title:"倭の夜明け — 邪馬台国から、次の世へ",text:"卑弥呼が世を去り、壹与（いよ）が後を継いだのち、倭の記録は中国の歴史書から長く途絶える。やがて時代は、大きな古墳が各地に築かれる「古墳時代」へと移っていく。\n\nだが、稲作・金属器・むらからくにへの歩み、そして女王・卑弥呼の名は、日本という国のはじまりの物語として、永遠に語り継がれている。"}}
       ],
       map:MAP,
-      skirmishFoes:SKIRMISH_FOES,
-      skirmishSitus:SKIRMISH_SITUS
+      skirmishFoes:SKIRMISH_FOES_KODAI,
+      skirmishSitus:SKIRMISH_SITUS_KODAI
     },
   };
 
