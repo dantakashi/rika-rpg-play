@@ -8962,6 +8962,16 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
     }
     return { total:total, have:have, byLevel:byLevel };
   }
+  // 📖学習図鑑：指定級で「覚えた(learned)問題」を一覧で返す（英語＋意味）。図鑑表示用。
+  function collectionList(learnedSet, level){
+    learnedSet=learnedSet||{}; var out=[], seen={};
+    for(var i=0;i<DB.length;i++){ var q=DB[i]; if((q.level||'e4')!==level) continue; var k=keyOf(q); if(seen[k]) continue; seen[k]=1;
+      if(!learnedSet[k]) continue;
+      var en, jp; if(q.genre==='grammar'){ en=(q.question||'').replace('( )','(　)'); jp=(q.choices&&q.choices[q.answer])||''; } else { en=q.answer; jp=q.name; }
+      out.push({key:k, en:en, jp:jp, genre:q.genre}); }
+    out.sort(function(a,b){ return a.en<b.en?-1:(a.en>b.en?1:0); });
+    return out;
+  }
   // 🗼修練の塔の「単語マラソン」用：現出題範囲のうち まだ覚えていない問題を優先して1問返す（全部覚えてたらnull→通常ドローへ）。
   function nextUnlearned(cc, learnedSet){
     learnedSet=learnedSet||{};
@@ -9094,7 +9104,7 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
   function setGrammarMode(m){ if(m==='eiken'||m==='field') grammarMode=m; }
 
   return { next, drawFor, comboGain, gemGain, dailyWords, pushReview, reviewCount, size:()=>DB.length,
-    keyOf, byKey, buildFrom, buildStagePool, clearStagePool, collectionStats, nextUnlearned,
+    keyOf, byKey, buildFrom, buildStagePool, clearStagePool, collectionStats, collectionList, nextUnlearned,
     EIKEN, TIERS, GENRES, FIELDS, LV_LABEL, LV_ORDER,
     getSel, setSel, toggleLevel, toggleTier, toggleField, setGenre, setGrammarMode, poolCount, isBuffEligible,
     genre:()=>selGenre, gmode:()=>grammarMode,
@@ -9953,6 +9963,7 @@ const Game = (()=>{
   }
 
   /* ---- 📚 おぼえた英語コレクション（達成数の見える化＝「復習○問」の負債感を相殺・要望2026-06-16） ---- */
+  let collectionOpenLevel = null;   // 図鑑：展開中の英検級（タップで覚えた単語一覧を表示・Phase3）
   function renderCollection(){
     var body=$('collectionBody'); if(!body) return;
     if(homeView!=='collection') return;        // アクティブな時だけ描画
@@ -9969,14 +9980,23 @@ const Game = (()=>{
     body.appendChild(barWrap);
     var pctLine=document.createElement('div'); pctLine.className='muted'; pctLine.style.cssText='text-align:center;font-size:12px;margin-bottom:12px'; pctLine.textContent=pct+'% 制覇'; body.appendChild(pctLine);
     var gh=document.createElement('div'); gh.style.cssText='font-weight:800;font-size:14px;margin:6px 0 6px'; gh.textContent='英検級ごとの達成'; body.appendChild(gh);
+    var ghint=document.createElement('div'); ghint.className='muted'; ghint.style.cssText='font-size:11px;margin-bottom:4px'; ghint.textContent='タップすると、その級で覚えた英語を見られます👇'; body.appendChild(ghint);
     QuizEngine.EIKEN.forEach(function(e){
       var d=cs.byLevel[e.key]||{have:0,total:0}; if(!d.total) return;
-      var p=Math.round(d.have/d.total*100);
-      var row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
-      row.innerHTML='<div style="flex:0 0 52px;font-weight:700;font-size:13px">'+e.label+'</div>'
+      var p=Math.round(d.have/d.total*100), open=(collectionOpenLevel===e.key);
+      var row=document.createElement('button'); row.className='btn ghost'; row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px;width:100%;text-align:left;padding:8px';
+      row.innerHTML='<div style="flex:0 0 58px;font-weight:700;font-size:13px">'+e.label+(open?' ▲':' ▼')+'</div>'
         +'<div style="flex:1;height:12px;border-radius:8px;background:#eee;overflow:hidden"><div style="height:100%;width:'+p+'%;background:#3aa66f"></div></div>'
         +'<div style="flex:0 0 92px;text-align:right;font-size:12px;color:#2e8b57;font-weight:700">'+d.have.toLocaleString()+' / '+d.total.toLocaleString()+'</div>';
+      row.onclick=function(){ collectionOpenLevel = open?null:e.key; renderCollection(); };
       body.appendChild(row);
+      if(open){
+        var listBox=document.createElement('div'); listBox.style.cssText='max-height:40vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin:0 0 8px;background:rgba(0,0,0,.03)';
+        var list=QuizEngine.collectionList(learned, e.key);
+        if(!list.length){ listBox.innerHTML='<div class="muted" style="font-size:12px;padding:6px;text-align:center">まだこの級で覚えた英語はありません。ステージや塔で正解すると ここに集まります。</div>'; }
+        else { var html='<div class="muted" style="font-size:11px;margin-bottom:4px">覚えた '+list.length+' 個</div>'; list.forEach(function(it){ html+='<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 2px;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px"><span style="font-weight:700;color:#2e8b57;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(it.en)+'</span><span class="muted" style="flex:0 0 auto;font-size:12px;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(it.jp)+'</span></div>'; }); listBox.innerHTML=html; }
+        body.appendChild(listBox);
+      }
     });
     var note=document.createElement('div'); note.className='muted'; note.style.cssText='font-size:12px;margin-top:12px;line-height:1.6';
     note.innerHTML='✅ <b>正解する</b>と、その問題が「おぼえた」にたまります（1問1回でOK・<b>へりません</b>）。<br>🔁 まちがえた問題は「きょうの復習」で<b>わすれた頃にもう一度</b>出ます。';
@@ -10355,6 +10375,16 @@ const Game = (()=>{
     var T=[{m:0,n:'かけだし',e:'🌱'},{m:1,n:'みならい',e:'📗'},{m:3,n:'ルーキー',e:'⭐'},{m:5,n:'チャレンジャー',e:'🔥'},{m:7,n:'エキスパート',e:'💎'},{m:9,n:'マスター',e:'👑'}];
     var r=T[0]; T.forEach(function(t){ if(score>=t.m) r=t; }); return r;
   }
+  // 🎖️学習ランク(Phase3): 実力測定1回で即マスターだった称号を、累計の成長指標へ再設計。
+  // おぼえた語数を主軸に、クリア数・塔到達・鉄の試練・学習の塔を合算＝何百時間かけて伸びる称号。
+  const LEARN_RANKS = [
+    {m:0,n:'かけだし',e:'🌱'},{m:50,n:'みならい',e:'📗'},{m:150,n:'ルーキー',e:'⭐'},
+    {m:400,n:'チャレンジャー',e:'🔥'},{m:800,n:'エキスパート',e:'💎'},{m:1500,n:'マスター',e:'👑'},
+    {m:2500,n:'達人',e:'🏆'},{m:4000,n:'英語の賢者',e:'🦉'},{m:6000,n:'伝説',e:'🌟'}
+  ];
+  function learnScore(col){ var have=(col&&col.have)||0; return have + clearedCount()*5 + (towerBest||0)*3 + Object.keys(ironCleared).length*30 + learnBuffFloors()*5; }
+  function learnRank(score){ var r=LEARN_RANKS[0]; for(var i=0;i<LEARN_RANKS.length;i++){ if(score>=LEARN_RANKS[i].m) r=LEARN_RANKS[i]; } return r; }
+  function learnNextRank(score){ for(var i=0;i<LEARN_RANKS.length;i++){ if(score<LEARN_RANKS[i].m) return LEARN_RANKS[i]; } return null; }
   function playFavAttack(el){
     if(!el) return;
     el.classList.remove('attacking'); void el.offsetWidth; el.classList.add('attacking');
@@ -10411,15 +10441,17 @@ const Game = (()=>{
     var sb=$('wordSpeakBtn'); if(sb) sb.onclick=function(e){ e.stopPropagation(); Speech.speak(w.answer, true); };
   }
   function renderHomeMenu(){
+    var __col=QuizEngine.collectionStats(learned);   // 暗記集計は1回だけ（ランクカードと暗記ボタンで共有）
     var rc=$('rankCard');
     if(rc){
       var wl=placement.word?QuizEngine.LV_LABEL[placement.word].replace('英検',''):'未測定';
       var gl=placement.grammar?QuizEngine.LV_LABEL[placement.grammar].replace('英検',''):'未測定';
-      var tr=titleRank(placement.bestScore||0);
+      var __sc=learnScore(__col), tr=learnRank(__sc), nr=learnNextRank(__sc);
       rc.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'
         +'<div style="min-width:0">'
-        +'<div class="muted" style="font-weight:800">🎖️ 英語ランク</div>'
+        +'<div class="muted" style="font-weight:800">🎖️ 学習ランク</div>'
         +'<div style="font-size:22px;font-weight:800;color:#c77b1a;line-height:1.15">'+tr.e+' '+tr.n+'</div>'
+        +(nr?('<div class="muted" style="font-size:11px">次のランク '+nr.e+nr.n+' まであと '+(nr.m-__sc)+'</div>'):'<div class="muted" style="font-size:11px">最高ランク到達！🎉</div>')
         +'<div style="font-size:12px;font-weight:700">単語 <b style="color:var(--ally)">'+wl+'</b> ／ 文法 <b style="color:var(--ally)">'+gl+'</b></div>'
         +(Object.keys(ironCleared).length?'<div style="font-size:12px;font-weight:800;color:#5a6670">⚔ 鉄の試練 '+Object.keys(ironCleared).length+'章制覇</div>':'')
         +'</div>'
@@ -10445,7 +10477,7 @@ const Game = (()=>{
     }
     // 📚 暗記コレクション（常時表示）＝「復習○問」の負債感を、増える一方の達成数で相殺する（要望2026-06-16）。
     var ab=$('achieveBtn');
-    if(ab){ var __cs=QuizEngine.collectionStats(learned); var __pct=__cs.total?Math.round(__cs.have/__cs.total*100):0;
+    if(ab){ var __cs=__col; var __pct=__cs.total?Math.round(__cs.have/__cs.total*100):0;
       ab.innerHTML='📚 おぼえた英語 <span style="color:#2e8b57;font-weight:800">'+__cs.have.toLocaleString()+'</span> <span style="font-size:13px;color:#888">/ '+__cs.total.toLocaleString()+'</span>'
         +'<span class="sub">正解できた問題がたまる達成コレクション（へらないよ！）　'+__pct+'% 制覇</span>';
     }
