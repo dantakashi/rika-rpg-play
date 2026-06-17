@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>戦国トレーナー 〜天下統一への道〜</title>
+<title>偉人トレーナー 〜歴史に名を刻め〜</title>
 <style>
 /* ============================================================
-   戦国トレーナー β — パワプロ/ウマ娘型 歴史育成SLG
+   偉人トレーナー β — パワプロ/ウマ娘型 歴史育成SLG（旧名: 戦国トレーナー）
    §S1 ベース・テーマ / §S2 タイトル / §S3 育成メイン
    §S4 モーダル共通・クイズ / §S5 合戦 / §S6 結果・殿堂
    設計書: ../PLAN_SENGOKU_IKUSEI.md
@@ -748,8 +748,8 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   <!-- ===== タイトル ===== -->
   <div id="scr-title" class="scr on">
     <img class="titleArt" src="assets/title_keyart.jpg" alt="" onerror="this.outerHTML='&lt;div class=&quot;titleCrest&quot;&gt;⚔️&lt;/div&gt;'">
-    <div class="titleName serif">戦国トレーナー</div>
-    <div class="titleSub serif">〜 天下統一への道 〜</div>
+    <div class="titleName serif">偉人トレーナー</div>
+    <div class="titleSub serif">〜 歴史に名を刻め 〜</div>
     <div style="display:inline-block; margin:2px auto 6px; padding:3px 14px; border-radius:999px;
       background:rgba(248,113,113,.18); border:1px solid #f87171; color:#fca5a5; font-size:12px; font-weight:800;">
       βテスト版 — 不具合・ご意見は先生まで！</div>
@@ -759,13 +759,13 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <button id="btn-title-home" class="btn" onclick="UI.goHome()">🏠 ホーム画面へ</button>
       <button class="btn" onclick="UI.openSaveIO()">💾 セーブ＆ロード</button>
     </div>
-    <div class="verTag">β版 / 社会科・歴史（戦国〜江戸開幕） / セーブはこの端末に保存</div>
+    <div class="verTag">β版 / 社会科・歴史（縄文〜現代＋世界史） / セーブはこの端末に保存</div>
   </div>
 
   <!-- ===== ホーム画面（G1第2弾: 育てた武将の展示・小判・お知らせ・メニュー） ===== -->
   <div id="scr-home" class="scr">
     <div class="homeHead">
-      <div class="hTitle serif">⚔️ 戦国トレーナー</div>
+      <div class="hTitle serif">⚔️ 偉人トレーナー</div>
       <button class="homeRes" onclick="UI.openCoinInfo()">🪙 <span id="h-coins">0</span></button>
     </div>
     <button class="showcase" id="h-showcase" onclick="UI.openHall()"></button>
@@ -796,7 +796,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <div class="stage" id="g-stage">
         <div class="stageDeco"><span>🚩</span><span id="g-season">🌸</span></div>
         <div class="sceneCastleLbl" id="g-scenelbl" style="display:none"></div>
-        <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">居城: 陣屋</div></div>
+        <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">拠点: 陣屋</div></div>
         <div class="stageChar" id="g-face">🙂</div>
         <button class="miniMapBtn" id="g-minimap" onclick="UI.openMap()"></button>
         <!-- 軍学帳ボタン（②家紋の位置に正方形・問題数を通知バッジ表示。下の専用行を廃止） -->
@@ -1165,7 +1165,7 @@ const Game = (function(){
       if (Math.random() < 0.25){
         const lucks = [
           { t:'寝込んでいる間に『孫子』を読み込んだ！', fx:{chiryaku:12} },
-          { t:'見舞いに来た家臣たちと、夜通し天下を語り合った。', fx:{ninbo:8}, bond:12 },
+          { t:'見舞いに来た人たちと、夜通し語り合った。', fx:{ninbo:8}, bond:12 },
           { t:'療養先の湯の里で、豊かな米どころを見つけた！', fx:{koku:40} },
           { t:'体の芯から力がみなぎってきた。完全復活だ！', fx:{stamina:60, mood:2} },
         ];
@@ -2049,7 +2049,7 @@ const UI = (function(){
       $('g-castlebox').className = 'stageCastle t'+(tier+1);
       const cimg = Game.H.castleImgs && Game.H.castleImgs[tier];
       $('g-castle').innerHTML = cimg ? `<img src="${cimg}" alt="${cs[tier][2]}">` : cs[tier][1];
-      $('g-castlelbl').textContent = `居城: ${cs[tier][2]}`;
+      $('g-castlelbl').textContent = `拠点: ${cs[tier][2]}`;
     }
     $('g-heroname').textContent = Game.H.name;
     const km = $('g-kamon');
@@ -2392,6 +2392,11 @@ const UI = (function(){
      MODES[key] = { name, ownVeil, setup(), renderMomentum(), onResult({tier}), climax(win) }。
      合戦eventの ev.presentMode で出し分け（既定=jin-atarashii＝②領地。⑤⑦は次コミットで追加）。 */
   const L = D.BATTLE_LINES;
+  // 進行役（偉人別の battleLines があれば優先・なければ既定＝戦国の佐助）。tier実況行は L を共用
+  function nCaster(){ const b=Game.H&&Game.H.battleLines; return (b&&b.caster)||L.caster; }
+  function nIntro(){ const b=Game.H&&Game.H.battleLines; return (b&&b.casterIntro)||L.casterIntro; }
+  function nShort(){ const b=Game.H&&Game.H.battleLines; return (b&&b.short)||L.short||'佐助'; }
+  function nIcon(){ const b=Game.H&&Game.H.battleLines; return (b&&b.icon)||L.icon||'🥷'; }
   const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   const reduceMotion = (typeof window!=='undefined' && window.matchMedia) ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
   let battleLog = [], casterIntroShown = false, fastFwd = false, fastPref = false;
@@ -2509,9 +2514,9 @@ const UI = (function(){
   }
   // 本物の復活=戦闘画面に佐助の吹き出し（暗転より前）
   async function reviveBubble(){
-    if(reduceMotion){ log('🥷 佐助「まだ……まだ勝負は終わっておりませぬッ——！」'); return wait(fastFwd?120:600); }
+    if(reduceMotion){ log(`${nIcon()} ${nShort()}「まだ……まだ勝負は終わっておりませぬッ——！」`); return wait(fastFwd?120:600); }
     const b=document.createElement('div'); b.className='revive-bubble';
-    b.innerHTML=`<span class="rb-ic">🥷</span><span class="rb-tx">まだ……まだ勝負は終わっておりませぬッ——！</span>`;
+    b.innerHTML=`<span class="rb-ic">${nIcon()}</span><span class="rb-tx">まだ……まだ勝負は終わっておりませぬッ——！</span>`;
     $('b-stage').appendChild(b); beep('yuko'); requestAnimationFrame(()=>b.classList.add('in'));
     await wait(fastFwd?280:1500); b.classList.add('out'); await wait(260); b.remove();
   }
@@ -2704,13 +2709,13 @@ const UI = (function(){
       if(win){
         enemy.style.opacity='0'; flood.style.background=trustFlood(allyT); spawnSparks('kaishin'); fxHit('kaishin');
         tag.className='rng-tag big'; tag.textContent='命中——敵本隊を撃ち崩した！'; void tag.offsetWidth; tag.classList.add('show');
-        log('🗣️ 佐助「見事な一発！ 勝ち鬨——！」');
+        log(`🗣️ ${nShort()}「見事な一発！ 勝ち鬨——！」`);
       } else {
         enemy.style.transition='transform .45s'; enemy.style.transform='translate(-235px,205px) scale(1.4)';
         shooter.style.transform='translateX(10px) rotate(12deg)'; fxHit('shikujiri');
         flood.style.background=`radial-gradient(circle,${FOE_C},transparent 80%)`;
         tag.className='rng-tag'; tag.textContent='弾それて…突撃を受けた！'; void tag.offsetWidth; tag.classList.add('show');
-        log('🗣️ 佐助「間合いを詰められた…。鍛えて出直しましょうぞ」');
+        log(`🗣️ ${nShort()}「間合いを詰められた…。鍛えて出直しましょうぞ」`);
       }
       flood.classList.add('on');
       await wait(900);
@@ -2787,11 +2792,12 @@ const UI = (function(){
     $('b-intro').innerHTML = ev.intro ? `<details class="fold dim"><summary>📜 いくさのいきさつ</summary><div class="foldBody">${ev.intro}</div></details>` : '';
     $('b-intro').style.display = ev.intro ? 'block' : 'none';
     $('b-headline').innerHTML = headlineHTML(ev);
-    $('b-castername').textContent = L.caster;
+    $('b-castername').textContent = nCaster();
+    { const sk=document.querySelector('.sasukeImg'); if(sk) sk.style.display = (Game.H && Game.H.battleLines) ? 'none' : ''; }
     clearLog(); $('b-actions').innerHTML = '';
     MODES[curMode].setup();                 // intro=true → 両軍とも空
     $('ovl-battle').classList.add('on');
-    const introLines = (ev.skirmish || casterIntroShown) ? [] : [L.casterIntro]; casterIntroShown = true;
+    const introLines = (ev.skirmish || casterIntroShown) ? [] : [nIntro()]; casterIntroShown = true;
     const opening = ev.skirmish ? ev.open : [...introLines, ...ev.open, '⚠️ 負ければ育成終了の大一番だ！'];
     await castLines(opening);
     await statusBonusIntro();               // ステータスボーナス→地力ぶんが満ちる
@@ -2802,10 +2808,10 @@ const UI = (function(){
     const B=Game.B, round=B.ev.rounds[B.round];
     const isFinal = (!B.skirmish && B.max>1 && B.round===B.max-1);
     if(isFinal) reachCue();
-    log((isFinal?'🔥 決戦！ ':`📯 軍配${B.round+1}本目！ `)+round.situ);
+    log((isFinal?'🔥 決戦！ ':`📯 采配${B.round+1}本目！ `)+round.situ);
     const chips={ safe:['堅実','#2e8b57'], risky:['博打','#b3362a'], trick:['搦め手','#7a4f9d'] };
     setTimeout(()=>{
-      const head = isFinal ? `<div class="saihaiHead">🔥 決着の采配！ ここが正念場だ</div>` : `<div class="saihaiHead">⚔️ 軍配 ${B.round+1}本目 — どう采配する？</div>`;
+      const head = isFinal ? `<div class="saihaiHead">🔥 決着の采配！ ここが正念場だ</div>` : `<div class="saihaiHead">⚔️ 采配 ${B.round+1}本目 — どう采配する？</div>`;
       $('b-actions').innerHTML = head +
         `<div class="note" style="text-align:center; margin-bottom:6px;">正解で采配が実行 ／ <b style="color:#2e8b57">堅実</b>=安定 <b style="color:#b3362a">博打</b>=一か八か <b style="color:#7a4f9d">搦め手</b>=高ステで化ける</div>` +
         round.opts.map((o,i)=>{ const g=D.GENRES[o.stat], c=chips[o.style];
@@ -2921,7 +2927,7 @@ const UI = (function(){
   function openHowto(){
     $('l-title').textContent = '❓ 遊び方';
     $('l-body').innerHTML = `<div class="bookItem" style="font-size:14px;">
-      <b style="color:#8a6605">⚔️ 偉人を選び、その人生を一緒に駆け抜けるゲームだ。（信長32年／秀吉37年）</b><br><br>
+      <b style="color:#8a6605">⚔️ 偉人を選び、その人生を一緒に駆け抜けるゲームだ。（選んだ偉人の生涯を、年表どおりに）</b><br><br>
       🎯 <b>毎ターン、コマンドを1つ選ぶ</b>。⚔️鍛錬を選ぶと歴史クイズが出る。<b>時間制限はない</b>、じっくり考えよう。<br><br>
       ⭕ 正解するとステータスが大きく成長＋✨スキルPゲット。貯めたPは<b>スキル</b>（成長アップ・ケガ予防など）と交換できる！<br>
       ❌ 不正解でも「気合で押し切る」と同じだけ成長できる。ただし<b>失敗率</b>のぶんだけ大失敗のリスクが…！<br><br>
@@ -2929,10 +2935,10 @@ const UI = (function(){
       🤕 大失敗すると<b>ケガ</b>をする。ケガをしたら<b>🌿薬師（くすし）</b>で治療！ たまに「塞翁が馬」——ケガが思わぬ福を呼ぶことも…。<br><br>
       ❤️ 鍛錬は体力を使う。<b>体力25未満まで無理をすると、押し切りの失敗率が大幅に上がる</b>ぞ。😴休息でしっかり回復しよう（まちがえた問題の復習チャンスもある）。<br><br>
       🤝 側近（そっきん）がいる鍛錬は伸びやすく・<b>絆</b>も深まる。側近にはそれぞれ<b>固有ボーナス</b>があり（◯アイコンをタップで確認）、絆MAXで<b>側近スキル</b>を授かる。絆80以上の側近が得意鍛錬で輝いていたら<b>🌈友情特訓</b>で超成長！ 偉人自身も<b>固有スキル</b>を最初から持っているぞ。<br><br>
-      🚩 <b>小競り合い</b>は腕試しのミニ合戦。勝てば石高（こくだか）と✨スキルPが稼げるぞ。<br><br>
-      🏯 1560年・桶狭間など、<b>史実の合戦</b>が年表どおりに起こる。合戦は<b>「合戦絵巻」</b>——物見の佐助の実況で戦いが流れ、戦況が動いた瞬間にきみが<b>采配</b>を振る！ 選択肢には<b>堅実・博打・搦め手</b>の色がある。<b>戦況の文章をよく読み、自分の強いステータスと相談して選べ</b>。クイズに正解すれば采配は実行され、結果は会心⚡〜しくじり💢の4段階。史実と同じ采配を見抜けたら…？ <b>負けたらそこで育成終了</b>——まずは32年の完走を目指せ！<br><br>
+      🚩 <b>小競り合い</b>は腕試しのミニ合戦。勝てばその時代の資源と✨スキルPが稼げるぞ。<br><br>
+      🏯 その時代の<b>史実の山場（合戦や大事業）</b>が年表どおりに起こる。これは<b>「絵巻」</b>——進行役の実況で勝負が流れ、戦況が動いた瞬間にきみが<b>采配</b>を振る！ 選択肢には<b>堅実・博打・搦め手</b>の色がある。<b>状況の文章をよく読み、自分の強いステータスと相談して選べ</b>。クイズに正解すれば采配は実行され、結果は会心⚡〜しくじり💢の4段階。史実と同じ采配を見抜けたら…？ <b>負けたらそこで育成終了</b>——まずは完走を目指せ！<br><br>
       🔥 そして最終年——<b>ステータスを高く育てておくと、「もしも」の歴史（IFエンド）</b>が見られるかもしれない…。<br><br>
-      📜 最後まで完走すると<b>「追憶の章」</b>へ！ 人生をふり返る5問に正解するほど総括がポジティブになり、<b>全ステータスが大幅アップ</b>してランクに上乗せされるぞ！信長なら本能寺、秀吉なら天下統一のその先で…。<br><br>
+      📜 最後まで完走すると<b>「追憶の章」</b>へ！ 人生をふり返る5問に正解するほど総括がポジティブになり、<b>全ステータスが大幅アップ</b>してランクに上乗せされるぞ！選んだ偉人の生涯の、その先で…。<br><br>
       🌗 一度でも完走すると、育成開始時に<b>「じっくりの生涯」（1ターン=半年・ターン数2倍）</b>が選べるようになる。たっぷり鍛えて、もっと高みを目指せ！</div>`;
     $('ovl-list').classList.add('on');
   }
