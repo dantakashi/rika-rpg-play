@@ -9472,6 +9472,7 @@ const Game = (()=>{
       for(var __mk in mistakes){ var __m=mistakes[__mk]; if(typeof __m.box!=='number') __m.box=0; if(typeof __m.due!=='number') __m.due=0; }
       favorites=(s.favorites&&typeof s.favorites==='object')?s.favorites:{};
       learned=(s.learned&&typeof s.learned==='object')?s.learned:{};
+      if(s.rtStats&&typeof s.rtStats==='object'){ rtStats=Object.assign({total:0,b:{},fast:0,fastCorrect:0}, s.rtStats); rtStats.b=rtStats.b||{}; } // 📊Phase0計測の累積
       ownedSkins=(s.ownedSkins&&typeof s.ownedSkins==='object')?s.ownedSkins:{default:1}; if(!ownedSkins.default) ownedSkins.default=1;
       equippedSkin=s.equippedSkin||'default'; if(!ownedSkins[equippedSkin]) equippedSkin='default';
       if(s.placement&&typeof s.placement==='object') placement=Object.assign({word:null,grammar:null,bestScore:0,doneAt:''}, s.placement);
@@ -9488,7 +9489,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, learned, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -9516,6 +9517,11 @@ const Game = (()=>{
   function dueCount(genre){ return dueMistakeKeys(genre).length; } // 「今日の復習○問」用
   // 📚暗記コレクション：正解した問題を記録（増える一方・復習で減らない＝復習の負債感を相殺する達成数）
   function markLearned(q){ if(q&&q.srcKey && !learned[q.srcKey]){ learned[q.srcKey]=1; } }
+  // 📊適当連打対策 Phase0(2026-06-17): 解答までの反応時間(reactMs)を集計。★挙動は一切変えない＝「読んだか/読まず連打か」の実データ収集だけ。
+  // 将来Phase1+で「未読(reactMs<readGate)」を罰の引き金にするための土台。閾値は実データで校正する。
+  let rtStats = { total:0, b:{}, fast:0, fastCorrect:0 }; // b=反応時間バケツ(秒) / fast=<800ms(読まず即タップ疑い)の数 / fastCorrect=そのうち正解(まぐれ)
+  function rtBucket(ms){ var s=ms/1000; return s<0.5?'<0.5':(s<1?'0.5-1':(s<2?'1-2':(s<4?'2-4':'4+'))); }
+  function recordRt(ms, right){ if(!(ms>=0)||ms>120000) return; rtStats.total++; var k=rtBucket(ms); rtStats.b[k]=(rtStats.b[k]||0)+1; if(ms<800){ rtStats.fast++; if(right) rtStats.fastCorrect++; } }
   // セーブ肥大対策：上限超過時は due が最も遠い(=緊急でない)項目から間引く
   function srsPrune(){ var ks=Object.keys(mistakes); if(ks.length<=SRS_SOFT_CAP) return; ks.sort(function(a,b){ return (mistakes[b].due||0)-(mistakes[a].due||0); }); var drop=ks.length-SRS_SOFT_CAP; for(var i=0;i<drop;i++) delete mistakes[ks[i]]; }
   // 定着メーター：box を 0..SRS_MAX_BOX+1 段の進み具合として返す（図書館の可視化用）
@@ -10006,13 +10012,14 @@ const Game = (()=>{
   /* ---- ✏️ れんしゅうモード（戦闘なし・問題だけ・💎が貯まる。まちがえたら2タップで次へ＝ゆっくり確認） ---- */
   let pracQ=null, pracAnswered=false, pracPick=-1;
   let pracAnsweredAt=0;    // 解答時刻：💎連打稼ぎ防止に「つぎへ」を2秒クールダウン
+  let pracShownAt=0;       // 📊Phase0: 出題時刻(練習の反応時間計測用)
   const PRAC_NEXT_COOLDOWN=2000;
   let pracStarted=false;   // ②練習は「範囲設定→スタート」してから出題(要望#2)
   let pracReview=false;    // 🔁今日の復習ドリル：due な誤答だけを全ジャンル横断で出す（範囲設定をスキップ）
   // 🔁「今日の復習」をはじめる：due な誤答だけを出題するドリルへ。ホーム/図書館のボタンから呼ぶ。
   function startReviewDrill(){ pracReview=true; pracStarted=true; pracQ=null; pracAnswered=false; lastWasReview=false; lastMistakeKey=null; homeView='practice'; renderHome(); show('home'); }
   function pracDraw(){
-    var cc=choiceMode; pracQ=null; pracAnswered=false; pracPick=-1; QuizEngine.clearStagePool();
+    var cc=choiceMode; pracQ=null; pracAnswered=false; pracPick=-1; pracShownAt=performance.now(); QuizEngine.clearStagePool();
     if(pracReview){ // due な誤答だけを全ジャンルから（尽きたら pracQ=null → renderPractice で「復習おわり」表示）
       var rk=pickDueMistake(null); if(rk){ var rq=QuizEngine.buildFrom(rk,cc); if(rq){ rq.review=true; pracQ=rq; lastMistakeKey=rk; } }
       lastWasReview=true; return;
@@ -10024,6 +10031,7 @@ const Game = (()=>{
   function pracAnswer(i){
     if(!pracQ||pracAnswered) return; pracAnswered=true; pracPick=i; pracAnsweredAt=Date.now();
     var right=(i===pracQ.answerIndex);
+    recordRt(performance.now()-(pracShownAt||performance.now()), right); // 📊Phase0計測のみ(挙動不変)
     if(pracQ.speak) Speech.speak(pracQ.speak); // 解答時に正答英語を再生
     var pts=QuizEngine.gemGain(pracQ,right); gems+=pts;
     if(right){ creditMistake(pracQ); markLearned(pracQ); } else recordMistake(pracQ);
@@ -11111,6 +11119,7 @@ const Game = (()=>{
     if(curQ.speak && Speech.supported && Speech.isOn() && Speech.hasEnglishVoice() && curQ.dir==='enjp'){
       rb.style.display=''; Speech.speak(curQ.speak);
     } else { rb.style.display='none'; }
+    curQ.shownAt = performance.now(); // 📊Phase0: 出題時刻(反応時間計測用・挙動は変えない)
   }
   function replayAudio(){ if(curQ && curQ.speak) Speech.speak(curQ.speak); }
   function answer(i, btn){
@@ -11118,6 +11127,7 @@ const Game = (()=>{
     B.answered++;
     if(curQ.speak) Speech.speak(curQ.speak); // 正誤どちらでも正答の英語を再生（誤答でも正しい発音が流れる）
     const right = (i===curQ.answerIndex);
+    recordRt(performance.now()-(curQ.shownAt||performance.now()), right); // 📊Phase0計測のみ(挙動不変)
     const buttons=[...$('choices').children];
     let gemPts = QuizEngine.gemGain(curQ, right); // 💎ガチャ通貨：正解=満額／不正解=約1/3
     if(B.recoBonus) gemPts *= 2; // 推奨難易度（推奨級チャレンジ中）は💎2倍
@@ -12051,6 +12061,8 @@ const Game = (()=>{
       rank(b){ return towerRank(b); }, nextRank(b){ return towerNextRank(b); }, weeklyRule(){ return weeklyTowerRule(); },
       resetTower(){ towerMiles={}; towerBest=0; towerWeekBest=0; towerWeekDone=''; towerWeekStamp=''; }
     },
+    // 📊適当連打対策 Phase0: 反応時間(reactMs)集計の読み出し/リセット（実データ収集用）
+    rt: { stats(){ return JSON.parse(JSON.stringify(rtStats)); }, reset(){ rtStats={total:0,b:{},fast:0,fastCorrect:0}; return 'rt reset'; } },
     // 現在の問題に対し、ペルソナの知識率で正誤を決めて回答（実問題・選択肢運込み）
     answerKnow(prof){
       if(!curQ||curQ.locked) return false;
