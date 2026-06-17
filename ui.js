@@ -154,6 +154,36 @@ const GameUI = (function() {
         } else { _gCard.classList.add('hidden'); }
       }
 
+      // 🔁#90 おぼえた理科コレクション（増え続ける達成数・まちがえても減らない）
+      const _cCard = document.getElementById('collection-home-card');
+      if (_cCard && GameEngine.getCollectionStats) {
+        const cs = GameEngine.getCollectionStats();
+        const pct = cs.total ? Math.floor(cs.learned / cs.total * 100) : 0;
+        const subLine = cs.bySubject.map(function (s) {
+          return '<span class="inline-block mr-2 text-[9px] text-cyan-100">' + s.icon + ' ' + s.learned + '/' + s.total + '</span>';
+        }).join('');
+        _cCard.classList.remove('hidden');
+        _cCard.innerHTML = '<div class="flex items-center gap-1.5"><span class="text-base">🔬</span>'
+          + '<span class="font-black text-cyan-200 text-[12px]">おぼえた理科 ' + cs.learned.toLocaleString() + ' / ' + cs.total.toLocaleString() + '</span>'
+          + '<span class="ml-auto text-[10px] text-cyan-400 font-bold">' + pct + '%</span></div>'
+          + '<div class="mt-1 h-1.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-cyan-500" style="width:' + pct + '%"></div></div>'
+          + '<div class="mt-1.5 leading-relaxed">' + subLine + '</div>'
+          + '<div class="text-[9px] text-cyan-200/80 mt-1">一度でも正解した問題が貯まっていくよ。まちがえても減らないから安心。</div>';
+      }
+
+      // 🔁#89続き きょうの復習（SRSで「そろそろ もう一回」になった問題数。復習モード本体は朝レビュー後）
+      const _rCard = document.getElementById('review-home-card');
+      if (_rCard && GameEngine.getReviewInfo) {
+        const ri = GameEngine.getReviewInfo();
+        if (ri.dueNow > 0) {
+          _rCard.classList.remove('hidden');
+          _rCard.innerHTML = '<div class="flex items-center gap-1.5"><span class="text-base">🔁</span>'
+            + '<span class="font-black text-emerald-200 text-[12px]">きょうの復習 ' + ri.dueNow.toLocaleString() + '問</span>'
+            + '<span class="ml-auto text-[9px] text-emerald-400">そろそろ おさらい</span></div>'
+            + '<div class="text-[9px] text-emerald-200/80 mt-1">前に解いた問題が「そろそろ もう一回」の合図だよ。まとめておさらいできる<b>復習モード</b>を準備中。</div>';
+        } else { _rCard.classList.add('hidden'); }
+      }
+
             // 進捗ヒント
       const hintBox = document.getElementById('progress-hint-box');
       if (hintBox) {

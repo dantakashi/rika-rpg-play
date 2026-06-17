@@ -44,6 +44,7 @@ let player = {
       equipped: { weapon:null, head:null, body:null, feet:null, accessory:null },
       inventory: [],
       quizStats: {},   // 学習進捗: キー "genre|diff" → {c:正解数, t:出題数}
+      qStat: {},       // 🔁#89 問題ごとの個体追跡: キー qkeyOf(q) → {box,due,ts,c,t}（SRS/おぼえた図鑑の土台。これ自体は出題を変えない）
       guerrillaWindow: -1,    // ⚡ #21③ 今のゲリラ問題のクリア数が属する3時間窓
       guerrillaClaimedCount: 0 // ⚡ #21③ この窓でクリアしたゲリラ数（0〜3）
     };
@@ -1801,6 +1802,57 @@ let player = {
       document.getElementById('typing-user').textContent = '';
     }
 
+    // 🔁#89 SRS（間隔反復）の土台。Leitnerの box(0..6)→次回出題予定日(due) を記録するだけで、
+    //  ここでは出題を一切変えない（＝挙動不変の"1cmの土台"）。読み出し側（今日の復習/おぼえた図鑑）は後続。
+    const SRS_INTERVALS_DAYS = [0, 1, 3, 7, 14, 30, 90]; // box0=今日, box6=90日
+    const SRS_MAX_BOX = SRS_INTERVALS_DAYS.length - 1;    // 6
+    const SRS_DAY_MS = 86400000;
+    // 問題ごとの安定キー。問題にidが無いので識別フィールドを連結→簡易ハッシュ(djb2)。
+    //  問題文/答えが変わらない限り同じキー＝セーブをまたいで同じ問題を追跡できる（編集で変われば履歴リセット＝許容）。
+    function qkeyOf(q) {
+      if (!q) return null;
+      const ans = (q.formula != null) ? ('=' + q.formula) : (q.a != null ? ('#' + q.a) : '');
+      const src = [q.genre, q.diff, q.type, q.name || '', q.display || q.q || '', ans].join('');
+      let h = 5381; for (let i = 0; i < src.length; i++) { h = ((h * 33) ^ src.charCodeAt(i)) >>> 0; }
+      return q.genre + '|' + q.diff + '|' + h.toString(36); // 例: reaction|junior|1a2b3c
+    }
+    // 1問の正誤を個体記録（box更新＝次回予定日を計算）。出題ロジックからは未参照＝挙動不変。
+    function srsRecord(q, correct) {
+      if (!player.qStat) player.qStat = {};
+      const k = qkeyOf(q); if (!k) return;
+      const now = Date.now();
+      let r = player.qStat[k];
+      if (!r) r = player.qStat[k] = { box: 0, due: now, ts: 0, c: 0, t: 0 };
+      r.t++; if (correct) r.c++;
+      r.box = correct ? Math.min((r.box || 0) + 1, SRS_MAX_BOX) : 0; // 正解で1段上げ／誤答は box0(今日)へ戻す
+      r.due = now + SRS_INTERVALS_DAYS[r.box] * SRS_DAY_MS;
+      r.ts = now;
+    }
+    // 読み出し専用の集計（後続の「今日の復習○問」「おぼえた理科○/全問」用。現状はどのUIにも未接続）。
+    function getReviewInfo() {
+      const qs = player.qStat || {}, now = Date.now();
+      let tracked = 0, learned = 0, dueNow = 0;
+      for (const k in qs) { const r = qs[k]; tracked++; if (r.c > 0) learned++; if (r.due <= now) dueNow++; }
+      return { tracked, learned, dueNow }; // 分母(全問数)は GameData.getQuestions({}).length
+    }
+    // 🔁#90 おぼえた理科コレクション: 全問のうち「一度でも正解した(c>0)」数を教科別に集計（読み出し専用・出題は変えない）。
+    //  問題にidが無いので全問に qkeyOf を当てて player.qStat と突合（約1700件の軽いハッシュ・メニュー表示時のみ）。
+    function getCollectionStats() {
+      const qs = player.qStat || {};
+      const all = (GameData.getQuestions ? GameData.getQuestions({}) : []);
+      const subs = {};
+      (GameData.SUBJECTS || []).forEach(function (s) { subs[s.key] = { key: s.key, label: s.label, icon: s.icon, learned: 0, total: 0 }; });
+      const g2s = {}; (GameData.GENRES || []).forEach(function (g) { g2s[g.key] = g.subject; });
+      let total = 0, learned = 0;
+      all.forEach(function (q) {
+        const bucket = subs[g2s[q.genre] || 'chemistry']; if (!bucket) return;
+        bucket.total++; total++;
+        const r = qs[qkeyOf(q)];
+        if (r && r.c > 0) { bucket.learned++; learned++; }
+      });
+      return { total: total, learned: learned, bySubject: (GameData.SUBJECTS || []).map(function (s) { return subs[s.key]; }) };
+    }
+
     // 学習進捗の記録: 現在の問題の genre×diff ごとに 正解数/出題数 を加算。
     //  選択式=初回正誤 / タイピング=その問題をミス0で完成できたか（battle.qHadMiss）。
     //  ULTIMATE必殺クイズ(handleQuizAnswer)は対象外（genre/diffを持たないため自然に弾かれる）。
@@ -1812,6 +1864,7 @@ let player = {
       if (!s) { s = { c: 0, t: 0 }; player.quizStats[key] = s; }
       s.t++;
       if (correct) s.c++;
+      srsRecord(q, correct); // 🔁#89 問題ごとの個体追跡（SRS土台）。出題は変えない
       gainRankExp(correct); // ★学習保障報酬: 問題を解くたびEXP→ランクUPでゴールド（撃破ゴールドとは別軸）
     }
 
@@ -2423,6 +2476,7 @@ let player = {
       if (typeof player.equippedAvatar !== 'string') player.equippedAvatar = 'default';
       if (typeof player.autoSellRarity !== 'string') player.autoSellRarity = ''; // ''=自動売却OFF
       if (!player.quizStats || typeof player.quizStats !== 'object') player.quizStats = {}; // 学習進捗(正答率)
+      if (!player.qStat || typeof player.qStat !== 'object') player.qStat = {}; // 🔁#89 問題個体追跡(SRS土台)。旧セーブは空で開始
       // スキル改名の移行: 旧『連鎖爆発』(コンボ消費型・コンボ爆撃と重複)→『連鎖共鳴』(消費しないATK上昇)。
       //  既存セーブの装備インスタンスはskill文字列を持つため、ここで置換しないと無効スキルになる。
       const _renameSkill = (it) => { if (it && it.skill === '連鎖爆発') it.skill = '連鎖共鳴'; };
@@ -2495,7 +2549,8 @@ let player = {
         stats: { hp:0, atk:0, def:0, cpRecover:0, cpAtk:0, stanAtk:0, stanDef:0 },
         equipped: { weapon:null, head:null, body:null, feet:null, accessory:null },
         inventory: [],
-        quizStats: {}
+        quizStats: {},
+        qStat: {}
       };
       grantStarterGear(); // 初期化後もスターター装備一式を配布（新規プレイヤーと同じ下地）
       saveUserDataLocal();
@@ -2685,7 +2740,7 @@ let player = {
   return {
     get player() { return player; }, set player(v) { player = v; },
     get battle() { return battle; },
-    getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar, getRankInfo,
+    getEffectiveStats, getTotalStrength, getDojoUnlockStatus, getMaxDojoEnemyLevel, updateCharAvatar, getRankInfo, getReviewInfo, getCollectionStats,
     getRecommendedDojoLevel, getBossRecommendedPower, getBossReadiness,
     startDojo, startBossBattle, startEndgameBoss, getCurrentEndgameBoss, startArenaBattle, spawnNextDojoEnemy, nextQuestion, getCurrentGuerrillaQuestions, getGuerrillaMsLeft, guerrillaClaimedCount,
     processCorrectAnswer, handleKeyInput, handleQuizAnswer, answerChoice, comboBurst, pauseGame, resumeGame,

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>わりあいバー 📊</title>
+<style>
+  /* ============================================================
+     わりあいバー — 数感覚ミニゲーム（軸: 割合・数直線）
+     上の「お手本バー」と同じ"割合"になるよう、下の自分のバーをタップして塗る。
+     割合を数字でなく「長さ・見た目の比」で感じる。
+     ステージ: ①同じ幅(コピー) ②ちがう幅(比例) ③%表示お手本
+     なぜ幅をステージで変える: 同じ"見た目の長さ"でなく"同じ割合"を狙わせ、
+     真の比例感覚（バーが短くても割合は同じ）を育てるため。
+     ※自己ベストのみ記録（順位は出さない＝成長を見せる設計）。
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; --purple:#7c3aed; }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#efe6ff 0%,#eaf2ff 45%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px 12px 26px; }
+  h1{ margin:.3em 0 .1em; font-size:clamp(22px,6vw,32px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 10px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .hidden{ display:none; }
+
+  /* ステージ選択 */
+  .stageGrid{ display:grid; grid-template-columns:1fr; gap:10px; }
+  .stage{ padding:16px 8px; border:3px solid var(--line); border-radius:13px; background:#fffdf5;
+    font-size:17px; font-weight:800; text-align:center; line-height:1.3; }
+  .stage small{ display:block; font-weight:600; color:#9a8a64; font-size:11px; margin-top:4px; min-height:13px; }
+  .stage:active{ transform:scale(.96); }
+
+  /* プレイ */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:6px; font-size:14px; }
+  .hud .sc{ margin-left:auto; color:var(--blue); font-size:18px; }
+  .target{ text-align:center; font-size:14px; color:#6b6250; font-weight:700; margin:4px 0 2px; }
+
+  /* バー共通 */
+  .barWrap{ margin:14px 0 2px; }
+  .barLabel{ font-size:13px; font-weight:800; margin:0 0 5px; }
+  .barLabel.me{ color:var(--purple); }
+  .barLabel.model{ color:var(--green); }
+  .barRow{ display:flex; justify-content:center; }
+  /* お手本バー（塗りはJSで幅指定・%表示お題は数字だけ見せて塗りを隠す） */
+  .barOuter{ position:relative; height:34px; border:2px solid var(--line); border-radius:9px; overflow:hidden;
+    background:linear-gradient(180deg,#ffffff,#f0e6c8); box-shadow:inset 0 2px 4px rgba(0,0,0,.08); }
+  .barFill{ position:absolute; top:0; bottom:0; left:0; width:0; }
+  .barFill.model{ background:linear-gradient(180deg,#5bd08a,#27a35a); }
+  .barFill.me{ background:linear-gradient(180deg,#a78bfa,#7c3aed); }
+  .barFill.truth{ background:repeating-linear-gradient(45deg,rgba(39,163,90,.0),rgba(39,163,90,.0) 6px,rgba(39,163,90,.45) 6px,rgba(39,163,90,.45) 12px);
+    border-right:3px dashed var(--green); }
+  .pctBig{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:900; color:var(--green); }
+
+  /* 自分のバー＝タップで塗る */
+  .barOuter.me{ cursor:pointer; touch-action:none; }
+  .hintTap{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:#9a8a64; font-weight:700; pointer-events:none; }
+
+  .fb{ text-align:center; font-size:22px; font-weight:900; min-height:30px; margin:10px 0 0; }
+  .fb .pts{ color:var(--gold); }
+  .fb .note{ display:block; font-size:13px; font-weight:700; color:#6b6250; margin-top:2px; }
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:8px; }
+  .dots i{ width:10px; height:10px; border-radius:50%; background:#e6d3a8; display:inline-block; }
+  .dots i.on{ background:var(--green); }
+
+  /* 結果 */
+  .result h2{ text-align:center; font-size:24px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(34px,10vw,52px); color:var(--purple); font-weight:900; margin:.1em 0; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:16px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+</style>
+</head>
+<body>
+<button id="portalBackBtn" title="数学ポータルへ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">← もどる</button>
+<script>
+  // ゲーム→数学ポータル（このフォルダの親 index.html＝numsense/index.html）へ戻る。
+  document.getElementById('portalBackBtn').addEventListener('click',function(){ location.href='../index.html'; });
+</script>
+
+<div class="wrap">
+  <h1>わりあいバー 📊</h1>
+  <p class="sub">お手本と<b>同じわりあい</b>になるよう、下のバーをタップして塗ろう！</p>
+
+  <!-- ステージ選択 -->
+  <div id="stageSel" class="panel">
+    <div class="stageGrid" id="stageGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのステージの自己ベスト。前の自分をこえよう！</p>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span id="stageName">同じはば</span>
+      <span class="sc">⭐ <span id="score">0</span></span>
+    </div>
+
+    <div class="barWrap">
+      <div class="barLabel model">📗 お手本</div>
+      <div class="barRow">
+        <div class="barOuter" id="modelOuter" style="width:100%">
+          <div class="barFill model" id="modelFill"></div>
+          <div class="pctBig hidden" id="modelPct"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="target">↓ お手本と<b>同じわりあい</b>になるところをタップ</div>
+
+    <div class="barWrap">
+      <div class="barLabel me">✏️ 自分のバー</div>
+      <div class="barRow">
+        <div class="barOuter me" id="meOuter" style="width:100%">
+          <div class="barFill me" id="meFill"></div>
+          <div class="barFill truth hidden" id="truthFill"></div>
+          <div class="hintTap" id="hintTap">タップして塗る 👆</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fb" id="fb"></div>
+    <div class="dots" id="shotDots"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2 id="rTitle">ステージクリア！</h2>
+    <div class="big" id="rScore">0</div>
+    <div id="newrec" class="newrec hidden">🏆 自己ベスト更新！</div>
+    <div class="stat"><span>このステージのベスト</span><span id="rBest">0</span></div>
+    <div class="stat"><span>ぴたり（ほぼ正確）</span><span id="rBull">0</span> 回</div>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button id="toStageBtn">ステージをえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 定数 ===== */
+const $ = (id)=>document.getElementById(id);
+const ROUNDS = 8;          // 1ステージの問題数
+// お題の割合（キリのよい分数だけ＝割合感覚の基礎）
+const RATIOS = [
+  ['1/4',1/4],['1/3',1/3],['2/5',2/5],['1/2',1/2],['3/5',3/5],
+  ['2/3',2/3],['3/4',3/4],['1/5',1/5],['4/5',4/5],
+];
+// 自分のバー幅の候補(px)。①は両方フル幅・②③で自分のバーを縮める＝真の比例。
+const NARROW_WIDTHS = [200, 240, 280, 160];
+const STAGES = [
+  { id:'copy',  name:'同じはば',   emoji:'🟢', desc:'お手本と同じ幅。マネしよう',     mode:'copy'  },
+  { id:'prop',  name:'ちがうはば', emoji:'🔵', desc:'幅がちがう。"わりあい"で合わせる', mode:'prop'  },
+  { id:'pct',   name:'％お手本',   emoji:'🟣', desc:'お手本は％表示。塗りはナシ',       mode:'pct'   },
+];
+
+/* ===== 状態（eval検証できるようトップレベルに公開） ===== */
+let stage=STAGES[0], round=0, score=0, bulls=0, targetR=0.5, targetLabel='1/2', locked=false;
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function bestKey(s){ return 'ns_best_ratiobar_'+s.id; }
+function getBest(s){ return parseInt(localStorage.getItem(bestKey(s))||'0',10); }
+
+/* ===== ステージ選択 ===== */
+function buildStages(){
+  const g=$('stageGrid'); g.innerHTML='';
+  STAGES.forEach(s=>{
+    const b=document.createElement('button'); b.className='stage';
+    const best=getBest(s);
+    b.innerHTML = s.emoji+' '+s.name+'<small>'+s.desc+'　'+(best?('★ '+best):'はじめて')+'</small>';
+    b.onclick=()=>startStage(s);
+    g.appendChild(b);
+  });
+}
+function toStages(){
+  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('stageSel').classList.remove('hidden'); buildStages();
+}
+
+/* ===== プレイ ===== */
+function startStage(s){
+  stage=s; round=0; score=0; bulls=0; locked=false;
+  $('stageSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('stageName').textContent = s.emoji+' '+s.name;
+  $('score').textContent='0';
+  buildShotDots();
+  newRound();
+}
+function buildShotDots(){
+  const d=$('shotDots'); d.innerHTML='';
+  for(let i=0;i<ROUNDS;i++){ const e=document.createElement('i'); d.appendChild(e); }
+}
+function markShotDots(){
+  [...$('shotDots').children].forEach((e,i)=>e.classList.toggle('on', i<round));
+}
+function newRound(){
+  // 表示リセット
+  $('meFill').style.width='0%';
+  $('truthFill').classList.add('hidden');
+  $('modelPct').classList.add('hidden'); $('modelPct').textContent='';
+  $('fb').textContent=''; $('hintTap').style.visibility='visible';
+
+  const r=RATIOS[rnd(0,RATIOS.length-1)];
+  targetLabel=r[0]; targetR=r[1];
+
+  // 自分のバーの幅をステージで変える（copyはフル幅・prop/pctは縮める＝比例）
+  const meOuter=$('meOuter'), modelOuter=$('modelOuter');
+  if(stage.mode==='copy'){
+    meOuter.style.width='100%';
+  } else {
+    // 極小画面ではみ出さないよう、コンテナの実幅で上限をかける（採点は実描画幅基準なので影響なし）。
+    const maxW = meOuter.parentElement ? meOuter.parentElement.clientWidth : 320;
+    const w = Math.min(NARROW_WIDTHS[rnd(0,NARROW_WIDTHS.length-1)], maxW);
+    meOuter.style.width = w+'px';
+  }
+  // お手本：copy/propは塗って見せる・pctは塗らず％数字だけ
+  if(stage.mode==='pct'){
+    $('modelFill').style.width='0%';
+    $('modelPct').textContent=Math.round(targetR*100)+'%';
+    $('modelPct').classList.remove('hidden');
+  } else {
+    $('modelFill').style.width=(targetR*100)+'%';
+  }
+  modelOuter.style.width='100%';
+  locked=false;
+}
+
+/* 自分のバー内のタップ位置 → 割合(0〜1) */
+function setFillByClientX(clientX){
+  if(locked) return; locked=true;
+  const bar=$('meOuter'); const rect=bar.getBoundingClientRect();
+  let frac=(clientX-rect.left)/rect.width; frac=Math.max(0,Math.min(1,frac));
+  judge(frac);
+}
+
+function judge(myR){
+  const err = Math.abs(myR - targetR)*100;            // 誤差%（割合の差×100）
+  const pts = Math.max(0, Math.round(100 - err*1.4)); // numlineと同じ採点思想
+  score += pts; $('score').textContent=score;
+  if(err<2.2) bulls++;
+
+  // 自分の塗りを確定表示
+  $('hintTap').style.visibility='hidden';
+  $('meFill').style.width=(myR*100)+'%';
+  // 正解の割合を重ねて表示（斜線＋破線の境目＝お手本と同じ割合の位置）
+  const tf=$('truthFill'); tf.style.width=(targetR*100)+'%'; tf.classList.remove('hidden');
+
+  // フィードバック（正解の割合も言葉で見せる）
+  let word, ty;
+  if(err<2.2){ word='ぴたり！🎯'; beep(880,.08); setTimeout(()=>beep(1180,.09),90); }
+  else if(err<6){ word='ナイス！👍'; beep(740,.07); }
+  else if(err<13){ word='おしい'; beep(520,.06); }
+  else { word='うーん…'; beep(300,.08,'sawtooth'); }
+  $('fb').innerHTML = word+' <span class="pts">+'+pts+'</span>'+
+    '<span class="note">こたえ '+targetLabel+'（＝'+Math.round(targetR*100)+'%）</span>';
+
+  round++; markShotDots();
+  setTimeout(()=>{
+    if(round>=ROUNDS) showResult();
+    else newRound();
+  }, 1400);
+}
+
+/* 入力：自分のバーをタップ */
+$('meOuter').addEventListener('pointerdown', (e)=>{ e.preventDefault(); setFillByClientX(e.clientX); });
+
+/* ===== 結果 ===== */
+function showResult(){
+  $('play').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rTitle').textContent = stage.emoji+' '+stage.name+' クリア！';
+  $('rScore').textContent = score;
+  $('rBull').textContent = bulls;
+  const prev=getBest(stage);
+  if(score>prev){ localStorage.setItem(bestKey(stage), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent = Math.max(prev,score);
+}
+$('retryBtn').onclick=()=>startStage(stage);
+$('toStageBtn').onclick=toStages;
+
+/* ===== 効果音 ===== */
+let actx=null;
+function beep(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'sine';
+  g.gain.value=0.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.06)); }catch(e){} }
+
+buildStages();
+</script>
+
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='numsense', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
+</body>
+</html>

@@ -86,6 +86,7 @@
   .ic-data {background:linear-gradient(160deg,#34e0f0,#0e7490)}
   .ic-soon {background:linear-gradient(160deg,#5b667c,#2f3a4f)}
   .ic-sengoku{background:linear-gradient(160deg,#fb923c,#9a3412)}
+  .ic-numsense{background:linear-gradient(160deg,#c084fc,#7c3aed)}
   .app.soon{cursor:default}
   .app.soon:active{transform:none}
   .badge-beta{position:absolute; right:-3px; top:-3px; background:#f87171; color:#fff; font-size:8px; font-weight:800;
@@ -265,6 +266,7 @@
 
   // アプリ一覧（catで教科に振り分け）。アプリが無い教科は「おたのしみに」を自動表示。
   var APPS = [
+    {key:'numsense', label:'数の第六感',   icon:'🔮', cls:'ic-numsense', href:'numsense/index.html', cat:'math', beta:true},
     {key:'gori',  label:'ゴリラ大砲',      icon:'🦍', cls:'ic-gori',  href:'math-gorilla/index.html', cat:'math'},
     {key:'run',   label:'割れる数ラン',    icon:'🏃', cls:'ic-run',   href:'math-run/index.html',     cat:'math'},
     {key:'merge', label:'そすうマージ',    icon:'🔢', cls:'ic-merge', href:MERGE,                     cat:'math'},
@@ -363,6 +365,7 @@
     {key:'gori',  name:'ゴリラ大砲',      icon:'🦍', cls:'ic-gori'},
     {key:'run',   name:'割れる数ラン',    icon:'🏃', cls:'ic-run'},
     {key:'merge', name:'そすうマージ',    icon:'🔢', cls:'ic-merge'},
+    {key:'numsense', name:'数の第六感',   icon:'🔮', cls:'ic-numsense'},
   ];
   var AVATARS=['🧑‍🎓','👦','👧','🦊','🐱','🐼','🐸','🐯','🤖','🦖','🐧','🦉'];
   function hubLoad(){ try{return JSON.parse(localStorage.getItem(HKEY))||{};}catch(e){return{};} }
@@ -529,8 +532,11 @@
   // ★運用ルール: ポータルやゲームを更新して生徒に配信したら、必ず UPDATES の
   //   先頭に1件追加すること（date=配信日 / title / body=やさしい言葉の箇条書き）。
   var UPDATES = [
-    { date:'2026-06-17', title:'英語：エネルギーのシステムを改修したよ⚡', body:[
-      '⚡ グラマー・ガード（英語）の<b>エネルギーの増え方</b>を改修しました。あそびながら、画面の<b>⚡×（ばいりつ）</b>がどう動くか見てみてね。',
+    { date:'2026-06-17', title:'数学に新コーナー「数の第六感」がふえたよ🔮', body:[
+      '🔮 数学に <b>「数の第六感」</b> という新しいアプリ（ミニゲーム集）がふえました。計算する前に、答えが<b>「だいたい見える」力</b>＝数のかんを、小さなゲームでみがきます。',
+      '🎯 まずは <b>数直線シュート</b>（数をだいたいの場所へ撃つ）、<b>¥2000で足りる？</b>（買えるか見積もる）、<b>フラッシュ道場</b>（一瞬で何個か当てる）など7本で遊べるよ。',
+      '⭐ 点数は<b>「自分のベスト」</b>だけ。だれかと比べるものじゃないから、気らくに前の自分をこえていこう。',
+      '🧪 まだ<b>できたて（テスト中）</b>です。へんな所やむずかしすぎる所があったら先生に教えてね。',
     ]},
     { date:'2026-06-17', title:'偉人トレーナーの絵が本物に＋ポータルへ戻るボタン🖼️🚪', body:[
       '🖼️ 18人の偉人の<b>立ち絵（全身）</b>と<b>育成画面の背景</b>を、仮の絵から本物のイラストに差し替えたよ。卑弥呼・聖徳太子・ナポレオン・ウィルソンなど、それぞれの時代に合った姿に。',

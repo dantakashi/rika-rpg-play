@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>数直線シュート 🎯</title>
+<style>
+  /* ============================================================
+     数直線シュート — 数感覚ミニゲーム（軸: 数直線感覚 / 桁）
+     目盛りのない数直線に、出てきた数を「だいたいの位置」へ撃ち込む。
+     近いほど高得点（PAE=百分率絶対誤差で採点）。
+     ステージ: 0〜100 / 0〜1000 / 分数・小数(0〜1) / 負の数(-100〜100)
+     ※自己ベストのみ記録（順位は出さない＝成長を見せる設計）。
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; --purple:#7c3aed; }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#efe6ff 0%,#eaf2ff 45%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px 12px 26px; }
+  h1{ margin:.3em 0 .1em; font-size:clamp(22px,6vw,32px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 10px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .hidden{ display:none; }
+
+  /* ステージ選択 */
+  .stageGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stage{ padding:16px 8px; border:3px solid var(--line); border-radius:13px; background:#fffdf5;
+    font-size:17px; font-weight:800; text-align:center; line-height:1.3; }
+  .stage small{ display:block; font-weight:600; color:#9a8a64; font-size:11px; margin-top:4px; min-height:13px; }
+  .stage:active{ transform:scale(.96); }
+
+  /* プレイ */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:6px; font-size:14px; }
+  .hud .sc{ margin-left:auto; color:var(--blue); font-size:18px; }
+  .target{ text-align:center; font-size:14px; color:#6b6250; font-weight:700; margin:4px 0 2px; }
+  .targetNum{ text-align:center; font-size:clamp(34px,11vw,52px); font-weight:900; color:var(--purple);
+    line-height:1.05; margin:0 0 14px; letter-spacing:1px; }
+
+  /* 数直線 */
+  .lineBox{ position:relative; padding:38px 14px 30px; touch-action:none; }
+  .nline{ position:relative; height:20px; border-radius:10px; cursor:crosshair;
+    background:linear-gradient(180deg,#ffffff,#f0e6c8); border:2px solid var(--line);
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.08); }
+  .endcap{ position:absolute; top:-4px; width:4px; height:28px; background:var(--ink); border-radius:2px; }
+  .endcap.l{ left:-2px; } .endcap.r{ right:-2px; }
+  .mid{ position:absolute; top:0; bottom:0; left:50%; width:2px; background:rgba(0,0,0,.14); }
+  .endlab{ position:absolute; top:30px; font-size:15px; font-weight:800; color:var(--ink); }
+  .endlab.l{ left:-4px; } .endlab.r{ right:-4px; }
+  .hintTap{ position:absolute; top:6px; left:0; right:0; text-align:center; font-size:12px; color:#9a8a64; font-weight:700; }
+
+  /* マーカー */
+  .marker{ position:absolute; top:-30px; transform:translateX(-50%); font-size:24px; line-height:1;
+    transition:left .25s ease; pointer-events:none; }
+  .truth{ position:absolute; top:24px; transform:translateX(-50%); pointer-events:none; }
+  .truth .flag{ font-size:22px; line-height:1; }
+  .truth .tval{ font-size:12px; font-weight:800; color:var(--green); white-space:nowrap; }
+  .errline{ position:absolute; top:9px; height:4px; background:var(--red); border-radius:2px; opacity:.85; pointer-events:none; }
+
+  .fb{ text-align:center; font-size:22px; font-weight:900; min-height:30px; margin:6px 0 0; }
+  .fb .pts{ color:var(--gold); }
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:8px; }
+  .dots i{ width:10px; height:10px; border-radius:50%; background:#e6d3a8; display:inline-block; }
+  .dots i.on{ background:var(--green); }
+
+  /* 結果 */
+  .result h2{ text-align:center; font-size:24px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(34px,10vw,52px); color:var(--purple); font-weight:900; margin:.1em 0; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:16px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+  .start{ display:block; width:100%; margin-top:12px; padding:15px; font-size:18px; font-weight:800; border-radius:13px;
+    color:#fff; background:var(--purple); border:none; box-shadow:0 4px 0 #5b21b6; }
+</style>
+</head>
+<body>
+<button id="portalBackBtn" title="数学ポータルへ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">← もどる</button>
+<script>
+  // ゲーム→数学ポータル（このフォルダの親 index.html＝numsense/index.html）へ戻る。
+  document.getElementById('portalBackBtn').addEventListener('click',function(){ location.href='../index.html'; });
+</script>
+
+<div class="wrap">
+  <h1>数直線シュート 🎯</h1>
+  <p class="sub">出てきた数を「だいたいの場所」へ撃て！ 近いほど高得点。</p>
+
+  <!-- ステージ選択 -->
+  <div id="stageSel" class="panel">
+    <div class="stageGrid" id="stageGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのステージの自己ベスト。前の自分をこえよう！</p>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span id="stageName">0〜100</span>
+      <span class="sc">⭐ <span id="score">0</span></span>
+    </div>
+    <div class="target">この数はどこ？</div>
+    <div class="targetNum" id="targetNum">—</div>
+    <div class="lineBox">
+      <div class="hintTap" id="hintTap">タップして撃つ 👆</div>
+      <div class="nline" id="nline">
+        <div class="endcap l"></div><div class="endcap r"></div>
+        <div class="mid" id="mid"></div>
+        <div class="endlab l" id="labL">0</div>
+        <div class="endlab r" id="labR">100</div>
+        <div class="errline hidden" id="errline"></div>
+        <div class="marker hidden" id="marker">⬇️</div>
+        <div class="truth hidden" id="truth"><div class="flag">🚩</div><div class="tval" id="tval"></div></div>
+      </div>
+    </div>
+    <div class="fb" id="fb"></div>
+    <div class="dots" id="shotDots"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2 id="rTitle">ステージクリア！</h2>
+    <div class="big" id="rScore">0</div>
+    <div id="newrec" class="newrec hidden">🏆 自己ベスト更新！</div>
+    <div class="stat"><span>このステージのベスト</span><span id="rBest">0</span></div>
+    <div class="stat"><span>ぴたり（ほぼ正確）</span><span id="rBull">0</span> 回</div>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button id="toStageBtn">ステージをえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 定数 ===== */
+const $ = (id)=>document.getElementById(id);
+const SHOTS = 8;            // 1ステージの問題数
+const STAGES = [
+  { id:'h', name:'0〜100',          lo:0,    hi:100,  type:'int',  emoji:'🟢' },
+  { id:'k', name:'0〜1000',         lo:0,    hi:1000, type:'int',  emoji:'🔵' },
+  { id:'f', name:'分数・小数(0〜1)', lo:0,    hi:1,    type:'frac', emoji:'🟣' },
+  { id:'n', name:'負の数(-100〜100)',lo:-100, hi:100,  type:'int',  emoji:'🟠' },
+];
+// 分数・小数ステージのお題（表記をまたいで「大きさの位置」を感じる）
+const FRACS = [
+  ['1/2',0.5],['1/4',0.25],['3/4',0.75],['1/3',1/3],['2/3',2/3],
+  ['1/5',0.2],['2/5',0.4],['3/5',0.6],['4/5',0.8],['1/10',0.1],
+  ['7/10',0.7],['9/10',0.9],['0.5',0.5],['0.25',0.25],['0.7',0.7],
+  ['0.9',0.9],['0.15',0.15],['0.6',0.6],['0.35',0.35],['0.85',0.85],
+];
+
+/* ===== 状態 ===== */
+let stage=STAGES[0], shotIdx=0, score=0, bulls=0, target={val:0,label:'0'}, locked=false;
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function bestKey(s){ return 'ns_best_numline_'+s.id; }
+function getBest(s){ return parseInt(localStorage.getItem(bestKey(s))||'0',10); }
+
+/* ===== ステージ選択 ===== */
+function buildStages(){
+  const g=$('stageGrid'); g.innerHTML='';
+  STAGES.forEach(s=>{
+    const b=document.createElement('button'); b.className='stage';
+    const best=getBest(s);
+    b.innerHTML = s.emoji+' '+s.name+'<small>'+(best?('★ '+best):'はじめて')+'</small>';
+    b.onclick=()=>startStage(s);
+    g.appendChild(b);
+  });
+}
+function toStages(){
+  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('stageSel').classList.remove('hidden'); buildStages();
+}
+
+/* ===== プレイ ===== */
+function startStage(s){
+  stage=s; shotIdx=0; score=0; bulls=0; locked=false;
+  $('stageSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('stageName').textContent = s.emoji+' '+s.name;
+  $('score').textContent='0';
+  $('labL').textContent = s.lo; $('labR').textContent = s.hi;
+  $('mid').style.display = (s.id==='n') ? 'block' : 'none'; // 負の数だけ中央(0)を薄く表示
+  buildShotDots();
+  newTarget();
+}
+function buildShotDots(){
+  const d=$('shotDots'); d.innerHTML='';
+  for(let i=0;i<SHOTS;i++){ const e=document.createElement('i'); d.appendChild(e); }
+}
+function markShotDots(){
+  [...$('shotDots').children].forEach((e,i)=>e.classList.toggle('on', i<shotIdx));
+}
+function newTarget(){
+  // マーカー類リセット
+  $('marker').classList.add('hidden'); $('truth').classList.add('hidden'); $('errline').classList.add('hidden');
+  $('fb').textContent=''; $('hintTap').style.visibility='visible';
+  if(stage.type==='frac'){
+    const f=FRACS[rnd(0,FRACS.length-1)]; target={val:f[1], label:f[0]};
+  } else {
+    let v;
+    if(stage.id==='k'){ v=rnd(2,199)*5; if(v>=stage.hi)v=stage.hi-15; } // 0〜1000は5の倍数で見やすく
+    else if(stage.id==='n'){ v=rnd(stage.lo+8, stage.hi-8); }
+    else { v=rnd(stage.lo+3, stage.hi-3); }
+    target={val:v, label:String(v)};
+  }
+  $('targetNum').textContent = target.label;
+  locked=false;
+}
+function valToPct(v){ return (v-stage.lo)/(stage.hi-stage.lo)*100; }
+
+function shoot(clientX){
+  if(locked) return; locked=true;
+  const line=$('nline'); const r=line.getBoundingClientRect();
+  let frac=(clientX-r.left)/r.width; frac=Math.max(0,Math.min(1,frac));
+  const guess = stage.lo + frac*(stage.hi-stage.lo);
+  const truePct = valToPct(target.val);
+  const guessPct = frac*100;
+  const pae = Math.abs(guess-target.val)/(stage.hi-stage.lo)*100; // 百分率絶対誤差
+  const pts = Math.max(0, Math.round(100 - pae*1.4));
+  score += pts; $('score').textContent=score;
+  if(pae<2.2) bulls++;
+
+  // マーカー表示
+  $('hintTap').style.visibility='hidden';
+  const m=$('marker'); m.style.left=guessPct+'%'; m.classList.remove('hidden');
+  const t=$('truth'); t.style.left=truePct+'%'; $('tval').textContent=target.label; t.classList.remove('hidden');
+  const el=$('errline'); const a=Math.min(guessPct,truePct), b=Math.max(guessPct,truePct);
+  el.style.left=a+'%'; el.style.width=(b-a)+'%'; el.classList.remove('hidden');
+
+  // フィードバック
+  let word;
+  if(pae<2.2){ word='ぴたり！🎯'; beep(880,.08); setTimeout(()=>beep(1180,.09),90); }
+  else if(pae<6){ word='ナイス！👍'; beep(740,.07); }
+  else if(pae<13){ word='おしい'; beep(520,.06); }
+  else { word='うーん…'; beep(300,.08,'sawtooth'); }
+  $('fb').innerHTML = word+' <span class="pts">+'+pts+'</span>';
+
+  shotIdx++; markShotDots();
+  setTimeout(()=>{
+    if(shotIdx>=SHOTS) showResult();
+    else newTarget();
+  }, 1250);
+}
+
+/* 入力：数直線のどこかをタップ */
+$('nline').addEventListener('pointerdown', (e)=>{ e.preventDefault(); shoot(e.clientX); });
+
+/* ===== 結果 ===== */
+function showResult(){
+  $('play').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rTitle').textContent = stage.emoji+' '+stage.name+' クリア！';
+  $('rScore').textContent = score;
+  $('rBull').textContent = bulls;
+  const prev=getBest(stage);
+  if(score>prev){ localStorage.setItem(bestKey(stage), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent = Math.max(prev,score);
+}
+$('retryBtn').onclick=()=>startStage(stage);
+$('toStageBtn').onclick=toStages;
+
+/* ===== 効果音 ===== */
+let actx=null;
+function beep(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'sine';
+  g.gain.value=0.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.06)); }catch(e){} }
+
+buildStages();
+</script>
+
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='numsense', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
+</body>
+</html>

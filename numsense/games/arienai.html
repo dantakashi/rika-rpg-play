@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ありえない検出 🚫</title>
+<style>
+  /* ============================================================
+     ありえない検出 — 数感覚ミニゲーム（軸: 桁・概算）
+     「48 × 52 = 24960」のように式と"答え"が出る。
+     ありえる(○)/ありえない(✕)を素早く判定する。
+     ※ありえない答えは桁違い・小数点ズレ・1の位の不一致・符号違い
+       など「ざっくり見積もり・末尾チェックで気づける」ものだけ作る。
+       設計上、壊した値が偶然 T と一致しないことを必ず確認する。
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; --purple:#7c3aed; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#efe6ff 0%,#eaf2ff 45%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px 12px 26px; }
+  h1{ margin:.3em 0 .1em; font-size:clamp(22px,6vw,32px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 10px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .hidden{ display:none; }
+
+  /* レベル選択 */
+  .stageGrid{ display:grid; grid-template-columns:1fr; gap:10px; }
+  .stage{ padding:16px 12px; border:3px solid var(--line); border-radius:13px; background:#fffdf5;
+    font-size:18px; font-weight:800; text-align:center; line-height:1.3; }
+  .stage small{ display:block; font-weight:600; color:#9a8a64; font-size:11px; margin-top:4px; min-height:13px; }
+  .stage:active{ transform:scale(.97); }
+
+  /* プレイ */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:6px; font-size:14px; }
+  .hud .combo{ color:var(--gold); }
+  .hud .sc{ margin-left:auto; color:var(--blue); font-size:18px; }
+  .timebar{ height:8px; border-radius:5px; background:#eaddb8; overflow:hidden; margin-bottom:12px; }
+  .timebar > i{ display:block; height:100%; background:var(--green); width:100%; transition:width .1s linear; }
+  .eq{ text-align:center; font-size:clamp(30px,9.5vw,46px); font-weight:900; color:var(--purple);
+    line-height:1.1; margin:18px 0 6px; letter-spacing:1px; }
+  .eq .res{ color:var(--ink); }
+  .ask{ text-align:center; font-size:14px; color:#6b6250; font-weight:700; margin:0 0 16px; }
+
+  .ansBtns{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .ansBtns button{ padding:20px 8px; font-size:20px; font-weight:900; border-radius:14px; border:3px solid var(--line); }
+  .ansBtns .ok{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+  .ansBtns .ng{ color:#fff; background:var(--red); border:none; box-shadow:0 4px 0 #a83a29; }
+  .ansBtns button:active{ transform:translateY(2px); }
+
+  .fb{ text-align:center; font-size:18px; font-weight:800; min-height:48px; margin:12px 0 0; line-height:1.4; }
+  .fb .good{ color:var(--green); } .fb .bad{ color:var(--red); }
+  .fb .hint{ display:block; font-size:13px; color:#6b6250; font-weight:700; margin-top:2px; }
+  .dots{ display:flex; gap:5px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+  .dots i{ width:9px; height:9px; border-radius:50%; background:#e6d3a8; display:inline-block; }
+  .dots i.on{ background:var(--green); }
+
+  /* 結果 */
+  .result h2{ text-align:center; font-size:24px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(34px,10vw,52px); color:var(--purple); font-weight:900; margin:.1em 0; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:16px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+</style>
+</head>
+<body>
+<button id="portalBackBtn" title="数学ポータルへ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">← もどる</button>
+<script>
+  // ゲーム→数学ポータル（このフォルダの親 index.html＝numsense/index.html）へ戻る。
+  document.getElementById('portalBackBtn').addEventListener('click',function(){ location.href='../index.html'; });
+</script>
+
+<div class="wrap">
+  <h1>ありえない検出 🚫</h1>
+  <p class="sub">答えはあってる？ ざっくり見積もりで「ありえない」を見やぶれ！</p>
+
+  <!-- レベル選択 -->
+  <div id="stageSel" class="panel">
+    <div class="stageGrid" id="stageGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのレベルの自己ベスト。1ラウンド12問。</p>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span id="lvName">やさしい</span>
+      <span class="combo" id="comboLab"></span>
+      <span class="sc">⭐ <span id="score">0</span></span>
+    </div>
+    <div class="timebar"><i id="timeFill"></i></div>
+    <div class="eq" id="eq">—</div>
+    <div class="ask">この答えは…？</div>
+    <div class="ansBtns">
+      <button class="ok" id="btnOk">⭕ ありえる</button>
+      <button class="ng" id="btnNg">❌ ありえない</button>
+    </div>
+    <div class="fb" id="fb"></div>
+    <div class="dots" id="qDots"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2 id="rTitle">ラウンド終了！</h2>
+    <div class="big" id="rScore">0</div>
+    <div id="newrec" class="newrec hidden">🏆 自己ベスト更新！</div>
+    <div class="stat"><span>このレベルのベスト</span><span id="rBest">0</span></div>
+    <div class="stat"><span>正解</span><span id="rCorrect">0</span> / 12</div>
+    <div class="stat"><span>最大コンボ</span><span id="rCombo">0</span></div>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button id="toStageBtn">レベルをえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 定数 ===== */
+const $ = (id)=>document.getElementById(id);
+const ROUND = 12;          // 1ラウンドの問題数
+const LEVELS = [
+  // showMs=提示時間(ms)。むずかしいほど短い。誤差も小さくなる(=見やぶりにくい)。
+  { id:'e', name:'やさしい', emoji:'🟢', showMs:7000 },
+  { id:'m', name:'ふつう',   emoji:'🔵', showMs:5500 },
+  { id:'h', name:'むずかしい',emoji:'🟣', showMs:4200 },
+];
+
+/* ===== 状態（トップレベル・グローバル） ===== */
+let level=LEVELS[0], round=0, score=0, correctCount=0, combo=0, maxCombo=0;
+let curTrue=0, curShown=0, curIsValid=true, curHint='', curExpr='', locked=false;
+let timer=null, timeLeft=0, timeTotal=0;
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=(arr)=>arr[rnd(0,arr.length-1)];
+function bestKey(l){ return 'ns_best_arienai_'+l.id; }
+function getBest(l){ return parseInt(localStorage.getItem(bestKey(l))||'0',10); }
+
+/* ===== レベル選択 ===== */
+function buildStages(){
+  const g=$('stageGrid'); g.innerHTML='';
+  LEVELS.forEach(l=>{
+    const b=document.createElement('button'); b.className='stage';
+    const best=getBest(l);
+    b.innerHTML = l.emoji+' '+l.name+'<small>'+(best?('★ '+best):'はじめて')+'</small>';
+    b.onclick=()=>startLevel(l);
+    g.appendChild(b);
+  });
+}
+function toStages(){
+  stopTimer();
+  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('stageSel').classList.remove('hidden'); buildStages();
+}
+
+/* ===== 問題生成 =====
+   真の値 T を正確に計算し、約50%でそのまま提示(=ありえる)。
+   残りは「ざっくり/末尾チェックで気づける」壊し方で別の値を提示(=ありえない)。
+   壊した値が偶然 T と一致しないことを必ず確認する。 */
+function makeOperands(l){
+  // 演算は × メイン、+/- を混ぜる。
+  const op = (Math.random()<0.6) ? '×' : (Math.random()<0.5 ? '+' : '−');
+  let a, b, T;
+  if(op==='×'){
+    if(l.id==='e'){ a=rnd(11,49); b=rnd(2,9); }          // 2桁 × 1桁
+    else if(l.id==='m'){ a=rnd(12,79); b=rnd(11,29); }    // 2桁 × 2桁
+    else { a=rnd(13,99); b=rnd(12,49); }                  // 2桁 × 2桁(大きめ)
+    T=a*b;
+  } else if(op==='+'){
+    if(l.id==='e'){ a=rnd(13,89); b=rnd(13,89); }
+    else if(l.id==='m'){ a=rnd(120,880); b=rnd(120,880); }
+    else { a=rnd(250,1900); b=rnd(250,1900); }
+    T=a+b;
+  } else { // −
+    if(l.id==='e'){ a=rnd(40,99); b=rnd(11,a-5); }
+    else if(l.id==='m'){ a=rnd(300,990); b=rnd(60,a-40); }
+    else { a=rnd(600,2200); b=rnd(120,a-90); }
+    T=a-b;
+  }
+  return { a, b, op, T };
+}
+
+// T を「気づける」別の値に壊す。失敗時は null を返し呼び出し側で別の壊し方を試す。
+function corrupt(T, kind){
+  let bad=null, hint='';
+  if(kind==='x10'){            // 桁が1つ大きすぎ
+    bad=T*10; hint='桁が大きすぎ（ざっくり見積もりの10倍）';
+  } else if(kind==='div10'){   // 桁が1つ小さすぎ（割り切れる時だけ）
+    if(T%10===0 && T>=20){ bad=T/10; hint='桁が小さすぎ（ざっくり見積もりの1/10）'; }
+  } else if(kind==='ones'){    // 1の位だけ違う（末尾チェックで一発）
+    const d=T%10; let nd=(d+rnd(1,8))%10; if(nd===d)nd=(nd+1)%10;
+    bad=T-d+nd; hint='1の位が合わない（かけ算の末尾を見ると…）';
+  } else if(kind==='neg'){     // 符号が逆（マイナスはありえない）
+    if(T>0){ bad=-T; hint='符号がおかしい（マイナスにはならない）'; }
+  } else if(kind==='dropDigit'){ // 桁を1つ抜いた（短すぎ＝小さすぎ）
+    const s=String(T);
+    if(s.length>=3){ bad=parseInt(s.slice(0,-1),10); hint='桁が足りない（けたが1つ少ない）'; }
+  } else if(kind==='addDigit'){  // 桁を1つ足した（長すぎ＝大きすぎ）
+    bad=T*10+rnd(1,9); hint='桁が多すぎ（けたが1つ多い）';
+  }
+  // 偶然 T と一致／非整数／同符号で同値、を弾く
+  if(bad===null || bad===T || !Number.isFinite(bad)) return null;
+  return { bad, hint };
+}
+
+function newQuestion(){
+  const { a, b, op, T } = makeOperands(level);
+  curTrue = T;
+  curExpr = a + ' ' + op + ' ' + b;
+
+  if(Math.random()<0.5){
+    // ありえる（正しい答えをそのまま）
+    curShown = T; curIsValid = true; curHint = '';
+  } else {
+    // ありえない（壊した値）。末尾チェック系は×のときだけ強く効くので重み付け。
+    let kinds = ['x10','div10','ones','dropDigit','addDigit'];
+    if(op==='−') kinds.push('neg','neg'); // 引き算では符号違いを混ぜる
+    if(op==='×') kinds.push('ones','ones'); // かけ算は末尾チェックが武器
+    let res=null, tries=0;
+    while(res===null && tries<12){ res=corrupt(T, pick(kinds)); tries++; }
+    if(res===null) res=corrupt(T,'x10'); // 最終フォールバック(T*10は常に成立)
+    curShown = res.bad; curIsValid = false; curHint = res.hint;
+  }
+
+  $('eq').innerHTML = curExpr + ' = <span class="res">' + curShown + '</span>';
+  $('fb').innerHTML = '';
+  locked=false;
+  startTimer();
+}
+
+/* ===== タイマー ===== */
+function startTimer(){
+  stopTimer();
+  timeTotal = level.showMs; timeLeft = level.showMs;
+  $('timeFill').style.width='100%';
+  const step=100;
+  timer=setInterval(()=>{
+    timeLeft-=step;
+    const pct=Math.max(0,timeLeft/timeTotal*100);
+    $('timeFill').style.width=pct+'%';
+    $('timeFill').style.background = pct<30 ? 'var(--red)' : (pct<55 ? 'var(--gold)' : 'var(--green)');
+    if(timeLeft<=0){ stopTimer(); timeUp(); }
+  }, step);
+}
+function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } }
+function timeUp(){
+  if(locked) return; locked=true;
+  combo=0; updateCombo();
+  showFeedback(false, true);
+}
+
+/* ===== 回答・採点 ===== */
+function answer(bool){
+  if(locked) return; locked=true;
+  stopTimer();
+  const ok = (bool === curIsValid);
+  if(ok){
+    correctCount++;
+    combo++; if(combo>maxCombo) maxCombo=combo;
+    // 正解点 = 基礎50 ＋ 速度ボーナス(残り時間割合×50) ＋ コンボ(最大+30)。
+    const speed = Math.round(timeLeft/timeTotal*50);
+    const cb = Math.min(combo-1,6)*5;
+    const pts = 50 + Math.max(0,speed) + cb;
+    score += pts; $('score').textContent=score;
+    beep(880,.08); setTimeout(()=>beep(1180,.09),80);
+  } else {
+    combo=0;
+    beep(220,.16,'sawtooth');
+  }
+  updateCombo();
+  showFeedback(ok, false);
+}
+
+function showFeedback(ok, timedOut){
+  let head;
+  if(ok){ head = '<span class="good">せいかい！ ⭕</span>'; }
+  else if(timedOut){ head = '<span class="bad">時間切れ ⏰</span>'; }
+  else { head = '<span class="bad">ざんねん… ❌</span>'; }
+  // 解説: 正しい答えと、ありえなかった理由を一瞬見せる。
+  let detail;
+  if(curIsValid){
+    detail = '<span class="hint">'+curExpr+' = '+curTrue+'（正しい答え）</span>';
+  } else {
+    detail = '<span class="hint">本当は '+curExpr+' = '+curTrue+'<br>ヒント: '+curHint+'</span>';
+  }
+  $('fb').innerHTML = head + detail;
+
+  round++; markDots();
+  setTimeout(()=>{
+    if(round>=ROUND) showResult();
+    else newQuestion();
+  }, 1500);
+}
+
+function updateCombo(){
+  $('comboLab').textContent = combo>=2 ? ('🔥'+combo+'れんぞく') : '';
+}
+
+/* ===== ドット（進行表示） ===== */
+function buildDots(){
+  const d=$('qDots'); d.innerHTML='';
+  for(let i=0;i<ROUND;i++){ d.appendChild(document.createElement('i')); }
+}
+function markDots(){
+  [...$('qDots').children].forEach((e,i)=>e.classList.toggle('on', i<round));
+}
+
+/* ===== プレイ開始 ===== */
+function startLevel(l){
+  level=l; round=0; score=0; correctCount=0; combo=0; maxCombo=0; locked=false;
+  $('stageSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('lvName').textContent = l.emoji+' '+l.name;
+  $('score').textContent='0'; $('comboLab').textContent='';
+  buildDots();
+  newQuestion();
+}
+
+/* ===== 結果 ===== */
+function showResult(){
+  stopTimer();
+  $('play').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rTitle').textContent = level.emoji+' '+level.name+' クリア！';
+  $('rScore').textContent = score;
+  $('rCorrect').textContent = correctCount;
+  $('rCombo').textContent = maxCombo;
+  const prev=getBest(level);
+  if(score>prev){ localStorage.setItem(bestKey(level), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent = Math.max(prev,score);
+}
+
+/* ===== 入力 ===== */
+$('btnOk').onclick=()=>answer(true);
+$('btnNg').onclick=()=>answer(false);
+$('retryBtn').onclick=()=>startLevel(level);
+$('toStageBtn').onclick=toStages;
+
+/* ===== 効果音 ===== */
+let actx=null;
+function beep(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'sine';
+  g.gain.value=0.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.06)); }catch(e){} }
+
+buildStages();
+</script>
+
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='numsense', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
+</body>
+</html>

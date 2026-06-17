@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>¥2000で足りる？ 🛒</title>
+<style>
+  /* ============================================================
+     ¥2000で足りる？ — 数感覚ミニゲーム（軸: 見積もり・概算）
+     かごの商品の合計を「正確に出す前に」だいたいの丸めで判断する。
+     さいふの予算で足りる(○)か足りない(✕)かを2ボタンで即答。
+     ※ねらい: 多めに丸めて上限を見積もる「概算の方向判断」を育てる。
+       速く答えるほどボーナス（連打防止に最低反応0.35秒）。
+     ※自己ベストのみ記録（順位は出さない＝成長を見せる設計）。
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; --purple:#7c3aed; }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#efe6ff 0%,#eaf2ff 45%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px 12px 26px; }
+  h1{ margin:.3em 0 .1em; font-size:clamp(22px,6vw,32px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 10px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .hidden{ display:none; }
+
+  /* レベル選択 */
+  .lvlGrid{ display:grid; grid-template-columns:1fr; gap:10px; }
+  .lvl{ padding:16px 12px; border:3px solid var(--line); border-radius:13px; background:#fffdf5;
+    font-size:18px; font-weight:800; text-align:left; line-height:1.3; }
+  .lvl small{ display:block; font-weight:600; color:#9a8a64; font-size:12px; margin-top:4px; min-height:14px; }
+  .lvl .star{ float:right; color:var(--gold); font-size:13px; }
+  .lvl:active{ transform:scale(.97); }
+
+  /* プレイ */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:8px; font-size:14px; }
+  .hud .sc{ margin-left:auto; color:var(--blue); font-size:18px; }
+  .purse{ text-align:center; font-size:14px; color:#6b6250; font-weight:700; margin:2px 0; }
+  .purseNum{ text-align:center; font-size:clamp(28px,9vw,42px); font-weight:900; color:var(--purple);
+    line-height:1.05; margin:0 0 12px; letter-spacing:1px; }
+
+  /* かご（商品リスト） */
+  .cart{ display:flex; flex-direction:column; gap:7px; margin:4px 0 6px;
+    border:2px dashed var(--line); border-radius:13px; padding:10px; background:#fffdf5; min-height:70px; }
+  .item{ display:flex; align-items:center; gap:10px; font-size:18px; font-weight:700;
+    padding:5px 6px; border-bottom:1px dashed #f0e6c8; }
+  .item:last-child{ border-bottom:none; }
+  .item .emo{ font-size:26px; line-height:1; width:34px; text-align:center; }
+  .item .nm{ flex:1; font-size:14px; color:#6b6250; font-weight:600; }
+  .item .pr{ font-size:20px; font-weight:900; color:var(--ink); letter-spacing:.5px; }
+
+  .ask{ text-align:center; font-size:16px; font-weight:800; margin:6px 0 8px; }
+  .ask b{ color:var(--purple); }
+
+  /* ○✕ボタン */
+  .ynBtns{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .ynBtns button{ padding:18px 8px; font-size:22px; font-weight:900; border-radius:14px; border:none; color:#fff; }
+  .ynBtns .yes{ background:var(--green); box-shadow:0 4px 0 #1d7a42; }
+  .ynBtns .no{ background:var(--red); box-shadow:0 4px 0 #b03a28; }
+  .ynBtns button:active{ transform:translateY(2px); box-shadow:none; }
+  .ynBtns button:disabled{ opacity:.5; }
+
+  .fb{ text-align:center; font-size:18px; font-weight:900; min-height:46px; margin:8px 0 0; line-height:1.4; }
+  .fb .pts{ color:var(--gold); }
+  .fb .hint{ display:block; font-size:13px; font-weight:700; color:#6b6250; margin-top:2px; }
+  .fb.ok{ color:var(--green); } .fb.ng{ color:var(--red); }
+
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+  .dots i{ width:10px; height:10px; border-radius:50%; background:#e6d3a8; display:inline-block; }
+  .dots i.on{ background:var(--green); }
+  .dots i.miss{ background:var(--red); }
+
+  /* 結果 */
+  .result h2{ text-align:center; font-size:24px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(34px,10vw,52px); color:var(--purple); font-weight:900; margin:.1em 0; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:16px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+</style>
+</head>
+<body>
+<button id="portalBackBtn" title="数学ポータルへ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">← もどる</button>
+<script>
+  // ゲーム→数学ポータル（このフォルダの親 index.html＝numsense/index.html）へ戻る。
+  document.getElementById('portalBackBtn').addEventListener('click',function(){ location.href='../index.html'; });
+</script>
+
+<div class="wrap">
+  <h1>¥2000で足りる？ 🛒</h1>
+  <p class="sub">かごの合計が さいふで足りる？ 計算する前に、だいたいで答えよう。</p>
+
+  <!-- レベル選択 -->
+  <div id="lvlSel" class="panel">
+    <div class="lvlGrid" id="lvlGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのレベルの自己ベスト。前の自分をこえよう！<br>コツ：値段を「すこし多め」に丸めて、ざっくり足すと速い。</p>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span id="lvlName">ふつう</span>
+      <span class="sc">⭐ <span id="score">0</span></span>
+    </div>
+    <div class="purse">👛 さいふ</div>
+    <div class="purseNum" id="purseNum">¥2000</div>
+    <div class="cart" id="cart"></div>
+    <div class="ask">この合計で <b>足りる</b>？</div>
+    <div class="ynBtns">
+      <button class="yes" id="yesBtn">⭕ 足りる</button>
+      <button class="no" id="noBtn">❌ 足りない</button>
+    </div>
+    <div class="fb" id="fb"></div>
+    <div class="dots" id="qDots"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2 id="rTitle">クリア！</h2>
+    <div class="big" id="rScore">0</div>
+    <div id="newrec" class="newrec hidden">🏆 自己ベスト更新！</div>
+    <div class="stat"><span>このレベルのベスト</span><span id="rBest">0</span></div>
+    <div class="stat"><span>正解</span><span id="rCorrect">0</span> / 10</div>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button id="toLvlBtn">レベルをえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 定数 ===== */
+const $ = (id)=>document.getElementById(id);
+const ROUND_Q = 10;          // 1ラウンドの問題数
+const FLOOR_MS = 350;        // 連打防止の最低反応時間（これより速い回答は速度ボーナス無し）
+
+// レベル: 品数の幅と「合計が予算の境界に寄る度合い(band)」で難度を作る。
+// band = 合計を予算の ±(band) の帯に寄せる割合（小さいほど境界に近く=難しい）。
+const LEVELS = [
+  { id:'easy', name:'やさしい', emoji:'🌱', items:[2,3], band:0.30, desc:'品数すくなめ・差がはっきり' },
+  { id:'mid',  name:'ふつう',   emoji:'🛒', items:[3,4], band:0.15, desc:'境界がやや近い' },
+  { id:'hard', name:'むずい',   emoji:'🔥', items:[4,5], band:0.07, desc:'品数おおめ・きわどい合計' },
+];
+// 商品プール（絵文字＋名前）。値段は出題時に端数つきで作る。
+const PRODUCTS = [
+  ['🍎','りんご'],['🥛','ぎゅうにゅう'],['🍞','パン'],['🧃','ジュース'],['🍫','チョコ'],
+  ['🧀','チーズ'],['🥚','たまご'],['🍙','おにぎり'],['🍌','バナナ'],['🧴','シャンプー'],
+  ['🍜','カップめん'],['🍪','クッキー'],['🧦','くつした'],['🥤','コーラ'],['🍇','ぶどう'],
+  ['🥦','ブロッコリー'],['🍗','からあげ'],['🧼','せっけん'],['📒','ノート'],['✏️','えんぴつ'],
+];
+const BUDGETS = [1000, 1500, 2000, 3000];
+
+/* ===== 状態（トップレベル＝グローバル） ===== */
+let level=LEVELS[1], qIdx=0, score=0, correctCount=0;
+let curBudget=2000, curSum=0, curAnswer=true, locked=false, qStart=0;
+let results=[];   // 各問の正誤（ドット表示用）
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=(arr)=>arr[rnd(0,arr.length-1)];
+function bestKey(lvl){ return 'ns_best_reach2000_'+lvl.id; }
+function getBest(lvl){ return parseInt(localStorage.getItem(bestKey(lvl))||'0',10); }
+function yen(n){ return '¥'+n.toLocaleString('ja-JP'); }
+
+/* 端数つきの値段を1つ作る（十の位・一の位がばらつく。下2桁が 0,8,80,98 等で意地悪に）。
+   maxは概ねの上限。最低 90 以上にして「だいたい100円台〜」の感覚に。 */
+function makePrice(max){
+  let base = rnd(1, Math.max(1, Math.floor(max/10))) * 10;   // 10の倍数の土台
+  const tails = [0, 8, 9, 18, 28, 48, 80, 88, 98, 38, 58, 68];
+  const t = pick(tails);
+  let p = base + t;
+  if(p < 90) p = 90 + t;          // 安すぎる値を底上げ
+  if(p > max) p = Math.max(90, p - 100);
+  return p;
+}
+
+/* ===== レベル選択 ===== */
+function buildLevels(){
+  const g=$('lvlGrid'); g.innerHTML='';
+  LEVELS.forEach(lvl=>{
+    const b=document.createElement('button'); b.className='lvl';
+    const best=getBest(lvl);
+    b.innerHTML = lvl.emoji+' '+lvl.name+'<span class="star">'+(best?('★ '+best):'')+'</span>'+
+      '<small>'+lvl.desc+'</small>';
+    b.onclick=()=>startLevel(lvl);
+    g.appendChild(b);
+  });
+}
+function toLevels(){
+  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('lvlSel').classList.remove('hidden'); buildLevels();
+}
+
+/* ===== プレイ ===== */
+function startLevel(lvl){
+  level=lvl; qIdx=0; score=0; correctCount=0; locked=false; results=[];
+  $('lvlSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('lvlName').textContent = lvl.emoji+' '+lvl.name;
+  $('score').textContent='0';
+  buildDots();
+  newQuestion();
+}
+function buildDots(){
+  const d=$('qDots'); d.innerHTML='';
+  for(let i=0;i<ROUND_Q;i++){ const e=document.createElement('i'); d.appendChild(e); }
+}
+function markDots(){
+  [...$('qDots').children].forEach((e,i)=>{
+    e.classList.remove('on','miss');
+    if(i<results.length){ e.classList.add(results[i]?'on':'miss'); }
+  });
+}
+
+// 出題: 予算を選び、合計が予算の境界±bandの帯に入る商品セットを作る。
+// 「足りる/足りない」をだいたい半々で出すため、目標合計 targetSum を予算の周辺に置く。
+function newQuestion(){
+  $('fb').textContent=''; $('fb').className='fb';
+  curBudget = pick(BUDGETS);
+  const band = level.band;
+  // 目標合計: 予算の (1-band*2 〜 1+band) あたり。半々で上下に振る。
+  const goEnough = Math.random() < 0.5;   // true=足りる(合計<予算) を狙う
+  let targetSum;
+  if(goEnough){
+    // 予算の (1-2*band) 〜 (1-0.1*band) → 予算より少し下
+    targetSum = curBudget * (1 - band*(0.2 + Math.random()*1.6));
+  } else {
+    // 予算の (1+0.1*band) 〜 (1+2*band) → 予算より少し上
+    targetSum = curBudget * (1 + band*(0.2 + Math.random()*1.6));
+  }
+  targetSum = Math.max(180, Math.round(targetSum));
+
+  const nItems = rnd(level.items[0], level.items[1]);
+  const items = makeCart(targetSum, nItems, curBudget);
+
+  // 実際の合計を集計（これが正の値。targetSumはあくまで狙い）
+  curSum = items.reduce((a,it)=>a+it.price, 0);
+  curAnswer = (curSum <= curBudget);   // 足りる = 合計が予算以下
+
+  // 描画
+  $('purseNum').textContent = yen(curBudget);
+  const c=$('cart'); c.innerHTML='';
+  items.forEach(it=>{
+    const row=document.createElement('div'); row.className='item';
+    row.innerHTML = '<span class="emo">'+it.emo+'</span>'+
+      '<span class="nm">'+it.name+'</span>'+
+      '<span class="pr">'+yen(it.price)+'</span>';
+    c.appendChild(row);
+  });
+
+  $('yesBtn').disabled=false; $('noBtn').disabled=false;
+  locked=false; qStart=performance.now();
+}
+
+// 合計が target に近い nItems 個の商品を作る。最後の1個で端数を合わせる。
+function makeCart(target, nItems, budget){
+  const chosen = [];
+  const used = {};
+  for(let i=0;i<nItems;i++){
+    let idx; do{ idx=rnd(0,PRODUCTS.length-1); }while(used[idx] && Object.keys(used).length<PRODUCTS.length);
+    used[idx]=true;
+    chosen.push(PRODUCTS[idx]);
+  }
+  // 各商品のおおよその上限。残りの目標を均しつつ端数で散らす。
+  const items=[];
+  let remain=target;
+  for(let i=0;i<nItems;i++){
+    const left = nItems - i;          // 残り商品数
+    if(left===1){
+      // 最後の1個で帳尻。ただし端数つきの値段に丸める。
+      let p = Math.max(80, Math.round(remain));
+      p = snapPrice(p);
+      items.push({emo:chosen[i][0], name:chosen[i][1], price:p});
+    } else {
+      // 残りを左数で割った付近 ±35% の値段
+      const avg = remain/left;
+      let p = Math.round(avg * (0.65 + Math.random()*0.7));
+      p = snapPrice(Math.max(80, p));
+      // 残りを使い切れるよう、最後の1個に十分残す
+      const minLeftForRest = 80*(left-1);
+      if(remain - p < minLeftForRest) p = Math.max(80, Math.round(remain - minLeftForRest));
+      p = snapPrice(p);
+      items.push({emo:chosen[i][0], name:chosen[i][1], price:p});
+      remain -= p;
+    }
+  }
+  return items;
+}
+
+// 値段を「端数つきっぽい」見た目に丸める（下2桁を意地悪な値に寄せる）。
+function snapPrice(p){
+  const tails=[0,8,9,18,28,38,48,58,68,78,80,88,98];
+  const hundreds = Math.floor(p/100)*100;
+  // 元の下2桁にいちばん近い tail を選ぶ
+  const rem = p - hundreds;
+  let best=tails[0], bd=Infinity;
+  tails.forEach(t=>{ const d=Math.abs(t-rem); if(d<bd){bd=d;best=t;} });
+  let out = hundreds + best;
+  if(out < 80) out = 80 + best;
+  return out;
+}
+
+/* ===== 回答 ===== */
+function answer(said){
+  if(locked) return; locked=true;
+  $('yesBtn').disabled=true; $('noBtn').disabled=true;
+  const correct = (said === curAnswer);
+
+  // 速度ボーナス: 速いほど高い（FLOOR_MS未満は連打とみなしボーナス無し）。
+  const dt = performance.now() - qStart;
+  let pts = 0;
+  if(correct){
+    let speedBonus = 0;
+    if(dt >= FLOOR_MS){
+      // 0.35秒〜5秒で 50→0 の線形ボーナス
+      const frac = Math.max(0, Math.min(1, (5000 - dt) / (5000 - FLOOR_MS)));
+      speedBonus = Math.round(frac * 50);
+    }
+    pts = 100 + speedBonus;
+    score += pts; correctCount++;
+    $('score').textContent = score;
+  }
+  results[qIdx] = correct; markDots();
+
+  // フィードバック（多めに見た概算ヒントつき）
+  const roundUp = Math.ceil(curSum/100)*100;   // 100円単位で多めに見た値
+  const fb=$('fb');
+  const hint = '合計 '+yen(curSum)+'（多めに見ると約 '+yen(roundUp)+'）／さいふ '+yen(curBudget);
+  if(correct){
+    fb.className='fb ok';
+    let word = curAnswer ? '⭕ 足りる！' : '❌ 足りない！';
+    fb.innerHTML = word+' <span class="pts">+'+pts+'</span><span class="hint">'+hint+'</span>';
+    beep(820,.08); setTimeout(()=>beep(1100,.09),85);
+  } else {
+    fb.className='fb ng';
+    let truth = curAnswer ? '本当は「⭕ 足りる」' : '本当は「❌ 足りない」';
+    fb.innerHTML = truth+'<span class="hint">'+hint+'</span>';
+    beep(300,.12,'sawtooth');
+  }
+
+  qIdx++;
+  setTimeout(()=>{
+    if(qIdx>=ROUND_Q) showResult();
+    else newQuestion();
+  }, correct ? 1100 : 1700);   // 不正解は解説を少し長く見せる
+}
+
+/* ===== 結果 ===== */
+function showResult(){
+  $('play').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rTitle').textContent = level.emoji+' '+level.name+' クリア！';
+  $('rScore').textContent = score;
+  $('rCorrect').textContent = correctCount;
+  const prev=getBest(level);
+  if(score>prev){ localStorage.setItem(bestKey(level), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent = Math.max(prev,score);
+}
+
+/* ===== イベント ===== */
+$('yesBtn').addEventListener('click', ()=>answer(true));
+$('noBtn').addEventListener('click', ()=>answer(false));
+$('retryBtn').onclick=()=>startLevel(level);
+$('toLvlBtn').onclick=toLevels;
+
+/* ===== 効果音 ===== */
+let actx=null;
+function beep(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'sine';
+  g.gain.value=0.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.06)); }catch(e){} }
+
+buildLevels();
+</script>
+
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='numsense', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>フラッシュ道場 ⚡</title>
+<style>
+  /* ============================================================
+     フラッシュ道場 — 数感覚ミニゲーム（軸: 瞬間把握 / だいたいの数(ANS) / かたまり読み）
+     点が一瞬光って消える→個数や多寡を答える。4モード統合:
+       count  瞬間カウント（1〜6を数えず一瞬で）
+       approx だいたい何個（数えきれない量をざっくり推定＝ANS）
+       more   どっち多い（多い色を選ぶ＝量の比較）
+       group  かたまり読み（小集団にまとめて速く数える＝groupitizing）
+     ※自己ベストのみ記録（順位は出さない＝成長を見せる設計）
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; --purple:#7c3aed; }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#e9f7ff 0%,#eef0ff 45%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px 12px 26px; }
+  h1{ margin:.3em 0 .1em; font-size:clamp(22px,6vw,32px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 10px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .hidden{ display:none; }
+
+  /* モード選択 */
+  .modeGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .mode{ padding:16px 8px; border:3px solid var(--line); border-radius:13px; background:#fffdf5;
+    font-size:16px; font-weight:800; text-align:center; line-height:1.25; }
+  .mode .e{ font-size:26px; display:block; margin-bottom:4px; }
+  .mode small{ display:block; font-weight:600; color:#9a8a64; font-size:11px; margin-top:5px; min-height:13px; }
+  .mode:active{ transform:scale(.96); }
+
+  /* プレイ */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:6px; font-size:14px; }
+  .hud .sc{ margin-left:auto; color:var(--blue); font-size:18px; }
+  .stageName{ font-size:13px; }
+  .arena{ position:relative; width:100%; height:300px; border-radius:14px; overflow:hidden;
+    background:#fbf3da; border:2px solid var(--line); }
+  canvas{ display:block; width:100%; height:100%; }
+  .bigMsg{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:clamp(20px,6vw,30px); font-weight:900; color:#6b6250; pointer-events:none; text-align:center; }
+
+  .ask{ text-align:center; font-size:16px; font-weight:800; margin:10px 0 6px; min-height:22px; }
+  .pad{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .pad button{ width:52px; height:52px; border-radius:12px; border:3px solid var(--line); background:#fffdf5;
+    font-size:20px; font-weight:800; }
+  .pad button:active{ transform:scale(.92); }
+  .colorBtns{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .colorBtns button{ padding:20px; border-radius:14px; border:none; font-size:20px; font-weight:900; color:#fff; }
+  .cb-blue{ background:var(--blue); box-shadow:0 4px 0 #1d4ea3; }
+  .cb-gold{ background:var(--gold); box-shadow:0 4px 0 #a4760f; }
+  .slideWrap{ text-align:center; }
+  .slideVal{ font-size:34px; font-weight:900; color:var(--purple); }
+  .slideWrap input[type=range]{ width:90%; margin:10px 0; height:30px; }
+  .slideWrap .ok{ padding:13px 30px; border:none; border-radius:12px; color:#fff; background:var(--green);
+    font-size:17px; font-weight:800; box-shadow:0 4px 0 #1d7a42; }
+
+  .fb{ text-align:center; font-size:20px; font-weight:900; min-height:28px; margin:8px 0 0; }
+  .fb .pts{ color:var(--gold); }
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:8px; }
+  .dots i{ width:9px; height:9px; border-radius:50%; background:#e6d3a8; display:inline-block; }
+  .dots i.on{ background:var(--green); }
+
+  /* 結果 */
+  .result h2{ text-align:center; font-size:22px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(34px,10vw,50px); color:var(--purple); font-weight:900; margin:.1em 0; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:16px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+</style>
+</head>
+<body>
+<button id="portalBackBtn" title="数学ポータルへ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">← もどる</button>
+<script>
+  document.getElementById('portalBackBtn').addEventListener('click',function(){ location.href='../index.html'; });
+</script>
+
+<div class="wrap">
+  <h1>フラッシュ道場 ⚡</h1>
+  <p class="sub">点が一瞬だけ光る。数えるな、感じろ！</p>
+
+  <!-- モード選択 -->
+  <div id="modeSel" class="panel">
+    <div class="modeGrid" id="modeGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのモードの自己ベスト。前の自分をこえよう！</p>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span class="stageName" id="stageName">瞬間カウント</span>
+      <span class="sc">⭐ <span id="score">0</span></span>
+    </div>
+    <div class="arena" id="arena">
+      <canvas id="cv"></canvas>
+      <div class="bigMsg hidden" id="bigMsg">よーい…</div>
+    </div>
+    <div class="ask" id="ask"></div>
+    <div id="inputArea"></div>
+    <div class="fb" id="fb"></div>
+    <div class="dots" id="trialDots"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2 id="rTitle">クリア！</h2>
+    <div class="big" id="rScore">0</div>
+    <div id="newrec" class="newrec hidden">🏆 自己ベスト更新！</div>
+    <div class="stat"><span>このモードのベスト</span><span id="rBest">0</span></div>
+    <div class="stat"><span>ばっちり</span><span id="rHit">0</span> 回</div>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button id="toModeBtn">モードをえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 定数・状態 ===== */
+const $=(id)=>document.getElementById(id);
+const TRIALS=10;
+const MODES={
+  count: { name:'瞬間カウント', emoji:'🔢', flash:300, sub:'パッと何個？',   ask:'何個あった？' },
+  approx:{ name:'だいたい何個', emoji:'👀', flash:650, sub:'ざっくり推定',   ask:'だいたい何個？' },
+  more:  { name:'どっち多い',   emoji:'⚖️', flash:480, sub:'多い色を選ぶ',   ask:'多いのはどっち？' },
+  group: { name:'かたまり読み', emoji:'🧩', flash:560, sub:'まとめて数える', ask:'ぜんぶで何個？' },
+};
+let mode='count', trialIdx=0, score=0, hits=0;
+let cur=null;           // { actual, blue, gold, ... , answered }
+let cv, ctx, tShown=0;
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function bestKey(m){ return 'ns_best_flash_'+m; }
+function getBest(m){ return parseInt(localStorage.getItem(bestKey(m))||'0',10); }
+
+/* ===== モード選択 ===== */
+function buildModes(){
+  const g=$('modeGrid'); g.innerHTML='';
+  Object.keys(MODES).forEach(m=>{
+    const M=MODES[m]; const best=getBest(m);
+    const b=document.createElement('button'); b.className='mode';
+    b.innerHTML='<span class="e">'+M.emoji+'</span>'+M.name+'<small>'+(best?('★ '+best):M.sub)+'</small>';
+    b.onclick=()=>startMode(m);
+    g.appendChild(b);
+  });
+}
+function toModes(){
+  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('modeSel').classList.remove('hidden'); buildModes();
+}
+
+/* ===== プレイ ===== */
+function startMode(m){
+  mode=m; trialIdx=0; score=0; hits=0;
+  $('modeSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('stageName').textContent=MODES[m].emoji+' '+MODES[m].name;
+  $('score').textContent='0';
+  setupCanvas(); buildTrialDots();
+  nextTrial();
+}
+function setupCanvas(){
+  cv=$('cv'); const r=$('arena').getBoundingClientRect();
+  cv.width=Math.max(280, Math.round(r.width)); cv.height=300;
+  ctx=cv.getContext('2d');
+}
+function buildTrialDots(){ const d=$('trialDots'); d.innerHTML=''; for(let i=0;i<TRIALS;i++) d.appendChild(document.createElement('i')); }
+function markTrialDots(){ [...$('trialDots').children].forEach((e,i)=>e.classList.toggle('on', i<trialIdx)); }
+
+function clearCanvas(){ if(!ctx) return; ctx.clearRect(0,0,cv.width,cv.height); ctx.fillStyle='#fbf3da'; ctx.fillRect(0,0,cv.width,cv.height); }
+function nonOverlapPositions(n, rad){
+  const pts=[], W=cv.width, H=cv.height, pad=rad+8;
+  let guard=0;
+  while(pts.length<n && guard<n*60){
+    guard++;
+    const x=rnd(pad,W-pad), y=rnd(pad,H-pad);
+    if(pts.every(p=>(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y) > (rad*2.1)*(rad*2.1))) pts.push({x,y});
+  }
+  while(pts.length<n){ pts.push({x:rnd(pad,W-pad), y:rnd(pad,H-pad)}); } // 詰まったら重なり許容
+  return pts;
+}
+function drawDot(x,y,rad,color){ ctx.beginPath(); ctx.arc(x,y,rad,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); }
+
+function nextTrial(){
+  clearCanvas(); $('fb').textContent=''; $('inputArea').innerHTML=''; $('ask').textContent='';
+  cur={ answered:false };
+  const M=MODES[mode];
+  const lvl = 1 + Math.floor(trialIdx/3);          // ラウンド内でじわっと難化
+  const flash = Math.max(180, M.flash - lvl*40);
+
+  if(mode==='count'){
+    const n=rnd(1, Math.min(6, 3+lvl)); cur.actual=n;
+    const pts=nonOverlapPositions(n, 16);
+    pts.forEach(p=>drawDot(p.x,p.y,16,'#2f7de1'));
+  } else if(mode==='group'){
+    const n=rnd(6, Math.min(16, 7+lvl*2)); cur.actual=n;
+    // 2〜4のかたまりに分割し、クラスタごとにまとめて配置（色も分ける＝まとめ読みを促す）
+    const groups=[]; let left=n;
+    while(left>0){ const g=Math.min(left, rnd(2,4)); groups.push(g); left-=g; }
+    const cols=['#2f7de1','#e0533d','#27a35a','#e3a32a','#7c3aed'];
+    const W=cv.width,H=cv.height;
+    groups.forEach((g,gi)=>{
+      const cx=rnd(60,W-60), cy=rnd(50,H-50), col=cols[gi%cols.length];
+      for(let i=0;i<g;i++){ const a=Math.random()*Math.PI*2, rr=rnd(0,16);
+        drawDot(cx+Math.cos(a)*rr, cy+Math.sin(a)*rr, 12, col); }
+    });
+  } else if(mode==='more'){
+    // 比率を連勝で1に近づける（量の比較＝距離/比率効果）
+    const ratios=[ [1,2],[2,3],[3,4],[4,5],[5,6],[6,7] ];
+    const rr=ratios[Math.min(ratios.length-1, lvl-1)] || ratios[ratios.length-1];
+    const base=rnd(8,16);
+    let blue=base, gold=Math.round(base*rr[1]/rr[0]);
+    if(Math.random()<0.5){ const t=blue; blue=gold; gold=t; }   // どちらが多いかランダム
+    if(blue===gold) gold+=1;
+    cur.blue=blue; cur.gold=gold; cur.actual=(blue>gold)?'blue':'gold';
+    const pall=nonOverlapPositions(blue+gold, 11);
+    pall.forEach((p,i)=>drawDot(p.x,p.y,11, i<blue?'#2f7de1':'#e3a32a'));
+  } else if(mode==='approx'){
+    const n=rnd(14+lvl*3, 30+lvl*6); cur.actual=n;
+    const pts=nonOverlapPositions(n, 8);
+    pts.forEach(p=>drawDot(p.x,p.y,8,'#7c3aed'));
+  }
+
+  // フラッシュ→隠す→入力
+  $('ask').textContent='👀 よく見て！';
+  setTimeout(()=>{ clearCanvas(); $('ask').textContent=M.ask; buildInput(); tShown=performance.now(); }, flash);
+}
+
+function buildInput(){
+  const area=$('inputArea');
+  if(mode==='more'){
+    area.innerHTML='<div class="colorBtns"><button class="cb-blue" onclick="answerMore(\'blue\')">🔵 青</button><button class="cb-gold" onclick="answerMore(\'gold\')">🟡 黄</button></div>';
+  } else if(mode==='approx'){
+    area.innerHTML='<div class="slideWrap"><div class="slideVal" id="slVal">30</div>'+
+      '<input type="range" id="slider" min="1" max="70" value="30" oninput="document.getElementById(\'slVal\').textContent=this.value">'+
+      '<div><button class="ok" onclick="answerApprox()">これくらい！</button></div></div>';
+  } else { // count / group = 数字パッド
+    const M=MODES[mode]; const max=(mode==='count')?6:16;
+    let html='<div class="pad">';
+    for(let i=1;i<=max;i++){ html+='<button onclick="answerCount('+i+')">'+i+'</button>'; }
+    html+='</div>';
+    area.innerHTML=html;
+  }
+}
+
+function gradeReaction(correct){
+  // 反応時間ボーナス: 速いほど高得点（正解時のみ）。最低でも基礎点。
+  const rt=(performance.now()-tShown)/1000;
+  const speed=Math.max(0, Math.round(60*(1 - Math.min(rt,3)/3)));
+  return correct ? (40+speed) : 0;
+}
+function afterAnswer(correct, ptsOverride, revealText){
+  if(cur.answered) return; cur.answered=true;
+  const pts = (ptsOverride!=null) ? ptsOverride : gradeReaction(correct);
+  score+=pts; $('score').textContent=score;
+  if(correct) hits++;
+  $('inputArea').innerHTML='';
+  $('fb').innerHTML = (correct?'⭕ ':'❌ ')+(revealText||'')+' <span class="pts">+'+pts+'</span>';
+  beep(correct?780:300, .08, correct?'sine':'sawtooth');
+  trialIdx++; markTrialDots();
+  setTimeout(()=>{ if(trialIdx>=TRIALS) showResult(); else nextTrial(); }, 1200);
+}
+
+function answerCount(n){
+  if(!cur||cur.answered) return;
+  afterAnswer(n===cur.actual, null, '正解は '+cur.actual+' 個');
+}
+function answerMore(color){
+  if(!cur||cur.answered) return;
+  afterAnswer(color===cur.actual, null, '青'+cur.blue+' / 黄'+cur.gold);
+}
+function answerApprox(){
+  if(!cur||cur.answered) return;
+  const guess=parseInt(($('slider')||{}).value||'0',10);
+  const err=Math.abs(guess-cur.actual)/cur.actual*100;      // 百分率誤差
+  const pts=Math.max(0, Math.round(100-err*1.2));
+  const good=err<15;
+  if(good) hits++;
+  // approx は近接度採点なので afterAnswer に pts を渡す（correct扱いは good）
+  cur.answered=true;
+  score+=pts; $('score').textContent=score;
+  $('inputArea').innerHTML='';
+  $('fb').innerHTML=(good?'⭕ ':'😶 ')+'ほんとは '+cur.actual+' 個 <span class="pts">+'+pts+'</span>';
+  beep(good?780:420,.08, good?'sine':'sine');
+  trialIdx++; markTrialDots();
+  setTimeout(()=>{ if(trialIdx>=TRIALS) showResult(); else nextTrial(); }, 1200);
+}
+
+/* ===== 結果 ===== */
+function showResult(){
+  $('play').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rTitle').textContent=MODES[mode].emoji+' '+MODES[mode].name+' クリア！';
+  $('rScore').textContent=score; $('rHit').textContent=hits;
+  const prev=getBest(mode);
+  if(score>prev){ localStorage.setItem(bestKey(mode), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent=Math.max(prev,score);
+}
+$('retryBtn').onclick=()=>startMode(mode);
+$('toModeBtn').onclick=toModes;
+
+/* ===== 効果音 ===== */
+let actx=null;
+function beep(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'sine';
+  g.gain.value=0.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.06)); }catch(e){} }
+
+buildModes();
+</script>
+
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='numsense', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
+</body>
+</html>

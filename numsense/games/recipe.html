@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>レシピ拡大 🍙</title>
+<style>
+  /* ============================================================
+     レシピ拡大 — 数感覚ミニゲーム（軸: 割合・比例 / ×で考える）
+     「3個で¥240、12個なら？」を4択で。
+     なぜ「加法的わな」を必ず入れるか:
+       比例を÷でなく＋で考える誤り（X+(b-a)）は中学生に最も多い。
+       その誤答を選択肢に置き、×で考えた正解だけが正しい構造にする。
+       誤答を選ぶたびに記録し、結果で「×で考えた回数」を可視化する。
+     ※自己ベストのみ記録（順位は出さない＝成長を見せる設計）。
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; --purple:#7c3aed; }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#efe6ff 0%,#eaf2ff 45%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px 12px 26px; }
+  h1{ margin:.3em 0 .1em; font-size:clamp(22px,6vw,32px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 10px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .hidden{ display:none; }
+
+  /* レベル選択 */
+  .lvlGrid{ display:grid; grid-template-columns:1fr; gap:10px; }
+  .lvl{ padding:16px 12px; border:3px solid var(--line); border-radius:13px; background:#fffdf5;
+    font-size:18px; font-weight:800; text-align:center; line-height:1.3; }
+  .lvl small{ display:block; font-weight:600; color:#9a8a64; font-size:12px; margin-top:4px; min-height:14px; }
+  .lvl:active{ transform:scale(.97); }
+
+  /* プレイ */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:8px; font-size:14px; }
+  .hud .sc{ margin-left:auto; color:var(--blue); font-size:18px; }
+  .qcard{ background:#fffdf5; border:2px solid var(--line); border-radius:13px; padding:14px 12px; text-align:center; }
+  .qemoji{ font-size:40px; line-height:1; }
+  .qgiven{ font-size:clamp(17px,5vw,21px); font-weight:800; margin:8px 0 4px; line-height:1.4; }
+  .qask{ font-size:clamp(20px,6vw,26px); font-weight:900; color:var(--purple); margin:6px 0 2px; }
+  .choices{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .choices button{ padding:16px 6px; font-size:clamp(18px,5vw,22px); font-weight:800; border-radius:13px;
+    border:3px solid var(--line); background:#fff; color:var(--ink); }
+  .choices button:active{ transform:scale(.97); }
+  .choices button.correct{ background:var(--green); color:#fff; border-color:var(--green); }
+  .choices button.wrong{ background:var(--red); color:#fff; border-color:var(--red); }
+  .choices button.show{ outline:3px dashed var(--green); outline-offset:-3px; }
+  .fb{ text-align:center; font-size:16px; font-weight:800; min-height:44px; margin:10px 0 0; line-height:1.4; }
+  .fb .pts{ color:var(--gold); }
+  .fb .ex{ display:block; font-size:13px; font-weight:700; color:#6b6250; margin-top:3px; }
+  .dots{ display:flex; gap:5px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+  .dots i{ width:10px; height:10px; border-radius:50%; background:#e6d3a8; display:inline-block; }
+  .dots i.ok{ background:var(--green); } .dots i.ng{ background:var(--red); }
+
+  /* 結果 */
+  .result h2{ text-align:center; font-size:24px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(34px,10vw,52px); color:var(--purple); font-weight:900; margin:.1em 0; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .stat b{ color:var(--blue); }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:16px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+</style>
+</head>
+<body>
+<button id="portalBackBtn" title="数学ポータルへ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">← もどる</button>
+<script>
+  // ゲーム→数学ポータル（このフォルダの親 index.html＝numsense/index.html）へ戻る。
+  document.getElementById('portalBackBtn').addEventListener('click',function(){ location.href='../index.html'; });
+</script>
+
+<div class="wrap">
+  <h1>レシピ拡大 🍙</h1>
+  <p class="sub">材料を「何倍か」で考える！ ＋じゃなくて ×（かける）で。</p>
+
+  <!-- レベル選択 -->
+  <div id="lvlSel" class="panel">
+    <div class="lvlGrid" id="lvlGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのレベルの自己ベスト。前の自分をこえよう！</p>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span id="lvlName">かんたん</span>
+      <span class="sc">⭐ <span id="score">0</span></span>
+    </div>
+    <div class="qcard">
+      <div class="qemoji" id="qemoji">🍙</div>
+      <div class="qgiven" id="qgiven">—</div>
+      <div class="qask" id="qask">—</div>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="fb" id="fb"></div>
+    <div class="dots" id="qDots"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2 id="rTitle">クリア！</h2>
+    <div class="big" id="rScore">0</div>
+    <div id="newrec" class="newrec hidden">🏆 自己ベスト更新！</div>
+    <div class="stat"><span>このレベルのベスト</span><span id="rBest">0</span></div>
+    <div class="stat"><span>正解した数</span><span><b id="rCorrect">0</b> / 10 問</span></div>
+    <div class="stat"><span>「×」で考えた回数</span><span><b id="rTrap">0</b> 回</span></div>
+    <p style="font-size:12px;color:#6b6250;margin:8px 4px 0;line-height:1.5" id="rTip"></p>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button id="toLvlBtn">レベルをえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 定数 ===== */
+const $ = (id)=>document.getElementById(id);
+const ROUND = 10;          // 1ラウンドの問題数
+// 題材（絵文字＋単位）。「個」か「本」かは品物で出し分ける。
+const ITEMS = [
+  { emoji:'🍙', name:'おにぎり', unit:'個' },
+  { emoji:'🥤', name:'ジュース', unit:'本' },
+  { emoji:'✏️', name:'えんぴつ', unit:'本' },
+  { emoji:'⭐', name:'シール',   unit:'枚' },
+  { emoji:'🍞', name:'パン',     unit:'個' },
+];
+const LEVELS = [
+  { id:'easy', name:'かんたん', emoji:'🟢', desc:'2〜4倍の整数倍', noninteger:false },
+  { id:'hard', name:'むずかしい', emoji:'🟣', desc:'1.5倍など整数でない倍率も', noninteger:true },
+];
+
+/* ===== 状態（トップレベル＝グローバル） ===== */
+let level=LEVELS[0], round=0, score=0, correctCount=0, trapPicks=0;
+let curAnsIdx=0, curTrapIdx=-1, qStart=0, locked=false;
+let cur=null; // { item, a, b, X, ans, choices:[], k }
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function bestKey(lvl){ return 'ns_best_recipe_'+lvl.id; }
+function getBest(lvl){ return parseInt(localStorage.getItem(bestKey(lvl))||'0',10); }
+const yen=(n)=>'¥'+n.toLocaleString('ja-JP');
+
+/* ===== レベル選択 ===== */
+function buildLevels(){
+  const g=$('lvlGrid'); g.innerHTML='';
+  LEVELS.forEach(lvl=>{
+    const b=document.createElement('button'); b.className='lvl';
+    const best=getBest(lvl);
+    b.innerHTML = lvl.emoji+' '+lvl.name+'<small>'+lvl.desc+' ／ '+(best?('★ ベスト '+best):'はじめて')+'</small>';
+    b.onclick=()=>startLevel(lvl);
+    g.appendChild(b);
+  });
+}
+function toLevels(){
+  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('lvlSel').classList.remove('hidden'); buildLevels();
+}
+
+/* ===== プレイ ===== */
+function startLevel(lvl){
+  level=lvl; round=0; score=0; correctCount=0; trapPicks=0; locked=false;
+  $('lvlSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('lvlName').textContent = lvl.emoji+' '+lvl.name;
+  $('score').textContent='0';
+  buildDots();
+  newQuestion();
+}
+function buildDots(){
+  const d=$('qDots'); d.innerHTML='';
+  for(let i=0;i<ROUND;i++){ d.appendChild(document.createElement('i')); }
+}
+function markDots(ok){
+  const kids=$('qDots').children;
+  if(kids[round-1]) kids[round-1].className = ok?'ok':'ng';
+}
+
+/* 比例の出題を作る。正解 = u×b（×で考える）。
+   加法的わな = X+(b-a)（＋で考えた誤り）。他ダミーは正解と必ず別の値。 */
+function makeQuestion(){
+  const item=ITEMS[rnd(0,ITEMS.length-1)];
+  const u=rnd(3,15)*10;       // 単価（30〜150円・整数）
+  const a=rnd(2,5);           // もとの個数
+  let b, k;
+  if(level.noninteger && Math.random()<0.5){
+    // むずかしい: ×1.5/2.5 等の非整数倍。a を偶数にして b を整数に保つ。
+    const halfK=[3,5,7];                 // k = 1.5, 2.5, 3.5
+    k = halfK[rnd(0,halfK.length-1)]/2;
+    const ae=(a%2===0)?a:a+1;            // a を偶数化（b=ae*k を整数に）
+    b = ae*k;
+    cur={ item, a:ae, u };
+  } else {
+    k = rnd(2,5);                        // 整数倍
+    b = a*k;
+    cur={ item, a, u };
+  }
+  cur.b=b; cur.k=k;
+  cur.X = u*cur.a;                       // もとの合計金額
+  cur.ans = u*b;                         // 正解（×で考える）
+  const trap = cur.X + (b-cur.a);        // 加法的わな（差を足しただけ）
+
+  // ダミー2つ: 正解・わなと重複しない別の不正解値
+  const pool=[];
+  function add(v){ if(v>0 && v!==cur.ans && v!==trap && pool.indexOf(v)<0) pool.push(v); }
+  // 強いダミー優先: cur.X=値段を変え忘れる誤り / ans*2=倍率を取り違える誤り（どちらも生徒が実際に出す）。
+  add(cur.X); add(cur.ans*2); add(u*(b+1)); add(u*(b-1)); add(Math.round(cur.ans/2/10)*10); add(cur.ans+u);
+  while(pool.length<2) add(cur.ans + rnd(1,9)*10); // 念のための保険
+  const d1=pool[0], d2=pool[1];
+
+  // 選択肢を作りシャッフル。正解・わなの位置を記録。
+  const opts=[{v:cur.ans,kind:'ans'},{v:trap,kind:'trap'},{v:d1,kind:'d'},{v:d2,kind:'d'}];
+  for(let i=opts.length-1;i>0;i--){ const j=rnd(0,i); [opts[i],opts[j]]=[opts[j],opts[i]]; }
+  cur.choices=opts;
+  curAnsIdx = opts.findIndex(o=>o.kind==='ans');
+  curTrapIdx = opts.findIndex(o=>o.kind==='trap');
+}
+
+function newQuestion(){
+  locked=false;
+  makeQuestion();
+  const it=cur.item;
+  $('qemoji').textContent = it.emoji;
+  $('qgiven').textContent = it.name+' '+cur.a+it.unit+' で '+yen(cur.X);
+  $('qask').textContent = cur.b+it.unit+' なら？';
+  $('fb').innerHTML='';
+  const c=$('choices'); c.innerHTML='';
+  cur.choices.forEach((o,i)=>{
+    const btn=document.createElement('button');
+    btn.textContent=yen(o.v);
+    btn.onclick=()=>choose(i);
+    c.appendChild(btn);
+  });
+  qStart=Date.now();
+}
+
+function choose(idx){
+  if(locked) return; locked=true;
+  const btns=$('choices').children;
+  const isCorrect=(idx===curAnsIdx);
+  const isTrap=(idx===curTrapIdx);
+  // 速さボーナス: 8秒以内で最大+50。正解×速度。
+  const sec=(Date.now()-qStart)/1000;
+  let pts=0;
+  if(isCorrect){
+    const speed=Math.max(0, Math.round(50*(1-sec/8)));
+    pts = 100 + speed;
+    score += pts; correctCount++;
+    $('score').textContent=score;
+  } else {
+    if(isTrap) trapPicks++;
+  }
+
+  // ボタン着色: 選んだのが誤りなら赤、正解は緑。正解は常に見せる。
+  btns[idx].classList.add(isCorrect?'correct':'wrong');
+  if(!isCorrect) btns[curAnsIdx].classList.add('show');
+
+  // フィードバック（÷の何倍かを一言で説明）
+  const it=cur.item;
+  const ratio=(cur.b/cur.a);
+  const ratioTxt=(Number.isInteger(ratio)?ratio:ratio.toFixed(1))+'倍';
+  if(isCorrect){
+    beep(880,.08); setTimeout(()=>beep(1180,.09),90);
+    $('fb').innerHTML='せいかい！🎯 <span class="pts">+'+pts+'</span>'+
+      '<span class="ex">'+cur.a+it.unit+'→'+cur.b+it.unit+' は '+ratioTxt+'。だから '+yen(cur.X)+' ×'+(Number.isInteger(ratio)?ratio:ratio.toFixed(1))+' ＝ '+yen(cur.ans)+'</span>';
+  } else {
+    beep(300,.1,'sawtooth');
+    let head = isTrap ? 'おしい！＋で考えたね' : 'ざんねん';
+    $('fb').innerHTML=head+' 正解は <b style="color:var(--green)">'+yen(cur.ans)+'</b>'+
+      '<span class="ex">'+cur.a+it.unit+'→'+cur.b+it.unit+' は '+ratioTxt+'。だから '+yen(cur.X)+' ×'+(Number.isInteger(ratio)?ratio:ratio.toFixed(1))+' ＝ '+yen(cur.ans)+'</span>';
+  }
+
+  round++; markDots(isCorrect);
+  setTimeout(()=>{
+    if(round>=ROUND) showResult();
+    else newQuestion();
+  }, isCorrect?1300:2100);
+}
+
+/* ===== 結果 ===== */
+function showResult(){
+  $('play').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rTitle').textContent = level.emoji+' '+level.name+' クリア！';
+  $('rScore').textContent = score;
+  $('rCorrect').textContent = correctCount;
+  $('rTrap').textContent = trapPicks;
+  const prev=getBest(level);
+  if(score>prev){ localStorage.setItem(bestKey(level), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent = Math.max(prev,score);
+  // 学びの可視化メッセージ
+  let tip;
+  if(trapPicks===0) tip='💡 「＋のわな」に一度もひっかからなかった！ ×（何倍か）で考える力がついてるよ。';
+  else if(trapPicks<=2) tip='💡 「○個ふえた＝同じだけ円もふえる」は＋のわな。何倍になるかを先に考えよう。';
+  else tip='💡 ふえた数を足すんじゃなくて、「何倍か」をかけるのが比例。3個→12個なら4倍だから ×4 だよ。';
+  $('rTip').textContent = tip;
+}
+function retry(){ startLevel(level); }
+$('retryBtn').onclick=retry;
+$('toLvlBtn').onclick=toLevels;
+
+/* ===== 効果音 ===== */
+let actx=null;
+function beep(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'sine';
+  g.gain.value=0.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.06)); }catch(e){} }
+
+buildLevels();
+</script>
+
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='numsense', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
+</body>
+</html>

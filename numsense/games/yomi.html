@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>先によみ 🔮</title>
+<style>
+  /* ============================================================
+     先によみ — 数感覚ミニゲーム（軸: 桁=オーダー感覚）
+     式を出し、正確に解く前に「だいたいの答え」を4択から先に選ぶ。
+     例 49×51 → [250 / 2500 / 25000 / 1250] のうち、本当の答えに
+     いちばん近い大きさ(キリのよい数)を当てる。
+     ・正解は必ず「Tにいちばん近いキリのよい数」で一意（桁ちがいのダミー）。
+     ・自己ベストのみ記録（順位は出さない＝成長を見せる設計）。
+     なぜ4択かつ桁ちがいダミーか: 正確計算ではなく「位どり=オーダー」を
+     体で覚えさせるため。ダミーがTに近すぎると採点が破綻するので桁で離す。
+     ============================================================ */
+  :root{ --ink:#1f2430; --paper:#fff7e6; --line:#e6d3a8; --green:#27a35a; --red:#e0533d;
+    --blue:#2f7de1; --gold:#e3a32a; --purple:#7c3aed; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+    font-family:"Yu Gothic","Meiryo",system-ui,sans-serif; user-select:none; -webkit-user-select:none;
+    background:linear-gradient(180deg,#efe6ff 0%,#eaf2ff 45%,#f6ecd0 100%);}
+  .wrap{ width:min(560px,100%); margin:0 auto; padding:10px 12px 26px; }
+  h1{ margin:.3em 0 .1em; font-size:clamp(22px,6vw,32px); text-align:center; }
+  .sub{ text-align:center; color:#6b6250; margin:0 0 10px; font-size:13px; }
+  .panel{ background:var(--paper); border:3px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:0 6px 0 rgba(0,0,0,.08); }
+  button{ font:inherit; color:inherit; cursor:pointer; }
+  .hidden{ display:none; }
+
+  /* レベル選択 */
+  .lvlGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .lvl{ padding:16px 8px; border:3px solid var(--line); border-radius:13px; background:#fffdf5;
+    font-size:17px; font-weight:800; text-align:center; line-height:1.3; }
+  .lvl small{ display:block; font-weight:600; color:#9a8a64; font-size:11px; margin-top:4px; min-height:13px; }
+  .lvl:active{ transform:scale(.96); }
+
+  /* プレイ */
+  .hud{ display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:6px; font-size:14px; }
+  .hud .combo{ color:var(--gold); }
+  .hud .sc{ margin-left:auto; color:var(--blue); font-size:18px; }
+  .ask{ text-align:center; font-size:14px; color:#6b6250; font-weight:700; margin:4px 0 2px; }
+  .expr{ text-align:center; font-size:clamp(30px,9vw,46px); font-weight:900; color:var(--purple);
+    line-height:1.1; margin:0 0 4px; letter-spacing:1px; }
+  .hintAns{ text-align:center; font-size:13px; color:#9a8a64; font-weight:700; margin:0 0 12px; }
+
+  /* 4択 */
+  .choices{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+  .choice{ padding:18px 8px; border:3px solid var(--line); border-radius:14px; background:#fffdf5;
+    font-size:clamp(20px,7vw,28px); font-weight:900; text-align:center; color:var(--ink); }
+  .choice:active{ transform:scale(.96); }
+  .choice.correct{ background:#e7f8ee; border-color:var(--green); color:var(--green); }
+  .choice.wrong{ background:#fdecea; border-color:var(--red); color:var(--red); }
+  .choice:disabled{ cursor:default; }
+
+  .fb{ text-align:center; font-size:18px; font-weight:900; min-height:46px; margin:10px 0 0; line-height:1.35; }
+  .fb .pts{ color:var(--gold); }
+  .fb .exact{ display:block; font-size:13px; font-weight:700; color:#6b6250; margin-top:2px; }
+  .dots{ display:flex; gap:6px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
+  .dots i{ width:10px; height:10px; border-radius:50%; background:#e6d3a8; display:inline-block; }
+  .dots i.on{ background:var(--green); }
+  .dots i.miss{ background:var(--red); }
+
+  /* 結果 */
+  .result h2{ text-align:center; font-size:24px; margin:.2em 0; }
+  .result .big{ text-align:center; font-size:clamp(34px,10vw,52px); color:var(--purple); font-weight:900; margin:.1em 0; }
+  .newrec{ text-align:center; color:var(--gold); font-weight:800; font-size:18px; margin:6px 0; }
+  .stat{ display:flex; justify-content:space-between; padding:7px 4px; border-bottom:1px dashed var(--line); font-size:15px; }
+  .btns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .btns button{ padding:14px; font-size:16px; font-weight:700; border-radius:13px; border:3px solid var(--line); background:#fffdf5; }
+  .btns .primary{ color:#fff; background:var(--green); border:none; box-shadow:0 4px 0 #1d7a42; }
+</style>
+</head>
+<body>
+<button id="portalBackBtn" title="数学ポータルへ戻る" style="position:fixed;top:8px;left:8px;z-index:99999;border:2px solid #e6d3a8;background:#fff7e6;color:#241c12;border-radius:999px;height:34px;padding:0 12px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer">← もどる</button>
+<script>
+  // ゲーム→数学ポータル（このフォルダの親 index.html＝numsense/index.html）へ戻る。
+  document.getElementById('portalBackBtn').addEventListener('click',function(){ location.href='../index.html'; });
+</script>
+
+<div class="wrap">
+  <h1>先によみ 🔮</h1>
+  <p class="sub">正確に計算する前に、答えの「だいたいの大きさ」を当てよう！</p>
+
+  <!-- レベル選択 -->
+  <div id="lvlSel" class="panel">
+    <div class="lvlGrid" id="lvlGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのレベルの自己ベスト。前の自分をこえよう！</p>
+  </div>
+
+  <!-- プレイ -->
+  <div id="play" class="panel hidden">
+    <div class="hud">
+      <span id="lvlName">かけ算</span>
+      <span class="combo" id="combo"></span>
+      <span class="sc">⭐ <span id="score">0</span></span>
+    </div>
+    <div class="ask">答えは だいたい どれ？</div>
+    <div class="expr" id="expr">—</div>
+    <div class="hintAns">いちばん近い大きさを選ぼう</div>
+    <div class="choices" id="choices"></div>
+    <div class="fb" id="fb"></div>
+    <div class="dots" id="qDots"></div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="result" class="panel result hidden">
+    <h2 id="rTitle">クリア！</h2>
+    <div class="big" id="rScore">0</div>
+    <div id="newrec" class="newrec hidden">🏆 自己ベスト更新！</div>
+    <div class="stat"><span>このレベルのベスト</span><span id="rBest">0</span></div>
+    <div class="stat"><span>正解</span><span id="rRight">0</span> / 10</div>
+    <div class="stat"><span>最大コンボ</span><span id="rCombo">0</span></div>
+    <div class="btns">
+      <button class="primary" id="retryBtn">もう1回！</button>
+      <button id="toLvlBtn">レベルをえらぶ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 定数 ===== */
+const $ = (id)=>document.getElementById(id);
+const ROUNDS = 10;          // 1ラウンドの問題数
+// kind: 出題の作り方。close=true は選択肢を接近させた高難度（×5/×2方向のダミーも混ぜる）。
+const LEVELS = [
+  { id:'mul',   name:'かけ算',     emoji:'✖️', kind:'mul',   close:false },
+  { id:'big',   name:'大きな数',   emoji:'🔢', kind:'big',   close:false },
+  { id:'dec',   name:'小数',       emoji:'🔸', kind:'dec',   close:false },
+  { id:'pct',   name:'割合(％)',   emoji:'％', kind:'pct',   close:false },
+  { id:'mix',   name:'なんでも',   emoji:'🎲', kind:'mix',   close:true  },
+];
+
+/* ===== 状態（トップレベル・グローバル） ===== */
+let level=LEVELS[0], round=0, score=0, rightCount=0, combo=0, maxCombo=0, locked=false;
+let curTrue=0;              // 今の問題の正確な答え（数値）
+let curChoices=[];          // 表示中の4択（数値の配列）
+let curAnsIdx=0;            // curChoices の中で正解のインデックス
+
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=(arr)=>arr[rnd(0,arr.length-1)];
+function bestKey(l){ return 'ns_best_yomi_'+l.id; }
+function getBest(l){ return parseInt(localStorage.getItem(bestKey(l))||'0',10); }
+
+/* 表示用に数を読みやすく（小数は最大2桁・整数はカンマ区切り） */
+function fmt(n){
+  if(Number.isInteger(n)) return n.toLocaleString('en-US');
+  return (Math.round(n*100)/100).toString();
+}
+
+/* T(真の値)に最も近い「キリのよい数」= 1,2,5 × 10^k の系列から選ぶ。
+   これが必ず一意の正解になるよう、選択肢は桁(=×10/÷10)で離して作る。 */
+function niceAnchor(T){
+  const a=Math.abs(T); if(a===0) return 0;
+  const k=Math.floor(Math.log10(a));            // おおよその桁
+  const cands=[];
+  for(let e=k-1;e<=k+1;e++){ const base=Math.pow(10,e); cands.push(base*1,base*2,base*5); }
+  let best=cands[0], bd=Infinity;
+  cands.forEach(c=>{ const d=Math.abs(c-a); if(d<bd){ bd=d; best=c; } });
+  return Math.sign(T)*best;
+}
+
+/* ===== 出題生成 ===== */
+// 戻り値: { exprText, T(正確値) } 。kindごとに式を作り、Tは厳密計算。
+function genProblem(kind){
+  if(kind==='mix') kind = pick(['mul','big','dec','pct']);
+  if(kind==='mul'){
+    // 2桁×2桁。式の見た目はそのまま、Tは厳密な積。
+    const a=rnd(11,99), b=rnd(11,99);
+    return { exprText:a+' × '+b, T:a*b };
+  }
+  if(kind==='big'){
+    // 大きな数の足し算／引き算（3〜4桁）。
+    if(Math.random()<0.5){
+      const a=rnd(120,900)*5, b=rnd(120,900)*5;
+      return { exprText:fmt(a)+' + '+fmt(b), T:a+b };
+    } else {
+      let a=rnd(300,950)*10, b=rnd(20,250)*10; if(b>a){ const t=a;a=b;b=t; }
+      return { exprText:fmt(a)+' − '+fmt(b), T:a-b };
+    }
+  }
+  if(kind==='dec'){
+    // 小数のかけ算。桁感覚（0.x を掛けると小さくなる等）をねらう。
+    const whole=rnd(12,98);
+    const dec=pick([0.2,0.3,0.5,0.7,1.5,2.5,0.25,0.8]);
+    const T=Math.round(whole*dec*100)/100;
+    return { exprText:whole+' × '+dec, T:T };
+  }
+  if(kind==='pct'){
+    // 「Nの p％」。割合の大きさ感覚。
+    const base=pick([200,400,500,800,1000,1500,2000,2500,3000]);
+    const p=pick([5,10,15,20,25,30,40,50,60,75]);
+    const T=Math.round(base*p/100);
+    return { exprText:fmt(base)+' の '+p+'％', T:T };
+  }
+  // 念のためのフォールバック
+  const a=rnd(11,99), b=rnd(11,99);
+  return { exprText:a+' × '+b, T:a*b };
+}
+
+/* 正解アンカー＋桁ちがいダミーで4択を作る。
+   T に最も近いキリ数(=正解)、その ×10 と ÷10（明らかに桁ちがい）。
+   4つ目: 通常は×100 か÷100 でさらに桁を離す。close=true のときだけ
+   ×2/÷2 の中間ダミーを混ぜて難しくする（それでも正解が一意に最も近い）。 */
+function buildChoices(T, close){
+  const ans = niceAnchor(T);
+  const set = [ans, ans*10, ans/10];
+  if(close){
+    // 中間ダミー: 正解の半分か倍。Tとの距離が ans より大きいことを確認して採用。
+    const mids=[ans*2, ans/2, ans*5, ans/5];
+    let extra=null;
+    for(const m of mids){
+      if(Math.abs(m-T) > Math.abs(ans-T)*1.25 && !set.includes(m)){ extra=m; break; }
+    }
+    set.push(extra!=null ? extra : ans*100);
+  } else {
+    set.push(Math.random()<0.5 ? ans*100 : ans/100);
+  }
+  // 重複や0の混入を避けつつ4つに整える
+  const uniq=[]; set.forEach(v=>{ if(v!==0 && !uniq.includes(v)) uniq.push(v); });
+  let mult=1000;
+  while(uniq.length<4){ const v=ans*mult; if(!uniq.includes(v) && v!==0) uniq.push(v); mult*=10; }
+  const four = uniq.slice(0,4);
+  // 正解が必ず含まれることを保証（slice で落ちないよう先頭が ans なので安全だが念押し）
+  if(!four.includes(ans)) four[0]=ans;
+  // シャッフル
+  for(let i=four.length-1;i>0;i--){ const j=rnd(0,i); const t=four[i]; four[i]=four[j]; four[j]=t; }
+  return { choices:four, ansIdx:four.indexOf(ans) };
+}
+
+/* ===== レベル選択 ===== */
+function buildLevels(){
+  const g=$('lvlGrid'); g.innerHTML='';
+  LEVELS.forEach(l=>{
+    const b=document.createElement('button'); b.className='lvl';
+    const best=getBest(l);
+    b.innerHTML = l.emoji+' '+l.name+'<small>'+(best?('★ '+best):'はじめて')+'</small>';
+    b.onclick=()=>startLevel(l.id);
+    g.appendChild(b);
+  });
+}
+function toLevels(){
+  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('lvlSel').classList.remove('hidden'); buildLevels();
+}
+
+/* ===== プレイ ===== */
+function startLevel(lvl){
+  level = LEVELS.find(l=>l.id===lvl) || LEVELS[0];
+  round=0; score=0; rightCount=0; combo=0; maxCombo=0; locked=false;
+  $('lvlSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('play').classList.remove('hidden');
+  $('lvlName').textContent = level.emoji+' '+level.name;
+  $('score').textContent='0'; $('combo').textContent='';
+  buildQDots();
+  newQuestion();
+}
+function buildQDots(){
+  const d=$('qDots'); d.innerHTML='';
+  for(let i=0;i<ROUNDS;i++){ const e=document.createElement('i'); d.appendChild(e); }
+}
+function markQDots(ok){
+  const dots=$('qDots').children; const e=dots[round]; if(e) e.classList.add(ok?'on':'miss');
+}
+
+function newQuestion(){
+  $('fb').innerHTML=''; locked=false;
+  const p = genProblem(level.kind);
+  curTrue = p.T;
+  const bc = buildChoices(curTrue, level.close);
+  curChoices = bc.choices; curAnsIdx = bc.ansIdx;
+  $('expr').textContent = p.exprText;
+  // 選択肢ボタンを描画
+  const c=$('choices'); c.innerHTML='';
+  curChoices.forEach((v,i)=>{
+    const b=document.createElement('button'); b.className='choice';
+    b.textContent = fmt(v);
+    b.onclick=()=>choose(i);
+    c.appendChild(b);
+  });
+}
+
+/* ===== 回答・採点 ===== */
+function choose(idx){
+  if(locked) return; locked=true;
+  const ok = (idx===curAnsIdx);
+  const btns=$('choices').children;
+  // 正解には緑、押した不正解には赤を付ける
+  btns[curAnsIdx].classList.add('correct');
+  if(!ok) btns[idx].classList.add('wrong');
+  [...btns].forEach(b=>b.disabled=true);
+
+  let pts=0;
+  if(ok){
+    rightCount++;
+    combo++; if(combo>maxCombo) maxCombo=combo;
+    // 正解=基礎点＋コンボボーナス（恐怖を煽らない範囲の小さな積み増し）
+    pts = 100 + (combo-1)*15;
+    score += pts; $('score').textContent=score;
+    $('combo').textContent = combo>=2 ? ('🔥'+combo+'連続') : '';
+    beep(880,.08); setTimeout(()=>beep(1180,.09),90);
+    $('fb').innerHTML = 'せいかい！🎯 <span class="pts">+'+pts+'</span>'+
+      '<span class="exact">本当の答えは '+fmt(curTrue)+'</span>';
+  } else {
+    combo=0; $('combo').textContent='';
+    beep(300,.10,'sawtooth');
+    // 誤答は得点0＋やさしい解説（だいたい◯◯だね）
+    $('fb').innerHTML = 'おしい！ だいたい <b>'+fmt(curChoices[curAnsIdx])+'</b> だね'+
+      '<span class="exact">本当の答えは '+fmt(curTrue)+'</span>';
+  }
+  markQDots(ok);
+  round++;
+  setTimeout(()=>{
+    if(round>=ROUNDS) showResult();
+    else newQuestion();
+  }, ok?1100:1700);
+}
+
+/* ===== 結果 ===== */
+function showResult(){
+  $('play').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rTitle').textContent = level.emoji+' '+level.name+' クリア！';
+  $('rScore').textContent = score;
+  $('rRight').textContent = rightCount;
+  $('rCombo').textContent = maxCombo;
+  const prev=getBest(level);
+  if(score>prev){ localStorage.setItem(bestKey(level), score); $('newrec').classList.remove('hidden'); }
+  else $('newrec').classList.add('hidden');
+  $('rBest').textContent = Math.max(prev,score);
+}
+$('retryBtn').onclick=()=>startLevel(level.id);
+$('toLvlBtn').onclick=toLevels;
+
+/* ===== 効果音 ===== */
+let actx=null;
+function beep(f,d,ty){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; o.type=ty||'sine';
+  g.gain.value=0.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+(d||.06)); }catch(e){} }
+
+buildLevels();
+</script>
+
+<!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
+<script>
+(function(){
+  var APP='numsense', KEY='manabi_hub_v1';
+  function ld(){ try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};} }
+  function sv(h){ try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  var h=ld(); h.play=h.play||{}; h.days=h.days||{}; h.days[today()]=true; h.lastApp=APP; h.lastSeen=Date.now(); sv(h);
+  var acc=0, last=Date.now();
+  function flush(){ if(acc<1)return; var g=ld(); g.play=g.play||{}; g.play[APP]=(g.play[APP]||0)+Math.round(acc); acc=0; g.days=g.days||{}; g.days[today()]=true; sv(g); }
+  setInterval(function(){ var n=Date.now(); if(!document.hidden) acc+=(n-last)/1000; last=n; if(acc>=15) flush(); },1000);
+  document.addEventListener('visibilitychange',function(){ last=Date.now(); if(document.hidden) flush(); });
+  window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
+})();
+</script>
+</body>
+</html>
