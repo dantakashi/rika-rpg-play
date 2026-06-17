@@ -743,6 +743,13 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 </style>
 </head>
 <body>
+<script>
+/* ポータル（アプリ一覧）へ戻る＝dev は親の launcher.html、本番(配布)は親の index.html。存在確認して遷移（数学ゲームと同方式） */
+window.goPortal = function(){
+  fetch('../launcher.html',{method:'HEAD'}).then(function(r){ location.href = r.ok ? '../launcher.html' : '../index.html'; })
+    .catch(function(){ location.href = '../index.html'; });
+};
+</script>
 <div class="wrap">
 
   <!-- ===== タイトル ===== -->
@@ -758,6 +765,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <button id="btn-resume" class="btn gold" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
       <button id="btn-title-home" class="btn" onclick="UI.goHome()">🏠 ホーム画面へ</button>
       <button class="btn" onclick="UI.openSaveIO()">💾 セーブ＆ロード</button>
+      <button class="btn" onclick="goPortal()">🚪 ポータル（アプリ一覧）へ戻る</button>
     </div>
     <div class="verTag">β版 / 社会科・歴史（縄文〜現代＋世界史） / セーブはこの端末に保存</div>
   </div>
@@ -775,11 +783,12 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <button id="btn-resume2" class="btn" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
       <div class="row2">
         <button class="btn" onclick="UI.openRoster()">🎴 偉人編成</button>
-        <button class="btn" onclick="UI.openHall()">🏯 殿堂</button>
+        <button class="btn" onclick="UI.openHall()">🏛️ 殿堂</button>
         <button class="btn" onclick="UI.openBook()">📖 まなび帳</button>
         <button class="btn" onclick="UI.openHowto()">❓ 遊び方</button>
       </div>
       <button class="btn" onclick="UI.openSaveIO()">💾 セーブ＆ロード（機種変更）</button>
+      <button class="btn" onclick="goPortal()">🚪 ポータル（アプリ一覧）へ戻る</button>
     </div>
     <div class="verTag">タイトルへは ⏸ → 🏠 から戻れます</div>
   </div>

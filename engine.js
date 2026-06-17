@@ -24,7 +24,6 @@
 const GameEngine = (function() {
   let battleInterval = null;
   let isFeedbacking = false;
-  let usedIndices = [];
   let _lastQuestion = null;
   let selectedModalItem = null;
 
@@ -823,7 +822,6 @@ let player = {
       battle.expEarnedInSession = 0;
       battle.missCount = 0;
       battle.isRaged = false;
-      usedIndices = []; 
 
       const stats = getEffectiveStats();
       battle.playerMaxHp = stats.hp;
@@ -1086,7 +1084,6 @@ let player = {
       battle.expEarnedInSession = 0;
       battle.missCount = 0;
       battle.isRaged = false;
-      usedIndices = []; 
 
       document.getElementById('rage-warning-badge').classList.add('hidden');
       document.getElementById('battle-left-panel').classList.remove('rage-active');
@@ -1163,7 +1160,6 @@ let player = {
       battle.goldEarnedInSession = 0;
       battle.missCount = 0;
       battle.isRaged = false;
-      usedIndices = [];
 
       document.getElementById('rage-warning-badge').classList.add('hidden');
       document.getElementById('battle-left-panel').classList.remove('rage-active');
@@ -1246,7 +1242,6 @@ let player = {
       battle.tutTier = null;         // ← チュートリアル難易度上書きの残留を防ぐ
       battle.tutForcedQ = null;
       battle.tutEnemyHp = null;
-      usedIndices = [];
 
       document.getElementById('rage-warning-badge').classList.add('hidden');
       document.getElementById('battle-left-panel').classList.remove('rage-active');

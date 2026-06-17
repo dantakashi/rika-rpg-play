@@ -235,9 +235,6 @@
     .frame-endgame::before{content:'⚜';} .frame-endgame::after{content:'⚜';}
     .frame-arena { border:1px solid #f59e0b; background:linear-gradient(90deg,rgba(245,158,11,.32),rgba(220,38,38,.24)); color:#fde68a; box-shadow:0 0 14px rgba(245,158,11,.5); }
     .frame-arena::before{content:'⚔';} .frame-arena::after{content:'⚔';}
-    /* 📖 ストーリー: ふりがな(ruby)。既定ON、.ruby-off(story-box)で隠す */
-    #screen-story rt { font-size:.6em; color:#7dd3fc; font-weight:400; }
-    #screen-story .ruby-off rt { display:none; }
     .frame-omega { border:1px solid transparent; color:#fff; font-weight:900;
       background:linear-gradient(90deg,rgba(0,0,0,.4),rgba(0,0,0,.4)) padding-box,
                  linear-gradient(270deg,#ff007f,#7f00ff,#00f0ff,#ffea00,#ff007f) border-box;
@@ -418,9 +415,6 @@
             </button>
             <button data-gate="cleared" onclick="openArenaPopup()" class="bg-gradient-to-r from-amber-700 to-red-800 hover:from-amber-600 hover:to-red-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-amber-950/40">
               <span class="text-2xl">🏛️</span> 闘技場の塔（200階）
-            </button>
-            <button data-gate="played" onclick="openStory()" class="bg-gradient-to-r from-teal-700 to-cyan-800 hover:from-teal-600 hover:to-cyan-700 text-white font-black py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-cyan-950/40">
-              <span class="text-2xl">📖</span> ストーリー（先取り授業）<span class="text-[10px] bg-cyan-300/20 px-1.5 py-0.5 rounded">🔒β</span>
             </button>
             <div data-gate="boss1" class="grid grid-cols-2 gap-2">
               <button onclick="openTitlePopup()" style="background-image:url('assets/ui/btn_title.png');background-size:100% 100%;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.9)" class="bg-amber-800/80 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-[11px] flex items-center justify-center gap-1 transition-all active:scale-95">🎖️ 称号</button>
@@ -1172,9 +1166,6 @@
     autocapitalize="off" spellcheck="false"
     style="position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;" />
 
-  <!-- 📖 ストーリー（先取り授業）βテスト用フルスクリーン画面。中身は story.js が描画 -->
-  <div id="screen-story" class="hidden fixed inset-0 z-40 bg-slate-950 flex flex-col"></div>
-
   <!-- デバッグエラー表示ボックス -->
   <div id="debug-error-box" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#7f1d1d;color:#fca5a5;padding:8px 12px;font-size:11px;z-index:9999;font-family:monospace;border-top:1px solid #991b1b;word-break:break-all;"></div>
 
@@ -1182,7 +1173,6 @@
   <script src="data.js?v=20260609"></script>
   <script src="engine.js?v=20260609"></script>
   <script src="ui.js?v=20260609"></script>
-  <script src="story.js?v=20260616"></script>
   <script>
     // ── 初期化 ──
     window.onerror = function(msg, src, line, col, err) {
@@ -1263,7 +1253,6 @@
     const openBossSelection = () => GameUI.openBossSelection();
     const openEndgamePopup = () => GameUI.openEndgamePopup();
     const openArenaPopup = () => GameUI.openArenaPopup();
-    const openStory = () => StoryUI.open();
     const openTitlePopup = () => GameUI.openTitlePopup();
     const openAvatarPopup = () => GameUI.openAvatarPopup();
     const openGachaScreen = () => GameUI.openGachaScreen();
