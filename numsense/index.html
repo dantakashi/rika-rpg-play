@@ -53,6 +53,18 @@
   .link:active{ transform:scale(.95); }
   .link .e{ font-size:24px; } .link .n{ font-size:11px; font-weight:700; text-align:center; }
 
+  /* 数感覚レベル（自己参照の成長メーター＝じゅんいではない） */
+  .levelCard{ background:linear-gradient(135deg,#7c3aed,#2f7de1); color:#fff; border-radius:16px;
+    padding:13px 15px; margin:6px 0 2px; box-shadow:0 6px 16px rgba(124,58,237,.28); }
+  .levelCard .lvl-top{ display:flex; align-items:center; gap:10px; }
+  .levelCard .lvl-badge{ font-size:22px; font-weight:900; background:rgba(255,255,255,.22);
+    border-radius:10px; padding:3px 12px; min-width:64px; text-align:center; }
+  .levelCard .lvl-name{ font-size:13px; font-weight:800; opacity:.95; }
+  .levelCard .lvl-pts{ margin-left:auto; font-size:12px; font-weight:800; opacity:.92; }
+  .levelCard .lvl-bar{ height:10px; border-radius:6px; background:rgba(255,255,255,.25); overflow:hidden; margin:9px 0 5px; }
+  .levelCard .lvl-bar > i{ display:block; height:100%; width:0%; background:#ffe08a; border-radius:6px; transition:width .6s cubic-bezier(.2,.85,.2,1); }
+  .levelCard .lvl-sub{ font-size:11.5px; font-weight:700; opacity:.95; }
+
   .footnote{ font-size:11px; color:var(--muted); text-align:center; margin-top:18px; line-height:1.7; }
 </style>
 </head>
@@ -73,6 +85,17 @@
     <p class="lead">計算する前に、答えが<b>「だいたい見える」</b>力をきたえる小さなゲーム集。<br>遊ぶほど、だれでも数の勘がするどくなるよ。</p>
   </div>
 
+  <!-- 数感覚レベル（あそぶほど上がる自分だけの成長メーター） -->
+  <div class="levelCard" id="levelCard">
+    <div class="lvl-top">
+      <span class="lvl-badge" id="lvlBadge">10級</span>
+      <span class="lvl-name">きみの数感覚レベル<br><span style="font-weight:700;font-size:11px;opacity:.9">あそぶほど上がるよ</span></span>
+      <span class="lvl-pts" id="lvlPts">✦ 0</span>
+    </div>
+    <div class="lvl-bar"><i id="lvlFill"></i></div>
+    <div class="lvl-sub" id="lvlSub">まずは1ゲーム遊んでみよう！</div>
+  </div>
+
   <div class="sec-t">👀 数感覚ゲーム（だいたい見える力）</div>
   <div class="grid" id="gameGrid"></div>
 
@@ -87,6 +110,7 @@
 // ready:false は「準備中」表示（まだ作っていないゲーム）。
 const GAMES = [
   { id:'numline',  title:'数直線シュート', emoji:'🎯', tag:'数直線・桁', file:'games/numline.html',  beta:true,  ready:true },
+  { id:'negative', title:'プラスマイナス',  emoji:'🌡️', tag:'負の数',     file:'games/negative.html', beta:true,  ready:true },
   { id:'reach2000',title:'¥2000で足りる？',emoji:'🛒', tag:'見積もり',   file:'games/reach2000.html',beta:true,  ready:true },
   { id:'flash',    title:'フラッシュ道場',  emoji:'⚡', tag:'瞬間把握・量',file:'games/flash.html',    beta:true,  ready:true },
   { id:'arienai',  title:'ありえない検出',  emoji:'🚫', tag:'桁・概算',   file:'games/arienai.html',  ready:true },
@@ -142,8 +166,39 @@ function buildGrid(){
     g.appendChild(card);
   });
 }
+// 数感覚レベル＝全ゲームの自己ベスト合計を、級→段の固定ラダーに写す（順位ではない＝自分の成長）。
+const TIERS=[
+  {name:'10級',need:0},{name:'9級',need:250},{name:'8級',need:550},{name:'7級',need:900},
+  {name:'6級',need:1300},{name:'5級',need:1800},{name:'4級',need:2400},{name:'3級',need:3100},
+  {name:'2級',need:3900},{name:'1級',need:4800},{name:'初段',need:5900},{name:'二段',need:7200},
+  {name:'三段',need:8700},{name:'四段',need:10400},{name:'五段',need:12300},{name:'六段',need:14500},
+  {name:'七段',need:17000},{name:'名人',need:20000}
+];
+function totalPoints(){
+  let t=0;
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
+    if(k && k.indexOf('ns_best_')===0){ const v=parseInt(localStorage.getItem(k)||'0',10); if(!isNaN(v)) t+=v; } }
+  return t;
+}
+function renderLevel(){
+  const pts=totalPoints();
+  let idx=0; for(let i=0;i<TIERS.length;i++){ if(pts>=TIERS[i].need) idx=i; }
+  const cur=TIERS[idx], next=TIERS[idx+1];
+  document.getElementById('lvlBadge').textContent=cur.name;
+  document.getElementById('lvlPts').textContent='✦ '+pts;
+  const fill=document.getElementById('lvlFill'), sub=document.getElementById('lvlSub');
+  if(pts===0){
+    fill.style.width='0%'; sub.textContent='まずは1ゲーム遊んでみよう！';
+  } else if(next){
+    const into=pts-cur.need, span=next.need-cur.need;
+    fill.style.width=Math.max(6, Math.min(100, Math.round(into/span*100)))+'%';
+    sub.textContent='あと '+(next.need-pts)+' ポイントで「'+next.name+'」';
+  } else { fill.style.width='100%'; sub.textContent='さいこう「名人」に到達！すごい！'; }
+}
+
 buildGrid();
 buildExtGrid();
+renderLevel();
 </script>
 
 <!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->
