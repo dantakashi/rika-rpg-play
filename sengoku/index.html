@@ -55,7 +55,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .homeHead .hTitle{font-weight:900; font-size:17px; letter-spacing:.08em; color:var(--gold2); flex:1;}
 .homeRes{display:flex; align-items:center; gap:5px; font-weight:800; font-size:13.5px; color:#ffe9a8;
   background:rgba(245,234,211,.1); border:1px solid rgba(216,168,35,.45); border-radius:999px; padding:4px 12px;}
-/* 育てた武将の展示（自慢要素）。タップで殿堂へ */
+/* 育てた偉人の展示（自慢要素）。タップで殿堂へ */
 .showcase{position:relative; border-radius:18px; border:2px solid rgba(216,168,35,.55); overflow:hidden;
   background:linear-gradient(180deg,#1d2438 0%,#2a3450 55%,#3a4666 100%); text-align:center; padding:16px 12px 0; width:100%;}
 .showcase::before{content:''; position:absolute; inset:-20%;
@@ -129,7 +129,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .board.aLayout .stage.sceneA{height:330px; overflow:visible; z-index:1;}
 .board.aLayout .sceneCastleLbl{display:none;}         /* ④城名は省略（城は背景に見えている） */
 .board.aLayout .stageDeco{display:none;}              /* 🚩季節デコは省略（季節はgHead年号で十分） */
-.board.aLayout .kamonImg{display:none !important;}    /* ②家紋は軍学帳ボタンに置換 */
+.board.aLayout .kamonImg{display:none !important;}    /* ②家紋はまなび帳ボタンに置換 */
 /* ⑤側近の顔（②iOS対策の決定版・2026-06-13）: 画像を枠より大きくするとiOS Safariがクリップできず枠外へはみ出す。
    → 拡大をやめ width/height:100% + object-fit:cover で枠ぴったり＝はみ出し原理的にゼロ。顔は object-position:top で上(顔)を見せる */
 .board.aLayout .bondC .bf{overflow:hidden; clip-path:inset(0 round 9px);}
@@ -194,7 +194,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
 .miniMapBtn{position:absolute; right:8px; top:30px; padding:0; text-align:center; z-index:2;}
 .miniMapBtn .mlbl{display:block; font-size:9.5px; font-weight:800; color:#4a5a44;
   background:rgba(245,234,211,.78); border-radius:999px; padding:0 6px; margin-top:2px;}
-/* 軍学帳ボタン（②家紋の位置・正方形角丸・問題数を通知バッジ） */
+/* まなび帳ボタン（②家紋の位置・正方形角丸・問題数を通知バッジ） */
 .bookBtn{position:absolute; right:10px; bottom:14px; z-index:5; cursor:pointer; width:48px; height:48px; border-radius:14px;
   background:rgba(245,234,211,.92); border:2px solid var(--line); box-shadow:0 3px 0 rgba(0,0,0,.18);
   display:flex; align-items:center; justify-content:center; transition:transform .06s;}
@@ -762,7 +762,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div class="verTag">β版 / 社会科・歴史（縄文〜現代＋世界史） / セーブはこの端末に保存</div>
   </div>
 
-  <!-- ===== ホーム画面（G1第2弾: 育てた武将の展示・小判・お知らせ・メニュー） ===== -->
+  <!-- ===== ホーム画面（G1第2弾: 育てた偉人の展示・メダル・お知らせ・メニュー） ===== -->
   <div id="scr-home" class="scr">
     <div class="homeHead">
       <div class="hTitle serif">⚔️ 偉人トレーナー</div>
@@ -774,9 +774,9 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
       <button class="btn gold main" onclick="UI.preStart()">⚔️ 育成開始（偉人を選ぶ）</button>
       <button id="btn-resume2" class="btn" onclick="Game.resume()" style="display:none">▶️ つづきから</button>
       <div class="row2">
-        <button class="btn" onclick="UI.openRoster()">🎴 武将編成</button>
+        <button class="btn" onclick="UI.openRoster()">🎴 偉人編成</button>
         <button class="btn" onclick="UI.openHall()">🏯 殿堂</button>
-        <button class="btn" onclick="UI.openBook()">📖 軍学帳</button>
+        <button class="btn" onclick="UI.openBook()">📖 まなび帳</button>
         <button class="btn" onclick="UI.openHowto()">❓ 遊び方</button>
       </div>
       <button class="btn" onclick="UI.openSaveIO()">💾 セーブ＆ロード（機種変更）</button>
@@ -799,8 +799,8 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
         <div class="stageCastle t1" id="g-castlebox"><span class="ce" id="g-castle">⛺</span><div class="castleLbl" id="g-castlelbl">拠点: 陣屋</div></div>
         <div class="stageChar" id="g-face">🙂</div>
         <button class="miniMapBtn" id="g-minimap" onclick="UI.openMap()"></button>
-        <!-- 軍学帳ボタン（②家紋の位置に正方形・問題数を通知バッジ表示。下の専用行を廃止） -->
-        <button class="bookBtn" id="g-bookbtn" onclick="UI.openBook()" aria-label="軍学帳"><span class="bbIcon">📖</span><span class="bbBadge" id="g-bookn" style="display:none">0</span></button>
+        <!-- まなび帳ボタン（②家紋の位置に正方形・問題数を通知バッジ表示。下の専用行を廃止） -->
+        <button class="bookBtn" id="g-bookbtn" onclick="UI.openBook()" aria-label="まなび帳"><span class="bbIcon">📖</span><span class="bbBadge" id="g-bookn" style="display:none">0</span></button>
         <div class="stageName">
           <span class="charName serif" id="g-heroname">織田信長</span>
           <span class="moodTag" id="g-mood">ふつう</span><span class="moodTag" id="g-inj" style="background:#f5b0a5; display:none">🤕 ケガ</span>
@@ -828,13 +828,13 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
   <div id="scr-result" class="scr">
     <div class="board" style="padding:16px;">
       <h2 class="serif" style="text-align:center; margin:4px 0 2px;">育成完了</h2>
-      <div class="rankBig"><div class="rk serif" id="r-rank">城主</div><div class="rsub" id="r-sub"></div></div>
+      <div class="rankBig"><div class="rk serif" id="r-rank">みならい</div><div class="rsub" id="r-sub"></div></div>
       <div class="statGrid" id="r-stats" style="padding:0;"></div>
       <div class="descBox" id="r-summary" style="margin-top:12px;"></div>
       <div class="descBox" id="r-legacy" style="margin-top:8px; background:#f0e6ff; border-color:var(--purple);"></div>
       <div class="descBox" id="r-report" style="margin-top:8px; background:#e8f4fb; border-color:var(--blue);"></div>
       <div style="display:grid; gap:8px; margin-top:14px;">
-        <button class="btn gold" onclick="UI.goHome()">🏠 ホームへ（武将をかざる）</button>
+        <button class="btn gold" onclick="UI.goHome()">🏠 ホームへ（偉人をかざる）</button>
       </div>
     </div>
   </div>
@@ -876,7 +876,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
     <div id="b-actions" style="display:grid; gap:8px;"></div>
   </div></div>
 
-  <!-- ===== 殿堂・軍学帳・汎用 ===== -->
+  <!-- ===== 殿堂・まなび帳・汎用 ===== -->
   <div id="ovl-list" class="ovl"><div class="box">
     <button class="closeX" onclick="UI.closeList()">✕</button>
     <h2 class="serif" id="l-title"></h2>
@@ -894,7 +894,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:none; background:none
    エンジン
    §1 定数・状態 / §2 セーブ / §3 クイズ抽選 / §4 育成ターン
    §5 トレーニング解決 / §6 年表イベント / §7 合戦 / §8 終了評価
-   §9 UI描画 / §10 殿堂・軍学帳
+   §9 UI描画 / §10 殿堂・まなび帳
    ============================================================ */
 const Game = (function(){
   /* ===== §1 定数・状態 ===== */
@@ -928,12 +928,12 @@ const Game = (function(){
     return Math.max(12, c);
   }
   const RANKS = [ // [必要評価点, ランク名, ひとこと]（追憶の章ボーナス込み前提・2026-06-13改定）
-    [0,'足軽','まだまだこれから。次はもっと学んでみよう！'],
-    [210,'侍大将','戦場で名が知られ始めた。'],
-    [360,'城主','一城のあるじ。側近たちが頼りにしている。'],
-    [500,'国主','一国を治める大名。天下が見えてきた。'],
-    [720,'大大名','天下にその名を轟かす大大名！'],
-    [930,'天下人','見事、天下統一！ 歴史にきみの名が刻まれた！'],
+    [0,'みならい','まだまだこれから。次はもっと学んでみよう！'],
+    [210,'若手','名が知られ始め、まわりが注目しはじめた。'],
+    [360,'一人前','一人前として、まわりから頼りにされる存在になった。'],
+    [500,'中堅','大きな仕事を任される、たのもしい存在になった。'],
+    [720,'名士','その名が広く知れわたる、ひとかどの人物になった！'],
+    [930,'偉人','見事、歴史にその名を刻んだ！ きみの名は永遠に語り継がれる！'],
   ];
 
   let S = null;        // 育成中の状態（runState）
@@ -1154,7 +1154,7 @@ const Game = (function(){
   function doCommand(k){
     if (guardEvent()) return;
     // ケガ中は治療が最優先（2026-06-11 ユーザー要望: ケガを直さないと次に進めない）
-    if (S.injury && k!=='care'){ toast('🤕 ケガの体では無理はできぬ…。🌿薬師に診てもらおう'); return; }
+    if (S.injury && k!=='care'){ toast('🤕 ケガの体では無理はできぬ…。🌿手当てを受けよう'); return; }
     if (k==='care'){
       if (!S.injury){ toast('🌿 いまは元気そのものだ！'); return; }
       S.trainStreak = 0;
@@ -1164,9 +1164,9 @@ const Game = (function(){
       // 塞翁が馬: 治療が思わぬ福を呼ぶことがある（保健室を「ただの1回休み」にしない）
       if (Math.random() < 0.25){
         const lucks = [
-          { t:'寝込んでいる間に『孫子』を読み込んだ！', fx:{chiryaku:12} },
+          { t:'寝込んでいる間に、たくさんの書物を読みふけった！', fx:{chiryaku:12} },
           { t:'見舞いに来た人たちと、夜通し語り合った。', fx:{ninbo:8}, bond:12 },
-          { t:'療養先の湯の里で、豊かな米どころを見つけた！', fx:{koku:40} },
+          { t:'療養先で、思いがけず豊かな実りの地を見つけた！', fx:{koku:40} },
           { t:'体の芯から力がみなぎってきた。完全復活だ！', fx:{stamina:60, mood:2} },
         ];
         const l = lucks[Math.floor(Math.random()*lucks.length)];
@@ -1174,13 +1174,13 @@ const Game = (function(){
         applyFx(l.fx);
         saveAll();
         UI.showEvent({ year:S.year, type:'story', title:'🌿 塞翁（さいおう）が馬！', art:'🌿🐴',
-          text:`薬師（くすし）の手当てで、ケガはすっかり治った。\nそれどころか——\n\n${l.t}${l.bond?'\n（家臣みんなの絆もアップ！）':''}` },
+          text:`手当てのおかげで、ケガはすっかり治った。\nそれどころか——\n\n${l.t}${l.bond?'\n（みんなの絆もアップ！）':''}` },
           ()=>nextTurn(), l.fx);
         return;
       }
       S.mood = Math.min(4, S.mood+1);
       saveAll();
-      toast(`🌿 薬師の手当てでケガが治った！ 体力+${heal}・やる気UP`);
+      toast(`🌿 手当てでケガが治った！ 体力+${heal}・やる気UP`);
       nextTurn(); return;
     }
     if (k==='skirmish'){ startSkirmish(); return; }
@@ -1189,12 +1189,12 @@ const Game = (function(){
       let heal = 45 + Math.floor(Math.random()*11);
       Object.keys(S.skills||{}).forEach(id=>{ const fx=skillFx(id); if (fx && fx.restPlus) heal += fx.restPlus; });
       S.stamina = Math.min(100, S.stamina+heal);
-      // 軍学帳があれば復習出題（ノーリスク）
+      // まなび帳があれば復習出題（ノーリスク）
       if (P.book.length){
         const bi = Math.floor(Math.random()*P.book.length);
         cur = { mode:'review', bookIdx:bi, genre:P.book[bi].genre };
         UI.openQuiz(P.book[bi], cur);
-        toast(`😴 休息で体力+${heal}。軍学帳から復習だ！`);
+        toast(`😴 休息で体力+${heal}。まなび帳から復習だ！`);
         return;
       }
       toast(`😴 ゆっくり休んだ。体力+${heal}`);
@@ -1208,7 +1208,7 @@ const Game = (function(){
       if (S.skills && S.skills.zeni) k2 = Math.round(k2*1.5);
       Object.keys(S.skills).forEach(id=>{ const fx=skillFx(id); if (fx && fx.tripKoku) k2 = Math.round(k2*fx.tripKoku); });
       S.koku += k2;
-      toast(`🏯 領内を視察した。やる気UP！ ${rName()}+${fmtKoku(k2)}`);
+      toast(`👀 まわりの様子を見て回った。やる気UP！ ${rName()}+${fmtKoku(k2)}`);
       nextTurn(); return;
     }
     // 鍛錬: クイズへ
@@ -1334,7 +1334,7 @@ const Game = (function(){
         S[cur.genre] += 8; // 晩年の鍛錬（2026-06-14 生徒FB「選んだステの鍛錬効果」）
         text = D.EPILOGUE.okLines[Math.floor(Math.random()*D.EPILOGUE.okLines.length)]
           + `\n${statName(cur.genre)}+8（人生の輝き ${E.glow}/5）`;
-        if (cur.bookIdx!=null && P.book[cur.bookIdx]){ P.book.splice(cur.bookIdx,1); text += '\n📖 軍学帳から1ページ卒業！'; savePersist(); }
+        if (cur.bookIdx!=null && P.book[cur.bookIdx]){ P.book.splice(cur.bookIdx,1); text += '\n📖 まなび帳から1ページ卒業！'; savePersist(); }
       } else {
         text = D.EPILOGUE.ngLines[Math.floor(Math.random()*D.EPILOGUE.ngLines.length)];
       }
@@ -1348,9 +1348,9 @@ const Game = (function(){
         cur.res = { gain:5 };
         P.book.splice(cur.bookIdx,1);
         savePersist();
-        return { correct, text:`復習成功！ ${statName(item.genre)}+5\n軍学帳から1ページ卒業！`, done:'next' };
+        return { correct, text:`復習成功！ ${statName(item.genre)}+5\nまなび帳から1ページ卒業！`, done:'next' };
       }
-      return { correct, text:'まだ覚えきれていないようだ。解説を読んでおこう。\n（軍学帳に残しておくね）', done:'next' };
+      return { correct, text:'まだ覚えきれていないようだ。解説を読んでおこう。\n（まなび帳に残しておくね）', done:'next' };
     }
     // train
     if (correct){
@@ -1369,7 +1369,7 @@ const Game = (function(){
       saveAll();
       return { correct, text:t, done:'next' };
     }
-    // 不正解 → 軍学帳に記録し、押し切るか選ばせる
+    // 不正解 → まなび帳に記録し、押し切るか選ばせる
     addToBook(cur.sel.q);
     return { correct, push:true };
   }
@@ -1394,7 +1394,7 @@ const Game = (function(){
         t = `💥 大失敗！ 体力ガタ落ち・やる気ダウン・${statName(cur.genre)}-2\n🩹 だが「丈夫な体」のおかげでケガは免れた！`;
       } else {
         S.injury = 1;
-        t = `💥 大失敗！ 無理がたたって倒れ、ケガをしてしまった……\n体力ガタ落ち・やる気ダウン・${statName(cur.genre)}-2\n\n🌿 まずは薬師（くすし）に診てもらおう`;
+        t = `💥 大失敗！ 無理がたたって倒れ、ケガをしてしまった……\n体力ガタ落ち・やる気ダウン・${statName(cur.genre)}-2\n\n🌿 まずは手当てを受けよう`;
       }
       saveAll();
       return { failed:true, text:t };
@@ -1410,7 +1410,7 @@ const Game = (function(){
     const res = trainGain(cur.sel.q, {correct:false, half:true});
     cur.res = res;
     applyTraining(res, false);
-    return { text:`解説をじっくり読んで学び直した。${statName(cur.genre)}+${res.gain}・${res.subLabel}（軍学帳に記録）` + takeMoodMsg() };
+    return { text:`解説をじっくり読んで学び直した。${statName(cur.genre)}+${res.gain}・${res.subLabel}（まなび帳に記録）` + takeMoodMsg() };
   }
 
   /* ===== §6 年表イベント ===== */
@@ -1539,7 +1539,7 @@ const Game = (function(){
     return { win, text: win? B.ev.winText : B.ev.loseText };
   }
 
-  /* ===== §7.5 小競り合い ＝ 1ラウンド版の合戦絵巻（石高とスキルP稼ぎ・敗北しても育成は続く） ===== */
+  /* ===== §7.5 腕だめし ＝ 1ラウンド版の合戦絵巻（石高とスキルP稼ぎ・敗北しても育成は続く） ===== */
   function startSkirmish(){
     const foe = H.skirmishFoes[Math.floor(Math.random()*H.skirmishFoes.length)];
     const situ = H.skirmishSitus[Math.floor(Math.random()*H.skirmishSitus.length)];
@@ -1569,7 +1569,7 @@ const Game = (function(){
       S.mood = Math.max(0, S.mood-1);
       if (Math.random()*100 < failRate()/2 + 8){
         S.injury = 1;
-        text = '💥 敗走の途中でケガをしてしまった……（🌿薬師で治療しよう）';
+        text = '💥 敗走の途中でケガをしてしまった……（🌿手当てで治療しよう）';
       } else {
         text = '🌀 戦果なし…兵を退いた。やる気DOWN';
       }
@@ -1668,7 +1668,7 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
     total = Math.round(total * 32 / (H.endYear - H.startYear + 1) / scoreScale() * (H.scoreNorm||1));
     let rank = RANKS[0];
     for (const r of RANKS){ if (total>=r[0]) rank = r; }
-    if (survived && rank[0]<590) rank = RANKS[4]; // IF生存は最低でも大大名
+    if (survived && rank[0]<590) rank = RANKS[4]; // IF生存は最低でも名士
     // 遺訓: 最高ステに応じて獲得
     let bestK = 'buyu';
     STAT_KEYS.forEach(k=>{ if(S[k]>S[bestK]) bestK=k; });
@@ -1678,7 +1678,7 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
     const coins = Math.max(5, Math.round(total/10)) + (survived?20:0);
     P.coins = (P.coins||0) + coins;
     // 殿堂入り
-    P.hall.push({ name:H.name, hero:H.id, rank:rank[1], total, tpy:S.tpy||1,
+    P.hall.push({ name:H.name, hero:H.id, rank:rank[1], resStr:rIcon()+fmtKoku(S.koku), total, tpy:S.tpy||1,
       stats:{buyu:S.buyu, chiryaku:S.chiryaku, seiji:S.seiji, ninbo:S.ninbo},
       koku:S.koku, wins:S.wins, battles:S.battles, survived:!!survived, fell:fellLabel||null,
       acc: S.answerTotal? Math.round(S.correctTotal/S.answerTotal*100):0,
@@ -1731,12 +1731,12 @@ const UI = (function(){
     if (name==='home') renderHome();
   }
 
-  /* ---- ホーム画面（G1第2弾・育てた武将の展示／小判／お知らせ） ---- */
+  /* ---- ホーム画面（G1第2弾・育てた偉人の展示／メダル／お知らせ） ---- */
   function goHome(){ show('home'); }
   function renderHome(){
     $('btn-resume2').style.display = Game.hasRun()? 'block':'none';
     $('h-coins').textContent = Game.P.coins||0;
-    // 展示する武将＝直近の殿堂入り（無ければプレースホルダ）
+    // 展示する偉人＝直近の殿堂入り（無ければプレースホルダ）
     const hall = Game.P.hall;
     const sc = $('h-showcase');
     if (hall.length){
@@ -1751,14 +1751,14 @@ const UI = (function(){
     } else {
       sc.innerHTML = `
         <span class="scCrest">🏯</span>
-        <div class="scName"><b class="serif">まだ武将がいません</b><small>育成を完了すると、ここに自慢の武将が飾られる！</small></div>`;
+        <div class="scName"><b class="serif">まだ偉人がいません</b><small>育成を完了すると、ここに自慢の偉人が飾られる！</small></div>`;
     }
     // お知らせ枠（他ゲーム連携の常設枠・今は告知文）
     $('h-notice').innerHTML = `📣 <b>お知らせ</b>　徳川家康パックを公開しました（人質→江戸幕府・全44ターン）。`
-      + `育てた武将は将来「戦争モード」で対戦できる予定です。`;
+      + `育てた偉人は将来「対戦モード」で競える予定です。`;
   }
   function openCoinInfo(){
-    $('l-title').textContent = '🪙 小判（こばん）';
+    $('l-title').textContent = '🪙 メダル';
     $('l-body').innerHTML = `<div class="bookItem">育成を完了するともらえる、この道場の通貨だ。いま <b>${Game.P.coins||0} 枚</b>。<br><br>
       <span class="note">つかいみち（準備中）: 偉人や側近を仲間にする「登用（ガチャ）」・育成の上限を広げる「限界突破」など、エンドコンテンツで使えるようにする予定だ。いまは貯めておこう！</span></div>`;
     $('ovl-list').classList.add('on');
@@ -2114,9 +2114,9 @@ const UI = (function(){
       `<button class="cmd train big${dimIf(injured)}" onclick="UI.openTrain()">${mateIcons?`<div class="mates">${mateIcons}</div>`:''}<span class="ci cimg"><img src="assets/cmd_train.png" alt=""></span><span class="cl">鍛錬</span></button>
       <button class="cmd rest${dimIf(injured)}" onclick="Game.doCommand('rest')"><span class="ci cimg"><img src="assets/cmd_rest.png" alt=""></span><span class="cl">休息</span></button>
       <button class="cmd skill${(S.skillPt||0)>0?' ready':''}" onclick="UI.openSkill()"><span class="ci cimg"><img src="assets/cmd_skill.png" alt=""></span><span class="cl">スキル</span></button>
-      <button class="cmd care${injured?' urgent':' dim'}" onclick="Game.doCommand('care')"><span class="ci cimg"><img src="assets/cmd_care.png" alt=""></span><span class="cl">薬師</span></button>
+      <button class="cmd care${injured?' urgent':' dim'}" onclick="Game.doCommand('care')"><span class="ci cimg"><img src="assets/cmd_care.png" alt=""></span><span class="cl">手当て</span></button>
       <button class="cmd trip${dimIf(injured)}" onclick="Game.doCommand('trip')"><span class="ci cimg"><img src="assets/cmd_trip.png" alt=""></span><span class="cl">視察</span></button>
-      <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><span class="ci cimg"><img src="assets/cmd_skirmish.png" alt=""></span><span class="cl">小競り合い</span></button>`;
+      <button class="cmd skirmish${dimIf(injured)}" onclick="Game.doCommand('skirmish')"><span class="ci cimg"><img src="assets/cmd_skirmish.png" alt=""></span><span class="cl">腕だめし</span></button>`;
     const bn = Game.P.book.length;
     const bnEl = $('g-bookn'); bnEl.textContent = bn; bnEl.style.display = bn? 'flex':'none';
     // 次イベント予告カード（改善#5・2026-06-13）。合戦は赤く緊張感・残り少ないと脈動
@@ -2187,7 +2187,7 @@ const UI = (function(){
     $('l-title').textContent = '✨ スキル';
     let html = `<div class="bookItem" style="text-align:center;">いま持っているスキルP
       <b style="font-size:28px; color:#7a4f9d;">✨${S? (S.skillPt||0) : 0}</b><br>
-      <span class="note">鍛錬の正解+2 ／ 合戦勝利+8 ／ 小競り合い+3 ／ 側近の絆MAX+5。スキルはこの育成の間だけ有効</span></div>`;
+      <span class="note">鍛錬の正解+2 ／ 合戦勝利+8 ／ 腕だめし+3 ／ 側近の絆MAX+5。スキルはこの育成の間だけ有効</span></div>`;
     if (S){
       // 所持中のスキル（偉人固有・側近スキル）
       const owned = Object.keys(S.skills||{}).filter(id=>!D.SKILLS.find(x=>x.id===id))
@@ -2384,7 +2384,7 @@ const UI = (function(){
     Game.pickEpilogue(k);
   }
 
-  /* （小競り合いのUIは合戦絵巻に統合 — §合戦絵巻を参照） */
+  /* （腕だめしのUIは合戦絵巻に統合 — §合戦絵巻を参照） */
 
   /* ---- §合戦シーン（②⑤⑦の新フォーマット・proto battle_proto2.html より移植・2026-06-15） ----
      押し合いバー方式→画面まるごと「場面」方式へ刷新。エンジン(§7)は不変。
@@ -2527,7 +2527,7 @@ const UI = (function(){
     ov.classList.add('charge'); beep('yuko'); await wait(reduceMotion?120:650);
     ov.classList.add('black'); await wait(reduceMotion?160:1050);
     const card=document.createElement('div'); card.className='fc-card '+(win?'ally':'foe');
-    if(win){ card.style.setProperty('--g',allyColor); card.innerHTML=`<span class="fc-ic">⚔️</span><span class="fc-nm">${meName()}</span><span class="fc-ln">かかれぇッ——！</span>`; }
+    if(win){ card.style.setProperty('--g',allyColor); card.innerHTML=`<span class="fc-ic">⚔️</span><span class="fc-nm">${meName()}</span><span class="fc-ln">いまだ——！</span>`; }
     else   { card.innerHTML=`<span class="fc-ic">${foeIcon()}</span><span class="fc-nm">${foeName()}</span><span class="fc-ln">「${enemyLine}」</span>`; }
     ov.appendChild(card); beep(win?'kaishin':'shikujiri'); if(win) spawnSparks('kaishin');
     requestAnimationFrame(()=>card.classList.add('on'));
@@ -2610,7 +2610,7 @@ const UI = (function(){
       }
       $('b-stage').innerHTML = `
         <div class="terr-field"></div>
-        <div class="terr-tag" id="terr-tag">${foeName()}との天下分け目</div>
+        <div class="terr-tag" id="terr-tag">${foeName()}との大一番</div>
         <div class="terr-grid">${cells.join('')}</div>
         <div class="terr-flood" id="terr-flood"></div>`;
       mst.spreadMe=this.buildSpread(this.HQ_ME,0,2);   // 左本部→中央へ(col0-2)
@@ -2641,7 +2641,7 @@ const UI = (function(){
     async climax(win){
       const allyT=trustColor(prog(),'final');
       const revived=win && !battleTiers.some(t=>t==='kaishin'||t==='yuko');
-      await finalClash(win, allyT.c, '本陣の囲いは固い。小僧の旗では届かぬわ', revived);
+      await finalClash(win, allyT.c, '守りは固いぞ。その程度では崩せぬ', revived);
       const cls=win?'me':'foe';
       const owned=i=>document.querySelector(`.terr-cell[data-i="${i}"]`).classList.contains(cls);
       const all=Array.from({length:35},(_,i)=>i).filter(i=>i!==this.HQ_ME && i!==this.HQ_FOE && i!==this.CASTLE && !owned(i));
@@ -2649,10 +2649,10 @@ const UI = (function(){
       const path=[...all, this.CASTLE];
       const seq=(reduceMotion||fastFwd)?[path]:path.map(x=>[x]);
       for(const grp of seq){ for(const idx of grp){ const c=document.querySelector(`.terr-cell[data-i="${idx}"]`); if(!c)continue;
-          if(idx===this.CASTLE){ c.classList.add(cls); c.textContent = win?'🏯':'🏚️'; if(!win) c.classList.add('fall'); }
+          if(idx===this.CASTLE){ c.classList.add(cls); c.textContent = win?'🏛️':'🏚️'; if(!win) c.classList.add('fall'); }
           else { c.classList.remove('me','foe'); c.classList.add(cls,'cap'); } }
         beep(win?'yuko':'shikujiri'); await wait((reduceMotion||fastFwd)?150:80); }
-      $('terr-tag').textContent = win?'中央の城を攻め落とした——天下分け目を制す！':'本城を明け渡した…無念！';
+      $('terr-tag').textContent = win?'中央を制した——大一番を勝ち取った！':'拠点を明け渡した…無念！';
       $('terr-tag').classList.add('show');
       const flood=$('terr-flood'); flood.style.background = win ? trustFlood(allyT) : `radial-gradient(circle,${FOE_C},transparent 80%)`;
       if(win) spawnSparks('kaishin');
@@ -2763,14 +2763,14 @@ const UI = (function(){
     async climax(win){
       const allyT=trustColor(prog(),'final');
       const revived=win && !battleTiers.some(t=>t==='kaishin'||t==='yuko');
-      await finalClash(win, allyT.c, '数の壁は厚いぞ。押し負けて引け', revived);   // 暗転あり
+      await finalClash(win, allyT.c, 'こちらの守りは厚い。押し返してくれるわ', revived);   // 暗転あり
       const me=$('push-me'), foe=$('push-foe'), seam=$('push-seam'), flood=$('push-flood');
       if(win){ me.style.width='100%'; foe.style.width='0%'; seam.style.left='100%'; }
       else   { me.style.width='0%'; foe.style.width='100%'; seam.style.left='0%'; }
       if(!reduceMotion){ const st=$('b-stage'); st.classList.add('push-quake'); setTimeout(()=>st.classList.remove('push-quake'),600); }
       fxHit(win?'kaishin':'shikujiri'); beep(win?'kaishin':'shikujiri');
       await wait(reduceMotion?150:600);
-      $('push-tag').textContent = win?'敵を押し出した——勝ち鬨！':'押し出された…無念！';
+      $('push-tag').textContent = win?'相手を押し切った——勝負あり！':'押し出された…無念！';
       $('push-tag').classList.add('show');
       flood.style.background = win ? trustFlood(allyT) : `radial-gradient(circle,${FOE_C},transparent 80%)`;
       if(win) spawnSparks('kaishin'); flood.classList.add('on');
@@ -2840,12 +2840,12 @@ const UI = (function(){
     $('b-actions').innerHTML = '';
     const r = Game.battleResult();
     const B = Game.B;
-    if(r.skirmish){   // 小競り合いは大げさにしない（軽い決着）
+    if(r.skirmish){   // 腕だめしは大げさにしない（軽い決着）
       if(r.win){ spawnSparks('kaishin'); beep('kaishin'); } else { fxHit('shikujiri'); beep('shikujiri'); }
-      log(r.win ? '🚩 敵を蹴散らした！ 見事な小競り合い！' : '🌀 痛み分け…兵を退こう。');
+      log(r.win ? '🚩 相手を退けた！ 見事な腕だめし！' : '🌀 引き分け…今日はここまで。');
       await wait(reduceMotion?160:750);
       $('ovl-battle').classList.remove('on');
-      showEvent({ year:Game.S.year, title: r.win ? '🚩 小競り合いに勝利！' : '🌀 退却…', text:r.text },
+      showEvent({ year:Game.S.year, title: r.win ? '🚩 腕だめしに勝利！' : '🌀 退却…', text:r.text },
         ()=>{ renderGame(); setTimeout(()=>Game.nextTurn(), 250); });
       return;
     }
@@ -2866,9 +2866,9 @@ const UI = (function(){
     $('r-sub').textContent = `評価点 ${sum.total} ／ ${sum.rank[2]}`;
     $('r-stats').innerHTML = Game.STAT_KEYS.map(k=>statCell(k, sum.stats[k], sum.tpy)).join('');
     $('r-summary').innerHTML =
-      `${Game.rIcon()} ${Game.rName()} <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 合戦 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
-      (sum.coins? `🪙 小判を <b>${sum.coins}枚</b> 獲得！（ホームでたまっていく）<br>` : '') +
-      (sum.fell? `💀 <b>${sum.fell}に敗れ、育成終了……</b><br>📖 軍学帳でまちがいを復習して、もう一度天下を目指そう！`
+      `${Game.rIcon()} ${Game.rName()} <b>${Game.fmtKoku(sum.koku)}</b> ／ ⚔️ 勝負 <b>${sum.wins}勝${sum.battles-sum.wins}敗</b> ／ 📝 クイズ正答率 <b>${sum.acc}%</b><br>` +
+      (sum.coins? `🪙 メダルを <b>${sum.coins}枚</b> 獲得！（ホームでたまっていく）<br>` : '') +
+      (sum.fell? `💀 <b>${sum.fell}に敗れ、育成終了……</b><br>📖 まなび帳でまちがいを復習して、もう一度てっぺんを目指そう！`
        : sum.survived? Game.H.endTexts.survived
        : Game.H.endTexts.completed);
     $('r-legacy').innerHTML = `📜 遺訓を獲得: <b>「${sum.legacy.name}」</b><br>次の育成で ${D.GENRES[sum.legacy.stat].icon}${genreLabel(sum.legacy.stat)}+${sum.legacy.val} できる！`;
@@ -2882,27 +2882,27 @@ const UI = (function(){
     }).filter(Boolean).join(' ／ ');
     $('r-report').innerHTML = `📚 <b>学びのきろく</b><br>解いた問題 <b>${sum.answered}問</b>・正答率 <b>${sum.acc}%</b><br>`
       + (gl? `ジャンル別: ${gl}<br>` : '')
-      + (sum.bookLeft? `📖 軍学帳に<b>${sum.bookLeft}問</b>残っています — 次の周で復習しよう！` : '📖 軍学帳はぜんぶ卒業！ おみごと！');
+      + (sum.bookLeft? `📖 まなび帳に<b>${sum.bookLeft}問</b>残っています — 次の周で復習しよう！` : '📖 まなび帳はぜんぶ卒業！ おみごと！');
   }
 
-  /* ---- §10 殿堂・軍学帳 ---- */
+  /* ---- §10 殿堂・まなび帳 ---- */
   function openHall(){
-    $('l-title').textContent = '🏯 殿堂（育てた武将）';
+    $('l-title').textContent = '🏛️ 殿堂（育てた偉人）';
     const body = $('l-body'); body.innerHTML='';
-    if (!Game.P.hall.length){ body.innerHTML = '<div class="note">まだ誰も育成していません。育成を完了すると、武将がここに記録されます。（将来「戦争モード」で5人編成して戦えるようになる予定！）</div>'; }
+    if (!Game.P.hall.length){ body.innerHTML = '<div class="note">まだ誰も育成していません。育成を完了すると、偉人がここに記録されます。（将来「対戦モード」で5人編成して競えるようになる予定！）</div>'; }
     [...Game.P.hall].reverse().forEach(h=>{
       body.insertAdjacentHTML('beforeend',
         `<div class="hallCard"><div class="hi">${h.fell?'💀':h.survived?'🌟':'⚔️'}</div>
          <div class="hb"><b>${h.name}</b>（${h.date}）${h.fell?`<br><span style="color:var(--red);font-weight:700">${h.fell}で敗北</span>`:''}<br>
-         ⚔️${h.stats.buyu} 🧠${h.stats.chiryaku} 🏛️${h.stats.seiji} 🤝${h.stats.ninbo} ／ 🌾${Game.fmtKoku(h.koku)} ／ ${h.wins}勝 ／ 正答率${h.acc}%</div>
+         ⚔️${h.stats.buyu} 🧠${h.stats.chiryaku} 🏛️${h.stats.seiji} 🤝${h.stats.ninbo} ／ ${h.resStr || ('🌾'+Game.fmtKoku(h.koku))} ／ ${h.wins}勝 ／ 正答率${h.acc}%</div>
          <div class="hr serif">${h.rank}</div></div>`);
     });
     $('ovl-list').classList.add('on');
   }
   function openBook(){
-    $('l-title').textContent = `📖 軍学帳（まちがい帳）${Game.P.book.length}ページ`;
+    $('l-title').textContent = `📖 まなび帳（まちがい帳）${Game.P.book.length}ページ`;
     const body = $('l-body'); body.innerHTML='';
-    if (!Game.P.book.length){ body.innerHTML='<div class="bookItem" style="text-align:center;font-size:14px;line-height:1.95;">📖<br><b>軍学帳は「まちがい帳」だよ</b><br>鍛錬や合戦の問題を<b>まちがえると</b>、その問題が自動でここに記録される。<br><br>たまった問題は <b>「💤休息」</b> のときに復習でき、正解すれば<b>卒業＋ボーナス</b>！<br><br><span class="note">いまは まだ1問もないよ。鍛錬でどんどん挑戦してみよう。</span></div>'; }
+    if (!Game.P.book.length){ body.innerHTML='<div class="bookItem" style="text-align:center;font-size:14px;line-height:1.95;">📖<br><b>まなび帳は「まちがい帳」だよ</b><br>鍛錬や合戦の問題を<b>まちがえると</b>、その問題が自動でここに記録される。<br><br>たまった問題は <b>「💤休息」</b> のときに復習でき、正解すれば<b>卒業＋ボーナス</b>！<br><br><span class="note">いまは まだ1問もないよ。鍛錬でどんどん挑戦してみよう。</span></div>'; }
     Game.P.book.forEach(b=>{
       const g = D.GENRES[b.genre];
       body.insertAdjacentHTML('beforeend',
@@ -2911,17 +2911,11 @@ const UI = (function(){
     $('ovl-list').classList.add('on');
   }
   function closeList(){ $('ovl-list').classList.remove('on'); }
-  // 武将編成（βは予定表示のみ。持ち味バフは未実装＝今後の戦争モード/育成解放用）
+  // 偉人編成（βは予定表示のみ＝予告だけ。旧WARLORDS戦国カードは脱戦国で撤去＝今後の対戦モード用）
   function openRoster(){
-    $('l-title').textContent = '🎴 武将編成';
+    $('l-title').textContent = '🎴 偉人編成';
     const body = $('l-body');
-    body.innerHTML = `<div class="note">育てた武将で戦う「戦争モード」を準備中！ いまは<b>織田信長と豊臣秀吉</b>を育成できる。残りも順次解放予定！</div>`;
-    D.WARLORDS.forEach(w=>{
-      body.insertAdjacentHTML('beforeend',
-        `<div class="hallCard" style="${w.playable?'':'opacity:.62'}"><div class="hi">${w.icon}</div>
-         <div class="hb"><b>${w.name}</b>「${w.title}」<br>持ち味: ${w.buff}</div>
-         <div class="hr serif" style="font-size:12px;">${w.playable?'育成できる':'解放予定'}</div></div>`);
-    });
+    body.innerHTML = `<div class="note">育てた偉人で競う「対戦モード」を準備中！ いろいろな時代の偉人を育てて、自分だけのコレクションを増やそう。<br><br>育成する偉人は、タイトルの「育成開始（偉人を選ぶ）」から、日本の歴史・世界の歴史の中から選べるよ。</div>`;
     $('ovl-list').classList.add('on');
   }
   function openHowto(){
@@ -2931,12 +2925,12 @@ const UI = (function(){
       🎯 <b>毎ターン、コマンドを1つ選ぶ</b>。⚔️鍛錬を選ぶと歴史クイズが出る。<b>時間制限はない</b>、じっくり考えよう。<br><br>
       ⭕ 正解するとステータスが大きく成長＋✨スキルPゲット。貯めたPは<b>スキル</b>（成長アップ・ケガ予防など）と交換できる！<br>
       ❌ 不正解でも「気合で押し切る」と同じだけ成長できる。ただし<b>失敗率</b>のぶんだけ大失敗のリスクが…！<br><br>
-      😊 <b>やる気</b>は成長量に直結する。🔥鍛錬を続けすぎると下がるぞ——🏯視察で気分転換、🌟大成功や🌈友情特訓で上がる！<br><br>
-      🤕 大失敗すると<b>ケガ</b>をする。ケガをしたら<b>🌿薬師（くすし）</b>で治療！ たまに「塞翁が馬」——ケガが思わぬ福を呼ぶことも…。<br><br>
+      😊 <b>やる気</b>は成長量に直結する。🔥鍛錬を続けすぎると下がるぞ——👀視察で気分転換、🌟大成功や🌈友情特訓で上がる！<br><br>
+      🤕 大失敗すると<b>ケガ</b>をする。ケガをしたら<b>🌿手当て</b>で治療！ たまに「塞翁が馬」——ケガが思わぬ福を呼ぶことも…。<br><br>
       ❤️ 鍛錬は体力を使う。<b>体力25未満まで無理をすると、押し切りの失敗率が大幅に上がる</b>ぞ。😴休息でしっかり回復しよう（まちがえた問題の復習チャンスもある）。<br><br>
       🤝 側近（そっきん）がいる鍛錬は伸びやすく・<b>絆</b>も深まる。側近にはそれぞれ<b>固有ボーナス</b>があり（◯アイコンをタップで確認）、絆MAXで<b>側近スキル</b>を授かる。絆80以上の側近が得意鍛錬で輝いていたら<b>🌈友情特訓</b>で超成長！ 偉人自身も<b>固有スキル</b>を最初から持っているぞ。<br><br>
-      🚩 <b>小競り合い</b>は腕試しのミニ合戦。勝てばその時代の資源と✨スキルPが稼げるぞ。<br><br>
-      🏯 その時代の<b>史実の山場（合戦や大事業）</b>が年表どおりに起こる。これは<b>「絵巻」</b>——進行役の実況で勝負が流れ、戦況が動いた瞬間にきみが<b>采配</b>を振る！ 選択肢には<b>堅実・博打・搦め手</b>の色がある。<b>状況の文章をよく読み、自分の強いステータスと相談して選べ</b>。クイズに正解すれば采配は実行され、結果は会心⚡〜しくじり💢の4段階。史実と同じ采配を見抜けたら…？ <b>負けたらそこで育成終了</b>——まずは完走を目指せ！<br><br>
+      🚩 <b>腕だめし</b>は、気軽に挑めるミニ勝負。勝てばその時代の資源と✨スキルPが稼げるぞ。<br><br>
+      📜 その時代の<b>史実の山場（合戦や大事業）</b>が年表どおりに起こる。これは<b>「名場面」</b>——進行役の実況で勝負が流れ、戦況が動いた瞬間にきみが<b>采配</b>を振る！ 選択肢には<b>堅実・博打・搦め手</b>の色がある。<b>状況の文章をよく読み、自分の強いステータスと相談して選べ</b>。クイズに正解すれば采配は実行され、結果は会心⚡〜しくじり💢の4段階。史実と同じ采配を見抜けたら…？ <b>負けたらそこで育成終了</b>——まずは完走を目指せ！<br><br>
       🔥 そして最終年——<b>ステータスを高く育てておくと、「もしも」の歴史（IFエンド）</b>が見られるかもしれない…。<br><br>
       📜 最後まで完走すると<b>「追憶の章」</b>へ！ 人生をふり返る5問に正解するほど総括がポジティブになり、<b>全ステータスが大幅アップ</b>してランクに上乗せされるぞ！選んだ偉人の生涯の、その先で…。<br><br>
       🌗 一度でも完走すると、育成開始時に<b>「じっくりの生涯」（1ターン=半年・ターン数2倍）</b>が選べるようになる。たっぷり鍛えて、もっと高みを目指せ！</div>`;

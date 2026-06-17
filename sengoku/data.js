@@ -23,7 +23,7 @@ const SENGOKU_DATA = (function(){
   // sub: 鍛錬の副次上昇先（主100%+副30%・特化育成の詰み対策）。seijiの副次は石高（経済）
   // label=文中の正式名 / short=ステ枠の1文字表示（2026-06-13 ユーザー要望でステ枠は1文字に）
   const GENRES = {
-    buyu:     { label:'武力', short:'武', icon:'⚔️', train:'武力の鍛錬', quizLabel:'合戦・戦乱', sub:'ninbo' },
+    buyu:     { label:'武力', short:'武', icon:'⚔️', train:'武力の鍛錬', quizLabel:'戦い・武力', sub:'ninbo' },
     chiryaku: { label:'知力', short:'知', icon:'🧠', train:'知力の鍛錬', quizLabel:'流れ・因果', sub:'seiji' },
     seiji:    { label:'政治力', short:'政', icon:'🏛️', train:'政務',       quizLabel:'政策・制度', sub:'koku' },
     ninbo:    { label:'人望', short:'人', icon:'🤝', train:'交流',       quizLabel:'文化・人物', sub:'chiryaku' },
@@ -343,9 +343,9 @@ const SENGOKU_DATA = (function(){
   /* ===== §2.8 スキル（スキルPで習得・その育成1周の間だけ有効） ===== */
   const SKILLS = [
     { id:'manabi', icon:'📖', name:'学びの極意',   cost:20, desc:'鍛錬の成長量が1割増える' },
-    { id:'zeni',   icon:'🌾', name:'銭の才',       cost:20, desc:'視察・小競り合いで得る石高が5割増える' },
+    { id:'zeni',   icon:'🌾', name:'やりくり上手', cost:20, desc:'視察・腕だめしで得る資源が5割増える' },
     { id:'joubu',  icon:'🩹', name:'丈夫な体',     cost:25, desc:'鍛錬の大失敗でケガをしにくくなる（半分の確率で耐える）' },
-    { id:'kokozo', icon:'⚡', name:'ここぞの度胸', cost:30, desc:'合戦の「しくじり」を1回だけ「不発」に踏みとどまる（1周に1回）' },
+    { id:'kokozo', icon:'⚡', name:'ここぞの度胸', cost:30, desc:'大一番の「しくじり」を1回だけ「不発」に踏みとどまる（1周に1回）' },
   ];
 
   /* ===== §3 年表イベント =====
@@ -700,11 +700,11 @@ const SENGOKU_DATA = (function(){
      正解数（人生の輝き）で総括が変わり、ポジティブなほど全ステ大幅アップ → ランクに反映 */
   const EPILOGUE = {
     intro:{ title:'📜 追憶の章 — 人生をふり返る', art:'🕯️📜', artImg:'assets/bg_epilogue.jpg',
-      text:'すべての戦いが終わった。\n\n静かな夜、あなたは歩んできた長い道のりを、ゆっくりとふり返る——あの戦。あの出会い。あの決断。\n\nこれより記憶を一つずつ確かめる（全5問）。鮮やかに思い出せるほど、人生の輝きが増していく。' },
+      text:'長い歩みが、ひと区切りを迎えた。\n\n静かな夜、あなたは歩んできた長い道のりを、ゆっくりとふり返る——あの挑戦。あの出会い。あの決断。\n\nこれより記憶を一つずつ確かめる（全5問）。鮮やかに思い出せるほど、人生の輝きが増していく。' },
     memories:{
-      buyu:     { label:'⚔️ いくさ場の記憶', flavor:'土煙、馬のいななき、軍配の重み——あの戦場の朝がよみがえる。' },
-      chiryaku: { label:'🧠 策をめぐらせた夜の記憶', flavor:'地図を広げ、敵の動きを読み続けた、眠れない夜々を思い出す。' },
-      seiji:    { label:'🏛️ 国づくりの記憶', flavor:'検地の帳面、市場のにぎわい、銭の流れ——築き上げた仕組みを思い出す。' },
+      buyu:     { label:'🔥 立ち向かった日々の記憶', flavor:'胸の高鳴り、踏み出した一歩、貫いた信念——あの挑戦の日々がよみがえる。' },
+      chiryaku: { label:'🧠 策をめぐらせた夜の記憶', flavor:'地図を広げ、先の動きを読み続けた、眠れない夜々を思い出す。' },
+      seiji:    { label:'🏛️ 国づくりの記憶', flavor:'帳面の数字、市場のにぎわい、人と物の流れ——築き上げた仕組みを思い出す。' },
       ninbo:    { label:'🤝 人びとの記憶', flavor:'側近たちの顔、交わした言葉、結んだ縁——出会った人びとを思い出す。' },
     },
     okLines:[
