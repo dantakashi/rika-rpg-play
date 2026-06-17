@@ -667,8 +667,8 @@
             <div style="font-size:13px;font-weight:700;margin:8px 0 4px">分野（複数選択可・⚡バフ無しの練習）</div>
             <div class="seg" id="fieldSeg"></div>
           </div>
-          <div style="font-size:13px;font-weight:700;margin:8px 0 4px">選択肢の数</div>
-          <div class="seg" id="choiceSeg"></div>
+          <div style="font-size:13px;font-weight:700;margin:8px 0 4px;display:none">選択肢の数</div>
+          <div class="seg" id="choiceSeg" style="display:none"></div>
           <div class="muted" id="poolCount" style="margin-top:8px"></div>
           <button class="toggle" id="comboInfoToggle" style="margin-top:8px;width:100%;text-align:left" onclick="(function(b){var p=document.getElementById('comboInfoBody');var open=p.style.display==='none';p.style.display=open?'block':'none';b.textContent=(open?'💥 コンボのしくみ ▴':'💥 コンボのしくみ ▾');})(this)">💥 コンボのしくみ ▾</button>
           <div id="comboInfoBody" class="muted" style="display:none;margin-top:8px;line-height:1.5;font-size:12px;background:#fff7e8;border:2px solid var(--line);border-radius:10px;padding:8px">💥 <b>コンボ数のしくみ</b>：1問正解でふえるコンボは<b>選択肢の数</b>と<b>ジャンル</b>で変わります。<br>・単語／熟語：2択＝+1／4択＝+2<br>・文法：2択＝+2／4択＝+4（むずかしいぶん多くもらえる）<br>さらに<b>上の級ほど倍率アップ</b>（4級×1.0 → 準1級×2.2）。むずかしい設定ほど城を速く攻められます。<br>🎰 <b>ガチャ用の💎グラマージェムも同じしくみで貯まります</b>（正解で満額・まちがえても約1/3）。たくさん解くほどガチャが引けます（1回300💎）。<br>⭐ <b>推奨難易度（実力測定の推奨級）で遊ぶと💎が2倍！</b></div>
@@ -729,6 +729,11 @@
           <div style="font-weight:800; margin-bottom:6px">🎚️ あそびやすさ</div>
           <div class="seg"><button class="toggle" id="tgAuto">自動召喚</button></div>
           <div class="muted" style="margin-top:6px">苦手でも安心。自動召喚をオンにすると、操作を問題だけに集中できます。</div>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:800; margin-bottom:6px">🔢 エネルギーの数字</div>
+          <div class="seg"><button class="toggle" id="tgNumbers">エネルギーの倍率（⚡×）を数字でだす</button></div>
+          <div class="muted" style="margin-top:6px">エネルギーの倍率（⚡×N）を数字で表示します。問題（英語）に集中したいときはオフにすると、いきおいは「光」だけで体感できます。</div>
         </div>
         <div class="card" style="margin-bottom:12px">
           <div style="font-weight:800; margin-bottom:6px">🔊 単語の音声</div>
@@ -8938,6 +8943,18 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
     var up=stretchLevelKey(); if(!up) return [];
     return DB.filter(function(q){ return q.genre===selGenre && q.level===up && selTiers.has(q.tier); });
   }
+  // ⤵やさしめ(2026-06-17・D5): 選択級の1つ下の級プール。やさしさ優勢ミックス(70/20/10)で「毎回ギリギリ問題」のストレスを下げる(85%ルール=最適成功率~85%)。下の級にも曖昧な語彙の学び直し価値あり(オーナー指摘)。
+  function easyLevelKey(){
+    if(selGenre==='grammar' && grammarMode==='field') return null;
+    var idxs=[]; selLevels.forEach(function(l){ var i=LV_ORDER.indexOf(l); if(i>=0) idxs.push(i); });
+    if(!idxs.length) return null;
+    var dn=LV_ORDER[Math.min.apply(null,idxs)-1];
+    return dn||null; // 最下位級(5級)なら やさしめ無し
+  }
+  function easyPool(){
+    var dn=easyLevelKey(); if(!dn) return [];
+    return DB.filter(function(q){ return q.genre===selGenre && q.level===dn && selTiers.has(q.tier); });
+  }
 
   const rnd = a=>a[Math.floor(Math.random()*a.length)];
 
@@ -9048,8 +9065,12 @@ const GG_E5_DOWN_I = ["come in","get up","go to bed","look at","listen to","sit 
       const __i=reviewQ.findIndex(r=>r.genre===selGenre);
       if(__i>=0){ return Object.assign({}, reviewQ.splice(__i,1)[0], {review:true, locked:false}); }
     }
-    // ⤴背伸び: 約25%で「1つ上の級(同ジャンル)」を差し込む(推奨級へ誘導・2026-06-16)。誤答罰なし＋復習行きなので安全な“ちょい上”の出会い。
-    if(Math.random()<0.25){ var __sp=stretchPool(); if(__sp.length){ var __b=buildOne(rnd(__sp), choiceCount); if(__b){ __b.stretch=true; return __b; } } }
+    // やさしさ優勢ミックス(2026-06-17・D5): 選択級を基準に 背伸び10%/やさしめ70%/丁度20%。「毎回ギリギリ問題」のストレス解消(85%ルール=最適成功率~85%)。
+    // recoBonusは選択級(sel.levels)で判定＝draw時の級上書きは安全(背伸びが既に実証)。背伸びは誤答罰なし＋復習行き＝安全な“ちょい上”。易/背伸びプールが空(端の級)のときは下の at-level 経路へ自然に落ちる。
+    { var __cr=Math.random();
+      if(__cr<0.10){ var __sp=stretchPool(); if(__sp.length){ var __b=buildOne(rnd(__sp), choiceCount); if(__b){ __b.stretch=true; return __b; } } } // 10% 背伸び(1つ上)
+      else if(__cr<0.80){ var __ep=easyPool(); if(__ep.length){ var __be=buildOne(rnd(__ep), choiceCount); if(__be) return __be; } }       // 70% やさしめ(1つ下)
+    }
     // ステージプールがあれば その n 問を巡回（尽きたら再シャッフルで反復＝定着）
     if(stagePool && stagePool.length){
       if(stageIdx>=stagePool.length){ shuf(stagePool); stageIdx=0; }
@@ -9427,8 +9448,9 @@ const Game = (()=>{
   let cgRefunded = false;  // コンボ保護の購入ゴールドを返金済みか（二重返金防止）
   let ownedParts = {};     // 🔩コンボパーツ 入手済み {partId:個数}
   let equippedParts = {};  // 🔩コンボパーツ 装着 {rosterKey:partId}
-  let choiceMode = 4;      // 2択/4択を固定(混ぜない)
+  let choiceMode = 4;      // 全問4択固定(2択廃止2026-06-17)。生徒の出題は4ハードコード・debug/sim治具だけが書き換える
   let homeView = 'menu';   // ホームの表示(menu/play/grow/settings/quiz)
+  let showNumbers = true;  // エネルギー倍率(⚡×N)の数字表示。既定ON(2026-06-17オーナー変更=遊んで倍率を見て「連打で下がる」のに自分で気づかせる狙い)。問題に集中したい子はsettingsでOFF可。
   let playTab = 0;         // あそぶの章タブ(1/2/3/'special')
   let towerBest = 0;       // 修練の塔の最高階
   let towerMiles = {};     // 🗼受取済みの節目報酬 {floor:1}（セーブ・Phase2）
@@ -9458,6 +9480,7 @@ const Game = (()=>{
     try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s){
       gold=s.gold||0; gems=s.gems||0; gemsGranted=!!s.gemsGranted; homeChars=Array.isArray(s.homeChars)?s.homeChars:[]; cleared=s.cleared||{}; heroCleared=(s.heroCleared&&typeof s.heroCleared==='object')?s.heroCleared:{}; ironCleared=(s.ironCleared&&typeof s.ironCleared==='object')?s.ironCleared:{}; autoSummon=!!s.autoSummon; seenAutoTip=!!s.seenAutoTip; /* slowMode廃止: 常にfalse */
       soundOn = s.soundOn!==false; Sound.setOn(soundOn);
+      showNumbers = s.showNumbers!==false; // 既定ON(未定義/旧セーブ→true・明示OFFだけfalse)
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
@@ -9479,7 +9502,7 @@ const Game = (()=>{
       placementReset1=!!s.placementReset1; placementResetUsed=!!s.placementResetUsed;
       // 到達ボーナス(初回一律3000💎): 既に測定したことがある子(保存に推奨級/bestScore)は受取済み扱い＝再配布しない(オーナー指示2026-06-16)
       assessRewardClaimed=!!s.assessRewardClaimed || !!(s.placement && (s.placement.doneAt || (s.placement.bestScore||0)>0));
-      if(s.sel) QuizEngine.setSel(s.sel); if(s.choiceMode) choiceMode=s.choiceMode;
+      if(s.sel) QuizEngine.setSel(s.sel); /* choiceModeは4択統一(2026-06-17)＝旧2択の保存値は無視 */
     }}catch(e){}
     if(!gemsGranted){ gems += 300; gemsGranted = true; } // 初回のみ1回ぶん(300💎)を配る（新規・既存セーブ救済）
     if(!placementReset1){ placement={word:null,grammar:null,bestScore:0,doneAt:''}; placementReset1=true; } // 2026-06-11: 推奨級ロック導入＝全員再測定（過去の試験結果を消去。💎は再獲得＝重複配布を許容）
@@ -9489,7 +9512,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin})); }catch(e){}
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -9522,6 +9545,33 @@ const Game = (()=>{
   let rtStats = { total:0, b:{}, fast:0, fastCorrect:0 }; // b=反応時間バケツ(秒) / fast=<800ms(読まず即タップ疑い)の数 / fastCorrect=そのうち正解(まぐれ)
   function rtBucket(ms){ var s=ms/1000; return s<0.5?'<0.5':(s<1?'0.5-1':(s<2?'1-2':(s<4?'2-4':'4+'))); }
   function recordRt(ms, right){ if(!(ms>=0)||ms>120000) return; rtStats.total++; var k=rtBucket(ms); rtStats.b[k]=(rtStats.b[k]||0)+1; if(ms<800){ rtStats.fast++; if(right) rtStats.fastCorrect++; } }
+  // ===== 適当連打対策 Phase1(2026-06-17・研究根拠付き確定プラン): 読了ボーナス readGain =====
+  // 「読んだ正解だけが一番おいしい」。罰でなく“上澄み(変動トッピング)の機会損失”として実装。
+  // ★引き金は『誤答』でなく『未読(reactMs<readGate) かつ 持続的な低正答率(まぐれ水準)』のAND＝苦手な子の“読んだ誤答”は無罰。
+  // ★床報酬(EN_ANSWER_INSTANT/EN_WRONG)は別式で常に満額＝下限は1ミリも削らない。プラトー＝readGate以上は何秒かけても満額(遅い子を保護)。
+  // ★正直な解答1回(reactMs>=readGate)で連打フラグ即リセット。学習の塔/PvP/開始直後(初学者足場)は対象外(=1.0)。
+  // 数値根拠: 4択の「読+選+決+タップ」物理下限~500ms・連打天井~300ms(その下)。readGate=BASE×qReadMul(内容スケール: 単語4択~750ms / 文法4択~1275ms)。BASEはsimで校正(実生徒RTは集めない方針)。
+  const READ_GATE_BASE = 500;   // ms。読んだ判定ラインの基準(×qReadMulで問題の長さに自動スケール)
+  const READGAIN_FLOOR = 0.15;  // 連打確定時でも正解の“変動トッピング”はこの割合は残す(完全0にしない=詰み防止)。即時床は別式で常に満額
+  const MASH_ACCEL_FLOOR = 0.2; // ★連打確定中は passive加速(コンボ×鮮度→最大4倍)をこの割合に絞る＝連打の“主エネ源”=自然回復のスノーボールを断つ＋隕石も止める。読んだ1回でB.masher解除→元に戻る。これが無いとreadGain(解答ボーナス)だけ絞っても連打で4倍に到達できてしまう(2026-06-17オーナー実機指摘)
+  const READ_EMA_A = 0.6;       // 連打検知EMAの平滑係数(小=直近重視)。窓方式の再検知遅れ(連打→読む→連打で2回目が捕まらない)を解消＝~3問で再確定/読んだらすぐ戻る
+  const ANTIMASH_MIN_ANS = 3;   // 開始直後は判定しない(初学者の足場・正解spotと同期)
+  function readGateMs(q){ return READ_GATE_BASE * qReadMul(q); }
+  // 解答ごとに呼ぶ(正誤どちらも)。移動ウィンドウを更新し連打フラグ(B.masher)をヒステリシス付きで上下、readGain(0..1)を返す。
+  function readGainFor(ms, q, right){
+    if(!B) return 1;
+    var gate=readGateMs(q), unread=(ms<gate);
+    // 直近重視の移動平均(EMA)で「読んでいるか(readEMA)」「正答率(accEMA)」を追う＝連打→読む→連打の2回目もすぐ再検知・読んだらすぐ戻る(旧8問窓は再検知が遅れた)
+    var aa=READ_EMA_A;
+    B.readEMA = (B.readEMA==null) ? (unread?0:1) : (B.readEMA*aa + (unread?0:1)*(1-aa));
+    B.accEMA  = (B.accEMA==null)  ? (right?1:0)  : (B.accEMA*aa  + (right?1:0)*(1-aa));
+    if(B.pvp || (B.stage&&B.stage.learn) || (B.answered||0)<ANTIMASH_MIN_ANS) return 1; // 対象外=満額
+    var chance=(q&&q.choiceCount)?(1/q.choiceCount):0.25;           // 4択=0.25。まぐれ水準+余裕(0.12)
+    if(!unread){ B.masher=false; }                                  // 読んだ解答1回で即解除(委縮させない・North-Star)
+    else if(B.readEMA<0.35 && B.accEMA<=chance+0.12){ B.masher=true; } // 未読が続き かつ 正答率がまぐれ＝適当確定(EMAなので連打を再開すれば~3問で再確定)
+    if(!B.masher) return 1;                                         // 未確定=満額(速い“正解者”はaccEMA高で決して掠めない)
+    return READGAIN_FLOOR;                                          // 連打確定×未読=床。読んだ解答で即解除&満額(プラトー)
+  }
   // セーブ肥大対策：上限超過時は due が最も遠い(=緊急でない)項目から間引く
   function srsPrune(){ var ks=Object.keys(mistakes); if(ks.length<=SRS_SOFT_CAP) return; ks.sort(function(a,b){ return (mistakes[b].due||0)-(mistakes[a].due||0); }); var drop=ks.length-SRS_SOFT_CAP; for(var i=0;i<drop;i++) delete mistakes[ks[i]]; }
   // 定着メーター：box を 0..SRS_MAX_BOX+1 段の進み具合として返す（図書館の可視化用）
@@ -10019,7 +10069,7 @@ const Game = (()=>{
   // 🔁「今日の復習」をはじめる：due な誤答だけを出題するドリルへ。ホーム/図書館のボタンから呼ぶ。
   function startReviewDrill(){ pracReview=true; pracStarted=true; pracQ=null; pracAnswered=false; lastWasReview=false; lastMistakeKey=null; homeView='practice'; renderHome(); show('home'); }
   function pracDraw(){
-    var cc=choiceMode; pracQ=null; pracAnswered=false; pracPick=-1; pracShownAt=performance.now(); QuizEngine.clearStagePool();
+    var cc=4; pracQ=null; pracAnswered=false; pracPick=-1; pracShownAt=performance.now(); QuizEngine.clearStagePool(); // 4択統一(2択廃止2026-06-17)
     if(pracReview){ // due な誤答だけを全ジャンルから（尽きたら pracQ=null → renderPractice で「復習おわり」表示）
       var rk=pickDueMistake(null); if(rk){ var rq=QuizEngine.buildFrom(rk,cc); if(rq){ rq.review=true; pracQ=rq; lastMistakeKey=rk; } }
       lastWasReview=true; return;
@@ -10047,7 +10097,7 @@ const Game = (()=>{
       var lvLabel=(sel.levels||[]).map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join('・')||'—';
       var g=document.createElement('div');
       g.innerHTML='<div style="font-weight:800;font-size:16px;margin-bottom:6px">✏️ れんしゅうの範囲をえらぼう</div>'
-        +'<div class="muted" style="font-size:13px;line-height:1.6;margin-bottom:10px">いまの範囲：<b>'+genLabel+'</b>｜<b>'+lvLabel+'</b>｜'+choiceMode+'択　（'+QuizEngine.poolCount()+'問）</div>';
+        +'<div class="muted" style="font-size:13px;line-height:1.6;margin-bottom:10px">いまの範囲：<b>'+genLabel+'</b>｜<b>'+lvLabel+'</b>　（'+QuizEngine.poolCount()+'問）</div>';
       body.appendChild(g);
       var prow=document.createElement('div'); prow.style.cssText='display:flex;gap:6px;margin-bottom:10px';
       var LVO=QuizEngine.LV_ORDER; var gk=(sel.genre==='grammar')?'grammar':'word'; var rk=placement[gk]||'e4'; var ri=Math.max(0,LVO.indexOf(rk));
@@ -10536,7 +10586,7 @@ const Game = (()=>{
     __seg('levelSeg', QuizEngine.EIKEN,  function(k){return QuizEngine.has('level',k);}, function(k){QuizEngine.toggleLevel(k);});
     __seg('tierSeg',  QuizEngine.TIERS,  function(k){return QuizEngine.has('tier',k);},  function(k){QuizEngine.toggleTier(k);});
     __seg('fieldSeg', QuizEngine.FIELDS, function(k){return QuizEngine.has('field',k);}, function(k){QuizEngine.toggleField(k);});
-    __seg('choiceSeg', [{key:2,label:'2択'},{key:4,label:'4択'}], function(k){return k===choiceMode;}, function(k){choiceMode=k;});
+    /* 選択肢数セグメントは廃止（2択廃止2026-06-17・全問4択）。#choiceSegブロックはHTML側でdisplay:none */
     // かんたんプリセット（出題範囲が分かりづらい対策・要望#4）：おすすめ=検定の推奨級／やさしめ=1つ下／むずかしめ=1つ上
     var __prow=$('presetRow');
     if(__prow){ __prow.innerHTML=''; var __LVO=QuizEngine.LV_ORDER; var __gk=(QuizEngine.genre()==='grammar')?'grammar':'word'; var __rk=placement[__gk]||'e4'; var __ri=Math.max(0,__LVO.indexOf(__rk));
@@ -10552,6 +10602,8 @@ const Game = (()=>{
     const ta=$('tgAuto');
     ta.classList.toggle('on', autoSummon);
     ta.onclick=()=>{ autoSummon=!autoSummon; save(); renderHome(); };
+    const tn=$('tgNumbers');
+    if(tn){ tn.classList.toggle('on', showNumbers); tn.onclick=()=>{ showNumbers=!showNumbers; save(); renderHome(); }; } // 🔢数値表示トグル(既定OFF)。次の戦闘のsyncHUDから反映
     // 音声トグルは「せってい」と「出題設定」の2か所。両方を同じ状態に同期して配線する。
     function wireVoiceToggle(tvId, vwId){
       const tv=$(tvId), vw=$(vwId); if(!tv) return;
@@ -10572,7 +10624,7 @@ const Game = (()=>{
       var __rng;
       if(__sel.genre==='grammar' && __sel.grammarMode==='field'){ __rng='分野別'+(__sel.fields.length?('('+__sel.fields.length+')'):''); }
       else { __rng=__sel.levels.map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join(','); }
-      __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__rng+'｜'+choiceMode+'択　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）⚙ 出題範囲設定 ▸</span>'; }
+      __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__rng+'　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）⚙ 出題範囲設定 ▸</span>'; }
     var __ct=$('chapTabs');
     var __unlChap=Math.ceil(Math.min(75,unlocked)/5); // 解禁済みの最終章
     if(__ct){ __ct.innerHTML=''; __ct.className=''; __ct.style.cssText='display:flex;align-items:center;gap:8px;margin:10px 0 4px';
@@ -11082,8 +11134,8 @@ const Game = (()=>{
   /* ---- 問題 ---- */
   let curQ=null;
   function nextQuestion(){
-    // 2択/4択は設定で固定（混ぜない）
-    const cc = choiceMode;
+    // 4択に統一（2択廃止2026-06-17：まぐれ1/2→1/4で連打検知を成立／低ストレスはやさしさ多めの出題で担保）
+    const cc = 4;
     // デバッグ専用問題（生徒には出ない・治具検証用）：2択・左が正解固定
     if(window.__GGDEBUG && window.__ggTestQ){
       curQ = { qtext:'🐛 デバッグ：左を選べ', choices:['○ 正解（左）','× 不正解（右）'], answerIndex:0, choiceCount:2, review:false, speak:null, dir:null, locked:false };
@@ -11127,7 +11179,10 @@ const Game = (()=>{
     B.answered++;
     if(curQ.speak) Speech.speak(curQ.speak); // 正誤どちらでも正答の英語を再生（誤答でも正しい発音が流れる）
     const right = (i===curQ.answerIndex);
-    recordRt(performance.now()-(curQ.shownAt||performance.now()), right); // 📊Phase0計測のみ(挙動不変)
+    var __rt = performance.now()-(curQ.shownAt||performance.now()); // 反応時間(ms): 出題→解答
+    recordRt(__rt, right); // 📊Phase0計測
+    var __rg = readGainFor(__rt, curQ, right); // 📊Phase1: 読了ボーナス(0..1)。床は別途不変／PvP・塔・初学者足場は1.0
+    if(B){ B.lastReactMs=__rt; B.lastReadGain=__rg; }
     const buttons=[...$('choices').children];
     let gemPts = QuizEngine.gemGain(curQ, right); // 💎ガチャ通貨：正解=満額／不正解=約1/3
     if(B.recoBonus) gemPts *= 2; // 推奨難易度（推奨級チャレンジ中）は💎2倍
@@ -11143,7 +11198,7 @@ const Game = (()=>{
       else if(!B.pvp){ // ⚡フィーバー: 正解でコンボ加速を8秒リチャージ＋即時エネルギー
         B.fresh=Math.min(FRESH_MAX,(B.fresh||0)+FRESH_ADD_C); B.lastAnsT=B.t; // 鮮度チャージ(解き続けるほど加速)
         var __am=1+(B.maxMult-1)*Math.min(1,B.combo/B.softcap)*(B.fresh/100); // 実効倍率(コンボ×鮮度)
-        var __eg=(EN_ANSWER_INSTANT+EN_CORRECT*__am)*qEnergyMul(curQ); B.energyGen=(B.energyGen||0)+__eg; // 計測用:解答由来の総エネ収入(simのスループット計測)
+        var __eg=(EN_ANSWER_INSTANT+EN_CORRECT*__am*__rg)*qEnergyMul(curQ); B.energyGen=(B.energyGen||0)+__eg; // 読了ボーナス: 変動トッピングのみ×readGain(__rg)。床(EN_ANSWER_INSTANT)は不変=連打でも下限は必ず入る。計測=解答由来エネ総量(sim)
         B.energy=Math.min(B.energyMax, B.energy+__eg); // 解答が主燃料＝解き続けるほど湧く。難問(文法/4択/上級)ほど多く・単語2択は控えめ(2026-06-16)
         // 🛡シールド兵: 正解すると場の全シールドが砕ける（新ギミック・解くことが戦術になる）
         var __sbn=0; B.enemies.forEach(function(e){ if(e.shield>0){ e.shield=0; var b=e.el.querySelector('.shieldbadge'); if(b)b.remove(); flash(e.el); __sbn++; } });
@@ -11195,8 +11250,12 @@ const Game = (()=>{
     // ===== エネルギー加速 = コンボ × 鮮度(直近に解いているか)。鮮度は答えた後の猶予を過ぎてからだけ減る(読む時間は罰しない) =====
     // 鮮度の猶予と減衰は「いま出ている問題の難しさ(読む時間)」で緩める＝長文を読んでいる間に鮮度が落ちない(2026-06-16)
     var __rm=(B.readMul||1), __grace=FRESH_GRACE*__rm;
-    if(!B.pvp && !B.stage.learn && (B.t-(B.lastAnsT==null?-99:B.lastAnsT)) > __grace){ B.fresh=Math.max(0,(B.fresh||0) - (FRESH_DECAY/__rm)*dt*(B.slow?0.6:1)); }
-    const __freshGate = B.pvpFixedCombo ? 1 : ((B.fresh||0)/100); // 貯めたコンボも鮮度が無ければ効かない＝放置封じ
+    // 猶予(grace)は問題の長さで延ばし「読む時間」を守るが、猶予を過ぎたら(=もう読んでいない=放置)減衰は難易度で緩めず一定速度で落とす。
+    // 旧: 減衰も /__rm で緩めていた→文法/4択で倍率が28秒も落ちず「4倍で放置OK」になっていた(2026-06-17オーナー指摘)。grace到達後は素直に落とす。
+    if(!B.pvp && !B.stage.learn && (B.t-(B.lastAnsT==null?-99:B.lastAnsT)) > __grace){ B.fresh=Math.max(0,(B.fresh||0) - FRESH_DECAY*dt*(B.slow?0.6:1)); }
+    // ★連打確定(B.masher)中は鮮度ゲートを絞り passive加速(最大4倍)を殺す＝連打の主エネ源(自然回復のスノーボール)を断つ。読んだ1回でB.masherが解除され元に戻る(ヒステリシス)。塔/PvPは対象外(masher立たない)。
+    const __mq = B.masher ? MASH_ACCEL_FLOOR : 1;
+    const __freshGate = B.pvpFixedCombo ? 1 : ((B.fresh||0)/100) * __mq; // 貯めたコンボも鮮度が無ければ効かない＝放置封じ＋連打封じ
     const __comboForEnergy = B.pvpFixedCombo ? 20 : B.combo;
     const __fmult = 1 + (B.maxMult-1) * Math.min(1, __comboForEnergy/B.softcap) * __freshGate;
     B.energy=Math.min(B.energyMax, B.energy + B.baseRegen*__fmult*dt);
@@ -11204,7 +11263,7 @@ const Game = (()=>{
     if(!B.pvp && !B.stage.learn){
       if(B.energy>=B.energyMax-0.001) B.meteorOn=true;
       // 隕石は「解いている人」への報酬＝鮮度0(放置)では降らせない（放置でエネルギーが溜まって隕石で勝つ抜け道を封じる）。
-      if(B.meteorOn){ B.mTimer=(B.mTimer||0)-dt; if(B.mTimer<=0){ if((B.fresh||0)>0){ dropOffenseMeteor(); B.energy-=B.energyMax*METEOR_COST_PCT; } B.mTimer=METEOR_INT; } if(B.energy<=B.energyMax*METEOR_FLOOR_PCT) B.meteorOn=false; }
+      if(B.meteorOn){ B.mTimer=(B.mTimer||0)-dt; if(B.mTimer<=0){ if((B.fresh||0)>0 && !B.masher){ dropOffenseMeteor(); B.energy-=B.energyMax*METEOR_COST_PCT; } B.mTimer=METEOR_INT; } if(B.energy<=B.energyMax*METEOR_FLOOR_PCT) B.meteorOn=false; } // ★連打確定中は隕石を降らせない(満タン放置/連打で隕石勝ちする穴を封じる)
     }
     // ❄フリーズ砲：効果＆クールダウンの消化（効果が切れたら凍結表示を解除）
     if(B.freezeCd>0){ B.freezeCd-=dt; if(B.freezeCd<0) B.freezeCd=0; }
@@ -11368,9 +11427,13 @@ const Game = (()=>{
     $('enBar').style.width=(B.energy/B.energyMax*100)+'%';
     // ⚡フィーバー可視化: 加速中はバーを金色に＋実効倍率（狭幅画面のためコンパクト表記。切れた瞬間のナッジはloop側のfloatText）
     var __fr = B.pvpFixedCombo ? 100 : (B.fresh||0); // 鮮度%(直近に解いているか)
-    var __fm = 1 + (B.maxMult-1)*Math.min(1,(B.pvpFixedCombo?20:B.combo)/B.softcap)*(__fr/100); // 実効倍率(コンボ×鮮度)
+    var __fm = 1 + (B.maxMult-1)*Math.min(1,(B.pvpFixedCombo?20:B.combo)/B.softcap)*(__fr/100)*(B.masher?MASH_ACCEL_FLOOR:1); // 実効倍率(コンボ×鮮度・連打確定で減衰)
     $('enBar').style.background = B.meteorOn ? 'linear-gradient(90deg,#5aa0d6,#bfe0f5)' : (__fr>=50 ? 'linear-gradient(90deg,#e0a93b,#ffd24a)' : '');
-    $('enTxt').textContent = Math.round(B.energy) + (B.stage.learn ? '' : (B.meteorOn ? ' 🌠隕石' : ' ⚡×'+__fm.toFixed(1)));
+    // 周辺視オーラ(2026-06-17 D2): 解答ボタン#choicesを「勢い(実効倍率)」で温かく光らせる＝数値を見ずに体感。連打確定(B.masher)中は鈍く濁らせる(罰でなく“おいしさが減る”の可視化)。
+    { var __mi=Math.max(0,Math.min(1,(__fm-1)/Math.max(0.001,(B.maxMult-1)))); // __fm は連打確定で既に減衰済＝オーラも自然に鈍る
+      var __gl=Math.round(5+__mi*22), __op=(0.16+__mi*0.5).toFixed(2), __col=B.meteorOn?'90,160,214':(B.masher?'150,150,150':'255,176,74');
+      var __sig=__gl+'|'+__op+'|'+__col; if(B._aura!==__sig){ B._aura=__sig; var __cx=$('choices'); if(__cx&&__cx.style) __cx.style.boxShadow='0 0 '+__gl+'px '+Math.round(__gl/2)+'px rgba('+__col+','+__op+')'; } }
+    $('enTxt').textContent = Math.round(B.energy) + (B.stage.learn ? '' : (B.meteorOn ? ' 🌠隕石' : (showNumbers ? ' ⚡×'+__fm.toFixed(1) : '')));
     $('comboTxt').textContent=B.combo;
     { var __g=$('guardTxt'); if(__g) __g.textContent = (comboGuardLv>0) ? (' '+'🛡️'.repeat(B.comboGuard)) : ''; }
     const big=$('combo-big'); big.style.color = B.combo>=15?'#e0683b':B.combo>=6?'#e0a93b':'#bbb';
@@ -11735,6 +11798,7 @@ const Game = (()=>{
   let placement = {word:null, grammar:null, bestScore:0, doneAt:''};
   let AS = null;
   const LV5 = QuizEngine.LV_ORDER; // e4..ep1
+  const ASSESS_WIN=6, ASSESS_NEED=4; // 実力測定ローリング(2026-06-17): 各級6問中4問正解で昇級・3問以下で確定(直近クリア級)。サドンデス(3連続/3ミス)の運/ストレスを排した安定判定。級は上方向のみ。
   function recIdx(g){ return placement[g]?LV5.indexOf(placement[g]):-1; }
   function recoBonusActive(){
     if(typeof QuizEngine.isBuffEligible==='function' && !QuizEngine.isBuffEligible()) return false; // 分野別=練習はバフ無し
@@ -11793,7 +11857,7 @@ const Game = (()=>{
   }
   function beginMeasure(){
     // streak=同じ級で連続正解（3でその級クリア＝上へ）／fails=同じ級での失敗回数（3でその級が上限＝確定）。要望2026-06-08
-    AS={ genre:'word', idx:0, cleared:-1, streak:0, fails:0, seen:{word:{},grammar:{}}, ranks:{}, locked:false, cur:null, asked:0 };
+    AS={ genre:'word', idx:0, cleared:-1, streak:0, fails:0, lv:{}, seen:{word:{},grammar:{}}, ranks:{}, locked:false, cur:null, asked:0 }; // lv={級idx:{asked,correct}}＝ローリング正答率(2026-06-17)。streak/fails は旧仕様の残置(未使用)
     assessView('quiz'); assessNext();
   }
   function drawUnseen(genre, level){
@@ -11817,8 +11881,9 @@ const Game = (()=>{
     var genre=AS.genre, level=LV5[AS.idx];
     var q=drawUnseen(genre, level); AS.cur=q; AS.locked=false; AS.asked++;
     var gname=genre==='word'?'単語':'文法';
+    var __cell=(AS.lv&&AS.lv[AS.idx])||{asked:0,correct:0};
     var pr=$('assessProg'); if(pr) pr.innerHTML='📊 <b>'+gname+'</b>の実力をチェック中　— いま <b style="color:var(--ally)">'+QuizEngine.LV_LABEL[level]+'</b> に挑戦！'
-      +'　<span style="color:var(--ally);font-weight:800">連続正解 '+AS.streak+'/3</span>'+(AS.fails>0?'　<span style="color:var(--enemy)">ミス '+AS.fails+'/3</span>':'');
+      +'　<span style="color:var(--ally);font-weight:800">正解 '+__cell.correct+'/'+__cell.asked+'</span>　<span class="muted" style="font-size:12px">('+ASSESS_WIN+'問中'+ASSESS_NEED+'問で次の級へ)</span>';
     var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
     renderTicks();
     if(!q){ $('assessQ').textContent='問題が読めませんでした'; return; }
@@ -11834,16 +11899,18 @@ const Game = (()=>{
     btn.classList.add(right?'ok':'ng');
     if(!right && btns[q.answerIndex]) btns[q.answerIndex].classList.add('ok');
     try{ Sound.play(right?'correct':'wrong'); }catch(e){}
-    if(right){
-      AS.streak++;
-      if(AS.streak>=3){ // 同じ級で3連続正解＝その級クリア→上へ
-        AS.cleared=AS.idx; AS.idx++; AS.streak=0; AS.fails=0;
+    // ローリング正答率(2026-06-17): 各級ASSESS_WIN問を出し、ASSESS_NEED問以上正解で昇級・未満で直近クリア級に確定。
+    // サドンデス(3連続正解/3ミス)はストレスかつ運に弱い→「ほどほど正解で次へ」の安定判定に。級はgenreDone/lockHigherで上方向のみ。
+    if(!AS.lv[AS.idx]) AS.lv[AS.idx]={asked:0,correct:0};
+    var cell=AS.lv[AS.idx]; cell.asked++; if(right) cell.correct++;
+    if(cell.asked>=ASSESS_WIN){
+      if(cell.correct>=ASSESS_NEED){ // この級は合格＝昇級
+        AS.cleared=AS.idx; AS.idx++;
         var bar=$('assessBar'); if(bar) bar.style.width=gaugePct()+'%';
         if(AS.idx>=LV5.length){ setTimeout(function(){ genreDone(LV5[LV5.length-1]); },700); return; }
+      } else { // 基準未満＝直近クリアした級で確定(無ければ最下位)
+        setTimeout(function(){ genreDone(AS.cleared>=0?LV5[AS.cleared]:LV5[0]); },700); return;
       }
-    } else {
-      AS.streak=0; AS.fails++; // 連続は途切れる
-      if(AS.fails>=3){ setTimeout(function(){ genreDone(AS.cleared>=0?LV5[AS.cleared]:LV5[0]); },700); return; } // 級内で3回失敗＝直近クリアした級で確定
     }
     setTimeout(assessNext, 800);
   }
@@ -11865,7 +11932,7 @@ const Game = (()=>{
     html+='<button class="btn" id="assessGoGrammar" style="max-width:300px">▶ 文法も測定する</button>';
     html+='<button class="btn ghost" id="assessStopHere" style="max-width:300px;margin-top:8px">ここで終わる</button>';
     var rb=$('assessResult'); rb.innerHTML=html;
-    $('assessGoGrammar').onclick=function(){ AS.genre='grammar'; AS.idx=0; AS.cleared=-1; AS.streak=0; AS.fails=0; assessView('quiz'); assessNext(); };
+    $('assessGoGrammar').onclick=function(){ AS.genre='grammar'; AS.idx=0; AS.cleared=-1; AS.streak=0; AS.fails=0; AS.lv={}; assessView('quiz'); assessNext(); };
     $('assessStopHere').onclick=function(){ finalizeAssess(); };
     try{ Sound.play('correct'); }catch(e){}
   }
@@ -12077,6 +12144,8 @@ const Game = (()=>{
       var b=$('choices').children[idx]; if(!b) return false;
       answer(idx,b); return true;
     },
+    // 検証用: 正誤を決め打ちで回答（実問題・正解=answerIndex / 誤答=次のindex）。連打対策simのreactMs制御bot用(決定的)。
+    answerRC(correct){ if(!curQ||curQ.locked) return false; var cc=curQ.choiceCount||4, ai=curQ.answerIndex; var idx=correct?ai:((ai+1)%cc); var b=$('choices').children[idx]; if(!b) return false; answer(idx,b); return true; },
     // ジョブ列を1戦ずつ自走（ブラウザ内でチェーン）。jobs=[{area|learnField, personaId, level, genre, cc, power, god}]
     // 結果は window.__ggBatch={done,i,total,results:[{job,win,...state}]} に蓄積→Claudeがポーリングして回収
     batch(jobs, opts){
@@ -12121,7 +12190,7 @@ const Game = (()=>{
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
-      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), partUnit:pu }; }
+      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), rt:Math.round(B.lastReactMs||0), rg:+(((B.lastReadGain==null)?1:B.lastReadGain).toFixed(3)), masher:!!B.masher, missStreak:B.missStreak||0, qAge:(curQ?Math.round(performance.now()-(curQ.shownAt||performance.now())):null), qLocked:!!(curQ&&curQ.locked), qcc:(curQ&&curQ.choiceCount)||null, partUnit:pu }; }
     ,
     // 自動プレイ：area=ステージ, chapter=強化想定章, opts{acc正答率, scale倍速}。logは window.__ptlog、終了で window.__ptdone
     run(area, chapter, opts){
