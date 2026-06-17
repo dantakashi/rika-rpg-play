@@ -60,8 +60,23 @@
   .truth .tval{ font-size:12px; font-weight:800; color:var(--green); white-space:nowrap; }
   .errline{ position:absolute; top:9px; height:4px; background:var(--red); border-radius:2px; opacity:.85; pointer-events:none; }
 
-  .fb{ text-align:center; font-size:22px; font-weight:900; min-height:30px; margin:6px 0 0; }
+  /* 結果ゲージ（ゆっくり伸びて結果確定＝ワクワクの溜め） */
+  .gauge{ position:relative; height:28px; border-radius:14px; background:#efe2bf; border:2px solid var(--line);
+    overflow:hidden; margin:12px 0 2px; }
+  .gfill{ position:absolute; left:0; top:0; bottom:0; width:0%; border-radius:14px;
+    background:linear-gradient(90deg,#e0533d,#e3a32a 55%,#27a35a); }
+  .gpts{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:15px; color:#241c12; text-shadow:0 1px 0 rgba(255,255,255,.6); }
+
+  .fb{ text-align:center; font-size:22px; font-weight:900; min-height:30px; margin:6px 0 0; transition:transform .15s; }
   .fb .pts{ color:var(--gold); }
+  .fb.fx-perfect{ animation:pop .5s; color:#1d7a42; }
+  .fb.fx-great{ color:#1d7a42; }
+  .fb.fx-ok{ color:#a4760f; }
+  .fb.fx-miss{ color:#9a8a64; }
+  @keyframes pop{ 0%{transform:scale(.7)} 40%{transform:scale(1.25)} 70%{transform:scale(.95)} 100%{transform:scale(1)} }
+  .confetti{ position:absolute; top:-10px; font-size:22px; pointer-events:none; animation:fall 1.3s ease-in forwards; }
+  @keyframes fall{ 0%{ transform:translateY(0) rotate(0); opacity:1 } 100%{ transform:translateY(220px) rotate(220deg); opacity:0 } }
   .dots{ display:flex; gap:6px; justify-content:center; margin-top:8px; }
   .dots i{ width:10px; height:10px; border-radius:50%; background:#e6d3a8; display:inline-block; }
   .dots i.on{ background:var(--green); }
@@ -115,6 +130,7 @@
         <div class="truth hidden" id="truth"><div class="flag">🚩</div><div class="tval" id="tval"></div></div>
       </div>
     </div>
+    <div class="gauge"><div class="gfill" id="gfill"></div><div class="gpts" id="gpts"></div></div>
     <div class="fb" id="fb"></div>
     <div class="dots" id="shotDots"></div>
   </div>
@@ -194,9 +210,10 @@ function markShotDots(){
   [...$('shotDots').children].forEach((e,i)=>e.classList.toggle('on', i<shotIdx));
 }
 function newTarget(){
-  // マーカー類リセット
+  // マーカー類・ゲージ・エフェクトをリセット
   $('marker').classList.add('hidden'); $('truth').classList.add('hidden'); $('errline').classList.add('hidden');
-  $('fb').textContent=''; $('hintTap').style.visibility='visible';
+  $('fb').className='fb'; $('fb').textContent=''; $('hintTap').style.visibility='visible';
+  const gf=$('gfill'); gf.style.transition='none'; gf.style.width='0%'; $('gpts').textContent='';
   if(stage.type==='frac'){
     const f=FRACS[rnd(0,FRACS.length-1)]; target={val:f[1], label:f[0]};
   } else {
@@ -220,29 +237,60 @@ function shoot(clientX){
   const guessPct = frac*100;
   const pae = Math.abs(guess-target.val)/(stage.hi-stage.lo)*100; // 百分率絶対誤差
   const pts = Math.max(0, Math.round(100 - pae*1.4));
-  score += pts; $('score').textContent=score;
-  if(pae<2.2) bulls++;
 
-  // マーカー表示
+  // 撃った瞬間は自分のマーカーだけ置き、正解は伏せる（結果までの“溜め”）。
   $('hintTap').style.visibility='hidden';
   const m=$('marker'); m.style.left=guessPct+'%'; m.classList.remove('hidden');
+  $('fb').className='fb'; $('fb').innerHTML='<span class="pts">はんてい中…</span>';
+  beep(520,.05);
+  runGauge(pts, ()=>reveal(guessPct, truePct, pae, pts));
+}
+
+// 結果ゲージ：約1秒かけて伸ばす。低スコアは「ウソの伸び」→一瞬で本当の値に戻す。
+function runGauge(pts, done){
+  const fill=$('gfill'), gp=$('gpts');
+  fill.style.transition='none'; fill.style.width='0%'; gp.textContent='…';
+  void fill.offsetWidth; // リフローでtransitionを効かせる
+  if(pts<40){
+    fill.style.transition='width .55s cubic-bezier(.2,.85,.2,1)';
+    fill.style.width=Math.min(85, 58+pts)+'%';                 // 高めまで伸ばして期待させ…
+    setTimeout(()=>{ fill.style.transition='width .14s ease-in'; fill.style.width=pts+'%'; }, 600); // …一瞬で本当の値へ
+  } else {
+    fill.style.transition='width .95s cubic-bezier(.2,.85,.2,1)';
+    fill.style.width=pts+'%';
+  }
+  setTimeout(done, 1000);
+}
+
+// 結果確定：正解の旗・誤差を見せ、スコアに応じたエフェクト。
+function reveal(guessPct, truePct, pae, pts){
+  score += pts; $('score').textContent=score;
+  if(pae<2.2) bulls++;
   const t=$('truth'); t.style.left=truePct+'%'; $('tval').textContent=target.label; t.classList.remove('hidden');
   const el=$('errline'); const a=Math.min(guessPct,truePct), b=Math.max(guessPct,truePct);
   el.style.left=a+'%'; el.style.width=(b-a)+'%'; el.classList.remove('hidden');
+  $('gpts').textContent='+'+pts;
 
-  // フィードバック
-  let word;
-  if(pae<2.2){ word='ぴたり！🎯'; beep(880,.08); setTimeout(()=>beep(1180,.09),90); }
-  else if(pae<6){ word='ナイス！👍'; beep(740,.07); }
-  else if(pae<13){ word='おしい'; beep(520,.06); }
-  else { word='うーん…'; beep(300,.08,'sawtooth'); }
-  $('fb').innerHTML = word+' <span class="pts">+'+pts+'</span>';
+  let word, fx;
+  if(pae<2.2){ word='ぴったり！🎯'; fx='fx-perfect'; beep(880,.08); setTimeout(()=>beep(1180,.1),90); setTimeout(()=>beep(1480,.12),200); fireConfetti(); }
+  else if(pae<6){ word='ナイス！👍'; fx='fx-great'; beep(740,.08); }
+  else if(pae<13){ word='おしい'; fx='fx-ok'; beep(520,.06); }
+  else { word='うーん…'; fx='fx-miss'; beep(300,.08,'sawtooth'); }
+  const fb=$('fb'); fb.className='fb '+fx; fb.innerHTML=word+' <span class="pts">+'+pts+'</span>';
 
   shotIdx++; markShotDots();
-  setTimeout(()=>{
-    if(shotIdx>=SHOTS) showResult();
-    else newTarget();
-  }, 1250);
+  // 結果を見せる時間を十分に（ぴったりは長め）。
+  setTimeout(()=>{ if(shotIdx>=SHOTS) showResult(); else newTarget(); }, pae<2.2?1900:1500);
+}
+
+function fireConfetti(){
+  const box=document.querySelector('.lineBox'); if(!box) return;
+  const em=['🎯','✨','🎉','⭐','💯'];
+  for(let i=0;i<10;i++){
+    const s=document.createElement('span'); s.className='confetti'; s.textContent=em[i%em.length];
+    s.style.left=(8+Math.random()*84)+'%'; s.style.animationDelay=(Math.random()*0.2)+'s';
+    box.appendChild(s); setTimeout(()=>s.remove(), 1500);
+  }
 }
 
 /* 入力：数直線のどこかをタップ */

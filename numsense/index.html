@@ -73,15 +73,11 @@
     <p class="lead">計算する前に、答えが<b>「だいたい見える」</b>力をきたえる小さなゲーム集。<br>遊ぶほど、だれでも数の勘がするどくなるよ。</p>
   </div>
 
-  <div class="sec-t">🎮 ゲーム</div>
+  <div class="sec-t">👀 数感覚ゲーム（だいたい見える力）</div>
   <div class="grid" id="gameGrid"></div>
 
-  <div class="sec-t">🧮 ほかの数学ゲーム</div>
-  <div class="links">
-    <a class="link" href="../math-gorilla/index.html"><span class="e">🦍</span><span class="n">ゴリラ大砲</span></a>
-    <a class="link" href="../math-run/index.html"><span class="e">🏃</span><span class="n">割れる数ラン</span></a>
-    <a class="link" href="../prime-merge/index.html"><span class="e">🔢</span><span class="n">そすうマージ</span></a>
-  </div>
+  <div class="sec-t">🧮 けいさん・パズル</div>
+  <div class="grid" id="extGrid"></div>
 
   <p class="footnote">★は<b>きみの自己ベスト</b>。だれかと比べる点数じゃないよ。<br>前の自分をちょっとずつこえていこう。</p>
 </div>
@@ -110,6 +106,26 @@ function gameBest(id){
   return found?max:null;
 }
 
+// 既存の数学ゲーム（けいさん・パズル）も「数の第六感」に統合。フォルダは親階層。
+const EXT_GAMES = [
+  { title:'ゴリラ大砲',     emoji:'🦍', tag:'たし算・大小',   href:'../math-gorilla/index.html' },
+  { title:'割れる数ラン',   emoji:'🏃', tag:'わり算・倍数',   href:'../math-run/index.html' },
+  { title:'そすうマージ',   emoji:'🔢', tag:'素因数・合体',   href:'../prime-merge/index.html' },
+];
+
+function buildExtGrid(){
+  const g=document.getElementById('extGrid'); if(!g) return; g.innerHTML='';
+  EXT_GAMES.forEach(game=>{
+    const card=document.createElement('a'); card.className='card'; card.href=game.href;
+    card.innerHTML =
+      '<span class="emo">'+game.emoji+'</span>'+
+      '<span class="ttl">'+game.title+'</span>'+
+      '<span class="tag">'+game.tag+'</span>'+
+      '<span class="best none">▶ あそぶ</span>';
+    g.appendChild(card);
+  });
+}
+
 function buildGrid(){
   const g=document.getElementById('gameGrid'); g.innerHTML='';
   GAMES.forEach(game=>{
@@ -127,6 +143,7 @@ function buildGrid(){
   });
 }
 buildGrid();
+buildExtGrid();
 </script>
 
 <!-- まなびハブ: 学習日・プレイ時間の記録（全アプリ共通／同一オリジンのlocalStorageを共有） -->

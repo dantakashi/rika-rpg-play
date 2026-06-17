@@ -93,6 +93,14 @@
     <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">★＝そのモードの自己ベスト。前の自分をこえよう！</p>
   </div>
 
+  <!-- むずかしさ選択（＝点が見える時間） -->
+  <div id="diffSel" class="panel hidden">
+    <p style="text-align:center;font-weight:800;margin:2px 0 12px"><span id="diffModeName">瞬間カウント</span> — むずかしさをえらぶ</p>
+    <div class="modeGrid" id="diffGrid"></div>
+    <p style="text-align:center;font-size:12px;color:#9a8a64;margin:12px 0 0">点が見える時間がかわるよ。まずは「やさしい」からどうぞ。</p>
+    <button id="diffBack" style="display:block;width:100%;margin-top:10px;padding:11px;border:3px solid var(--line);background:#fffdf5;border-radius:12px;font-weight:700;cursor:pointer">← モードにもどる</button>
+  </div>
+
   <!-- プレイ -->
   <div id="play" class="panel hidden">
     <div class="hud">
@@ -136,16 +144,25 @@ const MODES={
 let mode='count', trialIdx=0, score=0, hits=0;
 let cur=null;           // { actual, blue, gold, ... , answered }
 let cv, ctx, tShown=0;
+let pendingMode='count', diffMult=2, diffLabel='n';   // むずかしさ＝フラッシュ時間の倍率
+
+// むずかしさ＝点が見える時間。やさしい=4倍ゆっくり / ふつう=2倍 / むずかしい=1倍(一瞬)。
+const DIFFS=[
+  { label:'e', name:'やさしい', emoji:'🐢', mult:4, desc:'ゆっくり見える' },
+  { label:'n', name:'ふつう',   emoji:'🙂', mult:2, desc:'まあまあ' },
+  { label:'h', name:'むずかしい',emoji:'⚡', mult:1, desc:'一瞬！' },
+];
 
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
-function bestKey(m){ return 'ns_best_flash_'+m; }
-function getBest(m){ return parseInt(localStorage.getItem(bestKey(m))||'0',10); }
+function bestKey(m,d){ return 'ns_best_flash_'+m+'_'+d; }
+function getBest(m,d){ return parseInt(localStorage.getItem(bestKey(m,d))||'0',10); }
+function modeBest(m){ return Math.max(getBest(m,'e'),getBest(m,'n'),getBest(m,'h')); }
 
 /* ===== モード選択 ===== */
 function buildModes(){
   const g=$('modeGrid'); g.innerHTML='';
   Object.keys(MODES).forEach(m=>{
-    const M=MODES[m]; const best=getBest(m);
+    const M=MODES[m]; const best=modeBest(m);
     const b=document.createElement('button'); b.className='mode';
     b.innerHTML='<span class="e">'+M.emoji+'</span>'+M.name+'<small>'+(best?('★ '+best):M.sub)+'</small>';
     b.onclick=()=>startMode(m);
@@ -153,16 +170,37 @@ function buildModes(){
   });
 }
 function toModes(){
-  $('result').classList.add('hidden'); $('play').classList.add('hidden');
+  $('result').classList.add('hidden'); $('play').classList.add('hidden'); $('diffSel').classList.add('hidden');
   $('modeSel').classList.remove('hidden'); buildModes();
 }
 
-/* ===== プレイ ===== */
+/* ===== むずかしさ選択（＝点が見える時間） ===== */
 function startMode(m){
-  mode=m; trialIdx=0; score=0; hits=0;
+  pendingMode=m;
   $('modeSel').classList.add('hidden'); $('result').classList.add('hidden');
+  $('diffSel').classList.remove('hidden');
+  $('diffModeName').textContent=MODES[m].emoji+' '+MODES[m].name;
+  buildDiffs();
+}
+function buildDiffs(){
+  const g=$('diffGrid'); g.innerHTML='';
+  DIFFS.forEach(d=>{
+    const best=getBest(pendingMode,d.label);
+    const b=document.createElement('button'); b.className='mode';
+    b.innerHTML='<span class="e">'+d.emoji+'</span>'+d.name+'<small>'+(best?('★ '+best):d.desc)+'</small>';
+    b.onclick=()=>chooseDiff(d);
+    g.appendChild(b);
+  });
+}
+function chooseDiff(d){ diffLabel=d.label; diffMult=d.mult; startPlay(); }
+
+/* ===== プレイ ===== */
+function startPlay(){
+  mode=pendingMode; trialIdx=0; score=0; hits=0;
+  $('diffSel').classList.add('hidden'); $('result').classList.add('hidden');
   $('play').classList.remove('hidden');
-  $('stageName').textContent=MODES[m].emoji+' '+MODES[m].name;
+  const dn=(DIFFS.find(x=>x.label===diffLabel)||{}).name||'';
+  $('stageName').textContent=MODES[mode].emoji+' '+MODES[mode].name+'（'+dn+'）';
   $('score').textContent='0';
   setupCanvas(); buildTrialDots();
   nextTrial();
@@ -194,7 +232,8 @@ function nextTrial(){
   cur={ answered:false };
   const M=MODES[mode];
   const lvl = 1 + Math.floor(trialIdx/3);          // ラウンド内でじわっと難化
-  const flash = Math.max(180, M.flash - lvl*40);
+  // 点が見える時間＝モード基準 × むずかしさ倍率(やさしい4/ふつう2/むずかしい1) × ラウンド内の微減。
+  const flash = Math.max(140, Math.round(M.flash * diffMult * (1 - (lvl-1)*0.06)));
 
   if(mode==='count'){
     const n=rnd(1, Math.min(6, 3+lvl)); cur.actual=n;
@@ -202,15 +241,17 @@ function nextTrial(){
     pts.forEach(p=>drawDot(p.x,p.y,16,'#2f7de1'));
   } else if(mode==='group'){
     const n=rnd(6, Math.min(16, 7+lvl*2)); cur.actual=n;
-    // 2〜4のかたまりに分割し、クラスタごとにまとめて配置（色も分ける＝まとめ読みを促す）
+    // 2〜4のかたまりに分割。玉は小さめ＆クラスタ内は円状に等間隔＝重ならず「まとまり」が読める。
     const groups=[]; let left=n;
     while(left>0){ const g=Math.min(left, rnd(2,4)); groups.push(g); left-=g; }
     const cols=['#2f7de1','#e0533d','#27a35a','#e3a32a','#7c3aed'];
-    const W=cv.width,H=cv.height;
+    const DOT=9, RING=15;                              // 小さい玉・控えめなクラスタ半径
+    const centers=nonOverlapPositions(groups.length, 40); // クラスタ中心どうしも離す
     groups.forEach((g,gi)=>{
-      const cx=rnd(60,W-60), cy=rnd(50,H-50), col=cols[gi%cols.length];
-      for(let i=0;i<g;i++){ const a=Math.random()*Math.PI*2, rr=rnd(0,16);
-        drawDot(cx+Math.cos(a)*rr, cy+Math.sin(a)*rr, 12, col); }
+      const c=centers[gi]||{x:rnd(60,cv.width-60),y:rnd(50,cv.height-50)};
+      const col=cols[gi%cols.length];
+      for(let i=0;i<g;i++){ const a=(i/g)*Math.PI*2 + gi*0.7;   // 円周に等間隔配置
+        drawDot(c.x+Math.cos(a)*RING, c.y+Math.sin(a)*RING, DOT, col); }
     });
   } else if(mode==='more'){
     // 比率を連勝で1に近づける（量の比較＝距離/比率効果）
@@ -297,15 +338,17 @@ function answerApprox(){
 /* ===== 結果 ===== */
 function showResult(){
   $('play').classList.add('hidden'); $('result').classList.remove('hidden');
-  $('rTitle').textContent=MODES[mode].emoji+' '+MODES[mode].name+' クリア！';
+  const dn=(DIFFS.find(x=>x.label===diffLabel)||{}).name||'';
+  $('rTitle').textContent=MODES[mode].emoji+' '+MODES[mode].name+'（'+dn+'）クリア！';
   $('rScore').textContent=score; $('rHit').textContent=hits;
-  const prev=getBest(mode);
-  if(score>prev){ localStorage.setItem(bestKey(mode), score); $('newrec').classList.remove('hidden'); }
+  const prev=getBest(mode,diffLabel);
+  if(score>prev){ localStorage.setItem(bestKey(mode,diffLabel), score); $('newrec').classList.remove('hidden'); }
   else $('newrec').classList.add('hidden');
   $('rBest').textContent=Math.max(prev,score);
 }
-$('retryBtn').onclick=()=>startMode(mode);
+$('retryBtn').onclick=()=>startPlay();
 $('toModeBtn').onclick=toModes;
+$('diffBack').onclick=toModes;
 
 /* ===== 効果音 ===== */
 let actx=null;

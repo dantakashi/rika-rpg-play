@@ -65,6 +65,9 @@
   .fb{ text-align:center; font-size:22px; font-weight:900; min-height:30px; margin:10px 0 0; }
   .fb .pts{ color:var(--gold); }
   .fb .note{ display:block; font-size:13px; font-weight:700; color:#6b6250; margin-top:2px; }
+  .fb.fx-perfect{ animation:pop .5s; color:#1d7a42; }
+  .fb.fx-great{ color:#1d7a42; } .fb.fx-ok{ color:#a4760f; } .fb.fx-miss{ color:#9a8a64; }
+  @keyframes pop{ 0%{transform:scale(.7)} 40%{transform:scale(1.25)} 70%{transform:scale(.95)} 100%{transform:scale(1)} }
   .dots{ display:flex; gap:6px; justify-content:center; margin-top:8px; }
   .dots i{ width:10px; height:10px; border-radius:50%; background:#e6d3a8; display:inline-block; }
   .dots i.on{ background:var(--green); }
@@ -204,9 +207,9 @@ function markShotDots(){
 function newRound(){
   // 表示リセット
   $('meFill').style.width='0%';
-  $('truthFill').classList.add('hidden');
+  const tf=$('truthFill'); tf.classList.add('hidden'); tf.style.transition='none'; tf.style.width='0%';
   $('modelPct').classList.add('hidden'); $('modelPct').textContent='';
-  $('fb').textContent=''; $('hintTap').style.visibility='visible';
+  $('fb').className='fb'; $('fb').textContent=''; $('hintTap').style.visibility='visible';
 
   const r=RATIOS[rnd(0,RATIOS.length-1)];
   targetLabel=r[0]; targetR=r[1];
@@ -244,29 +247,36 @@ function setFillByClientX(clientX){
 function judge(myR){
   const err = Math.abs(myR - targetR)*100;            // 誤差%（割合の差×100）
   const pts = Math.max(0, Math.round(100 - err*1.4)); // numlineと同じ採点思想
-  score += pts; $('score').textContent=score;
-  if(err<2.2) bulls++;
 
-  // 自分の塗りを確定表示
+  // 自分の塗りはすぐ確定。正解はまだ伏せ、左から徐々にためる（結果までの“溜め”）。
   $('hintTap').style.visibility='hidden';
   $('meFill').style.width=(myR*100)+'%';
-  // 正解の割合を重ねて表示（斜線＋破線の境目＝お手本と同じ割合の位置）
-  const tf=$('truthFill'); tf.style.width=(targetR*100)+'%'; tf.classList.remove('hidden');
+  $('fb').className='fb'; $('fb').innerHTML='<span class="pts">せいかいは…？</span>';
+  beep(500,.05);
+  const tf=$('truthFill');
+  tf.classList.remove('hidden');
+  tf.style.transition='none'; tf.style.width='0%'; void tf.offsetWidth;     // 0から
+  tf.style.transition='width 1s cubic-bezier(.2,.85,.2,1)';
+  tf.style.width=(targetR*100)+'%';                                          // 実際の位置まで約1秒で伸ばす
+  setTimeout(()=>revealRatio(err, pts), 1050);
+}
 
-  // フィードバック（正解の割合も言葉で見せる）
-  let word, ty;
-  if(err<2.2){ word='ぴたり！🎯'; beep(880,.08); setTimeout(()=>beep(1180,.09),90); }
-  else if(err<6){ word='ナイス！👍'; beep(740,.07); }
-  else if(err<13){ word='おしい'; beep(520,.06); }
-  else { word='うーん…'; beep(300,.08,'sawtooth'); }
-  $('fb').innerHTML = word+' <span class="pts">+'+pts+'</span>'+
+// 正解バーが止まったあと、結果を確定＆エフェクト。
+function revealRatio(err, pts){
+  score += pts; $('score').textContent=score;
+  if(err<2.2) bulls++;
+  let word, fx;
+  if(err<2.2){ word='ぴったり！🎯✨'; fx='fx-perfect'; beep(880,.08); setTimeout(()=>beep(1180,.1),90); setTimeout(()=>beep(1480,.12),200); }
+  else if(err<6){ word='ナイス！👍'; fx='fx-great'; beep(740,.08); }
+  else if(err<13){ word='おしい'; fx='fx-ok'; beep(520,.06); }
+  else { word='うーん…'; fx='fx-miss'; beep(300,.08,'sawtooth'); }
+  const fb=$('fb'); fb.className='fb '+fx;
+  fb.innerHTML = word+' <span class="pts">+'+pts+'</span>'+
     '<span class="note">こたえ '+targetLabel+'（＝'+Math.round(targetR*100)+'%）</span>';
 
   round++; markShotDots();
-  setTimeout(()=>{
-    if(round>=ROUNDS) showResult();
-    else newRound();
-  }, 1400);
+  // 結果を十分に見せる（ぴったりは長め）。
+  setTimeout(()=>{ fb.className='fb'; if(round>=ROUNDS) showResult(); else newRound(); }, err<2.2?2000:1600);
 }
 
 /* 入力：自分のバーをタップ */

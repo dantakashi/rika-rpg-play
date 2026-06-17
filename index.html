@@ -266,10 +266,8 @@
 
   // アプリ一覧（catで教科に振り分け）。アプリが無い教科は「おたのしみに」を自動表示。
   var APPS = [
+    // 数学はすべて「数の第六感」ポータルに統合（ゴリラ/ラン/マージは数の第六感の中から起動）。
     {key:'numsense', label:'数の第六感',   icon:'🔮', cls:'ic-numsense', href:'numsense/index.html', cat:'math', beta:true},
-    {key:'gori',  label:'ゴリラ大砲',      icon:'🦍', cls:'ic-gori',  href:'math-gorilla/index.html', cat:'math'},
-    {key:'run',   label:'割れる数ラン',    icon:'🏃', cls:'ic-run',   href:'math-run/index.html',     cat:'math'},
-    {key:'merge', label:'そすうマージ',    icon:'🔢', cls:'ic-merge', href:MERGE,                     cat:'math'},
     {key:'eng',   label:'グラマー・ガード', icon:'🛡️', cls:'ic-eng',   href:ENG,                       cat:'english'},
     {key:'sengoku', label:'偉人トレーナー',  icon:'🗾', cls:'ic-sengoku', href:'sengoku/index.html',    cat:'social', beta:true},
     {key:'rika',  label:'理科RPG',        icon:'🧪', cls:'ic-rika',  href:RIKA,                      cat:'science'},
@@ -532,6 +530,11 @@
   // ★運用ルール: ポータルやゲームを更新して生徒に配信したら、必ず UPDATES の
   //   先頭に1件追加すること（date=配信日 / title / body=やさしい言葉の箇条書き）。
   var UPDATES = [
+    { date:'2026-06-18', title:'数の第六感：数学ぜんぶ集合＆結果がドキドキに🔮', body:[
+      '🧮 <b>ゴリラ大砲・割れる数ラン・そすうマージ</b>も「数の第六感」の中に集合！ 数学はここだけ見ればOKになったよ。',
+      '🎯 <b>数直線シュート</b>と<b>わりあいバー</b>は、結果が出るまで<b>バーがジワ〜ッと伸びてドキドキ</b>するように。ぴったりだと特別な演出が出ます。',
+      '⚡ <b>フラッシュ道場</b>に <b>やさしい／ふつう／むずかしい</b> を追加（点が見える時間がかわる）。はやすぎて見えなかった人は「やさしい」からどうぞ。かたまり読みの玉も見やすくしたよ。',
+    ]},
     { date:'2026-06-17', title:'数学に新コーナー「数の第六感」がふえたよ🔮', body:[
       '🔮 数学に <b>「数の第六感」</b> という新しいアプリ（ミニゲーム集）がふえました。計算する前に、答えが<b>「だいたい見える」力</b>＝数のかんを、小さなゲームでみがきます。',
       '🎯 まずは <b>数直線シュート</b>（数をだいたいの場所へ撃つ）、<b>¥2000で足りる？</b>（買えるか見積もる）、<b>フラッシュ道場</b>（一瞬で何個か当てる）など7本で遊べるよ。',
