@@ -6,9 +6,13 @@
 <title>理科RPG2 戦闘プロト</title>
 <!--
   ============================================================
-   理科RPG2 戦闘リズム試作（ATB「落ち着いて解く」型） v0.9
+   理科RPG2 戦闘リズム試作（ATB「落ち着いて解く」型） v0.10
    設計: rpg_v3/_docs/RIKA_BATTLE_ATB_DESIGN_2026-06-18.md (§9)
    スキル設計: rpg_v3/_docs/RIKA2_SKILLS_ROSTER_2026-06-18.md ＋ 追加候補=RIKA2_SKILL_CANDIDATES_2026-06-18.md
+   v0.10 = 候補カタログより次のスキル群=ATB操作＋状態異常シナジー(検証目的=馴染み確認):
+     ・ATB操作: ディレイ砲(敵ゲージを後退・確定)/号令(味方全員のゲージ即チャージ)/先駆け(連続行動)
+     ・状態異常シナジー: 追い討ち(止まっている敵に特大)/毒の連鎖(敵の毒・やけどを起爆)
+     ・「まず増やす→balance時に取捨選択」方針。数値は仮。不可侵維持。
    v0.9 = スキルレベル＋ヘイト一式(オーナーFB・検証目的=可能性とゲームへの馴染みの確認):
      ・★スキルレベル(1-3・装備で決まる想定/プロトはtunerで操作): lvAxis で伸び方を指定
        'power'=効力UP&MP増 / 'dur'=効き時間UP&MP増 / 'eff'=効果そのままMP減 / 無指定=レベルなし。
@@ -160,7 +164,7 @@
 </head>
 <body>
 <div id="app">
-  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.9</span></span>
+  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.10</span></span>
     <button class="gear" onclick="toggleTuner(true)">⚙ 調整</button></div>
 
   <div class="stage" id="stage">
@@ -208,7 +212,7 @@
       <div class="trow"><label>対生物 ×<b id="kbioV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="killers.biology=+this.value; kbioV.textContent=(+this.value).toFixed(1);"></div>
       <div class="trow"><label>対地学 ×<b id="kearV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="killers.earth=+this.value; kearV.textContent=(+this.value).toFixed(1);"></div>
     </div>
-    <div class="tnote">※v0.9=スキルレベル(上)＋ヘイト一式(挑発/かばう/とげの鎧/気配消し=壁ガイ)。数値は仮。誤答で味方HPは減りません(不可侵)。</div>
+    <div class="tnote">※v0.10=ATB操作(ディレイ砲/号令/先駆け)＋状態異常シナジー(追い討ち/毒の連鎖)を追加。数値は仮。誤答で味方HPは減りません(不可侵)。</div>
     <button class="tclose" onclick="toggleTuner(false)">✓ 戦闘にもどる</button>
   </div>
 
@@ -360,6 +364,17 @@ const SKILLS = {
     note:'しばらく、攻撃を受けるたび敵に反射ダメージ（挑発と相性◎）。', run:(c,e,L)=>{ c.thorns={pct:0.5*L.pow,remain:10}; bigSavor('🌵 とげの鎧'); } },
   fade:{ name:'気配消し', emoji:'👻', mp:8, needsQuiz:false, scope:'none', lvAxis:'eff', fl:'すっと、影に紛れる。',
     note:'しばらく敵に狙われにくくなる（育てた火力役を守る）。', run:(c,e,L)=>{ c.fade=Math.max(c.fade||0, 9); bigSavor('👻 気配消し'); } },
+  /* G. ATB操作・状態異常シナジー(v0.10・候補カタログより。ゲージと状態異常の相互作用を確認) */
+  delay:{ name:'ディレイ砲', emoji:'⏮️', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'時を巻き戻す一撃。',
+    note:'正解でダメージ＋敵の行動ゲージを大きく後退させる（確定・耐性なし）。', run:(c,e,L)=>{ const d=skillHit(c,e,0.7*L.pow); if(e&&e.alive) e.charge=Math.max(0,e.charge-60*L.pow); bigSavor('⏮️ ディレイ砲 '+fmt(d)); } },
+  rally:{ name:'号令', emoji:'📣', mp:12, needsQuiz:false, scope:'none', lvAxis:'power', fl:'続け、いまだ！',
+    note:'味方全員の行動ゲージを即チャージ（手番の渋滞を一気に動かす）。', run:(c,e,L)=>{ allies.forEach(a=>{ if(!a.downed) a.charge=Math.min(100,a.charge+30*L.pow); }); bigSavor('📣 号令！'); } },
+  quick:{ name:'先駆け', emoji:'💨', mp:12, needsQuiz:false, scope:'none', lvAxis:'eff', fl:'一足、お先に。',
+    note:'すぐにもう一度 自分の手番が回ってくる（連続行動の起点）。', run:(c,e,L)=>{ c.quickReady=true; bigSavor('💨 先駆け！'); } },
+  followup:{ name:'追い討ち', emoji:'🥊', mp:15, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'隙ありっ！',
+    note:'正解でダメージ。眠り・こおり・まひなど“止まっている”敵には特大ダメージ。', run:(c,e,L)=>{ const stop=e&&e.ail&&(e.ail.sleep||e.ail.freeze||e.ail.timestop||e.ail.paralyze); const d=skillHit(c,e,(stop?2.6:0.9)*L.pow,{canCrit:true}); bigSavor((stop?'🥊 追い討ち！特大 ':'🥊 追い討ち ')+fmt(d)); } },
+  detonate:{ name:'毒の連鎖', emoji:'🧨', mp:16, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'毒よ、はぜろ。',
+    note:'正解で、敵の毒・やけどを一気に爆発させて大ダメージ（毒は消える）。', run:(c,e,L)=>{ let burst=0; if(e&&e.ail){ ['poison','burn'].forEach(t=>{ const a=e.ail[t]; if(a){ burst+=e.hpMax*a.pps*a.remain; delete e.ail[t]; } }); } burst=Math.floor(burst*1.6*L.pow); if(burst>0&&e&&e.alive) dealEnemyTarget(e,burst,true); bigSavor('🧨 毒の連鎖 '+(burst>0?fmt(burst):'（毒なし）')); } },
   /* E. 回復・浄化・MP */
   heal:{ name:'回復', emoji:'❤️', mp:10, needsQuiz:true, scope:'none', lvAxis:'power', fl:'あたたかな光が傷をふさぐ。',
     note:'正解で味方1人のHPを回復（戦闘不能なら蘇生）。', run:(c,e,L)=>healAlly(0.30*L.pow) },
@@ -375,12 +390,12 @@ const SKILLS = {
   dai:{ name:'大魔法', emoji:'🔥', mp:40, needsQuiz:false, scope:'enemy', combo:3, lvAxis:'power', fl:'全魔力を、解き放つ。',
     note:'コンボ3＋MP40で発動。対象に極大ダメージ。コンボはリセット。', run:(c,e,L)=>{ const mult=(3+Math.min(combo,12)*0.5)*L.pow; combo=0; bumpCombo(); const d=skillHit(c,e,mult,{crit:true}); screenShake(); bigSavor('🔥 大魔法 '+fmt(d)); } },
 };
-// 味方4体(役割＋行動速度 spd: 大きいほど速い)。v0.9でヘイト一式を壁ガイに、気配消しを火力アレスに追加。
+// 味方4体(役割＋行動速度 spd: 大きいほど速い)。v0.9でヘイト一式、v0.10でATB操作・状態異常シナジーを追加(検証目的=まず増やす)。
 const ALLY_DEFS = [
-  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', hpMax:300, atk:130, mpMax:100, spd:1.0,  skills:['fireball','thunder','rock','multi','powerup','weakblade','fade','amp','dai'] },
-  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', hpMax:240, atk:105, mpMax:120, spd:0.9,  skills:['ice','acid','poison','paralyze','sleep','slow','defbreak','dazzle'] },
+  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', hpMax:300, atk:130, mpMax:100, spd:1.0,  skills:['fireball','thunder','rock','multi','followup','quick','powerup','weakblade','fade','amp','dai'] },
+  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', hpMax:240, atk:105, mpMax:120, spd:0.9,  skills:['ice','acid','poison','paralyze','sleep','slow','defbreak','dazzle','delay','detonate'] },
   { id:'gai',  name:'ガイ',   emoji:'🛡️', role:'壁',  hpMax:460, atk:70,  mpMax:90,  spd:0.75, skills:['taunt','cover','thorns','barrier','shock','seal','endure','counter','drain','timestop'] },
-  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', hpMax:250, atk:90,  mpMax:130, spd:1.1,  skills:['judge','haste','focus','insight','regen','heal','purify','mana'] },
+  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', hpMax:250, atk:90,  mpMax:130, spd:1.1,  skills:['judge','rally','haste','focus','insight','regen','heal','purify','mana'] },
 ];
 const ITEM_DEFS = [
   { id:'hpPotion', name:'HP回復薬', emoji:'🧪', gaugeCost:100, scope:'none', fl:'ぐびっと飲めば元気百倍。', note:'味方1人のHPを40%回復。正解すると行動ゲージの消費が軽くなる。', run:()=>healAlly(0.40) },
@@ -393,8 +408,8 @@ let phase='charging', stateTimer=0, curQ=null, answered=false, pendingAction=nul
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 function makeAllies(){ allies = ALLY_DEFS.map(d=>({ ...d, hp:d.hpMax, mp:d.mpMax, charge:0, downed:false,
   powerUp:0, weakBlade:false, shield:0, defending:false, endure:false, counter:false,
-  haste:null, focus:null, amp:null, regen:null, ail:{}, taunt:0, cover:0, thorns:null, fade:0 })); }
-function clearAllyBuffs(a){ a.powerUp=0; a.weakBlade=false; a.shield=0; a.defending=false; a.endure=false; a.counter=false; a.haste=null; a.focus=null; a.amp=null; a.regen=null; a.ail={}; a.taunt=0; a.cover=0; a.thorns=null; a.fade=0; }
+  haste:null, focus:null, amp:null, regen:null, ail:{}, taunt:0, cover:0, thorns:null, fade:0, quickReady:false })); }
+function clearAllyBuffs(a){ a.powerUp=0; a.weakBlade=false; a.shield=0; a.defending=false; a.endure=false; a.counter=false; a.haste=null; a.focus=null; a.amp=null; a.regen=null; a.ail={}; a.taunt=0; a.cover=0; a.thorns=null; a.fade=0; a.quickReady=false; }
 function setEncounter(i){ const defs=ENCOUNTERS[i%ENCOUNTERS.length];
   enemies = defs.map((ref,idx)=>{ const m=MONSTER_DB[ref]; return { ...m, attrs:m.attrs.slice(), hp:m.hp, hpMax:m.hp, charge:0, alive:true, idx:idx, ail:{}, spMeter:0 }; });
   buildEnemies(); }
@@ -416,6 +431,7 @@ function update(dt){
     if(e.ail){ if(e.ail.sleep||e.ail.freeze||e.ail.timestop)rate=0; else{ if(e.ail.paralyze)rate=Math.min(rate,e.ail.paralyze.mul); if(e.ail.slow)rate=Math.min(rate,e.ail.slow.mul); } }
     e.charge += dt*100/cfg.enemyIntervalSec*rate; });
   if(phase==='charging'){
+    allies.forEach(a=>{ if(a.quickReady&&!a.downed){ a.quickReady=false; a.charge=100; } });   // 先駆け: すぐ手番が回る
     allies.forEach(a=>{ if(!a.downed){ const hm=a.haste?a.haste.mul:1; a.charge += dt*100*a.spd*hm/cfg.chargeSec; } });
     const eReady = enemies.find(e=>e.alive && e.charge>=100);
     const ally = allies.find(a=>!a.downed && a.charge>=100);
@@ -675,7 +691,7 @@ function buildParty(){ for(const k in _buffSig)delete _buffSig[k]; document.getE
     <div class="ac-bar atb"><i id="atb-${a.id}"></i></div>
     <div class="ac-shield" id="sh-${a.id}"></div><div class="ac-down">💀</div></div>`).join(''); }
 function pct(v,max){ return Math.max(0,Math.min(100,v/max*100)); }
-function allyBuffIcons(a){ let s=''; if(a.shield>0)s+='🔰'; if(a.taunt>0)s+='😤'; if(a.cover>0)s+='🛡'; if(a.thorns)s+='🌵'; if(a.fade>0)s+='👻'; if(a.haste)s+='⏩'; if(a.focus)s+='🎯'; if(a.amp)s+='🔮'; if(a.regen)s+='🌿'; if(a.endure)s+='🪨'; if(a.counter)s+='↩️'; if(a.defending)s+='🛡️'; if(a.powerUp)s+='💪'; if(a.weakBlade)s+='🗡️'; if(a.ail&&a.ail.burn)s+='🔥'; return s; }
+function allyBuffIcons(a){ let s=''; if(a.shield>0)s+='🔰'; if(a.quickReady)s+='💨'; if(a.taunt>0)s+='😤'; if(a.cover>0)s+='🛡'; if(a.thorns)s+='🌵'; if(a.fade>0)s+='👻'; if(a.haste)s+='⏩'; if(a.focus)s+='🎯'; if(a.amp)s+='🔮'; if(a.regen)s+='🌿'; if(a.endure)s+='🪨'; if(a.counter)s+='↩️'; if(a.defending)s+='🛡️'; if(a.powerUp)s+='💪'; if(a.weakBlade)s+='🗡️'; if(a.ail&&a.ail.burn)s+='🔥'; return s; }
 function updateUI(){
   enemies.forEach(e=>{ const hp=document.getElementById('ehp-'+e.idx), ch=document.getElementById('echg-'+e.idx), card=document.getElementById('enemy-'+e.idx); if(!card)return;
     if(hp) hp.style.width=pct(e.hp,e.hpMax)+'%'; if(ch) ch.style.width=Math.min(100,e.charge)+'%';
