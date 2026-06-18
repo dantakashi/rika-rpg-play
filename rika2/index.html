@@ -32,7 +32,7 @@
   .stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:6px 10px 4px; min-height:0; overflow:hidden;}
   .enemy-row{display:flex; gap:8px; justify-content:center; align-items:flex-end; flex-wrap:wrap; flex:0 0 auto;}
   .enemy-card{position:relative; text-align:center;}
-  .eimg{margin:0 auto; display:flex; align-items:center; justify-content:center; border-radius:13px; overflow:hidden; border:1px solid var(--line); box-shadow:0 6px 12px rgba(0,0,0,.5); max-height:30vh;}
+  .eimg{margin:0 auto; display:flex; align-items:center; justify-content:center; border-radius:13px; overflow:hidden; border:1px solid var(--line); box-shadow:0 6px 12px rgba(0,0,0,.5); max-height:48vh;}
   .eimg img{width:100%; height:100%; object-fit:cover; display:block;}
   .enemy-card.dead{opacity:.28; filter:grayscale(1);}
   .enemy-card.targetable .eimg{outline:3px dashed var(--warn); outline-offset:2px; cursor:pointer; animation:tpulse 1s infinite;}
@@ -59,8 +59,9 @@
   .ally-card.downed{opacity:.42; filter:grayscale(1);}
   .ac-emoji{font-size:18px; line-height:1.1;} .ac-name{font-size:10px; font-weight:700; display:block;} .ac-role{font-size:8px; color:var(--sub); margin-bottom:1px;}
   .ac-bar{height:5px; border-radius:3px; background:#0007; margin-top:2px; overflow:hidden;} .ac-bar i{display:block; height:100%;}
-  .ac-bar.hp i{background:linear-gradient(90deg,#34d399,#10b981);} .ac-bar.atb i{background:linear-gradient(90deg,#c4b5fd,#8b5cf6);}
+  .ac-bar.hp i{background:linear-gradient(90deg,#34d399,#10b981);} .ac-bar.mp i{background:linear-gradient(90deg,#7dd3fc,#38bdf8);} .ac-bar.atb i{background:linear-gradient(90deg,#c4b5fd,#8b5cf6);}
   .ac-mp{font-size:8px; color:var(--mp); margin-top:2px;}
+  .ac-shield{position:absolute; right:3px; top:2px; font-size:11px;}
   .ac-down{position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:24px;} .ally-card.downed .ac-down{display:flex;}
   .ac-fx{position:absolute; left:50%; top:-4px; transform:translateX(-50%); font-size:15px; font-weight:900; pointer-events:none; animation:dmgFloat .9s ease-out forwards; white-space:nowrap;}
   .ac-fx.heal{color:var(--good);} .ac-fx.hit{color:var(--bad);} .ally-card.hitflash{animation:hitflash .3s;}
@@ -133,7 +134,7 @@
 </head>
 <body>
 <div id="app">
-  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.7.1</span></span>
+  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.7.2</span></span>
     <button class="gear" onclick="toggleTuner(true)">⚙ 調整</button></div>
 
   <div class="stage" id="stage">
@@ -460,7 +461,13 @@ function bumpCombo(){ const b=document.getElementById('comboBadge'); b.style.dis
 
 /* ===================== §11 描画 ===================== */
 function buildEnemies(){ const row=document.getElementById('enemyRow'); const n=enemies.length;
-  const wide = window.innerWidth>=680; const base = n<=1?150 : n===2?120 : n===3?100 : 84; const sz=Math.round(base*(wide?(n>=3?1.2:1.45):1));   // 横長は拡大・ただし3体時は縦圧迫を避け控えめ(縦上限は.eimg max-height:30vh)
+  // 敵が少ないほど大きく(1体=最大・2体=横幅いっぱい)。幅(画面/敵数)と縦上限(34vh)の小さい方＝はみ出さず最大化。
+  const stage=document.getElementById('stage');
+  const avail = (stage && stage.clientWidth>60 ? stage.clientWidth : Math.min((window.innerWidth||400)-24, window.innerWidth>=680?780:460)) - 4;
+  const vh = window.innerHeight||700;
+  const maxH = Math.floor(vh * (n<=1?0.45 : n===2?0.40 : 0.32));   // 敵が少ないほど縦も大きく許可(1体=最大)。CSS max-height:48vhが最終安全網
+  const perW = Math.floor((avail - 8*(n-1))/Math.max(1,n));
+  const sz = Math.max(74, Math.min(perW, maxH));
   row.innerHTML = enemies.map(e=>{ const ab=e.attrs.map(a=>{ const s=SUBJECTS[a]; return `<span class="eattr" style="color:${s.color};border-color:${s.color};background:${s.color}1a;">${s.emoji}${s.jp}</span>`; }).join(' ');
     const inner = /\.(png|jpg|webp)$/i.test(e.img)?`<img src="${e.img}" alt="${e.name}">`:`<span style="font-size:${Math.floor(sz*0.6)}px">${e.img}</span>`;
     return `<div class="enemy-card" id="enemy-${e.idx}" onclick="onPickTarget(${e.idx})">
@@ -473,8 +480,10 @@ function buildEnemies(){ const row=document.getElementById('enemyRow'); const n=
 function buildParty(){ document.getElementById('party').innerHTML=allies.map(a=>`
   <div class="ally-card" id="ally-${a.id}">
     <div class="ac-emoji">${a.emoji}</div><span class="ac-name">${a.name}</span><div class="ac-role">${a.role}</div>
-    <div class="ac-bar hp"><i id="hp-${a.id}"></i></div><div class="ac-bar atb"><i id="atb-${a.id}"></i></div>
-    <div class="ac-mp" id="mp-${a.id}"></div><div class="ac-down">💀</div></div>`).join(''); }
+    <div class="ac-bar hp"><i id="hp-${a.id}"></i></div>
+    <div class="ac-bar mp"><i id="mp-${a.id}"></i></div>
+    <div class="ac-bar atb"><i id="atb-${a.id}"></i></div>
+    <div class="ac-shield" id="sh-${a.id}"></div><div class="ac-down">💀</div></div>`).join(''); }
 function pct(v,max){ return Math.max(0,Math.min(100,v/max*100)); }
 function updateUI(){
   enemies.forEach(e=>{ const hp=document.getElementById('ehp-'+e.idx), ch=document.getElementById('echg-'+e.idx), card=document.getElementById('enemy-'+e.idx); if(!card)return;
@@ -483,8 +492,9 @@ function updateUI(){
     card.classList.toggle('dead', !e.alive); card.classList.toggle('targetable', phase==='targeting' && e.alive); });
   allies.forEach(a=>{ const card=document.getElementById('ally-'+a.id); if(!card)return;
     document.getElementById('hp-'+a.id).style.width=pct(a.hp,a.hpMax)+'%';
+    document.getElementById('mp-'+a.id).style.width=pct(a.mp,a.mpMax)+'%';
     document.getElementById('atb-'+a.id).style.width=Math.min(100,a.charge)+'%';
-    document.getElementById('mp-'+a.id).textContent='MP'+Math.floor(a.mp)+(a.shield>0?' 🔰':'');
+    const sh=document.getElementById('sh-'+a.id); if(sh) sh.textContent=a.shield>0?'🔰':'';
     card.classList.toggle('active', activeAlly===a); card.classList.toggle('downed', a.downed); }); }
 function showEnd(win){ document.getElementById('phaseHint').textContent=win?'🎉 全ウェーブ突破！':'💀 全滅…';
   document.getElementById('cmdArea').innerHTML=`<div style="text-align:center;padding:6px 0;">
