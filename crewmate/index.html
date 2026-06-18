@@ -99,7 +99,22 @@ input{width:100%;padding:15px;border-radius:12px;border:1px solid var(--line);ba
 <body>
 <div id="app"></div>
 
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<!-- PeerJS（P2P通信）。学校フィルタ対策で cdnjs(Cloudflare) を最優先＝動作実績あり。
+     unpkg は学校でブロックされがちなので、複数CDNを順に試すフォールバック方式にする。 -->
+<script>
+(function loadPeer(cdns){
+  if(!cdns.length){ window.__peerLoadFailed=true; return; }
+  var s=document.createElement('script');
+  s.src=cdns[0]; s.async=false;
+  s.onload=function(){ window.__peerReady=true; };
+  s.onerror=function(){ loadPeer(cdns.slice(1)); };
+  document.head.appendChild(s);
+})([
+  'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js',
+  'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js',
+  'https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js'
+]);
+</script>
 <script>
 "use strict";
 /* ===================== 共通ヘルパー ===================== */
@@ -120,7 +135,18 @@ const NET = { isHost:false, peer:null, conns:{}, hostConn:null, ready:false };
 // 自分の画面状態
 const ME = { id:null, name:'', role:null, fellow:[], myCode:'', snap:null, killReadyAt:0, meetingsLeft:1 };
 
-function peerOptions(){ return { debug:1 }; } // PeerJS クラウド(0.peerjs.com)を利用＝鍵不要
+// PeerJS クラウド(0.peerjs.com)を利用＝鍵不要。STUNは動作実績のあるGoogleを明示指定。
+function peerOptions(){ return { debug:1, config:{ iceServers:[
+  { urls:'stun:stun.l.google.com:19302' },
+  { urls:'stun:stun1.l.google.com:19302' }
+] } }; }
+function peerLibReady(){
+  if(typeof Peer==='undefined'){
+    showFatal('通信ライブラリ(PeerJS)を読み込めませんでした。\n\nこのWi-Fiがフィルタで外部ライブラリ(cdnjs等)を遮断している可能性があります。\nモバイル回線や別のWi-Fiでお試しください。');
+    return false;
+  }
+  return true;
+}
 
 function send(conn,obj){ try{ conn.send(obj); }catch(e){ console.warn('send fail',e); } }
 function toHost(obj){ if(NET.isHost){ HOST.handle(ME.id, obj); } else if(NET.hostConn){ send(NET.hostConn,obj); } }
@@ -128,6 +154,7 @@ function broadcast(obj){ for(const id in NET.conns) send(NET.conns[id], obj); }
 
 /* ---- ホストになる ---- */
 function startHost(myName){
+  if(!peerLibReady()) return;
   NET.isHost = true; ME.name = myName;
   let attempts = 0;
   function tryCreate(){
@@ -157,6 +184,7 @@ function startHost(myName){
 
 /* ---- 参加する ---- */
 function joinRoom(roomCode, myName){
+  if(!peerLibReady()) return;
   NET.isHost=false; ME.name=myName;
   const peer = new Peer(peerOptions()); NET.peer=peer;
   let opened=false;
