@@ -15,6 +15,8 @@
      ・★敵耐性 resist:{type:0..1} を導入(木=毒/岩=眠り氷まひ/オメガ=状態異常全般)。
        applyAilmentで 持続×(1-耐性)×(弱体中は×1.6)。蝕みで耐性ボスを崩す駆け引き。
      ・「まず増やす→balance時に取捨選択」方針。数値は仮。不可侵維持。
+   v0.12 = バランス調整(オーナー承認): 毒の連鎖(detonate)の起爆倍率 1.6→0.8
+     (敵の最大HP約95%の実質一撃を是正＝積む3手で約48%maxHPの強コンボに)。
    v0.9 = スキルレベル＋ヘイト一式(オーナーFB・検証目的=可能性とゲームへの馴染みの確認):
      ・★スキルレベル(1-3・装備で決まる想定/プロトはtunerで操作): lvAxis で伸び方を指定
        'power'=効力UP&MP増 / 'dur'=効き時間UP&MP増 / 'eff'=効果そのままMP減 / 無指定=レベルなし。
@@ -166,7 +168,7 @@
 </head>
 <body>
 <div id="app">
-  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.11</span></span>
+  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.12</span></span>
     <button class="gear" onclick="toggleTuner(true)">⚙ 調整</button></div>
 
   <div class="stage" id="stage">
@@ -378,7 +380,7 @@ const SKILLS = {
   followup:{ name:'追い討ち', emoji:'🥊', mp:15, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'隙ありっ！',
     note:'正解でダメージ。眠り・こおり・まひなど“止まっている”敵には特大ダメージ。', run:(c,e,L)=>{ const stop=e&&e.ail&&(e.ail.sleep||e.ail.freeze||e.ail.timestop||e.ail.paralyze); const d=skillHit(c,e,(stop?2.6:0.9)*L.pow,{canCrit:true}); bigSavor((stop?'🥊 追い討ち！特大 ':'🥊 追い討ち ')+fmt(d)); } },
   detonate:{ name:'毒の連鎖', emoji:'🧨', mp:16, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'毒よ、はぜろ。',
-    note:'正解で、敵の毒・やけどを一気に爆発させて大ダメージ（毒は消える）。', run:(c,e,L)=>{ let burst=0; if(e&&e.ail){ ['poison','burn'].forEach(t=>{ const a=e.ail[t]; if(a){ burst+=e.hpMax*a.pps*a.remain; delete e.ail[t]; } }); } burst=Math.floor(burst*1.6*L.pow); if(burst>0&&e&&e.alive) dealEnemyTarget(e,burst,true); bigSavor('🧨 毒の連鎖 '+(burst>0?fmt(burst):'（毒なし）')); } },
+    note:'正解で、敵の毒・やけどを一気に爆発させて大ダメージ（毒は消える）。', run:(c,e,L)=>{ let burst=0; if(e&&e.ail){ ['poison','burn'].forEach(t=>{ const a=e.ail[t]; if(a){ burst+=e.hpMax*a.pps*a.remain; delete e.ail[t]; } }); } burst=Math.floor(burst*0.8*L.pow); if(burst>0&&e&&e.alive) dealEnemyTarget(e,burst,true); bigSavor('🧨 毒の連鎖 '+(burst>0?fmt(burst):'（毒なし）')); } },
   /* H. 守りのデバフ・耐性崩し(v0.11・候補カタログ§4) */
   intimidate:{ name:'威圧', emoji:'😠', mp:10, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'ぎろり、と睨みつける。',
     note:'正解で対象の攻撃力を下げる（味方が受けるダメージが減る＝守りのデバフ）。', run:(c,e,L)=>{ applyAilment(e,'atkdown',{dur:AILMENTS.atkdown.dur*L.dur}); bigSavor('😠 威圧'); } },
