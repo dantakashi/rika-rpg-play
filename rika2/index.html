@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>理科RPG2 戦闘プロト</title>
+<!--
+  ============================================================
+   理科RPG2 戦闘リズム試作（ATB「落ち着いて解く」型）
+   設計: rpg_v3/_docs/RIKA_BATTLE_ATB_DESIGN_2026-06-18.md
+   目的: 手触り(テンポ)を実機で詰めるための単体アプリ。
+   §目次
+     §1 設定(cfg)・調整パネルで即変更
+     §2 問題データ(サンプル)
+     §3 状態(state)・敵/味方
+     §4 メインループ(rAF・dtベース)= 4フェーズ
+     §5 行動コマンド(攻撃/防御/スキル/回復/大魔法)
+     §6 出題と判定(正解=演出→余韻 / 誤答=ゲージ-30%+解説)
+     §7 敵の行動
+     §8 演出(ダメージ/粒子/シェイク/余韻バナー)
+     §9 描画(updateUI)
+  ============================================================
+-->
+<style>
+  :root{
+    --bg1:#0b1020; --bg2:#131a2e; --panel:#1a2336; --line:#2b3756;
+    --ink:#e8eefc; --sub:#9fb0d6; --good:#34d399; --bad:#f87171;
+    --warn:#fbbf24; --hp:#ef4444; --mp:#38bdf8; --charge:#a78bfa; --enemy:#fb7185;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:linear-gradient(160deg,var(--bg1),#070a14); color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; overflow:hidden;}
+  #app{max-width:480px; margin:0 auto; height:100vh; height:100dvh; display:flex; flex-direction:column; position:relative;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:8px 12px; font-size:12px; color:var(--sub);}
+  .topbar b{color:var(--ink);}
+  .gear{background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:4px 9px; font-size:13px;}
+
+  /* ===== バトル舞台 ===== */
+  .stage{flex:1; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:6px 12px 10px; min-height:0;}
+  .enemy-zone{text-align:center; padding-top:6px;}
+  .enemy-emoji{font-size:74px; line-height:1; display:inline-block; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5));}
+  .enemy-name{font-weight:700; margin-top:2px; font-size:15px;}
+  .bar{height:13px; border-radius:7px; background:#0008; border:1px solid var(--line); overflow:hidden; position:relative;}
+  .bar > i{display:block; height:100%; width:100%; border-radius:6px;}
+  .bar .lab{position:absolute; inset:0; font-size:10px; text-align:center; line-height:13px; color:#fff; text-shadow:0 1px 2px #000; font-weight:700;}
+  .barwrap{margin:4px auto; max-width:300px;}
+  .barwrap .tag{font-size:10px; color:var(--sub); display:flex; justify-content:space-between; margin-bottom:1px;}
+
+  .mid{flex:0 0 auto; text-align:center; min-height:30px; position:relative;}
+  .player-zone{text-align:center;}
+  .player-emoji{font-size:44px; line-height:1;}
+
+  /* ===== 下部パネル(コマンド/問題) ===== */
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px 14px 0 0; padding:12px; box-shadow:0 -6px 18px #0006;}
+  .phase-hint{font-size:12px; color:var(--sub); text-align:center; min-height:16px; margin-bottom:6px;}
+  .cmd-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .cmd{display:flex; align-items:center; gap:8px; justify-content:center; padding:14px 8px; border-radius:12px;
+    background:#222d45; border:1px solid var(--line); color:var(--ink); font-size:16px; font-weight:700; transition:transform .06s;}
+  .cmd:active{transform:scale(.96);}
+  .cmd.atk{background:linear-gradient(180deg,#3b2a55,#2a1f40); border-color:#6d28d9;}
+  .cmd.def{background:linear-gradient(180deg,#1e3a4f,#13283a); border-color:#0e7490;}
+  .cmd.skill{background:linear-gradient(180deg,#143a2e,#0e2a22); border-color:#0f766e;}
+  .cmd.heal{background:linear-gradient(180deg,#3a2a14,#2a1f0e); border-color:#b45309;}
+  .cmd.daimaohou{grid-column:1/3; background:linear-gradient(180deg,#5b1d1d,#7c2d12); border-color:#f59e0b; animation:glow 1s infinite alternate;}
+  @keyframes glow{from{box-shadow:0 0 4px #f59e0b55;}to{box-shadow:0 0 16px #f59e0baa;}}
+  .cmd:disabled{opacity:.35; filter:grayscale(.5);}
+
+  .q-text{font-size:18px; font-weight:700; text-align:center; margin:4px 0 12px; line-height:1.5; min-height:54px; display:flex; align-items:center; justify-content:center;}
+  .q-text .formula{font-family:"Courier New",monospace; color:var(--warn);}
+  .choices{display:grid; gap:8px;}
+  .choice{padding:13px; border-radius:11px; background:#222d45; border:1px solid var(--line); color:var(--ink); font-size:16px; text-align:left;}
+  .choice:active{transform:scale(.98);}
+  .choice.ok{background:#14532d; border-color:var(--good);}
+  .choice.ng{background:#4c1d1d; border-color:var(--bad);}
+  .typewrap{display:flex; gap:8px;}
+  .typewrap input{flex:1; padding:13px; font-size:18px; border-radius:11px; background:#0c1220; border:1px solid var(--line); color:var(--ink); font-family:"Courier New",monospace;}
+  .typewrap button{padding:0 18px; border-radius:11px; background:#6d28d9; color:#fff; border:none; font-size:16px; font-weight:700;}
+  .desc{margin-top:10px; font-size:13px; color:var(--sub); background:#0c1220; border:1px solid var(--line); border-radius:10px; padding:9px; line-height:1.5;}
+
+  /* ===== 演出 ===== */
+  .dmg{position:absolute; left:50%; top:30%; transform:translateX(-50%); font-size:34px; font-weight:900; color:#fff; text-shadow:0 2px 6px #000,0 0 10px #f87171; pointer-events:none; animation:dmgFloat .9s ease-out forwards;}
+  .dmg.crit{font-size:46px; color:var(--warn); text-shadow:0 2px 8px #000,0 0 14px #fbbf24;}
+  .dmg.heal{color:var(--good); text-shadow:0 2px 6px #000,0 0 10px #34d399;}
+  .dmg.miss{color:#cbd5e1; font-size:26px;}
+  @keyframes dmgFloat{0%{opacity:0; transform:translate(-50%,8px) scale(.6);}20%{opacity:1; transform:translate(-50%,-4px) scale(1.15);}100%{opacity:0; transform:translate(-50%,-46px) scale(1);}}
+  .shake{animation:shake .28s;}
+  @keyframes shake{0%,100%{transform:translate(0,0);}20%{transform:translate(-7px,3px);}40%{transform:translate(6px,-3px);}60%{transform:translate(-5px,2px);}80%{transform:translate(4px,-2px);}}
+  .hitflash{animation:hitflash .3s;}
+  @keyframes hitflash{0%,100%{filter:none;}40%{filter:brightness(2.2) drop-shadow(0 0 14px #fff);}}
+  .particle{position:absolute; width:9px; height:9px; border-radius:50%; pointer-events:none;}
+  .savor-banner{position:absolute; left:0; right:0; top:34%; text-align:center; pointer-events:none; z-index:5;}
+  .savor-banner .big{display:inline-block; font-size:30px; font-weight:900; padding:8px 20px; border-radius:14px; background:rgba(10,14,28,.82); border:1px solid var(--warn); color:var(--warn); text-shadow:0 2px 8px #000; animation:savorPop .35s ease-out;}
+  @keyframes savorPop{from{transform:scale(.6); opacity:0;}to{transform:scale(1); opacity:1;}}
+  .combo{position:absolute; right:14px; top:64px; text-align:center; transition:transform .1s;}
+  .combo .n{font-size:30px; font-weight:900; color:var(--warn); text-shadow:0 2px 6px #000; line-height:1;}
+  .combo .t{font-size:10px; color:var(--sub); letter-spacing:1px;}
+  .combo.bump{transform:scale(1.35);}
+  .flash-good{animation:fg .25s;} @keyframes fg{0%{background:rgba(52,211,153,.10);}100%{background:transparent;}}
+
+  /* ===== 調整パネル ===== */
+  .tuner{position:absolute; inset:0; background:rgba(5,8,16,.94); z-index:20; padding:16px; overflow:auto; display:none;}
+  .tuner.show{display:block;}
+  .tuner h2{margin:4px 0 12px; font-size:17px;}
+  .trow{margin-bottom:14px;}
+  .trow label{font-size:13px; color:var(--sub); display:flex; justify-content:space-between;}
+  .trow label b{color:var(--ink);}
+  .trow input[type=range]{width:100%; margin-top:5px;}
+  .trow.chk{display:flex; align-items:center; gap:8px;}
+  .trow.chk label{flex:1; justify-content:flex-start;}
+  .tnote{font-size:11px; color:var(--sub); line-height:1.5; margin-bottom:14px;}
+  .tclose{width:100%; padding:13px; border-radius:11px; background:#6d28d9; color:#fff; border:none; font-size:16px; font-weight:700; margin-top:6px;}
+  .gearbig{background:#10162a; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.1</span></span>
+    <button class="gear" onclick="toggleTuner(true)">⚙ 調整</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <!-- 敵 -->
+    <div class="enemy-zone">
+      <div class="enemy-emoji" id="enemyEmoji">👾</div>
+      <div class="enemy-name" id="enemyName">スライム実験体</div>
+      <div class="barwrap">
+        <div class="tag"><span>敵HP</span><span id="enemyHpTxt"></span></div>
+        <div class="bar"><i id="enemyHp" style="background:linear-gradient(90deg,#f87171,#ef4444);"></i></div>
+      </div>
+      <div class="barwrap" style="max-width:240px;">
+        <div class="tag"><span>敵の攻撃</span><span id="enemyChargeTxt"></span></div>
+        <div class="bar" style="height:9px;"><i id="enemyCharge" style="background:linear-gradient(90deg,#fb7185,#e11d48);"></i></div>
+      </div>
+    </div>
+
+    <!-- 中央(演出領域) -->
+    <div class="mid" id="mid">
+      <div class="combo" id="comboBox" style="display:none;">
+        <div class="n" id="comboN">0</div><div class="t">COMBO</div>
+      </div>
+    </div>
+
+    <!-- 味方 -->
+    <div class="player-zone">
+      <div class="player-emoji" id="playerEmoji">🧑‍🔬</div>
+      <div class="barwrap">
+        <div class="tag"><span>あなたのHP</span><span id="playerHpTxt"></span></div>
+        <div class="bar"><i id="playerHp" style="background:linear-gradient(90deg,#34d399,#10b981);"></i></div>
+      </div>
+      <div class="barwrap">
+        <div class="tag"><span>⚡ 行動ゲージ</span><span id="playerChargeTxt"></span></div>
+        <div class="bar"><i id="playerCharge" style="background:linear-gradient(90deg,#c4b5fd,#8b5cf6);"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 下部パネル -->
+  <div class="panel">
+    <div class="phase-hint" id="phaseHint">…</div>
+    <div id="cmdArea"></div>
+  </div>
+
+  <!-- 調整パネル -->
+  <div class="tuner" id="tuner">
+    <h2>⚙ 手触り調整（PCで触って決める）</h2>
+    <div class="gearbig">
+      <div class="trow">
+        <label>🛡 装備の強さ（=ゲームの進行）<b id="gearV">0</b></label>
+        <input type="range" id="gear" min="0" max="100" value="0" oninput="onGear(this.value)">
+        <div class="tnote">右にやるほど「装備が強い＝行動ゲージが速い／でも敵も速い」を再現。溜めと敵速度が同時に動きます。</div>
+      </div>
+    </div>
+    <div class="trow">
+      <label>⚡ 溜め時間（秒）<b id="chargeV">3.0</b></label>
+      <input type="range" id="charge" min="0.5" max="5" step="0.1" value="3" oninput="cfg.chargeSec=+this.value; chargeV.textContent=(+this.value).toFixed(1);">
+    </div>
+    <div class="trow">
+      <label>✨ 余韻（ご褒美を見せる秒数）<b id="savorV">1.8</b></label>
+      <input type="range" id="savor" min="0.5" max="3.5" step="0.1" value="1.8" oninput="cfg.savorSec=+this.value; savorV.textContent=(+this.value).toFixed(1);">
+    </div>
+    <div class="trow">
+      <label>👾 敵の攻撃間隔（秒・小さいほど速い）<b id="enemyV">9.0</b></label>
+      <input type="range" id="enemyInt" min="3" max="20" step="0.5" value="9" oninput="cfg.enemyIntervalSec=+this.value; enemyV.textContent=(+this.value).toFixed(1);">
+    </div>
+    <div class="trow">
+      <label>❌ 誤答で行動ゲージを減らす量（%）<b id="missV">30</b></label>
+      <input type="range" id="miss" min="0" max="60" step="5" value="30" oninput="cfg.missDropPct=+this.value; missV.textContent=this.value;">
+    </div>
+    <div class="trow chk">
+      <input type="checkbox" id="freeze" checked onchange="cfg.freezeOnThink=this.checked;">
+      <label for="freeze">問題を読む/選ぶ間は敵を完全停止（調べてもOK）</label>
+    </div>
+    <div class="trow chk">
+      <input type="checkbox" id="dai" onchange="cfg.daimaohou=this.checked; renderCommand();">
+      <label for="dai">🔥 大魔法を有効化（3連続正解で極大ダメージ・実験/保留案）</label>
+    </div>
+    <div class="tnote">※これは手触り検証用の試作です。問題・絵・バランスは仮。ここで決めた秒数を本実装に移します。</div>
+    <button class="tclose" onclick="toggleTuner(false)">✓ 戦闘にもどる</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   §1 設定（調整パネルで即変更）
+   ============================================================ */
+const cfg = {
+  chargeSec: 3.0,        // 行動ゲージが満タンになる秒数（初期3秒→装備で短縮）
+  savorSec: 1.8,         // 正解後に演出/ご褒美を見せる秒数（次の出題をゲート）
+  actionSec: 0.9,        // 攻撃以外(防御/回復/スキル)の演出秒数
+  enemyIntervalSec: 9.0, // 敵が1回攻撃するまでの秒数（小さいほど速い）
+  missDropPct: 30,       // 誤答で行動ゲージを減らす割合(%)
+  freezeOnThink: true,   // 読む/選ぶ間は敵停止
+  daimaohou: false,      // 大魔法スキル(保留案)
+};
+// 「装備の強さ」スライダー: 0=初期, 100=最強。溜めと敵速度を同時に動かす。
+function lerp(a,b,t){ return a + (b-a)*t; }
+function onGear(v){
+  const t = (+v)/100; gearV.textContent = v;
+  cfg.chargeSec = +lerp(3.0, 0.8, t).toFixed(2);
+  cfg.enemyIntervalSec = +lerp(9.0, 3.5, t).toFixed(2);
+  charge.value = cfg.chargeSec; chargeV.textContent = cfg.chargeSec.toFixed(1);
+  enemyInt.value = cfg.enemyIntervalSec; enemyV.textContent = cfg.enemyIntervalSec.toFixed(1);
+}
+
+/* ============================================================
+   §2 問題データ（サンプル・仮）
+   ============================================================ */
+const QUESTIONS = [
+  { type:'choice', q:'水を電気分解すると、＋極（陽極）に発生する気体は？', choices:['水素','酸素','二酸化炭素','窒素'], answer:1, desc:'陽極(＋)に酸素、陰極(−)に水素。体積比は酸素1：水素2。' },
+  { type:'typing', q:'水の化学式を書こう', answer:'H2O', accept:['h2o'], desc:'水素2つと酸素1つ。H₂O。' },
+  { type:'choice', q:'光が空気中から水中へ進むとき、境界で起こることは？', choices:['反射だけ','屈折する','まっすぐ進む','消える'], answer:1, desc:'速さが変わるので屈折。境目で折れ曲がる。' },
+  { type:'typing', q:'二酸化炭素の化学式は？', answer:'CO2', accept:['co2'], desc:'炭素1つ＋酸素2つ。CO₂。' },
+  { type:'choice', q:'植物が光を受けてデンプンを作るはたらきを何という？', choices:['呼吸','蒸散','光合成','発芽'], answer:2, desc:'葉緑体で、水と二酸化炭素から光のエネルギーで栄養を作る。' },
+  { type:'choice', q:'回路で、電流の大きさをはかる電流計のつなぎ方は？', choices:['並列','直列','どちらでもよい','つながない'], answer:1, desc:'電流計は直列、電圧計は並列。' },
+  { type:'typing', q:'食塩（塩化ナトリウム）の化学式は？', answer:'NaCl', accept:['nacl'], desc:'ナトリウムNa＋塩素Cl。NaCl。' },
+  { type:'choice', q:'地震で、初めに来る小さなゆれ（初期微動）を伝える波は？', choices:['P波','S波','津波','表面波'], answer:0, desc:'速いP波が先(初期微動)、遅いS波が後(主要動)。' },
+  { type:'choice', q:'物体にはたらく重力の大きさを表す単位は？', choices:['kg','N（ニュートン）','℃','mL'], answer:1, desc:'力の単位はN。質量(kg)とは別物。' },
+  { type:'typing', q:'酸素分子の化学式は？', answer:'O2', accept:['o2'], desc:'酸素は2原子分子。O₂。' },
+  { type:'choice', q:'うすい塩酸に鉄を入れると発生する気体は？', choices:['酸素','水素','二酸化炭素','アンモニア'], answer:1, desc:'金属＋酸→水素が発生。火を近づけるとポンと音。' },
+  { type:'choice', q:'月のように、自分では光らず太陽の光を反射して見える天体を何という？', choices:['恒星','惑星','衛星','銀河'], answer:2, desc:'惑星のまわりを回るのが衛星。月は地球の衛星。' },
+];
+let qPool = [];
+function drawQuestion(){
+  if(qPool.length===0) qPool = shuffle(QUESTIONS.slice());
+  return qPool.pop();
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ============================================================
+   §3 状態
+   ============================================================ */
+const ENEMIES = [
+  { name:'スライム実験体', emoji:'🟢', hp:600, atk:14 },
+  { name:'フラスコ・ゴーレム', emoji:'🧪', hp:1100, atk:22 },
+  { name:'雷電クラゲ', emoji:'⚡', hp:1700, atk:32 },
+  { name:'隕石ドラゴン', emoji:'🐉', hp:2600, atk:46 },
+];
+let enemyIdx = 0;
+const player = { hpMax:300, hp:300, atk:120, charge:0, combo:0, defending:false };
+const enemy  = { name:'', emoji:'', hpMax:1, hp:1, atk:10, charge:0 };
+// phase: 'charging' | 'command' | 'question' | 'savor' | 'enemyAct' | 'win' | 'lose'
+let phase = 'charging';
+let stateTimer = 0;     // savor/enemyAct 等の残り秒
+let curQ = null;
+let answered = false;
+
+function setEnemy(i){
+  const e = ENEMIES[i % ENEMIES.length];
+  enemy.name=e.name; enemy.emoji=e.emoji; enemy.hpMax=e.hp; enemy.hp=e.hp; enemy.atk=e.atk; enemy.charge=0;
+  enemyEmoji.textContent=e.emoji; enemyName.textContent=e.name;
+}
+function resetAll(){
+  enemyIdx=0; setEnemy(0);
+  player.hp=player.hpMax; player.charge=0; player.combo=0; player.defending=false;
+  phase='charging'; stateTimer=0; curQ=null; answered=false;
+  renderCommand();
+}
+
+/* ============================================================
+   §4 メインループ（rAF・dtベース）= 4フェーズ
+   ============================================================ */
+let last = performance.now();
+function loop(now){
+  let dt = (now-last)/1000; last=now;
+  if(dt>0.1) dt=0.1; // タブ復帰などの巨大dtを抑制
+  update(dt);
+  updateUI();
+  requestAnimationFrame(loop);
+}
+function update(dt){
+  if(phase==='win'||phase==='lose') return;
+
+  // 敵ゲージ: 「行動の合間(溜め/余韻)」で進む。読む/選ぶ間は停止(設定)。
+  const enemyAdvances = (phase==='charging'||phase==='savor') ||
+                        ((phase==='command'||phase==='question') && !cfg.freezeOnThink);
+  if(enemyAdvances && phase!=='enemyAct'){
+    enemy.charge += dt*100/cfg.enemyIntervalSec;
+  }
+
+  if(phase==='charging'){
+    player.charge += dt*100/cfg.chargeSec;
+    if(enemy.charge>=100){ enemyAttack(); return; }
+    if(player.charge>=100){ player.charge=100; phase='command'; renderCommand(); }
+  }
+  else if(phase==='command' || phase==='question'){
+    if(enemy.charge>=100){ enemyAttack(); return; }
+  }
+  else if(phase==='savor'){
+    stateTimer -= dt;
+    if(stateTimer<=0){
+      if(enemy.charge>=100){ enemyAttack(); return; }
+      player.charge=0; phase='charging'; renderCommand();
+    }
+  }
+  else if(phase==='enemyAct'){
+    stateTimer -= dt;
+    if(stateTimer<=0){
+      // 敵の番が終わったら、ゲージ状況に応じて元の流れへ
+      if(player.charge>=100){ phase='command'; renderCommand(); }
+      else { phase='charging'; renderCommand(); }
+    }
+  }
+}
+
+/* ============================================================
+   §5 行動コマンド
+   ============================================================ */
+function renderCommand(){
+  const area = document.getElementById('cmdArea');
+  const hint = document.getElementById('phaseHint');
+
+  if(phase==='charging' || phase==='enemyAct'){
+    hint.textContent = (phase==='enemyAct') ? '— 敵のターン —' : '⚡ 行動ゲージを溜めています…（ひと息）';
+    area.innerHTML = `<div style="text-align:center; color:var(--sub); padding:18px 0; font-size:14px;">${phase==='enemyAct'?'…':'つぎの行動を待っています'}</div>`;
+    return;
+  }
+  if(phase==='savor'){
+    hint.textContent = '✨ …';
+    area.innerHTML = `<div style="text-align:center; color:var(--sub); padding:18px 0; font-size:14px;">（演出中）</div>`;
+    return;
+  }
+  if(phase==='command'){
+    hint.textContent = '▶ 行動をえらぶ';
+    const daiReady = cfg.daimaohou && player.combo>=3;
+    area.innerHTML = `
+      <div class="cmd-grid">
+        <button class="cmd atk" onclick="chooseAttack()">⚔️ 攻撃</button>
+        <button class="cmd def" onclick="chooseDefend()">🛡️ 防御</button>
+        <button class="cmd skill" onclick="chooseSkill()">✨ スキル</button>
+        <button class="cmd heal" onclick="chooseHeal()">❤️ 回復</button>
+        ${daiReady? `<button class="cmd daimaohou" onclick="chooseDaimaohou()">🔥 大魔法（コンボ${player.combo}消費・極大ダメージ）</button>`:''}
+      </div>`;
+    return;
+  }
+  if(phase==='question'){ renderQuestion(); return; }
+}
+
+function chooseAttack(){ if(phase!=='command') return; phase='question'; answered=false; curQ=drawQuestion(); renderCommand(); }
+function chooseDefend(){ if(phase!=='command') return; player.defending=true; effectText('🛡️ 防御！','heal'); enterAction('身を守った（次の敵の攻撃を大きく軽減）'); }
+function chooseHeal(){ if(phase!=='command') return; const h=Math.floor(player.hpMax*0.25); player.hp=Math.min(player.hpMax,player.hp+h); spawnDamage('+'+h,'heal','player'); effectText('❤️ 回復','heal'); enterAction('HPを回復した'); }
+function chooseSkill(){ if(phase!=='command') return; enemy.charge=0; const d=Math.floor(player.atk*0.8); dealEnemy(d,false); effectText('✨ 氷結砲！','crit'); enterAction('敵の攻撃ゲージを0にした＋ダメージ'); }
+function chooseDaimaohou(){
+  if(phase!=='command') return;
+  const d = Math.floor(player.atk * (3 + player.combo*0.8));
+  player.combo=0; dealEnemy(d,true); bigSavor('🔥 大魔法 '+d.toLocaleString()+'！'); screenShake();
+  player.charge=0; phase='savor'; stateTimer=cfg.savorSec+0.4; renderCommand(); checkWin();
+}
+// 攻撃以外の行動共通: 短い演出→溜めへ
+function enterAction(hintMsg){
+  document.getElementById('phaseHint').textContent = hintMsg;
+  player.charge=0; phase='savor'; stateTimer=cfg.actionSec; renderCommand();
+}
+
+/* ============================================================
+   §6 出題と判定
+   ============================================================ */
+function renderQuestion(){
+  const area = document.getElementById('cmdArea');
+  document.getElementById('phaseHint').textContent = '📖 落ち着いて解こう（敵は止まっています）';
+  const q = curQ;
+  let body='';
+  if(q.type==='choice'){
+    body = `<div class="choices">` + q.choices.map((c,i)=>`<button class="choice" data-i="${i}" onclick="answerChoice(${i})">${c}</button>`).join('') + `</div>`;
+  } else {
+    body = `<div class="typewrap"><input id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="答えを入力" onkeydown="if(event.key==='Enter')answerTyping()"><button onclick="answerTyping()">決定</button></div>`;
+  }
+  area.innerHTML = `<div class="q-text">${q.q}</div>${body}`;
+  if(q.type==='typing'){ setTimeout(()=>{ const el=document.getElementById('ans'); if(el) el.focus(); },30); }
+}
+function answerChoice(i){
+  if(phase!=='question'||answered) return; answered=true;
+  const correct = (i===curQ.answer);
+  const btns = document.querySelectorAll('.choice');
+  btns.forEach(b=>{ const bi=+b.dataset.i; if(bi===curQ.answer) b.classList.add('ok'); else if(bi===i&&!correct) b.classList.add('ng'); b.disabled=true; });
+  setTimeout(()=> resolveAnswer(correct), 380);
+}
+function answerTyping(){
+  if(phase!=='question'||answered) return;
+  const el=document.getElementById('ans'); if(!el) return;
+  const norm = s => (s||'').trim().toLowerCase().replace(/\s+/g,'');
+  const ok = norm(el.value)===norm(curQ.answer) || (curQ.accept||[]).map(norm).includes(norm(el.value));
+  answered=true; el.disabled=true;
+  resolveAnswer(ok);
+}
+function resolveAnswer(correct){
+  if(correct){
+    player.combo++;
+    bumpCombo();
+    const isCrit = Math.random()<0.18;
+    let dmg = Math.floor(player.atk * (1 + player.combo*0.10));
+    if(isCrit) dmg = Math.floor(dmg*1.8);
+    dealEnemy(dmg, isCrit);
+    flashGood();
+    bigSavor((isCrit?'⚡クリティカル ':'⚔️ ')+dmg.toLocaleString()+'！');
+    screenShake();
+    document.getElementById('phaseHint').textContent = 'COMBO '+player.combo+'！';
+    player.charge=0; phase='savor'; stateTimer=cfg.savorSec; renderCommand();
+    checkWin();
+  } else {
+    player.combo=0; bumpCombo();
+    const drop = cfg.missDropPct;
+    player.charge = Math.max(0, player.charge - drop);
+    spawnDamage('MISS','miss','enemy');
+    // 解説を見せて前進（HPは減らさない＝無罰）
+    const area=document.getElementById('cmdArea');
+    area.innerHTML = `<div class="q-text" style="color:var(--bad); min-height:auto;">おしい！ 正解は <b>${answerLabel(curQ)}</b></div>
+      <div class="desc">💡 ${curQ.desc}</div>
+      <div style="text-align:center; margin-top:10px;"><button class="cmd atk" style="display:inline-flex; padding:11px 26px;" onclick="afterMiss()">つぎへ ▶</button></div>`;
+    document.getElementById('phaseHint').textContent = 'まちがえても大丈夫。HPは減りません。';
+    phase='miss';
+  }
+}
+function answerLabel(q){ return q.type==='choice'? q.choices[q.answer] : q.answer; }
+function afterMiss(){ phase='charging'; renderCommand(); } // 行動ゲージは-30%の状態から溜め直し
+
+/* ============================================================
+   §7 敵の行動
+   ============================================================ */
+function enemyAttack(){
+  enemy.charge=0;
+  let dmg = enemy.atk + Math.floor(Math.random()*enemy.atk*0.4);
+  if(player.defending){ dmg=Math.floor(dmg*0.3); player.defending=false; }
+  player.hp=Math.max(0, player.hp-dmg);
+  spawnDamage('-'+dmg,'', 'player');
+  document.getElementById('app').classList.add('shake');
+  document.getElementById('playerEmoji').classList.add('hitflash');
+  setTimeout(()=>{ document.getElementById('app').classList.remove('shake'); document.getElementById('playerEmoji').classList.remove('hitflash'); },300);
+  phase='enemyAct'; stateTimer=0.7; renderCommand();
+  if(player.hp<=0){ phase='lose'; showEnd(false); }
+}
+
+/* ============================================================
+   §8 演出
+   ============================================================ */
+function dealEnemy(dmg, crit){
+  enemy.hp=Math.max(0, enemy.hp-dmg);
+  spawnDamage(dmg.toLocaleString(), crit?'crit':'', 'enemy');
+  spawnParticles(crit);
+  const ee=document.getElementById('enemyEmoji'); ee.classList.add('hitflash');
+  setTimeout(()=>ee.classList.remove('hitflash'),300);
+}
+function checkWin(){ if(enemy.hp<=0){ setTimeout(nextEnemy, cfg.savorSec*1000*0.7); } }
+function nextEnemy(){
+  enemyIdx++;
+  if(enemyIdx>=ENEMIES.length){ phase='win'; showEnd(true); return; }
+  setEnemy(enemyIdx);
+  bigSavor('✓ 撃破！ つぎの相手だ');
+  player.charge=0; phase='charging'; renderCommand();
+}
+function spawnDamage(text, cls, who){
+  const mid=document.getElementById('mid');
+  const d=document.createElement('div'); d.className='dmg '+(cls||''); d.textContent=text;
+  d.style.top = who==='player' ? '72%' : '14%';
+  mid.appendChild(d); setTimeout(()=>d.remove(),900);
+}
+function spawnParticles(crit){
+  const mid=document.getElementById('mid');
+  const n=crit?14:8;
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div'); p.className='particle';
+    p.style.background = crit? '#fbbf24' : '#f87171';
+    p.style.left='50%'; p.style.top='16%';
+    mid.appendChild(p);
+    const ang=Math.random()*Math.PI*2, dist=30+Math.random()*60;
+    const dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist;
+    p.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${dx}px,${dy}px)`,opacity:0}],{duration:520,easing:'ease-out'});
+    setTimeout(()=>p.remove(),520);
+  }
+}
+function bigSavor(text){
+  const stage=document.getElementById('stage');
+  const old=document.getElementById('savorBanner'); if(old) old.remove();
+  const b=document.createElement('div'); b.className='savor-banner'; b.id='savorBanner';
+  b.innerHTML=`<span class="big">${text}</span>`;
+  stage.appendChild(b);
+  setTimeout(()=>{ if(b.parentNode) b.remove(); }, Math.max(900, cfg.savorSec*1000));
+}
+function effectText(text, cls){ bigSavor(text); }
+function screenShake(){ const a=document.getElementById('app'); a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),280); }
+function flashGood(){ const a=document.getElementById('app'); a.classList.add('flash-good'); setTimeout(()=>a.classList.remove('flash-good'),250); }
+function bumpCombo(){
+  const box=document.getElementById('comboBox');
+  box.style.display = player.combo>0 ? 'block':'none';
+  document.getElementById('comboN').textContent=player.combo;
+  box.classList.add('bump'); setTimeout(()=>box.classList.remove('bump'),120);
+}
+
+/* ============================================================
+   §9 描画
+   ============================================================ */
+function pct(v,max){ return Math.max(0,Math.min(100, v/max*100)); }
+function updateUI(){
+  document.getElementById('enemyHp').style.width = pct(enemy.hp,enemy.hpMax)+'%';
+  document.getElementById('enemyHpTxt').textContent = Math.max(0,enemy.hp).toLocaleString()+' / '+enemy.hpMax.toLocaleString();
+  document.getElementById('enemyCharge').style.width = Math.min(100,enemy.charge)+'%';
+  document.getElementById('enemyChargeTxt').textContent = Math.floor(Math.min(100,enemy.charge))+'%';
+  document.getElementById('playerHp').style.width = pct(player.hp,player.hpMax)+'%';
+  document.getElementById('playerHpTxt').textContent = Math.max(0,player.hp)+' / '+player.hpMax;
+  document.getElementById('playerCharge').style.width = Math.min(100,player.charge)+'%';
+  document.getElementById('playerChargeTxt').textContent = Math.floor(Math.min(100,player.charge))+'%'+(player.charge>=100?' ⚡満タン':'');
+}
+
+function showEnd(win){
+  const area=document.getElementById('cmdArea');
+  document.getElementById('phaseHint').textContent = win? '🎉 全部たおした！' : '💀 たおれてしまった…';
+  area.innerHTML = `<div style="text-align:center; padding:10px 0;">
+    <div style="font-size:40px;">${win?'🏆':'😵'}</div>
+    <div style="margin:8px 0 14px; color:var(--sub);">${win?'手触りはどうでしたか？ 調整パネルで秒数を変えて試せます。':'もう一度どうぞ。'}</div>
+    <button class="cmd atk" style="display:inline-flex; padding:13px 30px;" onclick="resetAll()">▶ もう一度</button>
+  </div>`;
+}
+
+/* ===== 調整パネル開閉 ===== */
+function toggleTuner(show){ document.getElementById('tuner').classList.toggle('show', show); }
+
+/* ===== 起動 ===== */
+resetAll();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
