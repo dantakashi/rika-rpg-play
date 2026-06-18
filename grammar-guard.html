@@ -9422,6 +9422,8 @@ const Game = (()=>{
   const SAVE_KEY = "gg_v2_save_v1";
   let gold = 0;
   let gems = 0;            // グラマージェム💎（ガチャ専用通貨。問題を解くと貯まる）
+  let learnGemDay = '';    // 💎1日上限の対象日(todayStr)。日が変わると learnGemToday を0に戻す
+  let learnGemToday = 0;   // 当日の「問題に答えて得た学習💎」累計（1日上限の判定用・save保存）
   let gemsGranted = false; // 初回のみ300💎を配る移行フラグ（既存セーブ救済）
   let placementReset1 = false; // 2026-06-11移行: 推奨級ロック導入に伴い実力試験を全員リセット（再測定・💎重複配布は許容＝ユーザー決定）
   let placementResetUsed = false; // 2026-06-16: 推奨級の「1回だけやり直し」ボタンを使ったか。調べて高い級にロックした子の救済(💎再配布なし=bestScore保持)
@@ -9489,7 +9491,7 @@ const Game = (()=>{
       ownedParts=(s.ownedParts&&typeof s.ownedParts==='object')?s.ownedParts:{}; equippedParts=(s.equippedParts&&typeof s.equippedParts==='object')?s.equippedParts:{};
       towerBest=s.towerBest||0; learnBest=(s.learnBest&&typeof s.learnBest==='object')?s.learnBest:{}; lastDaily=s.lastDaily||''; dailyChalDone=s.dailyChalDone||''; treasures=(s.treasures&&typeof s.treasures==='object')?s.treasures:{};
       towerMiles=(s.towerMiles&&typeof s.towerMiles==='object')?s.towerMiles:{}; towerWeekDone=s.towerWeekDone||''; towerWeekBest=s.towerWeekBest||0; towerWeekStamp=s.towerWeekStamp||'';
-      clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0;
+      clockTs=s.clockTs||0; goldDay=s.goldDay||''; dailyStageGold=s.dailyStageGold||0; learnGemDay=s.learnGemDay||''; learnGemToday=s.learnGemToday||0;
       mistakes=(s.mistakes&&typeof s.mistakes==='object')?s.mistakes:{};
       // 旧need方式→Leitner(box/due)移行: box/dueが無い項目は box0・due0(=今すぐ復習対象)に。need は無視。
       for(var __mk in mistakes){ var __m=mistakes[__mk]; if(typeof __m.box!=='number') __m.box=0; if(typeof __m.due!=='number') __m.due=0; }
@@ -9512,7 +9514,22 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin})); }catch(e){}
+  }
+  // 💎の1日上限(2026-06-18・荒稼ぎ対策): 「問題に答えて得る学習💎」(れんしゅう/今日の復習/戦闘の1問ごと)だけを
+  // 1日 LEARN_GEM_DAILY_CAP までに静かに制限する。ステージ/塔の節目/デイリー等の“報酬💎”は対象外＝従来どおり満額。
+  // ★生徒には見せない(UI/メッセージ無し)。普通の勉強では絶対に当たらない高さ＝farm(無限ミル/塔の1問farm)だけが頭打ちになる(オーナー決定2026-06-18)。
+  const LEARN_GEM_DAILY_CAP = 10000;
+  function addLearnGems(pts){
+    pts = Math.max(0, Math.round(pts||0));
+    if(!pts) return 0;
+    var d = todayStr();
+    if(learnGemDay !== d){ learnGemDay = d; learnGemToday = 0; } // 日替わりでリセット
+    var room = LEARN_GEM_DAILY_CAP - learnGemToday;
+    if(room <= 0) return 0;                       // 当日ぶんを使い切り＝以降は静かに0(メッセージ無し)
+    var grant = (pts < room) ? pts : room;
+    learnGemToday += grant; gems += grant;
+    return grant;
   }
   function maxUnlocked(){ let m=1; for(let a=1;a<=STAGES.length;a++){ if(cleared[a]) m=Math.max(m,a+1); } return m; }
 
@@ -10083,7 +10100,7 @@ const Game = (()=>{
     var right=(i===pracQ.answerIndex);
     recordRt(performance.now()-(pracShownAt||performance.now()), right); // 📊Phase0計測のみ(挙動不変)
     if(pracQ.speak) Speech.speak(pracQ.speak); // 解答時に正答英語を再生
-    var pts=QuizEngine.gemGain(pracQ,right); gems+=pts;
+    var pts=QuizEngine.gemGain(pracQ,right); addLearnGems(pts); // 学習💎は1日上限あり(addLearnGems)＝復習farmが頭打ち
     if(right){ creditMistake(pracQ); markLearned(pracQ); } else recordMistake(pracQ);
     save(); updateGemUI(); renderPractice();
   }
@@ -10168,17 +10185,16 @@ const Game = (()=>{
         var nb=document.createElement('button'); nb.className='btn'; nb.style.cssText='width:100%;margin-top:12px;padding:12px;font-size:16px';
         nb.onclick=function(){ if(nb.disabled) return; pracDraw(); renderPractice(); };
         body.appendChild(nb);
-        if(pracReview){ // 復習で誤答＝クールダウン無し（解説をゆっくり読んで自分のペースで進む）
-          nb.textContent='つぎへ ▶';
-        } else { // ✏️通常れんしゅう：💎連打稼ぎ防止に2秒クールダウン（残り秒数を表示）
-          var __ggNextTick=function(){
-            if(homeView!=='practice'||!nb.isConnected){ return; }
-            var remain=PRAC_NEXT_COOLDOWN-(Date.now()-pracAnsweredAt);
-            if(remain>0){ nb.disabled=true; nb.style.opacity='.55'; nb.textContent='つぎへ ▶（'+Math.ceil(remain/1000)+'）'; setTimeout(__ggNextTick,200); }
-            else { nb.disabled=false; nb.style.opacity=''; nb.textContent='つぎへ ▶'; }
-          };
-          __ggNextTick();
-        }
+        // ✏️通常れんしゅう／🔁今日の復習で誤答：どちらも2秒入力ロック（残り秒数を表示）。
+        // 💎連打稼ぎ防止に加え、復習でわざと誤答して due を即再武装する“自己増殖ミル”の連射を鈍らせる(2026-06-18・オーナー指定)。
+        // 解説をゆっくり読む間でもある＝正直な子には無害(2秒は読む時間に埋もれる)。
+        var __ggNextTick=function(){
+          if(homeView!=='practice'||!nb.isConnected){ return; }
+          var remain=PRAC_NEXT_COOLDOWN-(Date.now()-pracAnsweredAt);
+          if(remain>0){ nb.disabled=true; nb.style.opacity='.55'; nb.textContent='つぎへ ▶（'+Math.ceil(remain/1000)+'）'; setTimeout(__ggNextTick,200); }
+          else { nb.disabled=false; nb.style.opacity=''; nb.textContent='つぎへ ▶'; }
+        };
+        __ggNextTick();
       }
     } else {
       var hint=document.createElement('div'); hint.className='muted'; hint.style.cssText='font-size:12px;margin-top:10px;text-align:center'; hint.textContent='答えをタップ → 確認して「つぎへ」'; body.appendChild(hint);
@@ -11186,7 +11202,7 @@ const Game = (()=>{
     const buttons=[...$('choices').children];
     let gemPts = QuizEngine.gemGain(curQ, right); // 💎ガチャ通貨：正解=満額／不正解=約1/3
     if(B.recoBonus) gemPts *= 2; // 推奨難易度（推奨級チャレンジ中）は💎2倍
-    gems += gemPts; updateGemUI(); save(); // 1問ごとに保存（途中でやめても💎は残る）
+    addLearnGems(gemPts); updateGemUI(); save(); // 1問ごとに保存（途中でやめても💎は残る）。学習💎は1日上限あり(addLearnGems)＝塔/連打の1問farmが頭打ち
     if(right){
       btn.classList.add('ok'); B.correct++; B.missStreak=0;
       creditMistake(curQ); markLearned(curQ); // 正解：SRSのboxを進める(復習時のみ)＋暗記コレクションに記録(増える一方)
@@ -12130,6 +12146,8 @@ const Game = (()=>{
     },
     // 📊適当連打対策 Phase0: 反応時間(reactMs)集計の読み出し/リセット（実データ収集用）
     rt: { stats(){ return JSON.parse(JSON.stringify(rtStats)); }, reset(){ rtStats={total:0,b:{},fast:0,fastCorrect:0}; return 'rt reset'; } },
+    // 💎1日上限(addLearnGems)の検証フック（debug専用・本番無害）。学習💎の上限/日替わりリセット/閾値下の満額をsimで確認する。
+    gem: { add(pts){ return addLearnGems(pts); }, state(){ return {gems:gems, today:learnGemToday, day:learnGemDay, cap:LEARN_GEM_DAILY_CAP}; }, raw(q,correct){ return QuizEngine.gemGain(q,correct); } },
     // 現在の問題に対し、ペルソナの知識率で正誤を決めて回答（実問題・選択肢運込み）
     answerKnow(prof){
       if(!curQ||curQ.locked) return false;
@@ -12190,7 +12208,7 @@ const Game = (()=>{
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
-      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), rt:Math.round(B.lastReactMs||0), rg:+(((B.lastReadGain==null)?1:B.lastReadGain).toFixed(3)), masher:!!B.masher, missStreak:B.missStreak||0, qAge:(curQ?Math.round(performance.now()-(curQ.shownAt||performance.now())):null), qLocked:!!(curQ&&curQ.locked), qcc:(curQ&&curQ.choiceCount)||null, partUnit:pu }; }
+      return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), rt:Math.round(B.lastReactMs||0), rg:+(((B.lastReadGain==null)?1:B.lastReadGain).toFixed(3)), masher:!!B.masher, missStreak:B.missStreak||0, qAge:(curQ?Math.round(performance.now()-(curQ.shownAt||performance.now())):null), qLocked:!!(curQ&&curQ.locked), qcc:(curQ&&curQ.choiceCount)||null, gems:gems, learnGemToday:learnGemToday, learnGemDay:learnGemDay, partUnit:pu }; }
     ,
     // 自動プレイ：area=ステージ, chapter=強化想定章, opts{acc正答率, scale倍速}。logは window.__ptlog、終了で window.__ptdone
     run(area, chapter, opts){
