@@ -6,27 +6,24 @@
 <title>理科RPG2 戦闘プロト</title>
 <!--
   ============================================================
-   理科RPG2 戦闘リズム試作（ATB「落ち着いて解く」型） v0.2
-   設計: rpg_v3/_docs/RIKA_BATTLE_ATB_DESIGN_2026-06-18.md
-   v0.2 変更(オーナーFB 2026-06-18):
-     ・設定値は既定で確定
-     ・レイアウト修正: 味方ステータス(HP/行動ゲージ/コンボ)を下部パネルのヘッダへ移動
-       → 問題とステータスが重ならない(短い画面でも安全)
-     ・コマンド再設計: 攻撃 / 防御 / スキル の3つ
-       - 攻撃 = 要・問題
-       - 防御 = 問題不要
-       - スキル = サブメニュー。各スキルが「要・問題か」を持つ(内容に応じて)
-       - 回復・大魔法はスキルに統合(スキルは今後複数追加可)
-   §目次
-     §1 設定(cfg)  §2 問題データ  §3 状態  §4 メインループ(4フェーズ)
-     §5 コマンド/スキル  §6 出題と判定  §7 敵  §8 演出  §9 描画
+   理科RPG2 戦闘リズム試作（ATB「落ち着いて解く」型） v0.3
+   設計: rpg_v3/_docs/RIKA_BATTLE_ATB_DESIGN_2026-06-18.md (§7.7)
+   v0.3 変更(オーナーFB 第3便 2026-06-18):
+     ・データ駆動化(拡張性): MONSTERS / SKILLS / ITEMS / 教科タグ付きQUESTIONS / player.killers
+     ・カフート式の全画面出題: 問題文 / 画像枠 / 色形タイル(or 入力) ＝戦闘を隠す(メリハリ)
+     ・MPゲージ: スキルはMP消費。MP回復=正解で少し+回復薬(コンボMPは装備スキル側=後)
+     ・アイテム枠: HP/MP回復薬。使用=行動ゲージ消費(本来100%・正解で30%に軽減)・効果は必ず発動
+     ・属性=モンスト的キラー: モンスターに教科属性→その教科を出題／装備の対○=与ダメ倍率(無くても倒せる=無罰)
+     ・画像スロット: 敵=大・味方=小(今は仮)
+   §目次  §1設定 §2教科/問題 §3モンスター/スキル/アイテム §4状態
+          §5ループ(4フェーズ) §6コマンド §7全画面出題(カフート式) §8敵 §9演出 §10描画
   ============================================================
 -->
 <style>
   :root{
     --bg1:#0b1020; --bg2:#131a2e; --panel:#1a2336; --line:#2b3756;
-    --ink:#e8eefc; --sub:#9fb0d6; --good:#34d399; --bad:#f87171;
-    --warn:#fbbf24; --charge:#a78bfa;
+    --ink:#e8eefc; --sub:#9fb0d6; --good:#34d399; --bad:#f87171; --warn:#fbbf24;
+    --hp:#10b981; --charge:#8b5cf6; --mp:#38bdf8;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; background:linear-gradient(160deg,var(--bg1),#070a14); color:var(--ink);
@@ -36,69 +33,88 @@
   .topbar b{color:var(--ink);}
   .gear{background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:4px 9px; font-size:13px;}
 
-  /* ===== バトル舞台(敵+演出+味方の絵) overflow:hidden で下部パネルに被らない ===== */
+  /* ===== 舞台 ===== */
   .stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:4px 12px 6px; min-height:0; overflow:hidden;}
-  .enemy-zone{text-align:center; padding-top:4px; flex:0 0 auto;}
-  .enemy-emoji{font-size:60px; line-height:1; display:inline-block; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5));}
-  .enemy-name{font-weight:700; margin-top:2px; font-size:15px;}
+  .enemy-zone{text-align:center; padding-top:2px; flex:0 0 auto;}
+  .enemy-img{width:128px; height:128px; margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:96px; line-height:1;
+    background:radial-gradient(circle at 50% 40%, #ffffff14, #ffffff00 70%); filter:drop-shadow(0 8px 12px rgba(0,0,0,.55)); border-radius:18px;}
+  .enemy-name{font-weight:700; margin-top:0; font-size:15px;}
+  .attr-badges{display:flex; gap:5px; justify-content:center; margin:3px 0 2px;}
+  .attr{font-size:10px; padding:2px 8px; border-radius:99px; font-weight:700; border:1px solid;}
   .bar{height:13px; border-radius:7px; background:#0008; border:1px solid var(--line); overflow:hidden; position:relative;}
   .bar > i{display:block; height:100%; width:100%; border-radius:6px;}
-  .barwrap{margin:4px auto; max-width:300px;}
+  .barwrap{margin:3px auto; max-width:300px;}
   .barwrap .tag{font-size:10px; color:var(--sub); display:flex; justify-content:space-between; margin-bottom:1px;}
-  .mid{flex:1 1 auto; position:relative; min-height:24px;}
+  .mid{flex:1 1 auto; position:relative; min-height:16px;}
   .player-zone{text-align:center; flex:0 0 auto;}
-  .player-emoji{font-size:40px; line-height:1;}
+  .player-img{font-size:34px; line-height:1;}
 
   /* ===== 下部パネル ===== */
-  .panel{flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:14px 14px 0 0; padding:10px 12px 14px; box-shadow:0 -6px 18px #0006;}
-  /* 味方ステータス = パネルのヘッダ(常に見える・問題と重ならない) */
-  .pstatus{display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px;}
+  .panel{flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:14px 14px 0 0; padding:9px 12px 13px; box-shadow:0 -6px 18px #0006;}
+  .pstatus{margin-bottom:8px;}
+  .prow{display:grid; gap:8px; align-items:center; margin-bottom:5px;}
+  .prow.r1{grid-template-columns:1fr auto;}
+  .prow.r2{grid-template-columns:1fr 1fr;}
   .pbar .ptag{font-size:9px; color:var(--sub); display:flex; justify-content:space-between; margin-bottom:1px;}
-  .pcombo{text-align:center; min-width:42px; line-height:1;}
-  .pcombo span{font-size:22px; font-weight:900; color:var(--warn); text-shadow:0 1px 3px #000;}
+  .pcombo{text-align:center; min-width:46px; line-height:1;}
+  .pcombo span{font-size:20px; font-weight:900; color:var(--warn); text-shadow:0 1px 3px #000;}
   .pcombo small{display:block; font-size:8px; color:var(--sub); letter-spacing:1px;}
   .pcombo.bump{animation:bump .15s;}
   @keyframes bump{50%{transform:scale(1.4);}}
 
   .phase-hint{font-size:12px; color:var(--sub); text-align:center; min-height:16px; margin-bottom:7px;}
-  .cmd-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
-  .cmd{display:flex; flex-direction:column; align-items:center; gap:3px; justify-content:center; padding:13px 6px; border-radius:12px;
-    background:#222d45; border:1px solid var(--line); color:var(--ink); font-size:15px; font-weight:700; transition:transform .06s;}
+  .cmd-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
+  .cmd{display:flex; flex-direction:column; align-items:center; gap:2px; justify-content:center; padding:11px 4px; border-radius:11px;
+    background:#222d45; border:1px solid var(--line); color:var(--ink); font-size:14px; font-weight:700; transition:transform .06s;}
   .cmd:active{transform:scale(.95);}
-  .cmd .ico{font-size:20px;}
+  .cmd .ico{font-size:19px;}
+  .cmd .sub{font-size:8px; color:var(--sub); font-weight:400;}
   .cmd.atk{background:linear-gradient(180deg,#3b2a55,#2a1f40); border-color:#6d28d9;}
   .cmd.def{background:linear-gradient(180deg,#1e3a4f,#13283a); border-color:#0e7490;}
   .cmd.skill{background:linear-gradient(180deg,#143a2e,#0e2a22); border-color:#0f766e;}
+  .cmd.item{background:linear-gradient(180deg,#3a2a14,#2a1f0e); border-color:#b45309;}
   .cmd:disabled{opacity:.35; filter:grayscale(.5);}
 
-  /* スキル一覧 */
-  .skill-list{display:grid; gap:8px;}
-  .skill{display:flex; align-items:center; gap:10px; padding:12px; border-radius:11px; background:#1d2a3f; border:1px solid var(--line); color:var(--ink); text-align:left;}
-  .skill:active{transform:scale(.98);}
-  .skill .si{font-size:24px;}
-  .skill .sn{font-weight:700; font-size:16px;}
-  .skill .sd{font-size:11px; color:var(--sub);}
-  .skill .badge{margin-left:auto; font-size:10px; padding:3px 8px; border-radius:99px; white-space:nowrap;}
+  .list{display:grid; gap:7px;}
+  .li{display:flex; align-items:center; gap:10px; padding:11px; border-radius:11px; background:#1d2a3f; border:1px solid var(--line); color:var(--ink); text-align:left;}
+  .li:active{transform:scale(.98);}
+  .li .ii{font-size:23px;}
+  .li .nn{font-weight:700; font-size:15px;}
+  .li .dd{font-size:11px; color:var(--sub);}
+  .li .badge{margin-left:auto; font-size:10px; padding:3px 8px; border-radius:99px; white-space:nowrap; text-align:center; line-height:1.3;}
   .badge.q{background:#3b2a55; color:#d8b4fe; border:1px solid #6d28d9;}
   .badge.free{background:#13283a; color:#7dd3fc; border:1px solid #0e7490;}
-  .skill:disabled{opacity:.4; filter:grayscale(.6);}
-  .back-btn{margin-top:2px; width:100%; padding:11px; border-radius:11px; background:#222d45; border:1px solid var(--line); color:var(--sub); font-size:14px;}
+  .badge.mp{background:#0c2a3a; color:#38bdf8; border:1px solid #0284c7;}
+  .li:disabled{opacity:.4; filter:grayscale(.6);}
+  .back-btn{margin-top:2px; width:100%; padding:10px; border-radius:11px; background:#222d45; border:1px solid var(--line); color:var(--sub); font-size:14px;}
 
-  .q-text{font-size:18px; font-weight:700; text-align:center; margin:2px 0 10px; line-height:1.45; min-height:46px; display:flex; align-items:center; justify-content:center;}
-  .choices{display:grid; gap:7px;}
-  .choice{padding:12px; border-radius:11px; background:#222d45; border:1px solid var(--line); color:var(--ink); font-size:16px; text-align:left;}
-  .choice:active{transform:scale(.98);}
-  .choice.ok{background:#14532d; border-color:var(--good);}
-  .choice.ng{background:#4c1d1d; border-color:var(--bad);}
+  /* ===== 全画面出題(カフート式) ===== */
+  .qoverlay{position:absolute; inset:0; z-index:30; background:linear-gradient(160deg,#0c1326,#070a14); display:none; flex-direction:column; padding:14px 14px 16px;}
+  .qoverlay.show{display:flex;}
+  .qctx{font-size:12px; color:var(--sub); text-align:center; margin-bottom:8px;}
+  .qctx b{color:var(--ink);}
+  .qq{font-size:21px; font-weight:800; text-align:center; line-height:1.5; padding:6px 4px;}
+  .qimg{flex:1 1 auto; min-height:60px; margin:10px 0; border:2px dashed var(--line); border-radius:14px; display:flex; align-items:center; justify-content:center; color:var(--sub); font-size:13px; background:#ffffff05;}
+  .qans{flex:0 0 auto;}
+  .tiles{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  .tile{display:flex; align-items:center; gap:9px; padding:16px 12px; border-radius:12px; color:#fff; font-size:16px; font-weight:700; text-align:left; border:3px solid transparent; text-shadow:0 1px 2px #0007;}
+  .tile:active{transform:scale(.97);}
+  .tile .shape{font-size:18px;}
+  .tile.ok{border-color:#fff; box-shadow:0 0 0 3px var(--good);}
+  .tile.ng{opacity:.45;}
   .typewrap{display:flex; gap:8px;}
-  .typewrap input{flex:1; padding:12px; font-size:18px; border-radius:11px; background:#0c1220; border:1px solid var(--line); color:var(--ink); font-family:"Courier New",monospace;}
-  .typewrap button{padding:0 18px; border-radius:11px; background:#6d28d9; color:#fff; border:none; font-size:16px; font-weight:700;}
-  .desc{margin-top:9px; font-size:13px; color:var(--sub); background:#0c1220; border:1px solid var(--line); border-radius:10px; padding:9px; line-height:1.5;}
+  .typewrap input{flex:1; padding:15px; font-size:20px; border-radius:12px; background:#0c1220; border:1px solid var(--line); color:var(--ink); font-family:"Courier New",monospace; text-align:center;}
+  .typewrap button{padding:0 20px; border-radius:12px; background:#6d28d9; color:#fff; border:none; font-size:17px; font-weight:700;}
+  .qfeed{flex:0 0 auto; margin-top:10px;}
+  .qfeed .desc{font-size:14px; color:var(--ink); background:#0c1220; border:1px solid var(--line); border-radius:11px; padding:11px; line-height:1.55;}
+  .qfeed .next{width:100%; margin-top:9px; padding:13px; border-radius:11px; background:#6d28d9; color:#fff; border:none; font-size:16px; font-weight:700;}
+  .qfeed .wrongttl{color:var(--bad); font-weight:800; text-align:center; margin-bottom:6px; font-size:16px;}
 
   /* ===== 演出 ===== */
-  .dmg{position:absolute; left:50%; top:30%; transform:translateX(-50%); font-size:34px; font-weight:900; color:#fff; text-shadow:0 2px 6px #000,0 0 10px #f87171; pointer-events:none; animation:dmgFloat .9s ease-out forwards;}
-  .dmg.crit{font-size:46px; color:var(--warn); text-shadow:0 2px 8px #000,0 0 14px #fbbf24;}
+  .dmg{position:absolute; left:50%; top:18%; transform:translateX(-50%); font-size:34px; font-weight:900; color:#fff; text-shadow:0 2px 6px #000,0 0 10px #f87171; pointer-events:none; animation:dmgFloat .9s ease-out forwards;}
+  .dmg.crit{font-size:46px; color:var(--warn);}
   .dmg.heal{color:var(--good); text-shadow:0 2px 6px #000,0 0 10px #34d399;}
+  .dmg.mp{color:var(--mp); text-shadow:0 2px 6px #000,0 0 10px #38bdf8;}
   .dmg.miss{color:#cbd5e1; font-size:26px;}
   @keyframes dmgFloat{0%{opacity:0; transform:translate(-50%,8px) scale(.6);}20%{opacity:1; transform:translate(-50%,-4px) scale(1.15);}100%{opacity:0; transform:translate(-50%,-46px) scale(1);}}
   .shake{animation:shake .28s;}
@@ -106,194 +122,218 @@
   .hitflash{animation:hitflash .3s;}
   @keyframes hitflash{0%,100%{filter:none;}40%{filter:brightness(2.2) drop-shadow(0 0 14px #fff);}}
   .particle{position:absolute; width:9px; height:9px; border-radius:50%; pointer-events:none;}
-  .savor-banner{position:absolute; left:0; right:0; top:30%; text-align:center; pointer-events:none; z-index:5;}
-  .savor-banner .big{display:inline-block; font-size:28px; font-weight:900; padding:8px 18px; border-radius:14px; background:rgba(10,14,28,.82); border:1px solid var(--warn); color:var(--warn); text-shadow:0 2px 8px #000; animation:savorPop .35s ease-out;}
+  .savor-banner{position:absolute; left:0; right:0; top:24%; text-align:center; pointer-events:none; z-index:5;}
+  .savor-banner .big{display:inline-block; font-size:26px; font-weight:900; padding:8px 18px; border-radius:14px; background:rgba(10,14,28,.82); border:1px solid var(--warn); color:var(--warn); text-shadow:0 2px 8px #000; animation:savorPop .35s ease-out;}
   @keyframes savorPop{from{transform:scale(.6); opacity:0;}to{transform:scale(1); opacity:1;}}
   .flash-good{animation:fg .25s;} @keyframes fg{0%{background:rgba(52,211,153,.10);}100%{background:transparent;}}
 
   /* ===== 調整パネル ===== */
-  .tuner{position:absolute; inset:0; background:rgba(5,8,16,.94); z-index:20; padding:16px; overflow:auto; display:none;}
+  .tuner{position:absolute; inset:0; background:rgba(5,8,16,.95); z-index:40; padding:16px; overflow:auto; display:none;}
   .tuner.show{display:block;}
-  .tuner h2{margin:4px 0 12px; font-size:17px;}
-  .trow{margin-bottom:14px;}
+  .tuner h2{margin:4px 0 12px; font-size:17px;} .tuner h3{font-size:13px; color:var(--warn); margin:16px 0 8px;}
+  .trow{margin-bottom:13px;}
   .trow label{font-size:13px; color:var(--sub); display:flex; justify-content:space-between;}
   .trow label b{color:var(--ink);}
   .trow input[type=range]{width:100%; margin-top:5px;}
-  .trow.chk{display:flex; align-items:center; gap:8px;}
-  .trow.chk label{flex:1; justify-content:flex-start;}
-  .tnote{font-size:11px; color:var(--sub); line-height:1.5; margin-bottom:14px;}
+  .trow.chk{display:flex; align-items:center; gap:8px;} .trow.chk label{flex:1; justify-content:flex-start;}
+  .killgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .tnote{font-size:11px; color:var(--sub); line-height:1.5; margin-bottom:12px;}
   .tclose{width:100%; padding:13px; border-radius:11px; background:#6d28d9; color:#fff; border:none; font-size:16px; font-weight:700; margin-top:6px;}
-  .gearbig{background:#10162a; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:16px;}
+  .gearbig{background:#10162a; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:14px;}
 </style>
 </head>
 <body>
 <div id="app">
   <div class="topbar">
-    <span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.2</span></span>
+    <span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.3</span></span>
     <button class="gear" onclick="toggleTuner(true)">⚙ 調整</button>
   </div>
 
   <div class="stage" id="stage">
-    <!-- 敵 -->
     <div class="enemy-zone">
-      <div class="enemy-emoji" id="enemyEmoji">🟢</div>
+      <div class="enemy-img" id="enemyImg">🟢</div>
       <div class="enemy-name" id="enemyName">スライム実験体</div>
+      <div class="attr-badges" id="enemyAttrs"></div>
       <div class="barwrap">
         <div class="tag"><span>敵HP</span><span id="enemyHpTxt"></span></div>
         <div class="bar"><i id="enemyHp" style="background:linear-gradient(90deg,#f87171,#ef4444);"></i></div>
       </div>
-      <div class="barwrap" style="max-width:240px;">
+      <div class="barwrap" style="max-width:220px;">
         <div class="tag"><span>敵の攻撃</span><span id="enemyChargeTxt"></span></div>
-        <div class="bar" style="height:9px;"><i id="enemyCharge" style="background:linear-gradient(90deg,#fb7185,#e11d48);"></i></div>
+        <div class="bar" style="height:8px;"><i id="enemyCharge" style="background:linear-gradient(90deg,#fb7185,#e11d48);"></i></div>
       </div>
     </div>
-    <!-- 中央(演出領域) -->
     <div class="mid" id="mid"></div>
-    <!-- 味方の絵だけ(ステータスはパネルへ) -->
-    <div class="player-zone"><div class="player-emoji" id="playerEmoji">🧑‍🔬</div></div>
+    <div class="player-zone"><div class="player-img" id="playerImg">🧑‍🔬</div></div>
   </div>
 
-  <!-- 下部パネル -->
   <div class="panel">
-    <!-- 味方ステータス(常時表示・問題と重ならない) -->
     <div class="pstatus">
-      <div class="pbar">
-        <div class="ptag"><span>あなたのHP</span><span id="playerHpTxt"></span></div>
-        <div class="bar" style="height:11px;"><i id="playerHp" style="background:linear-gradient(90deg,#34d399,#10b981);"></i></div>
+      <div class="prow r1">
+        <div class="pbar"><div class="ptag"><span>あなたのHP</span><span id="playerHpTxt"></span></div>
+          <div class="bar" style="height:11px;"><i id="playerHp" style="background:linear-gradient(90deg,#34d399,#10b981);"></i></div></div>
+        <div class="pcombo" id="comboBox" style="visibility:hidden;"><span id="comboN">0</span><small>COMBO</small></div>
       </div>
-      <div class="pbar">
-        <div class="ptag"><span>⚡行動ゲージ</span><span id="playerChargeTxt"></span></div>
-        <div class="bar" style="height:11px;"><i id="playerCharge" style="background:linear-gradient(90deg,#c4b5fd,#8b5cf6);"></i></div>
+      <div class="prow r2">
+        <div class="pbar"><div class="ptag"><span>⚡行動ゲージ</span><span id="playerChargeTxt"></span></div>
+          <div class="bar" style="height:10px;"><i id="playerCharge" style="background:linear-gradient(90deg,#c4b5fd,#8b5cf6);"></i></div></div>
+        <div class="pbar"><div class="ptag"><span>💧MP</span><span id="playerMpTxt"></span></div>
+          <div class="bar" style="height:10px;"><i id="playerMp" style="background:linear-gradient(90deg,#7dd3fc,#38bdf8);"></i></div></div>
       </div>
-      <div class="pcombo" id="comboBox" style="visibility:hidden;"><span id="comboN">0</span><small>COMBO</small></div>
     </div>
     <div class="phase-hint" id="phaseHint">…</div>
     <div id="cmdArea"></div>
+  </div>
+
+  <!-- 全画面出題(カフート式) -->
+  <div class="qoverlay" id="qOverlay">
+    <div class="qctx" id="qctx"></div>
+    <div class="qq" id="qq"></div>
+    <div class="qimg" id="qimg">（ここに画像が入ります）</div>
+    <div class="qans" id="qans"></div>
+    <div class="qfeed" id="qfeed"></div>
   </div>
 
   <!-- 調整パネル -->
   <div class="tuner" id="tuner">
     <h2>⚙ 手触り調整（PCで触って決める）</h2>
     <div class="gearbig">
-      <div class="trow">
-        <label>🛡 装備の強さ（=ゲームの進行）<b id="gearV">0</b></label>
+      <div class="trow"><label>🛡 装備の強さ（=進行）<b id="gearV">0</b></label>
         <input type="range" id="gear" min="0" max="100" value="0" oninput="onGear(this.value)">
-        <div class="tnote">右にやるほど「装備が強い＝行動ゲージが速い／でも敵も速い」を再現。溜めと敵速度が同時に動きます。</div>
-      </div>
+        <div class="tnote">右ほど「行動ゲージが速い／でも敵も速い」。</div></div>
     </div>
-    <div class="trow">
-      <label>⚡ 溜め時間（秒）<b id="chargeV">3.0</b></label>
-      <input type="range" id="charge" min="0.5" max="5" step="0.1" value="3" oninput="cfg.chargeSec=+this.value; chargeV.textContent=(+this.value).toFixed(1);">
+    <div class="trow"><label>⚡ 溜め時間（秒）<b id="chargeV">3.0</b></label>
+      <input type="range" id="charge" min="0.5" max="5" step="0.1" value="3" oninput="cfg.chargeSec=+this.value; chargeV.textContent=(+this.value).toFixed(1);"></div>
+    <div class="trow"><label>✨ 余韻（秒）<b id="savorV">1.8</b></label>
+      <input type="range" id="savor" min="0.5" max="3.5" step="0.1" value="1.8" oninput="cfg.savorSec=+this.value; savorV.textContent=(+this.value).toFixed(1);"></div>
+    <div class="trow"><label>👾 敵の攻撃間隔（秒）<b id="enemyV">9.0</b></label>
+      <input type="range" id="enemyInt" min="3" max="20" step="0.5" value="9" oninput="cfg.enemyIntervalSec=+this.value; enemyV.textContent=(+this.value).toFixed(1);"></div>
+    <div class="trow"><label>❌ 誤答で行動ゲージ減（%）<b id="missV">30</b></label>
+      <input type="range" id="miss" min="0" max="60" step="5" value="30" oninput="cfg.missDropPct=+this.value; missV.textContent=this.value;"></div>
+    <div class="trow chk"><input type="checkbox" id="freeze" checked onchange="cfg.freezeOnThink=this.checked;">
+      <label for="freeze">読む/選ぶ間は敵を完全停止（調べてもOK）</label></div>
+
+    <h3>💧 MP（スキルのコスト）</h3>
+    <div class="trow"><label>正解で回復するMP<b id="mpgV">10</b></label>
+      <input type="range" id="mpg" min="0" max="40" step="2" value="10" oninput="cfg.mpPerCorrect=+this.value; mpgV.textContent=this.value;"></div>
+
+    <h3>⚔ 属性キラー（=装備の代わり・テスト用）</h3>
+    <div class="tnote">敵の教科と一致する倍率が与ダメに乗る（モンスト式キラー）。1.0=効果なし。装備が来るまではここで仮設定。</div>
+    <div class="killgrid">
+      <div class="trow"><label>対物理 ×<b id="kphyV">1.0</b></label><input type="range" min="1" max="3" step="0.1" value="1" oninput="player.killers.physics=+this.value; kphyV.textContent=(+this.value).toFixed(1);"></div>
+      <div class="trow"><label>対化学 ×<b id="kchemV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="player.killers.chemistry=+this.value; kchemV.textContent=(+this.value).toFixed(1);"></div>
+      <div class="trow"><label>対生物 ×<b id="kbioV">1.0</b></label><input type="range" min="1" max="3" step="0.1" value="1" oninput="player.killers.biology=+this.value; kbioV.textContent=(+this.value).toFixed(1);"></div>
+      <div class="trow"><label>対地学 ×<b id="kearV">1.0</b></label><input type="range" min="1" max="3" step="0.1" value="1" oninput="player.killers.earth=+this.value; kearV.textContent=(+this.value).toFixed(1);"></div>
     </div>
-    <div class="trow">
-      <label>✨ 余韻（ご褒美を見せる秒数）<b id="savorV">1.8</b></label>
-      <input type="range" id="savor" min="0.5" max="3.5" step="0.1" value="1.8" oninput="cfg.savorSec=+this.value; savorV.textContent=(+this.value).toFixed(1);">
-    </div>
-    <div class="trow">
-      <label>👾 敵の攻撃間隔（秒・小さいほど速い）<b id="enemyV">9.0</b></label>
-      <input type="range" id="enemyInt" min="3" max="20" step="0.5" value="9" oninput="cfg.enemyIntervalSec=+this.value; enemyV.textContent=(+this.value).toFixed(1);">
-    </div>
-    <div class="trow">
-      <label>❌ 誤答で行動ゲージを減らす量（%）<b id="missV">30</b></label>
-      <input type="range" id="miss" min="0" max="60" step="5" value="30" oninput="cfg.missDropPct=+this.value; missV.textContent=this.value;">
-    </div>
-    <div class="trow chk">
-      <input type="checkbox" id="freeze" checked onchange="cfg.freezeOnThink=this.checked;">
-      <label for="freeze">問題を読む/選ぶ間は敵を完全停止（調べてもOK）</label>
-    </div>
-    <div class="tnote">※手触り検証用の試作です。問題・絵・バランスは仮。ここで決めた秒数を本実装に移します。</div>
+    <div class="tnote">※手触り検証用の試作。問題・絵・バランスは仮。スキルの本格コンテンツ(氷/毒/雷・状態異常)と本番画像は後で。</div>
     <button class="tclose" onclick="toggleTuner(false)">✓ 戦闘にもどる</button>
   </div>
 </div>
 
 <script>
-/* ============================================================
-   §1 設定（既定値で確定・調整パネルで変更可）
-   ============================================================ */
+/* ============================================================ §1 設定 ============================================================ */
 const cfg = {
-  chargeSec: 3.0,        // 行動ゲージ満タンまでの秒数（初期3秒→装備で短縮）
-  savorSec: 1.8,         // 正解後に演出/ご褒美を見せる秒数（次の出題をゲート）
-  actionSec: 0.9,        // 防御など「問題なし行動」の演出秒数
-  enemyIntervalSec: 9.0, // 敵が1回攻撃するまでの秒数
-  missDropPct: 30,       // 誤答で行動ゲージを減らす割合(%)
-  freezeOnThink: true,   // 読む/選ぶ間は敵停止
+  chargeSec:3.0, savorSec:1.8, actionSec:0.9, enemyIntervalSec:9.0,
+  missDropPct:30,          // 誤答(攻撃/スキル)で行動ゲージを減らす割合(%)
+  freezeOnThink:true,
+  mpPerCorrect:10,         // 正解で回復するMP
 };
-function lerp(a,b,t){ return a + (b-a)*t; }
-function onGear(v){
-  const t = (+v)/100; gearV.textContent = v;
-  cfg.chargeSec = +lerp(3.0, 0.8, t).toFixed(2);
-  cfg.enemyIntervalSec = +lerp(9.0, 3.5, t).toFixed(2);
-  charge.value = cfg.chargeSec; chargeV.textContent = cfg.chargeSec.toFixed(1);
-  enemyInt.value = cfg.enemyIntervalSec; enemyV.textContent = cfg.enemyIntervalSec.toFixed(1);
-}
+function lerp(a,b,t){ return a+(b-a)*t; }
+function onGear(v){ const t=(+v)/100; gearV.textContent=v;
+  cfg.chargeSec=+lerp(3.0,0.8,t).toFixed(2); cfg.enemyIntervalSec=+lerp(9.0,3.5,t).toFixed(2);
+  charge.value=cfg.chargeSec; chargeV.textContent=cfg.chargeSec.toFixed(1);
+  enemyInt.value=cfg.enemyIntervalSec; enemyV.textContent=cfg.enemyIntervalSec.toFixed(1); }
 
-/* ============================================================
-   §2 問題データ（サンプル・仮）
-   ============================================================ */
+/* ============================================================ §2 教科(属性) と 問題 ============================================================ */
+const SUBJECTS = {
+  physics:  { jp:'物理', emoji:'⚙️', color:'#60a5fa' },
+  chemistry:{ jp:'化学', emoji:'⚗️', color:'#34d399' },
+  biology:  { jp:'生物', emoji:'🌿', color:'#a3e635' },
+  earth:    { jp:'地学', emoji:'🪨', color:'#fbbf24' },
+};
+// 各問に subject(教科=属性)タグ。type=choice/typing。
 const QUESTIONS = [
-  { type:'choice', q:'水を電気分解すると、＋極（陽極）に発生する気体は？', choices:['水素','酸素','二酸化炭素','窒素'], answer:1, desc:'陽極(＋)に酸素、陰極(−)に水素。体積比は酸素1：水素2。' },
-  { type:'typing', q:'水の化学式を書こう', answer:'H2O', accept:['h2o'], desc:'水素2つと酸素1つ。H₂O。' },
-  { type:'choice', q:'光が空気中から水中へ進むとき、境界で起こることは？', choices:['反射だけ','屈折する','まっすぐ進む','消える'], answer:1, desc:'速さが変わるので屈折。境目で折れ曲がる。' },
-  { type:'typing', q:'二酸化炭素の化学式は？', answer:'CO2', accept:['co2'], desc:'炭素1つ＋酸素2つ。CO₂。' },
-  { type:'choice', q:'植物が光を受けてデンプンを作るはたらきを何という？', choices:['呼吸','蒸散','光合成','発芽'], answer:2, desc:'葉緑体で、水と二酸化炭素から光のエネルギーで栄養を作る。' },
-  { type:'choice', q:'回路で、電流の大きさをはかる電流計のつなぎ方は？', choices:['並列','直列','どちらでもよい','つながない'], answer:1, desc:'電流計は直列、電圧計は並列。' },
-  { type:'typing', q:'食塩（塩化ナトリウム）の化学式は？', answer:'NaCl', accept:['nacl'], desc:'ナトリウムNa＋塩素Cl。NaCl。' },
-  { type:'choice', q:'地震で、初めに来る小さなゆれ（初期微動）を伝える波は？', choices:['P波','S波','津波','表面波'], answer:0, desc:'速いP波が先(初期微動)、遅いS波が後(主要動)。' },
-  { type:'choice', q:'物体にはたらく重力の大きさを表す単位は？', choices:['kg','N（ニュートン）','℃','mL'], answer:1, desc:'力の単位はN。質量(kg)とは別物。' },
-  { type:'typing', q:'酸素分子の化学式は？', answer:'O2', accept:['o2'], desc:'酸素は2原子分子。O₂。' },
-  { type:'choice', q:'うすい塩酸に鉄を入れると発生する気体は？', choices:['酸素','水素','二酸化炭素','アンモニア'], answer:1, desc:'金属＋酸→水素が発生。火を近づけるとポンと音。' },
-  { type:'choice', q:'月のように自分では光らず、太陽の光を反射して見える天体を何という？', choices:['恒星','惑星','衛星','銀河'], answer:2, desc:'惑星のまわりを回るのが衛星。月は地球の衛星。' },
+  // --- 化学 ---
+  { s:'chemistry', type:'choice', q:'水を電気分解すると、＋極（陽極）に発生する気体は？', choices:['水素','酸素','二酸化炭素','窒素'], answer:1, desc:'陽極(＋)に酸素、陰極(−)に水素。体積比は酸素1：水素2。' },
+  { s:'chemistry', type:'typing', q:'水の化学式を書こう', answer:'H2O', accept:['h2o'], desc:'水素2つと酸素1つ。H₂O。' },
+  { s:'chemistry', type:'typing', q:'二酸化炭素の化学式は？', answer:'CO2', accept:['co2'], desc:'炭素1＋酸素2。CO₂。' },
+  { s:'chemistry', type:'typing', q:'食塩（塩化ナトリウム）の化学式は？', answer:'NaCl', accept:['nacl'], desc:'ナトリウムNa＋塩素Cl。NaCl。' },
+  { s:'chemistry', type:'choice', q:'うすい塩酸に鉄を入れると発生する気体は？', choices:['酸素','水素','二酸化炭素','アンモニア'], answer:1, desc:'金属＋酸→水素。火を近づけるとポンと音。' },
+  { s:'chemistry', type:'choice', q:'物質が酸素と結びつく化学変化を何という？', choices:['還元','酸化','蒸発','溶解'], answer:1, desc:'酸素と結びつく＝酸化。酸素を奪う＝還元。' },
+  // --- 物理 ---
+  { s:'physics', type:'choice', q:'光が空気中から水中へ進むとき、境界で起こることは？', choices:['反射だけ','屈折する','まっすぐ進む','消える'], answer:1, desc:'速さが変わるので屈折。境目で折れ曲がる。' },
+  { s:'physics', type:'choice', q:'電流の大きさをはかる電流計のつなぎ方は？', choices:['並列','直列','どちらでも','つながない'], answer:1, desc:'電流計は直列、電圧計は並列。' },
+  { s:'physics', type:'choice', q:'物体にはたらく力の大きさを表す単位は？', choices:['kg','N（ニュートン）','℃','mL'], answer:1, desc:'力の単位はN。質量(kg)とは別。' },
+  { s:'physics', type:'choice', q:'音が空気中を伝わる速さはおよそ何m/s？', choices:['約34','約340','約3400','約34000'], answer:1, desc:'音速は約340m/s（気温で変化）。' },
+  // --- 生物 ---
+  { s:'biology', type:'choice', q:'植物が光を受けてデンプンを作るはたらきを何という？', choices:['呼吸','蒸散','光合成','発芽'], answer:2, desc:'葉緑体で、水と二酸化炭素から栄養を作る。' },
+  { s:'biology', type:'choice', q:'ヒトが酸素を取り入れ、二酸化炭素を出すはたらきは？', choices:['蒸散','呼吸','消化','反射'], answer:1, desc:'細胞でエネルギーを取り出すのが呼吸。' },
+  { s:'biology', type:'choice', q:'根から吸った水を、葉から水蒸気として出すことを何という？', choices:['蒸散','光合成','受粉','発芽'], answer:0, desc:'おもに葉の気孔から。蒸散で水が引き上げられる。' },
+  // --- 地学 ---
+  { s:'earth', type:'choice', q:'地震で、初めに来る小さなゆれ（初期微動）を伝える波は？', choices:['P波','S波','津波','表面波'], answer:0, desc:'速いP波が先(初期微動)、遅いS波が後(主要動)。' },
+  { s:'earth', type:'choice', q:'月のように自分では光らず、光を反射して見える天体を何という？', choices:['恒星','惑星','衛星','銀河'], answer:2, desc:'惑星のまわりを回るのが衛星。月は地球の衛星。' },
+  { s:'earth', type:'choice', q:'火山から噴き出す、どろどろにとけた高温の物質は？', choices:['マグマ','マントル','化石','鉱石'], answer:0, desc:'地下の高温でとけた岩石がマグマ。地表に出ると溶岩。' },
 ];
-let qPool = [];
-function drawQuestion(){ if(qPool.length===0) qPool = shuffle(QUESTIONS.slice()); return qPool.pop(); }
-function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+let _lastQ = null;
+function drawQuestion(subjects){
+  const cand = QUESTIONS.filter(q=>subjects.includes(q.s));
+  let pool = cand.filter(q=>q!==_lastQ); if(pool.length===0) pool=cand;
+  const q = pool[Math.floor(Math.random()*pool.length)]; _lastQ=q; return q;
+}
 
-/* ============================================================
-   §3 状態
-   ============================================================ */
-const ENEMIES = [
-  { name:'スライム実験体', emoji:'🟢', hp:600, atk:14 },
-  { name:'フラスコ・ゴーレム', emoji:'🧪', hp:1100, atk:22 },
-  { name:'雷電クラゲ', emoji:'⚡', hp:1700, atk:32 },
-  { name:'隕石ドラゴン', emoji:'🐉', hp:2600, atk:46 },
+/* ============================================================ §3 モンスター / スキル / アイテム（データ駆動＝後から足せる） ============================================================ */
+const MONSTERS = [
+  { name:'スライム実験体', img:'🟢', hp:600,  atk:14, attrs:['chemistry'] },
+  { name:'森のトレント',   img:'🌳', hp:1100, atk:22, attrs:['biology'] },
+  { name:'岩石ゴーレム',   img:'🗿', hp:1700, atk:32, attrs:['earth'] },
+  { name:'隕石ドラゴン',   img:'🐉', hp:2600, atk:46, attrs:['earth','physics'] }, // 複数属性
 ];
-let enemyIdx = 0;
-const player = { hpMax:300, hp:300, atk:120, charge:0, combo:0, defending:false };
-const enemy  = { name:'', emoji:'', hpMax:1, hp:1, atk:10, charge:0 };
-// phase: 'charging'|'command'|'skillmenu'|'question'|'savor'|'miss'|'enemyAct'|'win'|'lose'
-let phase = 'charging';
-let stateTimer = 0;
-let curQ = null;
-let answered = false;
-let pendingSkill = null;   // スキル発動のために問題を解いている最中ならそのスキル
+// スキル: mpCost=MP消費。needsQuiz=正解で発動。element/状態異常は後で。
+const SKILLS = [
+  { id:'heal', name:'回復',   emoji:'❤️', mpCost:20, needsQuiz:true,  note:'正解でHPを25%回復',
+    run:()=>{ const h=Math.floor(player.hpMax*0.25); player.hp=Math.min(player.hpMax,player.hp+h); spawnDamage('+'+h,'heal','player'); bigSavor('❤️ 回復 +'+h); } },
+  { id:'ice',  name:'氷結砲', emoji:'🧊', mpCost:15, needsQuiz:true,  note:'正解で敵の攻撃ゲージを0＋ダメージ',
+    run:()=>{ enemy.charge=0; const d=Math.floor(player.atk*0.9*killer().mult); dealEnemy(d,false); bigSavor('🧊 氷結砲 '+d.toLocaleString()); } },
+  { id:'dai',  name:'大魔法', emoji:'🔥', mpCost:40, needsQuiz:false, combo:3, note:'コンボ3＋MPで発動・極大ダメージ',
+    run:()=>{ const d=Math.floor(player.atk*(3+player.combo*0.8)*killer().mult); player.combo=0; bumpCombo(); dealEnemy(d,true); screenShake(); bigSavor('🔥 大魔法 '+d.toLocaleString()+'！'); } },
+];
+// アイテム: 使用は行動ゲージを消費(本来100%・正解で30%に軽減)。効果は必ず発動。countは在庫。
+const ITEM_DEFS = [
+  { id:'hpPotion', name:'HP回復薬', emoji:'🧪', gaugeCost:100, note:'HPを40%回復',
+    run:()=>{ const h=Math.floor(player.hpMax*0.40); player.hp=Math.min(player.hpMax,player.hp+h); spawnDamage('+'+h,'heal','player'); bigSavor('🧪 HP +'+h); } },
+  { id:'mpPotion', name:'MP回復薬', emoji:'🔋', gaugeCost:100, note:'MPを50回復',
+    run:()=>{ player.mp=Math.min(player.mpMax,player.mp+50); spawnDamage('+50','mp','player'); bigSavor('🔋 MP +50'); } },
+];
 
-function setEnemy(i){
-  const e = ENEMIES[i % ENEMIES.length];
-  enemy.name=e.name; enemy.emoji=e.emoji; enemy.hpMax=e.hp; enemy.hp=e.hp; enemy.atk=e.atk; enemy.charge=0;
-  enemyEmoji.textContent=e.emoji; enemyName.textContent=e.name;
-}
-function resetAll(){
-  enemyIdx=0; setEnemy(0);
-  player.hp=player.hpMax; player.charge=0; player.combo=0; player.defending=false;
-  phase='charging'; stateTimer=0; curQ=null; answered=false; pendingSkill=null;
-  bumpCombo(); renderCommand();
-}
+/* ============================================================ §4 状態 ============================================================ */
+let enemyIdx=0;
+const player = { hpMax:300, hp:300, atk:120, mp:60, mpMax:100, charge:0, combo:0, defending:false,
+  killers:{ physics:1.0, chemistry:1.5, biology:1.0, earth:1.0 }, items:{ hpPotion:3, mpPotion:3 } };
+const enemy = { name:'', img:'', hpMax:1, hp:1, atk:10, charge:0, attrs:[] };
+// phase: charging|command|skillmenu|itemmenu|question|savor|enemyAct|win|lose
+let phase='charging', stateTimer=0, curQ=null, answered=false;
+let pendingAction=null;  // {kind:'attack'|'skill'|'item', skill?, item?}
 
-/* ============================================================
-   §4 メインループ（rAF・dtベース）= 4フェーズ
-   ============================================================ */
-let last = performance.now();
-function loop(now){
-  let dt=(now-last)/1000; last=now; if(dt>0.1) dt=0.1;
-  update(dt); updateUI(); requestAnimationFrame(loop);
+function setEnemy(i){ const e=MONSTERS[i%MONSTERS.length];
+  enemy.name=e.name; enemy.img=e.img; enemy.hpMax=e.hp; enemy.hp=e.hp; enemy.atk=e.atk; enemy.charge=0; enemy.attrs=e.attrs.slice();
+  enemyImg.textContent=e.img; enemyName.textContent=e.name; renderEnemyAttrs(); }
+function renderEnemyAttrs(){
+  enemyAttrs.innerHTML = enemy.attrs.map(a=>{ const s=SUBJECTS[a];
+    return `<span class="attr" style="color:${s.color}; border-color:${s.color}; background:${s.color}1a;">${s.emoji}${s.jp}</span>`; }).join('');
 }
-const THINK_PHASES = ['command','skillmenu','question','miss']; // 読む/選ぶ間
+function resetAll(){ enemyIdx=0; setEnemy(0);
+  player.hp=player.hpMax; player.mp=60; player.charge=0; player.combo=0; player.defending=false; player.items={hpPotion:3,mpPotion:3};
+  phase='charging'; stateTimer=0; curQ=null; answered=false; pendingAction=null;
+  hideOverlay(); bumpCombo(); renderCommand(); }
+
+/* ============================================================ §5 メインループ(4フェーズ) ============================================================ */
+let last=performance.now();
+function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.1)dt=0.1; update(dt); updateUI(); requestAnimationFrame(loop); }
+const THINK=['command','skillmenu','itemmenu','question']; // 読む/選ぶ間
 function update(dt){
   if(phase==='win'||phase==='lose') return;
-  const enemyAdvances = (phase==='charging'||phase==='savor') ||
-                        (THINK_PHASES.includes(phase) && !cfg.freezeOnThink);
-  if(enemyAdvances) enemy.charge += dt*100/cfg.enemyIntervalSec;
-
+  const adv = (phase==='charging'||phase==='savor') || (THINK.includes(phase) && !cfg.freezeOnThink);
+  if(adv) enemy.charge += dt*100/cfg.enemyIntervalSec;
   if(phase==='charging'){
     player.charge += dt*100/cfg.chargeSec;
     if(enemy.charge>=100){ enemyAttack(); return; }
@@ -302,216 +342,181 @@ function update(dt){
     stateTimer-=dt;
     if(stateTimer<=0){
       if(enemy.charge>=100){ enemyAttack(); return; }
-      player.charge=0; phase='charging'; renderCommand();
+      phase = player.charge>=100 ? 'command' : 'charging';   // アイテムで70%残った場合は続きから溜める
+      renderCommand();
     }
   } else if(phase==='enemyAct'){
-    stateTimer-=dt;
-    if(stateTimer<=0){ phase = (player.charge>=100)?'command':'charging'; renderCommand(); }
+    stateTimer-=dt; if(stateTimer<=0){ phase=(player.charge>=100)?'command':'charging'; renderCommand(); }
   }
 }
 
-/* ============================================================
-   §5 コマンド / スキル
-   ============================================================ */
-// スキル定義: needsQuiz=true は「正解で発動」、false は即発動。cond()=使用可条件。
-const SKILLS = [
-  { id:'heal', name:'回復', emoji:'❤️', needsQuiz:true, cond:()=>true,
-    note:'正解でHPを25%回復',
-    run:()=>{ const h=Math.floor(player.hpMax*0.25); player.hp=Math.min(player.hpMax,player.hp+h); spawnDamage('+'+h,'heal','player'); bigSavor('❤️ 回復 +'+h); } },
-  { id:'ice', name:'氷結砲', emoji:'🧊', needsQuiz:true, cond:()=>true,
-    note:'正解で敵の攻撃ゲージを0＋ダメージ',
-    run:()=>{ enemy.charge=0; const d=Math.floor(player.atk*0.9); dealEnemy(d,false); bigSavor('🧊 氷結砲 '+d.toLocaleString()); } },
-  { id:'dai', name:'大魔法', emoji:'🔥', needsQuiz:false, cond:()=>player.combo>=3,
-    note:'3連続正解で発動・極大ダメージ',
-    run:()=>{ const d=Math.floor(player.atk*(3+player.combo*0.8)); player.combo=0; bumpCombo(); dealEnemy(d,true); screenShake(); bigSavor('🔥 大魔法 '+d.toLocaleString()+'！'); } },
-];
-
+/* ============================================================ §6 コマンド ============================================================ */
 function renderCommand(){
   const area=document.getElementById('cmdArea'), hint=document.getElementById('phaseHint');
-  if(phase==='charging'||phase==='enemyAct'){
-    hint.textContent = (phase==='enemyAct')?'— 敵のターン —':'⚡ 行動ゲージを溜めています…（ひと息）';
-    area.innerHTML = `<div style="text-align:center; color:var(--sub); padding:16px 0; font-size:14px;">${phase==='enemyAct'?'…':'つぎの行動を待っています'}</div>`;
-    return;
-  }
-  if(phase==='savor'){ hint.textContent='✨ …'; area.innerHTML=`<div style="text-align:center; color:var(--sub); padding:16px 0; font-size:14px;">（演出中）</div>`; return; }
-  if(phase==='command'){
-    hint.textContent='▶ 行動をえらぶ';
-    area.innerHTML = `<div class="cmd-grid">
-      <button class="cmd atk" onclick="chooseAttack()"><span class="ico">⚔️</span>攻撃<span class="sd" style="font-size:9px;color:var(--sub)">要・問題</span></button>
-      <button class="cmd def" onclick="chooseDefend()"><span class="ico">🛡️</span>防御<span class="sd" style="font-size:9px;color:var(--sub)">問題なし</span></button>
-      <button class="cmd skill" onclick="openSkills()"><span class="ico">✨</span>スキル<span class="sd" style="font-size:9px;color:var(--sub)">中身次第</span></button>
-    </div>`;
-    return;
-  }
+  if(phase==='charging'||phase==='enemyAct'){ hint.textContent=(phase==='enemyAct')?'— 敵のターン —':'⚡ 行動ゲージを溜めています…（ひと息）';
+    area.innerHTML=`<div style="text-align:center; color:var(--sub); padding:14px 0; font-size:14px;">${phase==='enemyAct'?'…':'つぎの行動を待っています'}</div>`; return; }
+  if(phase==='savor'){ hint.textContent='✨ …'; area.innerHTML=`<div style="text-align:center; color:var(--sub); padding:14px 0; font-size:14px;">（演出中）</div>`; return; }
+  if(phase==='command'){ hint.textContent='▶ 行動をえらぶ';
+    area.innerHTML=`<div class="cmd-grid">
+      <button class="cmd atk" onclick="chooseAttack()"><span class="ico">⚔️</span>攻撃<span class="sub">要・問題</span></button>
+      <button class="cmd def" onclick="chooseDefend()"><span class="ico">🛡️</span>防御<span class="sub">問題なし</span></button>
+      <button class="cmd skill" onclick="openSkills()"><span class="ico">✨</span>スキル<span class="sub">MP消費</span></button>
+      <button class="cmd item" onclick="openItems()"><span class="ico">🎒</span>アイテム<span class="sub">行動消費</span></button>
+    </div>`; return; }
   if(phase==='skillmenu'){ renderSkillMenu(); return; }
-  if(phase==='question'){ renderQuestion(); return; }
+  if(phase==='itemmenu'){ renderItemMenu(); return; }
 }
 
-function chooseAttack(){ if(phase!=='command') return; pendingSkill=null; phase='question'; answered=false; curQ=drawQuestion(); renderCommand(); }
-function chooseDefend(){ if(phase!=='command') return; player.defending=true; bigSavor('🛡️ 防御！'); afterAction('身を守った（次の敵の攻撃を大きく軽減）'); }
+function chooseAttack(){ if(phase!=='command')return; pendingAction={kind:'attack'}; startQuestion(); }
+function chooseDefend(){ if(phase!=='command')return; player.defending=true; bigSavor('🛡️ 防御！'); afterAction('身を守った（次の敵の攻撃を大きく軽減）'); }
 
-function openSkills(){ if(phase!=='command') return; phase='skillmenu'; renderSkillMenu(); }
+function openSkills(){ if(phase!=='command')return; phase='skillmenu'; renderSkillMenu(); }
 function renderSkillMenu(){
-  const area=document.getElementById('cmdArea');
-  document.getElementById('phaseHint').textContent='✨ スキルをえらぶ';
-  area.innerHTML = `<div class="skill-list">` + SKILLS.map(s=>{
-    const ok=s.cond();
-    const badge = s.needsQuiz ? `<span class="badge q">要・問題</span>` : `<span class="badge free">${s.id==='dai'?'コンボ3で発動':'問題なし'}</span>`;
-    return `<button class="skill" ${ok?'':'disabled'} onclick="selectSkill('${s.id}')">
-        <span class="si">${s.emoji}</span>
-        <span><span class="sn">${s.name}</span><br><span class="sd">${s.note}</span></span>${badge}
-      </button>`;
-  }).join('') + `</div><button class="back-btn" onclick="backToCommand()">◀ もどる</button>`;
+  const area=document.getElementById('cmdArea'); document.getElementById('phaseHint').textContent='✨ スキル（MPを使う）';
+  area.innerHTML=`<div class="list">`+SKILLS.map(s=>{
+    const comboOk = !s.combo || player.combo>=s.combo; const mpOk = player.mp>=s.mpCost; const ok=comboOk&&mpOk;
+    const why = !mpOk ? `<span class="badge mp">MP不足</span>` : (!comboOk ? `<span class="badge free">コンボ${s.combo}必要</span>` : (s.needsQuiz?`<span class="badge q">要・問題</span>`:`<span class="badge free">即発動</span>`));
+    return `<button class="li" ${ok?'':'disabled'} onclick="selectSkill('${s.id}')"><span class="ii">${s.emoji}</span>
+      <span><span class="nn">${s.name}</span> <span class="badge mp" style="margin:0;">MP${s.mpCost}</span><br><span class="dd">${s.note}</span></span>${why}</button>`;
+  }).join('')+`</div><button class="back-btn" onclick="backToCommand()">◀ もどる</button>`;
 }
-function backToCommand(){ if(phase!=='skillmenu') return; phase='command'; renderCommand(); }
-function selectSkill(id){
-  if(phase!=='skillmenu') return;
-  const s=SKILLS.find(x=>x.id===id); if(!s||!s.cond()) return;
-  if(s.needsQuiz){ pendingSkill=s; phase='question'; answered=false; curQ=drawQuestion(); renderCommand(); }
-  else { s.run(); afterAction(s.name+'を発動'); checkWin(); }
+function selectSkill(id){ if(phase!=='skillmenu')return; const s=SKILLS.find(x=>x.id===id); if(!s) return;
+  if(player.mp<s.mpCost) return; if(s.combo && player.combo<s.combo) return;
+  if(s.needsQuiz){ pendingAction={kind:'skill', skill:s}; startQuestion(); }
+  else { player.mp-=s.mpCost; s.run(); afterAction(s.name+'を発動'); checkWin(); } }
+
+function openItems(){ if(phase!=='command')return; phase='itemmenu'; renderItemMenu(); }
+function renderItemMenu(){
+  const area=document.getElementById('cmdArea'); document.getElementById('phaseHint').textContent='🎒 アイテム（行動ゲージを消費・正解で30%に軽減）';
+  area.innerHTML=`<div class="list">`+ITEM_DEFS.map(it=>{ const n=player.items[it.id]||0; const ok=n>0;
+    return `<button class="li" ${ok?'':'disabled'} onclick="selectItem('${it.id}')"><span class="ii">${it.emoji}</span>
+      <span><span class="nn">${it.name}</span> ×${n}<br><span class="dd">${it.note}</span></span><span class="badge q">問題で軽減</span></button>`;
+  }).join('')+`</div><button class="back-btn" onclick="backToCommand()">◀ もどる</button>`;
 }
-// 攻撃以外の即時行動の後始末: 短い演出→溜めへ
+function selectItem(id){ if(phase!=='itemmenu')return; const it=ITEM_DEFS.find(x=>x.id===id); if(!it||(player.items[id]||0)<=0) return;
+  pendingAction={kind:'item', item:it}; startQuestion(); }
+
+function backToCommand(){ if(phase==='skillmenu'||phase==='itemmenu'){ phase='command'; renderCommand(); } }
 function afterAction(hintMsg){ document.getElementById('phaseHint').textContent=hintMsg; player.charge=0; phase='savor'; stateTimer=cfg.actionSec; renderCommand(); }
 
-/* ============================================================
-   §6 出題と判定
-   ============================================================ */
-function renderQuestion(){
-  const area=document.getElementById('cmdArea'), q=curQ;
-  document.getElementById('phaseHint').textContent = pendingSkill
-    ? `📖 ${pendingSkill.name}：正解で発動！（敵は止まっています）`
-    : '📖 落ち着いて解こう（敵は止まっています）';
-  let body = q.type==='choice'
-    ? `<div class="choices">`+q.choices.map((c,i)=>`<button class="choice" data-i="${i}" onclick="answerChoice(${i})">${c}</button>`).join('')+`</div>`
-    : `<div class="typewrap"><input id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="答えを入力" onkeydown="if(event.key==='Enter')answerTyping()"><button onclick="answerTyping()">決定</button></div>`;
-  area.innerHTML = `<div class="q-text">${q.q}</div>${body}`;
-  if(q.type==='typing') setTimeout(()=>{ const el=document.getElementById('ans'); if(el) el.focus(); },30);
+/* ============================================================ §7 全画面出題（カフート式） ============================================================ */
+const TILE = [{c:'#e0413e',s:'▲'},{c:'#1368ce',s:'◆'},{c:'#d89e00',s:'●'},{c:'#26890c',s:'■'}];
+function startQuestion(){ phase='question'; answered=false; curQ=drawQuestion(enemy.attrs); renderQuestionOverlay(); }
+function renderQuestionOverlay(){
+  const q=curQ, ov=document.getElementById('qOverlay');
+  // 文脈ヘッダ
+  const subj=SUBJECTS[q.s]; let ctx='';
+  if(pendingAction.kind==='attack') ctx=`<b>⚔️ 攻撃</b>　｜　${subj.emoji}<b>${subj.jp}</b>の問題`;
+  else if(pendingAction.kind==='skill') ctx=`<b>${pendingAction.skill.emoji} ${pendingAction.skill.name}</b>（正解で発動）　｜　${subj.emoji}${subj.jp}`;
+  else ctx=`<b>${pendingAction.item.emoji} ${pendingAction.item.name}</b>（正解で行動消費30%）　｜　${subj.emoji}${subj.jp}`;
+  document.getElementById('qctx').innerHTML=ctx;
+  document.getElementById('qq').textContent=q.q;
+  document.getElementById('qimg').textContent='（ここに画像が入ります）';
+  document.getElementById('qfeed').innerHTML='';
+  const ans=document.getElementById('qans');
+  if(q.type==='choice'){
+    ans.innerHTML=`<div class="tiles">`+q.choices.map((c,i)=>{ const t=TILE[i%4];
+      return `<button class="tile" data-i="${i}" style="background:${t.c};" onclick="answerChoice(${i})"><span class="shape">${t.s}</span>${c}</button>`; }).join('')+`</div>`;
+  } else {
+    ans.innerHTML=`<div class="typewrap"><input id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="答えを入力" onkeydown="if(event.key==='Enter')answerTyping()"><button onclick="answerTyping()">決定</button></div>`;
+  }
+  ov.classList.add('show');
+  if(q.type==='typing') setTimeout(()=>{ const el=document.getElementById('ans'); if(el) el.focus(); },40);
 }
-function answerChoice(i){
-  if(phase!=='question'||answered) return; answered=true;
-  const correct=(i===curQ.answer);
-  document.querySelectorAll('.choice').forEach(b=>{ const bi=+b.dataset.i; if(bi===curQ.answer) b.classList.add('ok'); else if(bi===i&&!correct) b.classList.add('ng'); b.disabled=true; });
-  setTimeout(()=>resolveAnswer(correct),380);
-}
-function answerTyping(){
-  if(phase!=='question'||answered) return;
-  const el=document.getElementById('ans'); if(!el) return;
-  const norm=s=>(s||'').trim().toLowerCase().replace(/\s+/g,'');
-  const ok = norm(el.value)===norm(curQ.answer) || (curQ.accept||[]).map(norm).includes(norm(el.value));
-  answered=true; el.disabled=true; resolveAnswer(ok);
-}
+function hideOverlay(){ document.getElementById('qOverlay').classList.remove('show'); }
+function answerChoice(i){ if(phase!=='question'||answered)return; answered=true;
+  document.querySelectorAll('.tile').forEach(b=>{ const bi=+b.dataset.i; if(bi===curQ.answer) b.classList.add('ok'); else b.classList.add('ng'); b.disabled=true; });
+  setTimeout(()=>resolveAnswer(i===curQ.answer),460); }
+function answerTyping(){ if(phase!=='question'||answered)return; const el=document.getElementById('ans'); if(!el)return;
+  const norm=s=>(s||'').trim().toLowerCase().replace(/\s+/g,''); const ok=norm(el.value)===norm(curQ.answer)||(curQ.accept||[]).map(norm).includes(norm(el.value));
+  answered=true; el.disabled=true; resolveAnswer(ok); }
+
 function resolveAnswer(correct){
-  const skill=pendingSkill; pendingSkill=null;
+  const act=pendingAction;
   if(correct){
-    player.combo++; bumpCombo();
-    if(skill){ skill.run(); document.getElementById('phaseHint').textContent='COMBO '+player.combo+'！'; }
-    else { doAttack(); document.getElementById('phaseHint').textContent='COMBO '+player.combo+'！'; }
-    flashGood();
-    player.charge=0; phase='savor'; stateTimer=cfg.savorSec; renderCommand(); checkWin();
+    player.combo++; bumpCombo(); player.mp=Math.min(player.mpMax, player.mp+cfg.mpPerCorrect);
+    hideOverlay();
+    if(act.kind==='attack'){ doAttack(); player.charge=0; }                       // 攻撃=行動ゲージ全消費
+    else if(act.kind==='skill'){ player.mp-=act.skill.mpCost; act.skill.run(); player.charge=0; } // スキル=MP消費＋行動ゲージ全消費
+    else if(act.kind==='item'){ useItem(act.item, true); }                         // アイテム=行動ゲージは useItem が30%だけ消費
+    document.getElementById('phaseHint').textContent='COMBO '+player.combo+'！'; flashGood();
+    pendingAction=null; phase='savor'; stateTimer=cfg.savorSec; renderCommand(); checkWin();
   } else {
     player.combo=0; bumpCombo();
-    player.charge=Math.max(0, player.charge-cfg.missDropPct);
-    spawnDamage('MISS','miss','enemy');
-    const area=document.getElementById('cmdArea');
-    area.innerHTML = `<div class="q-text" style="color:var(--bad); min-height:auto;">おしい！ 正解は <b>${answerLabel(curQ)}</b></div>
-      <div class="desc">💡 ${curQ.desc}</div>
-      <div style="text-align:center; margin-top:10px;"><button class="cmd atk" style="display:inline-flex; flex-direction:row; gap:6px; padding:11px 26px;" onclick="afterMiss()">つぎへ ▶</button></div>`;
-    document.getElementById('phaseHint').textContent='まちがえても大丈夫。HPは減りません。';
-    phase='miss';
+    // 誤答時のコスト/効果（HPは無罰）
+    if(act.kind==='item'){ useItem(act.item, false); }           // アイテムは効果は出る・行動ゲージ全消費
+    else { player.charge=Math.max(0, player.charge-cfg.missDropPct); } // 攻撃/スキルは行動-30%・スキルはMP消費なし
+    // 解説をオーバーレイ内に表示→つぎへ
+    document.querySelectorAll('.tile').forEach(b=>b.disabled=true);
+    document.getElementById('qfeed').innerHTML=`<div class="wrongttl">おしい！ 正解は「${answerLabel(curQ)}」</div>
+      <div class="desc">💡 ${curQ.desc}</div><button class="next" onclick="afterMiss()">つぎへ ▶</button>`;
+    document.getElementById('qctx').innerHTML='まちがえても大丈夫。HPは減りません。';
   }
+}
+function useItem(it, correct){
+  player.items[it.id] = Math.max(0,(player.items[it.id]||0)-1);
+  it.run();                                   // 効果は必ず発動
+  const cost = correct ? it.gaugeCost*0.3 : it.gaugeCost;   // 正解=30%・誤答=本来100%
+  player.charge = Math.max(0, player.charge - cost);
 }
 function doAttack(){
-  const isCrit=Math.random()<0.18;
-  let dmg=Math.floor(player.atk*(1+player.combo*0.10));
+  const k=killer(); const isCrit=Math.random()<0.18;
+  let dmg=Math.floor(player.atk*(1+player.combo*0.10)*k.mult);
   if(isCrit) dmg=Math.floor(dmg*1.8);
   dealEnemy(dmg,isCrit); screenShake();
-  bigSavor((isCrit?'⚡クリティカル ':'⚔️ ')+dmg.toLocaleString()+'！');
+  const ktxt = k.mult>1 ? `　<span style="font-size:14px;color:#fff">対${k.label} ×${k.mult.toFixed(1)}</span>` : '';
+  bigSavor((isCrit?'⚡クリティカル ':'⚔️ ')+dmg.toLocaleString()+'！'+ktxt);
 }
+// 敵の属性に一致するキラー倍率(最大)を返す
+function killer(){ let mult=1, label=''; enemy.attrs.forEach(a=>{ const m=player.killers[a]||1; if(m>mult){mult=m; label=SUBJECTS[a].jp;} }); return {mult,label}; }
 function answerLabel(q){ return q.type==='choice'?q.choices[q.answer]:q.answer; }
-function afterMiss(){ phase='charging'; renderCommand(); }
+function afterMiss(){ hideOverlay(); pendingAction=null; phase='charging'; renderCommand(); }
 
-/* ============================================================
-   §7 敵
-   ============================================================ */
-function enemyAttack(){
-  enemy.charge=0;
+/* ============================================================ §8 敵 ============================================================ */
+function enemyAttack(){ enemy.charge=0;
   let dmg=enemy.atk+Math.floor(Math.random()*enemy.atk*0.4);
   if(player.defending){ dmg=Math.floor(dmg*0.3); player.defending=false; }
-  player.hp=Math.max(0,player.hp-dmg);
-  spawnDamage('-'+dmg,'','player');
-  document.getElementById('app').classList.add('shake');
-  document.getElementById('playerEmoji').classList.add('hitflash');
-  setTimeout(()=>{ document.getElementById('app').classList.remove('shake'); document.getElementById('playerEmoji').classList.remove('hitflash'); },300);
+  player.hp=Math.max(0,player.hp-dmg); spawnDamage('-'+dmg,'','player');
+  document.getElementById('app').classList.add('shake'); document.getElementById('playerImg').classList.add('hitflash');
+  setTimeout(()=>{ document.getElementById('app').classList.remove('shake'); document.getElementById('playerImg').classList.remove('hitflash'); },300);
   phase='enemyAct'; stateTimer=0.7; renderCommand();
-  if(player.hp<=0){ phase='lose'; showEnd(false); }
-}
+  if(player.hp<=0){ phase='lose'; showEnd(false); } }
 
-/* ============================================================
-   §8 演出
-   ============================================================ */
-function dealEnemy(dmg,crit){
-  enemy.hp=Math.max(0,enemy.hp-dmg);
+/* ============================================================ §9 演出 ============================================================ */
+function dealEnemy(dmg,crit){ enemy.hp=Math.max(0,enemy.hp-dmg);
   spawnDamage(dmg.toLocaleString(),crit?'crit':'','enemy'); spawnParticles(crit);
-  const ee=document.getElementById('enemyEmoji'); ee.classList.add('hitflash'); setTimeout(()=>ee.classList.remove('hitflash'),300);
-}
+  const ee=document.getElementById('enemyImg'); ee.classList.add('hitflash'); setTimeout(()=>ee.classList.remove('hitflash'),300); }
 function checkWin(){ if(enemy.hp<=0) setTimeout(nextEnemy, cfg.savorSec*1000*0.7); }
-function nextEnemy(){
-  enemyIdx++;
-  if(enemyIdx>=ENEMIES.length){ phase='win'; showEnd(true); return; }
-  setEnemy(enemyIdx); bigSavor('✓ 撃破！ つぎの相手だ');
-  player.charge=0; phase='charging'; renderCommand();
-}
-function spawnDamage(text,cls,who){
-  const mid=document.getElementById('mid');
-  const d=document.createElement('div'); d.className='dmg '+(cls||''); d.textContent=text;
-  d.style.top = who==='player' ? '70%' : '6%';
-  mid.appendChild(d); setTimeout(()=>d.remove(),900);
-}
-function spawnParticles(crit){
-  const mid=document.getElementById('mid'); const n=crit?14:8;
-  for(let i=0;i<n;i++){
-    const p=document.createElement('div'); p.className='particle'; p.style.background=crit?'#fbbf24':'#f87171';
-    p.style.left='50%'; p.style.top='8%'; mid.appendChild(p);
+function nextEnemy(){ enemyIdx++; if(enemyIdx>=MONSTERS.length){ phase='win'; showEnd(true); return; }
+  setEnemy(enemyIdx); bigSavor('✓ 撃破！ つぎの相手だ'); player.charge=0; phase='charging'; renderCommand(); }
+function spawnDamage(text,cls,who){ const mid=document.getElementById('mid'); const d=document.createElement('div'); d.className='dmg '+(cls||''); d.textContent=text;
+  d.style.top = who==='player'?'66%':'2%'; mid.appendChild(d); setTimeout(()=>d.remove(),900); }
+function spawnParticles(crit){ const mid=document.getElementById('mid'); const n=crit?14:8;
+  for(let i=0;i<n;i++){ const p=document.createElement('div'); p.className='particle'; p.style.background=crit?'#fbbf24':'#f87171'; p.style.left='50%'; p.style.top='4%'; mid.appendChild(p);
     const ang=Math.random()*Math.PI*2, dist=30+Math.random()*60, dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist;
-    p.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${dx}px,${dy}px)`,opacity:0}],{duration:520,easing:'ease-out'});
-    setTimeout(()=>p.remove(),520);
-  }
-}
-function bigSavor(text){
-  const stage=document.getElementById('stage'); const old=document.getElementById('savorBanner'); if(old) old.remove();
-  const b=document.createElement('div'); b.className='savor-banner'; b.id='savorBanner'; b.innerHTML=`<span class="big">${text}</span>`;
-  stage.appendChild(b); setTimeout(()=>{ if(b.parentNode) b.remove(); }, Math.max(900,cfg.savorSec*1000));
-}
+    p.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${dx}px,${dy}px)`,opacity:0}],{duration:520,easing:'ease-out'}); setTimeout(()=>p.remove(),520); } }
+function bigSavor(html){ const stage=document.getElementById('stage'); const old=document.getElementById('savorBanner'); if(old)old.remove();
+  const b=document.createElement('div'); b.className='savor-banner'; b.id='savorBanner'; b.innerHTML=`<span class="big">${html}</span>`; stage.appendChild(b);
+  setTimeout(()=>{ if(b.parentNode) b.remove(); }, Math.max(900,cfg.savorSec*1000)); }
 function screenShake(){ const a=document.getElementById('app'); a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),280); }
 function flashGood(){ const a=document.getElementById('app'); a.classList.add('flash-good'); setTimeout(()=>a.classList.remove('flash-good'),250); }
-function bumpCombo(){
-  const box=document.getElementById('comboBox');
-  box.style.visibility = player.combo>0 ? 'visible':'hidden';
-  document.getElementById('comboN').textContent=player.combo;
-  box.classList.remove('bump'); void box.offsetWidth; if(player.combo>0) box.classList.add('bump');
-}
+function bumpCombo(){ const box=document.getElementById('comboBox'); box.style.visibility=player.combo>0?'visible':'hidden';
+  document.getElementById('comboN').textContent=player.combo; box.classList.remove('bump'); void box.offsetWidth; if(player.combo>0) box.classList.add('bump'); }
 
-/* ============================================================
-   §9 描画
-   ============================================================ */
+/* ============================================================ §10 描画 ============================================================ */
 function pct(v,max){ return Math.max(0,Math.min(100,v/max*100)); }
 function updateUI(){
-  enemyHp.style.width=pct(enemy.hp,enemy.hpMax)+'%';
-  enemyHpTxt.textContent=Math.max(0,enemy.hp).toLocaleString()+' / '+enemy.hpMax.toLocaleString();
-  enemyCharge.style.width=Math.min(100,enemy.charge)+'%';
-  enemyChargeTxt.textContent=Math.floor(Math.min(100,enemy.charge))+'%';
-  playerHp.style.width=pct(player.hp,player.hpMax)+'%';
-  playerHpTxt.textContent=Math.max(0,player.hp)+' / '+player.hpMax;
-  playerCharge.style.width=Math.min(100,player.charge)+'%';
-  playerChargeTxt.textContent=Math.floor(Math.min(100,player.charge))+'%'+(player.charge>=100?' ⚡':'');
+  enemyHp.style.width=pct(enemy.hp,enemy.hpMax)+'%'; enemyHpTxt.textContent=Math.max(0,enemy.hp).toLocaleString()+' / '+enemy.hpMax.toLocaleString();
+  enemyCharge.style.width=Math.min(100,enemy.charge)+'%'; enemyChargeTxt.textContent=Math.floor(Math.min(100,enemy.charge))+'%';
+  playerHp.style.width=pct(player.hp,player.hpMax)+'%'; playerHpTxt.textContent=Math.max(0,player.hp)+' / '+player.hpMax;
+  playerCharge.style.width=Math.min(100,player.charge)+'%'; playerChargeTxt.textContent=Math.floor(Math.min(100,player.charge))+'%'+(player.charge>=100?' ⚡':'');
+  playerMp.style.width=pct(player.mp,player.mpMax)+'%'; playerMpTxt.textContent=Math.floor(player.mp)+' / '+player.mpMax;
 }
-function showEnd(win){
-  document.getElementById('phaseHint').textContent = win?'🎉 全部たおした！':'💀 たおれてしまった…';
-  document.getElementById('cmdArea').innerHTML = `<div style="text-align:center; padding:8px 0;">
-    <div style="font-size:38px;">${win?'🏆':'😵'}</div>
-    <div style="margin:6px 0 12px; color:var(--sub); font-size:13px;">${win?'手触りはどうでしたか？ ⚙調整で秒数を変えて試せます。':'もう一度どうぞ。'}</div>
-    <button class="cmd atk" style="display:inline-flex; flex-direction:row; gap:6px; padding:12px 28px;" onclick="resetAll()">▶ もう一度</button></div>`;
-}
+function showEnd(win){ document.getElementById('phaseHint').textContent=win?'🎉 全部たおした！':'💀 たおれてしまった…';
+  document.getElementById('cmdArea').innerHTML=`<div style="text-align:center; padding:6px 0;">
+    <div style="font-size:36px;">${win?'🏆':'😵'}</div>
+    <div style="margin:6px 0 12px; color:var(--sub); font-size:13px;">${win?'手触りはどうでしたか？ ⚙調整で秒数や属性キラーを試せます。':'もう一度どうぞ。'}</div>
+    <button class="cmd atk" style="display:inline-flex; flex-direction:row; gap:6px; padding:12px 26px;" onclick="resetAll()">▶ もう一度</button></div>`; }
 function toggleTuner(show){ document.getElementById('tuner').classList.toggle('show',show); }
 
 /* ===== 起動 ===== */
