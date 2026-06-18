@@ -36,8 +36,9 @@
   /* ===== 舞台 ===== */
   .stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:4px 12px 6px; min-height:0; overflow:hidden;}
   .enemy-zone{text-align:center; padding-top:2px; flex:0 0 auto;}
-  .enemy-img{width:128px; height:128px; margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:96px; line-height:1;
-    background:radial-gradient(circle at 50% 40%, #ffffff14, #ffffff00 70%); filter:drop-shadow(0 8px 12px rgba(0,0,0,.55)); border-radius:18px;}
+  .enemy-img{width:160px; height:160px; margin:0 auto; display:flex; align-items:center; justify-content:center; font-size:96px; line-height:1;
+    border-radius:16px; overflow:hidden; border:1px solid var(--line); box-shadow:0 8px 16px rgba(0,0,0,.55);}
+  .enemy-img img{width:100%; height:100%; object-fit:cover; display:block;}
   .enemy-name{font-weight:700; margin-top:0; font-size:15px;}
   .attr-badges{display:flex; gap:5px; justify-content:center; margin:3px 0 2px;}
   .attr{font-size:10px; padding:2px 8px; border-radius:99px; font-weight:700; border:1px solid;}
@@ -145,7 +146,7 @@
 <body>
 <div id="app">
   <div class="topbar">
-    <span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.3</span></span>
+    <span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.4</span></span>
     <button class="gear" onclick="toggleTuner(true)">⚙ 調整</button>
   </div>
 
@@ -220,10 +221,10 @@
     <h3>⚔ 属性キラー（=装備の代わり・テスト用）</h3>
     <div class="tnote">敵の教科と一致する倍率が与ダメに乗る（モンスト式キラー）。1.0=効果なし。装備が来るまではここで仮設定。</div>
     <div class="killgrid">
-      <div class="trow"><label>対物理 ×<b id="kphyV">1.0</b></label><input type="range" min="1" max="3" step="0.1" value="1" oninput="player.killers.physics=+this.value; kphyV.textContent=(+this.value).toFixed(1);"></div>
+      <div class="trow"><label>対物理 ×<b id="kphyV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="player.killers.physics=+this.value; kphyV.textContent=(+this.value).toFixed(1);"></div>
       <div class="trow"><label>対化学 ×<b id="kchemV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="player.killers.chemistry=+this.value; kchemV.textContent=(+this.value).toFixed(1);"></div>
-      <div class="trow"><label>対生物 ×<b id="kbioV">1.0</b></label><input type="range" min="1" max="3" step="0.1" value="1" oninput="player.killers.biology=+this.value; kbioV.textContent=(+this.value).toFixed(1);"></div>
-      <div class="trow"><label>対地学 ×<b id="kearV">1.0</b></label><input type="range" min="1" max="3" step="0.1" value="1" oninput="player.killers.earth=+this.value; kearV.textContent=(+this.value).toFixed(1);"></div>
+      <div class="trow"><label>対生物 ×<b id="kbioV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="player.killers.biology=+this.value; kbioV.textContent=(+this.value).toFixed(1);"></div>
+      <div class="trow"><label>対地学 ×<b id="kearV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="player.killers.earth=+this.value; kearV.textContent=(+this.value).toFixed(1);"></div>
     </div>
     <div class="tnote">※手触り検証用の試作。問題・絵・バランスは仮。スキルの本格コンテンツ(氷/毒/雷・状態異常)と本番画像は後で。</div>
     <button class="tclose" onclick="toggleTuner(false)">✓ 戦闘にもどる</button>
@@ -283,10 +284,10 @@ function drawQuestion(subjects){
 
 /* ============================================================ §3 モンスター / スキル / アイテム（データ駆動＝後から足せる） ============================================================ */
 const MONSTERS = [
-  { name:'スライム実験体', img:'🟢', hp:600,  atk:14, attrs:['chemistry'] },
-  { name:'森のトレント',   img:'🌳', hp:1100, atk:22, attrs:['biology'] },
-  { name:'岩石ゴーレム',   img:'🗿', hp:1700, atk:32, attrs:['earth'] },
-  { name:'隕石ドラゴン',   img:'🐉', hp:2600, atk:46, attrs:['earth','physics'] }, // 複数属性
+  { name:'スライム実験体',   img:'img/enemy_slime.png', hp:600,  atk:14, attrs:['chemistry'] },
+  { name:'森のトレント',     img:'img/enemy_tree.png',  hp:1100, atk:22, attrs:['biology'] },
+  { name:'岩石ゴーレム',     img:'img/enemy_golem.png', hp:1700, atk:32, attrs:['earth'] },
+  { name:'万象の賢者オメガ', img:'img/enemy_omega.png', hp:2600, atk:46, attrs:['physics','chemistry'] }, // 複数属性(ラスボス)
 ];
 // スキル: mpCost=MP消費。needsQuiz=正解で発動。element/状態異常は後で。
 const SKILLS = [
@@ -308,7 +309,7 @@ const ITEM_DEFS = [
 /* ============================================================ §4 状態 ============================================================ */
 let enemyIdx=0;
 const player = { hpMax:300, hp:300, atk:120, mp:60, mpMax:100, charge:0, combo:0, defending:false,
-  killers:{ physics:1.0, chemistry:1.5, biology:1.0, earth:1.0 }, items:{ hpPotion:3, mpPotion:3 } };
+  killers:{ physics:1.5, chemistry:1.5, biology:1.5, earth:1.5 }, items:{ hpPotion:3, mpPotion:3 } };
 const enemy = { name:'', img:'', hpMax:1, hp:1, atk:10, charge:0, attrs:[] };
 // phase: charging|command|skillmenu|itemmenu|question|savor|enemyAct|win|lose
 let phase='charging', stateTimer=0, curQ=null, answered=false;
@@ -316,7 +317,8 @@ let pendingAction=null;  // {kind:'attack'|'skill'|'item', skill?, item?}
 
 function setEnemy(i){ const e=MONSTERS[i%MONSTERS.length];
   enemy.name=e.name; enemy.img=e.img; enemy.hpMax=e.hp; enemy.hp=e.hp; enemy.atk=e.atk; enemy.charge=0; enemy.attrs=e.attrs.slice();
-  enemyImg.textContent=e.img; enemyName.textContent=e.name; renderEnemyAttrs(); }
+  enemyImg.innerHTML = /\.(png|jpg|webp)$/i.test(e.img) ? `<img src="${e.img}" alt="${e.name}">` : e.img;
+  enemyName.textContent=e.name; renderEnemyAttrs(); }
 function renderEnemyAttrs(){
   enemyAttrs.innerHTML = enemy.attrs.map(a=>{ const s=SUBJECTS[a];
     return `<span class="attr" style="color:${s.color}; border-color:${s.color}; background:${s.color}1a;">${s.emoji}${s.jp}</span>`; }).join('');
