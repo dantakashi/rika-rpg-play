@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ローカル・クルーメイト（対面用・宇宙人狼）</title>
+<style>
+/* =========================================================================
+   ローカル・クルーメイト — Among Us 風の対面用ソーシャル推理ゲーム
+   同じWi-Fi（＝同じ部屋）でスマホを各自持って遊ぶ。話し合いは対面なのでチャット不要。
+   通信は PeerJS（P2P・サーバー不要）。1台がホスト＝部屋を作り、他は4文字のコードで参加。
+   --------------------------------------------------------------------------
+   §CSS  見た目（スマホ縦持ち前提・大きいボタン）
+   §NET  通信（PeerJS・ホスト=ハブのスター型）
+   §HOST ホスト側の権威ロジック（役職配布・キル・会議・勝敗）
+   §ME   自分の画面状態（役職・コード・描画）
+   §MINI タスクのミニゲーム
+   §RENDER 画面描画（フェーズごと）
+   ========================================================================= */
+:root{
+  --bg:#0b0f1a; --panel:#161c2e; --panel2:#1f2740; --line:#2c3656;
+  --txt:#e9edf7; --sub:#9aa6c4; --accent:#3ad0ff; --crew:#37d67a; --imp:#ff4d5e;
+  --warn:#ffb648; --gold:#ffd34d;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  -webkit-text-size-adjust:100%;overscroll-behavior:none}
+body{min-height:100vh;min-height:100dvh}
+#app{max-width:520px;margin:0 auto;padding:16px 16px 40px;min-height:100vh;min-height:100dvh}
+h1{font-size:22px;margin:4px 0 2px;letter-spacing:.5px}
+h2{font-size:18px;margin:18px 0 8px}
+p{line-height:1.6;color:var(--sub);margin:8px 0}
+.small{font-size:12px;color:var(--sub)}
+.center{text-align:center}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0}
+.btn{display:block;width:100%;border:none;border-radius:14px;padding:16px;font-size:18px;font-weight:700;
+  color:#06131f;background:var(--accent);margin:10px 0;cursor:pointer;transition:transform .05s, filter .15s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{filter:grayscale(.7) brightness(.6);cursor:not-allowed}
+.btn.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+.btn.crew{background:var(--crew);color:#04210f}
+.btn.imp{background:var(--imp);color:#2a0307}
+.btn.warn{background:var(--warn);color:#2a1800}
+.btn.sm{padding:11px;font-size:15px;margin:6px 0}
+input{width:100%;padding:15px;border-radius:12px;border:1px solid var(--line);background:#0d1322;color:var(--txt);
+  font-size:20px;text-align:center;letter-spacing:3px;font-weight:700;outline:none}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--panel2);color:var(--sub);border:1px solid var(--line)}
+.tag.on{background:var(--crew);color:#04210f;border-color:transparent}
+.tag.off{background:#33233a;color:#ff96a3}
+.code{font-size:44px;font-weight:800;letter-spacing:10px;color:var(--gold);text-align:center;margin:6px 0}
+.plist{list-style:none;padding:0;margin:8px 0}
+.plist li{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--panel2);border-radius:12px;margin:7px 0;border:1px solid transparent}
+.plist li.dead{opacity:.42}
+.plist li.me{border-color:var(--accent)}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--crew);flex:0 0 auto}
+.dot.off{background:#5a6178}
+.pname{font-weight:700;flex:1}
+.bar{height:16px;background:#0d1322;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.bar>span{display:block;height:100%;background:linear-gradient(90deg,#37d67a,#3ad0ff);width:0%;transition:width .35s}
+.bigrole{border-radius:20px;padding:30px 18px;text-align:center;margin:14px 0}
+.bigrole .emoji{font-size:72px;line-height:1}
+.bigrole .what{font-size:30px;font-weight:800;margin:8px 0 2px}
+.crewbg{background:radial-gradient(120% 120% at 50% 0,#10502f,#0b2a1a)}
+.impbg{background:radial-gradient(120% 120% at 50% 0,#6a0f1c,#2a0710)}
+.overlay{position:fixed;inset:0;background:rgba(6,9,18,.92);display:flex;align-items:center;justify-content:center;padding:18px;z-index:50}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:440px}
+.kbd{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:10px}
+.kbd button{padding:18px;font-size:22px;font-weight:800;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--txt)}
+.wires{display:flex;justify-content:space-between;gap:30px}
+.wcol{display:flex;flex-direction:column;gap:16px;flex:0 0 auto}
+.wend{width:54px;height:54px;border-radius:12px;border:3px solid #0008}
+.wend.sel{outline:3px solid #fff;outline-offset:2px}
+.wend.done{opacity:.3}
+.scan{height:160px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;user-select:none;position:relative;overflow:hidden}
+.scanfill{position:absolute;inset:0;background:var(--crew);width:0%;transition:none;opacity:.85}
+.scan span{position:relative;z-index:2;color:#04210f}
+.flash{animation:fl .5s}
+@keyframes fl{0%{background:#fff}100%{}}
+.note{background:#1a2233;border-left:4px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--sub);margin:10px 0;line-height:1.55}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#000c;color:#fff;padding:11px 18px;border-radius:99px;font-weight:700;z-index:80;max-width:90%}
+.statusbar{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--sub);margin-bottom:6px}
+.mycode{font-size:13px;color:var(--sub)}
+.mycode b{font-size:22px;color:var(--gold);letter-spacing:2px}
+.tasklist button{display:flex;align-items:center;gap:10px;justify-content:flex-start;text-align:left}
+.check{width:22px;height:22px;border-radius:6px;border:2px solid var(--sub);flex:0 0 auto}
+.check.on{background:var(--crew);border-color:var(--crew)}
+.timer{font-size:14px;font-weight:800;color:var(--warn)}
+.err{color:#ff96a3;font-weight:700;text-align:center;min-height:20px}
+.hr{height:1px;background:var(--line);margin:14px 0;border:0}
+.foot{margin-top:26px;text-align:center}
+.link{color:var(--accent);text-decoration:underline}
+.steps{counter-reset:s;padding-left:0;list-style:none}
+.steps li{position:relative;padding:6px 0 6px 30px;color:var(--sub);font-size:13px;line-height:1.5}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:6px;width:20px;height:20px;background:var(--accent);color:#06131f;border-radius:50%;text-align:center;font-weight:800;font-size:12px;line-height:20px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+"use strict";
+/* ===================== 共通ヘルパー ===================== */
+const $ = (sel,root=document)=>root.querySelector(sel);
+const app = ()=>document.getElementById('app');
+const ALPH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 紛らわしい文字(I,O,0,1)除外
+const rnd = n => Math.floor(Math.random()*n);
+const esc = s => String(s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+function randCode(){let s="";for(let i=0;i<4;i++)s+=ALPH[rnd(ALPH.length)];return s;}
+function code3(){return String(100+rnd(900));}
+function toast(msg){let t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+const COLORS=['#ff4d5e','#3ad0ff','#37d67a','#ffd34d','#b06bff','#ff8c3a','#ff7ad9','#7affc1','#9aa6c4','#ffffff'];
+
+/* ===================== §NET 通信 ===================== */
+const NET = { isHost:false, peer:null, conns:{}, hostConn:null, ready:false };
+
+// 自分の画面状態
+const ME = { id:null, name:'', role:null, fellow:[], myCode:'', snap:null, killReadyAt:0, meetingsLeft:1 };
+
+function peerOptions(){ return { debug:1 }; } // PeerJS クラウド(0.peerjs.com)を利用＝鍵不要
+
+function send(conn,obj){ try{ conn.send(obj); }catch(e){ console.warn('send fail',e); } }
+function toHost(obj){ if(NET.isHost){ HOST.handle(ME.id, obj); } else if(NET.hostConn){ send(NET.hostConn,obj); } }
+function broadcast(obj){ for(const id in NET.conns) send(NET.conns[id], obj); }
+
+/* ---- ホストになる ---- */
+function startHost(myName){
+  NET.isHost = true; ME.name = myName;
+  let attempts = 0;
+  function tryCreate(){
+    const codeTry = randCode();
+    const peer = new Peer('crewmate-'+codeTry, peerOptions());
+    NET.peer = peer;
+    peer.on('open', id=>{
+      NET.ready = true; ME.id = id;
+      HOST.init(codeTry, {id, name:myName});
+      go('hostLobby');
+    });
+    peer.on('connection', conn=>{
+      conn.on('open', ()=>{ NET.conns[conn.peer]=conn; });
+      conn.on('data', d=> HOST.handle(conn.peer, d));
+      conn.on('close', ()=> HOST.onLeave(conn.peer));
+      conn.on('error', ()=> HOST.onLeave(conn.peer));
+    });
+    peer.on('error', err=>{
+      if(err.type==='unavailable-id' && attempts<6){ attempts++; peer.destroy(); tryCreate(); return; }
+      if(err.type==='unavailable-id'){ showFatal('部屋コードの作成に失敗しました。もう一度お試しください。'); return; }
+      console.warn('peer err',err.type,err);
+      if(!NET.ready) showFatal('通信の準備に失敗しました（ネットワークを確認してください）。\n\n'+err.type);
+    });
+  }
+  tryCreate();
+}
+
+/* ---- 参加する ---- */
+function joinRoom(roomCode, myName){
+  NET.isHost=false; ME.name=myName;
+  const peer = new Peer(peerOptions()); NET.peer=peer;
+  let opened=false;
+  peer.on('open', id=>{
+    ME.id=id;
+    const conn = peer.connect('crewmate-'+roomCode, {reliable:true});
+    NET.hostConn=conn;
+    const failTimer=setTimeout(()=>{ if(!opened) showFatal('部屋が見つかりませんでした。\nコード「'+roomCode+'」を確認してください。\n（ホストの人がまだ部屋を作っていない、別のWi-Fiにいる等の可能性）'); }, 9000);
+    conn.on('open', ()=>{ opened=true; clearTimeout(failTimer); NET.ready=true; send(conn,{t:'join', name:myName}); go('joinWait'); });
+    conn.on('data', d=> ME.recv(d));
+    conn.on('close', ()=>{ if(ME.snap && ME.snap.phase!=='end') showFatal('ホストとの接続が切れました。'); });
+  });
+  peer.on('error', err=>{
+    if(err.type==='peer-unavailable'){ showFatal('部屋が見つかりませんでした。\nコード「'+roomCode+'」を確認してください。'); return; }
+    console.warn('peer err',err.type,err);
+    if(!NET.ready) showFatal('通信の準備に失敗しました（ネットワークを確認してください）。\n\n'+err.type);
+  });
+}
+
+/* ===================== §HOST 権威ロジック ===================== */
+const HOST = {
+  G:null, roles:{}, codes:{}, killReady:{}, tickTimer:null,
+  init(code, hostPlayer){
+    this.G = {
+      code, phase:'lobby',
+      players:[{ id:hostPlayer.id, name:hostPlayer.name, isHost:true, alive:true, connected:true,
+                 tasksDone:0, taskTotal:0, meetingsLeft:1, color:COLORS[0] }],
+      settings:{ impostors:1, tasksPerPlayer:3, revealRole:true, killCooldown:25, meetingSec:75 },
+      taskProgress:{done:0,total:0},
+      meeting:null, result:null, winner:null
+    };
+    this.broadcastState();
+  },
+  player(id){ return this.G.players.find(p=>p.id===id); },
+  alivePlayers(){ return this.G.players.filter(p=>p.alive && p.connected); },
+  handle(fromId, msg){
+    const G=this.G; if(!G) return;
+    switch(msg.t){
+      case 'join': {
+        if(G.phase!=='lobby'){ const c=NET.conns[fromId]; if(c) send(c,{t:'denied',reason:'ゲームはもう始まっています'}); return; }
+        if(this.player(fromId)) return;
+        if(G.players.length>=12){ const c=NET.conns[fromId]; if(c) send(c,{t:'denied',reason:'満員です（最大12人）'}); return; }
+        G.players.push({ id:fromId, name:(msg.name||'プレイヤー').slice(0,10), isHost:false, alive:true, connected:true,
+                         tasksDone:0, taskTotal:0, meetingsLeft:1, color:COLORS[G.players.length%COLORS.length] });
+        this.broadcastState(); break;
+      }
+      case 'setSettings': { if(fromId!==ME.id) return; Object.assign(G.settings, msg.s); this.broadcastState(); break; }
+      case 'start': { if(fromId!==ME.id) return; this.startGame(); break; }
+      case 'taskDone': { this.taskDone(fromId); break; }
+      case 'kill': { this.tryKill(fromId, msg.code); break; }
+      case 'report': { this.startMeeting(fromId, 'report'); break; }
+      case 'meeting': { this.emergency(fromId); break; }
+      case 'vote': { this.castVote(fromId, msg.target); break; }
+      case 'restart': { if(fromId!==ME.id) return; this.toLobby(); break; }
+    }
+  },
+  onLeave(id){
+    const p=this.player(id); if(!p) return;
+    delete NET.conns[id];
+    if(this.G.phase==='lobby'){ this.G.players = this.G.players.filter(x=>x.id!==id); }
+    else { p.connected=false; p.alive=false; } // 途中離脱は死亡扱い（人数が合わなくなるため）
+    if(this.G.phase!=='lobby' && this.G.phase!=='end') this.checkWin();
+    this.broadcastState();
+  },
+  startGame(){
+    const G=this.G;
+    if(this.alivePlayers().length<3){ toast('3人以上で始められます'); return; }
+    const ids = G.players.map(p=>p.id);
+    const nImp = Math.min(G.settings.impostors, Math.max(1, Math.floor(ids.length/3)));
+    // 役職割り当て（ランダムに nImp 人をインポスターへ）
+    const impIds = shuffle(ids.slice()).slice(0, nImp);
+    this.roles={}; this.codes={}; this.killReady={};
+    G.players.forEach(p=>{
+      p.alive=true; p.connected = (p.id===ME.id) || !!NET.conns[p.id]; p.tasksDone=0; p.meetingsLeft=1;
+      this.roles[p.id] = impIds.includes(p.id) ? 'impostor' : 'crew';
+      this.codes[p.id] = code3();
+      p.taskTotal = G.settings.tasksPerPlayer; // 表示用（インポスターは“偽タスク”）
+    });
+    const crewCount = G.players.filter(p=>this.roles[p.id]==='crew').length;
+    G.taskProgress = { done:0, total: crewCount * G.settings.tasksPerPlayer };
+    // 役職公開は各自の端末でローカルに見せる。全体フェーズはすぐ play に。
+    G.phase='play'; G.meeting=null; G.result=null; G.winner=null;
+    // 役職を各自に“こっそり”送る（全員には配らない）
+    const impNames = impIds.map(id=>this.player(id).name);
+    G.players.forEach(p=>{
+      const youAre = { t:'youAre', role:this.roles[p.id], yourCode:this.codes[p.id],
+                       fellow: this.roles[p.id]==='impostor' ? impNames.filter(n=>n!==p.name) : [] };
+      if(p.id===ME.id) ME.recv(youAre); else if(NET.conns[p.id]) send(NET.conns[p.id], youAre);
+    });
+    this.broadcastState();
+    this.startTick();
+  },
+  taskDone(id){
+    const G=this.G; if(G.phase!=='play') return;
+    const p=this.player(id); if(!p||!p.alive) return;
+    if(p.tasksDone>=p.taskTotal) return;
+    p.tasksDone++;
+    if(this.roles[id]==='crew'){ G.taskProgress.done = Math.min(G.taskProgress.total, G.taskProgress.done+1); }
+    this.broadcastState();
+    this.checkWin();
+  },
+  tryKill(killerId, code){
+    const G=this.G; if(G.phase!=='play') return;
+    if(this.roles[killerId]!=='impostor'){ this.priv(killerId,{t:'killResult',ok:false,msg:'あなたはキルできません'}); return; }
+    const killer=this.player(killerId); if(!killer||!killer.alive) return;
+    const now=Date.now();
+    if((this.killReady[killerId]||0) > now){ this.priv(killerId,{t:'killResult',ok:false,msg:'まだクールダウン中です'}); return; }
+    // コードが一致する“生きているクルー”を探す（仲間インポスターは殺せない）
+    const victim = this.alivePlayers().find(p=>p.id!==killerId && this.codes[p.id]===String(code).trim());
+    if(!victim){ this.priv(killerId,{t:'killResult',ok:false,msg:'番号がちがう／対象がいません'}); return; }
+    if(this.roles[victim.id]==='impostor'){ this.priv(killerId,{t:'killResult',ok:false,msg:'それは仲間です'}); return; }
+    victim.alive=false;
+    this.killReady[killerId] = now + G.settings.killCooldown*1000;
+    this.priv(killerId,{t:'killResult',ok:true,msg:victim.name+' をキルした',nextAt:this.killReady[killerId]});
+    this.priv(victim.id,{t:'youDied'});
+    this.broadcastState();
+    this.checkWin();
+  },
+  emergency(id){
+    const G=this.G; if(G.phase!=='play') return;
+    const p=this.player(id); if(!p||!p.alive) return;
+    if(p.meetingsLeft<=0){ this.priv(id,{t:'info',msg:'緊急会議はもう使えません'}); return; }
+    p.meetingsLeft--;
+    this.startMeeting(id,'emergency');
+  },
+  startMeeting(callerId, reason){
+    const G=this.G; if(G.phase!=='play') return;
+    const caller=this.player(callerId); if(!caller||!caller.alive) return;
+    G.phase='meeting';
+    G.meeting = { reason, callerName:caller.name, votes:{}, endsAt: Date.now()+G.settings.meetingSec*1000, votedCount:0 };
+    this.broadcastState();
+  },
+  castVote(id, target){
+    const G=this.G; if(G.phase!=='meeting'||!G.meeting) return;
+    const p=this.player(id); if(!p||!p.alive) return;
+    if(G.meeting.votes[id]!==undefined) return;
+    G.meeting.votes[id]=target; // targetId か 'skip'
+    G.meeting.votedCount=Object.keys(G.meeting.votes).length;
+    this.broadcastState();
+    if(G.meeting.votedCount >= this.alivePlayers().length) this.endMeeting();
+  },
+  endMeeting(){
+    const G=this.G; if(!G.meeting) return;
+    const tally={}; let skip=0;
+    for(const v of Object.values(G.meeting.votes)){ if(v==='skip'||!v) skip++; else tally[v]=(tally[v]||0)+1; }
+    let top=null, topN=0, tie=false;
+    for(const id in tally){ if(tally[id]>topN){ top=id; topN=tally[id]; tie=false; } else if(tally[id]===topN){ tie=true; } }
+    let ejected=null;
+    if(top && !tie && topN>skip){ const p=this.player(top); if(p){ p.alive=false; ejected=p; } }
+    G.result = {
+      ejectedName: ejected? ejected.name : null,
+      ejectedWasImp: ejected? (this.roles[ejected.id]==='impostor') : null,
+      reveal: G.settings.revealRole, skipped: !ejected
+    };
+    G.phase='result'; G.meeting=null;
+    this.broadcastState();
+    if(this.checkWin()) return;
+    this._resultUntil = Date.now()+6500; // 数秒見せてからプレイへ
+  },
+  toPlayAfterResult(){
+    if(this.G.phase!=='result') return;
+    this.G.phase='play'; this.G.result=null; this._resultUntil=0;
+    this.broadcastState();
+  },
+  checkWin(){
+    const G=this.G; if(G.phase==='end') return true;
+    const alive=this.alivePlayers();
+    const impAlive=alive.filter(p=>this.roles[p.id]==='impostor').length;
+    const crewAlive=alive.filter(p=>this.roles[p.id]==='crew').length;
+    let winner=null;
+    if(G.taskProgress.total>0 && G.taskProgress.done>=G.taskProgress.total) winner='crew';
+    else if(impAlive===0) winner='crew';
+    else if(impAlive>=crewAlive) winner='impostor';
+    if(winner){
+      G.winner=winner; G.phase='end';
+      G.reveal = G.players.map(p=>({name:p.name,role:this.roles[p.id],isHost:p.isHost}));
+      this.broadcastState(); this.stopTick();
+      return true;
+    }
+    return false;
+  },
+  toLobby(){
+    const G=this.G; G.phase='lobby'; G.meeting=null; G.result=null; G.winner=null; G.reveal=null;
+    G.players.forEach(p=>{ p.alive=true; p.tasksDone=0; p.taskTotal=0; p.meetingsLeft=1; });
+    G.players = G.players.filter(p=>p.connected);
+    G.taskProgress={done:0,total:0};
+    this.roles={}; this.codes={}; this.killReady={};
+    this.stopTick(); this.broadcastState();
+  },
+  startTick(){ this.stopTick(); this.tickTimer=setInterval(()=>this.tick(),500); },
+  stopTick(){ if(this.tickTimer){ clearInterval(this.tickTimer); this.tickTimer=null; } },
+  tick(){
+    const G=this.G; if(!G) return;
+    if(G.phase==='meeting' && G.meeting && Date.now()>G.meeting.endsAt){ this.endMeeting(); }
+    else if(G.phase==='result' && this._resultUntil && Date.now()>this._resultUntil){ this.toPlayAfterResult(); }
+    else if(G.phase==='meeting' && G.meeting){ this.broadcastState(); } // タイマー更新
+  },
+  priv(id,obj){ if(id===ME.id) ME.recv(obj); else if(NET.conns[id]) send(NET.conns[id],obj); },
+  // クライアントに渡す“安全な”スナップショット（役職は含めない・会議中の票内訳も隠す）
+  snapshot(){
+    const G=this.G;
+    return {
+      t:'state', code:G.code, phase:G.phase,
+      players: G.players.map(p=>({id:p.id,name:p.name,isHost:p.isHost,alive:p.alive,connected:p.connected,
+                                  tasksDone:p.tasksDone,taskTotal:p.taskTotal,meetingsLeft:p.meetingsLeft,color:p.color})),
+      settings:G.settings, taskProgress:G.taskProgress,
+      meeting: G.meeting? {reason:G.meeting.reason,callerName:G.meeting.callerName,endsAt:G.meeting.endsAt,
+                           votedCount:G.meeting.votedCount, myVoted: undefined} : null,
+      result:G.result, winner:G.winner, reveal:G.reveal||null
+    };
+  },
+  broadcastState(){
+    const snap=this.snapshot();
+    // 各自に「自分が投票済みか」を付けて配る
+    const G=this.G;
+    G.players.forEach(p=>{
+      const s=JSON.parse(JSON.stringify(snap));
+      if(s.meeting && G.meeting){ s.meeting.myVoted = (G.meeting.votes[p.id]!==undefined); }
+      if(p.id===ME.id) ME.recv(s); else if(NET.conns[p.id]) send(NET.conns[p.id], s);
+    });
+  }
+};
+
+/* ===================== §ME 自分の画面 ===================== */
+ME.recv = function(msg){
+  switch(msg.t){
+    case 'state': ME.snap=msg; render(); break;
+    case 'youAre': ME.role=msg.role; ME.myCode=msg.yourCode; ME.fellow=msg.fellow||[]; ME.killReadyAt=0; ME.revealSeen=false; break;
+    case 'youDied': toast('💀 あなたはやられた…'); break;
+    case 'killResult':
+      if(msg.ok){ ME.killReadyAt=msg.nextAt||0; toast('🔪 '+msg.msg); }
+      else toast('⚠ '+msg.msg);
+      render(); break;
+    case 'denied': showFatal('参加できませんでした：'+(msg.reason||'')); break;
+    case 'info': toast(msg.msg); break;
+  }
+};
+ME.isAlive = function(){ const me=ME.snap && ME.snap.players.find(p=>p.id===ME.id); return me? me.alive:true; };
+ME.meHere = function(){ return ME.snap && ME.snap.players.find(p=>p.id===ME.id); };
+
+/* ===================== 画面遷移ルート ===================== */
+let SCREEN='top';
+function go(s){ SCREEN=s; render(); }
+function showFatal(msg){
+  app().innerHTML = `<div class="card center"><h1>⚠ 接続エラー</h1><p style="white-space:pre-wrap">${esc(msg)}</p>
+    <button class="btn" onclick="location.reload()">最初に戻る</button></div>`;
+}
+
+/* ===================== §RENDER 画面描画 ===================== */
+function render(){
+  // ゲームが始まったら（lobby以外）画面はスナップショットで決まる
+  if(ME.snap && ME.snap.phase && ME.snap.phase!=='lobby') return renderSnapScreen();
+  if(SCREEN==='top') return renderTop();
+  if(SCREEN==='hostName') return renderNameEntry(true);
+  if(SCREEN==='joinName') return renderNameEntry(false);
+  if(SCREEN==='hostLobby') return renderHostLobby();
+  if(SCREEN==='joinWait') return renderSnapScreen();
+  renderSnapScreen();
+}
+
+function renderTop(){
+  app().innerHTML = `
+  <div class="center">
+    <h1>👾 ローカル・クルーメイト</h1>
+    <p class="small">同じWi-Fiでスマホを持ちより、<b>対面</b>で遊ぶ宇宙人狼（Among Us風）。<br>話し合いは声でやるのでチャットはなし。</p>
+  </div>
+  <div class="card">
+    <button class="btn" onclick="go('hostName')">🛰️ 部屋を作る（ホスト）</button>
+    <button class="btn sec" onclick="go('joinName')">🚀 部屋に参加する</button>
+  </div>
+  <div class="card">
+    <h2>あそびかた</h2>
+    <ul class="steps">
+      <li>1人が「部屋を作る」→ 画面の<b>4文字コード</b>をみんなに見せる。</li>
+      <li>他の人は「参加する」でコードを入力。3〜12人で開始。</li>
+      <li>役は<b>クルー</b>（タスクをこなす）と<b>インポスター</b>（バレずにキル）。</li>
+      <li>クルーは部屋を歩いてタスクのミニゲームをクリア。バーが100%で勝ち。</li>
+      <li>インポスターは相手に近づき、相手スマホの<b>番号</b>を入れてキル。</li>
+      <li>死体を見つけたら「通報」、あやしい時は「緊急会議」。みんなで話して投票→追放。</li>
+    </ul>
+    <div class="note">📶 みんなが<b>インターネットにつながるWi-Fi</b>に入っていれば動きます（学校のフィルタでP2Pがブロックされる場合があります。その時は先生に相談）。</div>
+  </div>
+  <div class="foot small">© ローカル・クルーメイト / 対面用ミニゲーム</div>`;
+}
+
+function renderNameEntry(isHost){
+  app().innerHTML = `
+  <div class="card">
+    <h1>${isHost?'🛰️ 部屋を作る':'🚀 部屋に参加'}</h1>
+    <p class="small">あなたの名前（10文字まで）</p>
+    <input id="nm" maxlength="10" placeholder="なまえ" style="letter-spacing:1px">
+    ${isHost?'':'<p class="small" style="margin-top:14px">部屋コード（4文字）</p><input id="cd" maxlength="4" placeholder="ABCD" autocapitalize="characters">'}
+    <div class="err" id="err"></div>
+    <button class="btn" id="goBtn">${isHost?'部屋を作る':'参加する'}</button>
+    <button class="btn sec sm" onclick="go('top')">もどる</button>
+  </div>`;
+  const nm=$('#nm'); nm.focus();
+  $('#goBtn').onclick=()=>{
+    const name=(nm.value||'').trim();
+    if(!name){ $('#err').textContent='名前を入れてください'; return; }
+    if(isHost){ app().innerHTML=`<div class="card center"><h1>準備中…</h1><p>部屋を作っています</p></div>`; startHost(name); }
+    else {
+      const cd=($('#cd').value||'').trim().toUpperCase();
+      if(cd.length!==4){ $('#err').textContent='コードは4文字です'; return; }
+      app().innerHTML=`<div class="card center"><h1>接続中…</h1><p>部屋「${esc(cd)}」をさがしています</p></div>`;
+      joinRoom(cd, name);
+    }
+  };
+  if(!isHost) $('#cd').addEventListener('input',e=>{ e.target.value=e.target.value.toUpperCase(); });
+}
+
+function renderHostLobby(){
+  const G=HOST.G; const s=G.settings;
+  const list=G.players.map(p=>`<li><span class="dot" style="background:${p.color}"></span><span class="pname">${esc(p.name)}${p.isHost?' 👑':''}</span></li>`).join('');
+  const canStart=G.players.length>=3;
+  app().innerHTML=`
+  <div class="center"><h1>🛰️ 部屋ができました</h1><p class="small">この4文字をみんなに伝えてね</p>
+    <div class="code">${G.code}</div></div>
+  <div class="card">
+    <div class="statusbar"><span>参加者 <b>${G.players.length}</b> 人（3〜12人）</span><span class="tag on">待機中</span></div>
+    <ul class="plist">${list}</ul>
+    <p class="small center">みんなの参加を待っています…</p>
+  </div>
+  <div class="card">
+    <h2>⚙ 設定</h2>
+    <div class="statusbar"><span>インポスター人数</span><span>
+      <button class="tag" onclick="setImp(-1)">－</button> <b id="impN">${s.impostors}</b> <button class="tag" onclick="setImp(1)">＋</button></span></div>
+    <div class="statusbar" style="margin-top:12px"><span>1人あたりのタスク数</span><span>
+      <button class="tag" onclick="setTask(-1)">－</button> <b id="taskN">${s.tasksPerPlayer}</b> <button class="tag" onclick="setTask(1)">＋</button></span></div>
+    <div class="statusbar" style="margin-top:12px"><span>追放した人の正体を見せる</span>
+      <button class="tag ${s.revealRole?'on':'off'}" id="revT" onclick="toggleReveal()">${s.revealRole?'見せる':'隠す'}</button></div>
+    <div class="note">おすすめ：4〜6人ならインポスター1人 / 7〜9人で2人 / 10人以上で3人。</div>
+  </div>
+  <button class="btn crew" ${canStart?'':'disabled'} onclick="hostStart()">▶ ゲーム開始（${G.players.length}人）</button>
+  <p class="small center">${canStart?'いつでも始められます':'あと'+(3-G.players.length)+'人で開始できます'}</p>`;
+}
+window.setImp=d=>{ const s=HOST.G.settings; s.impostors=Math.max(1,Math.min(3,s.impostors+d)); HOST.broadcastState(); render(); };
+window.setTask=d=>{ const s=HOST.G.settings; s.tasksPerPlayer=Math.max(1,Math.min(8,s.tasksPerPlayer+d)); HOST.broadcastState(); render(); };
+window.toggleReveal=()=>{ HOST.G.settings.revealRole=!HOST.G.settings.revealRole; render(); };
+window.hostStart=()=>{ HOST.startGame(); };
+
+// 参加者の待機画面（スナップ未到着のとき）
+function renderSnapScreen(){
+  const snap=ME.snap;
+  if(!snap){ app().innerHTML=`<div class="card center"><h1>接続中…</h1><p>ホストの開始を待っています</p></div>`; return; }
+  switch(snap.phase){
+    case 'lobby': return renderClientLobby(snap);
+    case 'play':
+      if(ME.role && !ME.revealSeen) return renderReveal(snap);
+      return renderPlay(snap);
+    case 'meeting': return renderMeeting(snap);
+    case 'result': return renderResult(snap);
+    case 'end': return renderEnd(snap);
+    default: app().innerHTML='…';
+  }
+}
+
+function renderClientLobby(snap){
+  const list=snap.players.map(p=>`<li><span class="dot" style="background:${p.color}"></span><span class="pname">${esc(p.name)}${p.isHost?' 👑':''}</span>${p.id===ME.id?'<span class="tag on">あなた</span>':''}</li>`).join('');
+  app().innerHTML=`
+  <div class="center"><h1>🚀 参加しました</h1><div class="code">${snap.code}</div></div>
+  <div class="card">
+    <div class="statusbar"><span>参加者 <b>${snap.players.length}</b> 人</span><span class="tag on">待機中</span></div>
+    <ul class="plist">${list}</ul>
+    <p class="small center">ホストが「開始」を押すまで待ってね…</p>
+  </div>`;
+}
+
+function renderReveal(snap){
+  const imp = ME.role==='impostor';
+  const fellow = ME.fellow && ME.fellow.length ? `<p>仲間のインポスター：<b>${ME.fellow.map(esc).join('、')}</b></p>` : (imp?'<p>あなたは1人のインポスターです</p>':'');
+  app().innerHTML=`
+  <div class="bigrole ${imp?'impbg':'crewbg'}">
+    <div class="emoji">${imp?'😈':'🧑‍🚀'}</div>
+    <div class="what" style="color:${imp?'#ffd2d8':'#cfffe3'}">${imp?'インポスター':'クルー'}</div>
+    <p style="color:#fff">${imp?'バレないようにクルーをキルしよう':'タスクを終わらせて、犯人を見つけよう'}</p>
+    ${fellow}
+  </div>
+  <div class="card center">
+    <p class="small">あなたの番号（キルされる側の合言葉）</p>
+    <div class="mycode"><b>${ME.myCode||'---'}</b></div>
+    <p class="small">${imp?'相手に近づいて、相手の番号を入力するとキルできる。':'インポスターは君の「番号」を見るとキルできる。むやみに見せないで！'}</p>
+  </div>
+  <button class="btn ${imp?'imp':'crew'}" onclick="ME.revealSeen=true; render()">準備OK ▶</button>
+  <p class="small center">全員の準備ができたら、スマホを持って部屋を歩こう！</p>`;
+}
+
+/* ----- プレイ画面 ----- */
+let MINI=null; // 進行中のミニゲーム
+function renderPlay(snap){
+  const me=ME.meHere(); const alive=me && me.alive;
+  const imp=ME.role==='impostor';
+  const tp=snap.taskProgress; const pct=tp.total? Math.round(tp.done/tp.total*100):0;
+  const aliveCount=snap.players.filter(p=>p.alive && p.connected).length;
+  if(!alive){
+    // ゴースト：タスクは続けられる（クルーを助ける）
+    return renderGhost(snap);
+  }
+  const now=Date.now();
+  const cd = imp ? Math.max(0, Math.ceil((ME.killReadyAt-now)/1000)) : 0;
+  // タスクリスト
+  const tasksHtml = me.taskTotal>0 ? Array.from({length:me.taskTotal}).map((_,i)=>{
+    const done=i<me.tasksDone;
+    return `<button class="btn sec sm" ${done?'disabled':''} onclick="openTask(${i})">
+      <span class="check ${done?'on':''}"></span> ${done?'<s>タスク '+(i+1)+'</s>':'タスク '+(i+1)+' をやる'}</button>`;
+  }).join('') : '<p class="small">タスクはありません</p>';
+
+  app().innerHTML=`
+  <div class="statusbar"><span>部屋 <b>${snap.code}</b>・生存 <b>${aliveCount}</b></span>
+    <span class="tag ${imp?'off':'on'}">${imp?'😈 インポスター':'🧑‍🚀 クルー'}</span></div>
+  <div class="card">
+    <div class="statusbar"><span>みんなのタスク</span><span>${pct}%</span></div>
+    <div class="bar"><span style="width:${pct}%"></span></div>
+  </div>
+  <div class="card">
+    <div class="statusbar"><span>あなたの番号</span><span class="mycode"><b>${ME.myCode}</b></span></div>
+    <div class="hr"></div>
+    <h2 style="margin-top:0">${imp?'偽タスク（こなすフリ）':'あなたのタスク'}</h2>
+    <div class="tasklist">${tasksHtml}</div>
+  </div>
+  ${imp?`<div class="card">
+    <button class="btn imp" ${cd>0?'disabled':''} onclick="openKill()">🔪 キル ${cd>0?'（あと'+cd+'秒）':''}</button>
+  </div>`:''}
+  <div class="row">
+    <button class="btn warn sm" onclick="doReport()">🔴 通報</button>
+    <button class="btn sec sm" ${me.meetingsLeft>0?'':'disabled'} onclick="doEmergency()">🟦 緊急会議${me.meetingsLeft>0?'':'(済)'}</button>
+  </div>
+  <p class="small center">通報＝死体を見つけた時。緊急会議＝あやしい時（各自1回）。</p>`;
+  if(imp && cd>0){ setTimeout(()=>{ if(SCREEN!=='top'&&ME.snap&&ME.snap.phase==='play') render(); }, 1000); }
+}
+
+function renderGhost(snap){
+  const tp=snap.taskProgress; const pct=tp.total? Math.round(tp.done/tp.total*100):0;
+  const me=ME.meHere();
+  const tasksHtml = me.taskTotal>0 ? Array.from({length:me.taskTotal}).map((_,i)=>{
+    const done=i<me.tasksDone;
+    return `<button class="btn sec sm" ${done?'disabled':''} onclick="openTask(${i})">
+      <span class="check ${done?'on':''}"></span> ${done?'<s>タスク '+(i+1)+'</s>':'タスク '+(i+1)+' をやる'}</button>`;
+  }).join('') : '';
+  app().innerHTML=`
+  <div class="card center"><h1>👻 あなたはゴースト</h1>
+    <p>やられてしまった…でも<b>タスクは続けられる</b>。終わらせてクルーの勝ちを手伝おう！声は出さずに見守ってね。</p></div>
+  <div class="card">
+    <div class="statusbar"><span>みんなのタスク</span><span>${pct}%</span></div>
+    <div class="bar"><span style="width:${pct}%"></span></div>
+  </div>
+  ${ME.role==='crew'?`<div class="card"><h2 style="margin-top:0">残りタスク</h2><div class="tasklist">${tasksHtml}</div></div>`:'<p class="small center">（インポスターのゴーストはタスクなし）</p>'}`;
+}
+
+/* 通報・緊急会議・キル */
+window.doReport=()=>{ toHost({t:'report'}); };
+window.doEmergency=()=>{ toHost({t:'meeting'}); };
+window.openKill=()=>{
+  MINI='kill';
+  showModal(`<h2>🔪 キル</h2><p class="small">相手のスマホの「番号」を入力。近くにいる相手だけにしてね。</p>
+    <input id="kc" maxlength="3" inputmode="numeric" placeholder="番号3桁">
+    <div class="err" id="kerr"></div>
+    <button class="btn imp" onclick="confirmKill()">キルする</button>
+    <button class="btn sec sm" onclick="closeModal()">やめる</button>`);
+  setTimeout(()=>$('#kc')&&$('#kc').focus(),50);
+};
+window.confirmKill=()=>{
+  const v=($('#kc').value||'').trim();
+  if(!/^\d{3}$/.test(v)){ $('#kerr').textContent='3桁の番号を入れてね'; return; }
+  toHost({t:'kill', code:v}); closeModal();
+};
+
+/* ----- 会議・投票 ----- */
+function renderMeeting(snap){
+  const me=ME.meHere(); const alive=me&&me.alive;
+  const left=Math.max(0,Math.ceil((snap.meeting.endsAt-Date.now())/1000));
+  const aliveP=snap.players.filter(p=>p.alive&&p.connected);
+  const voted=snap.meeting.myVoted;
+  const head=snap.meeting.reason==='report'
+     ? `🔴 <b>${esc(snap.meeting.callerName)}</b> が通報！`
+     : `🟦 <b>${esc(snap.meeting.callerName)}</b> が緊急会議！`;
+  let body;
+  if(!alive){
+    body=`<p class="center">👻 ゴーストは投票できません。みんなの話し合いを見守ろう。</p>`;
+  } else if(voted){
+    body=`<p class="center">✅ 投票しました。<br>みんなが終わるまで待ってね（${snap.meeting.votedCount}/${aliveP.length}）。</p>`;
+  } else {
+    const opts=aliveP.map(p=>`<li><span class="dot" style="background:${p.color}"></span><span class="pname">${esc(p.name)}${p.id===ME.id?'（自分）':''}</span>
+        <button class="btn imp sm" style="flex:0 0 auto;width:auto;padding:8px 16px;margin:0" onclick="vote('${p.id}')">投票</button></li>`).join('');
+    body=`<p class="small center">あやしい人に投票。決められなければスキップ。</p>
+      <ul class="plist">${opts}</ul>
+      <button class="btn sec" onclick="vote('skip')">スキップに投票</button>`;
+  }
+  app().innerHTML=`
+  <div class="card center"><h1>🗳️ 緊急会議</h1><p>${head}</p>
+    <p class="timer">のこり ${left} 秒・投票 ${snap.meeting.votedCount}/${aliveP.length}</p>
+    <p class="small">📣 ここで<b>声に出して</b>話し合おう（このアプリにチャットはありません）。</p>
+  </div>
+  <div class="card">${body}</div>`;
+  // タイマー再描画
+  if(snap.phase==='meeting'){ clearTimeout(window._mt); window._mt=setTimeout(()=>{ if(ME.snap&&ME.snap.phase==='meeting') renderMeeting(ME.snap); },1000); }
+}
+window.vote=(id)=>{ toHost({t:'vote', target:id}); };
+
+function renderResult(snap){
+  const r=snap.result; let msg, sub='';
+  if(r.skipped){ msg='だれも追放されなかった'; sub='票がわれた／スキップ多数'; }
+  else { msg=`${esc(r.ejectedName)} を追放した`;
+    if(r.reveal) sub = r.ejectedWasImp ? '😈 …その人はインポスターだった！' : '🧑‍🚀 …その人はクルーだった…';
+    else sub='正体は明かされない設定';
+  }
+  app().innerHTML=`
+  <div class="bigrole ${r.ejectedWasImp?'crewbg':'impbg'}" style="${r.skipped?'background:var(--panel2)':''}">
+    <div class="emoji">${r.skipped?'🤝':(r.ejectedWasImp?'😈':'🧑‍🚀')}</div>
+    <div class="what" style="font-size:22px">${msg}</div>
+    <p style="color:#fff">${sub}</p>
+  </div>
+  <p class="small center">まもなくゲームにもどります…</p>`;
+}
+
+function renderEnd(snap){
+  const win=snap.winner;
+  const meImp=ME.role==='impostor';
+  const youWon = (win==='impostor')===meImp;
+  const reveal=(snap.reveal||[]).map(r=>`<li><span class="dot" style="background:${r.role==='impostor'?'var(--imp)':'var(--crew)'}"></span>
+     <span class="pname">${esc(r.name)}${r.isHost?' 👑':''}</span><span class="tag ${r.role==='impostor'?'off':'on'}">${r.role==='impostor'?'😈 インポスター':'🧑‍🚀 クルー'}</span></li>`).join('');
+  app().innerHTML=`
+  <div class="bigrole ${win==='impostor'?'impbg':'crewbg'}">
+    <div class="emoji">${win==='impostor'?'😈':'🎉'}</div>
+    <div class="what">${win==='impostor'?'インポスターの勝ち':'クルーの勝ち'}</div>
+    <p style="color:#fff">${youWon?'やったね！あなたの勝ち！':'残念…次がんばろう'}</p>
+  </div>
+  <div class="card"><h2 style="margin-top:0">正体</h2><ul class="plist">${reveal}</ul></div>
+  ${NET.isHost?'<button class="btn crew" onclick="hostRestart()">🔄 もう一度（同じメンバー）</button>':'<p class="small center">ホストが「もう一度」を押すと、同じメンバーでまた遊べます。</p>'}
+  <button class="btn sec sm" onclick="location.reload()">最初の画面にもどる</button>`;
+}
+window.hostRestart=()=>{ HOST.toLobby(); };
+
+/* ===================== §MINI タスクのミニゲーム ===================== */
+function showModal(html){ closeModal(); const o=document.createElement('div'); o.className='overlay'; o.id='ov';
+  o.innerHTML=`<div class="modal">${html}</div>`; document.body.appendChild(o); }
+function closeModal(){ const o=$('#ov'); if(o) o.remove(); MINI=null; }
+
+window.openTask=(i)=>{
+  const kinds=['wires','keypad','scan','tap'];
+  const kind=kinds[rnd(kinds.length)];
+  if(kind==='wires') miniWires();
+  else if(kind==='keypad') miniKeypad();
+  else if(kind==='scan') miniScan();
+  else miniTap();
+};
+function taskCleared(){ closeModal(); toHost({t:'taskDone'}); toast('✅ タスク完了！'); }
+
+// 配線つなぎ
+function miniWires(){
+  const cols=shuffle(COLORS.slice(0,4));
+  const right=shuffle(cols.slice());
+  let sel=null, doneN=0;
+  showModal(`<h2>🔌 配線をつなぐ</h2><p class="small">左右の同じ色をタップでつなごう（4本）</p>
+    <div class="wires" id="wz">
+      <div class="wcol" id="wl"></div><div class="wcol" id="wr"></div>
+    </div><button class="btn sec sm" onclick="closeModal()">やめる</button>`);
+  const wl=$('#wl'), wr=$('#wr');
+  cols.forEach((c,i)=>{ const e=document.createElement('div'); e.className='wend'; e.style.background=c; e.dataset.c=c; e.dataset.side='L';
+    e.onclick=()=>pick(e); wl.appendChild(e); });
+  right.forEach((c,i)=>{ const e=document.createElement('div'); e.className='wend'; e.style.background=c; e.dataset.c=c; e.dataset.side='R';
+    e.onclick=()=>pick(e); wr.appendChild(e); });
+  function pick(e){
+    if(e.classList.contains('done')) return;
+    if(e.dataset.side==='L'){ document.querySelectorAll('.wend.sel').forEach(x=>x.classList.remove('sel')); sel=e; e.classList.add('sel'); return; }
+    if(!sel) return;
+    if(sel.dataset.c===e.dataset.c){ sel.classList.add('done'); e.classList.add('done'); sel.classList.remove('sel'); sel=null; doneN++;
+      if(doneN>=4) setTimeout(taskCleared,250);
+    } else { sel.classList.remove('sel'); sel=null; toast('色がちがうよ'); }
+  }
+}
+// 数字メモリ
+function miniKeypad(){
+  const code=String(1000+rnd(9000));
+  showModal(`<h2>🔢 番号を覚えて入力</h2><p class="small">この番号を覚えてね</p>
+    <div class="code" id="show">${code}</div><div class="err" id="ke"></div>`);
+  setTimeout(()=>{
+    const m=$('#ov'); if(!m) return;
+    let entered='';
+    m.querySelector('.modal').innerHTML=`<h2>🔢 番号を入力</h2><div class="code" id="ent">＿＿＿＿</div>
+      <div class="kbd" id="kb"></div><button class="btn sec sm" onclick="closeModal()">やめる</button>`;
+    const kb=$('#kb');
+    for(let n=1;n<=9;n++) addk(n);
+    addk('←'); addk(0); addk('OK');
+    function addk(label){ const b=document.createElement('button'); b.textContent=label;
+      b.onclick=()=>{
+        if(label==='←'){ entered=entered.slice(0,-1); }
+        else if(label==='OK'){ if(entered===code){ taskCleared(); } else { toast('ちがうよ、もう一度'); entered=''; } }
+        else if(entered.length<4){ entered+=label; }
+        $('#ent').textContent=(entered+'____').slice(0,4).replace(/_/g,'＿');
+        if(entered.length===4 && entered!==code){} };
+      kb.appendChild(b);
+    }
+  }, 1900);
+}
+// スキャン（長押し）
+function miniScan(){
+  showModal(`<h2>🖐 スキャン（長押し）</h2><p class="small">バーが満タンになるまで押し続けてね</p>
+    <div class="scan" id="sc"><div class="scanfill" id="sf"></div><span id="st">長押し</span></div>
+    <button class="btn sec sm" onclick="closeModal()">やめる</button>`);
+  const sc=$('#sc'), sf=$('#sf'), st=$('#st');
+  let p=0, holding=false, timer=null;
+  const start=()=>{ holding=true; timer=setInterval(()=>{ if(!holding)return; p=Math.min(100,p+3); sf.style.width=p+'%';
+    if(p>=100){ clearInterval(timer); st.textContent='完了！'; setTimeout(taskCleared,250); } },40); };
+  const stop=()=>{ holding=false; clearInterval(timer); if(p<100){ p=Math.max(0,p-12); sf.style.width=p+'%'; } };
+  sc.addEventListener('touchstart',e=>{e.preventDefault();start();},{passive:false});
+  sc.addEventListener('mousedown',start);
+  sc.addEventListener('touchend',stop); sc.addEventListener('mouseup',stop); sc.addEventListener('mouseleave',stop);
+}
+// 連打
+function miniTap(){
+  const need=18; let n=0;
+  showModal(`<h2>⚡ 連打！</h2><p class="small">${need}回タップでチャージ完了</p>
+    <div class="scan" id="tp"><div class="scanfill" id="tf"></div><span id="tt">0 / ${need}</span></div>
+    <button class="btn sec sm" onclick="closeModal()">やめる</button>`);
+  const tp=$('#tp');
+  const hit=()=>{ n++; $('#tf').style.width=Math.min(100,n/need*100)+'%'; $('#tt').textContent=n+' / '+need;
+    tp.classList.remove('flash'); void tp.offsetWidth; tp.classList.add('flash');
+    if(n>=need) setTimeout(taskCleared,180); };
+  tp.addEventListener('touchstart',e=>{e.preventDefault();hit();},{passive:false});
+  tp.addEventListener('click',hit);
+}
+
+/* ===================== 起動 ===================== */
+window.addEventListener('load', renderTop);
+window.addEventListener('beforeunload', e=>{ if(ME.snap && ME.snap.phase && ME.snap.phase!=='end' && ME.snap.phase!=='lobby'){ e.preventDefault(); e.returnValue=''; } });
+</script>
+</body>
+</html>
