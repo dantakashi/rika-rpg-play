@@ -32,7 +32,7 @@
   .stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:6px 10px 4px; min-height:0; overflow:hidden;}
   .enemy-row{display:flex; gap:8px; justify-content:center; align-items:flex-end; flex-wrap:wrap; flex:0 0 auto;}
   .enemy-card{position:relative; text-align:center;}
-  .eimg{margin:0 auto; display:flex; align-items:center; justify-content:center; border-radius:13px; overflow:hidden; border:1px solid var(--line); box-shadow:0 6px 12px rgba(0,0,0,.5);}
+  .eimg{margin:0 auto; display:flex; align-items:center; justify-content:center; border-radius:13px; overflow:hidden; border:1px solid var(--line); box-shadow:0 6px 12px rgba(0,0,0,.5); max-height:30vh;}
   .eimg img{width:100%; height:100%; object-fit:cover; display:block;}
   .enemy-card.dead{opacity:.28; filter:grayscale(1);}
   .enemy-card.targetable .eimg{outline:3px dashed var(--warn); outline-offset:2px; cursor:pointer; animation:tpulse 1s infinite;}
@@ -133,7 +133,7 @@
 </head>
 <body>
 <div id="app">
-  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.7</span></span>
+  <div class="topbar"><span>理科RPG2 <b>戦闘プロト</b> <span style="color:var(--sub)">v0.7.1</span></span>
     <button class="gear" onclick="toggleTuner(true)">⚙ 調整</button></div>
 
   <div class="stage" id="stage">
@@ -228,7 +228,7 @@ const MONSTER_DB = {
 const ENCOUNTERS = [ ['slime','slime'], ['tree','golem'], ['slime','tree','golem'], ['omega'] ];
 
 // 状態異常定義(v0.7・拡張可). kind: dot=毒/やけど(実時間%減) / slow=まひ(敵ゲージ速度) / stop=ねむり(敵ゲージ停止)
-//  DoTモデル(リサーチ反映): 対象の最大HP%×毎秒・実時間tick・問題中は停止・継続時間+再付与は逓減(ppsCap)・スロー無関係(dt依存)。
+//  DoTモデル(リサーチ反映): 対象の最大HP%×毎秒・実時間tick・問題中は停止・継続時間あり・再付与=継続時間リフレッシュ(火力一定)・スロー無関係(dt依存)。
 const AILMENTS = {
   poison:   { jp:'毒',   emoji:'☠️', kind:'dot',  pps:0.020, dur:14, ppsCap:0.05 },
   burn:     { jp:'やけど', emoji:'🔥', kind:'dot',  pps:0.045, dur:6,  ppsCap:0.09 },
@@ -239,12 +239,12 @@ const SKILLS = {
   heal:    { name:'回復',   emoji:'❤️', mp:10, needsQuiz:true,  scope:'none', note:'正解で味方1人を回復(瀕死は蘇生)', run:(c)=>healAlly() },
   ice:     { name:'氷結砲', emoji:'🧊', mp:15, needsQuiz:true,  scope:'enemy', note:'正解で対象の攻撃ゲージ0＋ダメージ', run:(c,e)=>{ e.charge=0; dealEnemyTarget(e,Math.floor(c.atk*1.1*killer(e).mult),false); bigSavor('🧊 氷結砲'); } },
   shock:   { name:'衝撃波', emoji:'💥', mp:22, needsQuiz:true,  scope:'allEnemies', note:'正解で敵全体にダメージ', run:(c)=>{ aliveEnemies().forEach(e=>dealEnemyTarget(e,Math.floor(c.atk*0.6*killer(e).mult),false)); bigSavor('💥 衝撃波！<small>全体</small>'); } },
-  poison:  { name:'猛毒',   emoji:'☠️', mp:10, needsQuiz:true,  scope:'enemy', note:'正解で対象を毒(じわじわ減る)', run:(c,e)=>{ applyAilment(e,'poison'); bigSavor('☠️ 猛毒！'); } },
-  paralyze:{ name:'痺れ針', emoji:'⚡', mp:9,  needsQuiz:true,  scope:'enemy', note:'正解で対象をまひ(行動が遅く)', run:(c,e)=>{ applyAilment(e,'paralyze'); bigSavor('⚡ しびれ！'); } },
-  dai:     { name:'大魔法', emoji:'🔥', mp:40, needsQuiz:false, scope:'enemy', combo:3, note:'コンボ3＋MP・対象に極大ダメージ', run:(c,e)=>{ const d=Math.floor(c.atk*(3+combo*0.8)*killer(e).mult); combo=0; bumpCombo(); dealEnemyTarget(e,d,true); screenShake(); bigSavor('🔥 大魔法 '+d.toLocaleString()); } },
+  poison:  { name:'猛毒',   emoji:'☠️', mp:16, needsQuiz:true,  scope:'enemy', note:'正解で対象を毒(じわじわ減る)', run:(c,e)=>{ applyAilment(e,'poison'); bigSavor('☠️ 猛毒！'); } },
+  paralyze:{ name:'痺れ針', emoji:'⚡', mp:16, needsQuiz:true,  scope:'enemy', note:'正解で対象をまひ(行動が遅く)', run:(c,e)=>{ applyAilment(e,'paralyze'); bigSavor('⚡ しびれ！'); } },
+  dai:     { name:'大魔法', emoji:'🔥', mp:40, needsQuiz:false, scope:'enemy', combo:3, note:'コンボ3＋MP・対象に極大ダメージ', run:(c,e)=>{ const d=Math.floor(c.atk*(3+Math.min(combo,12)*0.5)*killer(e).mult); combo=0; bumpCombo(); dealEnemyTarget(e,d,true); screenShake(); bigSavor('🔥 大魔法 '+d.toLocaleString()); } },
   powerup: { name:'力ため', emoji:'💪', mp:6,  needsQuiz:false, scope:'none', note:'この味方の次の攻撃を2倍', run:(c)=>{ c.powerUp=2; bigSavor('💪 力をためた！'); } },
   haste:   { name:'加速',   emoji:'⏩', mp:12, needsQuiz:false, scope:'none', note:'味方全員の行動ゲージ+40', run:(c)=>{ allies.forEach(a=>{ if(!a.downed) a.charge=Math.min(100,a.charge+40); }); bigSavor('⏩ 加速！'); } },
-  barrier: { name:'バリア', emoji:'🔰', mp:14, needsQuiz:false, scope:'none', note:'この味方にダメージ吸収シールド', run:(c)=>{ c.shield=(c.shield||0)+Math.floor(c.hpMax*0.5); bigSavor('🔰 バリア展開'); } },
+  barrier: { name:'バリア', emoji:'🔰', mp:18, needsQuiz:false, scope:'none', note:'この味方にダメージ吸収シールド(上限あり)', run:(c)=>{ c.shield=Math.min(Math.floor(c.hpMax*0.8),(c.shield||0)+Math.floor(c.hpMax*0.5)); bigSavor('🔰 バリア展開'); } },
 };
 // 味方4体(役割＋行動速度 spd: 大きいほど速い)。セラ=妨害役(デバフ)。
 const ALLY_DEFS = [
@@ -260,14 +260,14 @@ const ITEM_DEFS = [
 
 /* ===================== §4 状態 ===================== */
 let encIdx=0, enemies=[], allies=[], combo=0, items={hpPotion:3,mpPotion:3};
-let phase='charging', stateTimer=0, curQ=null, answered=false, pendingAction=null, activeAlly=null, _advancing=false;
+let phase='charging', stateTimer=0, curQ=null, answered=false, pendingAction=null, activeAlly=null, _advancing=false, _lastEnemyActed=false;
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 function makeAllies(){ allies = ALLY_DEFS.map(d=>({ ...d, hp:d.hpMax, mp:d.mpMax, charge:0, downed:false, powerUp:0, shield:0, defending:false })); }
 function setEncounter(i){ const defs=ENCOUNTERS[i%ENCOUNTERS.length];
   enemies = defs.map((ref,idx)=>{ const m=MONSTER_DB[ref]; return { ...m, attrs:m.attrs.slice(), hp:m.hp, hpMax:m.hp, charge:0, alive:true, idx:idx, ail:{} }; });
   buildEnemies(); }
 function resetAll(){ encIdx=0; setEncounter(0); makeAllies(); combo=0; items={hpPotion:3,mpPotion:3};
-  phase='charging'; stateTimer=0; curQ=null; answered=false; pendingAction=null; activeAlly=null; _advancing=false;
+  phase='charging'; stateTimer=0; curQ=null; answered=false; pendingAction=null; activeAlly=null; _advancing=false; _lastEnemyActed=false;
   buildParty(); hideOverlay(); bumpCombo(); renderCommand(); }
 
 /* ===================== §5 メインループ ===================== */
@@ -275,19 +275,21 @@ let last=performance.now();
 function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.1)dt=0.1; update(dt); updateUI(); requestAnimationFrame(loop); }
 const THINK=['command','skillmenu','itemmenu','targeting','question','miss'];
 function update(dt){
-  if(phase==='win'||phase==='lose') return;
+  if(phase==='win'||phase==='lose'||_advancing) return;   // _advancing中(撃破→次ウェーブ待ち)は一切進めない＝空コマンド/レース防止
   // 状態異常は実時間tick(=charging/savor/enemyActの間だけ進む＝問題を解いてる/選んでる間は停止)。slow×毒の矛盾を避けるためdt依存。
   if(phase==='charging'||phase==='savor'||phase==='enemyAct') tickAilments(dt);
+  if(_advancing) return;   // tickAilmentsの毒killで撃破された可能性→以降の遷移をスキップ
   const fillEnemy = (phase==='charging'||phase==='savor'||(THINK.includes(phase)&&!cfg.freezeOnThink));
-  if(fillEnemy) enemies.forEach(e=>{ if(!e.alive)return; let rate=1; if(e.ail.sleep)rate=0; else if(e.ail.paralyze)rate=e.ail.paralyze.mul; e.charge += dt*100/cfg.enemyIntervalSec*rate; });
+  if(fillEnemy) enemies.forEach(e=>{ if(!e.alive)return; let rate=1; if(e.ail){ if(e.ail.sleep)rate=0; else if(e.ail.paralyze)rate=e.ail.paralyze.mul; } e.charge += dt*100/cfg.enemyIntervalSec*rate; });
   if(phase==='charging'){
     allies.forEach(a=>{ if(!a.downed) a.charge += dt*100*a.spd/cfg.chargeSec; });
     const eReady = enemies.find(e=>e.alive && e.charge>=100);
-    if(eReady){ enemyAttack(eReady); return; }
-    const ready = allies.find(a=>!a.downed && a.charge>=100);
-    if(ready){ ready.charge=100; activeAlly=ready; phase='command'; renderCommand(); }
+    const ally = allies.find(a=>!a.downed && a.charge>=100);
+    // 敵が連続2回動かない: 味方が手番待ちなら敵の2連を1回挟む(ハメ防止)。味方が居なければ敵は続けて動ける。
+    if(eReady && !(ally && _lastEnemyActed)){ _lastEnemyActed=true; enemyAttack(eReady); return; }
+    if(ally){ _lastEnemyActed=false; ally.charge=100; activeAlly=ally; phase='command'; renderCommand(); }
   } else if(phase==='savor'){
-    stateTimer-=dt; if(stateTimer<=0){ const er=enemies.find(e=>e.alive&&e.charge>=100); if(er){ enemyAttack(er); return; } phase='charging'; renderCommand(); }
+    stateTimer-=dt; if(stateTimer<=0){ const er=enemies.find(e=>e.alive&&e.charge>=100); if(er){ _lastEnemyActed=true; enemyAttack(er); return; } phase='charging'; renderCommand(); }
   } else if(phase==='enemyAct'){
     stateTimer-=dt; if(stateTimer<=0){ phase='charging'; renderCommand(); }
   }
@@ -336,8 +338,9 @@ function backToCommand(){ if(['skillmenu','itemmenu','targeting'].includes(phase
 function afterAction(hint){ document.getElementById('phaseHint').textContent=hint; if(activeAlly) activeAlly.charge=0; activeAlly=null; phase='savor'; stateTimer=cfg.actionSec; renderCommand(); }
 
 /* ===================== §7 対象選択 ===================== */
-function beginAction(act){ pendingAction=act;
+function beginAction(act){ act.targetIdx=null; pendingAction=act;
   if(act.scope==='enemy'){ const al=aliveEnemies();
+    if(al.length===0){ afterAction(activeAlly?activeAlly.name+'は空を切った':'…'); return; }   // 敵ゼロ保険(毒で全滅直後にコマンドへ流入した場合)
     if(al.length>1){ phase='targeting'; renderTargeting(); return; }
     act.targetIdx = al[0].idx; }
   proceedAction(); }
@@ -392,7 +395,7 @@ function resolveAnswer(correct){ const act=pendingAction, c=activeAlly; if(!act)
 function afterMiss(){ hideOverlay(); pendingAction=null; activeAlly=null; phase='charging'; renderCommand(); }
 function useItem(it,correct,c){ items[it.id]=Math.max(0,(items[it.id]||0)-1); it.run(); const cost=correct?it.gaugeCost*0.3:it.gaugeCost; if(c) c.charge=Math.max(0,c.charge-cost); }
 function doAttack(c,e){ if(!e)return; const k=killer(e); let mult=k.mult, pu=''; if(c.powerUp){ mult*=c.powerUp; pu=' 💪'; c.powerUp=0; }
-  const isCrit=Math.random()<0.18; let dmg=Math.floor(c.atk*(1+combo*0.10)*mult); if(isCrit) dmg=Math.floor(dmg*1.8);
+  const isCrit=Math.random()<0.18; let dmg=Math.floor(c.atk*(1+Math.min(combo,15)*0.10)*mult); if(isCrit) dmg=Math.floor(dmg*1.8);
   dealEnemyTarget(e,dmg,isCrit); screenShake();
   const kt=k.mult>1?` <small>対${k.label}×${k.mult.toFixed(1)}</small>`:''; bigSavor((isCrit?'⚡クリ ':'⚔️ ')+dmg.toLocaleString()+'！'+pu+kt); }
 function killer(e){ let mult=1,label=''; (e?e.attrs:[]).forEach(a=>{ const m=killers[a]||1; if(m>mult){mult=m;label=SUBJECTS[a].jp;} }); return {mult,label}; }
@@ -405,18 +408,20 @@ function healAlly(ratio){ ratio=ratio||0.30; let t=allies.find(a=>a.downed);
 /* ===================== §9 敵 ＋ 状態異常エンジン ===================== */
 // 状態異常を付与(再付与は逓減: DoTはpps加算半分・上限ppsCap／時間は更新)。
 function applyAilment(e,type){ const d=AILMENTS[type]; if(!d||!e||!e.alive)return; e.ail=e.ail||{};
-  if(d.kind==='dot'){ const cur=e.ail[type]; const pps=cur?Math.min(d.ppsCap, cur.pps + d.pps*0.5):d.pps;
-    e.ail[type]={ kind:'dot', pps:pps, remain:d.dur, acc:0, t:0 }; }
+  if(d.kind==='dot'){ const cur=e.ail[type];   // 再付与=継続時間をリフレッシュするだけ(火力は一定＝エスカレートしない)
+    e.ail[type]={ kind:'dot', pps:d.pps, remain:d.dur, acc:cur?cur.acc:0, t:cur?cur.t:0 }; }
   else { e.ail[type]={ kind:d.kind, mul:d.mul||0, remain:d.dur }; } }
 // 実時間tick(問題中は呼ばれない=停止)。DoTは最大HP%×秒で減らし、継続時間が切れたら解除。
 function tickAilments(dt){ let died=false;
   enemies.forEach(e=>{ if(!e.alive||!e.ail)return;
-    Object.keys(e.ail).forEach(type=>{ const a=e.ail[type]; a.remain-=dt;
+    Object.keys(e.ail).forEach(type=>{ const a=e.ail[type]; if(!a)return; a.remain-=dt;   // if(!a): 反復中に他のtickで消えた枠を踏まない
       if(a.remain<=0){ delete e.ail[type]; return; }
       if(a.kind==='dot' && e.alive){ const dmg=e.hpMax*a.pps*dt; e.hp=Math.max(0,e.hp-dmg); a.acc+=dmg; a.t+=dt;
         if(a.t>=0.6){ spawnEnemyFx(e,'☠'+Math.max(1,Math.round(a.acc)),'dot'); a.acc=0; a.t=0; }
-        if(e.hp<=0){ e.alive=false; e.ail={}; spawnEnemyFx(e,'☠ たおした','dot'); died=true; } }
-    }); });
+        if(e.hp<=0){ e.alive=false; spawnEnemyFx(e,'☠ たおした','dot'); died=true; } }   // クリアは反復後(下) ＝ 反復中に e.ail を壊さない(クラッシュ防止)
+    });
+    if(!e.alive) e.ail={};
+  });
   if(died) checkWin(); }
 function enemyAttack(e){ e.charge=0;
   const alive=allies.filter(a=>!a.downed); if(!alive.length){ phase='lose'; showEnd(false); return; }
@@ -436,6 +441,7 @@ function dealEnemyTarget(e,dmg,crit){ if(!e||!e.alive)return; e.hp=Math.max(0,e.
   if(e.hp<=0){ e.alive=false; e.ail={}; } }
 function checkWin(){ if(aliveEnemies().length===0 && !_advancing){ _advancing=true; setTimeout(()=>{ _advancing=false; nextEncounter(); }, cfg.savorSec*1000*0.7); } }
 function nextEncounter(){ encIdx++; if(encIdx>=ENCOUNTERS.length){ phase='win'; showEnd(true); return; }
+  activeAlly=null; pendingAction=null; _lastEnemyActed=false;   // 前ウェーブの手番/対象を残さない(targetIdxが新ウェーブの別敵を指す事故を防ぐ)
   setEncounter(encIdx); allies.forEach(a=>{ a.downed=false; a.hp=a.hpMax; a.mp=a.mpMax; a.charge=0; a.shield=0; a.powerUp=0; a.defending=false; });
   combo=0; bumpCombo(); bigSavor('✓ 撃破！ つぎの相手だ'); phase='charging'; renderCommand(); }
 function spawnEnemyFx(e,text,cls){ const card=document.getElementById('enemy-'+e.idx); if(!card)return; const f=document.createElement('div'); f.className='efx '+(cls||'norm');
@@ -454,7 +460,7 @@ function bumpCombo(){ const b=document.getElementById('comboBadge'); b.style.dis
 
 /* ===================== §11 描画 ===================== */
 function buildEnemies(){ const row=document.getElementById('enemyRow'); const n=enemies.length;
-  const wide = window.innerWidth>=680; const base = n<=1?150 : n===2?120 : n===3?100 : 84; const sz=Math.round(base*(wide?1.45:1));
+  const wide = window.innerWidth>=680; const base = n<=1?150 : n===2?120 : n===3?100 : 84; const sz=Math.round(base*(wide?(n>=3?1.2:1.45):1));   // 横長は拡大・ただし3体時は縦圧迫を避け控えめ(縦上限は.eimg max-height:30vh)
   row.innerHTML = enemies.map(e=>{ const ab=e.attrs.map(a=>{ const s=SUBJECTS[a]; return `<span class="eattr" style="color:${s.color};border-color:${s.color};background:${s.color}1a;">${s.emoji}${s.jp}</span>`; }).join(' ');
     const inner = /\.(png|jpg|webp)$/i.test(e.img)?`<img src="${e.img}" alt="${e.name}">`:`<span style="font-size:${Math.floor(sz*0.6)}px">${e.img}</span>`;
     return `<div class="enemy-card" id="enemy-${e.idx}" onclick="onPickTarget(${e.idx})">
