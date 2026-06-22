@@ -220,6 +220,19 @@
   .acc-chip{font-size:12px; padding:6px 11px; border-radius:99px; background:#1d2a3f; border:1.5px solid var(--line); color:var(--ink);}
   .acc-chip.remove{background:#3a1c1c; border-color:#b91c1c; color:#fca5a5;}
   .acc-hint{font-size:12px; color:var(--sub); padding:4px 2px;}
+  /* そうび: キャラ選択ハブ＋装備スロット */
+  .equip-hub{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:12px 0;}
+  .equip-card{background:#161f30; border:1px solid var(--line); border-radius:12px; padding:11px 6px 9px; text-align:center; color:var(--ink);}
+  .equip-card:active{transform:scale(.98);}
+  .equip-card .ec-skills{font-size:16px; letter-spacing:1px; margin:4px 0 2px; min-height:18px;}
+  .estat{font-size:12px; color:var(--sub); text-align:center; background:#10162a; border:1px solid var(--line); border-radius:10px; padding:7px; margin:6px 0 10px;}
+  .eq-secttl{font-size:12px; color:var(--warn); font-weight:700; margin:10px 0 6px;}
+  .gslot-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .gslot{display:flex; flex-direction:column; align-items:flex-start; gap:1px; padding:8px 10px; border-radius:10px; background:#0c1220; border:1px solid var(--line); color:var(--ink); text-align:left;}
+  .gslot.sel{border-color:var(--warn); box-shadow:0 0 0 2px var(--warn);}
+  .gs-slot{font-size:10px; color:var(--sub);} .gs-skill{font-size:13px; font-weight:700;} .gs-tag{font-size:10px; font-weight:800;}
+  .gs-b{font-size:10px; color:var(--good); line-height:1.3;}
+  .drop-scroll{max-height:34vh; overflow-y:auto;}
   /* あいことばゲート(β・ソフトな鍵) */
   .passgate{position:absolute; inset:0; z-index:9999; background:linear-gradient(160deg,#0c1326,#070a14); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
   .passgate.hide{display:none;}
@@ -684,7 +697,7 @@ let phase='charging', stateTimer=0, curQ=null, answered=false, pendingAction=nul
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 // curStatMul(メタ装備のステ倍率)とcurLoadout(役割別スキル)を反映して味方を作る。通常ステは sm=1 / loadout=既定。
 function makeAllies(){ const sm=curStatMul||1; allies = ALLY_DEFS.map(d=>{
-  const skills = (curLoadout&&curLoadout[d.id]) ? curLoadout[d.id].slice() : d.skills.slice();
+  const skills = (curLoadout&&curLoadout[d.id]) ? curLoadout[d.id].slice() : buildLoadout(d.id);   // メタステは固定/通常ステは装備スキル
   const acc = 1 + accPctFor(d.id)/100;   // ★装飾品メイン=全コアステータス+%(2枠合算)
   const str=Math.round(d.str*sm*acc)+accFlat(d.id,'str'), int=Math.round(d.int*sm*acc)+accFlat(d.id,'int'),   // ＋ボーナス=加算コアステ
     def=Math.round(d.def*sm*acc)+accFlat(d.id,'def'), hpMax=Math.round(d.hpMax*sm*acc)+accFlat(d.id,'hp'), mpMax=Math.round(d.mpMax*sm*acc)+accFlat(d.id,'mp');
@@ -701,7 +714,7 @@ function setEncounter(i){ const defs=curEncounters()[i] || curEncounters()[0]; c
   buildEnemies(); }
 let gameState='title';   // ★体験版の進行状態: 'title'|'map'|'battle'|'clear'|'complete'|'defeat'。battle以外はupdate()停止。
 // 1ステージ分の戦闘を初期化(味方フル・第1ウェーブ)。難度cfgはstartStageで適用済み。
-function startBattle(){ encIdx=0; setEncounter(0); makeAllies(); combo=0; items={hpPotion:3,mpPotion:3};
+function startBattle(){ encIdx=0; stageDrops=[]; setEncounter(0); makeAllies(); combo=0; items={hpPotion:3,mpPotion:3};
   phase='charging'; stateTimer=0; curQ=null; answered=false; pendingAction=null; activeAlly=null; _advancing=false; _lastEnemyActed=false;
   buildParty(); hideOverlay(); bumpCombo(); renderCommand(); }
 function resetAll(){ startStage(curStage); }   // 「もう一度」＝今のステージをやり直す
@@ -875,7 +888,7 @@ function tickStatuses(dt){ let died=false;
       if(a.remain<=0){ delete e.ail[type]; return; }
       if(a.kind==='dot' && e.alive){ const dmg=e.hpMax*a.pps*dt; e.hp=Math.max(0,e.hp-dmg); a.acc=(a.acc||0)+dmg; a.t=(a.t||0)+dt;
         if(a.t>=0.6){ spawnEnemyFx(e,'☠'+Math.max(1,Math.round(a.acc)),'dot'); a.acc=0; a.t=0; }
-        if(e.hp<=0){ e.alive=false; spawnEnemyFx(e,'☠ たおした','dot'); died=true; } }   // クリアは反復後(下) ＝ 反復中に e.ail を壊さない(クラッシュ防止)
+        if(e.hp<=0){ e.alive=false; spawnEnemyFx(e,'☠ たおした','dot'); died=true; onEnemyDeath(e); } }   // クリアは反復後(下) ＝ 反復中に e.ail を壊さない(クラッシュ防止)
     });
     if(!e.alive) e.ail={};
   });
@@ -953,7 +966,7 @@ function applyEnemyDamageToAlly(e,target,dmg,isAoE){
 function dealEnemyTarget(e,dmg,crit){ if(!e||!e.alive)return; e.hp=Math.max(0,e.hp-dmg);
   if(e.ail&&e.ail.sleep&&e.ail.sleep.breakOnHit) delete e.ail.sleep;   // 眠りは殴ると起きる
   spawnEnemyFx(e,fmt(dmg),crit?'crit':'norm'); flashEnemy(e);
-  if(e.hp<=0){ e.alive=false; e.ail={}; } }
+  if(e.hp<=0){ e.alive=false; e.ail={}; onEnemyDeath(e); } }
 function checkWin(){ if(aliveEnemies().length===0 && !_advancing){ _advancing=true; setTimeout(()=>{ _advancing=false; nextEncounter(); }, cfg.savorSec*1000*0.7); } }
 function nextEncounter(){ encIdx++; if(encIdx>=curEncounters().length){ stageClear(); return; }
   activeAlly=null; pendingAction=null; _lastEnemyActed=false;   // 前ウェーブの手番/対象を残さない(targetIdxが新ウェーブの別敵を指す事故を防ぐ)
@@ -1046,21 +1059,55 @@ function rollBonuses(rarity){ const n=BONUS_COUNT[rarity]||1; const pool=BONUS_P
   return out; }
 function accBonuses(a){ return (a&&a.bonuses)||[]; }
 function bonusText(b){ const d=BONUS_DEFS[b.t]||{jp:b.t}; return d.jp+'+'+b.v+(d.pct?'%':''); }
-let accInv = [];                       // 所持: [{id, rarity, base, bonuses:[{t,v}]}]
-let accEquip = { ares:[null,null], sera:[null,null], gai:[null,null], mina:[null,null] };  // 各2枠=accのid
-let _accSeq = 1, accSel = null;        // accSel={cid,slot}
+// ★Phase1: 装備(武器/頭/胴/足)＝スキルを変える＝ビルドが変わる。役割別にスキルプール(既存スキルをスロット別に整理)。
+const GEAR_SLOTS = ['武器','頭','胴','足'];
+const ROLE_OF = { ares:'火力', sera:'妨害', gai:'壁', mina:'回復' };
+const GEAR_POOL = {
+  火力:{ '武器':['honoo','rensan','yamiuchi'], '頭':['touki'], '胴':['fukutsu'], '足':['tosshin'] },
+  妨害:{ '武器':['thunder'], '頭':['poison','chain','armorbreak','acidrain'], '胴':['drain','manashield'], '足':['delay','slow'] },
+  壁:  { '武器':['tateuchi'], '頭':['iatsu','inori','higo'], '胴':['provoke'], '足':['kenshu'] },
+  回復:{ '武器':['holy'], '頭':['regen','protes','esna','regenall'], '胴':['heal','healall'], '足':['jiu'] },
+};
+let accInv = [];                       // 装飾品: [{id, rarity, base, bonuses}]
+let accEquip = { ares:[null,null], sera:[null,null], gai:[null,null], mina:[null,null] };  // 装飾品2枠=accのid
+let gearInv = [];                      // 装備: [{id, kind:'gear', role, slot, skillId, rarity, bonuses}]
+let gearEquip = { ares:{武器:null,頭:null,胴:null,足:null}, sera:{武器:null,頭:null,胴:null,足:null}, gai:{武器:null,頭:null,胴:null,足:null}, mina:{武器:null,頭:null,胴:null,足:null} };
+let _accSeq = 1;
 const ACC_KEY='rika2_demo_acc_v1';
-function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); _accSeq=s.seq||1; } }catch(e){} }
-function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, seq:_accSeq})); }catch(e){} }
+function _freshGearEquip(){ return { ares:{武器:null,頭:null,胴:null,足:null}, sera:{武器:null,頭:null,胴:null,足:null}, gai:{武器:null,頭:null,胴:null,足:null}, mina:{武器:null,頭:null,胴:null,足:null} }; }
+function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); gearInv=s.gearInv||[]; gearEquip=Object.assign(_freshGearEquip(), s.gearEquip||{}); _accSeq=s.seq||1; } }catch(e){} }
+function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, gearInv, gearEquip, seq:_accSeq})); }catch(e){} }
 function accById(id){ return accInv.find(a=>a.id===id); }
-function accPctFor(cid){ let p=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)p+=ACC_RARITY[a.rarity].pct; }); return p; }   // 全コア+%(2枠合算・メインステ)
-function accFlat(cid,stat){ let v=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; accBonuses(a).forEach(b=>{ if(b.t===stat)v+=b.v; }); }); return v; }   // 加算コアステ(その人の2枠分)
-function accResistFor(cid){ let v=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; accBonuses(a).forEach(b=>{ if(b.t==='resist')v+=b.v; }); }); return Math.min(50,v)/100; }   // 異常耐性(上限50%)
-function accMetaSum(type){ let v=0; Object.values(accEquip).forEach(arr=>arr.forEach(id=>{ const a=id!=null?accById(id):null; accBonuses(a).forEach(b=>{ if(b.t===type)v+=b.v; }); })); return v; }   // レア率/ドロップ率=全員の装飾品合算
+function gearById(id){ return gearInv.find(g=>g.id===id); }
+function accPctFor(cid){ let p=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)p+=ACC_RARITY[a.rarity].pct; }); return p; }   // 装飾品メイン=全コア+%(2枠)
+// その人に装備中の全アイテム(装飾品2＋装備4)。ボーナスはここから合算。
+function equippedItems(cid){ const out=[]; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)out.push(a); }); const g=gearEquip[cid]||{}; GEAR_SLOTS.forEach(s=>{ const it=g[s]!=null?gearById(g[s]):null; if(it)out.push(it); }); return out; }
+function allEquippedItems(){ let out=[]; Object.keys(ROLE_OF).forEach(cid=>{ out=out.concat(equippedItems(cid)); }); return out; }
+function accFlat(cid,stat){ let v=0; equippedItems(cid).forEach(it=>accBonuses(it).forEach(b=>{ if(b.t===stat)v+=b.v; })); return v; }   // 加算コア(装飾品＋装備)
+function accResistFor(cid){ let v=0; equippedItems(cid).forEach(it=>accBonuses(it).forEach(b=>{ if(b.t==='resist')v+=b.v; })); return Math.min(50,v)/100; }
+function accMetaSum(type){ let v=0; allEquippedItems().forEach(it=>accBonuses(it).forEach(b=>{ if(b.t===type)v+=b.v; })); return v; }   // レア率/ドロップ率=全装備合算
+function defSkill(cid,slot){ const d=ALLY_DEFS.find(a=>a.id===cid); const id=(d.skills||[]).find(sid=>SKILLS[sid]&&SKILLS[sid].slot===slot); return id||d.skills[1]; }   // 既定スキル(装備が無いスロット)
+function slotSkill(cid,slot){ const g=gearEquip[cid]&&gearEquip[cid][slot]; const it=g!=null?gearById(g):null; return it?it.skillId:defSkill(cid,slot); }
+function buildLoadout(cid){ return ['jab'].concat(GEAR_SLOTS.map(s=>slotSkill(cid,s))); }   // 通常ステ=ジャブ＋装備4スキル
 function rollAccRarity(){ const rareB=accMetaSum('accRare'); const ks=Object.keys(ACC_RARITY);
   const w={}; ks.forEach(k=>{ w[k]=ACC_RARITY[k].w; }); w.UC*=(1+rareB/100); w.R*=(1+rareB/100*1.6);   // レア率%で良レアに寄せる
   const tot=ks.reduce((s,k)=>s+w[k],0); let x=Math.random()*tot; for(const k of ks){ x-=w[k]; if(x<0)return k; } return 'C'; }
 function dropAccessory(){ const rarity=rollAccRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base, bonuses:rollBonuses(rarity) }; accInv.push(a); saveAcc(); return a; }
+function dropGear(){ const roles=Object.keys(GEAR_POOL); const role=roles[Math.floor(Math.random()*roles.length)]; const slot=GEAR_SLOTS[Math.floor(Math.random()*GEAR_SLOTS.length)];
+  const pool=GEAR_POOL[role][slot]; const skillId=pool[Math.floor(Math.random()*pool.length)]; const rarity=rollAccRarity();
+  const g={ id:_accSeq++, kind:'gear', role, slot, skillId, rarity, bonuses:rollBonuses(rarity) }; gearInv.push(g); saveAcc(); return g; }
+// ★ドロップ=装飾品 or 装備(半々)。報酬1個。
+function rollDrop(){ if(Math.random()<0.5) return { kind:'acc', item:dropAccessory() }; return { kind:'gear', item:dropGear() }; }
+// ★パズドラ式: 敵ごとにドロップ判定→演出→最後に結果表示。1ステージで1個は確定・1フロアで2個以上も可。
+let stageDrops = [];   // このステージ(全ウェーブ)のドロップ
+function enemyIsBoss(e){ return !!(e && (e.special || e.aoeAttack || e.hpMax>=4000)); }
+function onEnemyDeath(e){ if(!e || e._dropped) return; e._dropped=true;
+  const chance = enemyIsBoss(e) ? 1.0 : 0.55;
+  if(Math.random() < chance){ const d=rollDrop(); stageDrops.push(d); spawnDropFx(e, d); } }
+function spawnDropFx(e, d){ const r=ACC_RARITY[d.item.rarity]; spawnEnemyFx(e, '🎁'+r.jp, 'crit'); }   // 敵の上に宝箱＋レア度
+function dropCardHtml(d){ const it=d.item, r=ACC_RARITY[it.rarity], bx=accBonuses(it).map(bonusText).join(' / ');
+  if(d.kind==='gear'){ const sk=SKILLS[it.skillId]; return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.role}・${it.slot}　${sk?sk.emoji+sk.name:it.skillId}${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
+  return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.base}　＋全コア${r.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
 
 function showHome(){ gameState='home'; renderHome(); showScreen('home'); setTopbar(''); }
 function renderHome(){ const cards=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id);
@@ -1072,34 +1119,53 @@ function renderHome(){ const cards=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id);
     <div class="home-info">もちもの 装飾品：<b>${accInv.length}</b>こ</div>
     <div class="scr-btns">
       <button class="scr-btn primary big" onclick="showMap()">▶ ぼうけんへ</button>
-      <button class="scr-btn" onclick="showAccessory()">🔮 そうび（装飾品）</button>
+      <button class="scr-btn" onclick="showEquip()">🔮 そうび（装備・装飾品）</button>
     </div>`;
 }
-function showAccessory(){ gameState='accessory'; accSel=null; renderAccessory(); showScreen('accessory'); setTopbar(''); }
-function renderAccessory(){
-  const rows=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id);
-    const slots=(accEquip[d.id]||[null,null]).map((id,si)=>{ const a=id!=null?accById(id):null; const sel=accSel&&accSel.cid===d.id&&accSel.slot===si;
-      const bx=a?accBonuses(a).map(bonusText).join('・'):''; const inner=a?`<span class="aslot-r" style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</span><span class="aslot-n">${a.base} +全コア${ACC_RARITY[a.rarity].pct}%</span>${bx?`<span class="aslot-b">${bx}</span>`:''}`:`<span class="aslot-empty">＋ 空き</span>`;
-      return `<button class="aslot${sel?' sel':''}" onclick="selectSlot('${d.id}',${si})">${inner}</button>`; }).join('');
-    return `<div class="acc-row"><div class="ar-head"><span class="ar-emoji">${d.emoji}</span><span class="ar-name">${d.name}</span><span class="ar-pct">全コア +${pct}%</span></div><div class="ar-slots">${slots}</div></div>`; }).join('');
-  const equipped=new Set(); Object.values(accEquip).forEach(arr=>arr.forEach(id=>{ if(id!=null)equipped.add(id); }));
-  const inv=accInv.filter(a=>!equipped.has(a.id));
+// ★そうび画面: キャラ選択(ハブ)→そのキャラの装備(武器/頭/胴/足)＋装飾品(2)を付け替え。
+let equipCid=null, equipSel=null;   // equipSel={kind:'gear'|'acc', slot}
+function showEquip(){ gameState='equip'; equipCid=null; equipSel=null; renderEquip(); showScreen('accessory'); setTopbar(''); }
+function openCharEquip(cid){ equipCid=cid; equipSel=null; renderEquip(); }
+function selectEquipSlot(kind,slot){ equipSel={kind,slot}; renderEquip(); }
+function equipItem(id){ if(!equipSel||!equipCid)return; const cid=equipCid;
+  if(equipSel.kind==='gear'){ Object.keys(gearEquip).forEach(c=>GEAR_SLOTS.forEach(s=>{ if(gearEquip[c][s]===id)gearEquip[c][s]=null; })); gearEquip[cid][equipSel.slot]=id; }
+  else { Object.keys(accEquip).forEach(c=>accEquip[c].forEach((v,i)=>{ if(v===id)accEquip[c][i]=null; })); accEquip[cid][equipSel.slot]=id; }
+  saveAcc(); renderEquip(); }
+function unequipSel(){ if(!equipSel||!equipCid)return; if(equipSel.kind==='gear')gearEquip[equipCid][equipSel.slot]=null; else accEquip[equipCid][equipSel.slot]=null; saveAcc(); renderEquip(); }
+function renderEquip(){ const g=document.getElementById('accBody');
+  if(!equipCid){   // ハブ＝キャラ選択
+    const cards=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id); const sk=buildLoadout(d.id).slice(1).map(sid=>SKILLS[sid]?SKILLS[sid].emoji:'').join('');
+      return `<button class="equip-card" onclick="openCharEquip('${d.id}')"><div class="hc-emoji">${d.emoji}</div><div class="hc-name">${d.name}</div><div class="hc-role">${d.role}</div><div class="ec-skills">${sk}</div><div class="hc-pct">装飾品 +${pct}%</div></button>`; }).join('');
+    g.innerHTML=`<h2 class="scr-ttl">🔮 そうび</h2><div class="acc-sub">キャラをえらんで、装備（スキル）と装飾品をつけよう。</div><div class="equip-hub">${cards}</div><div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>`;
+    return; }
+  const cid=equipCid, d=ALLY_DEFS.find(a=>a.id===cid), accm=1+accPctFor(cid)/100;
+  const eStr=Math.round(d.str*accm)+accFlat(cid,'str'), eInt=Math.round(d.int*accm)+accFlat(cid,'int'), eDef=Math.round(d.def*accm)+accFlat(cid,'def'), eHp=Math.round(d.hpMax*accm)+accFlat(cid,'hp');
+  const gslots=GEAR_SLOTS.map(slot=>{ const gid=gearEquip[cid][slot], gear=gid!=null?gearById(gid):null, sid=slotSkill(cid,slot), sk=SKILLS[sid], sel=equipSel&&equipSel.kind==='gear'&&equipSel.slot===slot;
+    const rc=gear?ACC_RARITY[gear.rarity].col:'var(--sub)', bx=gear?accBonuses(gear).map(bonusText).join('・'):'';
+    return `<button class="gslot${sel?' sel':''}" onclick="selectEquipSlot('gear','${slot}')"><span class="gs-slot">${slot}</span><span class="gs-skill">${sk?sk.emoji+sk.name:sid}</span><span class="gs-tag" style="color:${rc};">${gear?ACC_RARITY[gear.rarity].jp:'きほん'}</span>${bx?`<span class="gs-b">${bx}</span>`:''}</button>`; }).join('');
+  const aslots=(accEquip[cid]||[null,null]).map((id,si)=>{ const a=id!=null?accById(id):null, sel=equipSel&&equipSel.kind==='acc'&&equipSel.slot===si, bx=a?accBonuses(a).map(bonusText).join('・'):'';
+    const inner=a?`<span class="aslot-r" style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</span><span class="aslot-n">${a.base} +全コア${ACC_RARITY[a.rarity].pct}%</span>${bx?`<span class="aslot-b">${bx}</span>`:''}`:`<span class="aslot-empty">＋ 空き</span>`;
+    return `<button class="aslot${sel?' sel':''}" onclick="selectEquipSlot('acc',${si})">${inner}</button>`; }).join('');
   let invHtml;
-  if(!accSel){ invHtml=`<div class="acc-hint">スロットをえらんでから、下のもちものをタップ</div>`; }
-  else { const filled=accEquip[accSel.cid][accSel.slot]!=null;
-    const rm=filled?`<button class="acc-chip remove" onclick="unequipSel()">✕ はずす</button>`:'';
-    const chips=inv.length?inv.map(a=>{ const bx=accBonuses(a).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${ACC_RARITY[a.rarity].col};" onclick="equipAcc(${a.id})"><b style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</b> ${a.base} +全コア${ACC_RARITY[a.rarity].pct}%${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">あいてる装飾品がありません</div>`;
+  if(!equipSel){ invHtml=`<div class="acc-hint">枠をえらんでから、下のもちものをタップ</div>`; }
+  else if(equipSel.kind==='gear'){ const role=ROLE_OF[cid], slot=equipSel.slot;
+    const eq=new Set(); Object.values(gearEquip).forEach(o=>GEAR_SLOTS.forEach(s=>{ if(o[s]!=null)eq.add(o[s]); }));
+    const list=gearInv.filter(x=>x.role===role&&x.slot===slot&&!eq.has(x.id));
+    const rm=gearEquip[cid][slot]!=null?`<button class="acc-chip remove" onclick="unequipSel()">✕ きほんに戻す</button>`:'';
+    const chips=list.length?list.map(x=>{ const sk=SKILLS[x.skillId], bx=accBonuses(x).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${ACC_RARITY[x.rarity].col};" onclick="equipItem(${x.id})"><b style="color:${ACC_RARITY[x.rarity].col};">${ACC_RARITY[x.rarity].jp}</b> ${sk?sk.emoji+sk.name:x.skillId}${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">この枠の装備がまだ無いよ</div>`;
+    invHtml=`<div class="acc-inv">${rm}${chips}</div>`;
+  } else { const eq=new Set(); Object.values(accEquip).forEach(arr=>arr.forEach(id=>{ if(id!=null)eq.add(id); }));
+    const list=accInv.filter(a=>!eq.has(a.id));
+    const rm=accEquip[cid][equipSel.slot]!=null?`<button class="acc-chip remove" onclick="unequipSel()">✕ はずす</button>`:'';
+    const chips=list.length?list.map(a=>{ const bx=accBonuses(a).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${ACC_RARITY[a.rarity].col};" onclick="equipItem(${a.id})"><b style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</b> ${a.base} +全コア${ACC_RARITY[a.rarity].pct}%${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">あいてる装飾品がありません</div>`;
     invHtml=`<div class="acc-inv">${rm}${chips}</div>`; }
-  document.getElementById('accBody').innerHTML=`
-    <h2 class="scr-ttl">🔮 そうび（装飾品）</h2>
-    <div class="acc-sub">装飾品は1人2つまで。全コアステータスが上がるよ。</div>
-    <div class="acc-list">${rows}</div>
-    <div class="acc-invwrap"><div class="acc-invttl">もちもの（${inv.length}）</div>${invHtml}</div>
-    <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>`;
+  g.innerHTML=`<h2 class="scr-ttl">${d.emoji} ${d.name}<span style="font-size:13px;color:var(--sub);"> ${d.role}</span></h2>
+    <div class="estat">ちから ${eStr}／かしこさ ${eInt}／まもり ${eDef}／HP ${eHp}　異常耐性 ${Math.round(accResistFor(cid)*100)}%</div>
+    <div class="eq-secttl">スキル装備（武器・頭・胴・足）＝ビルド</div><div class="gslot-grid">${gslots}</div>
+    <div class="eq-secttl">装飾品（2つまで・全コア+%）</div><div class="ar-slots">${aslots}</div>
+    <div class="acc-invwrap"><div class="acc-invttl">もちもの</div>${invHtml}</div>
+    <div class="scr-btns"><button class="scr-btn" onclick="showEquip()">◀ キャラ選択</button></div>`;
 }
-function selectSlot(cid,slot){ accSel={cid,slot}; renderAccessory(); }
-function equipAcc(accId){ if(!accSel)return; Object.keys(accEquip).forEach(c=>accEquip[c].forEach((v,i)=>{ if(v===accId)accEquip[c][i]=null; })); accEquip[accSel.cid][accSel.slot]=accId; saveAcc(); renderAccessory(); }
-function unequipSel(){ if(!accSel)return; accEquip[accSel.cid][accSel.slot]=null; saveAcc(); renderAccessory(); }
 
 function showScreen(name){   // overlay表示の一元管理。battle時は全overlay非表示。
   ['title','home','map','accessory','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
@@ -1129,18 +1195,16 @@ function stageClear(){ gameState='clear'; const st=STAGES[curStage];
   progress.unlocked=Math.max(progress.unlocked, Math.min(curStage+1, STAGES.length-1));
   saveProgress();
   const last=curStage>=STAGES.length-1;
-  const drops=[dropAccessory()];   // ★装飾品ドロップ(クリアごと・C〜R)
-  if(Math.random()*100 < accMetaSum('accDrop')) drops.push(dropAccessory());   // ドロップ率ボーナスで追加ドロップ
-  const dropCards=drops.map(acc=>{ const ar=ACC_RARITY[acc.rarity]; const bx=accBonuses(acc).map(bonusText).join(' / ');
-    return `<div class="drop-name" style="color:${ar.col};border-color:${ar.col};">［${ar.jp}］${acc.base}　＋全コア${ar.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }).join('');
+  if(stageDrops.length===0) stageDrops.push(rollDrop());   // ★1ステージで最低1個は確定
+  const dropCards=stageDrops.map(dropCardHtml).join('');   // 各敵で出たドロップを最後に結果表示
   document.getElementById('clearBody').innerHTML=`
     <div class="big-emoji">🏆</div>
     <h2 class="scr-ttl">STAGE ${curStage+1} クリア！</h2>
     <div class="scr-sub">${st.emoji} ${st.name}</div>
     <div class="drop-card">
-      <div class="drop-label">🎁 装飾品を てにいれた！${drops.length>1?'（2こ！）':''}</div>
-      ${dropCards}
-      <div class="drop-note">ホームの「そうび」で 1人2つまで つけられる</div>
+      <div class="drop-label">🎁 ${stageDrops.length}こ ゲット！</div>
+      <div class="drop-scroll">${dropCards}</div>
+      <div class="drop-note">ホームの「そうび」で 装備・装飾品をつけよう</div>
     </div>
     <div class="scr-btns">
       ${ last ? `<button class="scr-btn primary" onclick="showComplete()">▶ けっか</button>`
