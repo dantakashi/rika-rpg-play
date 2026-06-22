@@ -49,9 +49,18 @@
   html,body{margin:0; padding:0; background:linear-gradient(160deg,var(--bg1),#070a14); color:var(--ink);
     font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; overflow:hidden;}
   #app{max-width:480px; margin:0 auto; height:100vh; height:100dvh; display:flex; flex-direction:column; position:relative;}
-  .topbar{display:flex; align-items:center; justify-content:space-between; padding:5px 12px; font-size:12px; color:var(--sub); flex:0 0 auto;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 12px; font-size:12px; color:var(--sub); flex:0 0 auto;}
+  .topbar>span:first-child{display:flex; align-items:center; flex:1 1 auto; min-width:0;}   /* タイトルは縮めて…、ボタンは常に出す */
+  .topbar>span:first-child b{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .topbar>span:last-child{flex:0 0 auto;}
   .topbar b{color:var(--ink);}
-  .gear{background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:4px 9px; font-size:13px;}
+  .gear{background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:4px 9px; font-size:13px; white-space:nowrap;}
+  /* テスト用デバッグ枠(生徒テスター向け・誤操作しにくいよう囲って明示) */
+  .debug-box{width:100%; max-width:320px; margin:12px auto 0; border:1px dashed var(--warn); border-radius:10px; background:rgba(58,42,20,.4); padding:9px 10px;}
+  .debug-box .dtt{font-size:12px; color:var(--warn); font-weight:700; text-align:center; margin-bottom:7px;}
+  .debug-box .drow{display:flex; gap:7px; flex-wrap:wrap; justify-content:center;}
+  .debug-box button{flex:1 1 auto; min-width:92px; background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:7px 6px; font-size:12px;}
+  .debug-box .dver{text-align:center; font-size:10px; color:var(--sub); margin-top:7px;}
 
   .stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:6px 10px 4px; min-height:0; overflow:hidden;}
   .enemy-row{display:flex; gap:8px; justify-content:center; align-items:flex-end; flex-wrap:wrap; flex:0 0 auto;}
@@ -262,7 +271,7 @@
 <div id="app">
   <div class="topbar">
     <span><button class="gear" id="tbBack" style="display:none;margin-right:7px;" onclick="showMap()">🗺 マップ</button><b id="tbStage">理科RPG2 体験版</b></span>
-    <span></span></div>
+    <span><button class="gear" id="tbSkip" style="display:none;" onclick="debugSkipStage()" title="テスト用：このステージをクリア扱いでスキップ">⏭️ スキップ</button></span></div>
 
   <div class="stage" id="stage">
     <div class="enemy-row" id="enemyRow"></div>
@@ -299,6 +308,15 @@
       <h2 class="scr-ttl">🗺 ステージをえらぼう</h2>
       <div class="map-list" id="mapList"></div>
       <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>
+      <div class="debug-box">
+        <div class="dtt">🔧 テスト用ボタン（先生にきいてね）</div>
+        <div class="drow">
+          <button onclick="debugUnlockAll()" title="すべてのステージをすぐ遊べるように">ぜんぶ解放</button>
+          <button onclick="debugGrantGear()" title="後半ステージ検証用に全員へレアのそうび一式を付与">そうび一式（R）</button>
+          <button onclick="if(confirm('進行とそうびを ぜんぶ消して さいしょから？（もとに戻せません）'))debugResetProgress()" title="進行とそうびを消してさいしょから">進行リセット</button>
+        </div>
+        <div class="dver">理科RPG2 体験版・β（2026-06-23）</div>
+      </div>
     </div>
   </div>
 
@@ -520,8 +538,8 @@ const MONSTER_DB = {
 // ★体験版=5ステージ。各ステージ＝1〜2ウェーブ。drop＝コモン〜レアの装備フレーバー(テンプレ装備なので見た目だけ・実ステは不変)。cfg＝難度の上り。
 // enemyMul=敵ステ倍率(段階強化)。boss=単品ボス。meta=ステージ専用のメタ装備(pow=ステ倍率/loadout=役割別スキル/label=表示)。
 const STAGES = [
-  { id:0, name:'はじまりの実験室', emoji:'🧪', theme:'化学', encounters:[ ['slime'], ['slime','bubble'] ], enemyMul:0.45,
-    cfg:{ chargeSec:4.4, enemyIntervalSec:12.5 } },   // 武器1本(裸)でも余裕で勝てる
+  { id:0, name:'はじまりの実験室', emoji:'🧪', theme:'化学', encounters:[ ['slime'], ['slime','bubble'] ], enemyMul:0.45, hpMul:0.5,
+    cfg:{ chargeSec:4.4, enemyIntervalSec:12.5 } },   // 武器1本(裸)でも余裕で勝てる(最初の敵=HP半分でサクサク)
   { id:1, name:'ざわめきの森',     emoji:'🌳', theme:'生物', encounters:[ ['bug','bee'], ['tree'] ], enemyMul:0.6,
     cfg:{ chargeSec:4.2, enemyIntervalSec:11.0 } },
   { id:2, name:'ビリビリ電気室',   emoji:'⚡', theme:'物理', encounters:[ ['spark','spark'], ['wind','prism'] ], enemyMul:0.78,
@@ -705,8 +723,8 @@ function makeAllies(){ const mflat=curMetaFlat||{}; allies = ALLY_DEFS.map(d=>{
     haste:null, focus:null, amp:null, regen:null, atkBuff:null, reduce:null, statusResist:null, ail:{}, taunt:0, cover:0, thorns:null, fade:0, quickReady:false, _tossBonus:0 }; }); }
 function clearAllyBuffs(a){ a.powerUp=0; a.weakBlade=false; a.shield=0; a.defending=false; a.endure=false; a.counter=false; a.haste=null; a.focus=null; a.amp=null; a.regen=null; a.atkBuff=null; a.reduce=null; a.statusResist=null; a.ail={}; a.taunt=0; a.cover=0; a.thorns=null; a.fade=0; a.quickReady=false; a._tossBonus=0; }
 function curEncounters(){ return STAGES[curStage].encounters; }
-function setEncounter(i){ const defs=curEncounters()[i] || curEncounters()[0]; const mul=STAGES[curStage].enemyMul||1;
-  enemies = defs.map((ref,idx)=>{ const m=MONSTER_DB[ref]; const hp=Math.round(m.hp*mul);
+function setEncounter(i){ const defs=curEncounters()[i] || curEncounters()[0]; const mul=STAGES[curStage].enemyMul||1; const hpMul=STAGES[curStage].hpMul||1;   // hpMul=HPだけの倍率(攻撃力は据置で削れる)
+  enemies = defs.map((ref,idx)=>{ const m=MONSTER_DB[ref]; const hp=Math.round(m.hp*mul*hpMul);
     return { ...m, attrs:m.attrs.slice(), resist:(m.resist?Object.assign({},m.resist):null),
       hp:hp, hpMax:hp, def:Math.round((m.def||0)*Math.min(mul,1.5)), atk:Math.round(m.atk*mul),   // enemyMul=段階強化(defは割合なので伸びを抑える)
       charge:0, alive:true, idx:idx, ail:{}, spMeter:0 }; });
@@ -1211,6 +1229,20 @@ function renderMap(){ const g=document.getElementById('mapList');
       <div class="sc-flag">${cl?'✓ クリア':(locked?'ロック':'▶ ちょうせん')}</div>
     </button>`; }).join(''); }
 
+// ── テスト用デバッグ機能(生徒テスター向け・誤操作しにくいよう囲って明示) ──
+function debugToast(msg){ const g=document.getElementById('mapList'); if(!g)return; const t=document.createElement('div'); t.textContent=msg; t.style.cssText='text-align:center;color:var(--accent);font-size:13px;font-weight:700;padding:7px 0;'; g.parentNode.insertBefore(t,g); setTimeout(()=>{ if(t.parentNode)t.remove(); },2600); }
+function debugUnlockAll(){ progress.unlocked=STAGES.length-1; saveProgress(); renderMap();   // すべてのステージを解放=どこへでも飛べる(スキップ)
+  console.log('[DEBUG] unlock all stages'); debugToast('🔧 ぜんぶ解放したよ（テスト用）'); }
+function debugSkipStage(){ if(gameState!=='battle') return; console.log('[DEBUG] skip stage '+(curStage+1)); stageClear(); }   // 今のステージをクリア扱いでスキップ(update()はclearで停止=戦闘は凍結)
+function debugGrantGear(){   // テスト用: 全員にレアのそうび一式(武器/頭/胴/足)＋装飾品2を付与して装着=後半ステージ検証用(grindなし)
+  ALLY_DEFS.forEach(d=>{ const cid=d.id; gearEquip[cid]=gearEquip[cid]||{武器:null,頭:null,胴:null,足:null};
+    GEAR_SLOTS.forEach(slot=>{ const ok=GEAR_POOL[slot].filter(sid=>rangeIncludes(SKILL_RANGE[sid],'R')); const pool=ok.length?ok:GEAR_POOL[slot]; const skillId=pool[Math.floor(Math.random()*pool.length)];
+      const g={ id:_accSeq++, kind:'gear', slot, skillId, equip:SKILL_EQUIP[skillId], rarity:'R', main:rollMain(skillId,'R'), bonuses:rollBonuses('R') }; gearInv.push(g); gearEquip[cid][slot]=g.id; });
+    const mk=()=>{ const a={ id:_accSeq++, rarity:'R', base:ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)], bonuses:rollBonuses('R') }; accInv.push(a); return a.id; };
+    accEquip[cid]=[mk(),mk()]; });
+  saveAcc(); console.log('[DEBUG] grant R gear set'); debugToast('🛡️ 全員にレアのそうび一式をつけたよ（テスト用）'); }
+function debugResetProgress(){ console.log('[DEBUG] reset progress+gear'); try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(ACC_KEY); }catch(e){} window.location.reload(); }   // 進行＋そうびを消してさいしょから(あいことばは保持)
+
 function startStage(i){ if(i>progress.unlocked) return; curStage=i;
   const st=STAGES[i]; if(st.cfg){ cfg.chargeSec=st.cfg.chargeSec; cfg.enemyIntervalSec=st.cfg.enemyIntervalSec; }
   curMetaFlat = (st.meta&&st.meta.gear)||null; curLoadout = (st.meta&&st.meta.loadout)||null;   // ★メタ装備の自動切替(11〜)=装備相当のフラット補正＋固定loadout
@@ -1265,7 +1297,9 @@ function showComplete(){ gameState='complete';
   showScreen('complete'); setTopbar('');
 }
 function setTopbar(txt){ const el=document.getElementById('tbStage'); if(el) el.textContent=txt;
-  const back=document.getElementById('tbBack'); if(back) back.style.display=(gameState==='battle')?'inline-block':'none'; }
+  const inBattle=(gameState==='battle');
+  const back=document.getElementById('tbBack'); if(back) back.style.display=inBattle?'inline-block':'none';
+  const skip=document.getElementById('tbSkip'); if(skip) skip.style.display=inBattle?'inline-block':'none'; }   // ⏭️スキップは戦闘中だけ表示(テスト用)
 
 let _rzT=null; window.addEventListener('resize', ()=>{ clearTimeout(_rzT); _rzT=setTimeout(()=>{ try{ buildEnemies(); }catch(e){} }, 160); });   // デバウンス=連続resizeで演出が消えにくい
 
