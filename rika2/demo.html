@@ -280,7 +280,7 @@ function onGear(v){ const t=(+v)/100; gearV.textContent=v;
   cfg.chargeSec=+lerp(4.5,1.4,t).toFixed(2); cfg.enemyIntervalSec=+lerp(9.0,4.0,t).toFixed(2);
   charge.value=cfg.chargeSec; chargeV.textContent=cfg.chargeSec.toFixed(1);
   enemyInt.value=cfg.enemyIntervalSec; enemyV.textContent=cfg.enemyIntervalSec.toFixed(1); }
-let killers = { physics:1.5, chemistry:1.5, biology:1.5, earth:1.5 };
+let killers = { physics:1.0, chemistry:1.0, biology:1.0, earth:1.0 };   // ★属性キラー=一旦保留(全1.0=1倍/無効)。値を上げれば再有効化。killer()でfdmgに乗る。
 let skillLevel = 1;   // ★装備で決まる想定のスキルレベル(1-3)。プロトでは調整パネルで操作。
 const fmt = n => Math.round(n).toLocaleString();
 const ri  = n => Math.floor(Math.random()*n);
@@ -808,10 +808,13 @@ function mitig(def){ return DEF_K/(Math.max(0,def||0)+DEF_K); }   // 被ダメ�
 function vulnMult(e){ let v=1; if(e&&e.ail){ Object.keys(e.ail).forEach(t=>{ const a=e.ail[t]; if(a&&a.kind==='defdown')v*=a.mul; }); } return Math.min(v,2.0); }
 function comboBonus(){ return Math.min(combo*0.04, 0.6); }   // コンボ加算(最大+60%・仮)
 function statVal(c,key){ let v=(key==='int'?(c.int||0):key==='def'?(c.def||0):(c.str||0)); if(key==='str'&&c.atkBuff)v*=c.atkBuff.mul; return v; }   // 火力=ちから(str)/魔法=かしこさ(int)。闘気はstrに乗る。
-// スキル/攻撃の与ダメ共通処理: 攻撃ステ×倍率×会心×(1+コンボ+与ダメ%)×K/(防+K)×被ダメUP → 9999上限/最低1。
+// ★属性キラー: 一旦保留(2026-06-22オーナー判断)。コードは残すが killers を全て1.0にして実質無効(1倍)。
+//   再有効化したいときは killers の値(physics等)を1.5などに戻すだけでOK。敵のattrsで最大の倍率が乗る。
+function killer(e){ let m=1; if(e&&e.attrs){ e.attrs.forEach(a=>{ const k=killers[a]||1; if(k>m)m=k; }); } return m; }
+// スキル/攻撃の与ダメ共通処理: 攻撃ステ×倍率×会心×(1+コンボ+与ダメ%)×K/(防+K)×被ダメUP×属性キラー(現1倍) → 9999上限/最低1。
 function fdmg(c,statKey,mult,e,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
   const atk=statVal(c,statKey); const crit=(Math.random()*100 < (c.crit||10)); const cm=crit?1.5:1;
-  let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e);
+  let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e)*killer(e);
   dmg=Math.max(DMG_FLOOR,Math.min(DMG_CAP,Math.floor(dmg))); dealEnemyTarget(e,dmg,crit); return dmg; }
 function doAttack(c,e){ if(!e)return; const d=fdmg(c, c.atkStat||'str', 1.0, e); screenShake(); bigSavor('⚔️ こうげき '+fmt(d)); }   // 通常攻撃(主属性×1.0)＝唯一のMP回復手段(正解で+MP・resolveAnswerで加算)
 function answerLabel(q){ return q.type==='choice'?q.choices[q.answer]:q.answer; }
