@@ -494,27 +494,28 @@ function drawQuestion(subjects){ const cand=QUESTIONS.filter(q=>subjects.include
 // ★体験版の敵=序盤(コモン〜レア帯)。画像が無い敵は絵文字で表示(buildEnemiesが自動判別)。数値は仮。
 // 敵ステは土台スケール: def=割合防御(まもり相当・K/(防+K))/atk=与ダメの素/hp=体力。序盤帯(仮)。
 const MONSTER_DB = {
+  // ★敵ステ=新スケール(味方が裸~20ダメ→装備で数百)。mul 1.0 ≈ ステージ4帯。enemyMulで段階強化。
   // 化学
-  slime:  { name:'スライム実験体', img:'img/enemy_slime.png', hp:1200, def:15, atk:100, attrs:['chemistry'] },
-  bubble: { name:'しけんかんスライム', img:'🧫', hp:1500, def:25, atk:120, attrs:['chemistry'] },
+  slime:  { name:'スライム実験体', img:'img/enemy_slime.png', hp:200, def:6, atk:20, attrs:['chemistry'] },
+  bubble: { name:'しけんかんスライム', img:'🧫', hp:260, def:10, atk:26, attrs:['chemistry'] },
   // 生物
-  bug:    { name:'もぞもぞ虫',    img:'🐛', hp:1300, def:20, atk:115, attrs:['biology'] },
-  bee:    { name:'はりおバチ',    img:'🐝', hp:1100, def:15, atk:135, attrs:['biology'] },
-  tree:   { name:'森のトレント',  img:'img/enemy_tree.png', hp:2800, def:55, atk:160, attrs:['biology'], resist:{ poison:0.4 } },   // 木=毒に強い
+  bug:    { name:'もぞもぞ虫',    img:'🐛', hp:220, def:8, atk:24, attrs:['biology'] },
+  bee:    { name:'はりおバチ',    img:'🐝', hp:180, def:5, atk:30, attrs:['biology'] },
+  tree:   { name:'森のトレント',  img:'img/enemy_tree.png', hp:520, def:24, atk:40, attrs:['biology'], resist:{ poison:0.4 } },   // 木=毒に強い
   // 物理
-  spark:  { name:'ビリビリ玉',    img:'⚡', hp:1300, def:20, atk:135, attrs:['physics'] },
-  wind:   { name:'つむじ風',      img:'🌀', hp:1600, def:35, atk:120, attrs:['physics'] },
-  prism:  { name:'ひかりの精',    img:'🔆', hp:1400, def:30, atk:140, attrs:['physics'] },
+  spark:  { name:'ビリビリ玉',    img:'⚡', hp:220, def:8, atk:28, attrs:['physics'] },
+  wind:   { name:'つむじ風',      img:'🌀', hp:300, def:15, atk:24, attrs:['physics'] },
+  prism:  { name:'ひかりの精',    img:'🔆', hp:250, def:12, atk:30, attrs:['physics'] },
   // 地学
-  magma:  { name:'マグマのこぶし', img:'🌋', hp:1900, def:45, atk:150, attrs:['earth'], special:'erupt', specEvery:4 },   // たまに小噴火(全体小ダメ)
-  golem:  { name:'岩石ゴーレム',  img:'img/enemy_golem.png', hp:3400, def:85, atk:185, attrs:['earth'], special:'quake', specEvery:3, resist:{ sleep:0.6, freeze:0.5, paralyze:0.4 } },   // 岩=眠り/氷/まひに強い
-  // ボス(体験版のラスト・オメガより控えめ)
-  guardian:{ name:'研究塔の番人', img:'img/enemy_omega.png', hp:5600, def:75, atk:195, attrs:['physics','chemistry'], special:'quake', specEvery:3, resist:{ poison:0.3, paralyze:0.3, sleep:0.5, freeze:0.4 } },
-  // ★ギミックボス(ステージ11〜・メタ装備で対策)。HPは多め＝メタ装備の強化ステ前提。
-  b_status:{ name:'呪詛の魔人',   img:'😈', hp:11000, def:90,  atk:165, attrs:['biology','chemistry'], special:'curse', specEvery:2 },   // 状態異常(毒/やけど)を味方にかけてくる→浄化/耐性で対策
-  b_fast:{   name:'疾風の幻獣',   img:'🌪️', hp:9500,  def:80,  atk:150, attrs:['physics'], resist:{ paralyze:0.0 } },                    // 行動が速い(stage cfgで間隔短)→スロウ/まひ/ゲージ後退で対策
-  b_aoe:{    name:'業火の巨竜',   img:'🐉', hp:12000, def:100, atk:130, attrs:['chemistry','earth'], aoeAttack:true },                  // 毎手番 全体攻撃→全体回復/被ダメ軽減で対策
-  b_iron:{   name:'鋼鉄の番兵',   img:'🤖', hp:9000,  def:620, atk:185, attrs:['physics'], resist:{ poison:0.5 } },                      // 防御が非常に高い→防御崩し(被ダメUP)＋多段で対策
+  magma:  { name:'マグマのこぶし', img:'🌋', hp:360, def:20, atk:34, attrs:['earth'], special:'erupt', specEvery:4 },   // たまに小噴火(全体小ダメ)
+  golem:  { name:'岩石ゴーレム',  img:'img/enemy_golem.png', hp:700, def:42, atk:44, attrs:['earth'], special:'quake', specEvery:3, resist:{ sleep:0.6, freeze:0.5, paralyze:0.4 } },   // 岩=眠り/氷/まひに強い
+  // ボス(ステージ5の壁・enemyMulで強化)
+  guardian:{ name:'研究塔の番人', img:'img/enemy_omega.png', hp:1100, def:40, atk:48, attrs:['physics','chemistry'], special:'quake', specEvery:3, resist:{ poison:0.3, paralyze:0.3, sleep:0.5, freeze:0.4 } },
+  // ★ギミックボス(ステージ11〜・メタ装備=装備相当の補正で戦う)。
+  b_status:{ name:'呪詛の魔人',   img:'😈', hp:3200, def:28,  atk:110, attrs:['biology','chemistry'], special:'curse', specEvery:2 },   // 状態異常(毒/やけど)を味方にかけてくる→浄化/耐性で対策
+  b_fast:{   name:'疾風の幻獣',   img:'🌪️', hp:2700, def:24,  atk:95,  attrs:['physics'], resist:{ paralyze:0.0 } },                    // 行動が速い→スロウ/まひ/ゲージ後退で対策
+  b_aoe:{    name:'業火の巨竜',   img:'🐉', hp:3800, def:32,  atk:80,  attrs:['chemistry','earth'], aoeAttack:true },                  // 毎手番 全体攻撃→全体回復/被ダメ軽減で対策
+  b_iron:{   name:'鋼鉄の番兵',   img:'🤖', hp:2400, def:200, atk:120, attrs:['physics'], resist:{ poison:0.5 } },                      // 防御が非常に高い→防御崩し(被ダメUP)＋多段で対策
 };
 // ★体験版=5ステージ。各ステージ＝1〜2ウェーブ。drop＝コモン〜レアの装備フレーバー(テンプレ装備なので見た目だけ・実ステは不変)。cfg＝難度の上り。
 // enemyMul=敵ステ倍率(段階強化)。boss=単品ボス。meta=ステージ専用のメタ装備(pow=ステ倍率/loadout=役割別スキル/label=表示)。
@@ -540,36 +541,31 @@ const STAGES = [
     cfg:{ chargeSec:3.5, enemyIntervalSec:6.4 } },
   { id:9, name:'四元素の門',       emoji:'🌀', theme:'総合', boss:true, encounters:[ ['tree','golem'], ['golem','prism','magma'] ], enemyMul:3.0,
     cfg:{ chargeSec:3.5, enemyIntervalSec:5.8 } },   // ★5の倍数=壁
-  // ── 11〜14: ギミックボス単品。各ステージ専用のメタ装備に自動で切り替わる ──
-  { id:10, name:'呪詛の魔人', emoji:'😈', theme:'状態異常ボス', boss:true, encounters:[ ['b_status'] ],
-    drop:{ name:'浄化の聖典', rarity:'UR', who:'ミナ' }, cfg:{ chargeSec:3.6, enemyIntervalSec:6.5 },
-    meta:{ label:'状態異常たいさくセット', pow:1.4, loadout:{
+  // ── 11〜14: ギミックボス単品。メタ装備=固定loadout＋装備相当のフラット補正(gear)を自動付与(裸でも戦える) ──
+  { id:10, name:'呪詛の魔人', emoji:'😈', theme:'状態異常ボス', boss:true, encounters:[ ['b_status'] ], cfg:{ chargeSec:3.6, enemyIntervalSec:6.5 },
+    meta:{ label:'状態異常たいさくセット', gear:{str:130,int:130,def:70,hp:1000,mp:50}, loadout:{
       ares:['jab','honoo','rensan','touki','fukutsu'], sera:['jab','manashield','thunder','drain','poison'],
       gai:['jab','inori','provoke','kenshu','tateuchi'], mina:['jab','esna','protes','healall','heal'] } } },
-  { id:11, name:'疾風の幻獣', emoji:'🌪️', theme:'高速ボス', boss:true, encounters:[ ['b_fast'] ],
-    drop:{ name:'疾風の足甲', rarity:'UR', who:'セラ' }, cfg:{ chargeSec:3.5, enemyIntervalSec:4.3 },
-    meta:{ label:'速度デバフセット', pow:1.5, loadout:{
+  { id:11, name:'疾風の幻獣', emoji:'🌪️', theme:'高速ボス', boss:true, encounters:[ ['b_fast'] ], cfg:{ chargeSec:3.5, enemyIntervalSec:4.3 },
+    meta:{ label:'速度デバフセット', gear:{str:150,int:150,def:80,hp:1100,mp:55}, loadout:{
       ares:['jab','honoo','rensan','tosshin','touki'], sera:['jab','slow','chain','delay','thunder'],
       gai:['jab','provoke','kenshu','iatsu','tateuchi'], mina:['jab','heal','regen','holy','healall'] } } },
-  { id:12, name:'業火の巨竜', emoji:'🐉', theme:'全体攻撃ボス', boss:true, encounters:[ ['b_aoe'] ],
-    drop:{ name:'守護の大盾', rarity:'UR', who:'ガイ' }, cfg:{ chargeSec:3.6, enemyIntervalSec:6.0 },
-    meta:{ label:'全体回復・防御セット', pow:1.6, loadout:{
+  { id:12, name:'業火の巨竜', emoji:'🐉', theme:'全体攻撃ボス', boss:true, encounters:[ ['b_aoe'] ], cfg:{ chargeSec:3.6, enemyIntervalSec:6.0 },
+    meta:{ label:'全体回復・防御セット', gear:{str:170,int:170,def:90,hp:1300,mp:60}, loadout:{
       ares:['jab','honoo','rensan','touki','fukutsu'], sera:['jab','thunder','drain','poison','slow'],
       gai:['jab','higo','provoke','kenshu','iatsu'], mina:['jab','healall','regenall','heal','holy'] } } },
-  { id:13, name:'鋼鉄の番兵', emoji:'🤖', theme:'高防御ボス', boss:true, encounters:[ ['b_iron'] ],
-    drop:{ name:'徹甲の魔剣', rarity:'UR', who:'アレス' }, cfg:{ chargeSec:3.6, enemyIntervalSec:6.5 },
-    meta:{ label:'防御崩しセット', pow:1.6, loadout:{
+  { id:13, name:'鋼鉄の番兵', emoji:'🤖', theme:'高防御ボス', boss:true, encounters:[ ['b_iron'] ], cfg:{ chargeSec:3.6, enemyIntervalSec:6.5 },
+    meta:{ label:'防御崩しセット', gear:{str:180,int:180,def:100,hp:1400,mp:65}, loadout:{
       ares:['jab','rensan','honoo','touki','yamiuchi'], sera:['jab','armorbreak','acidrain','thunder','drain'],
       gai:['jab','provoke','kenshu','iatsu','tateuchi'], mina:['jab','heal','holy','regen','healall'] } } },
   // ── 15: 11〜14のボス連戦 ──
-  { id:14, name:'四凶の試練', emoji:'👑', theme:'ボス連戦', boss:true, encounters:[ ['b_status'], ['b_fast'], ['b_aoe'], ['b_iron'] ], enemyMul:0.72,
-    drop:{ name:'四凶討滅の証', rarity:'UR', who:'全員' }, cfg:{ chargeSec:3.5, enemyIntervalSec:5.8 },
-    meta:{ label:'バランス総合セット', pow:1.8, loadout:{
+  { id:14, name:'四凶の試練', emoji:'👑', theme:'ボス連戦', boss:true, encounters:[ ['b_status'], ['b_fast'], ['b_aoe'], ['b_iron'] ], enemyMul:0.72, cfg:{ chargeSec:3.5, enemyIntervalSec:5.8 },
+    meta:{ label:'バランス総合セット', gear:{str:210,int:210,def:120,hp:1700,mp:70}, loadout:{
       ares:['jab','honoo','rensan','touki','fukutsu'], sera:['jab','armorbreak','slow','thunder','drain'],
       gai:['jab','provoke','kenshu','higo','iatsu'], mina:['jab','healall','heal','esna','protes'] } } },
 ];
 let curStage = 0;
-let curStatMul = 1, curLoadout = null;   // メタ装備ステージで startStage が設定(ステ倍率/役割別スキル)。通常は 1 / null。
+let curMetaFlat = null, curLoadout = null;   // メタ装備ステージで startStage が設定(装備相当フラット補正/役割別スキル)。通常は null / null。
 
 // 状態異常定義(v0.8). kind:
 //  dot     = 毒/やけど(実時間 最大HP%×秒で減・問題中は停止・dt依存でスロー無関係・再付与は継続時間ﾘﾌﾚｯｼｭで火力一定)
@@ -679,11 +675,14 @@ const SKILLS = {
 };
 // 味方4体。★体験版＝テンプレ装備(装備変更なし)＝各キャラ「共通ジャブ＋固定4スキル(武器/頭/胴/足)」の計5スキル。
 // ステ: str=ちから(物理) int=かしこさ(魔法) def=まもり(割合防御) spd=すばやさ(行動速度) crit=会心率%(序盤10)。atkStat=通常攻撃/ジャブが使う主属性。土台のROLEBASEに準拠(仮)。
+// ★ステの大半は装備のメインステ＝素のキャラステは微々たるもの＆全員共通(BASE)。役割は『最終ステへの固有バフ(buff)』で匂わせる(火力=ちから↑等)。
+// ※将来レベル概念でキャラ3割/装備7割に。LRはお祭り。今はC〜Rなので素ステは小さく装備依存。
+const BASE = { str:4, int:4, def:4, hpMax:140, mpMax:40, spd:1.00, crit:10 };   // 4人共通の素ステ(微々たるもの)
 const ALLY_DEFS = [
-  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', str:720, int:200, def:110, hpMax:1300, mpMax:110, spd:1.00, crit:10, atkStat:'str', skills:['jab','honoo','touki','fukutsu','tosshin'] },
-  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', str:200, int:620, def:100, hpMax:1050, mpMax:140, spd:1.00, crit:10, atkStat:'int', skills:['jab','thunder','poison','drain','delay'] },
-  { id:'gai',  name:'ガイ',   emoji:'🛡️', role:'壁',  str:420, int:150, def:360, hpMax:2600, mpMax:90,  spd:0.85, crit:10, atkStat:'str', skills:['jab','tateuchi','iatsu','provoke','kenshu'] },
-  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', str:200, int:520, def:100, hpMax:1150, mpMax:140, spd:1.05, crit:10, atkStat:'int', skills:['jab','holy','regen','heal','jiu'] },
+  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', ...BASE, atkStat:'str', buff:{ str:1.25, def:0.85 }, skills:['jab','honoo','touki','fukutsu','tosshin'] },   // 火力=最終ちから+25%・まもり-15%(ガラスの大砲)
+  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', ...BASE, atkStat:'int', buff:{ int:1.25, hp:0.85 }, skills:['jab','thunder','poison','drain','delay'] },        // 妨害=最終かしこさ+25%・HP-15%
+  { id:'gai',  name:'ガイ',   emoji:'🛡️', role:'壁',  ...BASE, atkStat:'str', buff:{ def:1.5, hp:1.4, spd:0.85 }, skills:['jab','tateuchi','iatsu','provoke','kenshu'] }, // 壁=最終まもり+50%・HP+40%・遅い
+  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', ...BASE, atkStat:'int', buff:{ int:1.2, hp:1.1, spd:1.1 }, skills:['jab','holy','regen','heal','jiu'] },             // 回復=最終かしこさ+20%・HP+10%・速い
 ];
 const ITEM_DEFS = [
   { id:'hpPotion', name:'HP回復薬', emoji:'🧪', gaugeCost:100, scope:'none', fl:'ぐびっと飲めば元気百倍。', note:'味方1人のHPを40%回復。正解すると行動ゲージの消費が軽くなる。', run:()=>healAlly(0.40) },
@@ -694,13 +693,13 @@ const ITEM_DEFS = [
 let encIdx=0, enemies=[], allies=[], combo=0, items={hpPotion:3,mpPotion:3};
 let phase='charging', stateTimer=0, curQ=null, answered=false, pendingAction=null, activeAlly=null, _advancing=false, _lastEnemyActed=false;
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
-// curStatMul(メタ装備のステ倍率)とcurLoadout(役割別スキル)を反映して味方を作る。通常ステは sm=1 / loadout=既定。
-function makeAllies(){ const sm=curStatMul||1; allies = ALLY_DEFS.map(d=>{
+// curMetaFlat(メタステの装備相当フラット補正)とcurLoadout(役割別スキル)を反映。最終ステ=(素＋装備メイン＋ボーナス＋メタ補正)×装飾品%×固有バフ。
+function makeAllies(){ const mflat=curMetaFlat||{}; allies = ALLY_DEFS.map(d=>{
   const skills = (curLoadout&&curLoadout[d.id]) ? curLoadout[d.id].slice() : buildLoadout(d.id);   // メタステは固定/通常ステは装備スキル
-  const acc = 1 + accPctFor(d.id)/100;   // ★装飾品メイン=全コアステータス+%(2枠合算)
-  const str=Math.round(d.str*sm*acc)+accFlat(d.id,'str'), int=Math.round(d.int*sm*acc)+accFlat(d.id,'int'),   // ＋ボーナス=加算コアステ
-    def=Math.round(d.def*sm*acc)+accFlat(d.id,'def'), hpMax=Math.round(d.hpMax*sm*acc)+accFlat(d.id,'hp'), mpMax=Math.round(d.mpMax*sm*acc)+accFlat(d.id,'mp');
-  const spd=Math.min(2.2, d.spd + gearSpd(d.id));   // ★足装備のすばやさ(上限2.2≒1秒床の精神)
+  const accm = 1 + accPctFor(d.id)/100, bf = d.buff||{};   // 装飾品メイン=全コア+%／bf=キャラ固有バフ(最終ステ倍率)
+  const fin=(key,base)=>Math.round((base + accFlat(d.id,key) + (mflat[key]||0)) * accm * (bf[key]||1));   // ★装備のメインステ＋ボーナスが大半・素は微々
+  const str=fin('str',d.str), int=fin('int',d.int), def=fin('def',d.def), hpMax=fin('hp',d.hpMax), mpMax=fin('mp',d.mpMax);
+  const spd=Math.min(2.2, (d.spd + gearSpd(d.id)) * (bf.spd||1));   // ★足装備のすばやさ＋固有バフ(上限2.2≒1秒床の精神)
   return { ...d, skills, str, int, def, hpMax, mpMax, spd, hp:hpMax, mp:mpMax, baseResist:accResistFor(d.id), charge:0, downed:false,   // baseResist=装飾品の異常耐性(常時)
     powerUp:0, weakBlade:false, shield:0, defending:false, endure:false, counter:false,
     haste:null, focus:null, amp:null, regen:null, atkBuff:null, reduce:null, statusResist:null, ail:{}, taunt:0, cover:0, thorns:null, fade:0, quickReady:false, _tossBonus:0 }; }); }
@@ -1052,9 +1051,9 @@ const ACC_BASE = ['お守り','リング','ペンダント','ブレス','アミ�
 const BONUS_DEFS = { str:{jp:'ちから',pct:false}, int:{jp:'かしこさ',pct:false}, def:{jp:'まもり',pct:false}, hp:{jp:'最大HP',pct:false}, mp:{jp:'最大MP',pct:false},
   accRare:{jp:'レア率',pct:true}, accDrop:{jp:'ドロップ率',pct:true}, resist:{jp:'異常耐性',pct:true} };
 const BONUS_POOL = ['str','int','def','hp','mp','accRare','accDrop','resist'];
-const BONUS_VAL = { str:{C:12,R:34,SR:52,SSR:75,UR:100,LR:140}, int:{C:12,R:34,SR:52,SSR:75,UR:100,LR:140}, def:{C:8,R:24,SR:38,SSR:55,UR:75,LR:105},
-  hp:{C:50,R:140,SR:220,SSR:320,UR:440,LR:600}, mp:{C:4,R:12,SR:18,SSR:26,UR:36,LR:50},
-  accRare:{C:2,R:7,SR:11,SSR:16,UR:22,LR:30}, accDrop:{C:2,R:7,SR:11,SSR:16,UR:22,LR:30}, resist:{C:3,R:8,SR:12,SSR:17,UR:23,LR:30} };
+const BONUS_VAL = { str:{C:4,R:24,SR:60,SSR:110,UR:175,LR:260}, int:{C:4,R:24,SR:60,SSR:110,UR:175,LR:260}, def:{C:3,R:16,SR:40,SSR:72,UR:115,LR:170},
+  hp:{C:40,R:200,SR:480,SSR:850,UR:1350,LR:2000}, mp:{C:3,R:12,SR:26,SSR:44,UR:68,LR:100},
+  accRare:{C:2,R:6,SR:10,SSR:15,UR:21,LR:30}, accDrop:{C:2,R:6,SR:10,SSR:15,UR:21,LR:30}, resist:{C:3,R:7,SR:11,SSR:16,UR:22,LR:30} };
 const BONUS_COUNT = { C:1, R:2, SR:2, SSR:3, UR:3, LR:4 };
 function rollBonuses(rarity){ const n=BONUS_COUNT[rarity]||1; const pool=BONUS_POOL.slice(); const out=[];
   for(let i=0;i<n && pool.length;i++){ const t=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
@@ -1083,8 +1082,8 @@ const SKILL_STAT = { honoo:'str', rensan:'str', yamiuchi:'str', touki:'str', tat
   iatsu:'def', inori:'def', higo:'def', fukutsu:'hp', provoke:'hp', tosshin:'spd', delay:'spd', kenshu:'spd', jiu:'spd', slow:'spd' };
 const SKILL_RANGE = { honoo:'C〜R', rensan:'C〜R', yamiuchi:'C〜R', fukutsu:'C〜R', tosshin:'C〜R', poison:'C〜R', delay:'C〜R', tateuchi:'C〜R', iatsu:'C〜R', kenshu:'C〜R', holy:'C〜R', regen:'C〜R', heal:'C〜R', jiu:'C〜R', esna:'C〜R', protes:'C〜R', healall:'C〜R', higo:'C〜R', slow:'C〜R',
   touki:'C〜R〜SSR', inori:'C〜R〜SSR', thunder:'C〜R〜UR', drain:'C〜R〜UR', provoke:'C〜R〜UR', manashield:'C〜R〜UR', chain:'C〜R〜UR', armorbreak:'C〜R〜UR', acidrain:'C〜R〜UR' };
-const MAIN_VAL = { str:{C:40,R:90,SR:150,SSR:240,UR:360,LR:520}, int:{C:40,R:90,SR:150,SSR:240,UR:360,LR:520}, def:{C:24,R:56,SR:95,SSR:150,UR:230,LR:340},
-  hp:{C:150,R:350,SR:600,SSR:950,UR:1450,LR:2100}, mp:{C:8,R:18,SR:30,SSR:48,UR:72,LR:105}, spd:{C:0.03,R:0.06,SR:0.10,SSR:0.15,UR:0.22,LR:0.32} };
+const MAIN_VAL = { str:{C:7,R:80,SR:200,SSR:380,UR:600,LR:900}, int:{C:7,R:80,SR:200,SSR:380,UR:600,LR:900}, def:{C:8,R:55,SR:130,SSR:240,UR:380,LR:560},
+  hp:{C:120,R:700,SR:1700,SSR:3000,UR:4800,LR:7200}, mp:{C:6,R:35,SR:80,SSR:140,UR:210,LR:310}, spd:{C:0.03,R:0.07,SR:0.11,SSR:0.16,UR:0.23,LR:0.32} };   // ★装備のメインステ=ステの大半。CとRの差が大きい(R=今のプロト最上位の手応え)
 const RARITY_ORDER = ['C','R','SR','SSR','UR','LR'];
 function rangeIncludes(range,rarity){ const p=(range||'C〜R').split('〜'); const lo=RARITY_ORDER.indexOf(p[0]), hi=RARITY_ORDER.indexOf(p[p.length-1]), i=RARITY_ORDER.indexOf(rarity); return i>=0 && i>=lo && i<=hi; }
 function rollMain(skillId,rarity){ const stat=SKILL_STAT[skillId]||'str'; const base=(MAIN_VAL[stat]&&MAIN_VAL[stat][rarity])||0;
@@ -1214,7 +1213,7 @@ function renderMap(){ const g=document.getElementById('mapList');
 
 function startStage(i){ if(i>progress.unlocked) return; curStage=i;
   const st=STAGES[i]; if(st.cfg){ cfg.chargeSec=st.cfg.chargeSec; cfg.enemyIntervalSec=st.cfg.enemyIntervalSec; }
-  curStatMul = (st.meta&&st.meta.pow)||1; curLoadout = (st.meta&&st.meta.loadout)||null;   // ★メタ装備の自動切替(11〜)
+  curMetaFlat = (st.meta&&st.meta.gear)||null; curLoadout = (st.meta&&st.meta.loadout)||null;   // ★メタ装備の自動切替(11〜)=装備相当のフラット補正＋固定loadout
   gameState='battle'; showScreen(''); setTopbar(`STAGE ${i+1}・${st.name}`);
   startBattle();
   if(st.meta&&st.meta.label) setTimeout(()=>bigSavor('🔧 メタ装備：'+st.meta.label),140); }
