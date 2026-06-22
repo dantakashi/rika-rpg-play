@@ -3095,5 +3095,91 @@ const SENGOKU_DATA = (function(){
     },
   };
 
-  return { GENRES, WARLORDS, SKILLS, BATTLE_LINES, EPILOGUE, HEROES, QUESTIONS };
+  /* ===== §2.95 側近グローバルプール（Phase1 側近ガチャ化・2026-06-18）=====
+     全偉人の retainers を1つの収集プールに集約（id重複=同一人物は1枚にまとめ、ゆかりを足す）。
+     レアリティ・ティアは SIDEKICK_TIERS（知名度ベース・ワークフロー一次案2026-06-18→要オーナー抜取確認）。
+     効果値は RARITY_VALUES[rarity][tier-1]。設計=rpg_v3/PLAN_IJIN_SIDEKICK_GACHA.md。
+       yujo=友情ボーナス% / train=訓練効果アップ(同席1人ぶん加算) / bond0=初期絆 / tokui=得意率 */
+  // レアリティ×ティア(1-3)の効果値。tier3=そのレア内で強め。強SR(tier3)が弱SSR(tier1)に迫る設計（凸でさらに逆転可）。
+  const RARITY_VALUES = {
+    R:   [ {yujo:3,train:1,bond0:20,tokui:5},  {yujo:5,train:2,bond0:22,tokui:8},  {yujo:8,train:2,bond0:24,tokui:12} ],
+    SR:  [ {yujo:12,train:2,bond0:26,tokui:18},{yujo:15,train:3,bond0:28,tokui:25},{yujo:18,train:3,bond0:30,tokui:30} ],
+    SSR: [ {yujo:22,train:3,bond0:33,tokui:35},{yujo:28,train:4,bond0:36,tokui:42},{yujo:34,train:5,bond0:40,tokui:50} ],
+  };
+  // 知名度ベースの割当（[rarity, tier(1-3)]）。創作キャラはR。空欄idは ['R',2] 既定。
+  const SIDEKICK_TIERS = {
+    hideyoshi:['SSR',3], katsuie:['SR',2], mitsuhide:['SSR',2], kicho:['R',2], toshiie:['SR',2], kazumasu:['R',1],
+    nene:['R',2], hanbei:['SR',2], kanbei:['SR',3], mitsunari:['SSR',2], hidenaga:['R',2], kiyomasa:['SR',2],
+    tadakatsu:['SR',2], naomasa:['SR',2], yasumasa:['R',2], hanzo:['SR',2], tadatsugu:['R',2], acha:['R',1],
+    umako:['SSR',2], imoko:['SSR',2], naka:['SSR',3], kamatari:['SSR',3], horse:['R',2], katsu:['SSR',2],
+    saigo:['SSR',3], kido:['SR',3], oryo:['R',3], yataro:['SR',3], nakaoka:['R',3], gutenberg:['SR',3],
+    davinci:['SSR',3], michelangelo:['SSR',2], gama:['SR',3], magellan:['SSR',2], isabel:['R',2], masanobu:['R',2],
+    kasuga:['SR',2], iemitsu_doi:['R',1], matsudaira_nobu:['R',2], yagyu:['R',2], tenkai_e:['R',2], tanuma:['SSR',1],
+    sadanobu:['SSR',1], norinaga:['SR',3], genpaku:['SSR',2], tadataka:['SSR',2], ooka:['SR',2], macarthur:['SSR',2],
+    ikeda:['SR',2], shirasu:['R',2], minister:['R',1], engineer:['R',1], fumiko:['R',1], kammu:['SR',3],
+    tamuramaro:['SR',3], saicho:['SSR',1], kukai:['SSR',2], murasaki:['SSR',3], sei:['SSR',3], kariudo:['R',1],
+    doki:['R',1], ishi:['R',1], umi:['R',1], inori:['R',1], urushi:['R',1], masako:['SSR',2],
+    tokimasa:['R',3], yoshitoki:['SR',2], yasutoki:['SR',2], yoshitsune:['SSR',3], kagetoki:['R',2], okubo:['SSR',2],
+    itagaki:['SR',3], okuma:['SR',3], fukuzawa:['SSR',3], meijitenno:['SR',3], takauji:['SSR',2], yoriyuki:['R',2],
+    gidou:['R',1], sadayo:['R',2], zeami:['SSR',2], gyoki:['SR',3], ganjin:['SSR',3], fujiwara:['SR',3],
+    kibi:['SR',2], komyo:['SR',2], watt_boulton:['R',1], watt_smith:['SSR',2], watt_stephenson:['SR',3], watt_victoria:['SR',3],
+    watt_marx:['SSR',3], watt_bismarck:['SSR',1], hammurabi:['SSR',3], khufu:['SR',2], shihuangdi:['SSR',3], perikles:['R',3],
+    alexandros:['SSR',3], caesar:['SSR',3], locke:['SR',3], montesquieu:['SSR',2], rousseau:['SSR',2], robespierre:['SR',2],
+    josephine:['R',2], talleyrand:['R',1], yoshino:['SR',2], takahashi:['SR',3], tokonami:['R',1], shidehara:['SR',2],
+    hamaguchi:['SR',2], lenin:['SSR',3], gandhi:['SSR',3], sunyatsen:['SSR',2], clemenceau:['SR',1], house:['R',1],
+    naukan:['R',1], iyo:['R',1], ototo:['R',1], tabe:['R',1], kanube:['R',1], philippos:['SR',1],
+    aristoteles:['SSR',3], hephaistion:['R',1], parmenion:['R',1], ptolemaios:['R',2], roxane:['R',1], pompeius:['SR',1],
+    crassus:['R',2], vercingetorix:['R',1], cicero:['SR',1], cleopatra:['SSR',3], octavianus:['SR',3], clementine:['R',1],
+    george6:['SR',1], roosevelt:['SSR',3], montgomery:['SR',1], alanbrooke:['R',1], bevin:['R',1], yankai:['SR',1],
+    shiro:['R',2], shiko:['R',2], moushi:['SSR',2], roushi:['SSR',2], kanpishi:['SR',3], ogata:['SR',2],
+    kinjiro:['R',1], koizumi:['R',1], nakamura:['SR',1], mori:['SR',2], student:['R',1], nehru:['SR',3],
+    patel:['R',2], azad:['R',1], nayedu:['R',1], tagore:['SR',2], ambedkar:['SR',1], masashige:['SSR',3],
+    yoshisada:['SR',3], chikafusa:['R',2], morinaga:['R',3], fujifusa:['R',1], michi:['R',1], kageyasu:['R',2],
+    mamiya:['SR',2], sakabe:['R',1], ohira:['R',3], nikaido:['R',1], ekousan:['R',1], kanryo:['R',1],
+    kisha:['R',1], kougyou:['R',1], jackie:['R',3], bobby:['R',3], mlk:['SSR',3], mcnamara:['R',2],
+    sorensen:['R',1], johnson:['SR',1], tokiko:['R',2], shigemori:['R',2], shigehira:['R',1], tokitada:['R',1],
+    toba:['SR',1], jacqueline:['R',1], voltaire:['SSR',1], jefferson:['SR',3], jasper:['R',1], khadija:['R',2],
+    abubakr:['R',2], umar:['R',2], ali:['R',2], bilal:['R',1], khalid:['R',1], lvbuwei:['R',3],
+    lisi:['SR',1], hanfei:['SR',3], wangjian:['R',2], mengtian:['R',2], zhaogao:['R',2], juko:['R',2],
+    jooh:['R',1], nobunaga_r:['SSR',3], hideyoshi_r:['SSR',3], sohshitsu:['R',1], sohon:['R',1], kondanna:['R',1],
+    sariputta:['R',2], moggallana:['R',1], ananda:['R',2], suddhodana:['R',1], ashoka:['SSR',2], plato:['SSR',3],
+    xenophon:['R',1], crito:['R',1], aspasia:['R',1], alcibiades:['R',2], chairephon:['R',1], imagawa_ujichika:['R',2],
+    arakawa:['R',1], tairano:['R',1], sozui_kanjo:['R',1], soun_son:['R',2], renga_so:['SR',1], franklin:['SR',3],
+    hamilton:['SR',2], adams:['SR',1], lafayette:['SR',1], martha:['R',1]
+  };
+  function heroPrimaryEra(h){
+    let best = h.id, bw = -1; const ep = h.eraPref || {};
+    for (const k in ep){ if (ep[k] > bw){ bw = ep[k]; best = k; } }
+    return best;
+  }
+  const SIDEKICKS = (function(){
+    const pool = {};
+    for (const hid in HEROES){
+      const h = HEROES[hid]; const era = heroPrimaryEra(h);
+      (h.retainers || []).forEach(r => {
+        if (pool[r.id]){ // 複数偉人に登場（西郷・大久保など）→ ゆかりを追加
+          if (!pool[r.id].yukariHeroes.includes(hid)) pool[r.id].yukariHeroes.push(hid);
+          if (!pool[r.id].yukariEras.includes(era))   pool[r.id].yukariEras.push(era);
+          return;
+        }
+        const t = SIDEKICK_TIERS[r.id] || ['R', 2];
+        const rarity = t[0], tier = t[1] || 2;
+        const v = (RARITY_VALUES[rarity] || RARITY_VALUES.R)[Math.max(0, Math.min(2, tier - 1))];
+        pool[r.id] = Object.assign({}, r, {
+          rarity, tier, yujo:v.yujo, train:v.train, bond0:v.bond0, tokui:v.tokui,
+          yukariHeroes: [hid], yukariEras: [era],
+        });
+      });
+    }
+    return pool;
+  })();
+  /* レベル/凸でスケールした実効値。Phase1は素の値（Phase2でLv/凸カーブを実装） */
+  function sidekickStats(card, lv, totsu){
+    if (!card) return null;
+    return { id:card.id, rarity:card.rarity, tier:card.tier, fav:card.fav,
+             yujo:card.yujo, train:card.train, bond0:card.bond0, tokui:card.tokui,
+             perk:card.perk, skill:card.skill, maxFx:card.maxFx };
+  }
+  return { GENRES, WARLORDS, SKILLS, BATTLE_LINES, EPILOGUE, HEROES, QUESTIONS,
+           SIDEKICKS, SIDEKICK_TIERS, RARITY_VALUES, sidekickStats };
 })();

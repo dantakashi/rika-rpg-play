@@ -923,9 +923,14 @@ const Game = (function(){
   const STAT_KEYS = ['buyu','chiryaku','seiji','ninbo'];
   // 2026-06-12 生徒FB「体力が減らなすぎ」: 18→24に増。側近が同席する鍛錬は1人につき-2軽減（最低15）
   const TRAIN_COST = 24;
+  /* ===== 側近ロスター（Phase1 側近ガチャ化・2026-06-18）=====
+     育成中に同席する側近の一覧。現状は偉人固定（roster()）にフォールバック。
+     将来はプレイヤーの収集デッキ（P.deck）から解決した S.roster を返す（PLAN_IJIN_SIDEKICK_GACHA.md）。
+     ※ body は H['retainers'] 表記（このあとの一括置換が自身に再帰しないため） */
+  function roster(){ return (S && S.roster && S.roster.length) ? S.roster : (H ? H['retainers'] : []); }
   function matePerks(genre, type){
     return (S.placement[genre]||[])
-      .map(id=>H.retainers.find(x=>x.id===id))
+      .map(id=>roster().find(x=>x.id===id))
       .filter(r=>r && r.perk && r.perk.type===type);
   }
   function trainCost(genre){
@@ -958,7 +963,7 @@ const Game = (function(){
       bonds:{}, bondMaxDone:{}, bondMidDone:{}, usedQ:[], placement:{}, correctTotal:0, answerTotal:0,
       pendingEventDone:{},
     };
-    H.retainers.forEach(r=>s.bonds[r.id]=20);
+    roster().forEach(r=>s.bonds[r.id]=20);
     if (H.uniqueSkill) s.skills[H.uniqueSkill.id] = true; // 偉人固有スキルは最初から所持
     if (legacyIdx!=null && P.legacy[legacyIdx]){
       const lg = P.legacy[legacyIdx];
@@ -977,13 +982,13 @@ const Game = (function(){
   // スキルIDから効果を引く（D.SKILLSは効果コード直書きなので対象外。側近スキル/偉人固有用）
   function skillFx(id){
     if (H.uniqueSkill && H.uniqueSkill.id===id) return H.uniqueSkill.fx;
-    for (const r of H.retainers){ if (r.skill && r.skill.id===id) return r.skill.fx; }
+    for (const r of roster()){ if (r.skill && r.skill.id===id) return r.skill.fx; }
     return null;
   }
   function skillInfo(id){
     const s = D.SKILLS.find(x=>x.id===id); if (s) return s;
     if (H.uniqueSkill && H.uniqueSkill.id===id) return H.uniqueSkill;
-    for (const r of H.retainers){ if (r.skill && r.skill.id===id) return r.skill; }
+    for (const r of roster()){ if (r.skill && r.skill.id===id) return r.skill; }
     return null;
   }
 
@@ -1036,7 +1041,7 @@ const Game = (function(){
       S.tpy = S.tpy===2 ? 2 : 1; S.half = S.half||0; // 半年制（v1.5）以前のセーブは年制
 
       if (H.uniqueSkill && S.skills[H.uniqueSkill.id]==null) S.skills[H.uniqueSkill.id] = true;
-      H.retainers.forEach(r=>{ if (S.bonds[r.id]==null) S.bonds[r.id]=20; });
+      roster().forEach(r=>{ if (S.bonds[r.id]==null) S.bonds[r.id]=20; });
       UI.show('game');
       if (S.epi){ UI.renderGame(); epilogueNext(); return; }
       turnStart(true);
@@ -1107,7 +1112,7 @@ const Game = (function(){
   function placeRetainers(){
     S.placement = {};
     // 6人化に伴い出現率を下げる（1人あたりの効果もtrainGain側で減・2026-06-13）
-    H.retainers.forEach(r=>{
+    roster().forEach(r=>{
       if (Math.random() < 0.5){
         const keys = STAT_KEYS;
         // 80%で得意コマンドに寄る（2026-06-14 生徒FB「重複が狙えない」→得意率を強化）
@@ -1179,7 +1184,7 @@ const Game = (function(){
           { t:'体の芯から力がみなぎってきた。完全復活だ！', fx:{stamina:60, mood:2} },
         ];
         const l = lucks[Math.floor(Math.random()*lucks.length)];
-        if (l.bond) H.retainers.forEach(r=>S.bonds[r.id]=Math.min(100, S.bonds[r.id]+l.bond));
+        if (l.bond) roster().forEach(r=>S.bonds[r.id]=Math.min(100, S.bonds[r.id]+l.bond));
         applyFx(l.fx);
         saveAll();
         UI.showEvent({ year:S.year, type:'story', title:'🌿 塞翁（さいおう）が馬！', art:'🌿🐴',
@@ -1237,7 +1242,7 @@ const Game = (function(){
     Object.keys(S.skills||{}).forEach(id=>{ const fx=skillFx(id); if (fx && fx.trainAll) g += fx.trainAll; });
     let friend = false;
     mates.forEach(id=>{
-      const r = H.retainers.find(x=>x.id===id);
+      const r = roster().find(x=>x.id===id);
       if (r.fav===cur.genre && S.bonds[id]>=80){ friend = true; }
     });
     if (friend) g *= 1.6;
@@ -1294,7 +1299,7 @@ const Game = (function(){
   }
   // 絆イベント（絆50=中間イベント／絆MAX=ボーナス＋側近スキル授与）
   function checkBondMax(){
-    for (const r of H.retainers){
+    for (const r of roster()){
       if (S.bonds[r.id]>=50 && S.bonds[r.id]<100 && !S.bondMidDone[r.id]){
         S.bondMidDone[r.id] = true;
         saveAll();
@@ -1304,7 +1309,7 @@ const Game = (function(){
         return;
       }
     }
-    for (const r of H.retainers){
+    for (const r of roster()){
       if (S.bonds[r.id]>=100 && !S.bondMaxDone[r.id]){
         S.bondMaxDone[r.id] = true;
         const fx = r.maxFx||{};
@@ -1719,7 +1724,7 @@ ${tier.text}` }, ()=>endRun(E.survived), fx);
 
   return { get S(){return S;}, get P(){return P;}, D, MOODS, STAT_KEYS, RANKS,
     newRun:(lg,tpy)=>{S=newRun(lg,tpy); saveAll();}, hasRun, resume, clearRun, exportSave, importSave,
-    failRate, pushRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill, setHero, epilogueNext, pickEpilogue, skillInfo,
+    failRate, pushRate, trainCost, doCommand, answer, pushThrough, learnSafe, checkBondMax, guardEvent, buySkill, setHero, epilogueNext, pickEpilogue, skillInfo, roster,
     timelineEvent, nextTurn, turnStart, choiceFx, applyFx,
     battlePick, battleResult, battleProgress, defeatEnd, playerPower, toast, shuffled, fmtKoku, rName, rIcon,
     get cur(){return cur;}, get B(){return B;}, get H(){return H;}, saveAll };
@@ -2117,7 +2122,7 @@ const UI = (function(){
       `<div class="stat${(S.skillPt||0)>0?' hasPt':''}" onclick="UI.openSkill()"><span class="sl">スキルP</span>
         <span class="srow"><b class="srk" style="color:#7a4f9d">${S.skillPt||0}</b></span></div>`;
     // 側近＝サポートカード（顔＋名前＋絆バー・配置中マーク／改善#4・#6 タップ導線）
-    $('g-bonds').innerHTML = Game.H.retainers.map(r=>{
+    $('g-bonds').innerHTML = Game.roster().map(r=>{
       const v = S.bonds[r.id];
       const placed = Game.STAT_KEYS.some(k=>(S.placement[k]||[]).includes(r.id));
       const fri = placed && (S.placement[r.fav]||[]).includes(r.id) && v>=80;
@@ -2130,7 +2135,7 @@ const UI = (function(){
     let mateIcons = '';
     Game.STAT_KEYS.forEach(k=>{
       (S.placement[k]||[]).forEach(id=>{
-        const r = Game.H.retainers.find(x=>x.id===id);
+        const r = Game.roster().find(x=>x.id===id);
         const fri = (r.fav===k && S.bonds[id]>=80);
         mateIcons += `<span class="${fri?'fr':''}" title="${r.name}">${rFace(r)}</span>`;
       });
@@ -2175,7 +2180,7 @@ const UI = (function(){
       const g = D.GENRES[k];
       let glow = false;
       const mateHtml = (S.placement[k]||[]).map(id=>{
-        const r = Game.H.retainers.find(x=>x.id===id);
+        const r = Game.roster().find(x=>x.id===id);
         const fri = (r.fav===k && S.bonds[id]>=80);
         if (fri) glow = true;
         return `<span class="${fri?'fr':''}" title="${r.name}">${rFace(r)}</span>`;
@@ -2193,7 +2198,7 @@ const UI = (function(){
   function pickTrain(k){ $('ovl-train').classList.remove('on'); Game.doCommand(k); }
   // 側近の個性カード（◯アイコンをタップ・2026-06-14 生徒FB「側近に個性がない」対応）
   function openRetainer(id){
-    const r = Game.H.retainers.find(x=>x.id===id);
+    const r = Game.roster().find(x=>x.id===id);
     if (!r) return;
     const v = Game.S ? Game.S.bonds[id] : 0;
     const g = D.GENRES[r.fav];
