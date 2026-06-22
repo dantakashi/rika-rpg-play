@@ -217,7 +217,7 @@
 <div id="app">
   <div class="topbar">
     <span><button class="gear" id="tbBack" style="display:none;margin-right:7px;" onclick="showMap()">🗺 マップ</button><b id="tbStage">理科RPG2 体験版</b></span>
-    <button class="gear" onclick="toggleTuner(true)">⚙</button></div>
+    <span></span></div>
 
   <div class="stage" id="stage">
     <div class="enemy-row" id="enemyRow"></div>
@@ -233,39 +233,6 @@
   <div class="qoverlay" id="qOverlay">
     <div class="qctx" id="qctx"></div><div class="qq" id="qq"></div>
     <div class="qimg" id="qimg">（ここに画像が入ります）</div><div id="qans"></div><div class="qfeed" id="qfeed"></div>
-  </div>
-
-  <div class="tuner" id="tuner">
-    <h2>⚙ 手触り調整</h2>
-    <div class="gearbig"><div class="trow"><label>🛡 装備の強さ（=進行）<b id="gearV">0</b></label>
-      <input type="range" id="gear" min="0" max="100" value="0" oninput="onGear(this.value)"><div class="tnote">右ほど「行動ゲージが速い／でも敵も速い」。</div></div>
-    <div class="trow" style="margin-bottom:0;"><label>🎚 スキルレベル（装備で決まる想定）<b id="slvV">1</b></label>
-      <input type="range" id="slv" min="1" max="3" step="1" value="1" oninput="skillLevel=+this.value; slvV.textContent=this.value; if(phase==='skillmenu')renderSkillMenu();"><div class="tnote">Lvが上がると技ごとに「効力UP・MP増／効き時間UP／効果そのままMP減」など伸び方が違う（各スキルは長押しで確認）。数値は仮。</div></div></div>
-    <div class="trow"><label>⚡ 溜め時間 基本（秒）<b id="chargeV">4.5</b></label>
-      <input type="range" id="charge" min="1" max="8" step="0.1" value="4.5" oninput="cfg.chargeSec=+this.value; chargeV.textContent=(+this.value).toFixed(1);"></div>
-    <div class="trow"><label>✨ 余韻（秒）<b id="savorV">1.3</b></label>
-      <input type="range" id="savor" min="0.4" max="3" step="0.1" value="1.3" oninput="cfg.savorSec=+this.value; savorV.textContent=(+this.value).toFixed(1);"></div>
-    <div class="trow"><label>👾 敵の攻撃間隔（秒・1体あたり）<b id="enemyV">9.0</b></label>
-      <input type="range" id="enemyInt" min="3" max="20" step="0.5" value="9" oninput="cfg.enemyIntervalSec=+this.value; enemyV.textContent=(+this.value).toFixed(1);"></div>
-    <div class="trow"><label>❌ 誤答で行動ゲージ減（%）<b id="missV">30</b></label>
-      <input type="range" id="miss" min="0" max="60" step="5" value="30" oninput="cfg.missDropPct=+this.value; missV.textContent=this.value;"></div>
-    <div class="trow chk"><input type="checkbox" id="freeze" checked onchange="cfg.freezeOnThink=this.checked;"><label for="freeze">読む/選ぶ間は敵を完全停止（調べてもOK）</label></div>
-    <h3>💧 MP回復（通常攻撃の正解で）</h3>
-    <div class="trow"><label>通常攻撃の正解で回復するMP<b id="mpgV">12</b></label>
-      <input type="range" id="mpg" min="0" max="40" step="2" value="12" oninput="cfg.mpPerCorrect=+this.value; mpgV.textContent=this.value;"></div>
-    <div class="tnote">※スキルの正解ではMPは回復しない＝低コスト状態異常の永続化を防止。</div>
-    <h3>☠️ 毒(DoT)の強さ</h3>
-    <div class="trow"><label>毒ダメージ 最大HP%/秒<b id="dotV">2.0</b></label>
-      <input type="range" id="dot" min="0.5" max="6" step="0.5" value="2" oninput="AILMENTS.poison.pps=(+this.value)/100; dotV.textContent=(+this.value).toFixed(1);"></div>
-    <h3>⚔ 属性キラー（×1.5固定・テストで変更可）</h3>
-    <div class="killgrid">
-      <div class="trow"><label>対物理 ×<b id="kphyV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="killers.physics=+this.value; kphyV.textContent=(+this.value).toFixed(1);"></div>
-      <div class="trow"><label>対化学 ×<b id="kchemV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="killers.chemistry=+this.value; kchemV.textContent=(+this.value).toFixed(1);"></div>
-      <div class="trow"><label>対生物 ×<b id="kbioV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="killers.biology=+this.value; kbioV.textContent=(+this.value).toFixed(1);"></div>
-      <div class="trow"><label>対地学 ×<b id="kearV">1.5</b></label><input type="range" min="1" max="3" step="0.1" value="1.5" oninput="killers.earth=+this.value; kearV.textContent=(+this.value).toFixed(1);"></div>
-    </div>
-    <div class="tnote">※v0.11=守りのデバフ(威圧=敵攻撃DOWN)＋耐性崩し(蝕み=状態異常UP)＋敵耐性システム。数値は仮。誤答で味方HPは減りません(不可侵)。</div>
-    <button class="tclose" onclick="toggleTuner(false)">✓ 戦闘にもどる</button>
   </div>
 
   <!-- ===== §M 体験版の画面(タイトル/マップ/クリア/完走/敗北) ===== -->
@@ -587,14 +554,17 @@ const SKILLS = {
     note:'味方1人のHPを回復（80＋かしこさ×1.5・戦闘不能なら蘇生）。', run:(c)=>{ healOne(80+c.int*1.5); bigSavor('❤️ ヒール'); } },
   jiu:{ name:'慈雨', emoji:'💧', mp:14, needsQuiz:true, scope:'none', slot:'足', fl:'恵みの雨が降りそそぐ。',
     note:'味方全員を毎秒すこしずつ回復（約10秒・控えめ）。', run:(c)=>{ allies.forEach(a=>{ if(!a.downed) a.regen={flat:8+c.int*0.12,remain:10}; }); spawnAllyFx(c,'慈雨','heal'); bigSavor('💧 慈雨'); } },
+  /* 共通スキル＝ジャブ(全員が最初から持つ・装備に依存しない) */
+  jab:{ name:'ジャブ', emoji:'👊', mp:4, needsQuiz:true, scope:'enemy', slot:'共通', common:true, fl:'すばやい小突きで揺さぶる。',
+    note:'軽いダメージ（主属性×0.4）＋敵の行動ゲージを30%減らす。だれでも最初から使える共通スキル。', run:(c,e)=>{ const d=fdmg(c, c.atkStat||'str', 0.4, e); if(e&&e.alive)e.charge=Math.max(0,e.charge-30); bigSavor('👊 ジャブ '+fmt(d)); } },
 };
-// 味方4体。★体験版＝テンプレ装備(装備変更なし)＝各キャラ固定の4スキル(武器/頭/胴/足)＋共通ジャブ(攻撃)。
-// ステ: str=ちから(物理) int=かしこさ(魔法) def=まもり(割合防御) spd=すばやさ(行動速度) crit=会心率%(序盤10)。土台のROLEBASEに準拠(仮)。
+// 味方4体。★体験版＝テンプレ装備(装備変更なし)＝各キャラ「共通ジャブ＋固定4スキル(武器/頭/胴/足)」の計5スキル。
+// ステ: str=ちから(物理) int=かしこさ(魔法) def=まもり(割合防御) spd=すばやさ(行動速度) crit=会心率%(序盤10)。atkStat=通常攻撃/ジャブが使う主属性。土台のROLEBASEに準拠(仮)。
 const ALLY_DEFS = [
-  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', str:720, int:200, def:110, hpMax:1300, mpMax:110, spd:1.00, crit:10, skills:['honoo','touki','fukutsu','tosshin'] },
-  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', str:200, int:620, def:100, hpMax:1050, mpMax:140, spd:1.00, crit:10, skills:['thunder','poison','drain','delay'] },
-  { id:'gai',  name:'ガイ',   emoji:'🛡️', role:'壁',  str:420, int:150, def:360, hpMax:2600, mpMax:90,  spd:0.85, crit:10, skills:['tateuchi','iatsu','provoke','kenshu'] },
-  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', str:200, int:520, def:100, hpMax:1150, mpMax:140, spd:1.05, crit:10, skills:['holy','regen','heal','jiu'] },
+  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', str:720, int:200, def:110, hpMax:1300, mpMax:110, spd:1.00, crit:10, atkStat:'str', skills:['jab','honoo','touki','fukutsu','tosshin'] },
+  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', str:200, int:620, def:100, hpMax:1050, mpMax:140, spd:1.00, crit:10, atkStat:'int', skills:['jab','thunder','poison','drain','delay'] },
+  { id:'gai',  name:'ガイ',   emoji:'🛡️', role:'壁',  str:420, int:150, def:360, hpMax:2600, mpMax:90,  spd:0.85, crit:10, atkStat:'str', skills:['jab','tateuchi','iatsu','provoke','kenshu'] },
+  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', str:200, int:520, def:100, hpMax:1150, mpMax:140, spd:1.05, crit:10, atkStat:'int', skills:['jab','holy','regen','heal','jiu'] },
 ];
 const ITEM_DEFS = [
   { id:'hpPotion', name:'HP回復薬', emoji:'🧪', gaugeCost:100, scope:'none', fl:'ぐびっと飲めば元気百倍。', note:'味方1人のHPを40%回復。正解すると行動ゲージの消費が軽くなる。', run:()=>healAlly(0.40) },
@@ -764,7 +734,7 @@ function fdmg(c,statKey,mult,e,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
   const atk=statVal(c,statKey); const crit=(Math.random()*100 < (c.crit||10)); const cm=crit?1.5:1;
   let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e);
   dmg=Math.max(DMG_FLOOR,Math.min(DMG_CAP,Math.floor(dmg))); dealEnemyTarget(e,dmg,crit); return dmg; }
-function doAttack(c,e){ if(!e)return; const d=fdmg(c,'str',0.8,e); screenShake(); bigSavor('👊 ジャブ '+fmt(d)); }   // 共通のジャブ(軽い物理・正解でMP回復＝MP源)
+function doAttack(c,e){ if(!e)return; const d=fdmg(c, c.atkStat||'str', 1.0, e); screenShake(); bigSavor('⚔️ こうげき '+fmt(d)); }   // 通常攻撃(主属性×1.0)＝唯一のMP回復手段(正解で+MP・resolveAnswerで加算)
 function answerLabel(q){ return q.type==='choice'?q.choices[q.answer]:q.answer; }
 function lowAlly(){ return allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; }
 // 回復: 戦闘不能が居れば蘇生優先(HP40%)、いなければ最もHP割合の低い味方を回復。amount=実数(上限1500)。
@@ -909,7 +879,7 @@ function updateUI(){
     const sh=document.getElementById('sh-'+a.id); if(sh){ const ic=allyBuffIcons(a); if(_buffSig[a.id]!==ic){ _buffSig[a.id]=ic; sh.textContent=ic; } }
     card.classList.toggle('active', activeAlly===a); card.classList.toggle('downed', a.downed); }); }
 function showEnd(win){ if(win) stageClear(); else stageDefeat(); }   // 勝=ステージクリア / 負=敗北画面(体験版の進行管理へ)
-function toggleTuner(show){ document.getElementById('tuner').classList.toggle('show',show); }
+function toggleTuner(show){ const t=document.getElementById('tuner'); if(t) t.classList.toggle('show',show); }   // 調整パネルは体験版では撤去(生徒に調整させない)。呼ばれても安全。
 
 /* ===================== §M 体験版の進行（タイトル/マップ/クリア） ===================== */
 const SAVE_KEY='rika2_demo_v1';
