@@ -188,6 +188,35 @@
   .drop-label{font-size:13px; color:var(--sub); margin-bottom:8px;}
   .drop-name{display:inline-block; font-size:17px; font-weight:800; padding:6px 14px; border-radius:99px; border:1.5px solid; margin-bottom:8px;}
   .drop-note{font-size:11px; color:var(--sub); line-height:1.5;}
+  /* ホーム */
+  .home-party{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:14px 0 12px;}
+  .home-card{background:#161f30; border:1px solid var(--line); border-radius:12px; padding:10px 4px 8px; text-align:center;}
+  .home-card .hc-emoji{font-size:24px; line-height:1;}
+  .home-card .hc-name{font-size:12px; font-weight:800; margin-top:2px;}
+  .home-card .hc-role{font-size:10px; color:var(--sub);}
+  .home-card .hc-dots{margin:5px 0 3px; display:flex; gap:4px; justify-content:center;}
+  .acc-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+  .acc-dot.empty{background:transparent; border:1px dashed var(--line);}
+  .home-card .hc-pct{font-size:10px; color:var(--warn); font-weight:700;}
+  .home-info{font-size:13px; color:var(--sub); text-align:center; margin-bottom:6px;}
+  .home-info b{color:var(--ink);}
+  /* 装飾品つけ替え */
+  .acc-sub{font-size:12px; color:var(--sub); text-align:center; margin:2px 0 12px;}
+  .acc-list{display:grid; gap:9px;}
+  .acc-row{background:#161f30; border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+  .ar-head{display:flex; align-items:center; gap:8px; margin-bottom:7px;}
+  .ar-emoji{font-size:18px;} .ar-name{font-size:14px; font-weight:800;} .ar-pct{margin-left:auto; font-size:12px; color:var(--warn); font-weight:700;}
+  .ar-slots{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .aslot{display:flex; flex-direction:column; align-items:flex-start; gap:1px; padding:8px 10px; border-radius:10px; background:#0c1220; border:1px solid var(--line); color:var(--ink); text-align:left; min-height:42px;}
+  .aslot.sel{border-color:var(--warn); box-shadow:0 0 0 2px var(--warn);}
+  .aslot-r{font-size:10px; font-weight:800;} .aslot-n{font-size:12px;}
+  .aslot-empty{font-size:13px; color:var(--sub); align-self:center; margin:auto;}
+  .acc-invwrap{margin-top:14px; background:#10162a; border:1px solid var(--line); border-radius:12px; padding:11px;}
+  .acc-invttl{font-size:12px; color:var(--sub); margin-bottom:8px;}
+  .acc-inv{display:flex; flex-wrap:wrap; gap:7px;}
+  .acc-chip{font-size:12px; padding:6px 11px; border-radius:99px; background:#1d2a3f; border:1.5px solid var(--line); color:var(--ink);}
+  .acc-chip.remove{background:#3a1c1c; border-color:#b91c1c; color:#fca5a5;}
+  .acc-hint{font-size:12px; color:var(--sub); padding:4px 2px;}
   /* あいことばゲート(β・ソフトな鍵) */
   .passgate{position:absolute; inset:0; z-index:9999; background:linear-gradient(160deg,#0c1326,#070a14); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;}
   .passgate.hide{display:none;}
@@ -241,20 +270,23 @@
       <div class="title-emoji">🧪⚗️🌿🪨</div>
       <h1 class="game-title">理科RPG2</h1>
       <div class="game-sub">体験版（コモン〜レア帯）</div>
-      <p class="title-lead">火力・妨害・壁・回復の4人で、<br>理科のもんだいを解いて たたかおう！<br>ぜんぶで5ステージ。</p>
-      <button class="scr-btn primary big" onclick="showMap()">▶ はじめる</button>
+      <p class="title-lead">火力・妨害・壁・回復の4人で、<br>理科のもんだいを解いて たたかおう！<br>かったら 装飾品が おちる。集めて強くなろう。</p>
+      <button class="scr-btn primary big" onclick="showHome()">▶ はじめる</button>
       <div class="title-note">まちがえても HPは へりません。気らくにどうぞ。</div>
     </div>
   </div>
+
+  <div class="screen" id="screen-home"><div class="scr-inner" id="homeBody"></div></div>
 
   <div class="screen" id="screen-map">
     <div class="scr-inner">
       <h2 class="scr-ttl">🗺 ステージをえらぼう</h2>
       <div class="map-list" id="mapList"></div>
-      <div class="title-note">クリアすると つぎのステージが ひらくよ。</div>
+      <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>
     </div>
   </div>
 
+  <div class="screen" id="screen-accessory"><div class="scr-inner" id="accBody"></div></div>
   <div class="screen" id="screen-clear"><div class="scr-inner" id="clearBody"></div></div>
   <div class="screen" id="screen-complete"><div class="scr-inner" id="completeBody"></div></div>
   <div class="screen" id="screen-defeat"><div class="scr-inner" id="defeatBody"></div></div>
@@ -650,7 +682,8 @@ function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 // curStatMul(メタ装備のステ倍率)とcurLoadout(役割別スキル)を反映して味方を作る。通常ステは sm=1 / loadout=既定。
 function makeAllies(){ const sm=curStatMul||1; allies = ALLY_DEFS.map(d=>{
   const skills = (curLoadout&&curLoadout[d.id]) ? curLoadout[d.id].slice() : d.skills.slice();
-  const str=Math.round(d.str*sm), int=Math.round(d.int*sm), def=Math.round(d.def*sm), hpMax=Math.round(d.hpMax*sm), mpMax=Math.round(d.mpMax*sm);
+  const acc = 1 + accPctFor(d.id)/100;   // ★装飾品=全コアステータス+%(2枠合算)
+  const str=Math.round(d.str*sm*acc), int=Math.round(d.int*sm*acc), def=Math.round(d.def*sm*acc), hpMax=Math.round(d.hpMax*sm*acc), mpMax=Math.round(d.mpMax*sm*acc);
   return { ...d, skills, str, int, def, hpMax, mpMax, hp:hpMax, mp:mpMax, charge:0, downed:false,
     powerUp:0, weakBlade:false, shield:0, defending:false, endure:false, counter:false,
     haste:null, focus:null, amp:null, regen:null, atkBuff:null, reduce:null, statusResist:null, ail:{}, taunt:0, cover:0, thorns:null, fade:0, quickReady:false, _tossBonus:0 }; }); }
@@ -986,8 +1019,67 @@ function loadProgress(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY))
 function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); }catch(e){} }
 function isCleared(i){ return progress.cleared.indexOf(i)>=0; }
 
+/* ===================== §A 装飾品(アクセサリ)＝集めのエンドの種(試作・C〜R) ===================== */
+// 装飾品=1キャラ2枠(スキル無し)。メインステ=全コアステータス +k%(C1/UC1.5/R2)。SR以降と特殊スキル(復活等)は後日。
+const ACC_RARITY = {
+  C:{  jp:'コモン',     col:'#9fb0d6', pct:1.0, w:60 },
+  UC:{ jp:'アンコモン', col:'#34d399', pct:1.5, w:28 },
+  R:{  jp:'レア',       col:'#60a5fa', pct:2.0, w:12 },
+  SR:{ jp:'スーパーレア', col:'#c084fc', pct:3.0, w:0 },   // 試作では落ちない(後日)
+};
+const ACC_BASE = ['お守り','リング','ペンダント','ブレス','アミュレット','まが玉','バッジ','イヤリング'];
+let accInv = [];                       // 所持: [{id, rarity, base}]
+let accEquip = { ares:[null,null], sera:[null,null], gai:[null,null], mina:[null,null] };  // 各2枠=accのid
+let _accSeq = 1, accSel = null;        // accSel={cid,slot}
+const ACC_KEY='rika2_demo_acc_v1';
+function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); _accSeq=s.seq||1; } }catch(e){} }
+function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, seq:_accSeq})); }catch(e){} }
+function accById(id){ return accInv.find(a=>a.id===id); }
+function accPctFor(cid){ let p=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)p+=ACC_RARITY[a.rarity].pct; }); return p; }   // 全コア+%(2枠合算)
+function rollAccRarity(){ const ks=Object.keys(ACC_RARITY); const tot=ks.reduce((s,k)=>s+ACC_RARITY[k].w,0); let x=Math.random()*tot; for(const k of ks){ x-=ACC_RARITY[k].w; if(x<0)return k; } return 'C'; }
+function dropAccessory(){ const rarity=rollAccRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base }; accInv.push(a); saveAcc(); return a; }
+
+function showHome(){ gameState='home'; renderHome(); showScreen('home'); setTopbar(''); }
+function renderHome(){ const cards=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id);
+    const dots=(accEquip[d.id]||[null,null]).map(id=>{ const a=id!=null?accById(id):null; return a?`<span class="acc-dot" style="background:${ACC_RARITY[a.rarity].col};"></span>`:`<span class="acc-dot empty"></span>`; }).join('');
+    return `<div class="home-card"><div class="hc-emoji">${d.emoji}</div><div class="hc-name">${d.name}</div><div class="hc-role">${d.role}</div><div class="hc-dots">${dots}</div><div class="hc-pct">全コア +${pct}%</div></div>`; }).join('');
+  document.getElementById('homeBody').innerHTML=`
+    <h2 class="scr-ttl">🏠 ホーム</h2>
+    <div class="home-party">${cards}</div>
+    <div class="home-info">もちもの 装飾品：<b>${accInv.length}</b>こ</div>
+    <div class="scr-btns">
+      <button class="scr-btn primary big" onclick="showMap()">▶ ぼうけんへ</button>
+      <button class="scr-btn" onclick="showAccessory()">🔮 そうび（装飾品）</button>
+    </div>`;
+}
+function showAccessory(){ gameState='accessory'; accSel=null; renderAccessory(); showScreen('accessory'); setTopbar(''); }
+function renderAccessory(){
+  const rows=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id);
+    const slots=(accEquip[d.id]||[null,null]).map((id,si)=>{ const a=id!=null?accById(id):null; const sel=accSel&&accSel.cid===d.id&&accSel.slot===si;
+      const inner=a?`<span class="aslot-r" style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</span><span class="aslot-n">${a.base} +${ACC_RARITY[a.rarity].pct}%</span>`:`<span class="aslot-empty">＋ 空き</span>`;
+      return `<button class="aslot${sel?' sel':''}" onclick="selectSlot('${d.id}',${si})">${inner}</button>`; }).join('');
+    return `<div class="acc-row"><div class="ar-head"><span class="ar-emoji">${d.emoji}</span><span class="ar-name">${d.name}</span><span class="ar-pct">全コア +${pct}%</span></div><div class="ar-slots">${slots}</div></div>`; }).join('');
+  const equipped=new Set(); Object.values(accEquip).forEach(arr=>arr.forEach(id=>{ if(id!=null)equipped.add(id); }));
+  const inv=accInv.filter(a=>!equipped.has(a.id));
+  let invHtml;
+  if(!accSel){ invHtml=`<div class="acc-hint">スロットをえらんでから、下のもちものをタップ</div>`; }
+  else { const filled=accEquip[accSel.cid][accSel.slot]!=null;
+    const rm=filled?`<button class="acc-chip remove" onclick="unequipSel()">✕ はずす</button>`:'';
+    const chips=inv.length?inv.map(a=>`<button class="acc-chip" style="border-color:${ACC_RARITY[a.rarity].col};" onclick="equipAcc(${a.id})"><b style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</b> ${a.base} +${ACC_RARITY[a.rarity].pct}%</button>`).join(''):`<div class="acc-hint">あいてる装飾品がありません</div>`;
+    invHtml=`<div class="acc-inv">${rm}${chips}</div>`; }
+  document.getElementById('accBody').innerHTML=`
+    <h2 class="scr-ttl">🔮 そうび（装飾品）</h2>
+    <div class="acc-sub">装飾品は1人2つまで。全コアステータスが上がるよ。</div>
+    <div class="acc-list">${rows}</div>
+    <div class="acc-invwrap"><div class="acc-invttl">もちもの（${inv.length}）</div>${invHtml}</div>
+    <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>`;
+}
+function selectSlot(cid,slot){ accSel={cid,slot}; renderAccessory(); }
+function equipAcc(accId){ if(!accSel)return; Object.keys(accEquip).forEach(c=>accEquip[c].forEach((v,i)=>{ if(v===accId)accEquip[c][i]=null; })); accEquip[accSel.cid][accSel.slot]=accId; saveAcc(); renderAccessory(); }
+function unequipSel(){ if(!accSel)return; accEquip[accSel.cid][accSel.slot]=null; saveAcc(); renderAccessory(); }
+
 function showScreen(name){   // overlay表示の一元管理。battle時は全overlay非表示。
-  ['title','map','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
+  ['title','home','map','accessory','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
 }
 function showTitle(){ gameState='title'; showScreen('title'); setTopbar(''); }
 function showMap(){ gameState='map'; renderMap(); showScreen('map'); setTopbar(''); }
@@ -1013,21 +1105,22 @@ function stageClear(){ gameState='clear'; const st=STAGES[curStage];
   if(!isCleared(curStage)) progress.cleared.push(curStage);
   progress.unlocked=Math.max(progress.unlocked, Math.min(curStage+1, STAGES.length-1));
   saveProgress();
-  const last=curStage>=STAGES.length-1, allDone=progress.cleared.length>=STAGES.length;
-  const r=RARITY[st.drop.rarity];
+  const last=curStage>=STAGES.length-1;
+  const acc=dropAccessory(); const ar=ACC_RARITY[acc.rarity];   // ★装飾品ドロップ(クリアごと・C〜R)
   document.getElementById('clearBody').innerHTML=`
     <div class="big-emoji">🏆</div>
     <h2 class="scr-ttl">STAGE ${curStage+1} クリア！</h2>
     <div class="scr-sub">${st.emoji} ${st.name}</div>
     <div class="drop-card">
-      <div class="drop-label">🎁 そうびを てにいれた！</div>
-      <div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${st.drop.name}</div>
-      <div class="drop-note">${st.drop.who}の そうび（体験版では見た目だけ・つよさは固定）</div>
+      <div class="drop-label">🎁 装飾品を てにいれた！</div>
+      <div class="drop-name" style="color:${ar.col};border-color:${ar.col};">［${ar.jp}］${acc.base}　＋全コア${ar.pct}%</div>
+      <div class="drop-note">ホームの「そうび」で 1人2つまで つけられる</div>
     </div>
     <div class="scr-btns">
       ${ last ? `<button class="scr-btn primary" onclick="showComplete()">▶ けっか</button>`
              : `<button class="scr-btn primary" onclick="startStage(${curStage+1})">▶ つぎのステージへ</button>` }
       <button class="scr-btn" onclick="showMap()">🗺 マップへ</button>
+      <button class="scr-btn" onclick="showHome()">🏠 ホーム</button>
     </div>`;
   showScreen('clear'); setTopbar('');
 }
@@ -1046,9 +1139,10 @@ function showComplete(){ gameState='complete';
   document.getElementById('completeBody').innerHTML=`
     <div class="big-emoji">🎉</div>
     <h2 class="scr-ttl">体験版クリア！</h2>
-    <div class="scr-sub">5つのステージ、ぜんぶ突破！<br>火力・妨害・壁・回復の チームプレイ、どうだった？</div>
+    <div class="scr-sub">15ステージ、ぜんぶ突破！<br>集めた装飾品で もっと上をめざそう。</div>
     <div class="scr-btns">
-      <button class="scr-btn primary" onclick="showMap()">🗺 マップへもどる</button>
+      <button class="scr-btn primary" onclick="showHome()">🏠 ホームへ</button>
+      <button class="scr-btn" onclick="showMap()">🗺 マップへ</button>
     </div>`;
   showScreen('complete'); setTopbar('');
 }
@@ -1105,6 +1199,7 @@ function pgInit(){ let ok=false; try{ ok=localStorage.getItem(PG_KEY)==='1'; }ca
 
 buildInfo();
 loadProgress();
+loadAcc();
 // 体験版は味方/敵の器を先に1回つくっておく(updateUIが空配列でも安全だが、初回描画のため)。curStage=0で仮初期化。
 makeAllies(); buildParty(); setEncounter(0);
 showTitle();
