@@ -477,23 +477,24 @@ function drawQuestion(subjects){ const cand=QUESTIONS.filter(q=>subjects.include
 
 /* ===================== §3 敵 / 味方 / スキル / アイテム / 状態異常 ===================== */
 // ★体験版の敵=序盤(コモン〜レア帯)。画像が無い敵は絵文字で表示(buildEnemiesが自動判別)。数値は仮。
+// 敵ステは土台スケール: def=割合防御(まもり相当・K/(防+K))/atk=与ダメの素/hp=体力。序盤帯(仮)。
 const MONSTER_DB = {
   // 化学
-  slime:  { name:'スライム実験体', img:'img/enemy_slime.png', hp:620,  atk:18, attrs:['chemistry'] },
-  bubble: { name:'しけんかんスライム', img:'🧫', hp:780, atk:22, attrs:['chemistry'] },
+  slime:  { name:'スライム実験体', img:'img/enemy_slime.png', hp:1200, def:15, atk:100, attrs:['chemistry'] },
+  bubble: { name:'しけんかんスライム', img:'🧫', hp:1500, def:25, atk:120, attrs:['chemistry'] },
   // 生物
-  bug:    { name:'もぞもぞ虫',    img:'🐛', hp:700,  atk:22, attrs:['biology'] },
-  bee:    { name:'はりおバチ',    img:'🐝', hp:600,  atk:26, attrs:['biology'] },
-  tree:   { name:'森のトレント',  img:'img/enemy_tree.png', hp:1700, atk:34, attrs:['biology'], resist:{ poison:0.4 } },   // 木=毒に強い
+  bug:    { name:'もぞもぞ虫',    img:'🐛', hp:1300, def:20, atk:115, attrs:['biology'] },
+  bee:    { name:'はりおバチ',    img:'🐝', hp:1100, def:15, atk:135, attrs:['biology'] },
+  tree:   { name:'森のトレント',  img:'img/enemy_tree.png', hp:2800, def:55, atk:160, attrs:['biology'], resist:{ poison:0.4 } },   // 木=毒に強い
   // 物理
-  spark:  { name:'ビリビリ玉',    img:'⚡', hp:720,  atk:26, attrs:['physics'] },
-  wind:   { name:'つむじ風',      img:'🌀', hp:880,  atk:24, attrs:['physics'] },
-  prism:  { name:'ひかりの精',    img:'🔆', hp:760,  atk:30, attrs:['physics'] },
+  spark:  { name:'ビリビリ玉',    img:'⚡', hp:1300, def:20, atk:135, attrs:['physics'] },
+  wind:   { name:'つむじ風',      img:'🌀', hp:1600, def:35, atk:120, attrs:['physics'] },
+  prism:  { name:'ひかりの精',    img:'🔆', hp:1400, def:30, atk:140, attrs:['physics'] },
   // 地学
-  magma:  { name:'マグマのこぶし', img:'🌋', hp:980, atk:32, attrs:['earth'], special:'erupt', specEvery:4 },   // たまに小噴火(全体小ダメ)
-  golem:  { name:'岩石ゴーレム',  img:'img/enemy_golem.png', hp:2200, atk:44, attrs:['earth'], special:'quake', specEvery:3, resist:{ sleep:0.6, freeze:0.5, paralyze:0.4 } },   // 岩=眠り/氷/まひに強い
+  magma:  { name:'マグマのこぶし', img:'🌋', hp:1900, def:45, atk:150, attrs:['earth'], special:'erupt', specEvery:4 },   // たまに小噴火(全体小ダメ)
+  golem:  { name:'岩石ゴーレム',  img:'img/enemy_golem.png', hp:3400, def:85, atk:185, attrs:['earth'], special:'quake', specEvery:3, resist:{ sleep:0.6, freeze:0.5, paralyze:0.4 } },   // 岩=眠り/氷/まひに強い
   // ボス(体験版のラスト・オメガより控えめ)
-  guardian:{ name:'研究塔の番人', img:'img/enemy_omega.png', hp:3200, atk:52, attrs:['physics','chemistry'], special:'quake', specEvery:3, resist:{ poison:0.3, paralyze:0.3, sleep:0.5, freeze:0.4 } },
+  guardian:{ name:'研究塔の番人', img:'img/enemy_omega.png', hp:5600, def:75, atk:195, attrs:['physics','chemistry'], special:'quake', specEvery:3, resist:{ poison:0.3, paralyze:0.3, sleep:0.5, freeze:0.4 } },
 };
 // ★体験版=5ステージ。各ステージ＝1〜2ウェーブ。drop＝コモン〜レアの装備フレーバー(テンプレ装備なので見た目だけ・実ステは不変)。cfg＝難度の上り。
 const STAGES = [
@@ -530,7 +531,7 @@ const AILMENTS = {
   seal:     { jp:'封印',   emoji:'🚫', kind:'seal', dur:16, fl:'力を封じられた。', ef:'敵が特殊行動を出せなくなる。' },
   blind:    { jp:'暗闇',   emoji:'🌑', kind:'blind', miss:0.5, dur:12, fl:'視界が奪われた。', ef:'敵の攻撃が当たりにくくなる（よく外す）。' },
   confuse:  { jp:'混乱',   emoji:'💫', kind:'confuse', fail:0.4, dur:8, fl:'わけがわからない。', ef:'敵がときどき行動に失敗する。' },
-  atkdown:  { jp:'攻撃低下', emoji:'🔻', kind:'atkdown', mul:0.6, dur:12, fl:'力が抜けていく。', ef:'敵の攻撃のダメージが下がる（味方が受ける痛みが減る＝守りのデバフ）。' },
+  atkdown:  { jp:'攻撃低下', emoji:'🔻', kind:'atkdown', mul:0.8, dur:12, fl:'力が抜けていく。', ef:'敵の攻撃のダメージが下がる（約-20%・味方が受ける痛みが減る＝守りのデバフ）。' },
   ailamp:   { jp:'弱体',   emoji:'🦠', kind:'ailamp', mul:1.6, dur:16, fl:'抵抗する力が削がれている。', ef:'状態異常が効きやすく・長持ちするようになる（耐性持ちボスに有効）。' },
 };
 
@@ -547,108 +548,53 @@ function skAxisHint(s){ return s.lvAxis==='power'?'レベルUPで効力UP・MP�
 
 // スキル: needsQuiz=true は「正解で発動」(火力/状態異常・学習核)。false は即発動(補助/防御/特殊)。
 //  ★MP経済: 正解でMP回復は『通常攻撃』だけ→スキルは純コスト=状態異常の永続化を防止。note=実効果(長押し表示・確率は濁す)。fl=フレーバー。
+// ★体験版スキル＝確定設計(master JSON)のコモン〜レア帯。各キャラ4スキル(武器/頭/胴/足の1枠ずつ)＋共通のジャブ(攻撃コマンド)。
+// 火力=ちから(str)/妨害・回復=かしこさ(int)/壁=まもり(def)で硬い。数値・効果は確定ログ準拠(仮)。needsQuiz=true は正解で発動。
 const SKILLS = {
-  /* A. 火力(属性付き・キラーが乗る) */
-  fireball:{ name:'火炎弾', emoji:'☄️', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'ごう、と炎が敵をのみこむ。',
-    note:'対象に炎の中〜大ダメージ。中確率でやけど（毎秒ダメージ）。', run:(c,e,L)=>{ const d=skillHit(c,e,1.4*L.pow,{canCrit:true}); if(Math.random()<0.30)applyAilment(e,'burn'); bigSavor('☄️ 火炎弾 '+fmt(d)); } },
-  ice:{ name:'氷結砲', emoji:'🧊', mp:15, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'凍てつく弾が動きを奪う。',
-    note:'対象にダメージ＋行動ゲージを0に戻す。中確率でこおり。', run:(c,e,L)=>{ if(e)e.charge=0; const d=skillHit(c,e,1.1*L.pow); if(e&&e.alive&&Math.random()<0.30)applyAilment(e,'freeze'); bigSavor('🧊 氷結砲 '+fmt(d)); } },
-  thunder:{ name:'雷撃', emoji:'⚡', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'稲妻が体を貫く。',
-    note:'対象にダメージ。高確率でまひ（敵が遅く・たまに失敗）。', run:(c,e,L)=>{ const d=skillHit(c,e,1.2*L.pow,{canCrit:true}); if(e&&e.alive&&Math.random()<0.45)applyAilment(e,'paralyze'); bigSavor('⚡ 雷撃 '+fmt(d)); } },
-  rock:{ name:'岩石落とし', emoji:'🪨', mp:18, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'巨岩が頭上から降りそそぐ。',
-    note:'対象に大ダメージ。小確率でスタン（短い眠り）。', run:(c,e,L)=>{ const d=skillHit(c,e,1.9*L.pow,{canCrit:true}); if(e&&e.alive&&Math.random()<0.25)applyAilment(e,'sleep',{dur:4}); bigSavor('🪨 岩石落とし '+fmt(d)); } },
-  judge:{ name:'光の裁き', emoji:'🌟', mp:16, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'天の光が悪をうがつ。',
-    note:'防御を無視したダメージ＋敵の残りHPに応じた追加ダメージ。硬い敵に強い。', run:(c,e,L)=>{ const d=skillHit(c,e,1.0*L.pow,{flatHpPct:0.06*L.pow}); bigSavor('🌟 光の裁き '+fmt(d)); } },
-  acid:{ name:'酸の飛沫', emoji:'🧪', mp:13, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'酸が装甲をじゅっととかす。',
-    note:'対象にダメージ＋防御低下（しばらく被ダメージUP）。', run:(c,e,L)=>{ const d=skillHit(c,e,0.9*L.pow); if(e&&e.alive)applyAilment(e,'defdown',{mul:1.35,dur:12}); bigSavor('🧪 酸の飛沫 '+fmt(d)); } },
-  shock:{ name:'衝撃波', emoji:'💥', mp:20, needsQuiz:true, scope:'allEnemies', lvAxis:'power', fl:'衝撃が戦場をなぎ払う。',
-    note:'敵全体にダメージ。', run:(c,e,L)=>{ aliveEnemies().forEach(en=>skillHit(c,en,0.6*L.pow)); bigSavor('💥 衝撃波！<small>全体</small>'); } },
-  multi:{ name:'連撃', emoji:'🌀', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'目にも止まらぬ三段斬り。',
-    note:'対象に3回ヒット。1発ずつ会心の可能性あり。', run:(c,e,L)=>{ let tot=0; for(let i=0;i<3;i++){ if(e&&e.alive) tot+=skillHit(c,e,0.55*L.pow,{canCrit:true}); } bigSavor('🌀 連撃 '+fmt(tot)); } },
-  /* B. 状態異常(デバフ主体) */
-  poison:{ name:'猛毒', emoji:'☠️', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'じわりと毒がめぐる。',
-    note:'対象を毒に。時間とともにHPが少しずつ減る。長期戦向き。', run:(c,e,L)=>{ applyAilment(e,'poison',{dur:AILMENTS.poison.dur*L.dur}); bigSavor('☠️ 猛毒！'); } },
-  paralyze:{ name:'痺れ針', emoji:'⚡', mp:12, needsQuiz:true, scope:'enemy', lvAxis:'eff', fl:'ビリッ、体がしびれる。',
-    note:'対象をまひに。行動ゲージが遅くなり、たまに行動失敗。', run:(c,e,L)=>{ applyAilment(e,'paralyze'); bigSavor('⚡ しびれ！'); } },
-  sleep:{ name:'眠りの胞子', emoji:'😴', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'まぶたが重くなる胞子。',
-    note:'対象を眠らせ一定時間 行動停止。ただし殴ると起きる。', run:(c,e,L)=>{ applyAilment(e,'sleep',{dur:AILMENTS.sleep.dur*L.dur}); bigSavor('😴 ねむり…'); } },
-  slow:{ name:'鈍足の霧', emoji:'🐌', mp:8, needsQuiz:true, scope:'enemy', lvAxis:'eff', fl:'霧が足取りを重くする。',
-    note:'対象を鈍足に（確実）。行動ゲージが遅くなる。', run:(c,e,L)=>{ applyAilment(e,'slow'); bigSavor('🐌 鈍足'); } },
-  defbreak:{ name:'防御崩し', emoji:'🔨', mp:12, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'渾身の一撃で守りを砕く。',
-    note:'対象の防御を大きく下げる（被ダメージ大UP）。', run:(c,e,L)=>{ applyAilment(e,'defdown',{mul:1.6,dur:14*L.dur}); bigSavor('🔨 防御崩し！'); } },
-  seal:{ name:'封印札', emoji:'🚫', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'札が特殊な力を縛る。',
-    note:'対象を封印。ボスの特殊行動を止める。', run:(c,e,L)=>{ applyAilment(e,'seal',{dur:AILMENTS.seal.dur*L.dur}); bigSavor('🚫 封印！'); } },
-  dazzle:{ name:'幻惑光', emoji:'🌑', mp:12, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'まばゆい光で目をくらます。',
-    note:'対象を暗闇に（敵の命中DOWN）。中確率で混乱も。', run:(c,e,L)=>{ applyAilment(e,'blind',{dur:AILMENTS.blind.dur*L.dur}); if(e&&e.alive&&Math.random()<0.30)applyAilment(e,'confuse'); bigSavor('🌑 幻惑光'); } },
-  /* C. 補助(自己バフ・ATB操作) */
-  haste:{ name:'加速', emoji:'⏩', mp:12, needsQuiz:false, scope:'none', lvAxis:'dur', fl:'風のごとく速くなる。',
-    note:'自分の行動ゲージの溜まる速さがしばらくUP。手数が増える。', run:(c,e,L)=>{ c.haste={mul:1.6,remain:12*L.dur}; bigSavor('⏩ 加速！'); } },
-  focus:{ name:'集中', emoji:'🎯', mp:8, needsQuiz:false, scope:'none', lvAxis:'dur', fl:'呼吸を整え、急所を見すえる。',
-    note:'しばらく会心（クリティカル）率がUP。', run:(c,e,L)=>{ c.focus={remain:14*L.dur}; bigSavor('🎯 集中'); } },
-  powerup:{ name:'力ため', emoji:'💪', mp:6, needsQuiz:false, scope:'none', lvAxis:'power', fl:'ぐっと力をためる。',
-    note:'次の通常攻撃のダメージを大きくUP。', run:(c,e,L)=>{ c.powerUp=1+L.pow; bigSavor('💪 力をためた！'); } },
-  amp:{ name:'魔力増幅', emoji:'🔮', mp:10, needsQuiz:false, scope:'none', lvAxis:'dur', fl:'魔力が高まっていく。',
-    note:'しばらくスキルのダメージがUP。', run:(c,e,L)=>{ c.amp={remain:14*L.dur}; bigSavor('🔮 魔力増幅'); } },
-  weakblade:{ name:'弱点剣', emoji:'🗡️', mp:8, needsQuiz:false, scope:'none', lvAxis:'eff', fl:'弱点を見切る刃。',
-    note:'次の通常攻撃に弱点特効を付ける（与ダメージUP）。', run:(c,e,L)=>{ c.weakBlade=true; bigSavor('🗡️ 弱点剣'); } },
-  insight:{ name:'弱点看破', emoji:'👁️', mp:6, needsQuiz:false, scope:'allEnemies', lvAxis:'dur', fl:'敵の急所を見抜く。',
-    note:'敵全体の弱点を露呈（しばらく全員の被ダメージUP）。', run:(c,e,L)=>{ aliveEnemies().forEach(en=>applyAilment(en,'exposed',{dur:AILMENTS.exposed.dur*L.dur})); bigSavor('👁️ 弱点看破'); } },
-  /* D. 防御・耐久 */
-  barrier:{ name:'バリア', emoji:'🔰', mp:16, needsQuiz:false, scope:'none', lvAxis:'power', fl:'光の盾が身を包む。',
-    note:'自分にダメージを吸収するシールド（上限あり）。', run:(c,e,L)=>{ c.shield=Math.min(Math.floor(c.hpMax*0.8),(c.shield||0)+Math.floor(c.hpMax*0.5*L.pow)); bigSavor('🔰 バリア展開'); } },
-  endure:{ name:'不屈', emoji:'🪨', mp:16, needsQuiz:false, scope:'none', fl:'ここでは、倒れない。',
-    note:'一度だけ、致命傷をHP1で耐える。（レベルなし）', run:(c)=>{ c.endure=true; bigSavor('🪨 不屈の構え'); } },
-  regen:{ name:'リジェネ', emoji:'🌿', mp:12, needsQuiz:false, scope:'none', lvAxis:'power', fl:'癒やしの力が巡る。',
-    note:'しばらくの間、毎秒HPが自動回復。', run:(c,e,L)=>{ c.regen={pps:0.03*L.pow,remain:14}; bigSavor('🌿 リジェネ'); } },
-  counter:{ name:'カウンター', emoji:'↩️', mp:12, needsQuiz:false, scope:'none', lvAxis:'eff', fl:'来るなら、返す。',
-    note:'次に受ける敵の攻撃を反射してダメージを返す。', run:(c,e,L)=>{ c.counter=true; bigSavor('↩️ カウンター構え'); } },
-  /* 壁・ヘイト管理(v0.9新規) */
-  taunt:{ name:'挑発', emoji:'😤', mp:8, needsQuiz:false, scope:'none', lvAxis:'dur', fl:'我にかかってこい！',
-    note:'しばらく敵全体の狙いを自分に集める（壁が前に立って仲間を守る）。', run:(c,e,L)=>{ c.taunt=Math.max(c.taunt||0, 8*L.dur); bigSavor('😤 挑発！'); } },
-  cover:{ name:'かばう', emoji:'🛡', mp:10, needsQuiz:false, scope:'none', lvAxis:'dur', fl:'下がってろ、ここは任せろ。',
-    note:'しばらく、仲間に向かう単体攻撃を自分が肩代わり（軽減つき）。', run:(c,e,L)=>{ c.cover=Math.max(c.cover||0, 7*L.dur); bigSavor('🛡 かばう構え'); } },
-  thorns:{ name:'とげの鎧', emoji:'🌵', mp:12, needsQuiz:false, scope:'none', lvAxis:'power', fl:'触れれば、ただでは済まさん。',
-    note:'しばらく、攻撃を受けるたび敵に反射ダメージ（挑発と相性◎）。', run:(c,e,L)=>{ c.thorns={pct:0.5*L.pow,remain:10}; bigSavor('🌵 とげの鎧'); } },
-  fade:{ name:'気配消し', emoji:'👻', mp:8, needsQuiz:false, scope:'none', lvAxis:'eff', fl:'すっと、影に紛れる。',
-    note:'しばらく敵に狙われにくくなる（育てた火力役を守る）。', run:(c,e,L)=>{ c.fade=Math.max(c.fade||0, 9); bigSavor('👻 気配消し'); } },
-  /* G. ATB操作・状態異常シナジー(v0.10・候補カタログより。ゲージと状態異常の相互作用を確認) */
-  delay:{ name:'ディレイ砲', emoji:'⏮️', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'時を巻き戻す一撃。',
-    note:'正解でダメージ＋敵の行動ゲージを大きく後退させる（確定・耐性なし）。', run:(c,e,L)=>{ const d=skillHit(c,e,0.7*L.pow); if(e&&e.alive) e.charge=Math.max(0,e.charge-60*L.pow); bigSavor('⏮️ ディレイ砲 '+fmt(d)); } },
-  rally:{ name:'号令', emoji:'📣', mp:12, needsQuiz:false, scope:'none', lvAxis:'power', fl:'続け、いまだ！',
-    note:'味方全員の行動ゲージを即チャージ（手番の渋滞を一気に動かす）。', run:(c,e,L)=>{ allies.forEach(a=>{ if(!a.downed) a.charge=Math.min(100,a.charge+30*L.pow); }); bigSavor('📣 号令！'); } },
-  quick:{ name:'先駆け', emoji:'💨', mp:12, needsQuiz:false, scope:'none', lvAxis:'eff', fl:'一足、お先に。',
-    note:'すぐにもう一度 自分の手番が回ってくる（連続行動の起点）。', run:(c,e,L)=>{ c.quickReady=true; bigSavor('💨 先駆け！'); } },
-  followup:{ name:'追い討ち', emoji:'🥊', mp:15, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'隙ありっ！',
-    note:'正解でダメージ。眠り・こおり・まひなど“止まっている”敵には特大ダメージ。', run:(c,e,L)=>{ const stop=e&&e.ail&&(e.ail.sleep||e.ail.freeze||e.ail.timestop||e.ail.paralyze); const d=skillHit(c,e,(stop?2.6:0.9)*L.pow,{canCrit:true}); bigSavor((stop?'🥊 追い討ち！特大 ':'🥊 追い討ち ')+fmt(d)); } },
-  detonate:{ name:'毒の連鎖', emoji:'🧨', mp:16, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'毒よ、はぜろ。',
-    note:'正解で、敵の毒・やけどを一気に爆発させて大ダメージ（毒は消える）。', run:(c,e,L)=>{ let burst=0; if(e&&e.ail){ ['poison','burn'].forEach(t=>{ const a=e.ail[t]; if(a){ burst+=e.hpMax*a.pps*a.remain; delete e.ail[t]; } }); } burst=Math.floor(burst*0.8*L.pow); if(burst>0&&e&&e.alive) dealEnemyTarget(e,burst,true); bigSavor('🧨 毒の連鎖 '+(burst>0?fmt(burst):'（毒なし）')); } },
-  /* H. 守りのデバフ・耐性崩し(v0.11・候補カタログ§4) */
-  intimidate:{ name:'威圧', emoji:'😠', mp:10, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'ぎろり、と睨みつける。',
-    note:'正解で対象の攻撃力を下げる（味方が受けるダメージが減る＝守りのデバフ）。', run:(c,e,L)=>{ applyAilment(e,'atkdown',{dur:AILMENTS.atkdown.dur*L.dur}); bigSavor('😠 威圧'); } },
-  mushibami:{ name:'蝕み', emoji:'🦠', mp:12, needsQuiz:true, scope:'enemy', lvAxis:'dur', fl:'抗う力を、むしばむ。',
-    note:'正解で対象を弱体化＝状態異常が効きやすく長持ちする（耐性持ちボス対策）。', run:(c,e,L)=>{ applyAilment(e,'ailamp',{dur:AILMENTS.ailamp.dur*L.dur}); bigSavor('🦠 蝕み'); } },
-  /* E. 回復・浄化・MP */
-  heal:{ name:'回復', emoji:'❤️', mp:10, needsQuiz:true, scope:'none', lvAxis:'power', fl:'あたたかな光が傷をふさぐ。',
-    note:'正解で味方1人のHPを回復（戦闘不能なら蘇生）。', run:(c,e,L)=>healAlly(0.30*L.pow) },
-  purify:{ name:'浄化', emoji:'💧', mp:8, needsQuiz:false, scope:'none', fl:'清らかな水が穢れを流す。',
-    note:'自分にかかった状態異常を治す。（レベルなし）', run:(c)=>{ c.ail={}; spawnAllyFx(c,'浄化','heal'); bigSavor('💧 浄化'); } },
-  mana:{ name:'魔力転換', emoji:'🔋', mp:0, needsQuiz:false, scope:'none', lvAxis:'power', fl:'気をめぐらせ魔力に変える。',
-    note:'行動を1回使ってMPを大きく回復。立て直しに。', run:(c,e,L)=>{ const g=Math.min(c.mpMax,c.mp+Math.round(50*L.pow))-c.mp; c.mp+=g; spawnAllyFx(c,'+'+g+'MP','heal'); bigSavor('🔋 魔力転換'); } },
-  /* F. 特殊・フィニッシャー */
-  drain:{ name:'吸収', emoji:'🩸', mp:14, needsQuiz:true, scope:'enemy', lvAxis:'power', fl:'敵の力を吸い取る。',
-    note:'正解でダメージ＋与えた分だけ自分のHPを回復。', run:(c,e,L)=>{ const d=skillHit(c,e,1.1*L.pow); const h=Math.floor(d*0.5); c.hp=Math.min(c.hpMax,c.hp+h); if(h>0)spawnAllyFx(c,'+'+h,'heal'); bigSavor('🩸 吸収 '+fmt(d)); } },
-  timestop:{ name:'時間停止', emoji:'⏱️', mp:20, needsQuiz:false, scope:'allEnemies', lvAxis:'dur', fl:'時よ、止まれ。',
-    note:'敵全体の行動を一定時間 完全停止。切り札。', run:(c,e,L)=>{ aliveEnemies().forEach(en=>{ en.charge=0; applyAilment(en,'timestop',{dur:AILMENTS.timestop.dur*L.dur}); }); bigSavor('⏱️ 時間停止！'); } },
-  dai:{ name:'大魔法', emoji:'🔥', mp:40, needsQuiz:false, scope:'enemy', combo:3, lvAxis:'power', fl:'全魔力を、解き放つ。',
-    note:'コンボ3＋MP40で発動。対象に極大ダメージ。コンボはリセット。', run:(c,e,L)=>{ const mult=(3+Math.min(combo,12)*0.5)*L.pow; combo=0; bumpCombo(); const d=skillHit(c,e,mult,{crit:true}); screenShake(); bigSavor('🔥 大魔法 '+fmt(d)); } },
+  /* 火力アレス(ちから) ── 武器/頭/胴/足 */
+  honoo:{ name:'ほのお斬り', emoji:'🔥', mp:6, needsQuiz:true, scope:'enemy', slot:'武器', fl:'刃に炎をまとわせ斬りつける。',
+    note:'対象に炎の一撃（ちから×1.5）。', run:(c,e)=>{ const d=fdmg(c,'str',1.5,e); bigSavor('🔥 ほのお斬り '+fmt(d)); } },
+  touki:{ name:'闘気', emoji:'🔆', mp:8, needsQuiz:false, scope:'none', slot:'頭', fl:'闘気を高め、力がみなぎる。',
+    note:'しばらく自分のちからが上がる（+30%・8秒）。', run:(c)=>{ c.atkBuff={mul:1.3,remain:8}; spawnAllyFx(c,'ちから↑','heal'); bigSavor('🔆 闘気！'); } },
+  fukutsu:{ name:'不屈', emoji:'🪨', mp:12, needsQuiz:false, scope:'none', slot:'胴', fl:'ここでは、倒れない。',
+    note:'一度だけ、致命傷をHP1で耐える。', run:(c)=>{ c.endure=true; bigSavor('🪨 不屈の構え'); } },
+  tosshin:{ name:'突進', emoji:'💨', mp:10, needsQuiz:true, scope:'enemy', slot:'足', fl:'地を蹴り、一気に踏み込む。',
+    note:'対象に体当たり（ちから×1.5）＋自分の行動ゲージが少し進む。', run:(c,e)=>{ const d=fdmg(c,'str',1.5,e); c._tossBonus=15; bigSavor('💨 突進 '+fmt(d)); } },
+  /* 妨害セラ(かしこさ) */
+  thunder:{ name:'サンダー', emoji:'⚡', mp:12, needsQuiz:true, scope:'enemy', slot:'武器', fl:'雷光が敵を打つ。',
+    note:'雷の魔法ダメージ（かしこさ×1.0）＋まひ（敵が遅く・たまに行動失敗）。', run:(c,e)=>{ const d=fdmg(c,'int',1.0,e); if(e&&e.alive)applyAilment(e,'paralyze'); bigSavor('⚡ サンダー '+fmt(d)); } },
+  poison:{ name:'ポイズン', emoji:'☠️', mp:5, needsQuiz:true, scope:'enemy', slot:'頭', fl:'毒の霧がからみつく。',
+    note:'対象を毒に（時間をかけてジワジワ・木の敵には効きにくい）。', run:(c,e)=>{ applyAilment(e,'poison'); bigSavor('☠️ ポイズン！'); } },
+  drain:{ name:'ドレイン', emoji:'🩸', mp:12, needsQuiz:true, scope:'enemy', slot:'胴', fl:'生命力を吸い上げる。',
+    note:'魔法ダメージ（かしこさ×0.9）＋与えた分の半分だけ自分のHPを回復。', run:(c,e)=>{ const d=fdmg(c,'int',0.9,e); const h=Math.floor(d*0.5); c.hp=Math.min(c.hpMax,c.hp+h); if(h>0)spawnAllyFx(c,'+'+h,'heal'); bigSavor('🩸 ドレイン '+fmt(d)); } },
+  delay:{ name:'ディレイ', emoji:'⏮️', mp:11, needsQuiz:true, scope:'enemy', slot:'足', fl:'時を引き戻す一撃。',
+    note:'魔法ダメージ（かしこさ×0.8）＋敵の行動ゲージを後退させる（ハメ防止）。', run:(c,e)=>{ const d=fdmg(c,'int',0.8,e); if(e&&e.alive)e.charge=Math.max(0,e.charge-25); bigSavor('⏮️ ディレイ '+fmt(d)); } },
+  /* 壁ガイ(まもり・物理はちから) */
+  tateuchi:{ name:'盾撃', emoji:'🛡', mp:6, needsQuiz:true, scope:'enemy', slot:'武器', fl:'盾の角で打ちつける。',
+    note:'盾でなぐる物理ダメージ（ちから×1.0）。', run:(c,e)=>{ const d=fdmg(c,'str',1.0,e); bigSavor('🛡 盾撃 '+fmt(d)); } },
+  iatsu:{ name:'威圧', emoji:'😠', mp:10, needsQuiz:true, scope:'allEnemies', slot:'頭', fl:'ぎろりと睨みをきかせる。',
+    note:'敵全体の攻撃力を下げる（味方が受けるダメージが減る・しばらく）。', run:(c)=>{ aliveEnemies().forEach(en=>applyAilment(en,'atkdown')); bigSavor('😠 威圧！'); } },
+  provoke:{ name:'挑発', emoji:'😤', mp:4, needsQuiz:false, scope:'none', slot:'胴', fl:'我にかかってこい！',
+    note:'しばらく敵の狙いを自分に集める（仲間を守る・8秒）。', run:(c)=>{ c.taunt=Math.max(c.taunt||0,8); bigSavor('😤 挑発！'); } },
+  kenshu:{ name:'堅守', emoji:'🔰', mp:8, needsQuiz:false, scope:'none', slot:'足', fl:'守りを固める。',
+    note:'しばらく自分の受けるダメージを軽減（-35%・7秒）。', run:(c)=>{ c.reduce={pct:0.35,remain:7}; spawnAllyFx(c,'被ダメ↓','heal'); bigSavor('🔰 堅守'); } },
+  /* 回復ミナ(かしこさ) */
+  holy:{ name:'ホーリー', emoji:'🌟', mp:9, needsQuiz:true, scope:'enemy', slot:'武器', fl:'聖なる光が敵をうがつ。',
+    note:'光の魔法ダメージ（かしこさ×1.3）。', run:(c,e)=>{ const d=fdmg(c,'int',1.3,e); bigSavor('🌟 ホーリー '+fmt(d)); } },
+  regen:{ name:'リジェネ', emoji:'🌿', mp:10, needsQuiz:true, scope:'none', slot:'頭', fl:'癒やしの力が巡る。',
+    note:'味方1人を毎秒すこしずつ回復（約12秒・かしこさ依存）。', run:(c)=>{ const t=lowAlly(); if(t){ t.regen={flat:10+c.int*0.25,remain:12}; spawnAllyFx(t,'リジェネ','heal'); } bigSavor('🌿 リジェネ'); } },
+  heal:{ name:'ヒール', emoji:'❤️', mp:6, needsQuiz:true, scope:'none', slot:'胴', fl:'あたたかな光が傷をふさぐ。',
+    note:'味方1人のHPを回復（80＋かしこさ×1.5・戦闘不能なら蘇生）。', run:(c)=>{ healOne(80+c.int*1.5); bigSavor('❤️ ヒール'); } },
+  jiu:{ name:'慈雨', emoji:'💧', mp:14, needsQuiz:true, scope:'none', slot:'足', fl:'恵みの雨が降りそそぐ。',
+    note:'味方全員を毎秒すこしずつ回復（約10秒・控えめ）。', run:(c)=>{ allies.forEach(a=>{ if(!a.downed) a.regen={flat:8+c.int*0.12,remain:10}; }); spawnAllyFx(c,'慈雨','heal'); bigSavor('💧 慈雨'); } },
 };
-// 味方4体(役割＋行動速度 spd: 大きいほど速い)。★体験版＝テンプレ装備(装備変更なし)＝各キャラ固定のコモン〜レア帯スキル6つ。
-// 大魔法/時間停止などの切り札(LR〜UR帯)はエンド用なので体験版では外す。gear＝各スキルの装備フレーバー名(編成表示用)。
+// 味方4体。★体験版＝テンプレ装備(装備変更なし)＝各キャラ固定の4スキル(武器/頭/胴/足)＋共通ジャブ(攻撃)。
+// ステ: str=ちから(物理) int=かしこさ(魔法) def=まもり(割合防御) spd=すばやさ(行動速度) crit=会心率%(序盤10)。土台のROLEBASEに準拠(仮)。
 const ALLY_DEFS = [
-  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', hpMax:300, atk:130, mpMax:100, spd:1.0,  skills:['fireball','multi','thunder','powerup','followup','quick'] },
-  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', hpMax:240, atk:105, mpMax:120, spd:0.9,  skills:['ice','poison','paralyze','slow','defbreak','detonate'] },
-  { id:'gai',  name:'ガイ',   emoji:'🛡️', role:'壁',  hpMax:460, atk:70,  mpMax:90,  spd:0.75, skills:['taunt','cover','barrier','intimidate','shock','seal'] },
-  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', hpMax:250, atk:90,  mpMax:130, spd:1.1,  skills:['heal','regen','judge','rally','purify','insight'] },
+  { id:'ares', name:'アレス', emoji:'🔥', role:'火力', str:720, int:200, def:110, hpMax:1300, mpMax:110, spd:1.00, crit:10, skills:['honoo','touki','fukutsu','tosshin'] },
+  { id:'sera', name:'セラ',   emoji:'❄️', role:'妨害', str:200, int:620, def:100, hpMax:1050, mpMax:140, spd:1.00, crit:10, skills:['thunder','poison','drain','delay'] },
+  { id:'gai',  name:'ガイ',   emoji:'🛡️', role:'壁',  str:420, int:150, def:360, hpMax:2600, mpMax:90,  spd:0.85, crit:10, skills:['tateuchi','iatsu','provoke','kenshu'] },
+  { id:'mina', name:'ミナ',   emoji:'✨', role:'回復', str:200, int:520, def:100, hpMax:1150, mpMax:140, spd:1.05, crit:10, skills:['holy','regen','heal','jiu'] },
 ];
 const ITEM_DEFS = [
   { id:'hpPotion', name:'HP回復薬', emoji:'🧪', gaugeCost:100, scope:'none', fl:'ぐびっと飲めば元気百倍。', note:'味方1人のHPを40%回復。正解すると行動ゲージの消費が軽くなる。', run:()=>healAlly(0.40) },
@@ -661,8 +607,8 @@ let phase='charging', stateTimer=0, curQ=null, answered=false, pendingAction=nul
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 function makeAllies(){ allies = ALLY_DEFS.map(d=>({ ...d, hp:d.hpMax, mp:d.mpMax, charge:0, downed:false,
   powerUp:0, weakBlade:false, shield:0, defending:false, endure:false, counter:false,
-  haste:null, focus:null, amp:null, regen:null, ail:{}, taunt:0, cover:0, thorns:null, fade:0, quickReady:false })); }
-function clearAllyBuffs(a){ a.powerUp=0; a.weakBlade=false; a.shield=0; a.defending=false; a.endure=false; a.counter=false; a.haste=null; a.focus=null; a.amp=null; a.regen=null; a.ail={}; a.taunt=0; a.cover=0; a.thorns=null; a.fade=0; a.quickReady=false; }
+  haste:null, focus:null, amp:null, regen:null, atkBuff:null, reduce:null, ail:{}, taunt:0, cover:0, thorns:null, fade:0, quickReady:false, _tossBonus:0 })); }
+function clearAllyBuffs(a){ a.powerUp=0; a.weakBlade=false; a.shield=0; a.defending=false; a.endure=false; a.counter=false; a.haste=null; a.focus=null; a.amp=null; a.regen=null; a.atkBuff=null; a.reduce=null; a.ail={}; a.taunt=0; a.cover=0; a.thorns=null; a.fade=0; a.quickReady=false; a._tossBonus=0; }
 function curEncounters(){ return STAGES[curStage].encounters; }
 function setEncounter(i){ const defs=curEncounters()[i] || curEncounters()[0];
   enemies = defs.map((ref,idx)=>{ const m=MONSTER_DB[ref]; return { ...m, attrs:m.attrs.slice(), resist:(m.resist?Object.assign({},m.resist):null), hp:m.hp, hpMax:m.hp, charge:0, alive:true, idx:idx, ail:{}, spMeter:0 }; });
@@ -792,7 +738,7 @@ function resolveAnswer(correct){ const act=pendingAction, c=activeAlly; if(!act)
   if(correct){ combo++; bumpCombo(); hideOverlay();
     // ★MP回復は『通常攻撃の正解』だけ＝スキルは純コスト→低コスト状態異常(まひ等)の永続化を防止(レビュー残対応)
     if(act.kind==='attack'){ if(c) c.mp=Math.min(c.mpMax,c.mp+cfg.mpPerCorrect); doAttack(c, enemies[act.targetIdx]); if(c) c.charge=0; }
-    else if(act.kind==='skill'){ c.mp-=skMp(act.skill); act.skill.run(c, enemies[act.targetIdx], skL(act.skill)); c.charge=0; }
+    else if(act.kind==='skill'){ c.mp-=skMp(act.skill); act.skill.run(c, enemies[act.targetIdx], skL(act.skill)); c.charge=c._tossBonus||0; c._tossBonus=0; }   // 突進など「自ゲージ+」は手番後の0リセットの代わりに少し残す
     else if(act.kind==='item'){ useItem(act.item,true,c); }
     document.getElementById('phaseHint').textContent='COMBO '+combo+'！';
     pendingAction=null; activeAlly=null; phase='savor'; stateTimer=cfg.savorSec; renderCommand(); checkWin();
@@ -806,32 +752,26 @@ function afterMiss(){ hideOverlay(); pendingAction=null; activeAlly=null; phase=
 function useItem(it,correct,c){ items[it.id]=Math.max(0,(items[it.id]||0)-1); it.run(); const cost=correct?it.gaugeCost*0.3:it.gaugeCost; if(c) c.charge=Math.max(0,c.charge-cost); }
 
 /* ===================== §9 ダメージ計算 ＋ 敵 ＋ 状態異常エンジン ===================== */
-// 被ダメ倍率: 防御低下/弱点露呈(kind:'defdown')を掛け合わせ・暴走防止に上限。
-function vulnMult(e){ let v=1; if(e&&e.ail){ Object.keys(e.ail).forEach(t=>{ const a=e.ail[t]; if(a&&a.kind==='defdown')v*=a.mul; }); } return Math.min(v,2.4); }
-function killer(e){ let mult=1,label=''; (e?e.attrs:[]).forEach(a=>{ const m=killers[a]||1; if(m>mult){mult=m;label=SUBJECTS[a].jp;} }); return {mult,label}; }
-// スキルの与ダメ共通処理。mult=caster.atk倍率。opts: flatHpPct(敵HP割合加算/防御無視)・ignoreKiller・canCrit・crit(演出のみ)。
-function skillHit(c,e,mult,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
-  let base=c.atk*mult; if(opts.flatHpPct) base += e.hp*opts.flatHpPct;
-  let k = opts.ignoreKiller?1:killer(e).mult;
-  let dmg = base * k * vulnMult(e);
-  if(c.amp) dmg *= 1.5;                                  // 魔力増幅
-  if(e.ail&&e.ail.freeze){ dmg*=1.6; delete e.ail.freeze; spawnEnemyFx(e,'パリンッ','crit'); }   // こおり砕き
-  let crit=!!opts.crit;
-  if(opts.canCrit){ const cr=0.12+(c.focus?0.32:0); if(Math.random()<cr){ crit=true; dmg*=1.8; } }
-  dmg=Math.max(1,Math.floor(dmg)); dealEnemyTarget(e,dmg,crit); return dmg; }
-function doAttack(c,e){ if(!e)return; const k=killer(e); let mult=k.mult, label=k.label, tags='';
-  if(c.weakBlade){ mult=Math.max(mult,1.5)*1.3; label=label||'弱点'; tags+=' 🗡️'; c.weakBlade=false; }
-  let dmg=c.atk*(1+Math.min(combo,15)*0.10)*mult*vulnMult(e);
-  if(c.powerUp){ dmg*=c.powerUp; tags+=' 💪'; c.powerUp=0; }
-  if(e.ail&&e.ail.freeze){ dmg*=1.6; delete e.ail.freeze; tags+=' 🧊砕'; }
-  const critRate=0.18+(c.focus?0.32:0), isCrit=Math.random()<critRate; if(isCrit)dmg*=1.8;
-  dmg=Math.max(1,Math.floor(dmg)); dealEnemyTarget(e,dmg,isCrit); screenShake();
-  const kt=mult>1?` <small>対${label}×${mult.toFixed(1)}</small>`:''; bigSavor((isCrit?'⚡クリ ':'⚔️ ')+fmt(dmg)+'！'+tags+kt); }
+// ★土台(⑧)のダメージ計算: 防御=割合式 K/(防+K)・各ヒット個別9999上限・会心は単純×1.5(序盤率10%)。
+const DMG_CAP=9999, DMG_FLOOR=1, DEF_K=1000;
+function mitig(def){ return DEF_K/(Math.max(0,def||0)+DEF_K); }   // 被ダメ率(0〜1)。防御が高いほど小さい。
+// 被ダメUP倍率: 防御低下(kind:'defdown')を掛け合わせ・暴走防止に上限。
+function vulnMult(e){ let v=1; if(e&&e.ail){ Object.keys(e.ail).forEach(t=>{ const a=e.ail[t]; if(a&&a.kind==='defdown')v*=a.mul; }); } return Math.min(v,2.0); }
+function comboBonus(){ return Math.min(combo*0.04, 0.6); }   // コンボ加算(最大+60%・仮)
+function statVal(c,key){ let v=(key==='int'?(c.int||0):key==='def'?(c.def||0):(c.str||0)); if(key==='str'&&c.atkBuff)v*=c.atkBuff.mul; return v; }   // 火力=ちから(str)/魔法=かしこさ(int)。闘気はstrに乗る。
+// スキル/攻撃の与ダメ共通処理: 攻撃ステ×倍率×会心×(1+コンボ+与ダメ%)×K/(防+K)×被ダメUP → 9999上限/最低1。
+function fdmg(c,statKey,mult,e,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
+  const atk=statVal(c,statKey); const crit=(Math.random()*100 < (c.crit||10)); const cm=crit?1.5:1;
+  let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e);
+  dmg=Math.max(DMG_FLOOR,Math.min(DMG_CAP,Math.floor(dmg))); dealEnemyTarget(e,dmg,crit); return dmg; }
+function doAttack(c,e){ if(!e)return; const d=fdmg(c,'str',0.8,e); screenShake(); bigSavor('👊 ジャブ '+fmt(d)); }   // 共通のジャブ(軽い物理・正解でMP回復＝MP源)
 function answerLabel(q){ return q.type==='choice'?q.choices[q.answer]:q.answer; }
-function healAlly(ratio){ ratio=ratio||0.30; let t=allies.find(a=>a.downed);
-  if(t){ t.downed=false; t.hp=Math.floor(t.hpMax*0.4); spawnAllyFx(t,'蘇生！','heal'); }
-  else { t=allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; if(!t)return; const h=Math.floor(t.hpMax*ratio); t.hp=Math.min(t.hpMax,t.hp+h); spawnAllyFx(t,'+'+h,'heal'); }
-  bigSavor('❤️ 回復'); }
+function lowAlly(){ return allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; }
+// 回復: 戦闘不能が居れば蘇生優先(HP40%)、いなければ最もHP割合の低い味方を回復。amount=実数(上限1500)。
+function healOne(amount){ let t=allies.find(a=>a.downed);
+  if(t){ t.downed=false; t.hp=Math.floor(t.hpMax*0.4); spawnAllyFx(t,'蘇生！','heal'); return; }
+  t=lowAlly(); if(!t)return; const h=Math.min(1500,Math.max(1,Math.floor(amount))); t.hp=Math.min(t.hpMax,t.hp+h); spawnAllyFx(t,'+'+h,'heal'); }
+function healAlly(ratio){ ratio=ratio||0.30; const t=allies.find(a=>a.downed)||lowAlly(); if(!t)return; healOne(t.hpMax*ratio); }   // アイテム用(割合回復)
 
 // 状態異常を付与。dot=継続時間ﾘﾌﾚｯｼｭ(火力一定・エスカレートしない)／その他=overrideで強さ/時間を上書き。
 function applyAilment(e,type,override){ const base=AILMENTS[type]; if(!base||!e||!e.alive)return; const d=Object.assign({},base,override||{}); e.ail=e.ail||{};
@@ -851,10 +791,10 @@ function tickStatuses(dt){ let died=false;
     if(!e.alive) e.ail={};
   });
   allies.forEach(a=>{ if(a.downed)return;
-    ['haste','focus','amp','regen'].forEach(k=>{ if(a[k]){ a[k].remain-=dt; if(a[k].remain<=0)a[k]=null; } });
+    ['haste','focus','amp','regen','atkBuff','reduce'].forEach(k=>{ if(a[k]){ a[k].remain-=dt; if(a[k].remain<=0)a[k]=null; } });
     ['taunt','cover','fade'].forEach(k=>{ if(a[k]>0) a[k]=Math.max(0,a[k]-dt); });   // ヘイト系(秒)
     if(a.thorns){ a.thorns.remain-=dt; if(a.thorns.remain<=0)a.thorns=null; }
-    if(a.regen){ a.hp=Math.min(a.hpMax,a.hp+a.hpMax*a.regen.pps*dt); a._rgA=(a._rgA||0)+a.hpMax*a.regen.pps*dt; a._rgT=(a._rgT||0)+dt; if(a._rgT>=0.7){ spawnAllyFx(a,'+'+Math.max(1,Math.round(a._rgA)),'heal'); a._rgA=0; a._rgT=0; } }
+    if(a.regen){ const amt=a.regen.flat*dt; a.hp=Math.min(a.hpMax,a.hp+amt); a._rgA=(a._rgA||0)+amt; a._rgT=(a._rgT||0)+dt; if(a._rgT>=0.7){ spawnAllyFx(a,'+'+Math.max(1,Math.round(a._rgA)),'heal'); a._rgA=0; a._rgT=0; } }   // リジェネ/慈雨=毎秒一定回復
     if(a.ail) Object.keys(a.ail).forEach(type=>{ const x=a.ail[type]; if(!x)return; x.remain-=dt; if(x.remain<=0){ delete a.ail[type]; return; }
       if(x.kind==='dot'){ const dmg=a.hpMax*x.pps*dt; a.hp=Math.max(1,a.hp-dmg); x.acc=(x.acc||0)+dmg; x.t=(x.t||0)+dt; if(x.t>=0.7){ spawnAllyFx(a,'🔥'+Math.max(1,Math.round(x.acc)),'hit'); x.acc=0; x.t=0; } } });   // 味方DoTは最低HP1(やさしさ・無罰の精神)
   });
@@ -889,9 +829,11 @@ function doEnemySpecial(e){ const alive=allies.filter(a=>!a.downed); if(!alive.l
 function applyEnemyDamageToAlly(e,target,dmg,isAoE){
   // かばう: 単体攻撃のみ・他の味方への攻撃を かばう中の壁が肩代わり(軽減つき)。AoE(特殊の全体)は対象にしない=壁が4連で即死しない。
   if(!isAoE){ const cov=allies.find(a=>!a.downed && a.cover>0 && a!==target); if(cov){ spawnAllyFx(target,'🛡かばう','heal'); target=cov; dmg=Math.floor(dmg*0.7); } }
+  dmg=Math.max(1,Math.floor(dmg*mitig(target.def)));                                  // ★割合防御(まもり)＝被ダメ率 K/(防+K)
+  if(target.reduce && target.reduce.remain>0) dmg=Math.max(1,Math.floor(dmg*(1-target.reduce.pct)));   // 堅守などの被ダメ軽減
   if(target.defending){ dmg=Math.floor(dmg*0.3); target.defending=false; }
   if(target.shield>0){ const ab=Math.min(target.shield,dmg); target.shield-=ab; dmg-=ab; }
-  if(target.counter && dmg>0){ target.counter=false; const ref=Math.floor(dmg*0.6)+Math.floor(target.atk*0.5);
+  if(target.counter && dmg>0){ target.counter=false; const ref=Math.floor(dmg*0.6)+Math.floor((target.str||0)*0.5);
     if(e&&e.alive){ dealEnemyTarget(e,ref,false); bigSavor('↩️ カウンター '+fmt(ref)); if(e.hp<=0)checkWin(); } }
   if(target.thorns && dmg>0 && e && e.alive){ const ref=Math.floor(dmg*target.thorns.pct); if(ref>0){ dealEnemyTarget(e,ref,false); spawnEnemyFx(e,'🌵'+fmt(ref),'dot'); if(e.hp<=0)checkWin(); } }   // とげの鎧(持続反射)
   let newHp=target.hp-dmg;
@@ -953,7 +895,7 @@ function buildParty(){ for(const k in _buffSig)delete _buffSig[k]; document.getE
     <div class="ac-bar atb"><i id="atb-${a.id}"></i></div>
     <div class="ac-shield" id="sh-${a.id}"></div><div class="ac-down">💀</div></div>`).join(''); }
 function pct(v,max){ return Math.max(0,Math.min(100,v/max*100)); }
-function allyBuffIcons(a){ let s=''; if(a.shield>0)s+='🔰'; if(a.quickReady)s+='💨'; if(a.taunt>0)s+='😤'; if(a.cover>0)s+='🛡'; if(a.thorns)s+='🌵'; if(a.fade>0)s+='👻'; if(a.haste)s+='⏩'; if(a.focus)s+='🎯'; if(a.amp)s+='🔮'; if(a.regen)s+='🌿'; if(a.endure)s+='🪨'; if(a.counter)s+='↩️'; if(a.defending)s+='🛡️'; if(a.powerUp)s+='💪'; if(a.weakBlade)s+='🗡️'; if(a.ail&&a.ail.burn)s+='🔥'; return s; }
+function allyBuffIcons(a){ let s=''; if(a.taunt>0)s+='😤'; if(a.reduce)s+='🔰'; if(a.atkBuff)s+='🔆'; if(a.endure)s+='🪨'; if(a.regen)s+='🌿'; if(a.shield>0)s+='🛡'; if(a.cover>0)s+='🛡'; if(a.fade>0)s+='👻'; if(a.defending)s+='🛡️'; if(a.ail&&a.ail.burn)s+='🔥'; return s; }
 function updateUI(){
   enemies.forEach(e=>{ const hp=document.getElementById('ehp-'+e.idx), ch=document.getElementById('echg-'+e.idx), card=document.getElementById('enemy-'+e.idx); if(!card)return;
     if(hp) hp.style.width=pct(e.hp,e.hpMax)+'%'; if(ch) ch.style.width=Math.min(100,e.charge)+'%';
