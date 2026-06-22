@@ -568,7 +568,6 @@ const STAGES = [
       ares:['jab','honoo','rensan','touki','fukutsu'], sera:['jab','armorbreak','slow','thunder','drain'],
       gai:['jab','provoke','kenshu','higo','iatsu'], mina:['jab','healall','heal','esna','protes'] } } },
 ];
-const RARITY = { C:{ jp:'コモン', col:'#9fb0d6' }, R:{ jp:'レア', col:'#60a5fa' }, SR:{ jp:'スーパーレア', col:'#c084fc' }, UR:{ jp:'ウルトラレア', col:'#fbbf24' } };
 let curStage = 0;
 let curStatMul = 1, curLoadout = null;   // メタ装備ステージで startStage が設定(ステ倍率/役割別スキル)。通常は 1 / null。
 
@@ -1037,65 +1036,74 @@ function loadProgress(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY))
 function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); }catch(e){} }
 function isCleared(i){ return progress.cleared.indexOf(i)>=0; }
 
-/* ===================== §A 装飾品(アクセサリ)＝集めのエンドの種(試作・C〜R) ===================== */
-// 装飾品=1キャラ2枠(スキル無し)。メインステ=全コアステータス +k%(C1/UC1.5/R2)。SR以降と特殊スキル(復活等)は後日。
-const ACC_RARITY = {
-  C:{  jp:'コモン',     col:'#9fb0d6', pct:1.0, w:60 },
-  UC:{ jp:'アンコモン', col:'#34d399', pct:1.5, w:28 },
-  R:{  jp:'レア',       col:'#60a5fa', pct:2.0, w:12 },
-  SR:{ jp:'スーパーレア', col:'#c084fc', pct:3.0, w:0 },   // 試作では落ちない(後日)
+/* ===================== §A レア度＋ボーナス＋装飾品(集めのエンドの種) ===================== */
+// ★レア度ラダー=聖典どおり C / R / SR / SSR / UR / LR（UC=アンコモンは聖典に無い・廃止）。試作は C・R のみドロップ(SR以降は重み0=後日)。
+const RARITY = {
+  C:{   jp:'コモン',       col:'#9fb0d6', pct:1.0, w:62 },
+  R:{   jp:'レア',         col:'#60a5fa', pct:2.0, w:38 },
+  SR:{  jp:'スーパーレア', col:'#c084fc', pct:3.0, w:0 },
+  SSR:{ jp:'SSレア',       col:'#f472b6', pct:4.5, w:0 },
+  UR:{  jp:'ウルトラレア', col:'#fbbf24', pct:6.0, w:0 },
+  LR:{  jp:'レジェンド',   col:'#ff6b6b', pct:8.0, w:0 },
 };
 const ACC_BASE = ['お守り','リング','ペンダント','ブレス','アミュレット','まが玉','バッジ','イヤリング'];
 // ★ボーナスステータス(FOUNDATION ⑦の指輪ボーナス枠より・プロトで効くもの)。加算コア＋loot系(レア率/ドロップ率)＋異常耐性。
 const BONUS_DEFS = { str:{jp:'ちから',pct:false}, int:{jp:'かしこさ',pct:false}, def:{jp:'まもり',pct:false}, hp:{jp:'最大HP',pct:false}, mp:{jp:'最大MP',pct:false},
   accRare:{jp:'レア率',pct:true}, accDrop:{jp:'ドロップ率',pct:true}, resist:{jp:'異常耐性',pct:true} };
 const BONUS_POOL = ['str','int','def','hp','mp','accRare','accDrop','resist'];
-const BONUS_VAL = { str:{C:12,UC:20,R:34,SR:52}, int:{C:12,UC:20,R:34,SR:52}, def:{C:8,UC:14,R:24,SR:38},
-  hp:{C:50,UC:85,R:140,SR:220}, mp:{C:4,UC:7,R:12,SR:18}, accRare:{C:2,UC:4,R:7,SR:11}, accDrop:{C:2,UC:4,R:7,SR:11}, resist:{C:3,UC:5,R:8,SR:12} };
-const BONUS_COUNT = { C:1, UC:1, R:2, SR:3 };
+const BONUS_VAL = { str:{C:12,R:34,SR:52,SSR:75,UR:100,LR:140}, int:{C:12,R:34,SR:52,SSR:75,UR:100,LR:140}, def:{C:8,R:24,SR:38,SSR:55,UR:75,LR:105},
+  hp:{C:50,R:140,SR:220,SSR:320,UR:440,LR:600}, mp:{C:4,R:12,SR:18,SSR:26,UR:36,LR:50},
+  accRare:{C:2,R:7,SR:11,SSR:16,UR:22,LR:30}, accDrop:{C:2,R:7,SR:11,SSR:16,UR:22,LR:30}, resist:{C:3,R:8,SR:12,SSR:17,UR:23,LR:30} };
+const BONUS_COUNT = { C:1, R:2, SR:2, SSR:3, UR:3, LR:4 };
 function rollBonuses(rarity){ const n=BONUS_COUNT[rarity]||1; const pool=BONUS_POOL.slice(); const out=[];
   for(let i=0;i<n && pool.length;i++){ const t=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
     const base=(BONUS_VAL[t]&&BONUS_VAL[t][rarity])||0; out.push({ t, v:Math.max(1, Math.round(base*(0.85+Math.random()*0.3))) }); }   // ±15%のばらつき(loot感)
   return out; }
 function accBonuses(a){ return (a&&a.bonuses)||[]; }
 function bonusText(b){ const d=BONUS_DEFS[b.t]||{jp:b.t}; return d.jp+'+'+b.v+(d.pct?'%':''); }
-// ★Phase1: 装備(武器/頭/胴/足)＝スキルを変える＝ビルドが変わる。役割別にスキルプール(既存スキルをスロット別に整理)。
+// ★Phase1: 装備(武器/頭/胴/足)＝スキルを変える＝ビルドが変わる。★聖典どおり役割ロックなし＝スロット別の共通プール(誰でも装備可)。
 const GEAR_SLOTS = ['武器','頭','胴','足'];
-const ROLE_OF = { ares:'火力', sera:'妨害', gai:'壁', mina:'回復' };
-const GEAR_POOL = {
-  火力:{ '武器':['honoo','rensan','yamiuchi'], '頭':['touki'], '胴':['fukutsu'], '足':['tosshin'] },
-  妨害:{ '武器':['thunder'], '頭':['poison','chain','armorbreak','acidrain'], '胴':['drain','manashield'], '足':['delay','slow'] },
-  壁:  { '武器':['tateuchi'], '頭':['iatsu','inori','higo'], '胴':['provoke'], '足':['kenshu'] },
-  回復:{ '武器':['holy'], '頭':['regen','protes','esna','regenall'], '胴':['heal','healall'], '足':['jiu'] },
+const GEAR_POOL = {   // スロット別に全役割のスキルを混在(C〜R帯のみ・regenallはSSR専用なので除外)
+  '武器':['honoo','rensan','yamiuchi','thunder','tateuchi','holy'],
+  '頭':['touki','poison','iatsu','regen','esna','protes','inori','higo','chain','armorbreak','acidrain'],
+  '胴':['fukutsu','drain','provoke','heal','healall','manashield'],
+  '足':['tosshin','delay','kenshu','jiu','slow'],
 };
+// ★聖典の固有装備名(MASTER.jsonのequip)。装備はこの名前で表示し、スキルは中身として併記。
+const SKILL_EQUIP = { honoo:'ほのおの小太刀', rensan:'疾風の双剣', yamiuchi:'不意打ちの短刀', touki:'闘気の頭巾', fukutsu:'不屈の胸当て', tosshin:'突進の戦靴',
+  thunder:'雷鳴の杖', poison:'毒の頭巾', drain:'吸命の外套', delay:'時詠みの靴', tateuchi:'鉄盾の打突', iatsu:'威圧の兜', provoke:'挑発の胸当て', kenshu:'堅守の具足',
+  holy:'聖光の杖', regen:'再生の冠', heal:'癒やしのローブ', jiu:'慈雨の靴', esna:'浄化の聖典', protes:'予防の聖典', inori:'祈祷の頭巾', manashield:'魔法耐性のローブ',
+  healall:'見習いの祈りローブ', higo:'庇護の旗印', slow:'鈍足の魔靴', chain:'束縛の呪本', armorbreak:'鎧朽ちの魔本', acidrain:'酸の魔本' };
+function equipName(g){ return (g&&g.equip) || (g&&SKILL_EQUIP[g.skillId]) || (g&&SKILLS[g.skillId]?SKILLS[g.skillId].name:'装備'); }
 let accInv = [];                       // 装飾品: [{id, rarity, base, bonuses}]
 let accEquip = { ares:[null,null], sera:[null,null], gai:[null,null], mina:[null,null] };  // 装飾品2枠=accのid
-let gearInv = [];                      // 装備: [{id, kind:'gear', role, slot, skillId, rarity, bonuses}]
+let gearInv = [];                      // 装備: [{id, kind:'gear', slot, skillId, equip, rarity, bonuses}] ※役割ロックなし
 let gearEquip = { ares:{武器:null,頭:null,胴:null,足:null}, sera:{武器:null,頭:null,胴:null,足:null}, gai:{武器:null,頭:null,胴:null,足:null}, mina:{武器:null,頭:null,胴:null,足:null} };
 let _accSeq = 1;
 const ACC_KEY='rika2_demo_acc_v1';
 function _freshGearEquip(){ return { ares:{武器:null,頭:null,胴:null,足:null}, sera:{武器:null,頭:null,胴:null,足:null}, gai:{武器:null,頭:null,胴:null,足:null}, mina:{武器:null,頭:null,胴:null,足:null} }; }
-function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); gearInv=s.gearInv||[]; gearEquip=Object.assign(_freshGearEquip(), s.gearEquip||{}); _accSeq=s.seq||1; } }catch(e){} }
+function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); gearInv=s.gearInv||[]; gearEquip=Object.assign(_freshGearEquip(), s.gearEquip||{}); _accSeq=s.seq||1;
+  [].concat(accInv,gearInv).forEach(it=>{ if(it&&!RARITY[it.rarity]) it.rarity='R'; });   // 旧UC等の廃止レア度→Rに救済
+  } }catch(e){} }
 function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, gearInv, gearEquip, seq:_accSeq})); }catch(e){} }
 function accById(id){ return accInv.find(a=>a.id===id); }
 function gearById(id){ return gearInv.find(g=>g.id===id); }
-function accPctFor(cid){ let p=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)p+=ACC_RARITY[a.rarity].pct; }); return p; }   // 装飾品メイン=全コア+%(2枠)
+function accPctFor(cid){ let p=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)p+=RARITY[a.rarity].pct; }); return p; }   // 装飾品メイン=全コア+%(2枠)
 // その人に装備中の全アイテム(装飾品2＋装備4)。ボーナスはここから合算。
 function equippedItems(cid){ const out=[]; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)out.push(a); }); const g=gearEquip[cid]||{}; GEAR_SLOTS.forEach(s=>{ const it=g[s]!=null?gearById(g[s]):null; if(it)out.push(it); }); return out; }
-function allEquippedItems(){ let out=[]; Object.keys(ROLE_OF).forEach(cid=>{ out=out.concat(equippedItems(cid)); }); return out; }
+function allEquippedItems(){ let out=[]; ALLY_DEFS.forEach(a=>{ out=out.concat(equippedItems(a.id)); }); return out; }
 function accFlat(cid,stat){ let v=0; equippedItems(cid).forEach(it=>accBonuses(it).forEach(b=>{ if(b.t===stat)v+=b.v; })); return v; }   // 加算コア(装飾品＋装備)
 function accResistFor(cid){ let v=0; equippedItems(cid).forEach(it=>accBonuses(it).forEach(b=>{ if(b.t==='resist')v+=b.v; })); return Math.min(50,v)/100; }
 function accMetaSum(type){ let v=0; allEquippedItems().forEach(it=>accBonuses(it).forEach(b=>{ if(b.t===type)v+=b.v; })); return v; }   // レア率/ドロップ率=全装備合算
 function defSkill(cid,slot){ const d=ALLY_DEFS.find(a=>a.id===cid); const id=(d.skills||[]).find(sid=>SKILLS[sid]&&SKILLS[sid].slot===slot); return id||d.skills[1]; }   // 既定スキル(装備が無いスロット)
 function slotSkill(cid,slot){ const g=gearEquip[cid]&&gearEquip[cid][slot]; const it=g!=null?gearById(g):null; return it?it.skillId:defSkill(cid,slot); }
 function buildLoadout(cid){ return ['jab'].concat(GEAR_SLOTS.map(s=>slotSkill(cid,s))); }   // 通常ステ=ジャブ＋装備4スキル
-function rollAccRarity(){ const rareB=accMetaSum('accRare'); const ks=Object.keys(ACC_RARITY);
-  const w={}; ks.forEach(k=>{ w[k]=ACC_RARITY[k].w; }); w.UC*=(1+rareB/100); w.R*=(1+rareB/100*1.6);   // レア率%で良レアに寄せる
+function rollRarity(){ const rareB=accMetaSum('accRare'); const ks=Object.keys(RARITY);
+  const w={}; ks.forEach(k=>{ w[k]=RARITY[k].w * (k==='C'?1:(1+rareB/100)); });   // レア率%でC以外(=良レア)に寄せる。試作はC/Rのみ重みあり
   const tot=ks.reduce((s,k)=>s+w[k],0); let x=Math.random()*tot; for(const k of ks){ x-=w[k]; if(x<0)return k; } return 'C'; }
-function dropAccessory(){ const rarity=rollAccRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base, bonuses:rollBonuses(rarity) }; accInv.push(a); saveAcc(); return a; }
-function dropGear(){ const roles=Object.keys(GEAR_POOL); const role=roles[Math.floor(Math.random()*roles.length)]; const slot=GEAR_SLOTS[Math.floor(Math.random()*GEAR_SLOTS.length)];
-  const pool=GEAR_POOL[role][slot]; const skillId=pool[Math.floor(Math.random()*pool.length)]; const rarity=rollAccRarity();
-  const g={ id:_accSeq++, kind:'gear', role, slot, skillId, rarity, bonuses:rollBonuses(rarity) }; gearInv.push(g); saveAcc(); return g; }
+function dropAccessory(){ const rarity=rollRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base, bonuses:rollBonuses(rarity) }; accInv.push(a); saveAcc(); return a; }
+function dropGear(){ const slot=GEAR_SLOTS[Math.floor(Math.random()*GEAR_SLOTS.length)]; const pool=GEAR_POOL[slot]; const skillId=pool[Math.floor(Math.random()*pool.length)]; const rarity=rollRarity();   // ★役割ロックなし=スロット別共通プール
+  const g={ id:_accSeq++, kind:'gear', slot, skillId, equip:SKILL_EQUIP[skillId], rarity, bonuses:rollBonuses(rarity) }; gearInv.push(g); saveAcc(); return g; }
 // ★ドロップ=装飾品 or 装備(半々)。報酬1個。
 function rollDrop(){ if(Math.random()<0.5) return { kind:'acc', item:dropAccessory() }; return { kind:'gear', item:dropGear() }; }
 // ★パズドラ式: 敵ごとにドロップ判定→演出→最後に結果表示。1ステージで1個は確定・1フロアで2個以上も可。
@@ -1104,14 +1112,14 @@ function enemyIsBoss(e){ return !!(e && (e.special || e.aoeAttack || e.hpMax>=40
 function onEnemyDeath(e){ if(!e || e._dropped) return; e._dropped=true;
   const chance = enemyIsBoss(e) ? 1.0 : 0.55;
   if(Math.random() < chance){ const d=rollDrop(); stageDrops.push(d); spawnDropFx(e, d); } }
-function spawnDropFx(e, d){ const r=ACC_RARITY[d.item.rarity]; spawnEnemyFx(e, '🎁'+r.jp, 'crit'); }   // 敵の上に宝箱＋レア度
-function dropCardHtml(d){ const it=d.item, r=ACC_RARITY[it.rarity], bx=accBonuses(it).map(bonusText).join(' / ');
-  if(d.kind==='gear'){ const sk=SKILLS[it.skillId]; return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.role}・${it.slot}　${sk?sk.emoji+sk.name:it.skillId}${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
+function spawnDropFx(e, d){ const r=RARITY[d.item.rarity]; spawnEnemyFx(e, '🎁'+r.jp, 'crit'); }   // 敵の上に宝箱＋レア度
+function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it).map(bonusText).join(' / ');
+  if(d.kind==='gear'){ const sk=SKILLS[it.skillId]; return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${equipName(it)}<div class="drop-bonus" style="color:var(--sub);">${it.slot}・${sk?sk.emoji+sk.name:it.skillId}</div>${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
   return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.base}　＋全コア${r.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
 
 function showHome(){ gameState='home'; renderHome(); showScreen('home'); setTopbar(''); }
 function renderHome(){ const cards=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id);
-    const dots=(accEquip[d.id]||[null,null]).map(id=>{ const a=id!=null?accById(id):null; return a?`<span class="acc-dot" style="background:${ACC_RARITY[a.rarity].col};"></span>`:`<span class="acc-dot empty"></span>`; }).join('');
+    const dots=(accEquip[d.id]||[null,null]).map(id=>{ const a=id!=null?accById(id):null; return a?`<span class="acc-dot" style="background:${RARITY[a.rarity].col};"></span>`:`<span class="acc-dot empty"></span>`; }).join('');
     return `<div class="home-card"><div class="hc-emoji">${d.emoji}</div><div class="hc-name">${d.name}</div><div class="hc-role">${d.role}</div><div class="hc-dots">${dots}</div><div class="hc-pct">全コア +${pct}%</div></div>`; }).join('');
   document.getElementById('homeBody').innerHTML=`
     <h2 class="scr-ttl">🏠 ホーム</h2>
@@ -1141,23 +1149,23 @@ function renderEquip(){ const g=document.getElementById('accBody');
   const cid=equipCid, d=ALLY_DEFS.find(a=>a.id===cid), accm=1+accPctFor(cid)/100;
   const eStr=Math.round(d.str*accm)+accFlat(cid,'str'), eInt=Math.round(d.int*accm)+accFlat(cid,'int'), eDef=Math.round(d.def*accm)+accFlat(cid,'def'), eHp=Math.round(d.hpMax*accm)+accFlat(cid,'hp');
   const gslots=GEAR_SLOTS.map(slot=>{ const gid=gearEquip[cid][slot], gear=gid!=null?gearById(gid):null, sid=slotSkill(cid,slot), sk=SKILLS[sid], sel=equipSel&&equipSel.kind==='gear'&&equipSel.slot===slot;
-    const rc=gear?ACC_RARITY[gear.rarity].col:'var(--sub)', bx=gear?accBonuses(gear).map(bonusText).join('・'):'';
-    return `<button class="gslot${sel?' sel':''}" onclick="selectEquipSlot('gear','${slot}')"><span class="gs-slot">${slot}</span><span class="gs-skill">${sk?sk.emoji+sk.name:sid}</span><span class="gs-tag" style="color:${rc};">${gear?ACC_RARITY[gear.rarity].jp:'きほん'}</span>${bx?`<span class="gs-b">${bx}</span>`:''}</button>`; }).join('');
+    const rc=gear?RARITY[gear.rarity].col:'var(--sub)', bx=gear?accBonuses(gear).map(bonusText).join('・'):'';
+    return `<button class="gslot${sel?' sel':''}" onclick="selectEquipSlot('gear','${slot}')"><span class="gs-slot">${slot}</span><span class="gs-tag" style="color:${rc};">${gear?'［'+RARITY[gear.rarity].jp+'］'+equipName(gear):'きほん'}</span><span class="gs-skill">${sk?sk.emoji+sk.name:sid}</span>${bx?`<span class="gs-b">${bx}</span>`:''}</button>`; }).join('');
   const aslots=(accEquip[cid]||[null,null]).map((id,si)=>{ const a=id!=null?accById(id):null, sel=equipSel&&equipSel.kind==='acc'&&equipSel.slot===si, bx=a?accBonuses(a).map(bonusText).join('・'):'';
-    const inner=a?`<span class="aslot-r" style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</span><span class="aslot-n">${a.base} +全コア${ACC_RARITY[a.rarity].pct}%</span>${bx?`<span class="aslot-b">${bx}</span>`:''}`:`<span class="aslot-empty">＋ 空き</span>`;
+    const inner=a?`<span class="aslot-r" style="color:${RARITY[a.rarity].col};">${RARITY[a.rarity].jp}</span><span class="aslot-n">${a.base} +全コア${RARITY[a.rarity].pct}%</span>${bx?`<span class="aslot-b">${bx}</span>`:''}`:`<span class="aslot-empty">＋ 空き</span>`;
     return `<button class="aslot${sel?' sel':''}" onclick="selectEquipSlot('acc',${si})">${inner}</button>`; }).join('');
   let invHtml;
   if(!equipSel){ invHtml=`<div class="acc-hint">枠をえらんでから、下のもちものをタップ</div>`; }
-  else if(equipSel.kind==='gear'){ const role=ROLE_OF[cid], slot=equipSel.slot;
+  else if(equipSel.kind==='gear'){ const slot=equipSel.slot;   // ★役割ロックなし=同スロットの装備は誰でも装備可
     const eq=new Set(); Object.values(gearEquip).forEach(o=>GEAR_SLOTS.forEach(s=>{ if(o[s]!=null)eq.add(o[s]); }));
-    const list=gearInv.filter(x=>x.role===role&&x.slot===slot&&!eq.has(x.id));
+    const list=gearInv.filter(x=>x.slot===slot&&!eq.has(x.id));
     const rm=gearEquip[cid][slot]!=null?`<button class="acc-chip remove" onclick="unequipSel()">✕ きほんに戻す</button>`:'';
-    const chips=list.length?list.map(x=>{ const sk=SKILLS[x.skillId], bx=accBonuses(x).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${ACC_RARITY[x.rarity].col};" onclick="equipItem(${x.id})"><b style="color:${ACC_RARITY[x.rarity].col};">${ACC_RARITY[x.rarity].jp}</b> ${sk?sk.emoji+sk.name:x.skillId}${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">この枠の装備がまだ無いよ</div>`;
+    const chips=list.length?list.map(x=>{ const sk=SKILLS[x.skillId], bx=accBonuses(x).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${RARITY[x.rarity].col};" onclick="equipItem(${x.id})"><b style="color:${RARITY[x.rarity].col};">${RARITY[x.rarity].jp}</b> ${equipName(x)} <span style="color:var(--sub);">${sk?sk.emoji+sk.name:x.skillId}</span>${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">この枠の装備がまだ無いよ</div>`;
     invHtml=`<div class="acc-inv">${rm}${chips}</div>`;
   } else { const eq=new Set(); Object.values(accEquip).forEach(arr=>arr.forEach(id=>{ if(id!=null)eq.add(id); }));
     const list=accInv.filter(a=>!eq.has(a.id));
     const rm=accEquip[cid][equipSel.slot]!=null?`<button class="acc-chip remove" onclick="unequipSel()">✕ はずす</button>`:'';
-    const chips=list.length?list.map(a=>{ const bx=accBonuses(a).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${ACC_RARITY[a.rarity].col};" onclick="equipItem(${a.id})"><b style="color:${ACC_RARITY[a.rarity].col};">${ACC_RARITY[a.rarity].jp}</b> ${a.base} +全コア${ACC_RARITY[a.rarity].pct}%${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">あいてる装飾品がありません</div>`;
+    const chips=list.length?list.map(a=>{ const bx=accBonuses(a).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${RARITY[a.rarity].col};" onclick="equipItem(${a.id})"><b style="color:${RARITY[a.rarity].col};">${RARITY[a.rarity].jp}</b> ${a.base} +全コア${RARITY[a.rarity].pct}%${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">あいてる装飾品がありません</div>`;
     invHtml=`<div class="acc-inv">${rm}${chips}</div>`; }
   g.innerHTML=`<h2 class="scr-ttl">${d.emoji} ${d.name}<span style="font-size:13px;color:var(--sub);"> ${d.role}</span></h2>
     <div class="estat">ちから ${eStr}／かしこさ ${eInt}／まもり ${eDef}／HP ${eHp}　異常耐性 ${Math.round(accResistFor(cid)*100)}%</div>
