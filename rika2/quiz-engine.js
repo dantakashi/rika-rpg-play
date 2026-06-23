@@ -163,6 +163,24 @@ const QUESTIONS = [
   { s:'earth', type:'choice', q:"地球のまわりを公転し、満ち欠けして見える天体はどれか。", choices:["太陽","月","北極星","火星"], answer:1, desc:"月は地球のまわりを公転する衛星で、太陽の光を反射し、位置関係によって満ち欠けして見えます。" },
   { s:'earth', type:'choice', q:"花こう岩の特徴として正しいものはどれか。", choices:["深成岩で等粒状組織をもつ","火山岩で斑状組織をもつ","堆積岩で化石を多く含む","火山灰が固まった岩石である"], answer:0, desc:"花こう岩は地下深くでゆっくり冷えてできた深成岩で、等粒状組織をもちます。" },
   { s:'earth', type:'choice', q:"冬の日本付近に強く影響する、冷たく乾いた気団はどれか。", choices:["シベリア気団","小笠原気団","オホーツク海気団","赤道気団"], answer:0, desc:"シベリア気団は冷たく乾いた大陸性の気団で、冬の日本の季節風に大きく関係します。" },
+
+  /* ===== ★カフート式の答え方デモ問題(answerType付き)=真偽/並べ替え/画像タッチ。type:'choice'のままなので drawQuestion を通り通常戦闘でも出る。 ===== */
+  // ── 真偽(○✕) answerType:'truefalse'・answer は true(○正しい)/false(✕まちがい)。choices不要 ──
+  { s:'biology',   type:'choice', answerType:'truefalse', q:"クジラは魚類である。", answer:false, desc:"クジラは肺で呼吸し、子を乳で育てる哺乳類です。水中でくらしますが魚類ではありません。" },
+  { s:'physics',   type:'choice', answerType:'truefalse', q:"音は真空中では伝わらない。", answer:true,  desc:"音は空気や水などの物質の振動として伝わります。物質のない真空中では音は伝わりません。" },
+  { s:'chemistry', type:'choice', answerType:'truefalse', q:"二酸化炭素を通すと石灰水は白くにごる。", answer:true,  desc:"石灰水に二酸化炭素を通すと炭酸カルシウムができ、白くにごります。二酸化炭素の確認に使う反応です。" },
+  { s:'earth',     type:'choice', answerType:'truefalse', q:"マグニチュードは、ある地点でのゆれの強さを表す。", answer:false, desc:"ある地点でのゆれの強さは「震度」。マグニチュードは地震そのものの規模を表します。" },
+  // ── 並べ替え(順序) answerType:'order'・items は『正しい順』に書く(表示はシャッフルされる)。choices/answer不要 ──
+  { s:'chemistry', type:'choice', answerType:'order', q:"温度が低い順にならべよう（水のすがた）", items:["氷（固体）","水（液体）","水蒸気（気体）"], desc:"温度が上がると固体→液体→気体と変化します。氷がとけて水に、さらにあたためると水蒸気になります。" },
+  { s:'earth',     type:'choice', answerType:'order', q:"太陽に近い順にならべよう（惑星）", items:["水星","金星","地球","火星"], desc:"太陽に近い順に 水星・金星・地球・火星… と並びます。『すい・きん・ち・か…』と覚えます。" },
+  { s:'biology',   type:'choice', answerType:'order', q:"花から実ができるまでの順にならべよう", items:["受粉する","受精する","種子ができる","果実ができる"], desc:"めしべに花粉がつき(受粉)→精細胞と卵細胞が合体(受精)→胚珠が種子に→子房が果実になります。" },
+  // ── 画像タッチ(正しい領域) answerType:'imageTap'・scene=図のキー(SCENES) か img=画像URL／regions=タッチ範囲[%]／answer=正解index ──
+  { s:'biology', type:'choice', answerType:'imageTap', q:"光合成をさかんに行う部分をタッチしよう", scene:'plant',
+    regions:[{label:'花',x:34,y:3,w:32,h:22},{label:'葉',x:12,y:44,w:36,h:22},{label:'茎',x:44,y:24,w:12,h:16},{label:'根',x:30,y:68,w:40,h:24}], answer:1,
+    desc:"光合成は、緑色の葉にある葉緑体でさかんに行われます。葉が日光を受けてデンプンなどをつくります。" },
+  { s:'biology', type:'choice', answerType:'imageTap', q:"遺伝の情報（染色体）が入っている部分をタッチしよう", scene:'cell',
+    regions:[{label:'核',x:37,y:34,w:26,h:30},{label:'葉緑体',x:14,y:20,w:20,h:18},{label:'細胞壁',x:6,y:4,w:88,h:12},{label:'液胞',x:62,y:52,w:30,h:34}], answer:0,
+    desc:"核の中には染色体(DNA)があり、遺伝に関係する情報をふくみます。酢酸カーミンなどの染色液で赤く染まります。" },
 ];
 // ★タイピング問題は廃止(テンポが悪い／全角半角の誤りが理不尽・聖典記載の方針)＝化学式タイピングを4択に自動変換(内容は残す)。
 (function(){ const typ=QUESTIONS.filter(q=>q.type==='typing'); const all=[...new Set(typ.map(q=>q.answer))]; const isIon=a=>/[+\-]/.test(a);
@@ -176,32 +194,108 @@ function drawQuestion(subjects){ const cand=QUESTIONS.filter(q=>q.type!=='typing
 
 const TILE=[{c:'#e0413e',s:'▲'},{c:'#1368ce',s:'◆'},{c:'#d89e00',s:'●'},{c:'#26890c',s:'■'}];
 function shuffleOrder(n){ const a=[]; for(let i=0;i<n;i++)a.push(i); for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }   // 選択肢の表示順シャッフル(Fisher-Yates)
-function answerLabel(q){ return q.type==='choice'?q.choices[q.answer]:q.answer; }
+// 正解の表示名(誤答時の「正解は…」に使う)＝答え方ごとに作る
+function answerLabel(q){ switch(q.answerType){
+  case 'truefalse': return q.answer?'○（正しい）':'✕（まちがい）';
+  case 'order':     return q.items.join(' → ');
+  case 'imageTap':  return q.regions[q.answer].label;
+  default:          return q.type==='choice'?q.choices[q.answer]:q.answer; } }
+
+/* ===== カフート式の答え方ごとのCSS＝契約どおり quiz-engine から<style>注入(色は demo.html の :root を流用) ===== */
+const QUIZ_CSS = `
+  .tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .tf-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:22px 12px;border-radius:14px;border:3px solid transparent;font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 2px #0007;}
+  .tf-btn .tf-mark{font-size:42px;line-height:1;} .tf-o{background:#1f8f4e;} .tf-x{background:#c0392b;}
+  .tf-btn:active{transform:scale(.97);} .tf-btn.ok{border-color:#fff;box-shadow:0 0 0 3px var(--good,#34d399);} .tf-btn.ng{opacity:.4;}
+  .ord-slots{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:11px;}
+  .ord-slot{min-width:96px;flex:1 1 96px;max-width:170px;min-height:50px;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:12px;border:2px dashed var(--line,#2a3550);color:var(--ink,#e8eefc);font-weight:700;font-size:15px;background:#0c1220;}
+  .ord-slot .num{font-size:12px;color:var(--gold,#f7d579);font-weight:800;}
+  .ord-slot.filled{border-style:solid;border-color:var(--gold-d,#dca22f);cursor:pointer;}
+  .ord-slot.ok{border-color:#fff;box-shadow:0 0 0 2px var(--good,#34d399);} .ord-slot.ng{border-color:var(--bad,#ef4444);box-shadow:0 0 0 2px var(--bad,#ef4444);}
+  .ord-bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .ord-chip{padding:12px 15px;border-radius:11px;background:#1368ce;color:#fff;font-weight:700;font-size:15px;border:none;text-shadow:0 1px 2px #0007;}
+  .ord-chip:active{transform:scale(.97);} .ord-chip.used{opacity:.22;pointer-events:none;}
+  .ord-go{width:100%;margin-top:12px;padding:13px;border-radius:11px;background:linear-gradient(180deg,#f7d579,#dca22f);color:#3a230a;border:none;border-bottom:3px solid var(--gold-d,#b9831f);font-size:16px;font-weight:800;}
+  .ord-go:disabled{filter:grayscale(.7);opacity:.5;}
+  .imgtap-wrap{position:relative;width:100%;max-width:360px;margin:0 auto;}
+  .imgtap-wrap svg,.imgtap-wrap img{width:100%;height:auto;display:block;border-radius:12px;}
+  .imgtap-hot{position:absolute;border:2px solid #ffffff4d;border-radius:10px;background:#ffffff12;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;color:#fff;font-size:12px;font-weight:800;text-shadow:0 1px 3px #000;}
+  .imgtap-hot:active{transform:scale(.97);} .imgtap-hot.ok{border-color:#fff;background:rgba(52,211,153,.35);box-shadow:0 0 0 2px var(--good,#34d399);} .imgtap-hot.ng{border-color:var(--bad,#ef4444);background:rgba(239,68,68,.32);}
+  .imgtap-hint{text-align:center;color:var(--sub,#9fb0d0);font-size:13px;margin-top:6px;}`;
+// 画像タッチ用の仮の図(SVG)。本番は問題の img:'URL' で実画像に差し替える(regionsはそのまま使える)。
+const SCENES = {
+  plant:`<svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="170" rx="12" fill="#0e1830"/><rect y="120" width="200" height="50" fill="#3a2a16"/><rect x="96" y="36" width="8" height="84" rx="4" fill="#2f9e44"/><ellipse cx="68" cy="92" rx="26" ry="12" fill="#37b24d" transform="rotate(-20 68 92)"/><ellipse cx="132" cy="92" rx="26" ry="12" fill="#37b24d" transform="rotate(20 132 92)"/><circle cx="100" cy="14" r="9" fill="#ff8787"/><circle cx="86" cy="24" r="9" fill="#ff8787"/><circle cx="114" cy="24" r="9" fill="#ff8787"/><circle cx="92" cy="36" r="9" fill="#ff8787"/><circle cx="108" cy="36" r="9" fill="#ff8787"/><circle cx="100" cy="26" r="8" fill="#ffd43b"/><path d="M100 120 L78 152 M100 120 L100 158 M100 120 L122 152" stroke="#8a5a2b" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  cell:`<svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="170" rx="12" fill="#0e1830"/><rect x="10" y="10" width="180" height="150" rx="22" fill="#173a1f" stroke="#3aa657" stroke-width="6"/><rect x="20" y="20" width="160" height="130" rx="16" fill="#10402a" stroke="#2f9e44" stroke-width="2"/><circle cx="150" cy="116" r="30" fill="#1c6fb5" opacity="0.55"/><ellipse cx="42" cy="48" rx="13" ry="8" fill="#51cf66" transform="rotate(-25 42 48)"/><ellipse cx="58" cy="118" rx="13" ry="8" fill="#51cf66" transform="rotate(15 58 118)"/><circle cx="100" cy="84" r="26" fill="#9775fa"/><circle cx="100" cy="84" r="9" fill="#5f3dc4"/></svg>`
+};
 
 /* ===== 問題エンジン(Quiz)＝戦闘から分離。combat も 練習/復習/実力測定 も同じ窓口 Quiz.ask を呼ぶ(戦闘を知らない) ===== */
 // Quiz.ask({ subjects:[出題範囲], ctxFn?:()=>文脈html, ctx?:文脈html, onResult:(correct)=>{}, onContinue:()=>{} })
-// 正誤の判定・表示・解説(無罰)は Quiz が持つ。呼び出し側は『範囲を渡し、正誤を受け取る』だけ。
-const Quiz = { _onResult:null, _onContinue:null,
+// 正誤の判定・表示・解説(無罰)は Quiz が持つ。呼び出し側は『範囲を渡し、正誤を受け取る』だけ。答え方(answerType)が増えても接点は不変。
+const Quiz = { _onResult:null, _onContinue:null, _styled:false, _order:null,
   ask(opts){ Quiz._onResult=opts.onResult||null; Quiz._onContinue=opts.onContinue||null; answered=false;
     curQ=drawQuestion(opts.subjects||['chemistry']); Quiz._render(opts.ctxFn?opts.ctxFn(curQ):(opts.ctx||'')); },   // ctxFnには出題された問題を渡す(ゲーム側はcurQグローバルを読まなくてよい)
-  _render(ctxHtml){ const q=curQ, subj=SUBJECTS[q.s];
+  _ensureStyles(){ if(Quiz._styled)return; Quiz._styled=true; const s=document.createElement('style'); s.id='quizEngineStyles'; s.textContent=QUIZ_CSS; document.head.appendChild(s); },
+  _render(ctxHtml){ Quiz._ensureStyles(); const q=curQ, subj=SUBJECTS[q.s];
     document.getElementById('qctx').innerHTML=ctxHtml;
     document.getElementById('qq').textContent=q.q;
-    document.getElementById('qimg').innerHTML=`<div style="text-align:center;"><div style="font-size:62px;line-height:1;">${subj.emoji}</div><div style="font-size:13px;color:${subj.color};margin-top:8px;font-weight:700;">${subj.jp}</div></div>`;
     document.getElementById('qfeed').innerHTML='';
-    const order=shuffleOrder(q.choices.length);   // ★表示順シャッフル(data-iは元index＝判定は正しい)
-    document.getElementById('qans').innerHTML=`<div class="tiles">`+order.map((oi,pos)=>{ const t=TILE[pos%4];
-      return `<button class="tile" data-i="${oi}" style="background:${t.c};" onclick="quizPick(${oi})"><span class="shape">${t.s}</span>${q.choices[oi]}</button>`; }).join('')+`</div>`;
+    (Quiz._renderers[q.answerType]||Quiz._renderers.choice)(q,subj);   // ★answerTypeで答え方UIを分岐(#qans/#qimgを作る)
     document.getElementById('qOverlay').classList.add('show'); },
+  _subjImg(subj){ return `<div style="text-align:center;"><div style="font-size:62px;line-height:1;">${subj.emoji}</div><div style="font-size:13px;color:${subj.color};margin-top:8px;font-weight:700;">${subj.jp}</div></div>`; },
+  _renderers:{
+    // 4択(既定)＝4色タイル。表示順シャッフル(data-iは元index＝判定は正しい)
+    choice(q,subj){ document.getElementById('qimg').innerHTML=Quiz._subjImg(subj);
+      const order=shuffleOrder(q.choices.length);
+      document.getElementById('qans').innerHTML=`<div class="tiles">`+order.map((oi,pos)=>{ const t=TILE[pos%4];
+        return `<button class="tile" data-i="${oi}" style="background:${t.c};" onclick="quizPick(${oi})"><span class="shape">${t.s}</span>${q.choices[oi]}</button>`; }).join('')+`</div>`; },
+    // 真偽(○✕)＝2つの大ボタン
+    truefalse(q,subj){ document.getElementById('qimg').innerHTML=Quiz._subjImg(subj);
+      document.getElementById('qans').innerHTML=`<div class="tf-grid"><button class="tf-btn tf-o" data-v="1" onclick="quizTF(true)"><span class="tf-mark">○</span>正しい</button><button class="tf-btn tf-x" data-v="0" onclick="quizTF(false)"><span class="tf-mark">✕</span>まちがい</button></div>`; },
+    // 並べ替え(順序)＝枠(slot)＋ばらの札(bank)。札をタップで次の枠へ／枠タップで戻す／全部うまったら「けってい」
+    order(q,subj){ document.getElementById('qimg').innerHTML=Quiz._subjImg(subj);
+      Quiz._order={ items:q.items, display:shuffleOrder(q.items.length), placed:[] }; Quiz._orderDraw(); },
+    // 画像タッチ(正しい領域)＝図(scene/img)の上に%でホットスポットを重ねる
+    imageTap(q,subj){ const scene = q.img ? `<img src="${q.img}" alt="">` : (SCENES[q.scene]||'');
+      document.getElementById('qimg').innerHTML=`<div class="imgtap-wrap">${scene}`+
+        q.regions.map((r,i)=>`<button class="imgtap-hot" data-i="${i}" style="left:${r.x}%;top:${r.y}%;width:${r.w}%;height:${r.h}%;" onclick="quizImgTap(${i})"><span>${r.label||''}</span></button>`).join('')+`</div>`;
+      document.getElementById('qans').innerHTML=`<div class="imgtap-hint">図の中をタッチして答えてね</div>`; }
+  },
+  _orderDraw(){ const st=Quiz._order, n=st.items.length;
+    const slots=`<div class="ord-slots">`+Array.from({length:n},(_,pos)=>{ const r=st.placed[pos];
+      return r==null ? `<div class="ord-slot"><span class="num">${pos+1}</span>?</div>`
+                     : `<div class="ord-slot filled" onclick="quizOrderRemove(${pos})"><span class="num">${pos+1}</span>${st.items[r]}</div>`; }).join('')+`</div>`;
+    const bank=`<div class="ord-bank">`+st.display.map(r=>`<button class="ord-chip${st.placed.includes(r)?' used':''}" onclick="quizOrderPick(${r})">${st.items[r]}</button>`).join('')+`</div>`;
+    const full=st.placed.length===n;
+    document.getElementById('qans').innerHTML=slots+bank+`<button class="ord-go" ${full?'':'disabled'} onclick="quizOrderCommit()">けってい ▶</button>`; },
+  // ── 各答え方の確定処理。正誤を出し、答えエリアに○✕の色を出してから _settle ──
   _pick(i){ if(answered)return; answered=true; const q=curQ;
     document.querySelectorAll('.tile').forEach(b=>{ const bi=+b.dataset.i; if(bi===q.answer)b.classList.add('ok'); else b.classList.add('ng'); b.disabled=true; });
-    setTimeout(()=>Quiz._resolve(i===q.answer),460); },
+    Quiz._settle(i===q.answer); },
+  _tf(v){ if(answered)return; answered=true; const q=curQ;
+    document.querySelectorAll('.tf-btn').forEach(b=>{ const bv=b.dataset.v==='1'; if(bv===q.answer)b.classList.add('ok'); else if(bv===v)b.classList.add('ng'); b.disabled=true; });
+    Quiz._settle(v===q.answer); },
+  _orderPick(r){ if(answered)return; const st=Quiz._order; if(!st||st.placed.includes(r))return; st.placed.push(r); Quiz._orderDraw(); },
+  _orderRemove(pos){ if(answered)return; const st=Quiz._order; if(!st)return; st.placed.splice(pos,1); Quiz._orderDraw(); },
+  _orderCommit(){ if(answered)return; const st=Quiz._order, n=st.items.length; if(st.placed.length<n)return; answered=true;
+    const correct=st.placed.every((r,pos)=>r===pos);
+    document.getElementById('qans').innerHTML=`<div class="ord-slots">`+Array.from({length:n},(_,pos)=>{ const r=st.placed[pos];
+      return `<div class="ord-slot filled ${r===pos?'ok':'ng'}"><span class="num">${pos+1}</span>${st.items[r]}</div>`; }).join('')+`</div>`;
+    Quiz._settle(correct); },
+  _imgTap(i){ if(answered)return; answered=true; const q=curQ;
+    document.querySelectorAll('.imgtap-hot').forEach(b=>{ const bi=+b.dataset.i; if(bi===q.answer)b.classList.add('ok'); else if(bi===i)b.classList.add('ng'); b.disabled=true; });
+    Quiz._settle(i===q.answer); },
+  _settle(correct){ setTimeout(()=>Quiz._resolve(correct),500); },   // 色を見せてから結果へ(全答え方共通)
   _resolve(correct){ if(correct){ hideOverlay(); if(Quiz._onResult)Quiz._onResult(true); }   // 正解=即・呼び出し側へ
     else { if(Quiz._onResult)Quiz._onResult(false);   // 誤答=先に結果(combatはcharge-等)→解説表示(無罰)
-      document.querySelectorAll('.tile').forEach(b=>b.disabled=true);
+      document.querySelectorAll('.tile,.tf-btn,.ord-chip,.ord-go,.imgtap-hot').forEach(b=>b.disabled=true);
       document.getElementById('qfeed').innerHTML=`<div class="wrongttl">おしい！ 正解は「${answerLabel(curQ)}」</div><div class="desc">💡 ${curQ.desc}</div><button class="next" onclick="Quiz._continue()">つぎへ ▶</button>`;
       document.getElementById('qctx').innerHTML='まちがえても大丈夫。HPは減りません。'; } },
   _continue(){ if(Quiz._onContinue)Quiz._onContinue(); } };
 function quizPick(i){ Quiz._pick(i); }
 function answerChoice(i){ Quiz._pick(i); }   // 旧名alias(互換)
+function quizTF(v){ Quiz._tf(v); }
+function quizOrderPick(r){ Quiz._orderPick(r); }
+function quizOrderRemove(pos){ Quiz._orderRemove(pos); }
+function quizOrderCommit(){ Quiz._orderCommit(); }
+function quizImgTap(i){ Quiz._imgTap(i); }
 function hideOverlay(){ document.getElementById('qOverlay').classList.remove('show'); }

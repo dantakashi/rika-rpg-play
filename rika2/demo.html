@@ -349,6 +349,22 @@
   .gcard .eq{position:absolute;top:5px;right:5px;width:19px;height:19px;border-radius:6px;background:var(--gold);color:#3a230a;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;z-index:2;}
   .gcard .slotpip{position:absolute;top:4px;left:6px;font-size:11px;z-index:2;opacity:.85;}
   .inv-empty{grid-column:1/-1;text-align:center;color:var(--sub);font-size:13px;padding:26px 0;}
+  /* 売却モード */
+  .inv-head-r{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .gold{display:inline-flex;align-items:center;gap:3px;font-size:13px;color:var(--gold);font-weight:800;background:rgba(244,201,93,.1);border:1px solid rgba(244,201,93,.4);padding:4px 11px;border-radius:30px;white-space:nowrap;}
+  .chip.selltgl.on{background:#3a1c1c;border-color:#b91c1c;color:#fca5a5;}
+  .sell-hint{font-size:12px;color:var(--sub);background:rgba(244,201,93,.06);border:1px dashed rgba(244,201,93,.35);border-radius:9px;padding:7px 11px;margin:8px 0 0;line-height:1.5;}
+  .sell-hint b{color:var(--gold);}
+  .gcard.locked{opacity:.5;filter:grayscale(.55);}
+  .gcard.sel{box-shadow:0 0 0 2px var(--good);}
+  .gcard .sellchk{position:absolute;top:5px;right:5px;width:19px;height:19px;border-radius:6px;background:var(--good);color:#06281c;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .gcard .eq.lock{background:#0c1220;border:1px solid var(--line);color:var(--sub);}
+  .gcard .gm.sellg{color:var(--gold);}
+  .sellbar{display:flex;align-items:center;gap:8px;margin:10px 0 2px;flex-wrap:wrap;}
+  .sell-go{flex:1;min-width:170px;padding:12px;border-radius:11px;border:0;border-bottom:3px solid var(--gold-d);background:linear-gradient(180deg,#f7d579,#dca22f);color:#3a230a;font-weight:800;font-size:14px;transition:transform .12s var(--bounce);}
+  .sell-go:active{transform:scale(.97);}
+  .sell-go:disabled{opacity:.5;filter:grayscale(.5);background:#2a3450;color:var(--sub);border-bottom-color:var(--line);}
+  .inv-toast{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:6;background:rgba(8,12,24,.94);border:1px solid var(--gold);color:var(--gold);font-size:13px;font-weight:800;padding:8px 18px;border-radius:20px;box-shadow:0 6px 20px #0008;}
   /* ===== 装備詳細ドロワー(右からスライド・#app内に収める) ===== */
   .drawer-scrim{position:absolute;inset:0;background:rgba(4,7,14,.62);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s;}
   .drawer-scrim.open{opacity:1;pointer-events:auto;}
@@ -1030,8 +1046,8 @@ function toggleTuner(show){ const t=document.getElementById('tuner'); if(t) t.cl
 
 /* ===================== §M 体験版の進行（タイトル/マップ/クリア） ===================== */
 const SAVE_KEY='rika2_demo_v1';
-let progress={ unlocked:0, cleared:[], lead:0 };   // unlocked=解放済みの最大ステージidx / cleared=クリア済みidx配列 / lead=ホームの看板キャラidx(覚える)
-function loadProgress(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s.unlocked==='number'){ progress={ unlocked:s.unlocked, cleared:s.cleared||[], lead:s.lead||0 }; } }catch(e){} }
+let progress={ unlocked:0, cleared:[], lead:0, gold:0 };   // unlocked=解放済みの最大ステージidx / cleared=クリア済みidx配列 / lead=ホームの看板キャラidx(覚える) / gold=ゴールド(聖典の通貨・売却/ショップ用)
+function loadProgress(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s.unlocked==='number'){ progress={ unlocked:s.unlocked, cleared:s.cleared||[], lead:s.lead||0, gold:s.gold||0 }; } }catch(e){} }
 function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); }catch(e){} }
 function isCleared(i){ return progress.cleared.indexOf(i)>=0; }
 
@@ -1148,7 +1164,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
     <div class="nh">
       <div class="nh-top">
         <div class="nh-prof"><div class="av">🧑‍🔬</div><div><div class="nm">きみ</div><div class="lv">とっぱ ${cleared}/${STAGES.length}</div></div></div>
-        <div class="nh-loot">🎁 おたから ${loot}</div>
+        <div class="nh-loot">💰 ${fmtGold(progress.gold)}　🎁 ${loot}</div>
       </div>
       <div class="nh-mid">
         <div class="nh-char"><div class="glow"></div><div class="emo">${lead.emoji}</div></div>
@@ -1235,6 +1251,13 @@ function accPoolCard(a,cid,si){ const rc=RARITY[a.rarity].col;
      ボーナスは bonusText(未知tでも"t+v")で描画。アイコンは枠＝後で<img>差込(本番アート)。問題エンジンには無干渉。 */
 const SLOT_PIP={ '武器':'🗡', '頭':'🎩', '胴':'🥋', '足':'👢' };
 let invFilter={ tab:'gear', slot:'all', rarity:'all' };
+let invMode='view';            // 'view'(見る)｜'sell'(売る)
+let invSellSel=new Set();      // 売却に選んだアイテム('g'+id / 'a'+id)
+const SELL_VALUE={ C:10, R:60, SR:200, SSR:600, UR:1500, LR:4000 };   // ★売却額(仮・レア度依存・聖典のゴールド経済)。装備/装飾品 共通表。
+function sellValue(it){ return (it&&SELL_VALUE[it.rarity])||0; }
+function fmtGold(n){ return fmt(n||0); }
+function addGold(n){ progress.gold=(progress.gold||0)+n; saveProgress(); }
+function sellKey(kind,id){ return (kind==='gear'?'g':'a')+id; }
 function rIdx(r){ return RARITY_ORDER.indexOf(r); }
 function allyById(cid){ return ALLY_DEFS.find(a=>a.id===cid); }
 function leadCid(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); return ALLY_DEFS[li].id; }
@@ -1244,10 +1267,28 @@ function previewStats(cid){ const d=allyById(cid), accm=1+accPctFor(cid)/100, bf
   const fin=(key,base)=>Math.round((base+accFlat(cid,key))*accm*(bf[key]||1));
   return { str:fin('str',d.str), int:fin('int',d.int), def:fin('def',d.def), hp:fin('hp',d.hpMax), mp:fin('mp',d.mpMax),
     spd:Math.min(2.2,(d.spd+gearSpd(cid))*(bf.spd||1)), resist:accResistFor(cid) }; }
-function showInventory(){ gameState='inventory'; invFilter={tab:'gear',slot:'all',rarity:'all'}; renderInventory(); showScreen('inventory'); setTopbar(''); }
-function invSetTab(k){ invFilter={tab:k,slot:'all',rarity:'all'}; renderInventory(); }
-function invSetSlot(k){ invFilter.slot=k; renderInventory(); }
-function invSetRarity(k){ invFilter.rarity=k; renderInventory(); }
+function showInventory(){ gameState='inventory'; invFilter={tab:'gear',slot:'all',rarity:'all'}; invMode='view'; invSellSel.clear(); renderInventory(); showScreen('inventory'); setTopbar(''); }
+function invSetTab(k){ invFilter={tab:k,slot:'all',rarity:'all'}; if(k==='item')invMode='view'; invSellSel.clear(); renderInventory(); }   // 売却の選択は絞り込みを変えたらリセット(見えてる物だけ売る=取り違え防止)
+function invSetSlot(k){ invFilter.slot=k; invSellSel.clear(); renderInventory(); }
+function invSetRarity(k){ invFilter.rarity=k; invSellSel.clear(); renderInventory(); }   // ★レア度で絞る→ぜんぶ選ぶ→売る=一括レア度売却の導線
+function invSetMode(m){ invMode=m; invSellSel.clear(); renderInventory(); }
+function invToggleSell(kind,id){ const k=sellKey(kind,id); if(invSellSel.has(k))invSellSel.delete(k); else invSellSel.add(k); renderInventory(); }
+function invSellableList(){   // いま見えている、装備中でない そうび/装飾品(どうぐは売却対象外)
+  const kind=invFilter.tab==='acc'?'acc':'gear';
+  let L=(kind==='acc'?accInv:gearInv).slice();
+  if(kind==='gear'&&invFilter.slot!=='all') L=L.filter(x=>x.slot===invFilter.slot);
+  if(invFilter.rarity!=='all') L=L.filter(x=>x.rarity===invFilter.rarity);
+  return L.filter(x=>(kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id))===null).map(x=>({kind,it:x})); }
+function invSelectAllVisible(){ invSellableList().forEach(o=>invSellSel.add(sellKey(o.kind,o.it.id))); renderInventory(); }
+function invClearSell(){ invSellSel.clear(); renderInventory(); }
+function invSellTotal(){ let g=0,n=0; invSellSel.forEach(k=>{ const kind=k[0]==='a'?'acc':'gear', id=+k.slice(1), it=kind==='gear'?gearById(id):accById(id); if(it){ g+=sellValue(it); n++; } }); return {gold:g,count:n}; }
+function invSellSelected(){ const {gold,count}=invSellTotal(); if(!count)return;
+  if(!confirm(`そうび ${count}個を ${fmtGold(gold)}G で うりますか？\n（もとに もどせません）`)) return;
+  invSellSel.forEach(k=>{ const kind=k[0]==='a'?'acc':'gear', id=+k.slice(1);
+    if(kind==='gear'){ if(gearEquippedBy(id)===null){ const i=gearInv.findIndex(x=>x.id===id); if(i>=0)gearInv.splice(i,1); } }   // ★装備中は売らない(二重ガード)
+    else { if(accEquippedBy(id)===null){ const i=accInv.findIndex(x=>x.id===id); if(i>=0)accInv.splice(i,1); } } });
+  addGold(gold); saveAcc(); invSellSel.clear(); renderInventory(); invToast(`💰 ${count}個 うって ${fmtGold(gold)}G ゲット！`); }
+function invToast(msg){ const g=document.getElementById('invBody'); if(!g)return; const t=document.createElement('div'); t.className='inv-toast'; t.textContent=msg; g.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1800); }
 function renderInventory(){ const g=document.getElementById('invBody'); if(!g)return;
   const total=gearInv.length+accInv.length+(items.hpPotion||0)+(items.mpPotion||0);
   const tab=(k,l,n)=>`<button class="chip" aria-pressed="${invFilter.tab===k}" onclick="invSetTab('${k}')">${l} ${n}</button>`;
@@ -1261,25 +1302,41 @@ function renderInventory(){ const g=document.getElementById('invBody'); if(!g)re
       if(!present.has(k)) return '';
       return `<button class="chip r" style="--rc:${RARITY[k].col};" aria-pressed="${invFilter.rarity===k}" onclick="invSetRarity('${k}')">${RARITY[k].jp}</button>`; };
     rar=`<div class="chips sub">${rb('all')}${RARITY_ORDER.map(rb).join('')}</div>`; }
-  g.innerHTML=`<div class="inv-head"><h2>🎒 もちもの台帳</h2><div class="count">あつめたおたから <b>${total}</b></div></div>
+  let sellBar='';
+  if(invMode==='sell'&&invFilter.tab!=='item'){ const t=invSellTotal();
+    sellBar=`<div class="sellbar"><button class="chip" onclick="invSelectAllVisible()">ぜんぶ選ぶ</button><button class="chip" onclick="invClearSell()">えらび直す</button>`
+      +`<button class="sell-go" ${t.count?'':'disabled'} onclick="invSellSelected()">💰 ${t.count}個を うる（+${fmtGold(t.gold)}G）</button></div>`; }
+  const sellTgl=invFilter.tab!=='item'?`<button class="chip selltgl${invMode==='sell'?' on':''}" onclick="invSetMode('${invMode==='sell'?'view':'sell'}')">${invMode==='sell'?'✕ やめる':'💰 売る'}</button>`:'';
+  g.innerHTML=`<div class="inv-head"><h2>🎒 もちもの台帳</h2><div class="inv-head-r"><span class="gold">💰 <b>${fmtGold(progress.gold)}</b></span>${sellTgl}</div></div>
+    ${invMode==='sell'?`<div class="sell-hint">うりたい そうびを えらんでね。<b>レア度でしぼって「ぜんぶ選ぶ」</b>で 一括も できるよ。<b>装備中は うれません</b>。</div>`:''}
     ${tabs}${sub}${rar}
     <div class="inv-grid">${invCardsHtml()}</div>
+    ${sellBar}
     <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showEquip()">🔮 そうびを組む →</button></div>`; }
 function invCardsHtml(){
   if(invFilter.tab==='item'){ const cards=ITEM_DEFS.filter(it=>(items[it.id]||0)>0).map(it=>
       `<button class="gcard" style="--rc:var(--line);" onclick="openDetail('item','${it.id}')"><div class="thumb" style="background:#0c1326;">${it.emoji}</div><div class="rr" style="color:var(--sub);">×${items[it.id]}</div><div class="gn">${it.name}</div></button>`).join('');
     return cards||`<div class="inv-empty">どうぐが ありません</div>`; }
-  let L=(invFilter.tab==='gear'?gearInv:accInv).slice();
-  if(invFilter.tab==='gear'&&invFilter.slot!=='all') L=L.filter(x=>x.slot===invFilter.slot);
+  const kind=invFilter.tab==='acc'?'acc':'gear';
+  let L=(kind==='acc'?accInv:gearInv).slice();
+  if(kind==='gear'&&invFilter.slot!=='all') L=L.filter(x=>x.slot===invFilter.slot);
   if(invFilter.rarity!=='all') L=L.filter(x=>x.rarity===invFilter.rarity);
-  L.sort((a,b)=>rIdx(b.rarity)-rIdx(a.rarity) || (invFilter.tab==='gear'?GEAR_SLOTS.indexOf(a.slot)-GEAR_SLOTS.indexOf(b.slot):0) || a.id-b.id);
-  if(!L.length){ const filtered=(invFilter.rarity!=='all')||(invFilter.tab==='gear'&&invFilter.slot!=='all');
+  L.sort((a,b)=>rIdx(b.rarity)-rIdx(a.rarity) || (kind==='gear'?GEAR_SLOTS.indexOf(a.slot)-GEAR_SLOTS.indexOf(b.slot):0) || a.id-b.id);
+  if(!L.length){ const filtered=(invFilter.rarity!=='all')||(kind==='gear'&&invFilter.slot!=='all');
     return `<div class="inv-empty">${filtered?'あてはまる アイテムが ないよ':'まだ ないよ。冒険で あつめよう！'}</div>`; }
+  const sell=(invMode==='sell');
   return L.map(x=>{ const rc=RARITY[x.rarity].col;
-    if(invFilter.tab==='gear'){ const sk=SKILLS[x.skillId], wc=gearEquippedBy(x.id), al=wc?allyById(wc):null;
-      return `<button class="gcard${al?' worn':''}" style="--rc:${rc};" onclick="openDetail('gear',${x.id})">${al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:''}<span class="slotpip">${SLOT_PIP[x.slot]||''}</span><div class="thumb">${sk?sk.emoji:'❔'}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${equipName(x)}</div><div class="gm">${mainText(x)}</div></button>`; }
-    const wc=accEquippedBy(x.id), al=wc?allyById(wc):null;
-    return `<button class="gcard${al?' worn':''}" style="--rc:${rc};" onclick="openDetail('acc',${x.id})">${al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:''}<div class="thumb">◆</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${x.base}</div><div class="gm">全コア+${RARITY[x.rarity].pct}%</div></button>`; }).join('');
+    const ico=kind==='gear'?(SKILLS[x.skillId]?SKILLS[x.skillId].emoji:'❔'):'◆';
+    const nm=kind==='gear'?equipName(x):x.base;
+    const gm=kind==='gear'?mainText(x):('全コア+'+RARITY[x.rarity].pct+'%');
+    const pip=kind==='gear'?`<span class="slotpip">${SLOT_PIP[x.slot]||''}</span>`:'';
+    const wc=kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id), al=wc?allyById(wc):null;
+    if(sell){ const seld=invSellSel.has(sellKey(kind,x.id)), locked=!!al;
+      const onclick=locked?`invToast('${al.name}が そうび中。はずすと うれるよ')`:`invToggleSell('${kind}',${x.id})`;
+      const badge=locked?`<span class="eq lock" title="装備中">🔒</span>`:(seld?`<span class="sellchk">✓</span>`:'');
+      return `<button class="gcard${locked?' locked':''}${seld?' sel':''}" style="--rc:${rc};" onclick="${onclick}">${badge}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
+    return `<button class="gcard${al?' worn':''}" style="--rc:${rc};" onclick="openDetail('${kind}',${x.id})">${al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:''}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm">${gm}</div></button>`;
+  }).join('');
 }
 /* ── 装備詳細ドロワー(③・比較つき)＝インベントリ/そうび 両画面で共用 ── */
 let dwKind=null, dwId=null, dwWhom=null, dwAccSlot=null;
