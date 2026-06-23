@@ -6,42 +6,27 @@
 <title>理科RPG2（β）体験版</title>
 <!--
   ============================================================
-   理科RPG2 戦闘リズム試作（ATB「落ち着いて解く」型） v0.10
-   設計: rpg_v3/_docs/RIKA_BATTLE_ATB_DESIGN_2026-06-18.md (§9)
-   スキル設計: rpg_v3/_docs/RIKA2_SKILLS_ROSTER_2026-06-18.md ＋ 追加候補=RIKA2_SKILL_CANDIDATES_2026-06-18.md
-   v0.10 = ATB操作(ディレイ砲/号令/先駆け)＋状態異常シナジー(追い討ち/毒の連鎖)
-   v0.11 = 守りのデバフ・耐性崩し(候補カタログ§4)＋★敵耐性システム:
-     ・威圧(敵の攻撃力DOWN=atkdown・守りのデバフ)/蝕み(弱体ailamp=状態異常が効きやすく長持ち)
-     ・★敵耐性 resist:{type:0..1} を導入(木=毒/岩=眠り氷まひ/オメガ=状態異常全般)。
-       applyAilmentで 持続×(1-耐性)×(弱体中は×1.6)。蝕みで耐性ボスを崩す駆け引き。
-     ・「まず増やす→balance時に取捨選択」方針。数値は仮。不可侵維持。
-   v0.12 = バランス調整(オーナー承認): 毒の連鎖(detonate)の起爆倍率 1.6→0.8
-     (敵の最大HP約95%の実質一撃を是正＝積む3手で約48%maxHPの強コンボに)。
-   v0.9 = スキルレベル＋ヘイト一式(オーナーFB・検証目的=可能性とゲームへの馴染みの確認):
-     ・★スキルレベル(1-3・装備で決まる想定/プロトはtunerで操作): lvAxis で伸び方を指定
-       'power'=効力UP&MP増 / 'dur'=効き時間UP&MP増 / 'eff'=効果そのままMP減 / 無指定=レベルなし。
-       run は L={lv,pow,dur} を受け取る。数値は全て仮(本番でバランス調整・似たスキルは取捨選択)。
-     ・★ヘイト一式: 挑発(狙いを壁に固定)/かばう(単体攻撃を肩代わり・軽減)/とげの鎧(被弾で反射)/
-       気配消し(狙われにくく)。敵の対象選択をヘイトで操作＝壁ガイが主役に。
-   既出: v0.8スキル30実装 / v0.8.1 長押し説明＋確率を濁す
-   v0.8.1 = 説明文の整理＋長押し説明＋確率を濁す(オーナーFB):
-     ・画面の薄い小文字の説明(.dd/.sub)を撤去＝ボタンを すっきり。
-     ・要素(スキル/アイテム/コマンド/状態異常アイコン)を【長押し or 右クリック】→
-       フレーバーテキスト＋実効果を説明モーダルで表示(§12)。
-     ・状態異常の付与確率は敵耐性がある前提で「小確率/中確率/高確率」と濁す
-       (内部の確率値は不変・表示だけ濁す)。
-   v0.8 = スキル30案を全実装＋バランス調整＋レビュー残対応:
-     ・全31スキルを役割に配分(火力アレス/妨害セラ/壁ガイ/回復ミナ)。sleep付与スキルも実装(死にコード解消)。
-     ・状態異常を拡張: 毒/やけど(DoT)・まひ/鈍足(ゲージ速度)・眠り/こおり/時間停止(停止)・
-       防御低下/弱点露呈(被ダメUP)・封印(特殊封じ)・暗闇(命中DOWN)・混乱(行動失敗)
-     ・敵の特殊行動(ボス)＝封印で止める／浄化で味方状態異常を治す（防御スキルに意味を持たせる）
-     ・★MP経済修正(レビュー残): MP回復は「通常攻撃の正解」だけ→低コスト状態異常の永続化を遮断
-     ・バフ持続(加速/集中/魔力増幅/リジェネ)＝実時間tick。誤答で味方HPは減らさない(無罰・不可侵)
-     ・nit対応: defending=次の自手番で解除／updateUIの状態異常アイコンは差分更新／resizeはデバウンス
-   既出: v0.5パーティ基盤 / v0.6複数敵+対象選択+AoE / v0.7状態異常エンジン+DoT+Chromebook最適化
-   §目次 §1設定 §2教科/問題 §3敵/味方/スキル/アイテム/状態異常 §4状態 §5ループ §6コマンド §7対象選択 §8全画面出題 §9敵+状態異常 §10演出 §11描画
+   理科RPG2 体験版（β）＝ demo.html
+   ⚠ これは「使い捨ての試作（β）」。数値(ステ/敵HP/ドロップ率/装備メイン値)・スキル構成・15ステージは
+      全部【仮】。実装と『聖典』が食い違うときは つねに【聖典が正】。
+      demo の数字やスキル並びを“設計の真実”として引用しないこと（過去ドリフトの原因はここ）。
+
+   ── 設計の正典＝聖典（新しい会話は まずここから・この順で）──
+     ① rpg_v3/_docs/RIKA2_FOUNDATION_2026-06-21.docx     戦闘/ステ/装備/ダメージ式/レア度ladder の土台
+     ② rpg_v3/_docs/RIKA2_CONFIRMED_LOG_2026-06-21.docx  オーナー確定事項のログ
+     ③ rpg_v3/_docs/RIKA2_SKILLS_MASTER.json             全295スキル(正規の装備名/stat/range/tier)
+     ＋ rpg_v3/_docs/RIKA2_HACKNSLASH_DESIGN_2026-06-22.docx  ハクスラ化(ループ/報酬/装備ドロップ)の設計
+     索引・読む順・廃止ドキュメント一覧 → rpg_v3/_docs/RIKA2_CANON.md（最初に開く地図）
+     最新の引き継ぎ                    → rpg_v3/_docs/HANDOFF_RIKA2_2026-06-23.md
+
+   ── コードの目次 ──
+   §1設定 §2教科/問題 §3敵/味方/スキル/アイテム/状態異常 §4状態 §5ループ §6コマンド
+   §7対象選択 §8全画面出題 §9敵+状態異常 §10演出 §11描画 §12長押し説明 §M体験版画面(タイトル/ホーム/マップ/クリア)
   ============================================================
 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=M+PLUS+Rounded+1c:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{ --bg1:#0b1020; --panel:#1a2336; --line:#2b3756; --ink:#e8eefc; --sub:#9fb0d6;
     --good:#34d399; --bad:#f87171; --warn:#fbbf24; --charge:#8b5cf6; --mp:#38bdf8; }
@@ -61,6 +46,56 @@
   .debug-box .drow{display:flex; gap:7px; flex-wrap:wrap; justify-content:center;}
   .debug-box button{flex:1 1 auto; min-width:92px; background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:7px 6px; font-size:12px;}
   .debug-box .dver{text-align:center; font-size:10px; color:var(--sub); margin-top:7px;}
+  /* ===== ホーム画面＝拠点(A案:王道RPG・横長Chromebook対応・装備ドロップ主軸 / 2026-06-23) ===== */
+  #screen-home{padding:0;}
+  #homeBody{margin:0; max-width:none; width:100%; align-self:stretch; min-height:100%; display:flex; flex-direction:column; text-align:left;}
+  .nh{--gold:#f4c95d; --gold-d:#b9821f; flex:1; display:flex; flex-direction:column; min-height:100%; padding:12px 15px 13px; position:relative; overflow:hidden; background:radial-gradient(120% 80% at 30% 28%,#1b2a4d 0%,#0c1326 55%,#070a14 100%);}
+  .nh::before{content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(60% 52% at 32% 42%,rgba(244,201,93,.12),transparent 70%);}
+  .nh>*{position:relative; z-index:1;}
+  .nh button{font-family:inherit; cursor:pointer;}
+  .nh-top{display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto;}
+  .nh-prof{display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.05); border:1px solid rgba(160,200,255,.16); padding:4px 12px 4px 4px; border-radius:30px;}
+  .nh-prof .av{width:28px; height:28px; border-radius:50%; background:linear-gradient(150deg,#2a3a5e,#1a2336); display:flex; align-items:center; justify-content:center; font-size:15px; border:1px solid rgba(244,201,93,.4);}
+  .nh-prof .nm{font-size:12px; font-weight:800; color:var(--ink); font-family:'Zen Kaku Gothic New',sans-serif;}
+  .nh-prof .lv{font-size:10px; color:var(--sub);}
+  .nh-loot{display:flex; align-items:center; gap:5px; background:rgba(244,201,93,.1); border:1px solid rgba(244,201,93,.4); color:var(--gold); font-size:13px; font-weight:800; padding:5px 13px; border-radius:30px;}
+  .nh-mid{flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;}
+  .nh-char{flex:0 0 auto; position:relative; display:flex; align-items:center; justify-content:center;}
+  .nh-char .glow{position:absolute; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle,rgba(244,201,93,.3),transparent 66%);}
+  .nh-char .emo{font-size:118px; line-height:1; filter:drop-shadow(0 10px 22px rgba(0,0,0,.55)); animation:nhFloat 3.6s ease-in-out infinite;}
+  @keyframes nhFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .nh-panel{width:100%; max-width:430px; display:flex; flex-direction:column; gap:9px;}
+  .nh-title{text-align:center; font-family:'Reggae One',cursive; font-size:30px; line-height:1; color:#fff; text-shadow:0 2px 12px rgba(244,201,93,.4);}
+  .nh-title span{color:var(--gold);}
+  .nh-title small{display:block; font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700; font-size:9px; letter-spacing:5px; color:var(--gold); margin-top:4px;}
+  .nh-gear{display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:rgba(255,255,255,.05); border:1px solid rgba(160,200,255,.16); border-radius:11px; padding:8px 12px; color:var(--ink); font-size:12px; font-weight:800; font-family:'Zen Kaku Gothic New',sans-serif;}
+  .nh-gear .nh-gslots{display:flex; gap:4px; flex-wrap:wrap;}
+  .nh-gear .nh-gslot{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:rgba(0,0,0,.28); border:1px solid rgba(160,200,255,.22); font-size:15px; line-height:1; overflow:hidden;}   /* ★装備の枠＝あとで<img>に差し替え可 */
+  .nh-gear .nh-gslot img{width:100%; height:100%; object-fit:contain;}
+  .nh-gear .nh-gslot.acc{font-size:12px;}
+  .nh-gear .to{margin-left:auto; color:var(--gold); font-size:11px;}
+  .nh-chg{display:flex; align-items:center; gap:8px; width:100%; background:rgba(255,255,255,.05); border:1px solid rgba(244,201,93,.32); border-radius:11px; padding:6px;}
+  .nh-chg .ar{flex:0 0 auto; width:36px; height:32px; display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--gold); background:rgba(244,201,93,.1); border:0; border-radius:8px;}
+  .nh-chg .who{flex:1; text-align:center; font-size:14px; font-weight:800; color:var(--ink); font-family:'Zen Kaku Gothic New',sans-serif;}
+  .nh-chg .who small{display:block; font-size:10px; color:var(--gold); font-weight:700;}
+  .nh-cta{--bounce:cubic-bezier(.5,1.75,.65,1); display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:15px; border-radius:14px; border:0; border-bottom:4px solid var(--gold-d); background:linear-gradient(180deg,#f7d579,#dca22f); color:#3a230a; font-family:'Reggae One',cursive; font-size:21px; box-shadow:0 6px 22px rgba(244,201,93,.32); transition:transform .14s var(--bounce);}
+  .nh-cta:active{transform:scale(.97) translateY(2px); border-bottom-width:2px;}
+  .nh-subs{display:flex; gap:8px; margin-top:9px; flex:0 0 auto;}
+  .nh-subs button{flex:1; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(160,200,255,.15); border-radius:12px; padding:9px 3px 8px; color:var(--ink); font-size:11px; font-weight:800; font-family:'Zen Kaku Gothic New',sans-serif;}
+  .nh-subs button .e{display:block; font-size:18px; margin-bottom:2px;}
+  .nh-subs button:active{transform:scale(.95);}
+  .nh-subs button.soon{opacity:.5;}
+  /* 横長Chromebook(11.6"): 立ち絵を左に大きく、メニューを右に */
+  @media (min-width:680px){
+    .nh-mid{flex-direction:row; align-items:center; gap:24px; padding:0 12px;}
+    .nh-char{flex:0 0 44%;}
+    .nh-char .emo{font-size:150px;}
+    .nh-char .glow{width:248px; height:248px;}
+    .nh-panel{flex:1; max-width:none;}
+    .nh-title{text-align:left; font-size:34px;}
+    .nh-title small{letter-spacing:6px;}
+  }
+  @media (prefers-reduced-motion:reduce){ .nh-char .emo{animation:none;} .nh-cta{transition:none;} }
 
   .stage{flex:1 1 auto; position:relative; display:flex; flex-direction:column; justify-content:space-between; padding:6px 10px 4px; min-height:0; overflow:hidden;}
   .enemy-row{display:flex; gap:8px; justify-content:center; align-items:flex-end; flex-wrap:wrap; flex:0 0 auto;}
@@ -254,7 +289,13 @@
 
   /* Chromebook 11.6"(1366x768 横長)最適化: 広い画面では拡大して横を使う(生徒の実機)。スマホ縦は従来どおり。 */
   @media (min-width:680px){
-    #app{ max-width:780px; }
+    #app{ max-width:min(1040px,96vw); }
+    /* マップ=横長は複数列グリッド／全画面の中身は広げる */
+    #screen-map .scr-inner{ max-width:none; }
+    .map-list{ grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); }
+    /* 全画面出題=横長で文字が間延びしないよう中身を中央820pxに寄せる */
+    .qoverlay{ padding-left:max(14px,calc((100% - 820px)/2)); padding-right:max(14px,calc((100% - 820px)/2)); }
+    /* タイトル/クリア等のカードは中央寄せのまま(広い背景に置く) */
     .ename{font-size:12px;} .eattr{font-size:11px;} .ail{font-size:11px;}
     .ac-emoji{font-size:23px;} .ac-name{font-size:12px;} .ac-role{font-size:10px;} .ac-mp{font-size:10px;} .ac-bar{height:7px;} .party{gap:8px;} .ac-shield{font-size:11px;}
     .cmd{font-size:16px; padding:14px 6px;} .cmd .ico{font-size:23px;} .cmd .sub{font-size:10px;}
@@ -1049,8 +1090,8 @@ function toggleTuner(show){ const t=document.getElementById('tuner'); if(t) t.cl
 
 /* ===================== §M 体験版の進行（タイトル/マップ/クリア） ===================== */
 const SAVE_KEY='rika2_demo_v1';
-let progress={ unlocked:0, cleared:[] };   // unlocked=解放済みの最大ステージidx / cleared=クリア済みidx配列
-function loadProgress(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s.unlocked==='number'){ progress={ unlocked:s.unlocked, cleared:s.cleared||[] }; } }catch(e){} }
+let progress={ unlocked:0, cleared:[], lead:0 };   // unlocked=解放済みの最大ステージidx / cleared=クリア済みidx配列 / lead=ホームの看板キャラidx(覚える)
+function loadProgress(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s.unlocked==='number'){ progress={ unlocked:s.unlocked, cleared:s.cleared||[], lead:s.lead||0 }; } }catch(e){} }
 function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); }catch(e){} }
 function isCleared(i){ return progress.cleared.indexOf(i)>=0; }
 
@@ -1156,18 +1197,41 @@ function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it
   return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.base}　＋全コア${r.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
 
 function showHome(){ gameState='home'; renderHome(); showScreen('home'); setTopbar(''); }
-function renderHome(){ const cards=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id);
-    const dots=(accEquip[d.id]||[null,null]).map(id=>{ const a=id!=null?accById(id):null; return a?`<span class="acc-dot" style="background:${RARITY[a.rarity].col};"></span>`:`<span class="acc-dot empty"></span>`; }).join('');
-    return `<div class="home-card"><div class="hc-emoji">${d.emoji}</div><div class="hc-name">${d.name}</div><div class="hc-role">${d.role}</div><div class="hc-dots">${dots}</div><div class="hc-pct">全コア +${pct}%</div></div>`; }).join('');
+function homeChangeLead(dir){ progress.lead=((progress.lead||0)+dir+ALLY_DEFS.length)%ALLY_DEFS.length; saveProgress(); renderHome(); }   // ★選んだキャラを覚える(progress.leadに保存)
+function homeEquip(cid){ showEquip(); openCharEquip(cid); }   // 装備→編成(そのキャラの詳細へ直行)
+function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); const lead=ALLY_DEFS[li], cid=lead.id;
+  const cleared=progress.cleared.length, loot=gearInv.length+accInv.length;   // とっぱ数・あつめたおたから(=ドロップ主軸の表現)
+  // ★装備=「枠(.nh-gslot)」で表示＝あとで絵文字→アイコン画像に差し替えられる(中に<img>を入れるだけ)
+  const gicons=GEAR_SLOTS.map(s=>{ const sid=slotSkill(cid,s), sk=sid&&SKILLS[sid]?SKILLS[sid]:null; return `<span class="nh-gslot" title="${s}">${sk?sk.emoji:''}</span>`; }).join('');
+  const aicons=(accEquip[cid]||[null,null]).map(id=>{ const a=id!=null?accById(id):null; return `<span class="nh-gslot acc"${a?` style="border-color:${RARITY[a.rarity].col}"`:''} title="装飾品">${a?'◆':''}</span>`; }).join('');
   document.getElementById('homeBody').innerHTML=`
-    <h2 class="scr-ttl">🏠 ホーム</h2>
-    <div class="home-party">${cards}</div>
-    <div class="home-info">もちもの 装飾品：<b>${accInv.length}</b>こ</div>
-    <div class="scr-btns">
-      <button class="scr-btn primary big" onclick="showMap()">▶ ぼうけんへ</button>
-      <button class="scr-btn" onclick="showEquip()">🔮 そうび（装備・装飾品）</button>
+    <div class="nh">
+      <div class="nh-top">
+        <div class="nh-prof"><div class="av">🧑‍🔬</div><div><div class="nm">きみ</div><div class="lv">とっぱ ${cleared}/${STAGES.length}</div></div></div>
+        <div class="nh-loot">🎁 おたから ${loot}</div>
+      </div>
+      <div class="nh-mid">
+        <div class="nh-char"><div class="glow"></div><div class="emo">${lead.emoji}</div></div>
+        <div class="nh-panel">
+          <div class="nh-title">理科<span>RPG</span>2<small>S C I E N C E　R P G</small></div>
+          <button class="nh-gear" onclick="homeEquip('${cid}')">そうび <span class="nh-gslots">${gicons}${aicons}</span><span class="to">→ 編成</span></button>
+          <div class="nh-chg"><button class="ar" onclick="homeChangeLead(-1)" aria-label="前のキャラ">◀</button><div class="who">${lead.name}<small>${lead.role}</small></div><button class="ar" onclick="homeChangeLead(1)" aria-label="次のキャラ">▶</button></div>
+          <button class="nh-cta" onclick="showMap()">⚔ 冒険に出る</button>
+        </div>
+      </div>
+      <div class="nh-subs">
+        <button class="soon" onclick="homeSoon()"><span class="e">📖</span>ずかん</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">🧪</span>ラボ</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">📊</span>きろく</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">🎯</span>ミッション</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">🛒</span>こうかん</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">⚙</span>せってい</button>
+      </div>
     </div>`;
 }
+function homeSoon(){ const nh=document.querySelector('.nh'); if(!nh)return; const t=document.createElement('div');   // 未実装ボタン=準備中トースト(死にボタンにしない)
+  t.textContent='準備中だよ（もうすぐ！）'; t.style.cssText='position:absolute; left:50%; bottom:70px; transform:translateX(-50%); z-index:5; background:rgba(8,12,24,.92); border:1px solid var(--warn); color:var(--warn); font-size:13px; font-weight:700; padding:7px 16px; border-radius:20px;';
+  nh.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1500); }
 // ★そうび画面: キャラ選択(ハブ)→そのキャラの装備(武器/頭/胴/足)＋装飾品(2)を付け替え。
 let equipCid=null, equipSel=null;   // equipSel={kind:'gear'|'acc', slot}
 function showEquip(){ gameState='equip'; equipCid=null; equipSel=null; renderEquip(); showScreen('accessory'); setTopbar(''); }
