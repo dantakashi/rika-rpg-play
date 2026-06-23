@@ -29,7 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=M+PLUS+Rounded+1c:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{ --bg1:#0b1020; --panel:#1a2336; --line:#2b3756; --ink:#e8eefc; --sub:#9fb0d6;
-    --good:#34d399; --bad:#f87171; --warn:#fbbf24; --charge:#8b5cf6; --mp:#38bdf8; }
+    --good:#34d399; --bad:#f87171; --warn:#fbbf24; --charge:#e6b34d; --mp:#38bdf8; --gold:#f4c95d; --gold-d:#b9821f; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; background:linear-gradient(160deg,var(--bg1),#070a14); color:var(--ink);
     font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; overflow:hidden;}
@@ -80,6 +80,8 @@
   .nh-chg .who small{display:block; font-size:10px; color:var(--gold); font-weight:700;}
   .nh-cta{--bounce:cubic-bezier(.5,1.75,.65,1); display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:15px; border-radius:14px; border:0; border-bottom:4px solid var(--gold-d); background:linear-gradient(180deg,#f7d579,#dca22f); color:#3a230a; font-family:'Reggae One',cursive; font-size:21px; box-shadow:0 6px 22px rgba(244,201,93,.32); transition:transform .14s var(--bounce);}
   .nh-cta:active{transform:scale(.97) translateY(2px); border-bottom-width:2px;}
+  .nh-review{display:flex; align-items:center; justify-content:center; gap:7px; width:100%; padding:10px; border-radius:12px; border:1px solid var(--gold); background:rgba(244,201,93,.1); color:var(--gold); font-size:14px; font-weight:800; font-family:'Zen Kaku Gothic New',sans-serif;}   /* ★復習=大事なのでホームにも(冒険の下に) */
+  .nh-review:active{transform:scale(.97);}
   .nh-subs{display:flex; gap:8px; margin-top:9px; flex:0 0 auto;}
   .nh-subs button{flex:1; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(160,200,255,.15); border-radius:12px; padding:9px 3px 8px; color:var(--ink); font-size:11px; font-weight:800; font-family:'Zen Kaku Gothic New',sans-serif;}
   .nh-subs button .e{display:block; font-size:18px; margin-bottom:2px;}
@@ -127,7 +129,7 @@
   .ally-card.downed{opacity:.42; filter:grayscale(1);}
   .ac-emoji{font-size:18px; line-height:1.1;} .ac-name{font-size:10px; font-weight:700; display:block;} .ac-role{font-size:8px; color:var(--sub); margin-bottom:1px;}
   .ac-bar{height:5px; border-radius:3px; background:#0007; margin-top:2px; overflow:hidden;} .ac-bar i{display:block; height:100%;}
-  .ac-bar.hp i{background:linear-gradient(90deg,#34d399,#10b981);} .ac-bar.mp i{background:linear-gradient(90deg,#7dd3fc,#38bdf8);} .ac-bar.atb i{background:linear-gradient(90deg,#c4b5fd,#8b5cf6);}
+  .ac-bar.hp i{background:linear-gradient(90deg,#34d399,#10b981);} .ac-bar.mp i{background:linear-gradient(90deg,#7dd3fc,#38bdf8);} .ac-bar.atb i{background:linear-gradient(90deg,#ffe39c,#e6b34d);}
   .ac-mp{font-size:8px; color:var(--mp); margin-top:2px;}
   .ac-shield{position:absolute; right:2px; top:1px; font-size:9px; line-height:1; max-width:88%; text-align:right; word-break:break-all;}
   .ac-down{position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:24px;} .ally-card.downed .ac-down{display:flex;}
@@ -138,7 +140,8 @@
   .cmd-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
   .cmd{display:flex; flex-direction:column; align-items:center; gap:2px; justify-content:center; padding:11px 4px; border-radius:11px; background:#222d45; border:1px solid var(--line); color:var(--ink); font-size:14px; font-weight:700; transition:transform .06s;}
   .cmd:active{transform:scale(.95);} .cmd .ico{font-size:19px;} .cmd .sub{font-size:8px; color:var(--sub); font-weight:400;}
-  .cmd.atk{background:linear-gradient(180deg,#3b2a55,#2a1f40); border-color:#6d28d9;}
+  .cmd.atk{background:linear-gradient(180deg,#f7d579,#dca22f); border-color:var(--gold-d); color:#3a230a;}   /* 攻撃=金(ホームの主役色と統一) */
+  .cmd.atk .ac-role,.cmd.atk .sub{color:#6a4a12;}
   .cmd.def{background:linear-gradient(180deg,#1e3a4f,#13283a); border-color:#0e7490;}
   .cmd.skill{background:linear-gradient(180deg,#143a2e,#0e2a22); border-color:#0f766e;}
   .cmd.item{background:linear-gradient(180deg,#3a2a14,#2a1f0e); border-color:#b45309;}
@@ -148,7 +151,7 @@
   .li{display:flex; align-items:center; gap:10px; padding:11px; border-radius:11px; background:#1d2a3f; border:1px solid var(--line); color:var(--ink); text-align:left;}
   .li:active{transform:scale(.98);} .li .ii{font-size:22px;} .li .nn{font-weight:700; font-size:15px;} .li .dd{font-size:11px; color:var(--sub);}
   .li .badge{margin-left:auto; font-size:10px; padding:3px 8px; border-radius:99px; white-space:nowrap; text-align:center; line-height:1.3;}
-  .badge.q{background:#3b2a55; color:#d8b4fe; border:1px solid #6d28d9;} .badge.free{background:#13283a; color:#7dd3fc; border:1px solid #0e7490;}
+  .badge.q{background:rgba(244,201,93,.13); color:var(--gold); border:1px solid rgba(244,201,93,.4);} .badge.free{background:#13283a; color:#7dd3fc; border:1px solid #0e7490;}
   .badge.mp{background:#0c2a3a; color:#38bdf8; border:1px solid #0284c7;} .badge.aoe{background:#3a1c1c; color:#fca5a5; border:1px solid #b91c1c;}
   .li:disabled{opacity:.4; filter:grayscale(.6);}
   .back-btn{margin-top:2px; width:100%; padding:10px; border-radius:11px; background:#222d45; border:1px solid var(--line); color:var(--sub); font-size:14px;}
@@ -173,7 +176,7 @@
   .typewrap{display:flex; gap:8px;} .typewrap input{flex:1; padding:15px; font-size:20px; border-radius:12px; background:#0c1220; border:1px solid var(--line); color:var(--ink); font-family:"Courier New",monospace; text-align:center;}
   .typewrap button{padding:0 20px; border-radius:12px; background:#6d28d9; color:#fff; border:none; font-size:17px; font-weight:700;}
   .qfeed{flex:0 0 auto; margin-top:10px;} .qfeed .desc{font-size:14px; color:var(--ink); background:#0c1220; border:1px solid var(--line); border-radius:11px; padding:11px; line-height:1.55;}
-  .qfeed .next{width:100%; margin-top:9px; padding:13px; border-radius:11px; background:#6d28d9; color:#fff; border:none; font-size:16px; font-weight:700;}
+  .qfeed .next{width:100%; margin-top:9px; padding:13px; border-radius:11px; background:linear-gradient(180deg,#f7d579,#dca22f); color:#3a230a; border:none; border-bottom:3px solid var(--gold-d); font-size:16px; font-weight:800;}
   .qfeed .wrongttl{color:var(--bad); font-weight:800; text-align:center; margin-bottom:6px; font-size:16px;}
 
   .dmg{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-size:30px; font-weight:900; color:#fff; pointer-events:none; animation:dmgFloat .9s ease-out forwards;}
@@ -193,7 +196,7 @@
   .trow input[type=range]{width:100%; margin-top:5px;} .trow.chk{display:flex; align-items:center; gap:8px;} .trow.chk label{flex:1; justify-content:flex-start;}
   .killgrid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .tnote{font-size:11px; color:var(--sub); line-height:1.5; margin-bottom:12px;}
-  .tclose{width:100%; padding:13px; border-radius:11px; background:#6d28d9; color:#fff; border:none; font-size:16px; font-weight:700; margin-top:6px;}
+  .tclose{width:100%; padding:13px; border-radius:11px; background:#222d45; color:var(--ink); border:1px solid var(--line); font-size:16px; font-weight:700; margin-top:6px;}
   .gearbig{background:#10162a; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:14px;}
 
   /* ===== §M 体験版の画面(タイトル/マップ/クリア) ===== */
@@ -201,16 +204,19 @@
   .screen.show{display:flex;}
   .scr-inner{margin:auto 0; width:100%; max-width:440px; align-self:center; text-align:center;}
   .title-inner{display:flex; flex-direction:column; align-items:center; gap:10px;}
-  .title-emoji{font-size:30px; letter-spacing:4px;}
-  .game-title{font-size:40px; font-weight:900; margin:2px 0 0; letter-spacing:2px; background:linear-gradient(90deg,#f87171,#fbbf24,#34d399,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent;}
-  .game-sub{font-size:14px; color:var(--warn); font-weight:700; margin-bottom:4px;}
+  .title-emoji{font-size:28px; letter-spacing:6px; filter:saturate(1.1);}
+  .game-title{font-family:'Reggae One',cursive; font-size:48px; font-weight:400; margin:4px 0 0; letter-spacing:1px; color:#fff; text-shadow:0 2px 16px rgba(244,201,93,.5);}
+  .game-title span{color:var(--gold);}
+  .game-sub{font-size:11px; color:var(--gold); font-weight:700; letter-spacing:3px; margin:6px 0 2px;}
+  .title-party{display:flex; gap:10px; justify-content:center; margin:12px 0 2px;}
+  .title-party span{width:48px; height:48px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(244,201,93,.3); display:flex; align-items:center; justify-content:center; font-size:26px;}
   .title-lead{font-size:14px; color:var(--sub); line-height:1.7; margin:6px 0 14px;}
   .title-note{font-size:12px; color:var(--sub); opacity:.8; margin-top:14px; line-height:1.6;}
   .scr-ttl{font-size:24px; font-weight:900; margin:6px 0 4px;}
   .scr-sub{font-size:14px; color:var(--sub); line-height:1.6; margin-bottom:10px;}
   .big-emoji{font-size:54px; line-height:1; margin-bottom:6px;}
   .scr-btn{display:block; width:100%; max-width:320px; margin:9px auto 0; padding:13px; border-radius:12px; background:#222d45; border:1px solid var(--line); color:var(--ink); font-size:15px; font-weight:700;}
-  .scr-btn.primary{background:linear-gradient(180deg,#3b2a55,#2a1f40); border-color:#6d28d9;}
+  .scr-btn.primary{background:linear-gradient(180deg,#f7d579,#dca22f); border:0; border-bottom:4px solid var(--gold-d); color:#3a230a; font-family:'Reggae One',cursive;}
   .scr-btn.big{font-size:18px; padding:16px;}
   .scr-btn:active{transform:scale(.97);}
   .scr-btns{margin-top:16px;}
@@ -284,7 +290,7 @@
   .pg-ttl{font-size:24px; font-weight:900; margin:12px 0 4px;}
   .pg-sub{font-size:13px; color:var(--sub); margin-bottom:18px;}
   .pg-input{width:100%; max-width:260px; padding:13px; font-size:18px; text-align:center; border-radius:12px; background:#0c1220; border:1px solid var(--line); color:var(--ink);}
-  .pg-btn{width:100%; max-width:260px; margin-top:11px; padding:13px; border-radius:12px; background:linear-gradient(180deg,#3b2a55,#2a1f40); border:1px solid #6d28d9; color:#fff; font-size:16px; font-weight:700;}
+  .pg-btn{width:100%; max-width:260px; margin-top:11px; padding:13px; border-radius:12px; background:linear-gradient(180deg,#f7d579,#dca22f); border:0; border-bottom:3px solid var(--gold-d); color:#3a230a; font-size:16px; font-weight:800;}
   .pg-err{color:var(--bad); font-size:13px; margin-top:10px; min-height:18px;}
 
   /* Chromebook 11.6"(1366x768 横長)最適化: 広い画面では拡大して横を使う(生徒の実機)。スマホ縦は従来どおり。 */
@@ -334,9 +340,10 @@
   <div class="screen" id="screen-title">
     <div class="scr-inner title-inner">
       <div class="title-emoji">🧪⚗️🌿🪨</div>
-      <h1 class="game-title">理科RPG2</h1>
-      <div class="game-sub">体験版（コモン〜レア帯）</div>
-      <p class="title-lead">火力・妨害・壁・回復の4人で、<br>理科のもんだいを解いて たたかおう！<br>かったら 装飾品が おちる。集めて強くなろう。</p>
+      <h1 class="game-title">理科<span>RPG</span>2</h1>
+      <div class="game-sub">S C I E N C E　R P G　・　体験版β</div>
+      <div class="title-party"><span>🔥</span><span>❄️</span><span>🛡️</span><span>✨</span></div>
+      <p class="title-lead">火力・妨害・壁・回復の4人で、<br>理科のもんだいを解いて たたかおう！<br>かったら <b>そうび</b>が おちる。集めて強くなろう。</p>
       <button class="scr-btn primary big" onclick="showHome()">▶ はじめる</button>
       <div class="title-note">まちがえても HPは へりません。気らくにどうぞ。</div>
     </div>
@@ -545,8 +552,14 @@ const QUESTIONS = [
   { s:'earth', type:'choice', q:"花こう岩の特徴として正しいものはどれか。", choices:["深成岩で等粒状組織をもつ","火山岩で斑状組織をもつ","堆積岩で化石を多く含む","火山灰が固まった岩石である"], answer:0, desc:"花こう岩は地下深くでゆっくり冷えてできた深成岩で、等粒状組織をもちます。" },
   { s:'earth', type:'choice', q:"冬の日本付近に強く影響する、冷たく乾いた気団はどれか。", choices:["シベリア気団","小笠原気団","オホーツク海気団","赤道気団"], answer:0, desc:"シベリア気団は冷たく乾いた大陸性の気団で、冬の日本の季節風に大きく関係します。" },
 ];
+// ★タイピング問題は廃止(テンポが悪い／全角半角の誤りが理不尽・聖典記載の方針)＝化学式タイピングを4択に自動変換(内容は残す)。
+(function(){ const typ=QUESTIONS.filter(q=>q.type==='typing'); const all=[...new Set(typ.map(q=>q.answer))]; const isIon=a=>/[+\-]/.test(a);
+  typ.forEach(q=>{ const ans=q.answer; let fam=all.filter(a=>a!==ans && isIon(a)===isIon(ans)); if(fam.length<3)fam=all.filter(a=>a!==ans);   // 分子は分子/イオンはイオンから誤答を作る
+    for(let i=fam.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [fam[i],fam[j]]=[fam[j],fam[i]]; }
+    q.type='choice'; q.choices=[ans,...fam.slice(0,3)]; q.answer=0; q.q=q.q.replace('を書こう','はどれ？'); });   // 表示順はdrawの shuffleOrder で更にシャッフルされる
+})();
 let _lastQ=null;
-function drawQuestion(subjects){ const cand=QUESTIONS.filter(q=>subjects.includes(q.s)); let pool=cand.filter(q=>q!==_lastQ); if(!pool.length)pool=cand.length?cand:QUESTIONS;
+function drawQuestion(subjects){ const cand=QUESTIONS.filter(q=>q.type!=='typing'&&subjects.includes(q.s)); let pool=cand.filter(q=>q!==_lastQ); if(!pool.length)pool=cand.length?cand:QUESTIONS.filter(q=>q.type!=='typing');
   const q=pool[Math.floor(Math.random()*pool.length)]; _lastQ=q; return q; }
 
 /* ===================== §3 敵 / 味方 / スキル / アイテム / 状態異常 ===================== */
@@ -1217,15 +1230,16 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
           <button class="nh-gear" onclick="homeEquip('${cid}')">そうび <span class="nh-gslots">${gicons}${aicons}</span><span class="to">→ 編成</span></button>
           <div class="nh-chg"><button class="ar" onclick="homeChangeLead(-1)" aria-label="前のキャラ">◀</button><div class="who">${lead.name}<small>${lead.role}</small></div><button class="ar" onclick="homeChangeLead(1)" aria-label="次のキャラ">▶</button></div>
           <button class="nh-cta" onclick="showMap()">⚔ 冒険に出る</button>
+          <button class="nh-review soon" onclick="homeSoon()">🔁 きょうの復習</button>
         </div>
       </div>
       <div class="nh-subs">
-        <button class="soon" onclick="homeSoon()"><span class="e">📖</span>ずかん</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">🧪</span>ラボ</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">📊</span>きろく</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">🎯</span>ミッション</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">🛒</span>こうかん</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">⚙</span>せってい</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">📚</span>問題</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">🔁</span>復習</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">🎒</span>インベントリ</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">🛒</span>ショップ</button>
+        <button class="soon" onclick="homeSoon()"><span class="e">⚙</span>その他</button>
+        <button onclick="showHome()"><span class="e">🏠</span>ホーム</button>
       </div>
     </div>`;
 }
