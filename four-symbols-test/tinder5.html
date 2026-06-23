@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "copper-coil-rhino-beetle-b5", "name_ja": "銅線コイル甲虫", "tier": "序盤", "element": "電", "flavor_ja": "コイルに電流を流すと磁石になる――その電磁石の原理を角に宿した甲虫。突進のたび角が磁化し、青い火花を散らす。", "img": "gacha5/copper-coil-rhino-beetle-b5.png"}, {"id": "magnetite-fang-wolf-b5", "name_ja": "磁鉄鉱の牙狼", "tier": "序盤", "element": "磁", "flavor_ja": "全身が磁鉄鉱でできた狼。吠えると砂鉄が牙のまわりに集まり、磁力線が見えるほどに荒ぶる。", "img": "gacha5/magnetite-fang-wolf-b5.png"}, {"id": "verdigris-acid-toad-b5", "name_ja": "緑青の酸蝕ガマ", "tier": "序盤", "element": "酸", "flavor_ja": "銅が酸でとけて緑青になる――そのさびと酸を背負ったガマ。にじみ出る液が金属を音もなく溶かす。", "img": "gacha5/verdigris-acid-toad-b5.png"}, {"id": "gear-driven-steel-dragon-b5", "name_ja": "歯車駆動の鋼竜", "tier": "中盤", "element": "金属", "flavor_ja": "無数の歯車がかみ合って動く鋼の竜。大きな歯車がゆっくり回り、小さな歯車を速く回す――力の伝達がそのまま咆哮になる。", "img": "gacha5/gear-driven-steel-dragon-b5.png"}, {"id": "circuit-board-serpent-b5", "name_ja": "回路基板の電脈大蛇", "tier": "中盤", "element": "電", "flavor_ja": "回路をめぐる電流がそのまま血のように脈打つ大蛇。直列・並列に分かれた光の筋が、頭へと一気に集まって放電する。", "img": "gacha5/circuit-board-serpent-b5.png"}, {"id": "crystal-lattice-stag-b5", "name_ja": "結晶格子の角獣", "tier": "中盤", "element": "氷", "flavor_ja": "原子が規則正しく並んでできた結晶――その整然とした格子の美しさと硬さをまとう角獣。砕いても同じ形に割れる。", "img": "gacha5/crystal-lattice-stag-b5.png"}, {"id": "alloy-titan-colossus-b5", "name_ja": "合金超巨神", "tier": "終盤", "element": "金属", "flavor_ja": "鉄に別の金属をまぜて造られた、純金属より硬く強い合金の巨神。継ぎ目から溶けた金属がにじみ、踏み出すたび大地が鳴る。", "img": "gacha5/alloy-titan-colossus-b5.png"}, {"id": "prism-optic-griffin-b5", "name_ja": "屈折プリズムの光翼獣", "tier": "終盤", "element": "光", "flavor_ja": "光を曲げ、分け、一点に集める――屈折と反射の理を翼に持つ獣。羽ばたくと白い光が虹に分かれ、目から灼く一条を放つ。", "img": "gacha5/prism-optic-griffin-b5.png"}, {"id": "gravity-core-leviathan-b5", "name_ja": "重力炉心の天体竜", "tier": "ラスボス級", "element": "闇", "flavor_ja": "胸の炉心がすべてを引き寄せる――重力をまとった天体竜。まわりの光すら曲げ、砕いた岩を環にして従える。最終決戦の象徴。", "img": "gacha5/gravity-core-leviathan-b5.png"}, {"id": "combustion-furnace-overlord-b5", "name_ja": "完全燃焼の炉皇神獣", "tier": "ラスボス級", "element": "火", "flavor_ja": "酸素を十分に取り込み、青白く激しく燃え尽くす完全燃焼の化身。肋から噴き出す炎は最も高温で、近づく者をすべて灰にする。", "img": "gacha5/combustion-furnace-overlord-b5.png"}, {"id": "ember-fang-lizard-wyrm-b5", "name_ja": "灯火竜", "tier": "序盤", "element": "火", "flavor_ja": "全身のうろこの裂け目から赤い火種がのぞく、まだ若い火竜。怒ると背びれの炎が一気に燃え上がる。", "img": "gacha5/ember-fang-lizard-wyrm-b5.png"}, {"id": "stone-jaw-clawbeast-b5", "name_ja": "岩牙獣", "tier": "序盤", "element": "地", "flavor_ja": "全身を岩の装甲でおおった四足の魔獣。突進ひと突きで地面をえぐる岩の牙を持つ。", "img": "gacha5/stone-jaw-clawbeast-b5.png"}, {"id": "gale-serpent-raptor-b5", "name_ja": "疾風蛇竜", "tier": "序盤", "element": "風", "flavor_ja": "細身でしなやかな風の蛇竜。体側の羽根状ヒレで突風をまとい、目にも止まらぬ速さで切りかかる。", "img": "gacha5/gale-serpent-raptor-b5.png"}, {"id": "magma-mane-lion-b5", "name_ja": "熔岩獅子", "tier": "中盤", "element": "火", "flavor_ja": "黒曜のからだに溶岩の血管を走らせた獅子王。たてがみは流れる溶岩そのもので、吠えると灼熱の波が押し寄せる。", "img": "gacha5/magma-mane-lion-b5.png"}, {"id": "quake-render-tyrant-b5", "name_ja": "地砕き暴竜", "tier": "中盤", "element": "地", "flavor_ja": "岩の装甲をまとった暴竜。一歩踏みしめるだけで大地が砕け、巨顎のかみつきは城門すら噛みちぎる。", "img": "gacha5/quake-render-tyrant-b5.png"}, {"id": "storm-tempest-hydra-b5", "name_ja": "雷嵐大蛇竜", "tier": "中盤", "element": "雷", "flavor_ja": "三つの首それぞれが稲妻をはらむ嵐の大蛇竜。首がうねるたびに雷鳴がとどろき、空が黒雲におおわれる。", "img": "gacha5/storm-tempest-hydra-b5.png"}, {"id": "inferno-sovereign-wyrm-b5", "name_ja": "業火覇竜", "tier": "終盤", "element": "火", "flavor_ja": "全身から白熱の炎を噴き上げる業火の覇王竜。広げた翼は空を焼き尽くし、その咆哮は炎の津波となって押し寄せる。", "img": "gacha5/inferno-sovereign-wyrm-b5.png"}, {"id": "glacier-fang-chimera-b5", "name_ja": "氷牙キメラ", "tier": "終盤", "element": "氷", "flavor_ja": "獅子・蛇・角獣が氷で繋がれた異形のキメラ。三つの牙が獲物を凍てつかせ、近づくものを氷漬けにする。", "img": "gacha5/glacier-fang-chimera-b5.png"}, {"id": "abyssal-doom-wyrm-b5", "name_ja": "終焉の極竜", "tier": "ラスボス級", "element": "闇", "flavor_ja": "無数の眼を宿した漆黒の極竜。広げた翼が世界を闇でおおい、口から吐く虚無の炎はすべてを終わらせる。", "img": "gacha5/abyssal-doom-wyrm-b5.png"}, {"id": "world-render-titan-dragon-b5", "name_ja": "天地砕きの覇王竜", "tier": "ラスボス級", "element": "無", "flavor_ja": "炎・雷・大地のすべての力をまとう覇王の竜。立ちはだかるその姿は要塞のごとく、四肢のひと振りで天地を砕く最強の敵。", "img": "gacha5/world-render-titan-dragon-b5.png"}, {"id": "kessho-zarigani-b5", "name_ja": "けっしょうザリガニ甲兵", "tier": "序盤", "element": "化学(結晶)", "flavor_ja": "とう明な結晶のよろいで全身をおおったザリガニのかいじゅう。はさみがぶつかると、結晶がカチカチと光をはじく。割れた所からまた結晶がのびて、よろいは自分でなおっていく。", "img": "gacha5/kessho-zarigani-b5.png"}, {"id": "haguruma-watarigani-b5", "name_ja": "歯車ワタリガニ機兵", "tier": "序盤", "element": "物理(歯車・てこ)", "flavor_ja": "あしのつけ根で歯車がぐるぐる回るカニ型のきかいじゅう。横に走るたびにギチギチと歯車がかみ合い、はさみは『てこ』の力で岩もはさみつぶす。", "img": "gacha5/haguruma-watarigani-b5.png"}, {"id": "jiketsu-suzumebachi-b5", "name_ja": "磁穴スズメバチ装甲蜂", "tier": "序盤", "element": "物理(磁力)", "flavor_ja": "せ中に鉄の磁石をしょったオオスズメバチのかいじゅう。とぶと、まわりの鉄のかけらが体に吸いついてトゲのよろいになる。針はビリビリと青い磁力をまとう。", "img": "gacha5/jiketsu-suzumebachi-b5.png"}, {"id": "denji-iseebi-b5", "name_ja": "電磁イセエビ砲兵", "tier": "中盤", "element": "物理(電磁・回路)", "flavor_ja": "長いしょっ角を銅のコイルにかえた、イセエビのかいじゅう。せ中の回路もようがピカピカ光り、ためた電気をしょっ角からビリッと放つ。しっぽは電気の電池のかたまり。", "img": "gacha5/denji-iseebi-b5.png"}, {"id": "san-suzumebachi-b5", "name_ja": "強酸スズメバチ毒将", "tier": "中盤", "element": "化学(酸)", "flavor_ja": "おなかに強い酸をためこんだ、巨大なスズメバチのかいじゅう。針からしたたる酸は、ふれた岩をジュウジュウととかす。よろいまで酸でうす緑に光っている。", "img": "gacha5/san-suzumebachi-b5.png"}, {"id": "kokuyo-watarigani-b5", "name_ja": "黒曜ワタリガニ岩将", "tier": "中盤", "element": "地学(火山岩・鉱物)", "flavor_ja": "黒曜石の岩で全身をかためた、巨大なワタリガニのかいじゅう。よろいのすき間からマグマのようなオレンジの光がもれる。ガラスのようにするどい黒い岩のはさみは、ふれただけで切れる。", "img": "gacha5/kokuyo-watarigani-b5.png"}, {"id": "gokin-zarigani-b5", "name_ja": "合金ザリガニ重騎兵", "tier": "終盤", "element": "化学(合金)", "flavor_ja": "金・鉄・チタンをまぜた合金のよろいを何まいも重ねた、巨大なザリガニのきょじん。ちがう金属を合わせたよろいは、どんな一げきにもびくともしない。むねの動力炉が青く光る。", "img": "gacha5/gokin-zarigani-b5.png"}, {"id": "kouriki-iseebi-b5", "name_ja": "光力イセエビ天将", "tier": "終盤", "element": "物理(光学・レンズ)", "flavor_ja": "体じゅうのよろいがプリズムになって、光を七色に分ける巨大イセエビ。レンズのような大きな目としょっ角の先で光を一点に集め、まばゆいビームを放つ。にじの輪をまとう天の将。", "img": "gacha5/kouriki-iseebi-b5.png"}, {"id": "jutetsu-isekai-koushin-b5", "name_ja": "磁鉄甲殻の戦神", "tier": "ラスボス級", "element": "物理(磁力・電磁) / 装甲合成獣", "flavor_ja": "カニのこうら・エビのしっぽ・ハチの羽を一つに合わせた、合成のかいじゅう神。じ石の力で鉄くずを宙にうかべ、よろいにする。体のまわりは電磁の力でビリビリとうずまく、おそろしい大将。", "img": "gacha5/jutetsu-isekai-koushin-b5.png"}, {"id": "bankou-konchu-teikou-b5", "name_ja": "万鋼コウチュウ帝甲", "tier": "ラスボス級", "element": "化学(合金・結晶) / 物理(歯車)", "flavor_ja": "合金のよろいに、ダイヤのようにかたい結晶のトゲをびっしり生やした、カブトムシの帝王。大きな角は何まいもの金属を重ねたもの。あしは歯車とピストンで動く、すべての甲殻虫の頂点に立つ最強の帝甲。", "img": "gacha5/bankou-konchu-teikou-b5.png"}, {"id": "chibi-spark-pup-b5", "name_ja": "ミニびりすけ", "tier": "序盤", "element": "physics", "flavor_ja": "ちいさいのにバチバチ。さわると静電気でくしゃみが止まらない。", "img": "gacha5/chibi-spark-pup-b5.png"}, {"id": "yokai-ink-lantern-b5", "name_ja": "すみあんどん", "tier": "序盤", "element": "chemistry", "flavor_ja": "古い理科室で夜ごとに灯る。こぼした薬品のにおいがする。", "img": "gacha5/yokai-ink-lantern-b5.png"}, {"id": "elegant-mist-deer-b5", "name_ja": "きりしか", "tier": "序盤", "element": "earth", "flavor_ja": "霧の谷をしずかに渡る。角に朝つゆの世界が映る。", "img": "gacha5/elegant-mist-deer-b5.png"}, {"id": "cyber-helix-serpent-b5", "name_ja": "ジェノコイル", "tier": "中盤", "element": "biology", "flavor_ja": "生命の設計図を読みこんで自分を書きかえる。", "img": "gacha5/cyber-helix-serpent-b5.png"}, {"id": "grotesque-acid-maw-b5", "name_ja": "とけくちヘドロ", "tier": "中盤", "element": "chemistry", "flavor_ja": "ふれたものを何でもとかす。実験のしっぱいが集まって生まれた。", "img": "gacha5/grotesque-acid-maw-b5.png"}, {"id": "yokai-thunder-drum-b5", "name_ja": "なるかみだいこ", "tier": "中盤", "element": "physics", "flavor_ja": "太鼓を打つたび、雷がドンと落ちる。耳をふさげ。", "img": "gacha5/yokai-thunder-drum-b5.png"}, {"id": "cyber-mecha-titan-b5", "name_ja": "コアブレイカー", "tier": "終盤", "element": "physics", "flavor_ja": "胸の炉に力を満たし、ひと振りで地を割る鋼の巨人。", "img": "gacha5/cyber-mecha-titan-b5.png"}, {"id": "grotesque-eye-tumor-b5", "name_ja": "まなこのかたまり", "tier": "終盤", "element": "biology", "flavor_ja": "どこから見ても、こっちを見ている。まばたきが部屋に響く。", "img": "gacha5/grotesque-eye-tumor-b5.png"}, {"id": "elegant-phoenix-emperor-b5", "name_ja": "あかつきのほうおう", "tier": "ラスボス級", "element": "earth", "flavor_ja": "夜明けとともによみがえり、すべてを焼き清める王。", "img": "gacha5/elegant-phoenix-emperor-b5.png"}, {"id": "chibi-final-overlord-b5", "name_ja": "ちびまおうザ・ラスト", "tier": "ラスボス級", "element": "chemistry", "flavor_ja": "見た目はちいさいが、これでも最終決戦の魔王だぞ。なめるな。", "img": "gacha5/chibi-final-overlord-b5.png"}, {"id": "spore-mite-swarm-king-b5", "name_ja": "ほうし蟲の女王", "tier": "序盤", "element": "biology", "flavor_ja": "顕微鏡の向こうから現れた、ほうしをまき散らすクマムシの女王。小さくてもしぶとい。", "img": "gacha5/spore-mite-swarm-king-b5.png"}, {"id": "bubble-alchemist-blob-b5", "name_ja": "あわ立つ錬成スライム", "tier": "序盤", "element": "chemistry", "flavor_ja": "ふりまぜると泡が止まらない、いたずら好きの反応スライム。さわると弾ける。", "img": "gacha5/bubble-alchemist-blob-b5.png"}, {"id": "moss-snail-symbiont-b5", "name_ja": "苔むしカタツムリ獣", "tier": "序盤", "element": "biology", "flavor_ja": "背中の苔と持ちつ持たれつで生きる、のんびり屋の共生けもの。", "img": "gacha5/moss-snail-symbiont-b5.png"}, {"id": "geode-shell-crab-b5", "name_ja": "晶洞ガニ", "tier": "中盤", "element": "earth", "flavor_ja": "割れた殻の中に紫水晶を抱える、岩場の宝石ガニ。はさみがきらめく。", "img": "gacha5/geode-shell-crab-b5.png"}, {"id": "resonance-bell-serpent-b5", "name_ja": "共鳴の鐘ヘビ", "tier": "中盤", "element": "physics", "flavor_ja": "うなりを上げると空気がふるえる、音と振動をあやつる鐘の大蛇。", "img": "gacha5/resonance-bell-serpent-b5.png"}, {"id": "aurora-jelly-drifter-b5", "name_ja": "オーロラくらげ霊", "tier": "中盤", "element": "physics", "flavor_ja": "夜空のカーテンが命を持った、プラズマのくらげ。ふれると光がはじける。", "img": "gacha5/aurora-jelly-drifter-b5.png"}, {"id": "tide-pulling-moon-toad-b5", "name_ja": "潮よびガマ", "tier": "終盤", "element": "earth", "flavor_ja": "背の月で潮を引き寄せる、重力をつかさどる太古のガマ。にらまれると体が重い。", "img": "gacha5/tide-pulling-moon-toad-b5.png"}, {"id": "petri-bloom-leviathan-b5", "name_ja": "培養のリヴァイア", "tier": "終盤", "element": "biology", "flavor_ja": "一つの細胞が際限なく分かれて巨獣になった、培養皿生まれの怪物。", "img": "gacha5/petri-bloom-leviathan-b5.png"}, {"id": "thunderbird-of-the-rift-b5", "name_ja": "雷裂の大鵬", "tier": "ラスボス級", "element": "physics", "flavor_ja": "嵐の裂け目から舞い降りる、稲妻を翼に持つ伝説の大鵬。一鳴きで天がさける。", "img": "gacha5/thunderbird-of-the-rift-b5.png"}, {"id": "world-root-titan-b5", "name_ja": "世界樹の根の巨神", "tier": "ラスボス級", "element": "biology", "flavor_ja": "あらゆる根がひとつに絡まって立ち上がった、共生の頂点に立つ巨神。", "img": "gacha5/world-root-titan-b5.png"}]; const KEY="rika2_boss_swipe_v1";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
