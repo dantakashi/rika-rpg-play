@@ -29,7 +29,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=M+PLUS+Rounded+1c:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{ --bg1:#0b1020; --panel:#1a2336; --line:#2b3756; --ink:#e8eefc; --sub:#9fb0d6;
-    --good:#34d399; --bad:#f87171; --warn:#fbbf24; --charge:#e6b34d; --mp:#38bdf8; --gold:#f4c95d; --gold-d:#b9821f; }
+    --good:#34d399; --bad:#f87171; --warn:#fbbf24; --charge:#e6b34d; --mp:#38bdf8; --gold:#f4c95d; --gold-d:#b9821f;
+    --bounce:cubic-bezier(.5,1.75,.75,1.25); }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; background:linear-gradient(160deg,var(--bg1),#070a14); color:var(--ink);
     font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; overflow:hidden;}
@@ -312,6 +313,108 @@
     .typewrap input{font-size:23px;}
     .savor-banner .big{font-size:30px;} .combo-badge b{font-size:24px;}
   }
+
+  /* ===== §I もちもの台帳(インベントリ)＋装備詳細ドロワー＋装備3カラム(2026-06-24) =====
+     世界観モチーフ＝理科室の実験ノート: 方眼の下地＋六角(周期表セル)のアイテム枠。
+     レア度色は --rc 変数で受ける(全6レア度C〜LRに耐える)。紫グラデは使わない。 */
+  /* 方眼ノートの下地(インベントリ/そうび画面の共通の地) */
+  #screen-inventory::before,#screen-accessory::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(160,200,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(160,200,255,.035) 1px,transparent 1px);
+    background-size:24px 24px;}
+  #screen-inventory .scr-inner,#screen-accessory .scr-inner{position:relative;z-index:1;}
+  /* 絞り込みチップ(試験管ラベル感のpill) */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0 0;}
+  .chips.sub{margin-top:6px;}
+  .chip{font-size:12px;font-weight:800;padding:6px 13px;border-radius:99px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--sub);transition:transform .12s var(--bounce);min-height:34px;}
+  .chip:active{transform:scale(.94);}
+  .chip[aria-pressed="true"]{background:rgba(244,201,93,.12);border-color:var(--gold);color:var(--gold);}
+  .chip.r[aria-pressed="true"]{background:color-mix(in srgb,var(--rc) 16%,transparent);border-color:var(--rc);color:var(--rc);}
+  /* インベントリのヘッダ */
+  .inv-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;}
+  .inv-head h2{font-family:'Reggae One',cursive;font-size:23px;font-weight:400;margin:0;color:#fff;}
+  .inv-head .count{font-size:12px;color:var(--sub);} .inv-head .count b{color:var(--gold);font-size:16px;}
+  /* アイテムカード(.gcard)＝周期表セルの標本。レア度=上辺3px＋六角サムネ地。枠優先(影は乱用しない) */
+  .inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:10px;margin:12px 0;}
+  .gcard{position:relative;background:#10162a;border:1px solid var(--line);border-top:3px solid var(--rc,var(--line));border-radius:12px;padding:9px 6px 8px;text-align:center;color:var(--ink);overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .12s var(--bounce);min-height:118px;}
+  .gcard::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(160,200,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(160,200,255,.04) 1px,transparent 1px);background-size:11px 11px;pointer-events:none;}
+  .gcard:active{transform:scale(.96);}
+  .gcard.worn{box-shadow:0 0 0 2px rgba(244,201,93,.5);}
+  .gcard .thumb{position:relative;z-index:1;width:54px;height:54px;margin:1px auto 4px;clip-path:polygon(25% 4%,75% 4%,98% 50%,75% 96%,25% 96%,2% 50%);
+    background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--rc,#60a5fa) 22%,#0c1326),#0c1326 72%);display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;overflow:hidden;}
+  .gcard .thumb img{width:100%;height:100%;object-fit:contain;}   /* ★本番アートはここに<img>差込 */
+  .gcard .rr{position:relative;z-index:1;font-size:10px;font-weight:800;color:var(--rc);line-height:1.2;}
+  .gcard .gn{position:relative;z-index:1;font-size:11px;font-weight:800;line-height:1.22;}
+  .gcard .gm{position:relative;z-index:1;font-size:10px;color:var(--gold);font-weight:700;}
+  .gcard .gb{position:relative;z-index:1;font-size:9px;color:var(--good);}
+  .gcard .eq{position:absolute;top:5px;right:5px;width:19px;height:19px;border-radius:6px;background:var(--gold);color:#3a230a;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .gcard .slotpip{position:absolute;top:4px;left:6px;font-size:11px;z-index:2;opacity:.85;}
+  .inv-empty{grid-column:1/-1;text-align:center;color:var(--sub);font-size:13px;padding:26px 0;}
+  /* ===== 装備詳細ドロワー(右からスライド・#app内に収める) ===== */
+  .drawer-scrim{position:absolute;inset:0;background:rgba(4,7,14,.62);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .drawer-scrim.open{opacity:1;pointer-events:auto;}
+  .drawer{position:absolute;top:0;right:0;bottom:0;width:min(360px,90%);z-index:71;background:linear-gradient(160deg,#141d33,#0b1124);border-left:1px solid var(--line);box-shadow:-14px 0 44px #000b;
+    transform:translateX(103%);transition:transform .22s cubic-bezier(.4,1.3,.5,1);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 15px 22px;}
+  .drawer.open{transform:translateX(0);}
+  .dw-top{display:flex;align-items:flex-start;gap:10px;}
+  .dw-thumb{flex:0 0 auto;width:60px;height:60px;clip-path:polygon(25% 4%,75% 4%,98% 50%,75% 96%,25% 96%,2% 50%);background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--rc,#60a5fa) 26%,#0c1326),#0c1326 72%);display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;}
+  .dw-thumb img{width:100%;height:100%;object-fit:contain;}
+  .dw-htxt{flex:1;min-width:0;}
+  .dw-rr{font-size:11px;font-weight:800;color:var(--rc);}
+  .dw-nm{font-size:17px;font-weight:800;line-height:1.25;}
+  .dw-slot{font-size:11px;color:var(--sub);}
+  .dw-x{position:absolute;top:8px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--ink);font-size:15px;}
+  .dw-sec{margin-top:12px;}
+  .dw-sectt{font-size:11px;color:var(--warn);font-weight:700;margin-bottom:5px;}
+  .dw-skill{background:#0c1220;border:1px solid var(--line);border-radius:11px;padding:10px;}
+  .dw-skill .sk-h{font-size:14px;font-weight:800;} .dw-skill .sk-note{font-size:12px;color:var(--ink);line-height:1.5;margin-top:4px;} .dw-skill .sk-fl{font-size:11px;color:var(--sub);font-style:italic;margin-top:4px;}
+  .dw-main{font-size:18px;font-weight:800;color:var(--gold);background:#0c1220;border:1px solid var(--gold-d);border-radius:11px;padding:9px 12px;text-align:center;}
+  .dw-bon{display:flex;flex-direction:column;gap:4px;}
+  .dw-bon .brow{display:flex;align-items:center;gap:6px;font-size:13px;background:#0c1220;border:1px solid var(--line);border-radius:9px;padding:6px 10px;}
+  .dw-bon .brow .bi{color:var(--good);} .dw-bon .brow.pct .bi{color:var(--mp);}
+  /* 出現帯ミニ周期表バー */
+  .rangebar{display:flex;gap:3px;margin-top:2px;}
+  .rangebar .rc{flex:1;text-align:center;font-size:10px;font-weight:800;padding:4px 0;border-radius:5px;background:#0c1220;border:1px solid var(--line);color:var(--sub);}
+  .rangebar .rc.on{color:#0c1220;border-color:transparent;}
+  /* だれに つける？セレクタ */
+  .dw-whom{display:flex;gap:6px;justify-content:center;}
+  .dw-whom button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;border-radius:10px;background:#0c1220;border:1px solid var(--line);color:var(--sub);font-size:9px;font-weight:700;}
+  .dw-whom button .we{font-size:18px;}
+  .dw-whom button.on{border-color:var(--gold);background:rgba(244,201,93,.1);color:var(--gold);}
+  /* 差分比較 */
+  .dw-cmp{background:#0c1220;border:1px solid var(--line);border-radius:11px;padding:9px 11px;font-size:12px;}
+  .dw-cmp .cmp-h{color:var(--sub);line-height:1.5;margin-bottom:5px;}
+  .dw-cmp .cmp-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0;}
+  .dw-cmp .cmp-l{color:var(--ink);} .dw-cmp .cmp-v{font-weight:800;}
+  .delta{font-weight:800;font-size:12px;padding:1px 7px;border-radius:7px;}
+  .delta.up{color:var(--good);background:rgba(52,211,153,.13);} .delta.down{color:var(--bad);background:rgba(248,113,113,.13);} .delta.eqd{color:var(--sub);background:rgba(159,176,214,.1);}
+  .dw-act{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .dw-cta{width:100%;padding:13px;border-radius:12px;border:0;border-bottom:4px solid var(--gold-d);background:linear-gradient(180deg,#f7d579,#dca22f);color:#3a230a;font-family:'Reggae One',cursive;font-size:17px;transition:transform .12s var(--bounce);}
+  .dw-cta:active{transform:scale(.97) translateY(2px);border-bottom-width:2px;}
+  .dw-cta:disabled{opacity:.5;filter:grayscale(.5);background:#2a3450;color:var(--sub);border-bottom-color:var(--line);}
+  .dw-rm{width:100%;padding:10px;border-radius:11px;background:#3a1c1c;border:1px solid #b91c1c;color:#fca5a5;font-size:14px;font-weight:700;}
+  .dw-note{font-size:11px;color:var(--sub);text-align:center;line-height:1.5;}
+  /* ===== そうび(装備)画面の横長3カラム(キャラ＋6スロット＋もちもの) ===== */
+  .eq-wrap{display:flex;flex-direction:column;gap:12px;}
+  .eq-portrait{text-align:center;background:#10162a;border:1px solid var(--line);border-radius:14px;padding:12px 8px;}
+  .eq-portrait .pe{font-size:74px;line-height:1;filter:drop-shadow(0 8px 16px rgba(0,0,0,.5));}
+  .eq-portrait .pn{font-size:17px;font-weight:800;margin-top:4px;} .eq-portrait .pr{font-size:12px;color:var(--gold);font-weight:700;}
+  .eq-statlist{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+  .eq-statlist .srow{display:flex;align-items:center;justify-content:space-between;font-size:13px;background:#0c1220;border:1px solid var(--line);border-radius:8px;padding:6px 11px;}
+  .eq-statlist .srow .sl{color:var(--sub);} .eq-statlist .srow .sv{font-weight:800;}
+  .eq-statlist .srow.flash{animation:statFlash .6s ease-out;}
+  @keyframes statFlash{0%{background:rgba(52,211,153,.28);}100%{background:#0c1220;}}
+  .eq-poolttl{font-size:12px;color:var(--warn);font-weight:700;margin:2px 0 6px;}
+  @media (min-width:680px){
+    #screen-inventory .scr-inner,#screen-accessory .scr-inner{max-width:none;}
+    .equip-hub{max-width:520px;margin:12px auto;}
+    .eq-wrap.cols{flex-direction:row;align-items:flex-start;}
+    .eq-wrap.cols .eq-c1{flex:0 0 248px;} .eq-wrap.cols .eq-c2{flex:1 1 auto;min-width:0;} .eq-wrap.cols .eq-c3{flex:0 0 320px;}
+    .eq-wrap.cols .eq-c3 .inv-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));max-height:62vh;overflow-y:auto;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .chip,.gcard,.drawer,.drawer-scrim,.dw-cta,.eq-portrait .pe{transition:none;animation:none;transform:none;}
+    .eq-statlist .srow.flash{animation:none;}
+  }
 </style>
 </head>
 <body>
@@ -369,11 +472,16 @@
   </div>
 
   <div class="screen" id="screen-accessory"><div class="scr-inner" id="accBody"></div></div>
+  <div class="screen" id="screen-inventory"><div class="scr-inner" id="invBody"></div></div>
   <div class="screen" id="screen-clear"><div class="scr-inner" id="clearBody"></div></div>
   <div class="screen" id="screen-complete"><div class="scr-inner" id="completeBody"></div></div>
   <div class="screen" id="screen-defeat"><div class="scr-inner" id="defeatBody"></div></div>
 
   <div class="info-modal" id="infoModal" onclick="hideInfo()"></div>
+
+  <!-- 装備詳細ドロワー(インベントリ/そうび 両画面で共用) -->
+  <div class="drawer-scrim" id="dwScrim" onclick="closeDetail()"></div>
+  <div class="drawer" id="detailDrawer" role="dialog" aria-modal="true"></div>
 
   <!-- あいことばゲート(β公開・ソフトな鍵) -->
   <div class="passgate" id="passgate">
@@ -386,6 +494,7 @@
   </div>
 </div>
 
+<script src="quiz-engine.js"></script>
 <script>
 /* ===================== §1 設定 ===================== */
 const cfg = { chargeSec:4.5, savorSec:1.3, actionSec:0.8, enemyIntervalSec:9.0, missDropPct:30, freezeOnThink:true, mpPerCorrect:12 };
@@ -400,167 +509,6 @@ const fmt = n => Math.round(n).toLocaleString();
 const ri  = n => Math.floor(Math.random()*n);
 
 /* ===================== §2 教科(属性)と問題 ===================== */
-const SUBJECTS = { physics:{jp:'物理',emoji:'⚙️',color:'#60a5fa'}, chemistry:{jp:'化学',emoji:'⚗️',color:'#34d399'},
-  biology:{jp:'生物',emoji:'🌿',color:'#a3e635'}, earth:{jp:'地学',emoji:'🪨',color:'#fbbf24'} };
-const QUESTIONS = [
-  { s:'chemistry', type:'typing', q:"「水素分子」の化学式を書こう", answer:"H2", accept:["h2"], desc:"水素原子2個でできた、最も軽い無色の気体。" },
-  { s:'chemistry', type:'typing', q:"「水素イオン」の化学式を書こう", answer:"H+", accept:["h+"], desc:"水素原子が電子を1個失った陽イオン。酸性の正体。" },
-  { s:'chemistry', type:'choice', q:"点火時に開くねじは？", choices:["空気調節ねじ","ガス調節ねじ","元栓","コック"], answer:1, desc:"元栓・コックを開けた後、マッチの火を近づけながらガス調節ねじを開けて点火する。" },
-  { s:'chemistry', type:'choice', q:"1種類に分かれる変化は？", choices:["還元","中和","分解","化合"], answer:2, desc:"1種類の物質が複数に分かれる変化が分解。加熱や電流によって起こる。" },
-  { s:'chemistry', type:'choice', q:"固体の説明として正しいものはどれ？", choices:["形も体積もほぼ決まっている","形は決まらず体積も決まらない","入れ物いっぱいに広がる","必ず透明である"], answer:0, desc:"固体は形と体積がほぼ決まっている状態です。" },
-  { s:'chemistry', type:'typing', q:"「酸素分子」の化学式を書こう", answer:"O2", accept:["o2"], desc:"酸素原子2個でできた気体。ものを燃やすはたらきがある。" },
-  { s:'chemistry', type:'typing', q:"「ナトリウムイオン」の化学式を書こう", answer:"Na+", accept:["na+"], desc:"ナトリウム原子が電子1個を失った陽イオン。" },
-  { s:'chemistry', type:'choice', q:"炎を青くする操作は？", choices:["ガス調節ねじを閉じる","元栓を閉じる","空気調節ねじを開けて空気を増やす","水をかける"], answer:2, desc:"オレンジの炎は空気（酸素）不足。空気調節ねじを開けて空気を増やすと完全燃焼し青い炎になる。" },
-  { s:'chemistry', type:'choice', q:"物質が酸素と結びつく化学変化を何というか。", choices:["還元","分解","蒸発","酸化"], answer:3, desc:"物質が酸素と結びつく変化を酸化、酸化物が酸素をうばわれる変化を還元という。" },
-  { s:'chemistry', type:'choice', q:"水のような液体の説明として正しいものはどれ？", choices:["形も体積も決まっている","入れ物に合わせて形が変わる","必ず空気中に広がる","つかんでも形がくずれない"], answer:1, desc:"液体は体積はほぼ決まっていますが、形は入れ物に合わせて変わります。" },
-  { s:'chemistry', type:'typing', q:"「窒素分子」の化学式を書こう", answer:"N2", accept:["n2"], desc:"空気の約8割をしめる気体。窒素原子2個でできる。" },
-  { s:'chemistry', type:'typing', q:"「カリウムイオン」の化学式を書こう", answer:"K+", accept:["k+"], desc:"カリウム原子が電子1個を失った陽イオン。" },
-  { s:'chemistry', type:'choice', q:"試験管に入れた液体を加熱するとき、正しい操作はどれか？", choices:["口を自分に向ける","一点だけを強く熱し続ける","試験管の口を人のいない方へ向ける","液体を満杯まで入れる"], answer:2, desc:"突沸して中身が飛び出す危険があるため、口は人のいない方向へ向ける。" },
-  { s:'chemistry', type:'choice', q:"酸化のうち、熱や光を出しながら激しく進むものを何というか。", choices:["燃焼","還元","蒸留","溶解"], answer:0, desc:"熱や光を出す激しい酸化を燃焼という。木炭やマグネシウムの燃焼など。" },
-  { s:'chemistry', type:'choice', q:"気体の説明として正しいものはどれ？", choices:["形だけ決まっている","体積だけ決まっている","入れ物いっぱいに広がる","必ず目で見える"], answer:2, desc:"気体は形も体積も決まらず、入れ物いっぱいに広がります。" },
-  { s:'chemistry', type:'typing', q:"「ヘリウム」の化学式を書こう", answer:"He", accept:["he"], desc:"原子1個で安定している気体（単原子分子）。風船に使われることがあり、空気より軽い。" },
-  { s:'chemistry', type:'typing', q:"「カルシウムイオン」の化学式を書こう", answer:"Ca2+", accept:["ca2+"], desc:"カルシウム原子が電子2個を失った陽イオン。塩化カルシウムなどにふくまれる。" },
-  { s:'chemistry', type:'choice', q:"薬品のにおいを確認するときの正しい方法はどれか？", choices:["鼻を直接つけて深く吸う","手であおいでかぐ","加熱してからかぐ","容器を振ってからかぐ"], answer:1, desc:"有害な気体もあるため、手であおいで少量を確認する。" },
-  { s:'chemistry', type:'choice', q:"酸化物が酸素をうばわれる化学変化を何というか。", choices:["燃焼","還元","酸化","化合"], answer:1, desc:"酸化銅が炭素によって酸素をうばわれ銅になるような変化が還元。酸化と還元は同時に起こる。" },
-  { s:'chemistry', type:'choice', q:"氷が水になる変化を何という？", choices:["凝固","蒸発","凝縮","融解"], answer:3, desc:"固体が液体になる変化を融解といいます。" },
-  { s:'chemistry', type:'typing', q:"「塩素分子」の化学式を書こう", answer:"Cl2", accept:["cl2"], desc:"黄緑色で刺激臭のある有毒な気体。塩素原子2個。" },
-  { s:'chemistry', type:'typing', q:"「マグネシウムイオン」の化学式を書こう", answer:"Mg2+", accept:["mg2+"], desc:"マグネシウム原子が電子2個を失った陽イオン。金属原子は電子を失って陽イオンになりやすい。" },
-  { s:'chemistry', type:'choice', q:"液体を加熱する前に沸騰石を入れる理由はどれか？", choices:["早く沸騰させるため","急な沸騰（突沸）を防ぐため","色をつけるため","においを消すため"], answer:1, desc:"沸騰石は突沸を防ぎ、おだやかに沸騰させるために入れる。" },
-  { s:'chemistry', type:'choice', q:"結びついて1つになる変化は？", choices:["還元","蒸発","化合","分解"], answer:2, desc:"鉄と硫黄が結びついて硫化鉄ができるように、結びついて別の物質ができる変化を化合という。" },
-  { s:'chemistry', type:'choice', q:"水が氷になる変化を何という？", choices:["凝固","融解","蒸発","昇華"], answer:0, desc:"液体が固体になる変化を凝固といいます。" },
-  { s:'chemistry', type:'typing', q:"「水分子」の化学式を書こう", answer:"H2O", accept:["h2o"], desc:"水素2・酸素1からできる。すべての生物に不可欠。" },
-  { s:'chemistry', type:'typing', q:"「亜鉛イオン」の化学式を書こう", answer:"Zn2+", accept:["zn2+"], desc:"亜鉛原子が電子2個を失った陽イオン。酸と反応すると水溶液中でZn2+になる。" },
-  { s:'chemistry', type:'choice', q:"上皿てんびんの分銅を扱うとき、正しい方法はどれか？", choices:["手で持つ","ピンセットで持つ","水でぬらして持つ","息を吹きかけてから持つ"], answer:1, desc:"手の脂やさびを防ぐため、分銅はピンセットで扱う。" },
-  { s:'chemistry', type:'choice', q:"反応前後で保たれる量は？", choices:["定比例の法則","フックの法則","オームの法則","質量保存の法則"], answer:3, desc:"化学変化の前後で原子の数や種類は変わらないため、全体の質量は保存される（質量保存の法則）。" },
-  { s:'chemistry', type:'choice', q:"水たまりの水が少しずつ水蒸気になる変化を何という？", choices:["凝縮","蒸発","凝固","融解"], answer:1, desc:"液体が気体になる変化を蒸発といいます。" },
-  { s:'chemistry', type:'typing', q:"「二酸化炭素分子」の化学式を書こう", answer:"CO2", accept:["co2"], desc:"炭素1・酸素2。石灰水を白くにごらせる。" },
-  { s:'chemistry', type:'typing', q:"「銅イオン」の化学式を書こう", answer:"Cu2+", accept:["cu2+"], desc:"水溶液中で青色を示す陽イオン。塩化銅や硫酸銅の水溶液で見られる。" },
-  { s:'chemistry', type:'choice', q:"メスシリンダーで体積をはかるとき、目盛りの読み方はどれか？", choices:["上から見下ろして読む","液面の最も高い所を読む","液面の最も低い所を真横から読む","斜め上から読む"], answer:2, desc:"目の高さを液面に合わせ、へこんだ最下部を真横から読む。" },
-  { s:'chemistry', type:'choice', q:"熱を出す反応は？", choices:["発熱反応","吸熱反応","中和","分解"], answer:0, desc:"熱を放出する反応が発熱反応（鉄の酸化を利用したかいろなど）。熱を吸収するのが吸熱反応。" },
-  { s:'chemistry', type:'choice', q:"水滴は水蒸気が何になった？", choices:["氷","水蒸気","水","金属"], answer:2, desc:"気体の水蒸気が液体の水になる変化を凝縮といいます。" },
-  { s:'chemistry', type:'typing', q:"「アンモニア分子」の化学式を書こう", answer:"NH3", accept:["nh3"], desc:"窒素1・水素3。刺激臭がありアルカリ性を示す。" },
-  { s:'chemistry', type:'typing', q:"「バリウムイオン」の化学式を書こう", answer:"Ba2+", accept:["ba2+"], desc:"バリウム原子が電子2個を失った陽イオン。硫酸イオンと結びつくと白色沈殿をつくる。" },
-  { s:'chemistry', type:'choice', q:"薬品が手についたときの正しい対処はどれか？", choices:["ふき取って放置する","すぐに大量の水で洗い流す","こすって落とす","別の薬品で中和する"], answer:1, desc:"まず大量の水で洗い流すのが基本。その後、先生に伝える。" },
-  { s:'chemistry', type:'choice', q:"まわりから熱を吸収して温度が下がる反応を何というか。", choices:["酸化","吸熱反応","発熱反応","燃焼"], answer:1, desc:"まわりの熱を吸収する反応が吸熱反応。クエン酸と炭酸水素ナトリウムの反応などが例。" },
-  { s:'chemistry', type:'choice', q:"ドライアイスが液体にならず気体になる変化を何という？", choices:["蒸発","凝固","融解","昇華"], answer:3, desc:"固体が直接気体になる変化を昇華といいます。" },
-  { s:'physics', type:'choice', q:"光が鏡に当たってはね返る現象を何という？", choices:["反射","屈折","回折","蒸発"], answer:0, desc:"光が鏡などの表面ではね返る現象を反射という。" },
-  { s:'physics', type:'choice', q:"力の単位はどれ？", choices:["N","A","V","J"], answer:0, desc:"力の単位はニュートンで、記号はNで表す。" },
-  { s:'physics', type:'choice', q:"電流の単位はどれ？", choices:["A","V","Ω","W"], answer:0, desc:"電流の単位はアンペアで、記号はAで表す。" },
-  { s:'physics', type:'choice', q:"物体が20mを4秒で進んだときの速さは何m/s？", choices:["4m/s","5m/s","16m/s","80m/s"], answer:1, desc:"速さ=距離÷時間なので、20m÷4s=5m/s。" },
-  { s:'physics', type:'choice', q:"反射の角度関係は？", choices:["入射角と反射角は等しい","入射角は反射角の2倍","反射角はいつも0度","入射角と反射角は無関係"], answer:0, desc:"反射の法則では、入射角と反射角は等しくなる。" },
-  { s:'physics', type:'choice', q:"地球が物体を引く力を何という？", choices:["重力","摩擦力","弾性力","磁力"], answer:0, desc:"地球が物体を地球の中心へ向かって引く力を重力という。" },
-  { s:'physics', type:'choice', q:"電圧の単位はどれ？", choices:["V","A","N","J"], answer:0, desc:"電圧の単位はボルトで、記号はVで表す。" },
-  { s:'physics', type:'choice', q:"速さ3m/sで10秒進むと、進む距離は何m？", choices:["3m","10m","13m","30m"], answer:3, desc:"距離=速さ×時間なので、3m/s×10s=30m。" },
-  { s:'physics', type:'choice', q:"光の向き変化の名は？", choices:["反射","屈折","凝結","放電"], answer:1, desc:"光が異なる物質へ進むとき、進む向きが変わる現象を屈折という。" },
-  { s:'physics', type:'choice', q:"運動を妨げる力は？", choices:["摩擦力","浮力","重力","電力"], answer:0, desc:"接している面の間で、すべりをさまたげる向きにはたらく力を摩擦力という。" },
-  { s:'physics', type:'choice', q:"抵抗の単位はどれ？", choices:["Ω","A","V","m/s"], answer:0, desc:"抵抗の単位はオームで、記号はΩで表す。" },
-  { s:'physics', type:'choice', q:"距離60mを速さ12m/sで進むと、かかる時間は何秒？", choices:["5秒","12秒","48秒","720秒"], answer:0, desc:"時間=距離÷速さなので、60m÷12m/s=5s。" },
-  { s:'physics', type:'choice', q:"凸レンズに平行な光を当てると、光は主にどこに集まる？", choices:["焦点","中心の真上","レンズの端","光源の後ろ"], answer:0, desc:"凸レンズに軸に平行な光を当てると、屈折して焦点に集まる。" },
-  { s:'physics', type:'choice', q:"ばねやゴムがもとの形に戻ろうとしてはたらく力を何という？", choices:["弾性力","電流","圧力","音波"], answer:0, desc:"変形したばねやゴムがもとの形に戻ろうとしてはたらく力を弾性力という。" },
-  { s:'physics', type:'choice', q:"直列回路で、各部分を流れる電流について正しいものはどれ？", choices:["どこでも同じ大きさ","電源から遠いほど大きい","枝分かれごとに必ず0になる","抵抗と無関係に変わる"], answer:0, desc:"直列回路では電流の通り道が1本なので、各部分を流れる電流は同じ大きさになる。" },
-  { s:'physics', type:'choice', q:"一定の速さで一直線上を進む運動を何という？", choices:["等速直線運動","自由落下だけ","反射","放電"], answer:0, desc:"速さが一定で、向きも変わらず一直線上を進む運動を等速直線運動という。" },
-  { s:'physics', type:'choice', q:"音は何によって生じる？", choices:["物体の振動","物体の色","光の反射","水の蒸発"], answer:0, desc:"音は物体が振動することで発生し、空気などを通して伝わる。" },
-  { s:'physics', type:'choice', q:"水中の物体にはたらく、上向きの力を何という？", choices:["浮力","摩擦力","重力","電圧"], answer:0, desc:"水や空気などの中にある物体には、上向きの浮力がはたらく。" },
-  { s:'physics', type:'choice', q:"並列回路で、各枝に加わる電圧について正しいものはどれ？", choices:["電源の電圧と等しい","枝が多いほど必ず0になる","電流と必ず同じ単位になる","抵抗があると電圧は存在しない"], answer:0, desc:"並列回路では、それぞれの枝に電源と同じ電圧が加わる。" },
-  { s:'physics', type:'choice', q:"力の向きに物体を動かしたときの仕事を求める式はどれ？", choices:["仕事=力×移動距離","仕事=電圧÷電流","仕事=面積÷力","仕事=振動数×音速"], answer:0, desc:"力の向きに物体が動いたとき、仕事[J]=力[N]×移動距離[m]で求める。" },
-  { s:'physics', type:'choice', q:"音の大きさに最も関係が深いものはどれ？", choices:["振幅","振動数","温度の単位","光の速さ"], answer:0, desc:"音の大きさは振動の幅である振幅が大きいほど大きくなる。" },
-  { s:'physics', type:'choice', q:"磁石が鉄を引きつける力はどれ？", choices:["磁力","重力","浮力","圧力"], answer:0, desc:"磁石が鉄などを引きつけたり、磁石どうしが引き合ったり反発したりする力を磁力という。" },
-  { s:'physics', type:'choice', q:"電力の単位はどれ？", choices:["W","A","V","Ω"], answer:0, desc:"電力の単位はワットで、記号はWで表す。電力は電気器具が1秒あたりに使う電気エネルギーの量を表す。" },
-  { s:'physics', type:'choice', q:"10Nの力で物体を力の向きに2m動かした。仕事は何J？", choices:["5J","10J","20J","40J"], answer:2, desc:"仕事=力×移動距離なので、10N×2m=20J。" },
-  { s:'physics', type:'choice', q:"音の高さに最も関係が深いものはどれ？", choices:["振動数","質量","面積","電圧"], answer:0, desc:"音の高さは1秒間の振動回数である振動数が多いほど高くなる。" },
-  { s:'physics', type:'choice', q:"静止を続ける2力は？", choices:["2力がつり合っている","2力が同じ向きである","力がまったくない","重力だけが2倍になる"], answer:0, desc:"物体が静止し続ける場合、はたらく力がつり合っていることがある。2力のつり合いでは大きさが等しく向きが反対になる。" },
-  { s:'physics', type:'choice', q:"電流が流れる導線のまわりにできるものはどれ？", choices:["磁界","真空","焦点","水圧"], answer:0, desc:"電流が流れる導線のまわりには磁界ができる。" },
-  { s:'physics', type:'choice', q:"40Jの仕事を8秒で行ったときの仕事率は何W？", choices:["5W","8W","32W","320W"], answer:0, desc:"仕事率=仕事÷時間なので、40J÷8s=5W。" },
-  { s:'physics', type:'choice', q:"真空中で音が伝わらない理由として正しいものはどれ？", choices:["音を伝える物質がないから","光がないから","温度が必ず0度だから","重力がないから"], answer:0, desc:"音は空気や水などの物質の振動として伝わるため、真空中では伝わらない。" },
-  { s:'physics', type:'choice', q:"ばねののびと加えた力の関係として、範囲内で正しいものはどれ？", choices:["力が大きいほどのびは大きい","力が大きいほどのびは小さい","のびは力と無関係","力を加えると必ず縮む"], answer:0, desc:"ばねは限度内で、加えた力が大きいほどのびが大きくなる。" },
-  { s:'physics', type:'choice', q:"電磁石を強くする方法として正しいものはどれ？", choices:["コイルの巻き数を増やす","電流を小さくする","鉄しんを必ず外す","導線を切る"], answer:0, desc:"電磁石は、コイルの巻き数を増やしたり電流を大きくしたりすると強くなる。" },
-  { s:'physics', type:'choice', q:"道具を使っても、摩擦などを無視すると変わらない量はどれ？", choices:["必要な仕事の総量","必ず必要な力","必ず移動距離","物体の質量が0になること"], answer:0, desc:"滑車や斜面などを使うと力の大きさや動かす距離は変えられるが、摩擦を無視すると仕事の総量は変わらない。" },
-  { s:'physics', type:'choice', q:"空気中の音の速さとして最も近い値はどれ？", choices:["約34m/s","約340m/s","約3400m/s","約30万km/s"], answer:1, desc:"中学理科では、空気中の音の速さをおよそ340m/sとして扱う。" },
-  { s:'physics', type:'choice', q:"圧力を大きくする方法として正しいものはどれ？", choices:["同じ力で押す面積を小さくする","同じ力で押す面積を大きくする","力を0にする","物体の色を変える"], answer:0, desc:"圧力は力を面積で割った量なので、同じ力なら面積が小さいほど圧力は大きい。" },
-  { s:'physics', type:'choice', q:"抵抗3Ωに6Vの電圧を加えると、流れる電流は何A？", choices:["0.5A","2A","3A","18A"], answer:1, desc:"オームの法則V=IRより、I=V÷R=6V÷3Ω=2A。" },
-  { s:'physics', type:'choice', q:"等速の距離時間グラフは？", choices:["原点を通る直線","水平な直線だけ","ぎざぎざの線だけ","必ず円"], answer:0, desc:"速さが一定なら、進んだ距離は時間に比例するため、距離-時間グラフは直線になる。" },
-  { s:'physics', type:'choice', q:"水面にうつった景色が見える主な理由はどれ？", choices:["水面で光が反射するから","水が音を吸収するから","水が電気を流すから","水が重力を消すから"], answer:0, desc:"水面で光が反射し、その反射した光が目に入るため景色が見える。" },
-  { s:'physics', type:'choice', q:"大気の重さによって生じる圧力を何という？", choices:["大気圧","水圧","電圧","音圧"], answer:0, desc:"空気にも重さがあり、その重さによって大気圧が生じる。" },
-  { s:'biology', type:'choice', q:"花のつくりで、花粉をつくる部分はどれか。", choices:["おしべ","めしべ","がく","花弁"], answer:0, desc:"おしべの先にあるやくで花粉がつくられます。めしべは受粉後に種子や果実に関係する部分です。" },
-  { s:'biology', type:'choice', q:"だ液に含まれ、デンプンを分解する消化酵素はどれか。", choices:["アミラーゼ","ペプシン","ヘモグロビン","インスリン"], answer:0, desc:"だ液中のアミラーゼはデンプンを分解します。消化酵素は決まった物質にはたらく性質があります。" },
-  { s:'biology', type:'choice', q:"細胞の中にあり、遺伝に関係する染色体を含む部分はどれか。", choices:["核","細胞膜","液胞","細胞壁"], answer:0, desc:"核には染色体があり、遺伝に関係する情報を含みます。多くの細胞で重要なはたらきを調節しています。" },
-  { s:'biology', type:'choice', q:"植物のように、無機物から有機物をつくる生物を何というか。", choices:["生産者","消費者","分解者","捕食者"], answer:0, desc:"植物は光合成によって有機物をつくるため、生態系の生産者と呼ばれます。" },
-  { s:'biology', type:'choice', q:"受粉とは、花粉がどこにつくことか。", choices:["めしべの柱頭","子房","胚珠","花弁"], answer:0, desc:"受粉は花粉がめしべの柱頭につくことです。その後、胚珠が種子になり、子房が果実になります。" },
-  { s:'biology', type:'choice', q:"胃で主にタンパク質の消化に関わる消化酵素はどれか。", choices:["ペプシン","アミラーゼ","リパーゼ","胆汁"], answer:0, desc:"胃液に含まれるペプシンはタンパク質の消化に関わります。胆汁は消化酵素ではありません。" },
-  { s:'biology', type:'choice', q:"植物細胞にあり、動物細胞にはふつう見られないつくりはどれか。", choices:["細胞壁","細胞膜","細胞質","核"], answer:0, desc:"植物細胞には細胞壁や葉緑体、大きな液胞が見られます。細胞膜、細胞質、核は動物細胞にも見られます。" },
-  { s:'biology', type:'choice', q:"動物のように、ほかの生物を食べて生活する生物を何というか。", choices:["消費者","生産者","分解者","無機物"], answer:0, desc:"動物は植物やほかの動物を食べて有機物を得るため、消費者と呼ばれます。" },
-  { s:'biology', type:'choice', q:"光合成で主にデンプンがつくられる場所はどこか。", choices:["葉緑体","細胞壁","根毛","道管"], answer:0, desc:"光合成は葉の細胞にある葉緑体で行われます。光を受けて二酸化炭素と水からデンプンなどをつくります。" },
-  { s:'biology', type:'choice', q:"小腸の内側にある、養分の吸収面積を広げるつくりはどれか。", choices:["柔毛","肺胞","気孔","腎臓"], answer:0, desc:"小腸の内側には柔毛があり、表面積を広げて消化された養分を効率よく吸収します。" },
-  { s:'biology', type:'choice', q:"1つの細胞からできている生物を何というか。", choices:["単細胞生物","多細胞生物","脊椎動物","被子植物"], answer:0, desc:"単細胞生物は1つの細胞だけで生命活動を行います。ゾウリムシやミカヅキモなどが例です。" },
-  { s:'biology', type:'choice', q:"生物どうしの「食べる・食べられる」のつながりを何というか。", choices:["食物連鎖","細胞分裂","光合成","肺循環"], answer:0, desc:"食物連鎖は生物どうしの食べる・食べられる関係を表します。実際の自然界では多くの連鎖が網の目のようにつながります。" },
-  { s:'biology', type:'choice', q:"植物の光合成で、材料として使われるものの組み合わせはどれか。", choices:["二酸化炭素と水","酸素とデンプン","窒素と酸素","水素と酸素"], answer:0, desc:"光合成では二酸化炭素と水を材料にしてデンプンなどをつくり、酸素を放出します。" },
-  { s:'biology', type:'choice', q:"肺でガス交換をする小袋は？", choices:["肺胞","心房","柔毛","腎小体"], answer:0, desc:"肺胞は非常に薄い壁をもつ小さな袋で、まわりの毛細血管との間で気体の交換を行います。" },
-  { s:'biology', type:'choice', q:"精子と卵が合体することを何というか。", choices:["受精","分裂","発芽","蒸散"], answer:0, desc:"受精は精子と卵が合体することです。受精によってできた細胞を受精卵といいます。" },
-  { s:'biology', type:'choice', q:"落ち葉や死がいを分解する細菌や菌類などを何というか。", choices:["分解者","生産者","一次消費者","肉食動物"], answer:0, desc:"分解者は生物の死がいやふんなどの有機物を分解し、物質を自然界に戻すはたらきをします。" },
-  { s:'biology', type:'choice', q:"植物の葉で、水蒸気が主に出入りする小さな穴を何というか。", choices:["気孔","維管束","根毛","胚珠"], answer:0, desc:"気孔は葉の表皮にある小さな穴で、蒸散や気体の出入りに関係します。" },
-  { s:'biology', type:'choice', q:"血液中で酸素を運ぶはたらきが大きい成分はどれか。", choices:["赤血球","白血球","血小板","血しょう"], answer:0, desc:"赤血球にはヘモグロビンが含まれ、酸素と結びついて全身へ運びます。" },
-  { s:'biology', type:'choice', q:"親と同じ形質の子が、受精をせずにできるふえ方はどれか。", choices:["無性生殖","有性生殖","受粉","減数分裂"], answer:0, desc:"無性生殖では受精をせずに新しい個体ができます。親と同じ形質になりやすいことが特徴です。" },
-  { s:'biology', type:'choice', q:"食物連鎖のはじめに位置することが多い生物はどれか。", choices:["植物","肉食動物","分解者","大型の魚"], answer:0, desc:"多くの食物連鎖は、光合成で有機物をつくる植物から始まります。植物は生産者です。" },
-  { s:'biology', type:'choice', q:"根から吸収した水や無機養分を運ぶ管はどれか。", choices:["道管","師管","気孔","子房"], answer:0, desc:"道管は根から吸収した水や無機養分を上へ運びます。師管は光合成でできた養分を運びます。" },
-  { s:'biology', type:'choice', q:"背骨をもつ動物を何というか。", choices:["脊椎動物","無脊椎動物","節足動物","軟体動物"], answer:0, desc:"背骨をもつ動物を脊椎動物といいます。魚類、両生類、は虫類、鳥類、哺乳類が含まれます。" },
-  { s:'biology', type:'choice', q:"核内で見やすいひも状のものは？", choices:["染色体","気孔","師管","柔毛"], answer:0, desc:"細胞分裂のとき、核の中の染色体が見えやすくなります。染色体には遺伝に関係する情報が含まれます。" },
-  { s:'biology', type:'choice', q:"食物網とは何を表したものか。", choices:["複数の食物連鎖が網の目のようにつながった関係","一つの細胞のつくり","血液の流れ","花のつくり"], answer:0, desc:"自然界では生物が一種類だけを食べるとは限らないため、食物連鎖が複雑につながった食物網として考えます。" },
-  { s:'biology', type:'choice', q:"胚珠が子房内にある植物は？", choices:["被子植物","裸子植物","シダ植物","コケ植物"], answer:0, desc:"被子植物は胚珠が子房に包まれている種子植物です。裸子植物は胚珠がむき出しです。" },
-  { s:'biology', type:'choice', q:"心臓から全身へ血液を送り出す部屋はどれか。", choices:["左心室","右心室","左心房","右心房"], answer:0, desc:"左心室は酸素を多く含む血液を全身へ送り出します。心臓の中でも壁が厚い部屋です。" },
-  { s:'biology', type:'choice', q:"植物細胞だけにあるつくりは？", choices:["核","細胞膜","細胞壁","細胞質"], answer:2, desc:"細胞壁・葉緑体・大きな液胞は植物の細胞に見られ、動物の細胞にはありません。細胞壁はからだを支えます。" },
-  { s:'biology', type:'choice', q:"自然界で分解者が少なくなると起こりやすいことはどれか。", choices:["死がいや落ち葉が分解されにくくなる","光合成がすべて止まる","動物がすべて生産者になる","酸素が水に変わる"], answer:0, desc:"分解者は死がいや落ち葉を分解して物質の循環を支えます。少なくなると有機物が分解されにくくなります。" },
-  { s:'biology', type:'choice', q:"単子葉類に多く見られる葉脈の特徴はどれか。", choices:["平行脈","網状脈","葉脈がない","輪状に広がる脈"], answer:0, desc:"単子葉類の葉脈は平行脈が多く、双子葉類は網状脈が多いです。" },
-  { s:'biology', type:'choice', q:"全身から心臓へ戻った血液が最初に入る部屋はどれか。", choices:["右心房","右心室","左心房","左心室"], answer:0, desc:"全身をめぐった血液は大静脈を通って右心房に戻ります。その後、右心室から肺へ送られます。" },
-  { s:'biology', type:'choice', q:"植物が光合成を行う、細胞内の緑色の粒を何というか。", choices:["葉緑体","核","液胞","細胞膜"], answer:0, desc:"葉緑体は緑色の色素(クロロフィル)をふくみ、光合成を行う場所です。" },
-  { s:'biology', type:'choice', q:"外来種について正しい説明はどれか。", choices:["もともとその地域にいなかったが、人の活動などで入ってきた生物","必ず絶滅した生物","すべての地域にもともといる生物","光合成をしない植物"], answer:0, desc:"外来種はもともとその地域にいなかった生物が人の活動などで入ってきたものです。在来の生物に影響することがあります。" },
-  { s:'biology', type:'choice', q:"ヨウ素液を使って調べる物質はどれか。", choices:["デンプン","酸素","タンパク質","二酸化炭素"], answer:0, desc:"ヨウ素液はデンプンがあると青紫色に変化します。光合成でデンプンができたかを調べる実験に使います。" },
-  { s:'biology', type:'choice', q:"心臓と肺を往復する流れは？", choices:["肺循環","体循環","消化","反射"], answer:0, desc:"肺循環は心臓と肺の間をめぐる血液の流れです。全身をめぐる流れは体循環です。" },
-  { s:'biology', type:'choice', q:"染色体を含む丸いつくりは？", choices:["液胞","核","細胞壁","細胞膜"], answer:1, desc:"核の中には遺伝情報をもつ染色体(DNA)があり、酢酸カーミンなどの染色液で赤く染まります。" },
-  { s:'biology', type:'choice', q:"植物の光合成と動物の呼吸の関係として正しいものはどれか。", choices:["酸素や二酸化炭素の循環に関係する","水だけを一方的に増やす","炭素の循環とは無関係である","生物どうしの関係には入らない"], answer:0, desc:"植物の光合成は二酸化炭素を取り入れて酸素を出し、動物の呼吸は酸素を使って二酸化炭素を出します。物質の循環に関係します。" },
-  { s:'biology', type:'choice', q:"葉の一部を覆う主目的は？", choices:["光が必要かを比べるため","水が必要かを比べるため","酸素が出るかを比べるため","葉の温度を下げるため"], answer:0, desc:"アルミはくで光をさえぎった部分と光が当たった部分を比べることで、光合成に光が必要かを調べられます。" },
-  { s:'biology', type:'choice', q:"尿をつくり、血液中の不要物を取り除く器官はどれか。", choices:["腎臓","肝臓","胃","肺"], answer:0, desc:"腎臓は血液中の不要物や余分な水分などをこし取り、尿をつくります。" },
-  { s:'earth', type:'choice', q:"地下にある高温でどろどろにとけた物質を何というか。", choices:["マグマ","溶岩","火山灰","軽石"], answer:0, desc:"地下にあるとけた岩石をマグマといいます。地表に出たものは溶岩と呼ばれます。" },
-  { s:'earth', type:'choice', q:"空気中に含むことができる水蒸気の最大量を何というか。", choices:["飽和水蒸気量","露点","湿度","気圧"], answer:0, desc:"飽和水蒸気量は空気が含むことのできる水蒸気の最大量です。温度が高いほど大きくなります。" },
-  { s:'earth', type:'choice', q:"自転による見かけの動きは？", choices:["日周運動","年周運動","公転","満ち欠け"], answer:0, desc:"地球が自転しているため、太陽や星は一日の間に東から西へ動くように見えます。これを日周運動といいます。" },
-  { s:'earth', type:'choice', q:"ねばりけの小さいマグマでできやすい火山の形はどれか。", choices:["傾きがゆるやかな火山","盛り上がったドーム状の火山","急で高い火山","噴火しない火山"], answer:0, desc:"ねばりけの小さいマグマは流れやすく、傾きがゆるやかな火山をつくりやすいです。" },
-  { s:'earth', type:'choice', q:"水滴になり始める温度は？", choices:["露点","湿度","気圧","風力"], answer:0, desc:"露点は空気中の水蒸気が凝結し始める温度です。露点以下になると水滴ができやすくなります。" },
-  { s:'earth', type:'choice', q:"太陽や星が一日のうちに動いて見える向きはどれか。", choices:["東から西","西から東","北から南だけ","南から北だけ"], answer:0, desc:"地球が西から東へ自転しているため、天体は見かけ上、東から西へ動いて見えます。" },
-  { s:'earth', type:'choice', q:"火山灰を観察したときに見られる、小さな粒の主な正体はどれか。", choices:["鉱物や火山ガラス","花粉だけ","食塩だけ","生物の細胞だけ"], answer:0, desc:"火山灰には鉱物の結晶や火山ガラスの小さな粒が含まれます。顕微鏡で形や色を観察できます。" },
-  { s:'earth', type:'choice', q:"気圧を表す単位として使われるものはどれか。", choices:["hPa","℃","％","m/s"], answer:0, desc:"気圧はヘクトパスカル、記号hPaで表します。天気図では等圧線とともに使われます。" },
-  { s:'earth', type:'choice', q:"地球が太陽のまわりを回る運動を何というか。", choices:["公転","自転","日食","月食"], answer:0, desc:"地球が太陽のまわりを約1年で1周する運動を公転といいます。季節の変化にも関係します。" },
-  { s:'earth', type:'choice', q:"地震で最初に伝わり、初期微動を起こす波はどれか。", choices:["P波","S波","音波","電波"], answer:0, desc:"P波はS波より速く伝わり、最初に到着して初期微動を起こします。S波は主要動に関係します。" },
-  { s:'earth', type:'choice', q:"まわりより気圧が高いところを何というか。", choices:["高気圧","低気圧","前線","露点"], answer:0, desc:"まわりより気圧が高いところを高気圧といいます。一般に下降気流が起こり、晴れやすいです。" },
-  { s:'earth', type:'choice', q:"地球の地軸は、公転面に垂直な方向から約何度傾いているか。", choices:["23.4度","3.14度","66.6度","90度"], answer:0, desc:"地軸は公転面に垂直な方向から約23.4度傾いています。この傾きが季節による太陽高度の変化に関係します。" },
-  { s:'earth', type:'choice', q:"地震で、あとから伝わり主要動を起こす波はどれか。", choices:["S波","P波","光波","水蒸気"], answer:0, desc:"S波はP波より遅く伝わりますが、到着すると大きなゆれである主要動を起こします。" },
-  { s:'earth', type:'choice', q:"まわりより気圧が低いところを何というか。", choices:["低気圧","高気圧","等圧線","季節風"], answer:0, desc:"まわりより気圧が低いところを低気圧といいます。一般に上昇気流が起こり、雲ができやすいです。" },
-  { s:'earth', type:'choice', q:"太陽表面の暗い部分は？", choices:["黒点","満月","銀河","コロナだけ"], answer:0, desc:"黒点は太陽の表面に見える暗い部分で、まわりより温度が低いため暗く見えます。" },
-  { s:'earth', type:'choice', q:"地震そのものの規模を表す値はどれか。", choices:["マグニチュード","震度","気圧","湿度"], answer:0, desc:"マグニチュードは地震の規模を表します。震度はある場所でのゆれの強さを表します。" },
-  { s:'earth', type:'choice', q:"風向は何を表すか。", choices:["風が吹いてくる方向","風が吹いていく方向","雲が動く速さ","気圧の高さ"], answer:0, desc:"風向は風が吹いてくる方向で表します。北風は北から南へ向かって吹く風です。" },
-  { s:'earth', type:'choice', q:"地球が地軸を中心に1日に1回転する運動を何というか。", choices:["公転","自転","満ち欠け","年周運動"], answer:1, desc:"地球は西から東へ1日1回自転します。これにより太陽や星は東から西へ動いて見えます。" },
-  { s:'earth', type:'choice', q:"粒の大きさが2mm以上の粒を多く含む堆積岩はどれか。", choices:["れき岩","砂岩","泥岩","石灰岩"], answer:0, desc:"れき岩は2mm以上のれきを多く含む堆積岩です。砂岩や泥岩はより小さい粒からできています。" },
-  { s:'earth', type:'choice', q:"雲ができる主なしくみとして正しいものはどれか。", choices:["空気が上昇して冷え、水蒸気が水滴や氷の粒になる","空気が下降して必ず温まる","水蒸気がすべて酸素に変わる","気圧が高いほど必ず雲が増える"], answer:0, desc:"空気が上昇すると膨張して冷え、露点に達すると水蒸気が凝結して雲の粒になります。" },
-  { s:'earth', type:'choice', q:"太陽の1日の動きは？", choices:["日周運動","年周運動","公転","満ち欠け"], answer:0, desc:"地球の自転により、太陽や星は1日で東→南→西へと動いて見えます。これを日周運動といいます。" },
-  { s:'earth', type:'choice', q:"マグマが地表付近で急に冷えてできる火成岩を何というか。", choices:["火山岩","深成岩","堆積岩","変成岩"], answer:0, desc:"火山岩はマグマが地表付近で急に冷えてできた岩石です。斑状組織を示すことが多いです。" },
-  { s:'earth', type:'choice', q:"冷たい空気が暖かい空気を押し上げて進む前線はどれか。", choices:["寒冷前線","温暖前線","停滞前線","閉そく前線"], answer:0, desc:"寒冷前線では冷たい空気が暖かい空気の下にもぐりこみ、暖かい空気を急に押し上げます。" },
-  { s:'earth', type:'choice', q:"地球が太陽のまわりを1年に1回まわる運動を何というか。", choices:["自転","公転","日周運動","満ち欠け"], answer:1, desc:"地球は太陽のまわりを1年で1周公転します。地軸がかたむいたまま公転するため季節が生じます。" },
-  { s:'earth', type:'choice', q:"マグマが地下深くでゆっくり冷えてできる火成岩を何というか。", choices:["深成岩","火山岩","凝灰岩","石灰岩"], answer:0, desc:"深成岩は地下深くでゆっくり冷えてでき、結晶が大きく育ちやすいため等粒状組織になります。" },
-  { s:'earth', type:'choice', q:"暖かい空気が冷たい空気の上にはい上がって進む前線はどれか。", choices:["温暖前線","寒冷前線","停滞前線","等圧線"], answer:0, desc:"温暖前線では暖かい空気が冷たい空気の上をゆるやかにはい上がります。広い範囲で雨が降りやすいです。" },
-  { s:'earth', type:'choice', q:"太陽のように、みずから光を出す天体を何というか。", choices:["惑星","衛星","恒星","すい星"], answer:2, desc:"みずから光り輝く天体を恒星といいます。太陽は恒星です。惑星や衛星は太陽の光を反射しています。" },
-  { s:'earth', type:'choice', q:"斑状の火山岩組織は？", choices:["斑状組織","等粒状組織","柱状組織","層状組織"], answer:0, desc:"火山岩は急に冷えるため、先にできた大きな結晶と細かな石基からなる斑状組織になりやすいです。" },
-  { s:'earth', type:'choice', q:"梅雨の時期に日本付近にできやすい前線はどれか。", choices:["停滞前線","寒冷前線","温暖前線","閉そく前線"], answer:0, desc:"梅雨の時期には、性質の異なる気団の間に停滞前線ができやすく、雨の日が続きます。" },
-  { s:'earth', type:'choice', q:"地球のまわりを公転し、満ち欠けして見える天体はどれか。", choices:["太陽","月","北極星","火星"], answer:1, desc:"月は地球のまわりを公転する衛星で、太陽の光を反射し、位置関係によって満ち欠けして見えます。" },
-  { s:'earth', type:'choice', q:"花こう岩の特徴として正しいものはどれか。", choices:["深成岩で等粒状組織をもつ","火山岩で斑状組織をもつ","堆積岩で化石を多く含む","火山灰が固まった岩石である"], answer:0, desc:"花こう岩は地下深くでゆっくり冷えてできた深成岩で、等粒状組織をもちます。" },
-  { s:'earth', type:'choice', q:"冬の日本付近に強く影響する、冷たく乾いた気団はどれか。", choices:["シベリア気団","小笠原気団","オホーツク海気団","赤道気団"], answer:0, desc:"シベリア気団は冷たく乾いた大陸性の気団で、冬の日本の季節風に大きく関係します。" },
-];
-// ★タイピング問題は廃止(テンポが悪い／全角半角の誤りが理不尽・聖典記載の方針)＝化学式タイピングを4択に自動変換(内容は残す)。
-(function(){ const typ=QUESTIONS.filter(q=>q.type==='typing'); const all=[...new Set(typ.map(q=>q.answer))]; const isIon=a=>/[+\-]/.test(a);
-  typ.forEach(q=>{ const ans=q.answer; let fam=all.filter(a=>a!==ans && isIon(a)===isIon(ans)); if(fam.length<3)fam=all.filter(a=>a!==ans);   // 分子は分子/イオンはイオンから誤答を作る
-    for(let i=fam.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [fam[i],fam[j]]=[fam[j],fam[i]]; }
-    q.type='choice'; q.choices=[ans,...fam.slice(0,3)]; q.answer=0; q.q=q.q.replace('を書こう','はどれ？'); });   // 表示順はdrawの shuffleOrder で更にシャッフルされる
-})();
-let _lastQ=null;
-function drawQuestion(subjects){ const cand=QUESTIONS.filter(q=>q.type!=='typing'&&subjects.includes(q.s)); let pool=cand.filter(q=>q!==_lastQ); if(!pool.length)pool=cand.length?cand:QUESTIONS.filter(q=>q.type!=='typing');
-  const q=pool[Math.floor(Math.random()*pool.length)]; _lastQ=q; return q; }
 
 /* ===================== §3 敵 / 味方 / スキル / アイテム / 状態異常 ===================== */
 // ★体験版の敵=序盤(コモン〜レア帯)。画像が無い敵は絵文字で表示(buildEnemiesが自動判別)。数値は仮。
@@ -763,7 +711,7 @@ const ITEM_DEFS = [
 
 /* ===================== §4 状態 ===================== */
 let encIdx=0, enemies=[], allies=[], combo=0, items={hpPotion:3,mpPotion:3};
-let phase='charging', stateTimer=0, curQ=null, answered=false, pendingAction=null, activeAlly=null, _advancing=false, _lastEnemyActed=false;
+let phase='charging', stateTimer=0, pendingAction=null, activeAlly=null, _advancing=false, _lastEnemyActed=false;
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 // curMetaFlat(メタステの装備相当フラット補正)とcurLoadout(役割別スキル)を反映。最終ステ=(素＋装備メイン＋ボーナス＋メタ補正)×装飾品%×固有バフ。
 function makeAllies(){ const mflat=curMetaFlat||{}; allies = ALLY_DEFS.map(d=>{
@@ -786,7 +734,7 @@ function setEncounter(i){ const defs=curEncounters()[i] || curEncounters()[0]; c
 let gameState='title';   // ★体験版の進行状態: 'title'|'map'|'battle'|'clear'|'complete'|'defeat'。battle以外はupdate()停止。
 // 1ステージ分の戦闘を初期化(味方フル・第1ウェーブ)。難度cfgはstartStageで適用済み。
 function startBattle(){ encIdx=0; stageDrops=[]; setEncounter(0); makeAllies(); combo=0; items={hpPotion:3,mpPotion:3};
-  phase='charging'; stateTimer=0; curQ=null; answered=false; pendingAction=null; activeAlly=null; _advancing=false; _lastEnemyActed=false;
+  phase='charging'; stateTimer=0; pendingAction=null; activeAlly=null; _advancing=false; _lastEnemyActed=false;   // curQ/answered は問題側(quiz-engine)の状態＝ゲーム側は触らない(Quiz.askが毎問リセット)
   buildParty(); hideOverlay(); bumpCombo(); renderCommand(); }
 function resetAll(){ startStage(curStage); }   // 「もう一度」＝今のステージをやり直す
 
@@ -875,37 +823,20 @@ function proceedAction(){ const act=pendingAction, c=activeAlly;
   else { if(act.kind==='skill'){ c.mp-=skMp(act.skill); act.skill.run(c, enemies[act.targetIdx], skL(act.skill)); } afterAction(c.name+'は'+(act.skill?act.skill.name:'行動')+'を使った'); checkWin(); } }
 
 /* ===================== §8 全画面出題（カフート式・1ソルバー） ===================== */
-const TILE=[{c:'#e0413e',s:'▲'},{c:'#1368ce',s:'◆'},{c:'#d89e00',s:'●'},{c:'#26890c',s:'■'}];
-function shuffleOrder(n){ const a=[]; for(let i=0;i<n;i++)a.push(i); for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }   // 選択肢の表示順シャッフル(Fisher-Yates)
 function questionSubjects(){ const act=pendingAction;
   if(act.scope==='enemy' && act.targetIdx!=null) return enemies[act.targetIdx].attrs;
   const u=new Set(); aliveEnemies().forEach(e=>e.attrs.forEach(s=>u.add(s))); return u.size?[...u]:['chemistry']; }
-function startQuestion(){ phase='question'; answered=false; curQ=drawQuestion(questionSubjects()); renderQuestionOverlay(); }
-function renderQuestionOverlay(){ const q=curQ, subj=SUBJECTS[q.s], a=activeAlly, act=pendingAction;
-  let ctx, tgt = act.targetIdx!=null ? enemies[act.targetIdx] : null;
-  if(act.kind==='attack') ctx=`<b>${a.emoji}${a.name}</b> → ${tgt?tgt.name:'敵'}　｜　${subj.emoji}<b>${subj.jp}</b>の問題`;
-  else if(act.kind==='skill') ctx=`<b>${act.skill.emoji}${act.skill.name}</b>${act.scope==='allEnemies'?'(全体)':(tgt?'→'+tgt.name:'')}（正解で発動）　｜　${subj.emoji}${subj.jp}`;
-  else ctx=`<b>${act.item.emoji}${act.item.name}</b>（正解で行動消費30%）　｜　${subj.emoji}${subj.jp}`;
-  document.getElementById('qctx').innerHTML=ctx;
-  document.getElementById('qq').textContent=q.q;
-  document.getElementById('qimg').innerHTML=`<div style="text-align:center;"><div style="font-size:62px;line-height:1;">${subj.emoji}</div><div style="font-size:13px;color:${subj.color};margin-top:8px;font-weight:700;">${subj.jp}</div></div>`;
-  document.getElementById('qfeed').innerHTML='';
-  const ans=document.getElementById('qans');
-  if(q.type==='choice'){ const order=shuffleOrder(q.choices.length);   // ★表示順をシャッフル(正解が常に先頭にならないように)。data-i/onclickは元のindexのまま＝判定はそのまま正しい。
-    ans.innerHTML=`<div class="tiles">`+order.map((oi,pos)=>{ const t=TILE[pos%4];
-      return `<button class="tile" data-i="${oi}" style="background:${t.c};" onclick="answerChoice(${oi})"><span class="shape">${t.s}</span>${q.choices[oi]}</button>`; }).join('')+`</div>`; }
-  else ans.innerHTML=`<div class="typewrap"><input id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="答えを入力" onkeydown="if(event.key==='Enter')answerTyping()"><button onclick="answerTyping()">決定</button></div>`;
-  document.getElementById('qOverlay').classList.add('show');
-  if(q.type==='typing') setTimeout(()=>{ const el=document.getElementById('ans'); if(el)el.focus(); },40); }
-function hideOverlay(){ document.getElementById('qOverlay').classList.remove('show'); }
-function answerChoice(i){ if(phase!=='question'||answered)return; answered=true;
-  document.querySelectorAll('.tile').forEach(b=>{ const bi=+b.dataset.i; if(bi===curQ.answer)b.classList.add('ok'); else b.classList.add('ng'); b.disabled=true; });
-  setTimeout(()=>resolveAnswer(i===curQ.answer),460); }
-function answerTyping(){ if(phase!=='question'||answered)return; const el=document.getElementById('ans'); if(!el)return;
-  const norm=s=>(s||'').trim().toLowerCase().replace(/\s+/g,''); const ok=norm(el.value)===norm(curQ.answer)||(curQ.accept||[]).map(norm).includes(norm(el.value));
-  answered=true; el.disabled=true; resolveAnswer(ok); }
+// ── 戦闘から問題を呼ぶ＝出題範囲(敵attrs)＋文脈＋結果ハンドラを渡して Quiz.ask に委譲 ──
+function startQuestion(){ phase='question'; Quiz.ask({ subjects:questionSubjects(), ctxFn:buildQuizCtx, onResult:resolveAnswer, onContinue:afterMiss }); }
+function buildQuizCtx(q){ const subj=SUBJECTS[q.s], a=activeAlly, act=pendingAction, tgt=(act&&act.targetIdx!=null)?enemies[act.targetIdx]:null;   // qは Quiz.ask が渡す(問題側グローバルcurQに依存しない)
+  if(!act) return `${subj.emoji}<b>${subj.jp}</b>の問題`;
+  if(act.kind==='attack') return `<b>${a.emoji}${a.name}</b> → ${tgt?tgt.name:'敵'}　｜　${subj.emoji}<b>${subj.jp}</b>の問題`;
+  if(act.kind==='skill') return `<b>${act.skill.emoji}${act.skill.name}</b>${act.scope==='allEnemies'?'(全体)':(tgt?'→'+tgt.name:'')}（正解で発動）　｜　${subj.emoji}${subj.jp}`;
+  return `<b>${act.item.emoji}${act.item.name}</b>（正解で行動消費30%）　｜　${subj.emoji}${subj.jp}`; }
+
+// ★resolveAnswer＝Quiz から渡される『戦闘側の結果ハンドラ』(onResult)。問題UI/解説はQuizが持つ＝ここは戦闘反映だけ。
 function resolveAnswer(correct){ const act=pendingAction, c=activeAlly; if(!act)return;
-  if(correct){ combo++; bumpCombo(); hideOverlay();
+  if(correct){ combo++; bumpCombo();
     // ★MP回復は『通常攻撃の正解』だけ＝スキルは純コスト→低コスト状態異常(まひ等)の永続化を防止(レビュー残対応)
     if(act.kind==='attack'){ if(c) c.mp=Math.min(c.mpMax,c.mp+cfg.mpPerCorrect); doAttack(c, enemies[act.targetIdx]); if(c) c.charge=0; }
     else if(act.kind==='skill'){ c.mp-=skMp(act.skill); act.skill.run(c, enemies[act.targetIdx], skL(act.skill)); c.charge=c._tossBonus||0; c._tossBonus=0; }   // 突進など「自ゲージ+」は手番後の0リセットの代わりに少し残す
@@ -913,11 +844,8 @@ function resolveAnswer(correct){ const act=pendingAction, c=activeAlly; if(!act)
     document.getElementById('phaseHint').textContent='COMBO '+combo+'！';
     pendingAction=null; activeAlly=null; phase='savor'; stateTimer=cfg.savorSec; renderCommand(); checkWin();
   } else { combo=0; bumpCombo();
-    if(act.kind==='item'){ useItem(act.item,false,c); } else if(c){ c.charge=Math.max(0,c.charge-cfg.missDropPct); }   // 誤答=行動ゲージ−%だけ・HPは無罰(不可侵)
-    document.querySelectorAll('.tile').forEach(b=>b.disabled=true);
-    document.getElementById('qfeed').innerHTML=`<div class="wrongttl">おしい！ 正解は「${answerLabel(curQ)}」</div>
-      <div class="desc">💡 ${curQ.desc}</div><button class="next" onclick="afterMiss()">つぎへ ▶</button>`;
-    document.getElementById('qctx').innerHTML='まちがえても大丈夫。HPは減りません。'; phase='miss'; } }
+    if(act.kind==='item'){ useItem(act.item,false,c); } else if(c){ c.charge=Math.max(0,c.charge-cfg.missDropPct); }   // 誤答=行動ゲージ−%だけ・HPは無罰(不可侵)。解説はQuiz→つぎへでafterMiss
+    phase='miss'; } }
 function afterMiss(){ hideOverlay(); pendingAction=null; activeAlly=null; phase='charging'; renderCommand(); }
 function useItem(it,correct,c){ items[it.id]=Math.max(0,(items[it.id]||0)-1); it.run(); const cost=correct?it.gaugeCost*0.3:it.gaugeCost; if(c) c.charge=Math.max(0,c.charge-cost); }
 
@@ -938,7 +866,6 @@ function fdmg(c,statKey,mult,e,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
   let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e)*killer(e);
   dmg=Math.max(DMG_FLOOR,Math.min(DMG_CAP,Math.floor(dmg))); dealEnemyTarget(e,dmg,crit); return dmg; }
 function doAttack(c,e){ if(!e)return; const d=fdmg(c, c.atkStat||'str', 1.0, e); screenShake(); bigSavor('⚔️ こうげき '+fmt(d)); }   // 通常攻撃(主属性×1.0)＝唯一のMP回復手段(正解で+MP・resolveAnswerで加算)
-function answerLabel(q){ return q.type==='choice'?q.choices[q.answer]:q.answer; }
 function lowAlly(){ return allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; }
 // 回復: 戦闘不能が居れば蘇生優先(HP40%)、いなければ最もHP割合の低い味方を回復。amount=実数(上限1500)。
 function healOne(amount){ let t=allies.find(a=>a.downed);
@@ -1236,7 +1163,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
       <div class="nh-subs">
         <button class="soon" onclick="homeSoon()"><span class="e">📚</span>問題</button>
         <button class="soon" onclick="homeSoon()"><span class="e">🔁</span>復習</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">🎒</span>インベントリ</button>
+        <button onclick="showInventory()"><span class="e">🎒</span>インベントリ</button>
         <button class="soon" onclick="homeSoon()"><span class="e">🛒</span>ショップ</button>
         <button class="soon" onclick="homeSoon()"><span class="e">⚙</span>その他</button>
         <button onclick="showHome()"><span class="e">🏠</span>ホーム</button>
@@ -1251,10 +1178,7 @@ let equipCid=null, equipSel=null;   // equipSel={kind:'gear'|'acc', slot}
 function showEquip(){ gameState='equip'; equipCid=null; equipSel=null; renderEquip(); showScreen('accessory'); setTopbar(''); }
 function openCharEquip(cid){ equipCid=cid; equipSel=null; renderEquip(); }
 function selectEquipSlot(kind,slot){ equipSel={kind,slot}; renderEquip(); }
-function equipItem(id){ if(!equipSel||!equipCid)return; const cid=equipCid;
-  if(equipSel.kind==='gear'){ Object.keys(gearEquip).forEach(c=>GEAR_SLOTS.forEach(s=>{ if(gearEquip[c][s]===id)gearEquip[c][s]=null; })); gearEquip[cid][equipSel.slot]=id; }
-  else { Object.keys(accEquip).forEach(c=>accEquip[c].forEach((v,i)=>{ if(v===id)accEquip[c][i]=null; })); accEquip[cid][equipSel.slot]=id; }
-  saveAcc(); renderEquip(); }
+// ※旧 equipItem(直付け) は廃止＝候補タップ→詳細ドロワー(openDetail→dwEquip→equipOnto)に一本化(比較してから装備・2026-06-24)。
 function unequipSel(){ if(!equipSel||!equipCid)return; if(equipSel.kind==='gear')gearEquip[equipCid][equipSel.slot]=null; else accEquip[equipCid][equipSel.slot]=null; saveAcc(); renderEquip(); }
 function renderEquip(){ const g=document.getElementById('accBody');
   if(!equipCid){   // ハブ＝キャラ選択
@@ -1262,37 +1186,173 @@ function renderEquip(){ const g=document.getElementById('accBody');
       return `<button class="equip-card" onclick="openCharEquip('${d.id}')"><div class="hc-emoji">${d.emoji}</div><div class="hc-name">${d.name}</div><div class="hc-role">${d.role}</div><div class="ec-skills">${sk}</div><div class="hc-pct">装飾品 +${pct}%</div></button>`; }).join('');
     g.innerHTML=`<h2 class="scr-ttl">🔮 そうび</h2><div class="acc-sub">キャラをえらんで、装備（スキル）と装飾品をつけよう。</div><div class="equip-hub">${cards}</div><div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>`;
     return; }
-  const cid=equipCid, d=ALLY_DEFS.find(a=>a.id===cid), accm=1+accPctFor(cid)/100;
-  const eStr=Math.round(d.str*accm)+accFlat(cid,'str'), eInt=Math.round(d.int*accm)+accFlat(cid,'int'), eDef=Math.round(d.def*accm)+accFlat(cid,'def'), eHp=Math.round(d.hpMax*accm)+accFlat(cid,'hp');
+  const cid=equipCid, d=ALLY_DEFS.find(a=>a.id===cid), ps=previewStats(cid);
+  // ★ステ表示=戦闘のmakeAlliesと同式(buff倍率込み・mflatはステ専用なので拠点では除外)＝旧estatの近似ズレを是正
+  const statList=`<div class="eq-statlist">
+    <div class="srow"><span class="sl">ちから</span><span class="sv">${fmt(ps.str)}</span></div>
+    <div class="srow"><span class="sl">かしこさ</span><span class="sv">${fmt(ps.int)}</span></div>
+    <div class="srow"><span class="sl">まもり</span><span class="sv">${fmt(ps.def)}</span></div>
+    <div class="srow"><span class="sl">最大HP</span><span class="sv">${fmt(ps.hp)}</span></div>
+    <div class="srow"><span class="sl">すばやさ</span><span class="sv">${ps.spd.toFixed(2)}</span></div>
+    <div class="srow"><span class="sl">異常耐性</span><span class="sv">${Math.round(ps.resist*100)}%</span></div></div>`;
   const gslots=GEAR_SLOTS.map(slot=>{ const gid=gearEquip[cid][slot], gear=gid!=null?gearById(gid):null, sid=slotSkill(cid,slot), sk=sid?SKILLS[sid]:null, sel=equipSel&&equipSel.kind==='gear'&&equipSel.slot===slot;
     const rc=gear?RARITY[gear.rarity].col:'var(--sub)', mt=gear?mainText(gear):'', bx=gear?accBonuses(gear).map(bonusText).join('・'):'';
-    return `<button class="gslot${sel?' sel':''}" onclick="selectEquipSlot('gear','${slot}')"><span class="gs-slot">${slot}</span><span class="gs-tag" style="color:${rc};">${gear?'［'+RARITY[gear.rarity].jp+'］'+equipName(gear):'（空き）'}</span><span class="gs-skill">${sk?sk.emoji+sk.name:'—'}</span>${gear?`<span class="gs-b">${mt}${bx?'・'+bx:''}</span>`:''}</button>`; }).join('');
+    return `<button class="gslot${sel?' sel':''}" onclick="selectEquipSlot('gear','${slot}')"><span class="gs-slot">${SLOT_PIP[slot]||''} ${slot}</span><span class="gs-tag" style="color:${rc};">${gear?'［'+RARITY[gear.rarity].jp+'］'+equipName(gear):'（空き）'}</span><span class="gs-skill">${sk?sk.emoji+sk.name:'—'}</span>${gear?`<span class="gs-b">${mt}${bx?'・'+bx:''}</span>`:''}</button>`; }).join('');
   const aslots=(accEquip[cid]||[null,null]).map((id,si)=>{ const a=id!=null?accById(id):null, sel=equipSel&&equipSel.kind==='acc'&&equipSel.slot===si, bx=a?accBonuses(a).map(bonusText).join('・'):'';
     const inner=a?`<span class="aslot-r" style="color:${RARITY[a.rarity].col};">${RARITY[a.rarity].jp}</span><span class="aslot-n">${a.base} +全コア${RARITY[a.rarity].pct}%</span>${bx?`<span class="aslot-b">${bx}</span>`:''}`:`<span class="aslot-empty">＋ 空き</span>`;
     return `<button class="aslot${sel?' sel':''}" onclick="selectEquipSlot('acc',${si})">${inner}</button>`; }).join('');
-  let invHtml;
-  if(!equipSel){ invHtml=`<div class="acc-hint">枠をえらんでから、下のもちものをタップ</div>`; }
+  // もちもの(右カラム)＝選んだ枠の替え候補。タップで詳細ドロワー(比較つき)→装備する。
+  let poolHtml;
+  if(!equipSel){ poolHtml=`<div class="acc-hint">左の枠をえらぶと、ここに 付けられる そうびが出るよ。</div>`; }
   else if(equipSel.kind==='gear'){ const slot=equipSel.slot;   // ★役割ロックなし=同スロットの装備は誰でも装備可
     const eq=new Set(); Object.values(gearEquip).forEach(o=>GEAR_SLOTS.forEach(s=>{ if(o[s]!=null)eq.add(o[s]); }));
-    const list=gearInv.filter(x=>x.slot===slot&&!eq.has(x.id));
-    const rm=gearEquip[cid][slot]!=null?`<button class="acc-chip remove" onclick="unequipSel()">✕ きほんに戻す</button>`:'';
-    const chips=list.length?list.map(x=>{ const sk=SKILLS[x.skillId], mt=mainText(x), bx=accBonuses(x).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${RARITY[x.rarity].col};" onclick="equipItem(${x.id})"><b style="color:${RARITY[x.rarity].col};">${RARITY[x.rarity].jp}</b> ${equipName(x)} <span style="color:var(--sub);">${sk?sk.emoji+sk.name:x.skillId}</span><span class="chip-b">${mt}${bx?'・'+bx:''}</span></button>`; }).join(''):`<div class="acc-hint">この枠の装備がまだ無いよ</div>`;
-    invHtml=`<div class="acc-inv">${rm}${chips}</div>`;
-  } else { const eq=new Set(); Object.values(accEquip).forEach(arr=>arr.forEach(id=>{ if(id!=null)eq.add(id); }));
-    const list=accInv.filter(a=>!eq.has(a.id));
-    const rm=accEquip[cid][equipSel.slot]!=null?`<button class="acc-chip remove" onclick="unequipSel()">✕ はずす</button>`:'';
-    const chips=list.length?list.map(a=>{ const bx=accBonuses(a).map(bonusText).join('・'); return `<button class="acc-chip" style="border-color:${RARITY[a.rarity].col};" onclick="equipItem(${a.id})"><b style="color:${RARITY[a.rarity].col};">${RARITY[a.rarity].jp}</b> ${a.base} +全コア${RARITY[a.rarity].pct}%${bx?`<span class="chip-b">${bx}</span>`:''}</button>`; }).join(''):`<div class="acc-hint">あいてる装飾品がありません</div>`;
-    invHtml=`<div class="acc-inv">${rm}${chips}</div>`; }
+    const list=gearInv.filter(x=>x.slot===slot&&!eq.has(x.id)).sort((a,b)=>rIdx(b.rarity)-rIdx(a.rarity)||a.id-b.id);
+    const rm=gearEquip[cid][slot]!=null?`<button class="dw-rm" style="grid-column:1/-1;margin-bottom:2px;" onclick="unequipSel()">✕ きほんに戻す</button>`:'';
+    const cards=list.length?list.map(x=>gearPoolCard(x,cid)).join(''):`<div class="inv-empty">この枠の そうびは まだ無いよ</div>`;
+    poolHtml=`<div class="eq-poolttl">【${slot}】の替え候補</div><div class="inv-grid">${rm}${cards}</div>`;
+  } else { const si=equipSel.slot;
+    const eq=new Set(); Object.values(accEquip).forEach(arr=>arr.forEach(id=>{ if(id!=null)eq.add(id); }));
+    const list=accInv.filter(a=>!eq.has(a.id)).sort((a,b)=>rIdx(b.rarity)-rIdx(a.rarity)||a.id-b.id);
+    const rm=accEquip[cid][si]!=null?`<button class="dw-rm" style="grid-column:1/-1;margin-bottom:2px;" onclick="unequipSel()">✕ はずす</button>`:'';
+    const cards=list.length?list.map(a=>accPoolCard(a,cid,si)).join(''):`<div class="inv-empty">あいてる装飾品が ないよ</div>`;
+    poolHtml=`<div class="eq-poolttl">装飾品の候補</div><div class="inv-grid">${rm}${cards}</div>`; }
   g.innerHTML=`<h2 class="scr-ttl">${d.emoji} ${d.name}<span style="font-size:13px;color:var(--sub);"> ${d.role}</span></h2>
-    <div class="estat">ちから ${eStr}／かしこさ ${eInt}／まもり ${eDef}／HP ${eHp}　異常耐性 ${Math.round(accResistFor(cid)*100)}%</div>
-    <div class="eq-secttl">スキル装備（武器・頭・胴・足）＝ビルド</div><div class="gslot-grid">${gslots}</div>
-    <div class="eq-secttl">装飾品（2つまで・全コア+%）</div><div class="ar-slots">${aslots}</div>
-    <div class="acc-invwrap"><div class="acc-invttl">もちもの</div>${invHtml}</div>
-    <div class="scr-btns"><button class="scr-btn" onclick="showEquip()">◀ キャラ選択</button></div>`;
+    <div class="eq-wrap cols">
+      <div class="eq-c1"><div class="eq-portrait"><div class="pe">${d.emoji}</div><div class="pn">${d.name}</div><div class="pr">${d.role}</div></div>${statList}</div>
+      <div class="eq-c2"><div class="eq-secttl">スキル装備（武器・頭・胴・足）＝ビルド</div><div class="gslot-grid">${gslots}</div>
+        <div class="eq-secttl">装飾品（2つまで・全コア+%）</div><div class="ar-slots">${aslots}</div></div>
+      <div class="eq-c3"><div class="acc-invttl">もちもの</div>${poolHtml}</div>
+    </div>
+    <div class="scr-btns"><button class="scr-btn" onclick="showEquip()">◀ キャラ選択</button><button class="scr-btn" onclick="showInventory()">🎒 もちもの台帳</button></div>`;
 }
+function gearPoolCard(x,cid){ const rc=RARITY[x.rarity].col, sk=SKILLS[x.skillId];
+  return `<button class="gcard" style="--rc:${rc};" onclick="openDetail('gear',${x.id},'${cid}')"><span class="slotpip">${SLOT_PIP[x.slot]||''}</span><div class="thumb">${sk?sk.emoji:'❔'}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${equipName(x)}</div><div class="gm">${mainText(x)}</div></button>`; }
+function accPoolCard(a,cid,si){ const rc=RARITY[a.rarity].col;
+  return `<button class="gcard" style="--rc:${rc};" onclick="openDetail('acc',${a.id},'${cid}',${si})"><div class="thumb">◆</div><div class="rr">${RARITY[a.rarity].jp}</div><div class="gn">${a.base}</div><div class="gm">全コア+${RARITY[a.rarity].pct}%</div></button>`; }
+
+/* ===================== §I もちもの台帳(インベントリ)＋装備詳細ドロワー(2026-06-24) =====================
+   ★全6レア度(C〜LR)・全12ボーナスに耐える形: 色は RARITY[r].col(--rc)、レア度UIは RARITY_ORDER をループ、
+     ボーナスは bonusText(未知tでも"t+v")で描画。アイコンは枠＝後で<img>差込(本番アート)。問題エンジンには無干渉。 */
+const SLOT_PIP={ '武器':'🗡', '頭':'🎩', '胴':'🥋', '足':'👢' };
+let invFilter={ tab:'gear', slot:'all', rarity:'all' };
+function rIdx(r){ return RARITY_ORDER.indexOf(r); }
+function allyById(cid){ return ALLY_DEFS.find(a=>a.id===cid); }
+function leadCid(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); return ALLY_DEFS[li].id; }
+function gearEquippedBy(id){ for(const c of Object.keys(gearEquip)) for(const s of GEAR_SLOTS) if(gearEquip[c][s]===id) return c; return null; }
+function accEquippedBy(id){ for(const c of Object.keys(accEquip)) if((accEquip[c]||[]).indexOf(id)>=0) return c; return null; }
+function previewStats(cid){ const d=allyById(cid), accm=1+accPctFor(cid)/100, bf=d.buff||{};   // 戦闘makeAlliesと同式(mflat除く)
+  const fin=(key,base)=>Math.round((base+accFlat(cid,key))*accm*(bf[key]||1));
+  return { str:fin('str',d.str), int:fin('int',d.int), def:fin('def',d.def), hp:fin('hp',d.hpMax), mp:fin('mp',d.mpMax),
+    spd:Math.min(2.2,(d.spd+gearSpd(cid))*(bf.spd||1)), resist:accResistFor(cid) }; }
+function showInventory(){ gameState='inventory'; invFilter={tab:'gear',slot:'all',rarity:'all'}; renderInventory(); showScreen('inventory'); setTopbar(''); }
+function invSetTab(k){ invFilter={tab:k,slot:'all',rarity:'all'}; renderInventory(); }
+function invSetSlot(k){ invFilter.slot=k; renderInventory(); }
+function invSetRarity(k){ invFilter.rarity=k; renderInventory(); }
+function renderInventory(){ const g=document.getElementById('invBody'); if(!g)return;
+  const total=gearInv.length+accInv.length+(items.hpPotion||0)+(items.mpPotion||0);
+  const tab=(k,l,n)=>`<button class="chip" aria-pressed="${invFilter.tab===k}" onclick="invSetTab('${k}')">${l} ${n}</button>`;
+  const tabs=`<div class="chips">${tab('gear','🗡 そうび',gearInv.length)}${tab('acc','◆ 装飾品',accInv.length)}${tab('item','🧪 どうぐ',(items.hpPotion||0)+(items.mpPotion||0))}</div>`;
+  let sub='';
+  if(invFilter.tab==='gear'){ const sb=(k,l)=>`<button class="chip" aria-pressed="${invFilter.slot===k}" onclick="invSetSlot('${k}')">${l}</button>`;
+    sub=`<div class="chips sub">${sb('all','すべて')}${GEAR_SLOTS.map(s=>sb(s,(SLOT_PIP[s]||'')+s)).join('')}</div>`; }
+  let rar='';
+  if(invFilter.tab!=='item'){ const present=new Set((invFilter.tab==='gear'?gearInv:accInv).map(x=>x.rarity));   // ★在庫にあるレア度だけ＝死にフィルタなし＝全6レア度に自動対応
+    const rb=k=>{ if(k==='all') return `<button class="chip" aria-pressed="${invFilter.rarity==='all'}" onclick="invSetRarity('all')">レア度</button>`;
+      if(!present.has(k)) return '';
+      return `<button class="chip r" style="--rc:${RARITY[k].col};" aria-pressed="${invFilter.rarity===k}" onclick="invSetRarity('${k}')">${RARITY[k].jp}</button>`; };
+    rar=`<div class="chips sub">${rb('all')}${RARITY_ORDER.map(rb).join('')}</div>`; }
+  g.innerHTML=`<div class="inv-head"><h2>🎒 もちもの台帳</h2><div class="count">あつめたおたから <b>${total}</b></div></div>
+    ${tabs}${sub}${rar}
+    <div class="inv-grid">${invCardsHtml()}</div>
+    <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showEquip()">🔮 そうびを組む →</button></div>`; }
+function invCardsHtml(){
+  if(invFilter.tab==='item'){ const cards=ITEM_DEFS.filter(it=>(items[it.id]||0)>0).map(it=>
+      `<button class="gcard" style="--rc:var(--line);" onclick="openDetail('item','${it.id}')"><div class="thumb" style="background:#0c1326;">${it.emoji}</div><div class="rr" style="color:var(--sub);">×${items[it.id]}</div><div class="gn">${it.name}</div></button>`).join('');
+    return cards||`<div class="inv-empty">どうぐが ありません</div>`; }
+  let L=(invFilter.tab==='gear'?gearInv:accInv).slice();
+  if(invFilter.tab==='gear'&&invFilter.slot!=='all') L=L.filter(x=>x.slot===invFilter.slot);
+  if(invFilter.rarity!=='all') L=L.filter(x=>x.rarity===invFilter.rarity);
+  L.sort((a,b)=>rIdx(b.rarity)-rIdx(a.rarity) || (invFilter.tab==='gear'?GEAR_SLOTS.indexOf(a.slot)-GEAR_SLOTS.indexOf(b.slot):0) || a.id-b.id);
+  if(!L.length){ const filtered=(invFilter.rarity!=='all')||(invFilter.tab==='gear'&&invFilter.slot!=='all');
+    return `<div class="inv-empty">${filtered?'あてはまる アイテムが ないよ':'まだ ないよ。冒険で あつめよう！'}</div>`; }
+  return L.map(x=>{ const rc=RARITY[x.rarity].col;
+    if(invFilter.tab==='gear'){ const sk=SKILLS[x.skillId], wc=gearEquippedBy(x.id), al=wc?allyById(wc):null;
+      return `<button class="gcard${al?' worn':''}" style="--rc:${rc};" onclick="openDetail('gear',${x.id})">${al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:''}<span class="slotpip">${SLOT_PIP[x.slot]||''}</span><div class="thumb">${sk?sk.emoji:'❔'}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${equipName(x)}</div><div class="gm">${mainText(x)}</div></button>`; }
+    const wc=accEquippedBy(x.id), al=wc?allyById(wc):null;
+    return `<button class="gcard${al?' worn':''}" style="--rc:${rc};" onclick="openDetail('acc',${x.id})">${al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:''}<div class="thumb">◆</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${x.base}</div><div class="gm">全コア+${RARITY[x.rarity].pct}%</div></button>`; }).join('');
+}
+/* ── 装備詳細ドロワー(③・比較つき)＝インベントリ/そうび 両画面で共用 ── */
+let dwKind=null, dwId=null, dwWhom=null, dwAccSlot=null;
+function openDetail(kind,id,whom,accSlot){ dwKind=kind; dwId=id; dwAccSlot=(accSlot==null?null:accSlot);
+  if(kind==='item'){ dwWhom=null; }
+  else { const wc=kind==='gear'?gearEquippedBy(id):accEquippedBy(id); dwWhom=whom||wc||leadCid(); }   // 着用中ならその人/指定/看板キャラ
+  renderDrawer(); document.getElementById('dwScrim').classList.add('open'); document.getElementById('detailDrawer').classList.add('open'); }
+function closeDetail(){ document.getElementById('dwScrim').classList.remove('open'); document.getElementById('detailDrawer').classList.remove('open'); }
+function dwSetWhom(cid){ dwWhom=cid; dwAccSlot=null; renderDrawer(); }   // 比較相手を変えたら装飾品の指定枠はリセット(自動空き)
+function rangeBarHtml(skillId){ const range=SKILL_RANGE[skillId]||'C〜R';
+  return `<div class="rangebar">${RARITY_ORDER.map(r=>{ const on=rangeIncludes(range,r); return `<div class="rc${on?' on':''}"${on?` style="background:${RARITY[r].col};"`:''}>${r}</div>`; }).join('')}</div>`; }
+function fmtMain(m){ return m.stat==='spd'?(+m.v).toFixed(2):fmt(m.v); }
+function cmpRow(label,nowV,nextV,delta){ return `<div class="cmp-row"><span class="cmp-l">${label}</span><span class="cmp-v">${nowV} ▸ ${nextV}</span><span class="delta ${delta.cls}">${delta.txt}</span></div>`; }
+function renderDrawer(){ const d=document.getElementById('detailDrawer'); if(!d)return;
+  if(dwKind==='item'){ const it=ITEM_DEFS.find(x=>x.id===dwId);
+    d.innerHTML=`<button class="dw-x" onclick="closeDetail()">✕</button>
+      <div class="dw-top"><div class="dw-thumb" style="--rc:var(--line);">${it?it.emoji:'🧪'}</div><div class="dw-htxt"><div class="dw-nm">${it?it.name:'どうぐ'}</div><div class="dw-slot">どうぐ ×${it?(items[it.id]||0):0}</div></div></div>
+      <div class="dw-sec"><div class="dw-skill"><div class="sk-note">${it?it.note:''}</div>${it&&it.fl?`<div class="sk-fl">「${it.fl}」</div>`:''}</div></div>
+      <div class="dw-note" style="margin-top:12px;">どうぐは たたかいの「アイテム」で つかえるよ。</div>
+      <div class="dw-act"><button class="dw-rm" style="background:#222d45;border-color:var(--line);color:var(--sub);" onclick="closeDetail()">とじる</button></div>`;
+    return; }
+  const isGear=(dwKind==='gear'), it=isGear?gearById(dwId):accById(dwId);
+  if(!it){ closeDetail(); return; }
+  const r=RARITY[it.rarity], wc=isGear?gearEquippedBy(it.id):accEquippedBy(it.id), sk=isGear?SKILLS[it.skillId]:null;
+  const icon=isGear?(sk?sk.emoji:'❔'):'◆', nm=isGear?equipName(it):it.base, slotLabel=isGear?it.slot:'装飾品';
+  let html=`<button class="dw-x" onclick="closeDetail()">✕</button>
+    <div class="dw-top"><div class="dw-thumb" style="--rc:${r.col};">${icon}</div>
+      <div class="dw-htxt"><div class="dw-rr">［${r.jp}］</div><div class="dw-nm">${nm}</div><div class="dw-slot">${slotLabel}${wc?`・${allyById(wc).emoji}${allyById(wc).name}が装備中`:''}</div></div></div>`;
+  if(isGear&&sk){ html+=`<div class="dw-sec"><div class="dw-sectt">スキル</div><div class="dw-skill"><div class="sk-h">${sk.emoji} ${sk.name}<span style="font-size:11px;color:var(--sub);font-weight:400;"> MP${sk.mp}</span></div><div class="sk-note">${sk.note}</div>${sk.fl?`<div class="sk-fl">「${sk.fl}」</div>`:''}</div></div>`; }
+  html+=`<div class="dw-sec"><div class="dw-sectt">${isGear?'メインステ':'メインこうか'}</div><div class="dw-main">${isGear?mainText(it):'全コア +'+r.pct+'%'}</div></div>`;
+  const bs=accBonuses(it);
+  if(bs.length){ html+=`<div class="dw-sec"><div class="dw-sectt">ボーナス</div><div class="dw-bon">${bs.map(b=>{ const def=BONUS_DEFS[b.t]||{pct:false}; return `<div class="brow${def.pct?' pct':''}"><span class="bi">✦</span><span>${bonusText(b)}</span></div>`; }).join('')}</div></div>`; }
+  if(isGear){ html+=`<div class="dw-sec"><div class="dw-sectt">でやすさ（出現レア度）</div>${rangeBarHtml(it.skillId)}</div>`; }
+  html+=`<div class="dw-sec"><div class="dw-sectt">だれに つける？</div><div class="dw-whom">${ALLY_DEFS.map(a=>`<button class="${a.id===dwWhom?'on':''}" onclick="dwSetWhom('${a.id}')"><span class="we">${a.emoji}</span>${a.name}</button>`).join('')}</div></div>`;
+  html+=`<div class="dw-sec">${dwCompareHtml(it,isGear)}</div>`;
+  html+=dwActHtml(it,isGear);
+  d.innerHTML=html; }
+function dwCompareHtml(it,isGear){ const cid=dwWhom, ally=allyById(cid);
+  if(isGear){ const cur=gearById((gearEquip[cid]||{})[it.slot]); let rows='';
+    if(!cur){ rows=cmpRow(STAT_JP[it.main.stat],'—',fmtMain(it.main),{txt:'NEW',cls:'up'}); }
+    else if(cur.id===it.id){ rows=cmpRow(STAT_JP[it.main.stat],fmtMain(it.main),fmtMain(it.main),{txt:'装備中',cls:'eqd'}); }
+    else if(cur.main.stat!==it.main.stat){   // ★別ステは数値の大小を出さない＝誤誘導しない(両建て表示)
+      rows=cmpRow(STAT_JP[cur.main.stat],fmtMain(cur.main),'0',{txt:'別ステ',cls:'eqd'})+cmpRow(STAT_JP[it.main.stat],'0',fmtMain(it.main),{txt:'別ステ',cls:'eqd'}); }
+    else { const dv=it.main.v-cur.main.v, dd=it.main.stat==='spd'?dv.toFixed(2):Math.round(dv);
+      rows=cmpRow(STAT_JP[it.main.stat],fmtMain(cur.main),fmtMain(it.main), dv>0?{txt:'▲+'+dd,cls:'up'}:dv<0?{txt:'▼'+dd,cls:'down'}:{txt:'±0',cls:'eqd'}); }
+    const h=cur?`いま ${ally.name} の【${it.slot}】は「${equipName(cur)}」。くらべると：`:`${ally.name} の【${it.slot}】は空き。つければ強くなる！`;
+    return `<div class="dw-cmp"><div class="cmp-h">${h}</div>${rows}</div>`; }
+  const slots=accEquip[cid]||[null,null], filled=slots.filter(s=>s!=null).length;
+  const note=slots.indexOf(it.id)>=0?`${ally.name} が装備中。`:(filled<2?`${ally.name} の空きスロットに付くよ。`:`${ally.name} は装飾品が2つ うまってる。1つめと 入れかわるよ。`);
+  return `<div class="dw-cmp"><div class="cmp-h">${note}</div></div>`; }
+function dwActHtml(it,isGear){ const cid=dwWhom, ally=allyById(cid);
+  const worn=isGear?(gearEquip[cid]&&gearEquip[cid][it.slot]===it.id):((accEquip[cid]||[]).indexOf(it.id)>=0);
+  let act;
+  if(worn){ act=`<button class="dw-cta" disabled>✓ ${ally.name}が装備中</button><button class="dw-rm" onclick="dwUnequip()">✕ ${isGear?'きほんに戻す':'はずす'}</button>`; }
+  else { act=`<button class="dw-cta" onclick="dwEquip()">＋ ${ally.name}に そうびする</button>`; }
+  return `<div class="dw-act">${act}<button class="dw-rm" style="background:#222d45;border-color:var(--line);color:var(--sub);" onclick="closeDetail()">とじる</button></div>`; }
+function equipOnto(cid,kind,id,accSlot){
+  if(kind==='gear'){ const g=gearById(id); if(!g)return; const slot=g.slot;
+    Object.keys(gearEquip).forEach(c=>GEAR_SLOTS.forEach(s=>{ if(gearEquip[c][s]===id)gearEquip[c][s]=null; }));   // どこに付いてても外して付け替え
+    gearEquip[cid][slot]=id; }
+  else { Object.keys(accEquip).forEach(c=>accEquip[c].forEach((v,i)=>{ if(v===id)accEquip[c][i]=null; }));
+    let si=accSlot; if(si==null){ const arr=accEquip[cid]||[null,null]; si=arr.indexOf(null); if(si<0)si=0; } accEquip[cid][si]=id; }
+  saveAcc(); }
+function dwEquip(){ if(dwKind==='item')return; equipOnto(dwWhom,dwKind,dwId,dwAccSlot); dwAccSlot=null; afterDrawerChange(); }
+function dwUnequip(){ const cid=dwWhom;
+  if(dwKind==='gear'){ if(gearEquip[cid]) GEAR_SLOTS.forEach(s=>{ if(gearEquip[cid][s]===dwId)gearEquip[cid][s]=null; }); }
+  else { (accEquip[cid]||[]).forEach((v,i)=>{ if(v===dwId)accEquip[cid][i]=null; }); }
+  saveAcc(); afterDrawerChange(); }
+function afterDrawerChange(){ renderDrawer();   // ドロワーは開いたまま状態更新(装備中表示に)
+  if(gameState==='inventory') renderInventory(); else if(gameState==='equip') renderEquip(); }
 
 function showScreen(name){   // overlay表示の一元管理。battle時は全overlay非表示。
-  ['title','home','map','accessory','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
+  ['title','home','map','accessory','inventory','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
 }
 function showTitle(){ gameState='title'; showScreen('title'); setTopbar(''); }
 function showMap(){ gameState='map'; renderMap(); showScreen('map'); setTopbar(''); }
