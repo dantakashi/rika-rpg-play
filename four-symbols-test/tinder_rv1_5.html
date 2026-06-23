@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "soulflame-acid-cerberus-b7-rv1", "name_ja": "蝕炎の獄犬ケルベロアシッド", "tier": "終盤", "element": "酸", "flavor_ja": "三つの口から溶ける酸を垂らす地獄の番犬。眼窩に灯る魂の炎が獲物を惑わす。", "img": "gacha_rv1_5/soulflame-acid-cerberus-b7-rv1.png"}, {"id": "infernal-throne-archdemon-b7-rv1", "name_ja": "獄王アビスローン", "tier": "ラスボス級", "element": "闇", "flavor_ja": "煉獄の玉座より立ち上がる獄の王。割れた装甲から漏れる地獄火が、纏う闇に照り返す。", "img": "gacha_rv1_5/infernal-throne-archdemon-b7-rv1.png"}, {"id": "void-rot-leviathan-b7-rv1", "name_ja": "深淵の腐獣ヴォイドリヴァイア", "tier": "ラスボス級", "element": "重力", "flavor_ja": "深淵の底で腐り続ける異形の巨獣。纏う闇が空間ごと引き寄せ、光すら呑み込む。", "img": "gacha_rv1_5/void-rot-leviathan-b7-rv1.png"}, {"id": "lantern-spirit-koi-serpent-b7-rv1", "name_ja": "提灯ヒカリ蛇神", "tier": "序盤", "element": "光", "flavor_ja": "夜祭の提灯に宿った蛇の神。鱗の一枚一枚が灯となり、近づく者を温かな光で照らす。", "img": "gacha_rv1_5/lantern-spirit-koi-serpent-b7-rv1.png"}, {"id": "plasma-arc-thunder-king-b7-rv1", "name_ja": "プラズマ雷帝魔獣", "tier": "ラスボス級", "element": "電気", "flavor_ja": "雷とプラズマを身にまとう獣の王。咆哮のたび、全身から白き稲妻が奔る。", "img": "gacha_rv1_5/plasma-arc-thunder-king-b7-rv1.png"}, {"id": "catalyst-alloy-world-dragon-b7-rv1", "name_ja": "触媒合金・世界竜", "tier": "ラスボス級", "element": "合金", "flavor_ja": "あらゆる反応を司る合金の世界竜。その鋼の体は触媒となり、世界の化学を統べる。", "img": "gacha_rv1_5/catalyst-alloy-world-dragon-b7-rv1.png"}, {"id": "resonant-howler-hound-b8-rv1", "name_ja": "ソニックハウル", "tier": "序盤", "element": "音", "flavor_ja": "ひと吠えで空気そのものを震わせ、岩をも砕く獣。耳に届く前に、骨が先に鳴る。", "img": "gacha_rv1_5/resonant-howler-hound-b8-rv1.png"}, {"id": "froth-neutralizer-toad-b8-rv1", "name_ja": "ちゅうわガマ", "tier": "序盤", "element": "中和", "flavor_ja": "酸とアルカリ、二つの体を持つ。触れたものを泡に変えて、ちょうど真ん中で食らう。", "img": "gacha_rv1_5/froth-neutralizer-toad-b8-rv1.png"}, {"id": "refraction-mirage-serpent-b8-rv1", "name_ja": "クッセツミラージュ", "tier": "中盤", "element": "光", "flavor_ja": "見えている姿は、ほんとうの位置ではない。光を曲げて、いつも一歩ずれて現れる。", "img": "gacha_rv1_5/refraction-mirage-serpent-b8-rv1.png"}, {"id": "catalyst-spire-salamander-b8-rv1", "name_ja": "カタリストザラマンダ", "tier": "中盤", "element": "触媒", "flavor_ja": "触れただけで反応が加速する触媒の獣。背の尖塔から、止まらぬ煙が立ちのぼる。", "img": "gacha_rv1_5/catalyst-spire-salamander-b8-rv1.png"}, {"id": "standing-wave-drake-b8-rv1", "name_ja": "スタンディングドレイク", "tier": "終盤", "element": "音", "flavor_ja": "咆哮が共鳴して定常波を生む。震えが重なるとき、空間そのものが裂ける。", "img": "gacha_rv1_5/standing-wave-drake-b8-rv1.png"}, {"id": "geode-tortoise-colossus-b8-rv1", "name_ja": "ジオードコロッサス", "tier": "終盤", "element": "結晶", "flavor_ja": "山ひとつ分の歳月をかけて育った結晶の甲羅。歩くたびに、新たな鉱脈が背に芽吹く。", "img": "gacha_rv1_5/geode-tortoise-colossus-b8-rv1.png"}, {"id": "tesla-coil-thunder-tyrant-b8-rv1", "name_ja": "コイルサンダータイラント", "tier": "ラスボス級", "element": "電気", "flavor_ja": "全身が巨大な発電機。握る雷は逃さず、近づく者を骨まで焦がす機械の暴君。", "img": "gacha_rv1_5/tesla-coil-thunder-tyrant-b8-rv1.png"}, {"id": "spectral-burning-phoenix-wyrm-b8-rv1", "name_ja": "プリズムバーンワーム", "tier": "ラスボス級", "element": "光", "flavor_ja": "光を集めて焼き尽くす聖竜。その輝きはプリズムを越え、白く燃える光の炎となる。", "img": "gacha_rv1_5/spectral-burning-phoenix-wyrm-b8-rv1.png"}, {"id": "brook-hatchling-water-dragon-b8-rv1", "name_ja": "セセラギ・コリュウ", "tier": "序盤", "element": "水", "flavor_ja": "湧き水の岩間で生まれたばかりの幼い水龍。背を流れる水をまといながら、小さなとぐろを巻いて泉を守る。", "img": "gacha_rv1_5/brook-hatchling-water-dragon-b8-rv1.png"}, {"id": "breeze-drake-windling-b8-rv1", "name_ja": "ソヨカゼ・ドレイク", "tier": "序盤", "element": "気流", "flavor_ja": "山の尾根を渡る風から生まれた小さな竜。体に沿って流れる気流が、羽根うろこをなびかせ続ける。", "img": "gacha_rv1_5/breeze-drake-windling-b8-rv1.png"}, {"id": "geyser-steam-serpentling-b8-rv1", "name_ja": "ユゲマル・ジャリュウ", "tier": "序盤", "element": "蒸気", "flavor_ja": "温泉の噴気孔にひそむ幼い蛇竜。背の割れ目から噴き出す熱い蒸気を体にまとい、近づく者を蒸し上げる。", "img": "gacha_rv1_5/geyser-steam-serpentling-b8-rv1.png"}, {"id": "thunder-coil-raijin-dragon-b8-rv1", "name_ja": "ライコウ・ナルカミリュウ", "tier": "中盤", "element": "電気", "flavor_ja": "雷雲のただ中に棲む鳴神の龍。体を這う稲妻が鱗を伝い、近づく雷をすべて己の身にまとう。", "img": "gacha_rv1_5/thunder-coil-raijin-dragon-b8-rv1.png"}, {"id": "tidal-surge-water-dragon-b8-rv1", "name_ja": "シオナミ・スイリュウ", "tier": "中盤", "element": "水流", "flavor_ja": "満ち潮とともに現れる海の龍。体をめぐる海流が渦を巻き、ひと振りで岸を呑む大波を起こす。", "img": "gacha_rv1_5/tidal-surge-water-dragon-b8-rv1.png"}, {"id": "resonance-bell-sound-dragon-b8-rv1", "name_ja": "キョウメイ・スズリュウ", "tier": "中盤", "element": "音", "flavor_ja": "梵鐘の音から生まれた霊妙な竜。体を打つたびに響く共鳴が、空気をうねらせて骨まで震わせる。", "img": "gacha_rv1_5/resonance-bell-sound-dragon-b8-rv1.png"}, {"id": "glacier-frost-ice-dragon-b8-rv1", "name_ja": "ヒョウガ・コオリリュウ", "tier": "終盤", "element": "氷", "flavor_ja": "万年雪の頂に眠る氷の龍。吐く息は凍てつき、まとう氷甲は鋼すら砕く。動くたびに氷河が軋む。", "img": "gacha_rv1_5/glacier-frost-ice-dragon-b8-rv1.png"}, {"id": "magma-vein-volcano-dragon-b8-rv1", "name_ja": "マグマ・カザンリュウ", "tier": "終盤", "element": "燃焼", "flavor_ja": "火山の地脈にとぐろを巻く溶岩の龍。鱗の割れ目から溢れる熔けた岩が、通った道をすべて焼き払う。", "img": "gacha_rv1_5/magma-vein-volcano-dragon-b8-rv1.png"}, {"id": "aurora-storm-dragon-god-b8-rv1", "name_ja": "オーロラ・リュウジン", "tier": "ラスボス級", "element": "光", "flavor_ja": "極北の空を統べる龍神。とぐろを巻く体に揺らめくオーロラは、世界の終わりさえ照らすという。その瞳が開けば天が割れる。", "img": "gacha_rv1_5/aurora-storm-dragon-god-b8-rv1.png"}, {"id": "typhoon-pressure-tempest-dragon-b8-rv1", "name_ja": "タイフウ・アラシリュウオウ", "tier": "ラスボス級", "element": "圧力", "flavor_ja": "海上に超低気圧を呼ぶ嵐の龍王。体にまとう台風が島を沈め、ひと吼えで天地を引き裂く。荒ぶる神の化身。", "img": "gacha_rv1_5/typhoon-pressure-tempest-dragon-b8-rv1.png"}, {"id": "acid-etched-ammonite-husk-b8-rv1", "name_ja": "コロードアンモナイト", "tier": "序盤", "element": "酸", "flavor_ja": "古い海の渦巻きが、溶ける緑の酸を殻にためたまま這い出してくる。触れた鎧はじりじりと白く焼ける。", "img": "gacha_rv1_5/acid-etched-ammonite-husk-b8-rv1.png"}, {"id": "resonant-chamber-nautilus-b8-rv1", "name_ja": "キョウメイノオトガイ", "tier": "序盤", "element": "音", "flavor_ja": "渦巻く貝の部屋がひとつずつ共鳴し、押し寄せる音の波で骨まで震わせる小さな海の怪。", "img": "gacha_rv1_5/resonant-chamber-nautilus-b8-rv1.png"}, {"id": "lens-eye-dragonfly-knight-b8-rv1", "name_ja": "レンズガンリュウ", "tier": "中盤", "element": "光", "flavor_ja": "無数のレンズの複眼が光を束ね、四枚の硝子の翅で虹色の刃を編む、空を切る精密な狩人。", "img": "gacha_rv1_5/lens-eye-dragonfly-knight-b8-rv1.png"}, {"id": "titanium-mandible-stag-beetle-b8-rv1", "name_ja": "ゴウキンオオアギ", "tier": "中盤", "element": "合金", "flavor_ja": "焼き入れされた合金の大顎が、虹色に熱を帯びてかみ合う。鍛えられた鋼の甲虫は何でも噛み砕く。", "img": "gacha_rv1_5/titanium-mandible-stag-beetle-b8-rv1.png"}, {"id": "circuit-carapace-horseshoe-crab-b8-rv1", "name_ja": "カイロカブトガニ", "tier": "中盤", "element": "回路", "flavor_ja": "兜の甲羅まるごとが基板となり、金の回路に光が走る。古生代の生きた装甲がデータの脈を打つ。", "img": "gacha_rv1_5/circuit-carapace-horseshoe-crab-b8-rv1.png"}, {"id": "cavitation-strike-mantis-shrimp-b8-rv1", "name_ja": "ハカイダンシャコ", "tier": "終盤", "element": "圧力", "flavor_ja": "振り抜く拳が水を裂き、沸騰する圧力の閃光で鎧ごと粉砕する。海の最速にして最強の一撃。", "img": "gacha_rv1_5/cavitation-strike-mantis-shrimp-b8-rv1.png"}, {"id": "catalyst-bloom-barnacle-colossus-b8-rv1", "name_ja": "ショクバイフジツボ", "tier": "ラスボス級", "element": "触媒", "flavor_ja": "無数の貝が癒着した山のような巨体。すべての殻口から触媒の泡が噴き、世界を反応させ尽くそうとする。", "img": "gacha_rv1_5/catalyst-bloom-barnacle-colossus-b8-rv1.png"}, {"id": "frostbound-skeletal-stag-b8-rv1", "name_ja": "フロストボーン・ステイグ", "tier": "序盤", "element": "氷", "flavor_ja": "凍てついた骨だけの牡鹿。眼窩からこぼれる冷気が触れたものを白く凍らせる。", "img": "gacha_rv1_5/frostbound-skeletal-stag-b8-rv1.png"}, {"id": "wraith-lantern-moth-b8-rv1", "name_ja": "鬼火ランタンの蛾霊", "tier": "序盤", "element": "闇", "flavor_ja": "魂を喰らう蛾の亡霊。体に灯る青紫の鬼火が迷う者を誘い込む。", "img": "gacha_rv1_5/wraith-lantern-moth-b8-rv1.png"}, {"id": "abyssal-tentacle-angler-horror-b8-rv1", "name_ja": "深淵アングラーの触手鬼", "tier": "中盤", "element": "水", "flavor_ja": "深海の闇から這い出た触手の怪。冷たい光の釣り竿で獲物を惑わす。", "img": "gacha_rv1_5/abyssal-tentacle-angler-horror-b8-rv1.png"}, {"id": "bone-coral-scorpion-lich-b8-rv1", "name_ja": "骨珊瑚のサソリ屍霊", "tier": "中盤", "element": "毒", "flavor_ja": "骨と珊瑚で組み上がった死せるサソリ。尾の毒は触れた命を朽ちさせる。", "img": "gacha_rv1_5/bone-coral-scorpion-lich-b8-rv1.png"}, {"id": "plaguelord-rot-titan-chimera-b8-rv1", "name_ja": "疫病王ロット・タイタン", "tier": "ラスボス級", "element": "毒", "flavor_ja": "腐敗した獣たちを縫い合わせた疫病の巨神。胸の大釜が毒を煮えたぎらせる。", "img": "gacha_rv1_5/plaguelord-rot-titan-chimera-b8-rv1.png"}, {"id": "abyssal-void-demon-emperor-b8-rv1", "name_ja": "深淵帝デモンヴォイド", "tier": "ラスボス級", "element": "闇", "flavor_ja": "深淵を統べる魔帝。纏う影と虚無の炎が触れるものから光を喰らい尽くす。", "img": "gacha_rv1_5/abyssal-void-demon-emperor-b8-rv1.png"}, {"id": "static-charge-tanuki-spirit-b8-rv1", "name_ja": "ゲキデン・バケダヌキ", "tier": "序盤", "element": "電気", "flavor_ja": "毛をこすって電気をためる化けダヌキ。腹を叩くたびに青い火花が走り、油断した旅人をしびれさせる。", "img": "gacha_rv1_5/static-charge-tanuki-spirit-b8-rv1.png"}, {"id": "resonance-tuning-beetle-b8-rv1", "name_ja": "キョウメイ・カブト", "tier": "序盤", "element": "音", "flavor_ja": "ツノが音叉になった甲虫。鳴らすと空気が震え、近くの岩がひとりでに割れる。", "img": "gacha_rv1_5/resonance-tuning-beetle-b8-rv1.png"}, {"id": "neutralizing-salt-knight-crab-b8-rv1", "name_ja": "チュウワ・ガイヘイ", "tier": "中盤", "element": "中和", "flavor_ja": "酸とアルカリを両のハサミに宿す甲冑蟹。二つをぶつけて固めた塩の鎧でその身を守る。", "img": "gacha_rv1_5/neutralizing-salt-knight-crab-b8-rv1.png"}, {"id": "plasma-arc-kirin-beast-b8-rv1", "name_ja": "ライエン・キリン", "tier": "中盤", "element": "プラズマ", "flavor_ja": "雷とプラズマをまとう聖なる麒麟。たてがみは超高温の炎となって燃え、その蹄が地を打つと空気が裂ける。", "img": "gacha_rv1_5/plasma-arc-kirin-beast-b8-rv1.png"}, {"id": "mutant-cell-flesh-horror-b8-rv1", "name_ja": "ゾウショク・ニクカイ", "tier": "終盤", "element": "生物", "flavor_ja": "暴走した細胞が際限なく分裂してできた肉の塊。傷つけるほど増え、瘤がみな口となって喰らいつく。", "img": "gacha_rv1_5/mutant-cell-flesh-horror-b8-rv1.png"}, {"id": "antimatter-void-phoenix-lord-b8-rv1", "name_ja": "ショウメツ・ホウオウ", "tier": "ラスボス級", "element": "燃焼", "flavor_ja": "物質と反物質がぶつかり合う終焉の鳳凰。その羽は燃えながら消滅し、触れたものを光の塵に還す。", "img": "gacha_rv1_5/antimatter-void-phoenix-lord-b8-rv1.png"}, {"id": "tuning-fork-toad-b9-rv1", "name_ja": "キョウメイガエル", "tier": "序盤", "element": "音響・共鳴", "flavor_ja": "鳴くたびに地面が震える。喉袋の膜が音波で波打ち、頭の音叉が空気をビリビリ鳴らす共鳴の主。", "img": "gacha_rv1_5/tuning-fork-toad-b9-rv1.png"}, {"id": "lens-mantis-prism-b9-rv1", "name_ja": "シュウコウカマキリ", "tier": "序盤", "element": "光学・屈折", "flavor_ja": "光を曲げ、束ねて灼く硝子の狩人。レンズの眼が獲物に一点の光を結ぶ。", "img": "gacha_rv1_5/lens-mantis-prism-b9-rv1.png"}, {"id": "pressure-anglerfish-abyss-b9-rv1", "name_ja": "シンエンアツギョ", "tier": "中盤", "element": "物理・圧力（深海）", "flavor_ja": "深海の圧に耐えて膨れた漆黒の捕食者。誘灯の光だけが闇に滲み、まわりの水が歪む。", "img": "gacha_rv1_5/pressure-anglerfish-abyss-b9-rv1.png"}, {"id": "neutralizer-twin-serpent-b9-rv1", "name_ja": "チュウワソウジャ", "tier": "中盤", "element": "化学・中和（酸とアルカリ）", "flavor_ja": "片や酸、片やアルカリ。二つの体が触れる境目で泡立ち、塩を結び湯気を上げる中和の双蛇。", "img": "gacha_rv1_5/neutralizer-twin-serpent-b9-rv1.png"}, {"id": "gravity-well-ammonite-b9-rv1", "name_ja": "ジュウリョクアンモナイト", "tier": "終盤", "element": "物理・重力", "flavor_ja": "渦巻く殻が空間を歪ませるほどに重い太古の主。殻口へ光すら引き込む重力の渦。", "img": "gacha_rv1_5/gravity-well-ammonite-b9-rv1.png"}, {"id": "static-cloud-stormbird-b9-rv1", "name_ja": "セイデンライチョウ", "tier": "終盤", "element": "物理・電磁（静電気）", "flavor_ja": "羽根そのものが帯電した雷雲。触れれば閃く静電の猛禽。雲をまとって舞う。", "img": "gacha_rv1_5/static-cloud-stormbird-b9-rv1.png"}, {"id": "magnetar-iron-titan-b9-rv1", "name_ja": "ジリョクキョシン", "tier": "ラスボス級", "element": "物理・磁力", "flavor_ja": "鉄片を磁力で寄せ集めて成った巨像。場の線に沿って鉄粉が逆立つ。近づく金属を全て吸い寄せる。", "img": "gacha_rv1_5/magnetar-iron-titan-b9-rv1.png"}]; const KEY="rika2_boss_swipe_gacha_rv1_5";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
