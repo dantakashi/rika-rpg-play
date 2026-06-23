@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "ember-fox-pup-b2", "name_ja": "ひのこギツネ", "tier": "序盤", "element": "火", "flavor_ja": "しっぽの先に小さな火がともる子ギツネ。まだ火あそびの加減を知らず、走るたびに足あとがちりちり焦げる。", "img": "gacha/ember-fox-pup-b2.png"}, {"id": "spark-salamander-b2", "name_ja": "ヒバナイモリ", "tier": "序盤", "element": "火", "flavor_ja": "背中のもようがほんのり光るずんぐりイモリ。湿った岩の上でひなたぼっこをすると体がぽかぽか熱くなる。", "img": "gacha/spark-salamander-b2.png"}, {"id": "candle-snail-b2", "name_ja": "ともしびマイマイ", "tier": "序盤", "element": "火", "flavor_ja": "からの先に小さなろうそくの火をともすカタツムリ。夜道をのんびり歩いて、暗がりをぽっと照らす。", "img": "gacha/candle-snail-b2.png"}, {"id": "magma-boar-b2", "name_ja": "マグマイノシシ", "tier": "中盤", "element": "溶岩", "flavor_ja": "体が冷えた溶岩のよろいに包まれた猛イノシシ。突進すると地面が割れ、すきまから赤い光がもれる。", "img": "gacha/magma-boar-b2.png"}, {"id": "blaze-tiger-b2", "name_ja": "ほのおトラ", "tier": "中盤", "element": "炎", "flavor_ja": "しまもようが炎のように燃えるトラ。しのび足で近づき、ひと吠えするとあたりの空気がゆらめいて熱くなる。", "img": "gacha/blaze-tiger-b2.png"}, {"id": "cinder-scorpion-b2", "name_ja": "シンダーサソリ", "tier": "中盤", "element": "熱", "flavor_ja": "関節のすきまが赤く焼けた大サソリ。はさみを近づけるだけで空気がゆがみ、しっぽの先には燃える火種が光る。", "img": "gacha/cinder-scorpion-b2.png"}, {"id": "inferno-rhino-b2", "name_ja": "ごくえんサイ", "tier": "終盤", "element": "炎", "flavor_ja": "黒鉄のよろいの内がわが赤く燃える巨サイ。燃えさかる角でひと突きすれば、大岩もろとも吹き飛ばす。", "img": "gacha/inferno-rhino-b2.png"}, {"id": "lava-serpent-dragon-b2", "name_ja": "ようがん大ヘビ", "tier": "終盤", "element": "溶岩", "flavor_ja": "黒い岩のうろこのすきまから溶岩が流れる、つばさのない大蛇竜。とぐろを巻いて頭をもたげ、通った道は焼けただれる。", "img": "gacha/lava-serpent-dragon-b2.png"}, {"id": "volcano-titan-golem-b2", "name_ja": "かざんゴーレム", "tier": "ラスボス級", "element": "溶岩", "flavor_ja": "山ほどもある岩でできた巨人ゴーレム。岩のすきまを溶岩の川が流れ、胸には火口のように火が燃えさかる。歩くたび大地がゆれる。", "img": "gacha/volcano-titan-golem-b2.png"}, {"id": "sun-flame-emperor-dragon-b2", "name_ja": "えんてい大竜", "tier": "ラスボス級", "element": "炎", "flavor_ja": "深紅と金のうろこをまとい、炎でできたつばさを広げる王の大竜。ひと吠えで空が燃え、その背には太陽のような火の輪が輝く。", "img": "gacha/sun-flame-emperor-dragon-b2.png"}, {"id": "frost-pufferfish-b2", "name_ja": "こおりフグ", "tier": "序盤", "element": "氷", "flavor_ja": "ふくらむと体じゅうのトゲが氷柱になる、まんまるで愛嬌のある小型のフグ。怒るとプクッとふくれて冷気をまき散らす。", "img": "gacha/frost-pufferfish-b2.png"}, {"id": "tidepool-hermit-crab-b2", "name_ja": "しおだまりヤドカリ", "tier": "序盤", "element": "水", "flavor_ja": "水滴の形をした巻き貝を背負った、ちいさなヤドカリ。潮だまりの水をハサミにためてピュッと飛ばす。", "img": "gacha/tidepool-hermit-crab-b2.png"}, {"id": "baby-snow-seal-b2", "name_ja": "ゆきあざらし", "tier": "序盤", "element": "氷", "flavor_ja": "雪のように白くてふわふわの、子どものアザラシ。ヒゲについた霜を飛ばして冷やしてくる、まだ小さなボス。", "img": "gacha/baby-snow-seal-b2.png"}, {"id": "glacier-stag-elk-b2", "name_ja": "ひょうがオオジカ", "tier": "中盤", "element": "氷", "flavor_ja": "枝分かれした角がすべて透きとおった氷でできた、堂々たる大鹿。歩くたびに地面が凍りつく中盤の主。", "img": "gacha/glacier-stag-elk-b2.png"}, {"id": "armored-coelacanth-b2", "name_ja": "そうこうシーラカンス", "tier": "中盤", "element": "水", "flavor_ja": "鋼のような鱗で全身を固めた、古代から生き残った大魚。深海の重い水圧をまとって体当たりしてくる。", "img": "gacha/armored-coelacanth-b2.png"}, {"id": "giant-snapping-snail-b2", "name_ja": "おおうずまきガイ", "tier": "中盤", "element": "水", "flavor_ja": "渦巻きの殻が人ほどもある、巨大な水棲の巻き貝。殻に水をため込み、まわりを水浸しにして溺れさせる。", "img": "gacha/giant-snapping-snail-b2.png"}, {"id": "frostfang-orca-b2", "name_ja": "こおりばシャチ", "tier": "終盤", "element": "氷", "flavor_ja": "背びれと牙に分厚い氷をまとった、巨大で獰猛なシャチ。氷の海を割って跳びかかる終盤の捕食者。", "img": "gacha/frostfang-orca-b2.png"}, {"id": "abyss-anglerfish-b2", "name_ja": "しんかいアンコウ", "tier": "終盤", "element": "水", "flavor_ja": "頭の光るちょうちんで獲物をおびき寄せる、巨大で恐ろしい深海のアンコウ。針のような牙でひと飲みにする。", "img": "gacha/abyss-anglerfish-b2.png"}, {"id": "leviathan-sea-dragon-b2", "name_ja": "うみのリヴァイア", "tier": "ラスボス級", "element": "水", "flavor_ja": "海そのものをまとう、とてつもなく長い大海竜。とぐろを巻いて津波を呼び、すべてを呑み込むラスボス。", "img": "gacha/leviathan-sea-dragon-b2.png"}, {"id": "permafrost-titan-dragon-b2", "name_ja": "えいとうのひょうりゅう", "tier": "ラスボス級", "element": "氷", "flavor_ja": "氷河そのものが竜の姿をとった、巨大で荘厳な氷竜。永遠に溶けない凍てつく息で世界を凍らせる、氷の王。", "img": "gacha/permafrost-titan-dragon-b2.png"}, {"id": "gale-sparrowhawk-b2", "name_ja": "そよかぜハイタカ", "tier": "序盤", "element": "風", "flavor_ja": "野原をすべるように飛ぶ小さな鷹。風をまとって素早く方向を変える、嵐の入口の使い。", "img": "gacha/gale-sparrowhawk-b2.png"}, {"id": "breeze-foxtail-b2", "name_ja": "かぜきりキツネ", "tier": "序盤", "element": "風", "flavor_ja": "草原を疾風のように駆ける子ぎつね。通り過ぎたあとに小さなつむじ風を残す。", "img": "gacha/breeze-foxtail-b2.png"}, {"id": "puff-pigeon-drake-b2", "name_ja": "つむじポポロ", "tier": "序盤", "element": "風", "flavor_ja": "まんまるでかわいい風の小鳥。羽ばたくと足元から小さなつむじ風が立つ、はじめての風ボス。", "img": "gacha/puff-pigeon-drake-b2.png"}, {"id": "storm-falcon-b2", "name_ja": "あらしハヤブサ", "tier": "中盤", "element": "風", "flavor_ja": "雲を裂いて急降下する隼。音より速く獲物に迫る、嵐をまとった狩人。", "img": "gacha/storm-falcon-b2.png"}, {"id": "gust-wyvern-b2", "name_ja": "しっぷうワイバーン", "tier": "中盤", "element": "風", "flavor_ja": "翼で嵐を起こす二足の飛竜。羽ばたき一つで突風を巻き起こし、空の主を名乗る。", "img": "gacha/gust-wyvern-b2.png"}, {"id": "cyclone-stag-b2", "name_ja": "かまいたちオオシカ", "tier": "中盤", "element": "風", "flavor_ja": "風を切り裂く角を持つ大鹿。駆け抜けるとあたりに見えない刃の突風が舞う。", "img": "gacha/cyclone-stag-b2.png"}, {"id": "tempest-rocbird-b2", "name_ja": "ぼうふうロック", "tier": "終盤", "element": "風", "flavor_ja": "翼で空を覆う巨大な怪鳥。羽ばたきは暴風となり、嵐の雲ごと獲物を引き裂く。", "img": "gacha/tempest-rocbird-b2.png"}, {"id": "hurricane-serpent-dragon-b2", "name_ja": "たつまきリュウ", "tier": "終盤", "element": "風", "flavor_ja": "竜巻そのものとなって天をうねる長竜。とぐろから生まれる渦が大地を巻き上げる。", "img": "gacha/hurricane-serpent-dragon-b2.png"}, {"id": "skylord-thunderbird-b2", "name_ja": "てんくうライメイチョウ", "tier": "ラスボス級", "element": "風", "flavor_ja": "天空に君臨する巨大な雷鳴鳥。翼を広げれば嵐を従え、空そのものを支配する王。", "img": "gacha/skylord-thunderbird-b2.png"}, {"id": "world-storm-dragon-b2", "name_ja": "そうてんガイリュウ", "tier": "ラスボス級", "element": "風", "flavor_ja": "天を覆う巨躯で嵐の渦を背負う蒼天の竜王。翼の一打ちが全空を吹き荒らす、最終の嵐。", "img": "gacha/world-storm-dragon-b2.png"}, {"id": "pebble-armadillo-b2", "name_ja": "つぶて装甲アルマジロ", "tier": "序盤", "element": "地", "flavor_ja": "丸まると小石の鎧がぴったり閉じる、手のひらサイズの石ころ獣。背中の琥珀がちいさく光る。", "img": "gacha/pebble-armadillo-b2.png"}, {"id": "copper-stag-beetle-b2", "name_ja": "銅角クワガタ", "tier": "序盤", "element": "金", "flavor_ja": "銅でできた大きなアゴがレンチのよう。小さいが噛む力は侮れない金属の甲虫。", "img": "gacha/copper-stag-beetle-b2.png"}, {"id": "clockwork-mole-b2", "name_ja": "ねじまきモグラ", "tier": "序盤", "element": "機械", "flavor_ja": "背中のねじを巻くと土を掘り進む、ずんぐりした真鍮のからくりモグラ。", "img": "gacha/clockwork-mole-b2.png"}, {"id": "granite-tortoise-b2", "name_ja": "巌甲リクガメ", "tier": "中盤", "element": "地", "flavor_ja": "甲羅まるごと苔むした花崗岩の大岩。一歩ごとに地が鳴る重量級のリクガメ。", "img": "gacha/granite-tortoise-b2.png"}, {"id": "iron-rhino-beetle-b2", "name_ja": "鋼角カブトムシ", "tier": "中盤", "element": "金", "flavor_ja": "鉄骨のような一本角を持つ重装甲のカブトムシ。継ぎ目には赤錆がにじむ。", "img": "gacha/iron-rhino-beetle-b2.png"}, {"id": "magma-golem-b2", "name_ja": "溶岩岩塊ゴーレム", "tier": "中盤", "element": "地", "flavor_ja": "黒い溶岩石を積み上げた四つ足のゴーレム。岩の隙間からマグマが脈打つ。", "img": "gacha/magma-golem-b2.png"}, {"id": "obsidian-wyvern-b2", "name_ja": "黒曜の地竜", "tier": "終盤", "element": "地", "flavor_ja": "全身が割れた黒曜石の鱗で覆われた地を這う大竜。背の棘が鋭く赤く光る。", "img": "gacha/obsidian-wyvern-b2.png"}, {"id": "siege-mantis-machine-b2", "name_ja": "鉄鎌の戦巧蟷螂", "tier": "終盤", "element": "機械", "flavor_ja": "鋸刃の鎌を二振り構える鋼鉄の蟷螂兵器。関節からピストンと配線がのぞく。", "img": "gacha/siege-mantis-machine-b2.png"}, {"id": "titan-juggernaut-golem-b2", "name_ja": "巨壁ジャガーノート", "tier": "ラスボス級", "element": "金", "flavor_ja": "鉄板と巨岩を鋲で組んだ要塞そのものの巨大ゴーレム。胸の格子から炉の火が漏れる。", "img": "gacha/titan-juggernaut-golem-b2.png"}, {"id": "world-anvil-dragon-b2", "name_ja": "大地鍛冶の鋼竜", "tier": "ラスボス級", "element": "金", "flavor_ja": "全身が鍛えた鋼と青銅で覆われた荘厳なる巨竜。鱗の隙間から溶けた黄金がにじむ。", "img": "gacha/world-anvil-dragon-b2.png"}, {"id": "dart-frog-toxin-b2", "name_ja": "ドクヤドカエル", "tier": "序盤", "element": "毒", "flavor_ja": "ちいさな体に毒をたっぷりためた青いカエル。さわるだけであぶない。", "img": "gacha/dart-frog-toxin-b2.png"}, {"id": "scorpion-stinger-b2", "name_ja": "ドクサソリ", "tier": "序盤", "element": "毒", "flavor_ja": "しっぽの先に緑色の毒をためたサソリ。小さいが油断は禁物。", "img": "gacha/scorpion-stinger-b2.png"}, {"id": "carrion-rat-b2", "name_ja": "クサリネズミ", "tier": "序盤", "element": "腐敗", "flavor_ja": "ボロボロの毛皮で腐ったものをあさるネズミ。病をまき散らす。", "img": "gacha/carrion-rat-b2.png"}, {"id": "spitting-cobra-b2", "name_ja": "ドクハキコブラ", "tier": "中盤", "element": "毒", "flavor_ja": "首を広げて毒をふきかけるコブラ。にらまれたら一巻の終わり。", "img": "gacha/spitting-cobra-b2.png"}, {"id": "vulture-carrion-b2", "name_ja": "シニクハゲワシ", "tier": "中盤", "element": "腐敗", "flavor_ja": "腐った肉を食らうハゲワシ。骨だけ残して飛び去る。", "img": "gacha/vulture-carrion-b2.png"}, {"id": "swamp-snapper-b2", "name_ja": "ドロヌマガメ", "tier": "中盤", "element": "腐敗", "flavor_ja": "コケと泥にまみれた大きなカミツキガメ。沼の底でえものを待つ。", "img": "gacha/swamp-snapper-b2.png"}, {"id": "wolverine-fang-b2", "name_ja": "キバオオグマ", "tier": "終盤", "element": "自然", "flavor_ja": "巨大な牙と爪をもつ猛々しいクマ。森の王として君臨する。", "img": "gacha/wolverine-fang-b2.png"}, {"id": "giant-centipede-b2", "name_ja": "ドクオオムカデ", "tier": "終盤", "element": "毒", "flavor_ja": "何十本もの足をうねらせる巨大ムカデ。猛毒の牙でかみつく。", "img": "gacha/giant-centipede-b2.png"}, {"id": "hydra-venom-b2", "name_ja": "ドクヘビ大蛇ヒュドラ", "tier": "ラスボス級", "element": "毒", "flavor_ja": "五つの首から猛毒をしたたらせる大蛇。一つ斬っても倒れない。", "img": "gacha/hydra-venom-b2.png"}, {"id": "rot-wyrm-b2", "name_ja": "腐朽の大竜クサリュウ", "tier": "ラスボス級", "element": "腐敗", "flavor_ja": "腐りかけた体で森をくさらせる巨大な竜。通った跡は朽ち果てる。", "img": "gacha/rot-wyrm-b2.png"}]; const KEY="rika2_boss_swipe_v1";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
