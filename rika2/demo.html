@@ -365,6 +365,16 @@
   .sell-go:active{transform:scale(.97);}
   .sell-go:disabled{opacity:.5;filter:grayscale(.5);background:#2a3450;color:var(--sub);border-bottom-color:var(--line);}
   .inv-toast{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:6;background:rgba(8,12,24,.94);border:1px solid var(--gold);color:var(--gold);font-size:13px;font-weight:800;padding:8px 18px;border-radius:20px;box-shadow:0 6px 20px #0008;}
+  .inv-toast.sale{display:flex;align-items:center;gap:10px;white-space:nowrap;}
+  .toast-undo{background:var(--gold);color:#3a230a;border:0;border-radius:8px;padding:6px 13px;font-weight:800;font-size:12px;min-height:30px;}
+  /* ⭐ロック(お気に入り) */
+  .gcard .lockbtn{position:absolute;top:4px;right:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:var(--sub);z-index:3;background:rgba(0,0,0,.3);border:1px solid transparent;border-radius:7px;}
+  .gcard .lockbtn.on{color:var(--gold);background:rgba(244,201,93,.16);border-color:rgba(244,201,93,.45);}
+  .gcard.fav{box-shadow:0 0 0 1px rgba(244,201,93,.45);}   /* ロック品=控えめ金枠(装備中.wornより薄い) */
+  .gcard .eq.lock{background:#0c1220;border:1px solid var(--line);color:var(--sub);}
+  /* 誤売却アンドゥ・バー */
+  .undo-bar{display:flex;align-items:center;justify-content:center;gap:9px;font-size:12px;color:var(--sub);background:rgba(244,201,93,.07);border:1px dashed rgba(244,201,93,.32);border-radius:9px;padding:6px 12px;margin:8px 0 0;}
+  .undo-bar b{color:var(--ink);} .undo-bar .chip{padding:5px 13px;min-height:30px;color:var(--gold);border-color:var(--gold);}
   /* ===== 装備詳細ドロワー(右からスライド・#app内に収める) ===== */
   .drawer-scrim{position:absolute;inset:0;background:rgba(4,7,14,.62);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s;}
   .drawer-scrim.open{opacity:1;pointer-events:auto;}
@@ -1131,11 +1141,12 @@ function buildLoadout(cid){ return ['jab'].concat(GEAR_SLOTS.map(s=>slotSkill(ci
 function rollRarity(){ const rareB=accMetaSum('accRare'); const ks=Object.keys(RARITY);
   const w={}; ks.forEach(k=>{ w[k]=RARITY[k].w * (k==='C'?1:(1+rareB/100)); });   // レア率%でC以外(=良レア)に寄せる。試作はC/Rのみ重みあり
   const tot=ks.reduce((s,k)=>s+w[k],0); let x=Math.random()*tot; for(const k of ks){ x-=w[k]; if(x<0)return k; } return 'C'; }
-function dropAccessory(){ const rarity=rollRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base, bonuses:rollBonuses(rarity) }; accInv.push(a); saveAcc(); return a; }
+function dropAccessory(){ const rarity=rollRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base, bonuses:rollBonuses(rarity) }; if(rIdx(rarity)>=rIdx('SSR'))a.locked=true; accInv.push(a); saveAcc(); return a; }   // ★高レア(SSR+)は自動ロック=誤売却防止
 function dropGear(){ const slot=GEAR_SLOTS[Math.floor(Math.random()*GEAR_SLOTS.length)]; const rarity=rollRarity();   // ★役割ロックなし=スロット別共通プール
   const okPool=GEAR_POOL[slot].filter(sid=>rangeIncludes(SKILL_RANGE[sid],rarity));   // ★⑤ rangeに合うスキルだけ(そのレア度に出るスキル)
   const pool=okPool.length?okPool:GEAR_POOL[slot]; const skillId=pool[Math.floor(Math.random()*pool.length)];
   const g={ id:_accSeq++, kind:'gear', slot, skillId, equip:SKILL_EQUIP[skillId], rarity, main:rollMain(skillId,rarity), bonuses:rollBonuses(rarity) };   // ★④ main付与
+  if(rIdx(rarity)>=rIdx('SSR'))g.locked=true;   // ★高レア(SSR+)は自動ロック=誤売却防止
   gearInv.push(g); saveAcc(); return g; }
 // ★初期装備=各キャラ コモンの武器1本だけ(裸スタート)。何を初期にするかは設計判断。
 const STARTER = { ares:'honoo', sera:'thunder', gai:'tateuchi', mina:'holy' };
@@ -1254,6 +1265,7 @@ const SLOT_PIP={ '武器':'🗡', '頭':'🎩', '胴':'🥋', '足':'👢' };
 let invFilter={ tab:'gear', slot:'all', rarity:'all' };
 let invMode='view';            // 'view'(見る)｜'sell'(売る)
 let invSellSel=new Set();      // 売却に選んだアイテム('g'+id / 'a'+id)
+let lastSale=null;             // ★直前の売却(誤売却アンドゥ用)={items:[{kind,item}], gold}。リロードで消える=即時ミス取り消し用
 const SELL_VALUE={ C:10, R:60, SR:200, SSR:600, UR:1500, LR:4000 };   // ★売却額(仮・レア度依存・聖典のゴールド経済)。装備/装飾品 共通表。
 function sellValue(it){ return (it&&SELL_VALUE[it.rarity])||0; }
 function fmtGold(n){ return fmt(n||0); }
@@ -1274,22 +1286,34 @@ function invSetSlot(k){ invFilter.slot=k; invSellSel.clear(); renderInventory();
 function invSetRarity(k){ invFilter.rarity=k; invSellSel.clear(); renderInventory(); }   // ★レア度で絞る→ぜんぶ選ぶ→売る=一括レア度売却の導線
 function invSetMode(m){ invMode=m; invSellSel.clear(); renderInventory(); }
 function invToggleSell(kind,id){ const k=sellKey(kind,id); if(invSellSel.has(k))invSellSel.delete(k); else invSellSel.add(k); renderInventory(); }
-function invSellableList(){   // いま見えている、装備中でない そうび/装飾品(どうぐは売却対象外)
+function invToggleLock(kind,id){ const it=kind==='gear'?gearById(id):accById(id); if(!it)return; it.locked=!it.locked;   // ★お気に入りロック=一括売却の盾
+  if(it.locked) invSellSel.delete(sellKey(kind,id));   // ロックしたら売却選択から外す
+  saveAcc(); renderInventory(); }
+function invSellableList(){   // いま見えている、装備中でない・ロックしていない そうび/装飾品(どうぐは売却対象外)
   const kind=invFilter.tab==='acc'?'acc':'gear';
   let L=(kind==='acc'?accInv:gearInv).slice();
   if(kind==='gear'&&invFilter.slot!=='all') L=L.filter(x=>x.slot===invFilter.slot);
   if(invFilter.rarity!=='all') L=L.filter(x=>x.rarity===invFilter.rarity);
-  return L.filter(x=>(kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id))===null).map(x=>({kind,it:x})); }
+  return L.filter(x=>!x.locked && (kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id))===null).map(x=>({kind,it:x})); }
 function invSelectAllVisible(){ invSellableList().forEach(o=>invSellSel.add(sellKey(o.kind,o.it.id))); renderInventory(); }
 function invClearSell(){ invSellSel.clear(); renderInventory(); }
 function invSellTotal(){ let g=0,n=0; invSellSel.forEach(k=>{ const kind=k[0]==='a'?'acc':'gear', id=+k.slice(1), it=kind==='gear'?gearById(id):accById(id); if(it){ g+=sellValue(it); n++; } }); return {gold:g,count:n}; }
 function invSellSelected(){ const {gold,count}=invSellTotal(); if(!count)return;
-  if(!confirm(`そうび ${count}個を ${fmtGold(gold)}G で うりますか？\n（もとに もどせません）`)) return;
+  if(!confirm(`そうび ${count}個を ${fmtGold(gold)}G で うりますか？\n（売ったあと「もどす」で 取り消せます）`)) return;
+  const sold=[];   // ★実際に売れた物を記録=アンドゥ用
   invSellSel.forEach(k=>{ const kind=k[0]==='a'?'acc':'gear', id=+k.slice(1);
-    if(kind==='gear'){ if(gearEquippedBy(id)===null){ const i=gearInv.findIndex(x=>x.id===id); if(i>=0)gearInv.splice(i,1); } }   // ★装備中は売らない(二重ガード)
-    else { if(accEquippedBy(id)===null){ const i=accInv.findIndex(x=>x.id===id); if(i>=0)accInv.splice(i,1); } } });
-  addGold(gold); saveAcc(); invSellSel.clear(); renderInventory(); invToast(`💰 ${count}個 うって ${fmtGold(gold)}G ゲット！`); }
+    if(kind==='gear'){ const it=gearById(id); if(it&&!it.locked&&gearEquippedBy(id)===null){ const i=gearInv.findIndex(x=>x.id===id); if(i>=0){ gearInv.splice(i,1); sold.push({kind:'gear',item:it}); } } }   // ★装備中/ロックは売らない(二重ガード)
+    else { const it=accById(id); if(it&&!it.locked&&accEquippedBy(id)===null){ const i=accInv.findIndex(x=>x.id===id); if(i>=0){ accInv.splice(i,1); sold.push({kind:'acc',item:it}); } } } });
+  const realGold=sold.reduce((s,o)=>s+sellValue(o.item),0);
+  addGold(realGold); saveAcc(); invSellSel.clear(); lastSale={ items:sold, gold:realGold };
+  renderInventory(); invSaleToast(sold.length, realGold); }
+function invUndoSale(){ if(!lastSale)return;   // ★誤売却の取り消し=売った物を戻し、得たゴールドを返す(無罰)
+  lastSale.items.forEach(o=>{ if(o.kind==='gear')gearInv.push(o.item); else accInv.push(o.item); });
+  addGold(-lastSale.gold); saveAcc(); const n=lastSale.items.length; lastSale=null; renderInventory(); invToast(`↩️ ${n}個 もどした`); }
 function invToast(msg){ const g=document.getElementById('invBody'); if(!g)return; const t=document.createElement('div'); t.className='inv-toast'; t.textContent=msg; g.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1800); }
+function invSaleToast(n,gold){ const g=document.getElementById('invBody'); if(!g)return; const t=document.createElement('div'); t.className='inv-toast sale';   // ★売却トースト=その場で「もどす」(数秒)
+  t.innerHTML=`💰 ${n}個 うって +${fmtGold(gold)}G　<button class="toast-undo" onclick="invUndoSale()">↩️ もどす</button>`;
+  g.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },6000); }
 function renderInventory(){ const g=document.getElementById('invBody'); if(!g)return;
   const total=gearInv.length+accInv.length+(items.hpPotion||0)+(items.mpPotion||0);
   const tab=(k,l,n)=>`<button class="chip" aria-pressed="${invFilter.tab===k}" onclick="invSetTab('${k}')">${l} ${n}</button>`;
@@ -1308,8 +1332,10 @@ function renderInventory(){ const g=document.getElementById('invBody'); if(!g)re
     sellBar=`<div class="sellbar"><button class="chip" onclick="invSelectAllVisible()">ぜんぶ選ぶ</button><button class="chip" onclick="invClearSell()">えらび直す</button>`
       +`<button class="sell-go" ${t.count?'':'disabled'} onclick="invSellSelected()">💰 ${t.count}個を うる（+${fmtGold(t.gold)}G）</button></div>`; }
   const sellTgl=invFilter.tab!=='item'?`<button class="chip selltgl${invMode==='sell'?' on':''}" onclick="invSetMode('${invMode==='sell'?'view':'sell'}')">${invMode==='sell'?'✕ やめる':'💰 売る'}</button>`:'';
+  const undoBar=lastSale?`<div class="undo-bar">↩️ さっき <b>${lastSale.items.length}個</b> 売った（+${fmtGold(lastSale.gold)}G）<button class="chip" onclick="invUndoSale()">もどす</button></div>`:'';
   g.innerHTML=`<div class="inv-head"><h2>🎒 もちもの台帳</h2><div class="inv-head-r"><span class="gold">💰 <b>${fmtGold(progress.gold)}</b></span>${sellTgl}</div></div>
-    ${invMode==='sell'?`<div class="sell-hint">うりたい そうびを えらんでね。<b>レア度でしぼって「ぜんぶ選ぶ」</b>で 一括も できるよ。<b>装備中は うれません</b>。</div>`:''}
+    ${undoBar}
+    ${invMode==='sell'?`<div class="sell-hint">うりたい そうびを えらんでね。<b>レア度でしぼって「ぜんぶ選ぶ」</b>で 一括も できるよ。<b>装備中・⭐ロックは うれません</b>。</div>`:''}
     ${tabs}${sub}${rar}
     <div class="inv-grid">${invCardsHtml()}</div>
     ${sellBar}
@@ -1332,11 +1358,18 @@ function invCardsHtml(){
     const gm=kind==='gear'?mainText(x):('全コア+'+RARITY[x.rarity].pct+'%');
     const pip=kind==='gear'?`<span class="slotpip">${SLOT_PIP[x.slot]||''}</span>`:'';
     const wc=kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id), al=wc?allyById(wc):null;
-    if(sell){ const seld=invSellSel.has(sellKey(kind,x.id)), locked=!!al;
-      const onclick=locked?`invToast('${al.name}が そうび中。はずすと うれるよ')`:`invToggleSell('${kind}',${x.id})`;
-      const badge=locked?`<span class="eq lock" title="装備中">🔒</span>`:(seld?`<span class="sellchk">✓</span>`:'');
-      return `<button class="gcard${locked?' locked':''}${seld?' sel':''}" style="--rc:${rc};" onclick="${onclick}">${badge}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
-    return `<button class="gcard${al?' worn':''}" style="--rc:${rc};" onclick="openDetail('${kind}',${x.id})">${al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:''}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm">${gm}</div></button>`;
+    const lk=!!x.locked;   // ★お気に入りロック
+    const star=`<span class="lockbtn${lk?' on':''}" onclick="event.stopPropagation();invToggleLock('${kind}',${x.id})" title="${lk?'ロック中(タップで解除)':'ロックする'}">${lk?'⭐':'☆'}</span>`;
+    if(sell){
+      if(al||lk){   // 装備中 or ロック中=売れない(保護)
+        const onclick=al?`invToast('${al.name}が そうび中。はずすと うれるよ')`:`invToast('ロック中。⭐を タップで うれるよ')`;
+        const badge=al?`<span class="eq lock" title="装備中">🔒</span>`:star;   // ロックは⭐(タップで解除)を出す
+        return `<button class="gcard locked" style="--rc:${rc};" onclick="${onclick}">${badge}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
+      const seld=invSellSel.has(sellKey(kind,x.id));
+      return `<button class="gcard${seld?' sel':''}" style="--rc:${rc};" onclick="invToggleSell('${kind}',${x.id})">${seld?`<span class="sellchk">✓</span>`:star}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
+    // view mode: 右上=装備中なら着用者emoji / それ以外は⭐ロックトグル
+    const tr=al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:star;
+    return `<button class="gcard${al?' worn':''}${lk&&!al?' fav':''}" style="--rc:${rc};" onclick="openDetail('${kind}',${x.id})">${tr}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm">${gm}</div></button>`;
   }).join('');
 }
 /* ── 装備詳細ドロワー(③・比較つき)＝インベントリ/そうび 両画面で共用 ── */
