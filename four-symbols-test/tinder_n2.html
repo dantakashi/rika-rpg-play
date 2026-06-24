@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "ember-kirin-spirit-n2", "name_ja": "ほむらの麒麟霊", "tier": "序盤", "element": "火", "flavor_ja": "火そのものでできた幼い霊獣。たてがみは生きた炎で、踏みしめる足もとから小さな火花がこぼれる。", "img": "gacha_n2/ember-kirin-spirit-n2.png"}, {"id": "brook-koi-naiad-n2", "name_ja": "せせらぎの鯉霊", "tier": "序盤", "element": "水", "flavor_ja": "清流が形をとった水の精霊。体は澄んだ水でできていて、まわりの泡が体に寄りそう。", "img": "gacha_n2/brook-koi-naiad-n2.png"}, {"id": "gale-garuda-sprite-n2", "name_ja": "そよ風の鳥霊", "tier": "序盤", "element": "風", "flavor_ja": "風がまとまってできた小さな鳥の精霊。体のまわりを薄緑の風がぐるりと寄りそう。", "img": "gacha_n2/gale-garuda-sprite-n2.png"}, {"id": "loam-tortoise-guardian-n2", "name_ja": "大地の岩亀霊", "tier": "中盤", "element": "土", "flavor_ja": "土と岩がかたまってできた頑丈な亀の精霊。甲羅には草が生え、踏みしめる足から土ぼこりが舞う。", "img": "gacha_n2/loam-tortoise-guardian-n2.png"}, {"id": "levin-raiju-spirit-n2", "name_ja": "いかずちの獣霊", "tier": "中盤", "element": "雷", "flavor_ja": "稲妻がけものの姿になった雷の精霊。体表を電気が走り、毛は逆立つ稲妻でできている。", "img": "gacha_n2/levin-raiju-spirit-n2.png"}, {"id": "rime-aurochs-spirit-n2", "name_ja": "こおりの角獣霊", "tier": "中盤", "element": "氷", "flavor_ja": "氷河からけずり出されたような氷の角獣。体は澄んだ青氷で、まわりに冷気と雪がまとわりつく。", "img": "gacha_n2/rime-aurochs-spirit-n2.png"}, {"id": "radiant-seraph-colossus-n2", "name_ja": "ひかりの六腕巨神", "tier": "終盤", "element": "光", "flavor_ja": "光が荘厳な巨神の姿をとったもの。六本の腕と太陽の後光をまとい、体そのものが黄金にかがやく。", "img": "gacha_n2/radiant-seraph-colossus-n2.png"}, {"id": "void-wraith-revenant-n2", "name_ja": "やみの異形霊", "tier": "終盤", "element": "闇", "flavor_ja": "闇がねじれて異形の霊となったもの。体はうごめく虚無でできて、冷たい紫の炎が割れ目からにじみ出る。", "img": "gacha_n2/void-wraith-revenant-n2.png"}, {"id": "magma-leviathan-spirit-n2", "name_ja": "ようがんの大蛇霊", "tier": "ラスボス級", "element": "火", "flavor_ja": "地の底のマグマが大蛇となった終焉級の火霊。黒い溶岩の殻の割れ目から灼熱の光があふれ出す。", "img": "gacha_n2/magma-leviathan-spirit-n2.png"}, {"id": "tempest-titan-spirit-n2", "name_ja": "あらしの雷帝巨神", "tier": "ラスボス級", "element": "雷", "flavor_ja": "嵐そのものが雷の巨神となった終焉級の精霊。四本の腕と雷雲の体から稲妻があふれ出す。", "img": "gacha_n2/tempest-titan-spirit-n2.png"}, {"id": "mossback-toad-warden-n2", "name_ja": "コケむしガマ守り", "tier": "序盤", "element": "草", "flavor_ja": "森の地面そのものが立ち上がったような、コケと菌を背負った守りのガマ。湿った腐葉土のにおいを纏う。", "img": "gacha_n2/mossback-toad-warden-n2.png"}, {"id": "seedling-fawn-sprite-n2", "name_ja": "ふたばの子精", "tier": "序盤", "element": "草", "flavor_ja": "芽吹いたばかりの若木が幼い獣のかたちをとった精。頭の双葉が森の春を告げる。", "img": "gacha_n2/seedling-fawn-sprite-n2.png"}, {"id": "brook-otter-naiad-n2", "name_ja": "せせらぎのかわうそ精", "tier": "序盤", "element": "水", "flavor_ja": "渓流のせせらぎが一匹のかわうそにまとまった精。体そのものが澄んだ流れでできている。", "img": "gacha_n2/brook-otter-naiad-n2.png"}, {"id": "thornbriar-warden-boar-n2", "name_ja": "いばらの守り猪", "tier": "中盤", "element": "草", "flavor_ja": "森の奥を守る茨の主。踏み込めば棘が締めつける、生きた藪の壁のような巨猪。", "img": "gacha_n2/thornbriar-warden-boar-n2.png"}, {"id": "gale-crane-windhowl-n2", "name_ja": "つむじ風の鶴霊", "tier": "中盤", "element": "風", "flavor_ja": "森を渡る風が一羽の鶴に結ばれた精。羽ばたきが木々をざわめかせ、花弁を巻き上げる。", "img": "gacha_n2/gale-crane-windhowl-n2.png"}, {"id": "bloomheart-mantis-maiden-n2", "name_ja": "花芯のカマキリ姫", "tier": "中盤", "element": "草", "flavor_ja": "森の花畑に潜む花虫の姫。鎌は花弁、体は茎。花の芯が金色に脈打つ。", "img": "gacha_n2/bloomheart-mantis-maiden-n2.png"}, {"id": "ancient-loam-treant-n2", "name_ja": "古沼の樹霊", "tier": "終盤", "element": "草", "flavor_ja": "幾百年も沼地に根を張る古樹の主。体は森そのもの、洞のまなざしが侵入者を見据える。", "img": "gacha_n2/ancient-loam-treant-n2.png"}, {"id": "torrent-serpent-river-lord-n2", "name_ja": "急流の蛇主", "tier": "終盤", "element": "水", "flavor_ja": "渓谷の急流が結ばれた水流の主。とぐろを巻いた巨躯から白い飛沫が絶え間なくこぼれ落ちる。", "img": "gacha_n2/torrent-serpent-river-lord-n2.png"}, {"id": "verdant-throne-forest-god-n2", "name_ja": "緑冠の森神", "tier": "ラスボス級", "element": "草", "flavor_ja": "森のすべてを束ねる主神。四腕に枝角の天蓋、纏う緑は生命そのもの。怒れば森が立ち上がる。", "img": "gacha_n2/verdant-throne-forest-god-n2.png"}, {"id": "primeval-bloom-world-spirit-n2", "name_ja": "始原の咲き世界霊", "tier": "ラスボス級", "element": "草", "flavor_ja": "森が生まれた始まりの霊。無数の幹と根が一つの巨神に結ばれ、咲き乱れる花が世界の鼓動を刻む。", "img": "gacha_n2/primeval-bloom-world-spirit-n2.png"}, {"id": "rokuro-neck-serpent-yokai-n2", "name_ja": "ノビクビヒメ", "tier": "序盤", "element": "妖怪・伸縮", "flavor_ja": "首がぬるりと伸び、長い縄のようにとぐろを巻く夜の女妖。白い顔が闇からこちらを覗く。", "img": "gacha_n2/rokuro-neck-serpent-yokai-n2.png"}, {"id": "bakeneko-twin-tail-yokai-n2", "name_ja": "ニビノバケネコ", "tier": "序盤", "element": "妖怪・怪火", "flavor_ja": "尾が二股に裂け、青い怪火をまとう大化け猫。背筋に這う鬼火が夜を照らす。", "img": "gacha_n2/bakeneko-twin-tail-yokai-n2.png"}, {"id": "kappa-river-warlord-yokai-n2", "name_ja": "カワヌシガッパ", "tier": "序盤", "element": "妖怪・水流", "flavor_ja": "頭の皿に水を湛え、川の主として君臨する古河童。全身を流れる水の膜が陽に光る。", "img": "gacha_n2/kappa-river-warlord-yokai-n2.png"}, {"id": "tsuchigumo-earth-spider-yokai-n2", "name_ja": "ツチグモオオヌシ", "tier": "中盤", "element": "妖怪・糸", "flavor_ja": "土の山のような腹に鬼の顔を持つ大土蜘蛛。八本の脚で大地を掴み、銀の糸を全身に纏う。", "img": "gacha_n2/tsuchigumo-earth-spider-yokai-n2.png"}, {"id": "yuki-onna-frost-yokai-n2", "name_ja": "ユキフルヒメガミ", "tier": "中盤", "element": "妖怪・氷雪", "flavor_ja": "吹雪を従える氷雪の半神。裾は雪の山となって大地に根を張り、肌には霜が走る。", "img": "gacha_n2/yuki-onna-frost-yokai-n2.png"}, {"id": "gashadokuro-bone-titan-yokai-n2", "name_ja": "ガシャドクロ", "tier": "中盤", "element": "妖怪・怨念", "flavor_ja": "無数の骸が集い、巨大な髑髏となった怨念の妖。骨の隙間から青い鬼火と亡霊の靄が滲む。", "img": "gacha_n2/gashadokuro-bone-titan-yokai-n2.png"}, {"id": "tengu-mountain-king-yokai-n2", "name_ja": "ダイテング", "tier": "終盤", "element": "妖怪・烈風", "flavor_ja": "山を統べる大天狗。漆黒の翼を背に畳み、烈風を腕に纏って錫杖を大地に突き立てる山の主。", "img": "gacha_n2/tengu-mountain-king-yokai-n2.png"}, {"id": "nue-chimera-yokai-n2", "name_ja": "ヌエ", "tier": "終盤", "element": "妖怪・雷雲", "flavor_ja": "猿の顔、虎の胴、蛇の尾を持つ夜の合成獣。雷雲の妖気を体に纏い、不吉の声で鳴く。", "img": "gacha_n2/nue-chimera-yokai-n2.png"}, {"id": "kyuubi-nine-tail-yokai-n2", "name_ja": "キュウビノオオキツネ", "tier": "ラスボス級", "element": "妖怪・妖狐火", "flavor_ja": "九つの尾を扇に広げ、金の妖狐火を全身に纏う神格の大狐。荘厳にして禍々しい妖の頂。", "img": "gacha_n2/kyuubi-nine-tail-yokai-n2.png"}, {"id": "oni-warlord-demon-king-yokai-n2", "name_ja": "オニノオオキミ", "tier": "ラスボス級", "element": "妖怪・鬼神業火", "flavor_ja": "鬼神の王。漆黒金の鎧を纏い、肌を業火が這う巨神。鉄棍を大地に突き立て、世を睥睨する妖の覇者。", "img": "gacha_n2/oni-warlord-demon-king-yokai-n2.png"}, {"id": "kappa-coil-hydromancer-n2", "name_ja": "渦皿河童（うずざらかっぱ）", "tier": "序盤", "element": "水", "flavor_ja": "頭の皿の渦が涸れぬかぎり、沼の水を意のままに操る河童の長。皿の水が乾けば力を失う。", "img": "gacha_n2/kappa-coil-hydromancer-n2.png"}, {"id": "lantern-wisp-grinner-n2", "name_ja": "百提灯（ひゃくちょうちん）", "tier": "序盤", "element": "火", "flavor_ja": "夜道で笑う化け提灯。中の蝋燭が燃えるかぎり消えず、迷う者を火に誘う。", "img": "gacha_n2/lantern-wisp-grinner-n2.png"}, {"id": "kamaitachi-galeclaw-n2", "name_ja": "鎌鼬・疾風（かまいたち・しっぷう）", "tier": "序盤", "element": "風", "flavor_ja": "一瞬で三度斬る鎌鼬。風の刃が傷を斬り、痛みは遅れて来るという。", "img": "gacha_n2/kamaitachi-galeclaw-n2.png"}, {"id": "nure-onna-serpentcoil-n2", "name_ja": "濡女・蛟（ぬれおんな・みずち）", "tier": "中盤", "element": "水", "flavor_ja": "水辺で泣く濡女。憐れんで近づけば、蛇身に巻き取られ水底へ引きずり込む。", "img": "gacha_n2/nure-onna-serpentcoil-n2.png"}, {"id": "dodome-myriad-eye-n2", "name_ja": "百々目鬼（どどめき）", "tier": "中盤", "element": "光", "flavor_ja": "盗みを重ねた腕に百の目が生じた鬼。すべての目で見られ、隠し事は通じない。", "img": "gacha_n2/dodome-myriad-eye-n2.png"}, {"id": "nurikabe-bastion-wall-n2", "name_ja": "塗壁・城壁（ぬりかべ・じょうへき）", "tier": "中盤", "element": "土", "flavor_ja": "夜道を塞ぐ巨大な壁。叩いても押しても動かず、行く手をただ阻む。", "img": "gacha_n2/nurikabe-bastion-wall-n2.png"}, {"id": "umibozu-abyss-tide-n2", "name_ja": "海坊主・大潮（うみぼうず・おおしお）", "tier": "終盤", "element": "水", "flavor_ja": "凪の海に突如そびえる海坊主。船を覗き込み、ひと睨みで波に沈める海の主。", "img": "gacha_n2/umibozu-abyss-tide-n2.png"}, {"id": "tsuchigumo-ironweb-matriarch-n2", "name_ja": "土蜘蛛・鉄糸（つちぐも・てついと）", "tier": "終盤", "element": "土", "flavor_ja": "山に巣くう土蜘蛛の母。鉄より強い糸で英傑をも搦め捕り、地の底へ引き込む。", "img": "gacha_n2/tsuchigumo-ironweb-matriarch-n2.png"}, {"id": "nine-tail-blaze-sovereign-n2", "name_ja": "金毛九尾（きんもうきゅうび）", "tier": "ラスボス級", "element": "火", "flavor_ja": "九つの尾に金の妖火を纏う妖狐の女王。国を傾けし大妖、その一睨みは王の命を奪う。", "img": "gacha_n2/nine-tail-blaze-sovereign-n2.png"}, {"id": "rashomon-oni-gatekeeper-n2", "name_ja": "羅城門鬼神（らじょうもんきしん）", "tier": "ラスボス級", "element": "闇", "flavor_ja": "都の朽ちた大門に巣食う鬼神。四腕で英傑の腕を引きちぎり、呪いの炎を纏う最強の鬼。", "img": "gacha_n2/rashomon-oni-gatekeeper-n2.png"}, {"id": "komainu-guardian-pup-n2", "name_ja": "こまいぬの仔狛（しこま）", "tier": "序盤", "element": "土", "flavor_ja": "神社を守る狛犬が魂を宿した仔。石でできた毛なみに金の光がまとわりつく。まだ幼いが、邪を払う気高い唸りを上げる。", "img": "gacha_n2/komainu-guardian-pup-n2.png"}, {"id": "reigame-shell-turtle-n2", "name_ja": "霊亀ノ卵守（れいきのこもり）", "tier": "序盤", "element": "水", "flavor_ja": "星図を背負う霊亀の若き守り手。甲羅には宇宙の理が刻まれ、藻と小さな蛇の尾が育つ。じっと座り、世界の重さを支える。", "img": "gacha_n2/reigame-shell-turtle-n2.png"}, {"id": "shrine-fox-acolyte-n2", "name_ja": "稲荷の白狐巫（びゃっこみ）", "tier": "序盤", "element": "光", "flavor_ja": "稲荷大神に仕える白狐の巫。神域の装束をまとい、青白い狐火を背に灯す。鈴を鳴らして祈りを捧げる気高き眷属。", "img": "gacha_n2/shrine-fox-acolyte-n2.png"}, {"id": "byakko-frost-tiger-n2", "name_ja": "白虎・霜牙の王（そうがのおう）", "tier": "中盤", "element": "氷", "flavor_ja": "西方を守る白虎、霜の牙を持つ王。吐く息は秋の冷気となり、体に霜の衣をまとう。低く構え、獲物を狙う気高き殺気。", "img": "gacha_n2/byakko-frost-tiger-n2.png"}, {"id": "suzaku-ember-phoenix-n2", "name_ja": "朱雀・燼羽の使（じんうのし）", "tier": "中盤", "element": "火", "flavor_ja": "南方を司る朱雀の使い。翼をたたみ、羽そのものから炎を燃え立たせる。燃え尽きてはまた蘇る不滅の霊鳥。", "img": "gacha_n2/suzaku-ember-phoenix-n2.png"}, {"id": "genbu-abyss-warden-n2", "name_ja": "玄武・淵守の蛇亀（えんしゅ）", "tier": "中盤", "element": "水", "flavor_ja": "北方を守る玄武。漆黒の甲羅に黒蛇がからみつき、深淵の水を体にまとう。動かざること山の如く、世界の北を支える。", "img": "gacha_n2/genbu-abyss-warden-n2.png"}, {"id": "ouryu-storm-dragon-lord-n2", "name_ja": "応龍・雷雲の翼帝（らいうんのよくてい）", "tier": "終盤", "element": "雷", "flavor_ja": "翼ある龍神、雷雲を従える帝。体をとぐろに巻き、鱗から稲妻を放つ。天候を操り、雨と雷を世に降らせる古の神。", "img": "gacha_n2/ouryu-storm-dragon-lord-n2.png"}, {"id": "kirin-judgment-sage-n2", "name_ja": "麒麟・裁理の聖獣（さいりのせいじゅう）", "tier": "終盤", "element": "光", "flavor_ja": "聖王の世にのみ現れる麒麟。鱗は経文を刻み、たてがみと角から聖なる火が立ちのぼる。善悪を見抜く、慈悲と裁きの聖獣。", "img": "gacha_n2/kirin-judgment-sage-n2.png"}, {"id": "hou-ou-empyrean-sovereign-n2", "name_ja": "鳳凰・天嗣の女皇（てんしのじょこう）", "tier": "ラスボス級", "element": "火", "flavor_ja": "万鳥の頂に立つ鳳凰の女皇。五色の聖炎を羽にまとい、天命を継ぐ者を選ぶ。その降臨は一時代の終わりと始まりを告げる。", "img": "gacha_n2/hou-ou-empyrean-sovereign-n2.png"}, {"id": "kongo-shijin-colossus-n2", "name_ja": "金剛・四神統べる神巨（しじんすべるしんきょ）", "tier": "ラスボス級", "element": "無", "flavor_ja": "四神を統べる金剛の神巨。白虎・朱雀・玄武・青龍の頭を冠に戴き、四色の神威を鎧にまとう。天地の均衡そのものたる、終焉の守護神。", "img": "gacha_n2/kongo-shijin-colossus-n2.png"}]; const KEY="rika2_boss_swipe_gacha_n2";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
