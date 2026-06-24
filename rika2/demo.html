@@ -381,6 +381,16 @@
   /* 誤売却アンドゥ・バー */
   .undo-bar{display:flex;align-items:center;justify-content:center;gap:9px;font-size:12px;color:var(--sub);background:rgba(244,201,93,.07);border:1px dashed rgba(244,201,93,.32);border-radius:9px;padding:6px 12px;margin:8px 0 0;}
   .undo-bar b{color:var(--ink);} .undo-bar .chip{padding:5px 13px;min-height:30px;color:var(--gold);border-color:var(--gold);}
+  /* ⚡おまかせ装備 */
+  .ae-btn{display:block;width:100%;max-width:440px;margin:10px auto 4px;padding:13px;border-radius:13px;border:0;border-bottom:4px solid var(--gold-d);background:linear-gradient(180deg,#f7d579,#dca22f);color:#3a230a;font-family:'Reggae One',cursive;font-size:18px;transition:transform .12s var(--bounce);}
+  .ae-btn:active{transform:scale(.97) translateY(2px);border-bottom-width:2px;}
+  .ae-card{max-width:380px;}
+  .ae-sub{font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px;}
+  .ae-list{display:flex;flex-direction:column;gap:6px;}
+  .ae-row{display:flex;align-items:center;gap:8px;background:#0c1220;border:1px solid var(--line);border-radius:10px;padding:8px 11px;}
+  .ae-row .ae-c{font-size:13px;font-weight:800;flex:1;} .ae-row .ae-c small{font-weight:600;color:var(--sub);margin-left:4px;font-size:10px;}
+  .ae-row .ae-v{font-size:13px;color:var(--sub);} .ae-row .ae-v b{color:var(--gold);font-size:15px;}
+  .ae-note{font-size:11px;color:var(--sub);line-height:1.5;margin:10px 0 2px;}
   /* ===== 装備詳細ドロワー(右からスライド・#app内に収める) ===== */
   .drawer-scrim{position:absolute;inset:0;background:rgba(4,7,14,.62);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s;}
   .drawer-scrim.open{opacity:1;pointer-events:auto;}
@@ -510,6 +520,7 @@
   <div class="screen" id="screen-defeat"><div class="scr-inner" id="defeatBody"></div></div>
 
   <div class="info-modal" id="infoModal" onclick="hideInfo()"></div>
+  <div class="info-modal" id="autoModal" onclick="hideAutoEquip()"></div>
 
   <!-- 装備詳細ドロワー(インベントリ/そうび 両画面で共用) -->
   <div class="drawer-scrim" id="dwScrim" onclick="closeDetail()"></div>
@@ -1218,7 +1229,9 @@ function renderEquip(){ const g=document.getElementById('accBody');
   if(!equipCid){   // ハブ＝キャラ選択
     const cards=ALLY_DEFS.map(d=>{ const pct=accPctFor(d.id); const sk=buildLoadout(d.id).slice(1).map(sid=>SKILLS[sid]?SKILLS[sid].emoji:'').join('');
       return `<button class="equip-card" onclick="openCharEquip('${d.id}')"><div class="hc-emoji">${d.emoji}</div><div class="hc-name">${d.name}</div><div class="hc-role">${d.role}</div><div class="ec-skills">${sk}</div><div class="hc-pct">装飾品 +${pct}%</div></button>`; }).join('');
-    g.innerHTML=`<h2 class="scr-ttl">🔮 そうび</h2><div class="acc-sub">キャラをえらんで、装備（スキル）と装飾品をつけよう。</div><div class="equip-hub">${cards}</div><div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>`;
+    g.innerHTML=`<h2 class="scr-ttl">🔮 そうび</h2><div class="acc-sub">キャラをえらんで、装備（スキル）と装飾品をつけよう。</div>
+      <button class="ae-btn" onclick="showAutoEquip()">⚡ おまかせ装備（4人ぶん 自動で強く）</button>
+      <div class="equip-hub">${cards}</div><div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>`;
     return; }
   const cid=equipCid, d=ALLY_DEFS.find(a=>a.id===cid), ps=previewStats(cid);
   // ★ステ表示=戦闘のmakeAlliesと同式(buff倍率込み・mflatはステ専用なので拠点では除外)＝旧estatの近似ズレを是正
@@ -1328,6 +1341,7 @@ function invSellableList(){   // いま見えている(絞り込み後)、装備
   if(invFilter.tab==='item')return []; const {kind,L}=invFilteredRaw();
   return L.filter(x=>!x.locked && (kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id))===null).map(x=>({kind,it:x})); }
 function invSelectAllVisible(){ invSellableList().forEach(o=>invSellSel.add(sellKey(o.kind,o.it.id))); renderInventory(); }
+function invSelectJunk(){ let n=0; invSellableList().forEach(o=>{ if(!isUpgrade(o.kind,o.it)){ invSellSel.add(sellKey(o.kind,o.it.id)); n++; } }); renderInventory(); if(!n)invToast('いらない物は 見あたらないよ（みんな つけ得！）'); }   // ★誰の強化にもならない(✨無し)非ロック非装備=ゴミだけ自動選択
 function invClearSell(){ invSellSel.clear(); renderInventory(); }
 function invSellTotal(){ let g=0,n=0; invSellSel.forEach(k=>{ const kind=k[0]==='a'?'acc':'gear', id=+k.slice(1), it=kind==='gear'?gearById(id):accById(id); if(it){ g+=sellValue(it); n++; } }); return {gold:g,count:n}; }
 function invSellSelected(){ const {gold,count}=invSellTotal(); if(!count)return;
@@ -1361,7 +1375,7 @@ function renderInventory(){ const g=document.getElementById('invBody'); if(!g)re
     rar=`<div class="chips sub">${rb('all')}${RARITY_ORDER.map(rb).join('')}</div>`; }
   let sellBar='';
   if(invMode==='sell'&&invFilter.tab!=='item'){ const t=invSellTotal();
-    sellBar=`<div class="sellbar"><button class="chip" onclick="invSelectAllVisible()">ぜんぶ選ぶ</button><button class="chip" onclick="invClearSell()">えらび直す</button>`
+    sellBar=`<div class="sellbar"><button class="chip" onclick="invSelectJunk()" title="だれの強化にもならない物を自動で選ぶ">🗑 いらない物</button><button class="chip" onclick="invSelectAllVisible()">ぜんぶ選ぶ</button><button class="chip" onclick="invClearSell()">えらび直す</button>`
       +`<button class="sell-go" ${t.count?'':'disabled'} onclick="invSellSelected()">💰 ${t.count}個を うる（+${fmtGold(t.gold)}G）</button></div>`; }
   let sortRow='';
   if(invFilter.tab!=='item'){ const so=(k,l)=>`<button class="chip" aria-pressed="${invSort===k}" onclick="invSetSort('${k}')">${l}</button>`;
@@ -1480,6 +1494,51 @@ function dwUnequip(){ const cid=dwWhom;
   saveAcc(); afterDrawerChange(); }
 function afterDrawerChange(){ renderDrawer();   // ドロワーは開いたまま状態更新(装備中表示に)
   if(gameState==='inventory') renderInventory(); else if(gameState==='equip') renderEquip(); }
+
+/* ── ⚡おまかせ装備(段階4)=4人ぶん最強の組み合わせを自動で選ぶ＝順列爆発を消す決定打 ── */
+const ROLE_WEIGHT={   // キャラ別の重視ステ(役割)＝fitnessの重み
+  ares:{str:1.6,hp:0.5,def:0.3,spd:0.3,mp:0.2,int:0.1},   // 火力=ちから
+  sera:{int:1.6,hp:0.4,def:0.3,spd:0.3,mp:0.3,str:0.1},   // 妨害=かしこさ
+  gai: {def:1.3,hp:1.3,str:0.6,spd:0.2,mp:0.2,int:0.1},   // 壁=まもり/HP
+  mina:{int:1.4,hp:0.6,def:0.3,spd:0.4,mp:0.3,str:0.1},   // 回復=かしこさ
+};
+function statNorm(stat,v){ const ref=(MAIN_VAL[stat]&&MAIN_VAL[stat].R)||(BONUS_VAL[stat]&&BONUS_VAL[stat].R)||v||1; return v/ref; }   // R基準=1.0でstat種を超えて比較
+function gearFitness(cid,g){ const w=ROLE_WEIGHT[cid]||{}; let f=0;
+  if(g.main) f+=statNorm(g.main.stat,g.main.v)*(w[g.main.stat]||0.1);
+  accBonuses(g).forEach(b=>{ f+=statNorm(b.t,b.v)*(w[b.t]||0.05)*0.5; }); return f; }
+function accFitness(cid,a){ const w=ROLE_WEIGHT[cid]||{}; let f=(RARITY[a.rarity].pct/(RARITY.R.pct||2))*0.8;   // 全コア+%=汎用
+  accBonuses(a).forEach(b=>{ f+=statNorm(b.t,b.v)*(w[b.t]||0.05)*0.5; }); return f; }
+function autoEquipPlan(){   // 貪欲割当=(キャラ,枠,装備)のfitness降順で 1装備1人・1枠1個 を埋める(役割ロックなしでも重み表で成立)
+  const plan={}; ALLY_DEFS.forEach(d=>plan[d.id]={gear:{},acc:[null,null]});
+  const usedG=new Set(); const ge=[];
+  ALLY_DEFS.forEach(d=>GEAR_SLOTS.forEach(slot=>gearInv.filter(g=>g.slot===slot).forEach(g=>ge.push({cid:d.id,slot,id:g.id,fit:gearFitness(d.id,g)}))));
+  ge.sort((a,b)=>b.fit-a.fit);
+  ge.forEach(e=>{ if(plan[e.cid].gear[e.slot]!=null||usedG.has(e.id))return; plan[e.cid].gear[e.slot]=e.id; usedG.add(e.id); });
+  const usedA=new Set(); const ae=[];
+  ALLY_DEFS.forEach(d=>accInv.forEach(a=>ae.push({cid:d.id,id:a.id,fit:accFitness(d.id,a)})));
+  ae.sort((a,b)=>b.fit-a.fit);
+  ae.forEach(e=>{ const arr=plan[e.cid].acc; const free=arr.indexOf(null); if(free<0||usedA.has(e.id))return; arr[free]=e.id; usedA.add(e.id); });
+  return plan; }
+function autoEquipApplyNoSave(plan){ ALLY_DEFS.forEach(d=>{ GEAR_SLOTS.forEach(s=>gearEquip[d.id][s]=plan[d.id].gear[s]||null); accEquip[d.id]=[plan[d.id].acc[0]||null, plan[d.id].acc[1]||null]; }); }
+function charPowerNum(cid){ const ps=previewStats(cid); return Math.round(ps.str+ps.int+ps.def+ps.hp/10); }   // ざっくり戦力(プレビュー表示用)
+let autoPlan=null;
+function showAutoEquip(){ const plan=autoEquipPlan();
+  const before={}; ALLY_DEFS.forEach(d=>before[d.id]=charPowerNum(d.id));
+  const sg=JSON.parse(JSON.stringify(gearEquip)), sa=JSON.parse(JSON.stringify(accEquip));   // 一時適用→計測→復元(保存しない)
+  autoEquipApplyNoSave(plan);
+  const after={}; ALLY_DEFS.forEach(d=>after[d.id]=charPowerNum(d.id));
+  gearEquip=sg; accEquip=sa; autoPlan=plan;
+  const rows=ALLY_DEFS.map(d=>{ const b=before[d.id],a=after[d.id],dv=a-b,pct=b>0?Math.round(dv/b*100):(a>0?100:0);
+    return `<div class="ae-row"><span class="ae-c">${d.emoji} ${d.name}<small>${d.role}</small></span><span class="ae-v">${fmt(b)} ▸ <b>${fmt(a)}</b></span><span class="delta ${dv>0?'up':dv<0?'down':'eqd'}">${dv>0?'▲+'+pct+'%':dv<0?'▼'+pct+'%':'±0'}</span></div>`; }).join('');
+  document.getElementById('autoModal').innerHTML=`<div class="info-card ae-card" onclick="event.stopPropagation()"><div class="info-ttl">⚡ おまかせ装備</div>
+    <div class="ae-sub">いまの もちものから、4人ぶん いちばん 強くなる 組み合わせを じどうで えらぶよ。</div>
+    <div class="ae-list">${rows}</div>
+    <div class="ae-note">⭐ロックした そうびも 強ければ つかうよ。気に入らなければ「やめる」。</div>
+    <div class="dw-act"><button class="dw-cta" onclick="applyAutoEquip()">これにする</button><button class="dw-rm" style="background:#222d45;border-color:var(--line);color:var(--sub);" onclick="hideAutoEquip()">やめる</button></div></div>`;
+  document.getElementById('autoModal').classList.add('show'); }
+function hideAutoEquip(){ document.getElementById('autoModal').classList.remove('show'); autoPlan=null; }
+function applyAutoEquip(){ if(autoPlan){ autoEquipApplyNoSave(autoPlan); saveAcc(); } hideAutoEquip();
+  if(gameState==='equip')renderEquip(); else if(gameState==='inventory')renderInventory(); else if(gameState==='home')renderHome(); }
 
 function showScreen(name){   // overlay表示の一元管理。battle時は全overlay非表示。
   // ★ガード(問題側申し送り2026-06-24): 画面(メニュー/ホーム等)を出すとき、生きてる出題の器が残っていたら先に閉じる
