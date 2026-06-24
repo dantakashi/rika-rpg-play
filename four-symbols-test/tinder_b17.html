@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "fizz-bubble-slime-b17", "name_ja": "アワッパ", "tier": "序盤", "element": "泡", "flavor_ja": "せっけんの泡から生まれた、まんまるでぷるぷるの子。さわるとパチパチはじける。", "img": "gacha_b17/fizz-bubble-slime-b17.png"}, {"id": "spark-mouse-static-b17", "name_ja": "ビリネズ", "tier": "序盤", "element": "電気", "flavor_ja": "なでるとパチッとくる、しずでんきをためこむまんまるネズミ。おこるとモフモフがふくらむ。", "img": "gacha_b17/spark-mouse-static-b17.png"}, {"id": "pebble-crystal-pup-b17", "name_ja": "コロジオン", "tier": "序盤", "element": "結晶", "flavor_ja": "石ころと小さな結晶でできた、よちよち歩く子犬ゴーレム。背中のクリスタルがキラキラ光る。", "img": "gacha_b17/pebble-crystal-pup-b17.png"}, {"id": "prism-fox-rainbow-b17", "name_ja": "ニジツネ", "tier": "中盤", "element": "光", "flavor_ja": "光をプリズムで七色に分ける、ガラスのような毛なみのキツネ。走ると虹がきらめく。", "img": "gacha_b17/prism-fox-rainbow-b17.png"}, {"id": "magnet-beetle-horseshoe-b17", "name_ja": "マグネブル", "tier": "中盤", "element": "電気", "flavor_ja": "U字じしゃくのツノを持つ、ずんぐりカブトムシ。からだに金物がペタペタくっつく。", "img": "gacha_b17/magnet-beetle-horseshoe-b17.png"}, {"id": "soda-frog-carbonate-b17", "name_ja": "シュワガエル", "tier": "中盤", "element": "泡", "flavor_ja": "炭酸ジュースみたいに体じゅうでシュワシュワ泡だつカエル。おなかの泡がのぼっていく。", "img": "gacha_b17/soda-frog-carbonate-b17.png"}, {"id": "thunder-lion-dynamo-b17", "name_ja": "ライデンガオ", "tier": "終盤", "element": "電気", "flavor_ja": "電気のたてがみをまとう、堂々たる雷のライオン。ほえると稲妻が体じゅうにはしる。", "img": "gacha_b17/thunder-lion-dynamo-b17.png"}, {"id": "geode-turtle-crystal-b17", "name_ja": "ジオドラ", "tier": "終盤", "element": "結晶", "flavor_ja": "背中の甲羅が巨大なジオード(晶洞)になった、どっしりした竜亀。割れ目から結晶が光る。", "img": "gacha_b17/geode-turtle-crystal-b17.png"}, {"id": "aurora-leviathan-light-b17", "name_ja": "オーロドラ", "tier": "ラスボス級", "element": "光", "flavor_ja": "全身にオーロラの光をまとう、荘厳な光の覇竜。鱗の色が刻一刻と移ろう。", "img": "gacha_b17/aurora-leviathan-light-b17.png"}, {"id": "plasma-titan-king-b17", "name_ja": "プラズマオウ", "tier": "ラスボス級", "element": "電気", "flavor_ja": "胸の核で渦巻くプラズマを宿す、巨大な雷帝ゴーレム。全身を電撃がはいまわる。", "img": "gacha_b17/plasma-titan-king-b17.png"}, {"id": "prism-jelly-pup-b17", "name_ja": "プリズムくらげっこ", "tier": "序盤", "element": "光", "flavor_ja": "体の中で光が虹に分かれる、ゼリーみたいな子。むにっと地面にくっついている。", "img": "gacha_b17/prism-jelly-pup-b17.png"}, {"id": "glowbud-mushroom-b17", "name_ja": "ぴかぴかキノコ", "tier": "序盤", "element": "光", "flavor_ja": "暗いところで光るキノコの妖精。胞子がふわっと光って、どっしり根を張る。", "img": "gacha_b17/glowbud-mushroom-b17.png"}, {"id": "fizz-newt-soda-b17", "name_ja": "しゅわしゅわイモリ", "tier": "序盤", "element": "水", "flavor_ja": "中身が炭酸ジュースみたいに泡立つイモリ。短い足でしっかり踏ん張る。", "img": "gacha_b17/fizz-newt-soda-b17.png"}, {"id": "neon-mantis-tube-b17", "name_ja": "ネオンカマキリ", "tier": "中盤", "element": "光", "flavor_ja": "体がネオン管でできたカマキリ。発光する鎌をかまえてどっしり構える。", "img": "gacha_b17/neon-mantis-tube-b17.png"}, {"id": "crystal-crab-quartz-b17", "name_ja": "スペクトルガニ", "tier": "中盤", "element": "光", "flavor_ja": "水晶の甲羅が光を虹に割るカニ。重そうな結晶のハサミでがっしり踏ん張る。", "img": "gacha_b17/crystal-crab-quartz-b17.png"}, {"id": "plasma-toad-ball-b17", "name_ja": "プラズマがえる", "tier": "中盤", "element": "雷", "flavor_ja": "プラズマボールみたいに体の中で電気が枝分かれするカエル。びりびりっと光る。", "img": "gacha_b17/plasma-toad-ball-b17.png"}, {"id": "aurora-axolotl-b17", "name_ja": "オーロラウーパー", "tier": "終盤", "element": "光", "flavor_ja": "えらがオーロラのように極彩色に光る、神秘的なウーパー。重心は低く安定。", "img": "gacha_b17/aurora-axolotl-b17.png"}, {"id": "iris-beetle-shell-b17", "name_ja": "たまむしオオカブト", "tier": "終盤", "element": "光", "flavor_ja": "甲羅が玉虫色に七色変化する重装甲のカブトムシ。六本足でどっしり。", "img": "gacha_b17/iris-beetle-shell-b17.png"}, {"id": "spectrum-serpent-king-b17", "name_ja": "極彩の虹蛇王", "tier": "ラスボス級", "element": "光", "flavor_ja": "うろこ一枚ごとに虹の色がめぐる、極彩色の蛇の王。とぐろを巻いて鎮座する。", "img": "gacha_b17/spectrum-serpent-king-b17.png"}, {"id": "chroma-phoenix-core-b17", "name_ja": "クロマ・フェニクス", "tier": "ラスボス級", "element": "光", "flavor_ja": "羽根の一枚一枚が蛍光色に燃える不死鳥。翼は畳み、爪でしっかり立つ。", "img": "gacha_b17/chroma-phoenix-core-b17.png"}, {"id": "ember-sprout-puff-b17", "name_ja": "ポッと火だね", "tier": "序盤", "element": "炎", "flavor_ja": "うまれたての火の精。ほっぺに火のこがくっついて、いつもニコニコしている。あつくないよ、たぶん。", "img": "gacha_b17/ember-sprout-puff-b17.png"}, {"id": "drip-droplet-pal-b17", "name_ja": "ぽちゃ水たま", "tier": "序盤", "element": "水", "flavor_ja": "ぷるぷるの水の精。さわるとひんやり。ころぶとちょっとはねる。みんなのアイドル枠。", "img": "gacha_b17/drip-droplet-pal-b17.png"}, {"id": "puff-breeze-tot-b17", "name_ja": "ふわ風ちゃん", "tier": "序盤", "element": "風", "flavor_ja": "そよ風うまれの精。くしゃみすると自分でとんでいく。のんびり屋さん。", "img": "gacha_b17/puff-breeze-tot-b17.png"}, {"id": "spark-bolt-kiddo-b17", "name_ja": "ビリッと雷っこ", "tier": "中盤", "element": "雷", "flavor_ja": "じっとできない雷の精。さわると静電気でパチッ。テンションだけは100てんまん。", "img": "gacha_b17/spark-bolt-kiddo-b17.png"}, {"id": "frost-mochi-chill-b17", "name_ja": "つめたモチ氷", "tier": "中盤", "element": "氷", "flavor_ja": "ねむそうな氷の精。ぎゅっとすると冷たくて気持ちいい。ゆっくりとけながら生きている。", "img": "gacha_b17/frost-mochi-chill-b17.png"}, {"id": "pebble-mud-tubby-b17", "name_ja": "ごろ土だんご", "tier": "中盤", "element": "土", "flavor_ja": "のんびり屋の土の精。あたまから新芽がのびてくる。あるくたびにポロポロ小石をおとす。", "img": "gacha_b17/pebble-mud-tubby-b17.png"}, {"id": "glow-lumen-bean-b17", "name_ja": "ぴかり光まめ", "tier": "終盤", "element": "光", "flavor_ja": "やさしい光の精。くらいところでぼうっと光って道をてらす。少しだけお兄さん（お姉さん？）。", "img": "gacha_b17/glow-lumen-bean-b17.png"}, {"id": "umbra-shade-imp-b17", "name_ja": "もやもや影っこ", "tier": "終盤", "element": "闇", "flavor_ja": "いたずら好きな影の精。かくれんぼが得意で、本気を出すとちょっとこわい。でも実はさみしがり。", "img": "gacha_b17/umbra-shade-imp-b17.png"}, {"id": "primarch-elemental-king-b17", "name_ja": "ちび元素王プチエレ", "tier": "ラスボス級", "element": "複合（全元素）", "flavor_ja": "ちびっこ元素たちのおうさま。小さいけど全部の元素をあやつる。えらそうだけど面倒見はいい。", "img": "gacha_b17/primarch-elemental-king-b17.png"}, {"id": "chibi-elemental-titan-core-b17", "name_ja": "あつまれ精霊コア・ギガちび", "tier": "ラスボス級", "element": "複合（精霊融合）", "flavor_ja": "ちびエレメンタルたちが力をあわせて合体した最終形。たくさんの精霊がぎゅうぎゅうに集まったぬくもりのかたまり。倒すのはちょっとさみしい。", "img": "gacha_b17/chibi-elemental-titan-core-b17.png"}, {"id": "puffle-axolotl-b17", "name_ja": "ぷくぷくウーパー", "tier": "序盤", "element": "毒", "flavor_ja": "いつもニコニコしているが、体をおおうムラサキのねばねばには毒がある。エラからもれる毒のもやで近づくものをしびれさせる。", "img": "gacha_b17/puffle-axolotl-b17.png"}, {"id": "spark-clownfish-b17", "name_ja": "ビリビリクマノミ", "tier": "序盤", "element": "電気", "flavor_ja": "イソギンチャクの代わりに電気をまとった小さな魚の怪物。さわると体の表面でパチパチと電気がはじける。", "img": "gacha_b17/spark-clownfish-b17.png"}, {"id": "bubble-frog-pop-b17", "name_ja": "ぷよぷよガエル", "tier": "序盤", "element": "圧力", "flavor_ja": "ほっぺとおなかを空気でふくらませて、たまった圧力をいっきに吐き出してこうげきする。見た目はとぼけたカエル。", "img": "gacha_b17/bubble-frog-pop-b17.png"}, {"id": "glow-jelly-bell-b17", "name_ja": "ぴかぴかクラゲ", "tier": "中盤", "element": "発光", "flavor_ja": "体の中の光のつぶが、ぼうっと青やピンクに光る。深い海でじぶんから光を出すいきものをモデルにした。", "img": "gacha_b17/glow-jelly-bell-b17.png"}, {"id": "lantern-anglerfish-cub-b17", "name_ja": "ちょうちんアンコウっ子", "tier": "中盤", "element": "発光", "flavor_ja": "頭のさきっぽにある光るたまで、くらい海でえものをおびきよせる。こわそうでどこか愛嬌のある深海の怪物。", "img": "gacha_b17/lantern-anglerfish-cub-b17.png"}, {"id": "venom-seahorse-knight-b17", "name_ja": "ツノタツノオトシゴ", "tier": "中盤", "element": "毒", "flavor_ja": "丸まったしっぽで体をささえる、うろこのよろいをもつタツノオトシゴの怪物。背中のトゲから毒をにじませる。", "img": "gacha_b17/venom-seahorse-knight-b17.png"}, {"id": "abyss-mola-titan-b17", "name_ja": "ふかうみマンボウ", "tier": "終盤", "element": "圧力", "flavor_ja": "深い海の強い水圧にたえる、巨大でまんまるな怪物。のんびりした顔だが、その体は山のように重い。", "img": "gacha_b17/abyss-mola-titan-b17.png"}, {"id": "thunder-puffer-orb-b17", "name_ja": "いかずちフグ", "tier": "終盤", "element": "電気", "flavor_ja": "全身をふくらませてトゲを立て、そのトゲ一本一本に電気をためる。怒るとまん丸になって雷をはなつ。", "img": "gacha_b17/thunder-puffer-orb-b17.png"}, {"id": "leviathan-axolotl-lord-b17", "name_ja": "猛毒王ウパゴン", "tier": "ラスボス級", "element": "毒", "flavor_ja": "ぷくぷくウーパーの行き着く果て。巨大な体に猛毒をたたえ、エラからふき出す毒のもやで戦場を支配する毒の王。", "img": "gacha_b17/leviathan-axolotl-lord-b17.png"}, {"id": "cosmic-jelly-empress-b17", "name_ja": "光帝クラゲーザ", "tier": "ラスボス級", "element": "発光", "flavor_ja": "ぴかぴかクラゲの究極の姿。体の中で七色の光がうずまき、その光で深海を照らし支配する発光の女帝。", "img": "gacha_b17/cosmic-jelly-empress-b17.png"}, {"id": "pop-peacock-chick-px-b17", "name_ja": "クジャクヒナリン", "tier": "序盤", "element": "羽・色彩", "flavor_ja": "ちいさな尾っぽを広げると、宝石みたいな目玉もようがキラリ。色をためこんで育つ、縁起のいいクジャクの赤ちゃん。", "img": "gacha_b17/pop-peacock-chick-px-b17.png"}, {"id": "sprout-fairy-bud-px-b17", "name_ja": "メバエヨウセイ", "tier": "序盤", "element": "植物・春", "flavor_ja": "頭の新芽から花びらをこぼしながら、よちよち歩く。春になると目をさます、いちばん小さな草花の妖精。", "img": "gacha_b17/sprout-fairy-bud-px-b17.png"}, {"id": "lucky-kirin-calf-px-b17", "name_ja": "キリンコウシ", "tier": "序盤", "element": "聖獣・大地", "flavor_ja": "ひたいの小さなツノが、ぽうっとあたたかく光る。歩いたあとに福を落とすという、ふくふくの子麒麟。", "img": "gacha_b17/lucky-kirin-calf-px-b17.png"}, {"id": "phoenix-fledgling-px-b17", "name_ja": "ホウオウビナ", "tier": "中盤", "element": "炎・再生", "flavor_ja": "羽ばたくたびに、羽さきからぱちぱちと火の粉。まだ飛ぶのが下手な、生まれたての不死鳥。", "img": "gacha_b17/phoenix-fledgling-px-b17.png"}, {"id": "baby-azure-dragon-px-b17", "name_ja": "コリュウソラマル", "tier": "中盤", "element": "水・空", "flavor_ja": "雲をまとってくるりと丸まる、くもがた竜の赤ちゃん。ごきげんだと、体のまわりに小さな雨をふらせる。", "img": "gacha_b17/baby-azure-dragon-px-b17.png"}, {"id": "bell-flower-unicorn-px-b17", "name_ja": "スズランウマ", "tier": "中盤", "element": "花・鈴", "flavor_ja": "歩くたび、たてがみの花にさげた鈴がチリンと鳴る。鈴蘭をまとった、しあわせを呼ぶ小さな一角馬。", "img": "gacha_b17/bell-flower-unicorn-px-b17.png"}, {"id": "thunder-firebird-px-b17", "name_ja": "ライメイホウ", "tier": "終盤", "element": "雷・炎", "flavor_ja": "羽に雷と炎をまとい、鳴き声ひとつで空が割れる。荒ぶる縁起の鳥、嵐をつかさどる雷の鳳凰。", "img": "gacha_b17/thunder-firebird-px-b17.png"}, {"id": "golden-kirin-guardian-px-b17", "name_ja": "コガネキリン", "tier": "終盤", "element": "聖獣・黄金", "flavor_ja": "黄金のうろこをまとい、踏みしめた地に瑞兆を残す。世の乱れを正すために現れる、荘厳なる聖なる麒麟。", "img": "gacha_b17/golden-kirin-guardian-px-b17.png"}, {"id": "celestial-dragon-king-px-b17", "name_ja": "テンリュウオウ", "tier": "ラスボス級", "element": "天・万物", "flavor_ja": "天と地のあいだに座し、すべての竜を従えるという王。とぐろを巻いたその身に、瑞雲と万物の色をまとう。", "img": "gacha_b17/celestial-dragon-king-px-b17.png"}, {"id": "phoenix-empress-px-b17", "name_ja": "ホウオウタイテイ", "tier": "ラスボス級", "element": "炎・天命", "flavor_ja": "千年に一度よみがえり、世のはじまりを告げる炎の女帝。その翼にまとう聖火は、すべての縁起をつかさどる。", "img": "gacha_b17/phoenix-empress-px-b17.png"}]; const KEY="rika2_boss_swipe_gacha_b17";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
