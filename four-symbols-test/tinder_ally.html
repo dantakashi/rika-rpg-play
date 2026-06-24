@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "young-flame-mage-girl-ally01", "name_ja": "帝国戦士・紅炎の魔導士", "tier": "魔", "element": "帝国戦士", "flavor_ja": "帝国魔導院の若き炎使い。明るい笑顔で前線をささえる頼れる仲間。", "img": "gacha_ally/young-flame-mage-girl-ally01.png"}, {"id": "frost-scholar-boy-ally02", "name_ja": "帝国戦士・氷霜の研究者", "tier": "魔", "element": "帝国戦士", "flavor_ja": "冷静沈着な氷の研究者。落ち着いた頭脳で仲間を勝利へみちびく。", "img": "gacha_ally/frost-scholar-boy-ally02.png"}, {"id": "old-arcane-archmage-ally03", "name_ja": "帝国戦士・宮廷大魔導", "tier": "魔", "element": "帝国戦士", "flavor_ja": "帝国に仕える老練の大魔導士。長い経験が紡ぐ魔法は心強い。", "img": "gacha_ally/old-arcane-archmage-ally03.png"}, {"id": "thunder-witch-woman-ally04", "name_ja": "帝国戦士・雷光の魔女", "tier": "魔", "element": "帝国戦士", "flavor_ja": "稲妻をあやつる帝国の魔女。素早い判断で敵をしびれさせる。", "img": "gacha_ally/thunder-witch-woman-ally04.png"}, {"id": "earth-druid-boy-ally05", "name_ja": "帝国戦士・大地の術士", "tier": "魔", "element": "帝国戦士", "flavor_ja": "大地の力を借りる優しい術士。守りの結界で仲間を支える。", "img": "gacha_ally/earth-druid-boy-ally05.png"}, {"id": "light-priestess-girl-ally06", "name_ja": "帝国戦士・聖光の祈り手", "tier": "魔", "element": "帝国戦士", "flavor_ja": "光をともす帝国の祈り手。仲間の傷をいやす温かな存在。", "img": "gacha_ally/light-priestess-girl-ally06.png"}, {"id": "shadow-warlock-man-ally07", "name_ja": "帝国戦士・暗黒の魔法使い", "tier": "魔", "element": "帝国戦士", "flavor_ja": "闇の魔法をあつかう若き魔法使い。謎めいた力で形勢を変える。", "img": "gacha_ally/shadow-warlock-man-ally07.png"}, {"id": "wind-sage-girl-ally08", "name_ja": "帝国戦士・疾風の賢者", "tier": "魔", "element": "帝国戦士", "flavor_ja": "風をまとう明るい賢者。すばやい魔法で戦況をかきまわす。", "img": "gacha_ally/wind-sage-girl-ally08.png"}, {"id": "crystal-mage-woman-ally09", "name_ja": "帝国戦士・宝珠の魔術師", "tier": "魔", "element": "帝国戦士", "flavor_ja": "宝珠をあやつる気品ある魔術師。冷静な魔法で仲間を勝利へ。", "img": "gacha_ally/crystal-mage-woman-ally09.png"}, {"id": "young-apprentice-mage-boy-ally10", "name_ja": "帝国戦士・見習い魔導士", "tier": "魔", "element": "帝国戦士", "flavor_ja": "帝国魔導院の元気な見習い。これから伸びる頼もしい新人。", "img": "gacha_ally/young-apprentice-mage-boy-ally10.png"}, {"id": "young-sword-knight-girl-ally11", "name_ja": "帝国戦士・銀剣の騎士", "tier": "戦", "element": "帝国戦士", "flavor_ja": "帝国きっての銀剣の騎士。まっすぐな心で前線を切り開く。", "img": "gacha_ally/young-sword-knight-girl-ally11.png"}, {"id": "young-axe-warrior-boy-ally12", "name_ja": "帝国戦士・豪斧の戦士", "tier": "戦", "element": "帝国戦士", "flavor_ja": "大斧をふるう熱血の戦士。力強い一撃で敵をなぎ倒す。", "img": "gacha_ally/young-axe-warrior-boy-ally12.png"}, {"id": "veteran-spear-soldier-man-ally13", "name_ja": "帝国戦士・歴戦の槍兵", "tier": "戦", "element": "帝国戦士", "flavor_ja": "数々の戦をくぐった歴戦の槍兵。たのもしい背中で仲間を導く。", "img": "gacha_ally/veteran-spear-soldier-man-ally13.png"}, {"id": "young-dual-blade-girl-ally14", "name_ja": "帝国戦士・双剣の剣士", "tier": "戦", "element": "帝国戦士", "flavor_ja": "二刀をあやつる俊敏な剣士。素早い連撃が持ち味の頼れる味方。", "img": "gacha_ally/young-dual-blade-girl-ally14.png"}, {"id": "young-greatsword-boy-ally15", "name_ja": "帝国戦士・大剣の若武者", "tier": "戦", "element": "帝国戦士", "flavor_ja": "大剣をかついだ若武者。まっすぐな勇気でみんなを引っぱる。", "img": "gacha_ally/young-greatsword-boy-ally15.png"}, {"id": "flame-blade-warrior-woman-ally16", "name_ja": "帝国戦士・烈火の剣豪", "tier": "戦", "element": "帝国戦士", "flavor_ja": "炎をまとう剣をふるう剣豪。落ち着いた強さで戦線を支える。", "img": "gacha_ally/flame-blade-warrior-woman-ally16.png"}, {"id": "young-lance-cavalier-boy-ally17", "name_ja": "帝国戦士・蒼天の槍騎士", "tier": "戦", "element": "帝国戦士", "flavor_ja": "帝国騎士団の若き槍騎士。誇り高く前線を駆ける頼れる仲間。", "img": "gacha_ally/young-lance-cavalier-boy-ally17.png"}, {"id": "young-katana-girl-ally18", "name_ja": "帝国戦士・一閃の刀使い", "tier": "戦", "element": "帝国戦士", "flavor_ja": "鋭い一閃を放つ刀使い。研ぎ澄まされた集中で敵を斬る。", "img": "gacha_ally/young-katana-girl-ally18.png"}, {"id": "berserker-young-man-ally19", "name_ja": "帝国戦士・剛勇の闘士", "tier": "戦", "element": "帝国戦士", "flavor_ja": "豪快に暴れる剛勇の闘士。あふれる闘志で敵陣を崩す。", "img": "gacha_ally/berserker-young-man-ally19.png"}, {"id": "young-rapier-duelist-girl-ally20", "name_ja": "帝国戦士・優雅の剣客", "tier": "戦", "element": "帝国戦士", "flavor_ja": "細剣をあやつる優雅な剣客。華麗な技で敵を翻ろうする。", "img": "gacha_ally/young-rapier-duelist-girl-ally20.png"}, {"id": "young-twin-spear-boy-ally21", "name_ja": "帝国戦士・双槍の遊撃手", "tier": "戦", "element": "帝国戦士", "flavor_ja": "双つの穂先で戦う遊撃手。身軽な動きで戦場を駆けまわる。", "img": "gacha_ally/young-twin-spear-boy-ally21.png"}, {"id": "old-blademaster-man-ally22", "name_ja": "帝国戦士・老剣聖", "tier": "戦", "element": "帝国戦士", "flavor_ja": "長年の修練を積んだ老剣聖。静かな構えに圧倒的な強さが宿る。", "img": "gacha_ally/old-blademaster-man-ally22.png"}, {"id": "shield-knight-young-man-ally23", "name_ja": "帝国戦士・鋼壁の守護騎士", "tier": "盾", "element": "帝国戦士", "flavor_ja": "巨大な盾で前を守る守護騎士。どんな攻撃も受け止める鋼の壁。", "img": "gacha_ally/shield-knight-young-man-ally23.png"}, {"id": "shield-maiden-girl-ally24", "name_ja": "帝国戦士・盾乙女", "tier": "盾", "element": "帝国戦士", "flavor_ja": "明るい笑顔で皆を守る盾乙女。たのもしい守りで仲間を支える。", "img": "gacha_ally/shield-maiden-girl-ally24.png"}, {"id": "heavy-armor-veteran-man-ally25", "name_ja": "帝国戦士・鉄壁の老兵", "tier": "盾", "element": "帝国戦士", "flavor_ja": "傷だらけの鉄壁の老兵。動じない構えで仲間の盾となる。", "img": "gacha_ally/heavy-armor-veteran-man-ally25.png"}, {"id": "holy-paladin-woman-ally26", "name_ja": "帝国戦士・聖盾の守護者", "tier": "盾", "element": "帝国戦士", "flavor_ja": "光をまとう聖盾の守護者。気高い守りで前線を固める。", "img": "gacha_ally/holy-paladin-woman-ally26.png"}, {"id": "young-guard-recruit-boy-ally27", "name_ja": "帝国戦士・新米衛兵", "tier": "盾", "element": "帝国戦士", "flavor_ja": "配属されたばかりの新米衛兵。けんめいに仲間を守る若き盾。", "img": "gacha_ally/young-guard-recruit-boy-ally27.png"}, {"id": "fortress-defender-man-ally28", "name_ja": "帝国戦士・要塞の守り手", "tier": "盾", "element": "帝国戦士", "flavor_ja": "巨大な盾で要塞を守る守り手。どっしりと構える頼れる壁。", "img": "gacha_ally/fortress-defender-man-ally28.png"}, {"id": "young-guardian-girl-ally29", "name_ja": "帝国戦士・蒼盾の衛士", "tier": "盾", "element": "帝国戦士", "flavor_ja": "魔法の盾を構える若き衛士。仲間を守る頼もしい蒼盾。", "img": "gacha_ally/young-guardian-girl-ally29.png"}, {"id": "templar-old-man-ally30", "name_ja": "帝国戦士・老練の聖騎士", "tier": "盾", "element": "帝国戦士", "flavor_ja": "長年帝国を守ってきた聖騎士。揺るがぬ信念で前線に立つ。", "img": "gacha_ally/templar-old-man-ally30.png"}, {"id": "bulwark-warrior-woman-ally31", "name_ja": "帝国戦士・剛盾の女戦士", "tier": "盾", "element": "帝国戦士", "flavor_ja": "重い盾を軽々と扱う女戦士。たくましい守りで皆を安心させる。", "img": "gacha_ally/bulwark-warrior-woman-ally31.png"}, {"id": "young-rogue-girl-ally32", "name_ja": "帝国戦士・影渡りの盗賊", "tier": "妨", "element": "帝国戦士", "flavor_ja": "影を渡る身軽な盗賊。すきを突いて敵の動きを乱す。", "img": "gacha_ally/young-rogue-girl-ally32.png"}, {"id": "young-trickster-boy-ally33", "name_ja": "帝国戦士・かく乱の遊撃手", "tier": "妨", "element": "帝国戦士", "flavor_ja": "小道具で敵をかく乱する遊撃手。いたずらっぽい笑みが目印。", "img": "gacha_ally/young-trickster-boy-ally33.png"}, {"id": "hooded-assassin-man-ally34", "name_ja": "帝国戦士・静寂の暗殺者", "tier": "妨", "element": "帝国戦士", "flavor_ja": "音もなく動く静寂の暗殺者。鋭い一手で敵をしずめる。", "img": "gacha_ally/hooded-assassin-man-ally34.png"}, {"id": "young-archer-girl-ally35", "name_ja": "帝国戦士・狙撃の弓手", "tier": "妨", "element": "帝国戦士", "flavor_ja": "正確な狙撃で敵を止める弓手。冷静なまなざしが頼もしい。", "img": "gacha_ally/young-archer-girl-ally35.png"}, {"id": "saboteur-young-man-ally36", "name_ja": "帝国戦士・妨害の技師", "tier": "妨", "element": "帝国戦士", "flavor_ja": "道具で敵を妨害する技師。とんちのきいた仕掛けで戦況を変える。", "img": "gacha_ally/saboteur-young-man-ally36.png"}, {"id": "shadow-dancer-woman-ally37", "name_ja": "帝国戦士・夜陰の舞い手", "tier": "妨", "element": "帝国戦士", "flavor_ja": "闇に舞う夜陰の舞い手。幻惑の動きで敵を惑わせる。", "img": "gacha_ally/shadow-dancer-woman-ally37.png"}, {"id": "old-spy-man-ally38", "name_ja": "帝国戦士・古参の諜報員", "tier": "妨", "element": "帝国戦士", "flavor_ja": "裏で帝国を支える古参の諜報員。経験ゆずりの策で敵を出し抜く。", "img": "gacha_ally/old-spy-man-ally38.png"}, {"id": "young-ninja-boy-ally39", "name_ja": "帝国戦士・疾影の忍", "tier": "妨", "element": "帝国戦士", "flavor_ja": "影のように動く疾影の忍。素早い妨害で敵の足を止める。", "img": "gacha_ally/young-ninja-boy-ally39.png"}, {"id": "trapmaster-girl-ally40", "name_ja": "帝国戦士・罠仕掛けの斥候", "tier": "妨", "element": "帝国戦士", "flavor_ja": "罠を仕掛ける明るい斥候。とっさのワナで敵をはめる頼れる味方。", "img": "gacha_ally/trapmaster-girl-ally40.png"}]; const KEY="rika2_boss_swipe_gacha_ally";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
