@@ -391,6 +391,22 @@
   .ae-row .ae-c{font-size:13px;font-weight:800;flex:1;} .ae-row .ae-c small{font-weight:600;color:var(--sub);margin-left:4px;font-size:10px;}
   .ae-row .ae-v{font-size:13px;color:var(--sub);} .ae-row .ae-v b{color:var(--gold);font-size:15px;}
   .ae-note{font-size:11px;color:var(--sub);line-height:1.5;margin:10px 0 2px;}
+  /* ===== ショップ(どうぐ屋＝高級・切り札の消耗品) ===== */
+  .shop-wrap{position:relative;}
+  .shop-lead{font-size:13px;color:var(--ink);line-height:1.6;background:rgba(244,201,93,.07);border:1px dashed rgba(244,201,93,.32);border-radius:11px;padding:10px 13px;margin:6px 0 12px;}
+  .shop-lead b{color:var(--gold);}
+  .shop-list{display:flex;flex-direction:column;gap:10px;}
+  .shop-card{display:flex;align-items:center;gap:12px;background:#10162a;border:1px solid var(--line);border-radius:13px;padding:11px 13px;}
+  .shop-emo{flex:0 0 auto;width:48px;height:48px;border-radius:11px;background:radial-gradient(circle at 50% 38%,#243352,#0c1326 72%);border:1px solid rgba(244,201,93,.3);display:flex;align-items:center;justify-content:center;font-size:26px;}
+  .shop-info{flex:1 1 auto;min-width:0;}
+  .shop-nm{font-size:15px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .shop-own{font-size:11px;font-weight:700;color:var(--gold);background:rgba(244,201,93,.1);border:1px solid rgba(244,201,93,.32);border-radius:20px;padding:2px 9px;}
+  .shop-note{font-size:11px;color:var(--sub);line-height:1.5;margin-top:3px;}
+  .shop-buy{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:98px;padding:9px 12px;border-radius:11px;border:0;border-bottom:3px solid var(--gold-d);background:linear-gradient(180deg,#f7d579,#dca22f);color:#3a230a;font-weight:800;font-size:15px;transition:transform .12s var(--bounce);}
+  .shop-buy small{font-size:10px;font-weight:700;opacity:.8;}
+  .shop-buy:active{transform:scale(.95);}
+  .shop-buy.dis{background:#2a3346;color:#6b7794;border-bottom-color:#1a2233;box-shadow:none;}
+  .shop-toast{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:6;background:rgba(8,12,24,.94);border:1px solid var(--gold);color:var(--gold);font-size:13px;font-weight:800;padding:8px 18px;border-radius:20px;box-shadow:0 6px 20px #0008;white-space:nowrap;}
   /* ===== 装備詳細ドロワー(右からスライド・#app内に収める) ===== */
   .drawer-scrim{position:absolute;inset:0;background:rgba(4,7,14,.62);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s;}
   .drawer-scrim.open{opacity:1;pointer-events:auto;}
@@ -515,6 +531,7 @@
 
   <div class="screen" id="screen-accessory"><div class="scr-inner" id="accBody"></div></div>
   <div class="screen" id="screen-inventory"><div class="scr-inner" id="invBody"></div></div>
+  <div class="screen" id="screen-shop"><div class="scr-inner" id="shopBody"></div></div>
   <div class="screen" id="screen-clear"><div class="scr-inner" id="clearBody"></div></div>
   <div class="screen" id="screen-complete"><div class="scr-inner" id="completeBody"></div></div>
   <div class="screen" id="screen-defeat"><div class="scr-inner" id="defeatBody"></div></div>
@@ -628,6 +645,14 @@ const STAGES = [
       ares:['jab','honoo','rensan','touki','fukutsu'], sera:['jab','armorbreak','slow','thunder','drain'],
       gai:['jab','provoke','kenshu','higo','iatsu'], mina:['jab','healall','heal','esna','protes'] } } },
 ];
+// ── 学年帯(§5合意・接点契約 RIKA2_INTERFACE.md §1): 教科=敵attrs／学年=ステージ。中1=1/中2=2/中3=3 を STAGES[i].grades に焼き込み、startQuestion が Quiz.ask に渡す。
+//    既定: cycle1(0-4)=中1 → cycle2(5-9)=中1〜2 → 終盤ボス(10-14)=全学年。問題側は教科×学年→教科のみ→全体でフォールバック(空にならない)。帯はオーナー(教師)と実測で調整する運用値。
+const STAGE_GRADES = [
+  [1],[1],[1],[1],[1],                          // 0-4  はじまりの実験室〜研究塔の番人 = 中1
+  [1,2],[1,2],[1,2],[1,2],[1,2],                // 5-9  ふかい森のおく〜四元素の門     = 中1〜中2
+  [1,2,3],[1,2,3],[1,2,3],[1,2,3],[1,2,3],      // 10-14 呪詛の魔人〜四凶の試練(ギミックボス) = 全学年
+];
+STAGES.forEach((st,i)=>{ st.grades = STAGE_GRADES[i] || [1,2,3]; });   // 新ステージ追加時の保険=全学年(空にならない)
 let curStage = 0;
 let curMetaFlat = null, curLoadout = null;   // メタ装備ステージで startStage が設定(装備相当フラット補正/役割別スキル)。通常は null / null。
 
@@ -754,7 +779,7 @@ const ITEM_DEFS = [
 ];
 
 /* ===================== §4 状態 ===================== */
-let encIdx=0, enemies=[], allies=[], combo=0, items={hpPotion:3,mpPotion:3};
+let encIdx=0, enemies=[], allies=[], combo=0, items={hpPotion:3,mpPotion:2};   // items=消耗品の「持ち越し在庫」(永続=ACC_KEYに保存・戦闘ごとにリセットしない)。初期在庫は控えめ(MP薬は渋め=切り札の精神)。補充はショップ(1個1万)のみ
 let phase='charging', stateTimer=0, pendingAction=null, activeAlly=null, _advancing=false, _lastEnemyActed=false;
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 // curMetaFlat(メタステの装備相当フラット補正)とcurLoadout(役割別スキル)を反映。最終ステ=(素＋装備メイン＋ボーナス＋メタ補正)×装飾品%×固有バフ。
@@ -777,7 +802,7 @@ function setEncounter(i){ const defs=curEncounters()[i] || curEncounters()[0]; c
   buildEnemies(); }
 let gameState='title';   // ★体験版の進行状態: 'title'|'map'|'battle'|'clear'|'complete'|'defeat'。battle以外はupdate()停止。
 // 1ステージ分の戦闘を初期化(味方フル・第1ウェーブ)。難度cfgはstartStageで適用済み。
-function startBattle(){ encIdx=0; stageDrops=[]; setEncounter(0); makeAllies(); combo=0; items={hpPotion:3,mpPotion:3};
+function startBattle(){ encIdx=0; stageDrops=[]; setEncounter(0); makeAllies(); combo=0;   // ★items(消耗品)は持ち越し在庫=ここでリセットしない(ショップで買った切り札を戦闘に持ち込む)
   phase='charging'; stateTimer=0; pendingAction=null; activeAlly=null; _advancing=false; _lastEnemyActed=false;   // curQ/answered は問題側(quiz-engine)の状態＝ゲーム側は触らない(Quiz.askが毎問リセット)
   buildParty(); hideOverlay(); bumpCombo(); renderCommand(); }
 function resetAll(){ startStage(curStage); }   // 「もう一度」＝今のステージをやり直す
@@ -871,7 +896,7 @@ function questionSubjects(){ const act=pendingAction;
   if(act.scope==='enemy' && act.targetIdx!=null) return enemies[act.targetIdx].attrs;
   const u=new Set(); aliveEnemies().forEach(e=>e.attrs.forEach(s=>u.add(s))); return u.size?[...u]:['chemistry']; }
 // ── 戦闘から問題を呼ぶ＝出題範囲(敵attrs)＋文脈＋結果ハンドラを渡して Quiz.ask に委譲 ──
-function startQuestion(){ phase='question'; Quiz.ask({ subjects:questionSubjects(), ctxFn:buildQuizCtx, onResult:resolveAnswer, onContinue:afterMiss }); }
+function startQuestion(){ phase='question'; Quiz.ask({ subjects:questionSubjects(), grades:STAGES[curStage].grades, ctxFn:buildQuizCtx, onResult:resolveAnswer, onContinue:afterMiss }); }   // grades=ステージの学年帯(§5合意)。問題側がフォールバックするので空でも安全
 function buildQuizCtx(q){ const subj=SUBJECTS[q.s], a=activeAlly, act=pendingAction, tgt=(act&&act.targetIdx!=null)?enemies[act.targetIdx]:null;   // qは Quiz.ask が渡す(問題側グローバルcurQに依存しない)
   if(!act) return `${subj.emoji}<b>${subj.jp}</b>の問題`;
   if(act.kind==='attack') return `<b>${a.emoji}${a.name}</b> → ${tgt?tgt.name:'敵'}　｜　${subj.emoji}<b>${subj.jp}</b>の問題`;
@@ -891,7 +916,7 @@ function resolveAnswer(correct){ const act=pendingAction, c=activeAlly; if(!act)
     if(act.kind==='item'){ useItem(act.item,false,c); } else if(c){ c.charge=Math.max(0,c.charge-cfg.missDropPct); }   // 誤答=行動ゲージ−%だけ・HPは無罰(不可侵)。解説はQuiz→つぎへでafterMiss
     phase='miss'; } }
 function afterMiss(){ hideOverlay(); pendingAction=null; activeAlly=null; phase='charging'; renderCommand(); }
-function useItem(it,correct,c){ items[it.id]=Math.max(0,(items[it.id]||0)-1); it.run(); const cost=correct?it.gaugeCost*0.3:it.gaugeCost; if(c) c.charge=Math.max(0,c.charge-cost); }
+function useItem(it,correct,c){ items[it.id]=Math.max(0,(items[it.id]||0)-1); saveAcc(); it.run(); const cost=correct?it.gaugeCost*0.3:it.gaugeCost; if(c) c.charge=Math.max(0,c.charge-cost); }   // ★在庫は永続=使ったら即保存(切り札を消費)。誤答でもit.run()は走る=回復は必ず効く(無罰)
 
 /* ===================== §9 ダメージ計算 ＋ 敵 ＋ 状態異常エンジン ===================== */
 // ★土台(⑧)のダメージ計算: 防御=割合式 K/(防+K)・各ヒット個別9999上限・会心は単純×1.5(序盤率10%)。
@@ -1141,9 +1166,10 @@ let _accSeq = 1;
 const ACC_KEY='rika2_demo_acc_v1';
 function _freshGearEquip(){ return { ares:{武器:null,頭:null,胴:null,足:null}, sera:{武器:null,頭:null,胴:null,足:null}, gai:{武器:null,頭:null,胴:null,足:null}, mina:{武器:null,頭:null,胴:null,足:null} }; }
 function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); gearInv=s.gearInv||[]; gearEquip=Object.assign(_freshGearEquip(), s.gearEquip||{}); _accSeq=s.seq||1; newIds=new Set(s.newIds||[]);   // ★NEW(新着)バッジの永続
+  if(s.items) items=Object.assign({hpPotion:0,mpPotion:0}, s.items);   // ★消耗品の持ち越し在庫(永続)。旧セーブ(s.items無し)は初期在庫のまま=救済
   [].concat(accInv,gearInv).forEach(it=>{ if(it&&!RARITY[it.rarity]) it.rarity='R'; });   // 旧UC等の廃止レア度→Rに救済
   } }catch(e){} }
-function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, gearInv, gearEquip, seq:_accSeq, newIds:[...newIds]})); }catch(e){} }
+function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, gearInv, gearEquip, seq:_accSeq, newIds:[...newIds], items})); }catch(e){} }
 function accById(id){ return accInv.find(a=>a.id===id); }
 function gearById(id){ return gearInv.find(g=>g.id===id); }
 function accPctFor(cid){ let p=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)p+=RARITY[a.rarity].pct; }); return p; }   // 装飾品メイン=全コア+%(2枠)
@@ -1209,7 +1235,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
         <button class="soon" onclick="homeSoon()"><span class="e">📚</span>問題</button>
         <button class="soon" onclick="homeSoon()"><span class="e">🔁</span>復習</button>
         <button onclick="showInventory()"><span class="e">🎒</span>インベントリ</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">🛒</span>ショップ</button>
+        <button onclick="showShop()"><span class="e">🛒</span>ショップ</button>
         <button class="soon" onclick="homeSoon()"><span class="e">⚙</span>その他</button>
         <button onclick="showHome()"><span class="e">🏠</span>ホーム</button>
       </div>
@@ -1218,6 +1244,32 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
 function homeSoon(){ const nh=document.querySelector('.nh'); if(!nh)return; const t=document.createElement('div');   // 未実装ボタン=準備中トースト(死にボタンにしない)
   t.textContent='準備中だよ（もうすぐ！）'; t.style.cssText='position:absolute; left:50%; bottom:70px; transform:translateX(-50%); z-index:5; background:rgba(8,12,24,.92); border:1px solid var(--warn); color:var(--warn); font-size:13px; font-weight:700; padding:7px 16px; border-radius:20px;';
   nh.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1500); }
+
+/* ===================== ショップ（どうぐ屋＝高級・切り札の消耗品） ===================== */
+// オーナー指定: 消耗品は「高級＝合法チートに近い切り札」。MP渋い(ウィザードリィ型)設計の救済で、どうしてもクリアできないステージに持っていく。1個1万・HP/MP薬のみ。
+const SHOP_PRICE=10000;
+function showShop(){ gameState='shop'; renderShop(); showScreen('shop'); setTopbar(''); }
+function renderShop(){ const g=progress.gold||0;
+  const cards=ITEM_DEFS.map(it=>{ const own=items[it.id]||0, can=g>=SHOP_PRICE;
+    return `<div class="shop-card">
+      <div class="shop-emo">${it.emoji}</div>
+      <div class="shop-info"><div class="shop-nm">${it.name}<span class="shop-own">手持ち ×${own}</span></div>
+        <div class="shop-note">${it.note}</div></div>
+      <button class="shop-buy${can?'':' dis'}"${can?'':' disabled'} onclick="buyItem('${it.id}')">💰${fmtGold(SHOP_PRICE)}<small>1個かう</small></button>
+    </div>`; }).join('');
+  document.getElementById('shopBody').innerHTML=`
+    <div class="shop-wrap">
+      <div class="inv-head"><h2>🛒 どうぐ屋</h2><div class="inv-head-r"><span class="gold">💰 <b>${fmtGold(g)}</b></span></div></div>
+      <p class="shop-lead">回復薬は<b>とっておきの切り札</b>。このゲームはMPがとても貴重だから、どうしても勝てないステージに持っていく“ここぞ”の一杯だよ。装備を売ったゴールドでそなえよう。</p>
+      <div class="shop-list">${cards}</div>
+      <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showInventory()">🎒 もちもの</button></div>
+    </div>`; }
+function buyItem(id){ const it=ITEM_DEFS.find(x=>x.id===id); if(!it)return;
+  if((progress.gold||0)<SHOP_PRICE){ shopToast('ゴールドが足りないよ'); return; }
+  addGold(-SHOP_PRICE); items[id]=(items[id]||0)+1; saveAcc(); renderShop();   // addGold=progress保存／saveAcc=在庫保存
+  shopToast(`${it.emoji}${it.name} を1個かった！`); }
+function shopToast(msg){ const w=document.querySelector('.shop-wrap'); if(!w)return; const t=document.createElement('div');
+  t.className='shop-toast'; t.textContent=msg; w.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1400); }
 // ★そうび画面: キャラ選択(ハブ)→そのキャラの装備(武器/頭/胴/足)＋装飾品(2)を付け替え。
 let equipCid=null, equipSel=null;   // equipSel={kind:'gear'|'acc', slot}
 function showEquip(){ gameState='equip'; equipCid=null; equipSel=null; renderEquip(); showScreen('accessory'); setTopbar(''); }
@@ -1544,7 +1596,7 @@ function showScreen(name){   // overlay表示の一元管理。battle時は全ov
   // ★ガード(問題側申し送り2026-06-24): 画面(メニュー/ホーム等)を出すとき、生きてる出題の器が残っていたら先に閉じる
   //   ＝将来「戦闘中にメニュー/インベントリを開く」を足しても、不透明な画面が生きた問題を覆わない。
   if(name){ const q=document.getElementById('qOverlay'); if(q && q.classList.contains('show') && typeof hideOverlay==='function') hideOverlay(); }
-  ['title','home','map','accessory','inventory','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
+  ['title','home','map','accessory','inventory','shop','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
 }
 function showTitle(){ gameState='title'; showScreen('title'); setTopbar(''); }
 function showMap(){ gameState='map'; renderMap(); showScreen('map'); setTopbar(''); }
