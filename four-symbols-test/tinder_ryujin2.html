@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "ryujin-crimson-blade-ry201", "name_ja": "龍人ベニハ", "tier": "序盤", "element": "龍人", "flavor_ja": "竜の血を引く若き剣士。紅い鱗が炎のように輝く。", "img": "gacha_ryujin2/ryujin-crimson-blade-ry201.png"}, {"id": "ryujin-azure-spear-ry202", "name_ja": "龍人アオツキ", "tier": "序盤", "element": "龍人", "flavor_ja": "冷静沈着な槍の使い手。蒼い鱗に霜をまとう。", "img": "gacha_ryujin2/ryujin-azure-spear-ry202.png"}, {"id": "ryujin-bronze-axe-ry203", "name_ja": "龍人ガンテツ", "tier": "序盤", "element": "龍人", "flavor_ja": "力こそ正義の蛮族戦士。青銅の鱗に古傷を刻む。", "img": "gacha_ryujin2/ryujin-bronze-axe-ry203.png"}, {"id": "ryujin-green-archer-ry204", "name_ja": "龍人ミドリヤ", "tier": "序盤", "element": "龍人", "flavor_ja": "森を駆ける弓の名手。翠の鱗が木漏れ日に溶ける。", "img": "gacha_ryujin2/ryujin-green-archer-ry204.png"}, {"id": "ryujin-iron-twinblade-ry205", "name_ja": "龍人クロガネ", "tier": "序盤", "element": "龍人", "flavor_ja": "双剣を操る俊敏な戦士。鉄色の鱗が冷たく光る。", "img": "gacha_ryujin2/ryujin-iron-twinblade-ry205.png"}, {"id": "ryujin-white-monk-ry206", "name_ja": "龍人ハクレン", "tier": "序盤", "element": "龍人", "flavor_ja": "拳で語る修行者。白い鱗に静かな闘気を宿す。", "img": "gacha_ryujin2/ryujin-white-monk-ry206.png"}, {"id": "ryujin-amber-clubman-ry207", "name_ja": "龍人コハク", "tier": "序盤", "element": "龍人", "flavor_ja": "棍棒一本の荒くれ者。琥珀色の鱗が日に焼ける。", "img": "gacha_ryujin2/ryujin-amber-clubman-ry207.png"}, {"id": "ryujin-violet-mage-ry208", "name_ja": "龍人ムラサキ", "tier": "序盤", "element": "龍人", "flavor_ja": "魔導を学ぶ若き竜人。紫の鱗に魔力が宿る。", "img": "gacha_ryujin2/ryujin-violet-mage-ry208.png"}, {"id": "ryujin-sand-saber-ry209", "name_ja": "龍人スナハ", "tier": "序盤", "element": "龍人", "flavor_ja": "砂漠を渡る剣客。砂色の鱗が陽炎にゆらぐ。", "img": "gacha_ryujin2/ryujin-sand-saber-ry209.png"}, {"id": "ryujin-moss-shield-ry210", "name_ja": "龍人コケムシ", "tier": "序盤", "element": "龍人", "flavor_ja": "守りに長けた歩兵。苔色の鱗が盾を彩る。", "img": "gacha_ryujin2/ryujin-moss-shield-ry210.png"}, {"id": "ryujin-rust-hammer-ry211", "name_ja": "龍人サビイロ", "tier": "序盤", "element": "龍人", "flavor_ja": "鍛冶を兼ねる戦士。錆色の鱗に火花が散る。", "img": "gacha_ryujin2/ryujin-rust-hammer-ry211.png"}, {"id": "ryujin-teal-dagger-ry212", "name_ja": "龍人ミナモ", "tier": "序盤", "element": "龍人", "flavor_ja": "影に潜む暗殺者。青緑の鱗が水面のように揺らめく。", "img": "gacha_ryujin2/ryujin-teal-dagger-ry212.png"}, {"id": "ryujin-ash-pikeman-ry213", "name_ja": "龍人ハイイロ", "tier": "序盤", "element": "龍人", "flavor_ja": "規律正しい槍兵。灰色の鱗に誇りを纏う。", "img": "gacha_ryujin2/ryujin-ash-pikeman-ry213.png"}, {"id": "ryujin-rose-fan-ry214", "name_ja": "龍人サクラ", "tier": "序盤", "element": "龍人", "flavor_ja": "舞うように戦う麗人。桜色の鱗が花のように散る。", "img": "gacha_ryujin2/ryujin-rose-fan-ry214.png"}, {"id": "ryujin-onyx-katana-ry215", "name_ja": "龍人クロガラス", "tier": "中盤", "element": "龍人", "flavor_ja": "黒曜の剣豪。漆黒の刀に闇炎をまとう。", "img": "gacha_ryujin2/ryujin-onyx-katana-ry215.png"}, {"id": "ryujin-gold-paladin-ry216", "name_ja": "龍人コガネ", "tier": "中盤", "element": "龍人", "flavor_ja": "黄金の聖騎士。光をまとう剣で悪を討つ。", "img": "gacha_ryujin2/ryujin-gold-paladin-ry216.png"}, {"id": "ryujin-storm-glaive-ry217", "name_ja": "龍人アラシ", "tier": "中盤", "element": "龍人", "flavor_ja": "嵐を呼ぶ薙刀使い。雷光が刃に走る。", "img": "gacha_ryujin2/ryujin-storm-glaive-ry217.png"}, {"id": "ryujin-magma-greataxe-ry218", "name_ja": "龍人マグマ", "tier": "中盤", "element": "龍人", "flavor_ja": "溶岩を宿す狂戦士。岩のような体に灼熱が脈打つ。", "img": "gacha_ryujin2/ryujin-magma-greataxe-ry218.png"}, {"id": "ryujin-frost-lancer-ry219", "name_ja": "龍人ヒョウガ", "tier": "中盤", "element": "龍人", "flavor_ja": "氷河の騎士。冷気をまとう槍で貫く。", "img": "gacha_ryujin2/ryujin-frost-lancer-ry219.png"}, {"id": "ryujin-jade-warmonk-ry220", "name_ja": "龍人ヒスイ", "tier": "中盤", "element": "龍人", "flavor_ja": "翡翠の武僧。練り上げた気を拳に込める。", "img": "gacha_ryujin2/ryujin-jade-warmonk-ry220.png"}, {"id": "ryujin-shadow-twin-ry221", "name_ja": "龍人ヨイヤミ", "tier": "中盤", "element": "龍人", "flavor_ja": "夜陰に紛れる忍。影をまとい音もなく斬る。", "img": "gacha_ryujin2/ryujin-shadow-twin-ry221.png"}, {"id": "ryujin-copper-gunner-ry222", "name_ja": "龍人アカガネ", "tier": "中盤", "element": "龍人", "flavor_ja": "機巧を操る職人竜人。銅色の鱗に歯車が光る。", "img": "gacha_ryujin2/ryujin-copper-gunner-ry222.png"}, {"id": "ryujin-blood-greatsword-ry223", "name_ja": "龍人クレナイ", "tier": "中盤", "element": "龍人", "flavor_ja": "血染めの大剣を振るう重騎士。深紅の鱗が威圧する。", "img": "gacha_ryujin2/ryujin-blood-greatsword-ry223.png"}, {"id": "ryujin-silver-fencer-ry224", "name_ja": "龍人シロガネ", "tier": "中盤", "element": "龍人", "flavor_ja": "白銀の決闘者。流麗な剣捌きで魅せる。", "img": "gacha_ryujin2/ryujin-silver-fencer-ry224.png"}, {"id": "ryujin-tiger-claws-ry225", "name_ja": "龍人トラジマ", "tier": "中盤", "element": "龍人", "flavor_ja": "虎縞の格闘家。鋭い爪で猛然と襲いかかる。", "img": "gacha_ryujin2/ryujin-tiger-claws-ry225.png"}, {"id": "ryujin-bog-warlock-ry226", "name_ja": "龍人ヌマヌシ", "tier": "中盤", "element": "龍人", "flavor_ja": "沼地の呪術師。淀んだ気をまとう不気味な竜人。", "img": "gacha_ryujin2/ryujin-bog-warlock-ry226.png"}, {"id": "ryujin-cobalt-halberd-ry227", "name_ja": "龍人コバルト", "tier": "中盤", "element": "龍人", "flavor_ja": "宮殿を守る重装兵。瑠璃色の鱗が誇り高く輝く。", "img": "gacha_ryujin2/ryujin-cobalt-halberd-ry227.png"}, {"id": "ryujin-ember-chakram-ry228", "name_ja": "龍人ヒノコ", "tier": "中盤", "element": "龍人", "flavor_ja": "火の輪を操る戦士。橙の鱗に火の粉が舞う。", "img": "gacha_ryujin2/ryujin-ember-chakram-ry228.png"}, {"id": "ryujin-pearl-priestess-ry229", "name_ja": "龍人シラタマ", "tier": "中盤", "element": "龍人", "flavor_ja": "真珠色の祭祀。聖なる癒やしを宿す竜人。", "img": "gacha_ryujin2/ryujin-pearl-priestess-ry229.png"}, {"id": "ryujin-thunder-king-ry230", "name_ja": "龍人ライオウ", "tier": "終盤", "element": "龍人", "flavor_ja": "雷を統べる竜将。藍の鱗に稲妻が走る。", "img": "gacha_ryujin2/ryujin-thunder-king-ry230.png"}, {"id": "ryujin-volcano-tyrant-ry231", "name_ja": "龍人カザン", "tier": "終盤", "element": "龍人", "flavor_ja": "火山の暴君。岩肌の鱗から溶岩が吹き出す。", "img": "gacha_ryujin2/ryujin-volcano-tyrant-ry231.png"}, {"id": "ryujin-abyss-reaper-ry232", "name_ja": "龍人シンエン", "tier": "終盤", "element": "龍人", "flavor_ja": "深淵の死神。漆黒の大鎌で魂を刈る。", "img": "gacha_ryujin2/ryujin-abyss-reaper-ry232.png"}, {"id": "ryujin-jade-emperor-ry233", "name_ja": "龍人ギョクテイ", "tier": "終盤", "element": "龍人", "flavor_ja": "翡翠の皇帝。威風堂々たる竜の帝王。", "img": "gacha_ryujin2/ryujin-jade-emperor-ry233.png"}, {"id": "ryujin-bone-warchief-ry234", "name_ja": "龍人ホネツカ", "tier": "終盤", "element": "龍人", "flavor_ja": "骨の戦長。屍を踏み越えてきた蛮族の王。", "img": "gacha_ryujin2/ryujin-bone-warchief-ry234.png"}, {"id": "ryujin-frost-monarch-ry235", "name_ja": "龍人ヒョウオウ", "tier": "終盤", "element": "龍人", "flavor_ja": "氷の君主。永久凍土を従える竜王。", "img": "gacha_ryujin2/ryujin-frost-monarch-ry235.png"}, {"id": "ryujin-crimson-overlord-ry236", "name_ja": "龍人シャクネツ", "tier": "終盤", "element": "龍人", "flavor_ja": "灼熱の覇王。深紅の鱗から業火が立ち上る。", "img": "gacha_ryujin2/ryujin-crimson-overlord-ry236.png"}, {"id": "ryujin-storm-admiral-ry237", "name_ja": "龍人ライジン", "tier": "終盤", "element": "龍人", "flavor_ja": "嵐を率いる竜の提督。鋼青の鱗に雷鳴が轟く。", "img": "gacha_ryujin2/ryujin-storm-admiral-ry237.png"}, {"id": "ryujin-venom-sovereign-ry238", "name_ja": "龍人ドクオウ", "tier": "終盤", "element": "龍人", "flavor_ja": "猛毒の覇者。毒々しい鱗で敵を蝕む。", "img": "gacha_ryujin2/ryujin-venom-sovereign-ry238.png"}, {"id": "ryujin-gilded-shogun-ry239", "name_ja": "龍人キンショウ", "tier": "終盤", "element": "龍人", "flavor_ja": "黄金の大将軍。黒金の鎧で軍を統べる。", "img": "gacha_ryujin2/ryujin-gilded-shogun-ry239.png"}, {"id": "ryujin-grave-warden-ry240", "name_ja": "龍人ハカモリ", "tier": "終盤", "element": "龍人", "flavor_ja": "墓守の死騎士。呪われた鎧に冷気をまとう。", "img": "gacha_ryujin2/ryujin-grave-warden-ry240.png"}, {"id": "ryujin-prism-archmage-ry241", "name_ja": "龍人ナナイロ", "tier": "終盤", "element": "龍人", "flavor_ja": "虹色の大魔導士。万色の魔力を操る賢竜。", "img": "gacha_ryujin2/ryujin-prism-archmage-ry241.png"}, {"id": "ryujin-iron-juggernaut-ry242", "name_ja": "龍人テッコウ", "tier": "終盤", "element": "龍人", "flavor_ja": "鉄壁の重戦車。鋼の鎧で全てを踏み潰す。", "img": "gacha_ryujin2/ryujin-iron-juggernaut-ry242.png"}, {"id": "ryujin-soul-monarch-ry243", "name_ja": "龍人コンパク", "tier": "終盤", "element": "龍人", "flavor_ja": "魂魄の王。死霊を従える紫の竜帝。", "img": "gacha_ryujin2/ryujin-soul-monarch-ry243.png"}, {"id": "ryujin-eternal-godking-ry244", "name_ja": "龍人シンオウ", "tier": "ラスボス級", "element": "龍人", "flavor_ja": "神々しき竜の王。全ての竜人が頂と仰ぐ存在。", "img": "gacha_ryujin2/ryujin-eternal-godking-ry244.png"}, {"id": "ryujin-void-emperor-ry245", "name_ja": "龍人コクエン", "tier": "ラスボス級", "element": "龍人", "flavor_ja": "虚無の皇帝。星すら飲み込む漆黒の竜帝。", "img": "gacha_ryujin2/ryujin-void-emperor-ry245.png"}, {"id": "ryujin-flame-titan-ry246", "name_ja": "龍人エンテイ", "tier": "ラスボス級", "element": "龍人", "flavor_ja": "炎の巨神。大地を焼き尽くす竜の巨人。", "img": "gacha_ryujin2/ryujin-flame-titan-ry246.png"}, {"id": "ryujin-storm-sovereign-ry247", "name_ja": "龍人ライテイ", "tier": "ラスボス級", "element": "龍人", "flavor_ja": "雷霆の至高神。天空を統べる竜の覇王。", "img": "gacha_ryujin2/ryujin-storm-sovereign-ry247.png"}, {"id": "ryujin-jade-worldserpent-ry248", "name_ja": "龍人セカイリュウ", "tier": "ラスボス級", "element": "龍人", "flavor_ja": "世界を背負う竜神。大地と命を統べる帝王。", "img": "gacha_ryujin2/ryujin-jade-worldserpent-ry248.png"}, {"id": "ryujin-crimson-warlord-ry249", "name_ja": "龍人グレンオウ", "tier": "ラスボス級", "element": "龍人", "flavor_ja": "紅蓮の大覇王。戦場を制した竜人の頂点。", "img": "gacha_ryujin2/ryujin-crimson-warlord-ry249.png"}, {"id": "ryujin-frost-godqueen-ry250", "name_ja": "龍人ヒョウシン", "tier": "ラスボス級", "element": "龍人", "flavor_ja": "氷雪の女神。万年の氷を統べる竜の女王。", "img": "gacha_ryujin2/ryujin-frost-godqueen-ry250.png"}, {"id": "ryujin-storm-ronin-ry251", "name_ja": "龍人ナギ", "tier": "中盤", "element": "龍人", "flavor_ja": "流浪の浪人竜。古びた刀に幾多の戦を刻む。", "img": "gacha_ryujin2/ryujin-storm-ronin-ry251.png"}, {"id": "ryujin-young-squire-ry252", "name_ja": "龍人ワカバ", "tier": "序盤", "element": "龍人", "flavor_ja": "駆け出しの見習い竜人。若葉色の鱗に希望を抱く。", "img": "gacha_ryujin2/ryujin-young-squire-ry252.png"}]; const KEY="rika2_boss_swipe_gacha_ryujin2";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
