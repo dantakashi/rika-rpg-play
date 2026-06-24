@@ -1,0 +1,76 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>重複まとめ選抜 — 理科RPG2</title><style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:12px;color:#9aa0ad}
+.wrap{max-width:620px;margin:0 auto;padding:10px 12px 110px}
+.hint{font-size:13px;color:#9aa0ad;margin:2px 2px 12px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{border:2px solid #2c2f3a;border-radius:14px;overflow:hidden;background:#1d1f26;position:relative}
+.card.on{border-color:#2bd47a;box-shadow:0 0 0 2px #2bd47a inset}
+.imgbox{aspect-ratio:1/1;background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0;background-color:#e9e9e9;cursor:pointer}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.badge{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;background:#2bd47a;color:#06210f;font-weight:900;display:none;align-items:center;justify-content:center;font-size:15px}
+.card.on .badge{display:flex}
+.dname{font-size:11px;color:#8a8f9c;padding:5px 7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rn{display:none;padding:0 7px 7px}.card.on .rn{display:block}
+.rn input{width:100%;background:#0b0c10;border:1px solid #3a3f4c;border-radius:7px;color:#ffe27a;font-size:13px;padding:6px}
+.rn input::placeholder{color:#5a6070}
+.nav{position:fixed;bottom:0;left:0;right:0;background:#13141a;border-top:1px solid #2c2f3a;display:flex;gap:10px;padding:10px 12px;max-width:620px;margin:0 auto}
+.btn{flex:1;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;cursor:pointer}
+.btn.sub{background:#23242c;color:#cfd3db;border:1px solid #3a3f4c;flex:0 0 84px}
+.done{display:none;text-align:center;padding:26px 12px}.done h2{color:#ffe27a}
+#out{width:100%;height:150px;margin-top:12px;font-family:ui-monospace,monospace;font-size:11px;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>重複まとめ選抜</b></div><div class="count">グループ <span id="gi">1</span>/<span id="gn">0</span></div></header>
+<div class="wrap" id="wrap">
+  <div id="grp">
+    <div class="hint">似ている画像です。<b>残すものをタップ</b>（1枚でも複数でもOK）。残した画像は名前を変えられます（空ならそのまま）。残さない＝重複として却下。</div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="done" id="done"><h2>選抜おわり！</h2><div id="sum" style="color:#cfd3db"></div>
+    <div style="margin-top:14px;display:flex;gap:10px"><button class="btn" id="dl">CSVダウンロード</button><button class="btn sub" id="cp" style="flex:1">コピー</button></div>
+    <div style="font-size:12px;color:#9aa0ad;margin-top:8px">CSVをClaudeに渡すと、本採用/却下に振り分け＋改名を反映します（単独307体は自動で本採用）。</div>
+    <textarea id="out" readonly></textarea></div>
+</div>
+<div class="nav" id="nav"><button class="btn sub" id="prev">← 戻る</button><button class="btn" id="next">次へ →</button></div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const G=[[{"id": "hurricane-serpent-dragon-b2", "name": "たつまきリュウ", "img": "tentative/hurricane-serpent-dragon-b2.png"}, {"id": "world-end-elder-dragon-b4", "name": "終焉の古龍", "img": "tentative/world-end-elder-dragon-b4.png"}, {"id": "fusion-core-dragon-lord-b13", "name": "核融合竜王イグニコア", "img": "tentative/fusion-core-dragon-lord-b13.png"}, {"id": "thunder-dragon-sovereign-b18", "name": "らいていりゅうおう（雷帝竜王）", "img": "tentative/thunder-dragon-sovereign-b18.png"}, {"id": "copper-circuit-wyrmling-b7-rv2", "name": "ガルヴァノ・ワイバーン", "img": "tentative/copper-circuit-wyrmling-b7-rv2.png"}, {"id": "voltcore-leviathan-dynamo-b20", "name": "ダイナモ・リヴァイア", "img": "tentative/voltcore-leviathan-dynamo-b20.png"}, {"id": "chromatic-radiance-dragon-b20", "name": "クロマティックドラゴン", "img": "tentative/chromatic-radiance-dragon-b20.png"}, {"id": "tide-fin-wyrmling-b21", "name": "しおなみワイバ", "img": "tentative/tide-fin-wyrmling-b21.png"}], [{"id": "ember-coal-pup-wyvern-b11", "name": "スミビの仔ワイバーン", "img": "tentative/ember-coal-pup-wyvern-b11.png"}, {"id": "lava-serpent-dragon-b2", "name": "ようがん大ヘビ", "img": "tentative/lava-serpent-dragon-b2.png"}, {"id": "infernal-chimera-b4", "name": "業火の合成獣", "img": "tentative/infernal-chimera-b4.png"}, {"id": "abyss-chimera-fiend-b4", "name": "深淵の合成獣", "img": "tentative/abyss-chimera-fiend-b4.png"}, {"id": "alloy-forge-chimera-b7", "name": "アロイ・キメラ", "img": "tentative/alloy-forge-chimera-b7.png"}, {"id": "fallen-seraph-wyrm-b8", "name": "堕天セラフ・ワーム", "img": "tentative/fallen-seraph-wyrm-b8.png"}, {"id": "ember-whelp-dragon-b18", "name": "ねつぼうりゅう（熱暴竜）", "img": "tentative/ember-whelp-dragon-b18.png"}], [{"id": "permafrost-bone-hound-b11", "name": "ホネオオカミ・れいとう", "img": "tentative/permafrost-bone-hound-b11.png"}, {"id": "quake-render-tyrant-b5", "name": "地砕き暴竜", "img": "tentative/quake-render-tyrant-b5.png"}, {"id": "magnetite-twin-hydra-b7", "name": "磁極ヒュドラ磁鉄竜", "img": "tentative/magnetite-twin-hydra-b7.png"}, {"id": "neon-circuit-serpent-construct-b8", "name": "カイロ・サーペント", "img": "tentative/neon-circuit-serpent-construct-b8.png"}], [{"id": "abyssal-life-tree-rv1", "name": "ヤミノセイメイジュ", "img": "tentative/abyssal-life-tree-rv1.png"}, {"id": "abyssal-life-tree-rv2", "name": "ヤミノセイメイジュ", "img": "tentative/abyssal-life-tree-rv2.png"}, {"id": "abyssal-life-tree-rv3", "name": "ヤミノセイメイジュ", "img": "tentative/abyssal-life-tree-rv3.png"}], [{"id": "magnet-orc-pikeman-b11", "name": "マグネット・オーク", "img": "tentative/magnet-orc-pikeman-b11.png"}, {"id": "magnet-fist-orc-b13", "name": "磁鉄拳オーク", "img": "tentative/magnet-fist-orc-b13.png"}, {"id": "magnet-fist-orc-b18", "name": "じりょくオーク", "img": "tentative/magnet-fist-orc-b18.png"}], [{"id": "ember-prowler-b3-rv1", "name": "灼火の獣狼", "img": "tentative/ember-prowler-b3-rv1.png"}, {"id": "ember-prowler-b3-rv2", "name": "灼火の獣狼", "img": "tentative/ember-prowler-b3-rv2.png"}, {"id": "ember-prowler-b3-rv3", "name": "灼火の獣狼", "img": "tentative/ember-prowler-b3-rv3.png"}], [{"id": "abyss-tendril-rv1", "name": "シンエンノショクシュ", "img": "tentative/abyss-tendril-rv1.png"}, {"id": "abyss-tendril-rv3", "name": "シンエンノショクシュ", "img": "tentative/abyss-tendril-rv3.png"}], [{"id": "scorpion-stinger-b2-rv1", "name": "ドクサソリ", "img": "tentative/scorpion-stinger-b2-rv1.png"}, {"id": "scorpion-stinger-b2-rv3", "name": "ドクサソリ", "img": "tentative/scorpion-stinger-b2-rv3.png"}], [{"id": "drone-swarm-mech-b3-rv1", "name": "スウォーム・ノード", "img": "tentative/drone-swarm-mech-b3-rv1.png"}, {"id": "drone-swarm-mech-b3-rv2", "name": "スウォーム・ノード", "img": "tentative/drone-swarm-mech-b3-rv2.png"}], [{"id": "shard-sentinel-golem-b4-rv1", "name": "晶片の番ゴーレム", "img": "tentative/shard-sentinel-golem-b4-rv1.png"}, {"id": "shard-sentinel-golem-b4-rv2", "name": "晶片の番ゴーレム", "img": "tentative/shard-sentinel-golem-b4-rv2.png"}], [{"id": "mycelia-treant-b4-rv1", "name": "きょうせいの森人", "img": "tentative/mycelia-treant-b4-rv1.png"}, {"id": "mycelia-treant-b4-rv2", "name": "きょうせいの森人", "img": "tentative/mycelia-treant-b4-rv2.png"}], [{"id": "kokuyo-watarigani-b5-rv1", "name": "黒曜ワタリガニ岩将", "img": "tentative/kokuyo-watarigani-b5-rv1.png"}, {"id": "kokuyo-watarigani-b5-rv3", "name": "黒曜ワタリガニ岩将", "img": "tentative/kokuyo-watarigani-b5-rv3.png"}], [{"id": "obsidian-golem-b3", "name": "こくようせきの巨人", "img": "tentative/obsidian-golem-b3.png"}, {"id": "obsidian-golem-rv2", "name": "ヨウガングウ", "img": "tentative/obsidian-golem-rv2.png"}], [{"id": "fuhai-kinrui-grotesque-b6-rv1", "name": "腐肺キノコ憑き", "img": "tentative/fuhai-kinrui-grotesque-b6-rv1.png"}, {"id": "fuhai-kinrui-grotesque-b6-rv2", "name": "腐肺キノコ憑き", "img": "tentative/fuhai-kinrui-grotesque-b6-rv2.png"}], [{"id": "catalyst-reactor-ape-b7-rv1", "name": "カタリスト・リアクトル", "img": "tentative/catalyst-reactor-ape-b7-rv1.png"}, {"id": "catalyst-reactor-ape-b7-rv2", "name": "カタリスト・リアクトル", "img": "tentative/catalyst-reactor-ape-b7-rv2.png"}], [{"id": "dewdrop-puddle-spirit-b14", "name": "ミズタマちゃん", "img": "tentative/dewdrop-puddle-spirit-b14.png"}, {"id": "drip-droplet-pal-b17", "name": "ぽちゃ水たま", "img": "tentative/drip-droplet-pal-b17.png"}], [{"id": "soulflame-acid-cerberus-b7-rv1", "name": "蝕炎の獄犬ケルベロアシッド", "img": "tentative/soulflame-acid-cerberus-b7-rv1.png"}, {"id": "soulflame-acid-cerberus-b7-rv2", "name": "蝕炎の獄犬ケルベロアシッド", "img": "tentative/soulflame-acid-cerberus-b7-rv2.png"}], [{"id": "infernal-throne-archdemon-b7-rv1", "name": "獄王アビスローン", "img": "tentative/infernal-throne-archdemon-b7-rv1.png"}, {"id": "infernal-throne-archdemon-b7-rv2", "name": "獄王アビスローン", "img": "tentative/infernal-throne-archdemon-b7-rv2.png"}], [{"id": "brook-hatchling-water-dragon-b8-rv1", "name": "セセラギ・コリュウ", "img": "tentative/brook-hatchling-water-dragon-b8-rv1.png"}, {"id": "brook-hatchling-water-dragon-b8-rv2", "name": "セセラギ・コリュウ", "img": "tentative/brook-hatchling-water-dragon-b8-rv2.png"}], [{"id": "lens-eye-dragonfly-knight-b8-rv1", "name": "レンズガンリュウ", "img": "tentative/lens-eye-dragonfly-knight-b8-rv1.png"}, {"id": "lens-eye-dragonfly-knight-b8-rv2", "name": "レンズガンリュウ", "img": "tentative/lens-eye-dragonfly-knight-b8-rv2.png"}], [{"id": "abyssal-void-demon-emperor-b8-rv1", "name": "深淵帝デモンヴォイド", "img": "tentative/abyssal-void-demon-emperor-b8-rv1.png"}, {"id": "abyssal-void-demon-emperor-b8-rv2", "name": "深淵帝デモンヴォイド", "img": "tentative/abyssal-void-demon-emperor-b8-rv2.png"}], [{"id": "magnet-iron-drake-b15", "name": "マグネット・アイアンドレイク", "img": "tentative/magnet-iron-drake-b15.png"}, {"id": "magnet-iron-drake-b16", "name": "じりょくテツドレイク", "img": "tentative/magnet-iron-drake-b16.png"}], [{"id": "cursed-magnet-crab-b9-rv1", "name": "呪鉄のカニ将", "img": "tentative/cursed-magnet-crab-b9-rv1.png"}, {"id": "cursed-magnet-crab-b9-rv2", "name": "呪鉄のカニ将", "img": "tentative/cursed-magnet-crab-b9-rv2.png"}], [{"id": "obsidian-crystal-king-tortoise-b9-rv1", "name": "黒晶帝の不滅亀", "img": "tentative/obsidian-crystal-king-tortoise-b9-rv1.png"}, {"id": "obsidian-crystal-king-tortoise-b9-rv2", "name": "黒晶帝の不滅亀", "img": "tentative/obsidian-crystal-king-tortoise-b9-rv2.png"}], [{"id": "kido-saibou-mecha-b6-rv2", "name": "サイバ細胞ドローン", "img": "tentative/kido-saibou-mecha-b6-rv2.png"}, {"id": "kido-saibou-mecha-b6-rv3", "name": "サイバ細胞ドローン", "img": "tentative/kido-saibou-mecha-b6-rv3.png"}], [{"id": "void-rot-leviathan-b7-rv2", "name": "深淵の腐獣ヴォイドリヴァイア", "img": "tentative/void-rot-leviathan-b7-rv2.png"}, {"id": "void-rot-leviathan-b7-rv3", "name": "深淵の腐獣ヴォイドリヴァイア", "img": "tentative/void-rot-leviathan-b7-rv3.png"}], [{"id": "geyser-steam-serpentling-b8-rv2", "name": "ユゲマル・ジャリュウ", "img": "tentative/geyser-steam-serpentling-b8-rv2.png"}, {"id": "geyser-steam-serpentling-b8-rv3", "name": "ユゲマル・ジャリュウ", "img": "tentative/geyser-steam-serpentling-b8-rv3.png"}], [{"id": "plaguelord-rot-titan-chimera-b8-rv2", "name": "疫病王ロット・タイタン", "img": "tentative/plaguelord-rot-titan-chimera-b8-rv2.png"}, {"id": "plaguelord-rot-titan-chimera-b8-rv3", "name": "疫病王ロット・タイタン", "img": "tentative/plaguelord-rot-titan-chimera-b8-rv3.png"}]], KEY="rika2_dedup_v1";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{gi:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const $=id=>document.getElementById(id);
+$("gn").textContent=G.length;
+function rec(id){ if(!st.dec[id])st.dec[id]={keep:false,name:""}; return st.dec[id]; }
+function render(){
+  if(st.gi>=G.length){$("grp").style.display="none";$("nav").style.display="none";$("done").style.display="block";finish();return;}
+  $("grp").style.display="";$("nav").style.display="flex";$("done").style.display="none";
+  $("gi").textContent=st.gi+1;
+  const grp=G[st.gi]; const grid=$("grid"); grid.innerHTML="";
+  let num=0;
+  grp.forEach(b=>{ const r=rec(b.id); if(r.keep)num++; });
+  let kc=0;
+  grp.forEach(b=>{ const r=rec(b.id);
+    const c=document.createElement("div"); c.className="card"+(r.keep?" on":"");
+    if(r.keep)kc++;
+    c.innerHTML=`<div class="badge">${r.keep?kc:""}</div><div class="imgbox"><img src="${b.img}"></div>
+      <div class="dname">${b.name}</div>
+      <div class="rn"><input type="text" placeholder="${b.name}" value="${r.name||''}"></div>`;
+    c.querySelector(".imgbox").onclick=()=>{r.keep=!r.keep;save();render();};
+    const inp=c.querySelector("input"); inp.oninput=()=>{r.name=inp.value;save();};
+    grid.appendChild(c);
+  });
+}
+$("next").onclick=()=>{st.gi++;save();render();};
+$("prev").onclick=()=>{if(st.gi>0)st.gi--;save();render();};
+function csv(){let s="id,keep,new_name\n";G.forEach(g=>g.forEach(b=>{const r=st.dec[b.id]||{keep:false,name:""};s+=[b.id,r.keep?1:0,(r.name||"").replace(/,/g,"")].join(",")+"\n";}));return s;}
+function finish(){let k=0,t=0;G.forEach(g=>g.forEach(b=>{t++;if((st.dec[b.id]||{}).keep)k++;}));$("sum").textContent=`グループ${G.length}個 / 候補${t}枚 中 残す${k}枚（却下${t-k}）`;$("out").value=csv();}
+function copyCsv(){const s=csv();$("out").value=s;if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const e=$("toast");e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1500);});$("out").select();}
+function dlCsv(){const s=csv();const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([s],{type:"text/csv"}));a.download="dedup_result.csv";a.click();}
+$("dl").onclick=dlCsv;$("cp").onclick=copyCsv;
+document.addEventListener("keydown",e=>{if(e.key==="ArrowRight")$("next").click();else if(e.key==="ArrowLeft")$("prev").click();});
+render();
+</script></body></html>
