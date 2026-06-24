@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "plant-plant01", "name_ja": "植物ワカバ", "tier": "序盤", "element": "植物", "flavor_ja": "芽吹いたばかりの若葉が集まって生まれた小さな草の精。元気いっぱいに飛びはねる。", "img": "gacha_plant/plant-plant01.png"}, {"id": "plant-plant02", "name_ja": "植物コケムシ", "tier": "序盤", "element": "植物", "flavor_ja": "じめじめした森の岩に住む、苔をまとった小さなけもの。背中からキノコが生える。", "img": "gacha_plant/plant-plant02.png"}, {"id": "plant-plant03", "name_ja": "植物ツルマキ", "tier": "序盤", "element": "植物", "flavor_ja": "細い蔓が幾重にも巻きついて蛇の姿になった精。じわじわと締めつける。", "img": "gacha_plant/plant-plant03.png"}, {"id": "plant-plant04", "name_ja": "植物ハナウサ", "tier": "序盤", "element": "植物", "flavor_ja": "花びらの耳を持つ小さなうさぎの精。走ると花粉がきらきら舞う。", "img": "gacha_plant/plant-plant04.png"}, {"id": "plant-plant05", "name_ja": "植物クサトカゲ", "tier": "序盤", "element": "植物", "flavor_ja": "葉っぱのよろいをまとった小さなトカゲ。日なたぼっこが大好き。", "img": "gacha_plant/plant-plant05.png"}, {"id": "plant-plant06", "name_ja": "植物キノコビト", "tier": "序盤", "element": "植物", "flavor_ja": "大きなかさをかぶったキノコの小人。暗い森でぼんやり光る。", "img": "gacha_plant/plant-plant06.png"}, {"id": "plant-plant07", "name_ja": "植物ワタゲ", "tier": "序盤", "element": "植物", "flavor_ja": "たんぽぽの綿毛が集まったふわふわの精。風が吹くとちょっと飛ぶ。", "img": "gacha_plant/plant-plant07.png"}, {"id": "plant-plant08", "name_ja": "植物サボテンコ", "tier": "序盤", "element": "植物", "flavor_ja": "砂漠で暮らすちびサボテンの戦士。頭にひとつ黄色い花を咲かせる。", "img": "gacha_plant/plant-plant08.png"}, {"id": "plant-plant09", "name_ja": "植物ハッパガニ", "tier": "序盤", "element": "植物", "flavor_ja": "葉っぱのこうらを背負った小さなカニの精。木陰でちょこちょこ歩く。", "img": "gacha_plant/plant-plant09.png"}, {"id": "plant-plant10", "name_ja": "植物ネバツル", "tier": "序盤", "element": "植物", "flavor_ja": "虫をとらえる食虫植物の小さな芽。あまいにおいで獲物をさそう。", "img": "gacha_plant/plant-plant10.png"}, {"id": "plant-plant11", "name_ja": "植物コカブト", "tier": "序盤", "element": "植物", "flavor_ja": "どんぐりのこうらを背負った小さなカブトムシの精。落ち葉の下にかくれる。", "img": "gacha_plant/plant-plant11.png"}, {"id": "plant-plant12", "name_ja": "植物トゲイバラ", "tier": "中盤", "element": "植物", "flavor_ja": "茨と棘でできた猛々しいけもの。バラの花をまといながら獲物に襲いかかる。", "img": "gacha_plant/plant-plant12.png"}, {"id": "plant-plant13", "name_ja": "植物ウツボカ", "tier": "中盤", "element": "植物", "flavor_ja": "大きな口の食虫植物が獣に育った姿。近づくものを丸のみにする。", "img": "gacha_plant/plant-plant13.png"}, {"id": "plant-plant14", "name_ja": "植物オオキノコ", "tier": "中盤", "element": "植物", "flavor_ja": "見上げるほど大きなキノコの巨人。胞子をまき散らしながらゆっくり歩く。", "img": "gacha_plant/plant-plant14.png"}, {"id": "plant-plant15", "name_ja": "植物ハナグマ", "tier": "中盤", "element": "植物", "flavor_ja": "花びらの毛皮をまとった力強い熊の精。胸に大輪の花を咲かせる。", "img": "gacha_plant/plant-plant15.png"}, {"id": "plant-plant16", "name_ja": "植物ジュヒガメ", "tier": "中盤", "element": "植物", "flavor_ja": "樹皮と苔のこうらを背負った亀の精。甲羅から若木が生えている。", "img": "gacha_plant/plant-plant16.png"}, {"id": "plant-plant17", "name_ja": "植物ツタヘビ", "tier": "中盤", "element": "植物", "flavor_ja": "太い蔓がより合わさった大蛇。花のフードを広げて威嚇する。", "img": "gacha_plant/plant-plant17.png"}, {"id": "plant-plant18", "name_ja": "植物サボテン武者", "tier": "中盤", "element": "植物", "flavor_ja": "トゲの剣をかまえるサボテンの戦士。砂漠の旅人を見張る番人。", "img": "gacha_plant/plant-plant18.png"}, {"id": "plant-plant19", "name_ja": "植物コケゴーレム", "tier": "中盤", "element": "植物", "flavor_ja": "苔むした岩と根っこでできた巨人。動くと胞子がふわりと舞う。", "img": "gacha_plant/plant-plant19.png"}, {"id": "plant-plant20", "name_ja": "植物カエデキツネ", "tier": "中盤", "element": "植物", "flavor_ja": "紅葉の毛並みをもつ美しい狐の精。秋になると一段と赤くきらめく。", "img": "gacha_plant/plant-plant20.png"}, {"id": "plant-plant21", "name_ja": "植物バンブー兵", "tier": "中盤", "element": "植物", "flavor_ja": "しなやかな竹でできた俊敏な戦士。すばやい斬撃で敵を翻弄する。", "img": "gacha_plant/plant-plant21.png"}, {"id": "plant-plant22", "name_ja": "植物トレント", "tier": "終盤", "element": "植物", "flavor_ja": "森を守る巨大な樹木の巨人。太い根を引きずって大地を踏みしめる。", "img": "gacha_plant/plant-plant22.png"}, {"id": "plant-plant23", "name_ja": "植物イバラ竜", "tier": "終盤", "element": "植物", "flavor_ja": "無数の茨をまとった竜。バラの花を咲かせながら荒々しく暴れる。", "img": "gacha_plant/plant-plant23.png"}, {"id": "plant-plant24", "name_ja": "植物モウキノコ", "tier": "終盤", "element": "植物", "flavor_ja": "毒キノコをびっしり生やした獣。胞子の霧をまとって森を侵食する。", "img": "gacha_plant/plant-plant24.png"}, {"id": "plant-plant25", "name_ja": "植物カショク獣", "tier": "終盤", "element": "植物", "flavor_ja": "全身に食虫植物の口を持つ恐ろしい獣。何でも飲みこむ森の主。", "img": "gacha_plant/plant-plant25.png"}, {"id": "plant-plant26", "name_ja": "植物ハナオウ", "tier": "終盤", "element": "植物", "flavor_ja": "咲き誇る花のたてがみを持つ気高き聖獣。花畑の王として君臨する。", "img": "gacha_plant/plant-plant26.png"}, {"id": "plant-plant27", "name_ja": "植物ネノオウ", "tier": "終盤", "element": "植物", "flavor_ja": "うねる太い根が固まって生まれた王。大地をつかんで力を吸い上げる。", "img": "gacha_plant/plant-plant27.png"}, {"id": "plant-plant28", "name_ja": "植物ヒスイ樹", "tier": "終盤", "element": "植物", "flavor_ja": "翡翠のように輝く樹皮を持つ気高き樹獣。光る樹液が体をめぐる。", "img": "gacha_plant/plant-plant28.png"}, {"id": "plant-plant29", "name_ja": "植物ラフレシア", "tier": "終盤", "element": "植物", "flavor_ja": "巨大な怪花が魔獣になった姿。あまく腐ったにおいで獲物をひきよせる。", "img": "gacha_plant/plant-plant29.png"}, {"id": "plant-plant30", "name_ja": "植物セカイジュ", "tier": "ラスボス級", "element": "植物", "flavor_ja": "森のすべての命を束ねる世界樹の化身。黄金の樹皮が神々しく輝く。", "img": "gacha_plant/plant-plant30.png"}, {"id": "plant-plant31", "name_ja": "植物ハナノオウ", "tier": "ラスボス級", "element": "植物", "flavor_ja": "花園を統べる気高き女王。歩むたびに花が咲きこぼれる。", "img": "gacha_plant/plant-plant31.png"}, {"id": "plant-plant32", "name_ja": "植物モクリュウ帝", "tier": "ラスボス級", "element": "植物", "flavor_ja": "古木と花でできた樹竜の帝王。咲き誇る角で森の覇者を名乗る。", "img": "gacha_plant/plant-plant32.png"}, {"id": "plant-plant33", "name_ja": "植物ミドリ神", "tier": "ラスボス級", "element": "植物", "flavor_ja": "森の生命をつかさどる緑の神獣。咲く角から新しい命が芽吹く。", "img": "gacha_plant/plant-plant33.png"}, {"id": "plant-plant34", "name_ja": "植物マモノキ", "tier": "ラスボス級", "element": "植物", "flavor_ja": "森を枯らす魔樹の王。幹の口で旅人を丸のみにする恐怖の存在。", "img": "gacha_plant/plant-plant34.png"}, {"id": "plant-plant35", "name_ja": "植物ゲンセイジュ", "tier": "ラスボス級", "element": "植物", "flavor_ja": "はじまりの森を生んだ原初の樹神。白く輝く幹に無数の命を宿す。", "img": "gacha_plant/plant-plant35.png"}]; const KEY="rika2_boss_swipe_gacha_plant";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
