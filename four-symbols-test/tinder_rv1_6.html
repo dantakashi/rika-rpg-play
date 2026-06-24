@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "resonance-wraith-bell-b9-rv1", "name_ja": "キョウメイノモウレイ", "tier": "ラスボス級", "element": "音響・共鳴（霊体）", "flavor_ja": "罅割れた梵鐘の姿をした亡霊。鳴るたび自らの体を共鳴の輪が走り抜ける、冷たく荘厳な音の幽。", "img": "gacha_rv1_6/resonance-wraith-bell-b9-rv1.png"}, {"id": "thunder-qilin-brass-b9-rv1", "name_ja": "雷麟・轟雷の聖獣", "tier": "序盤", "element": "電磁・帯電", "flavor_ja": "聖なる雷を身にまとう麒麟。角の導体に触れた者は青白い稲妻に貫かれる。", "img": "gacha_rv1_6/thunder-qilin-brass-b9-rv1.png"}, {"id": "crystal-fox-prism-b9-rv1", "name_ja": "晶狐・七色の九尾", "tier": "序盤", "element": "光学・結晶", "flavor_ja": "光を七色に砕く九尾の晶狐。その瞳に映る虹は幻惑をもたらす。", "img": "gacha_rv1_6/crystal-fox-prism-b9-rv1.png"}, {"id": "acid-hydra-verdigris-b9-rv1", "name_ja": "腐酸のヒュドラ", "tier": "中盤", "element": "化学・酸／腐食", "flavor_ja": "首を斬れば酸が噴き、触れたものを溶かす腐食の多頭蛇。", "img": "gacha_rv1_6/acid-hydra-verdigris-b9-rv1.png"}, {"id": "flame-byakko-ember-b9-rv1", "name_ja": "焔白虎・炎獄の聖獣", "tier": "中盤", "element": "燃焼・炎", "flavor_ja": "炎をまとう聖獣・白虎。咆哮ひとつで草原を焼き尽くす。", "img": "gacha_rv1_6/flame-byakko-ember-b9-rv1.png"}, {"id": "stone-golem-volcanic-b9-rv1", "name_ja": "溶岩石の霊巌獣", "tier": "終盤", "element": "地学・火成岩／対流", "flavor_ja": "地の底のマグマが岩を獣に固めた巌の霊獣。動くたびに溶岩の罅が裂ける。", "img": "gacha_rv1_6/stone-golem-volcanic-b9-rv1.png"}, {"id": "void-chimera-eclipse-b9-rv1", "name_ja": "蝕のキメラ・三相の獣", "tier": "ラスボス級", "element": "重力・光学（蝕）", "flavor_ja": "光すら歪める三つの頭を持つ蝕の獣。その咆哮は空間を捻じ曲げる。", "img": "gacha_rv1_6/void-chimera-eclipse-b9-rv1.png"}, {"id": "obsidian-bone-dragon-b9-rv1", "name_ja": "黒曜骨竜・冥府の覇王", "tier": "ラスボス級", "element": "呪い・黒曜骨", "flavor_ja": "黒曜の骨を持つ不死の覇王竜。瞳に灯る紫の魂火は呪いを宿す。", "img": "gacha_rv1_6/obsidian-bone-dragon-b9-rv1.png"}, {"id": "firefly-bioluminescent-emitter-b9-rv1", "name_ja": "螢光蟲・ルクスホタル", "tier": "序盤", "element": "光学・発光", "flavor_ja": "腹の底に冷たい光をためる甲虫。継ぎ目から漏れる燐光が闇を裂く。", "img": "gacha_rv1_6/firefly-bioluminescent-emitter-b9-rv1.png"}, {"id": "cricket-resonance-stridulator-b9-rv1", "name_ja": "響鳴蟋蟀・ソニックコオロギ", "tier": "序盤", "element": "音響・共鳴", "flavor_ja": "翅をこすり大気を震わせる。音そのものを武器に変える鳴き虫。", "img": "gacha_rv1_6/cricket-resonance-stridulator-b9-rv1.png"}, {"id": "water-scorpion-pressure-piercer-b9-rv1", "name_ja": "圧穿タガメ・プレスバグ", "tier": "中盤", "element": "圧力・水圧", "flavor_ja": "前脚の油圧で獲物を圧し砕く水の刺客。継ぎ目から水圧が噴く。", "img": "gacha_rv1_6/water-scorpion-pressure-piercer-b9-rv1.png"}, {"id": "diving-beetle-electrolysis-paddler-b9-rv1", "name_ja": "電解ゲンゴロウ・ガルヴァ", "tier": "中盤", "element": "電磁・電気分解", "flavor_ja": "尾の電極で水を裂く甲虫。亜鉛と銅の火花を散らして泳ぐ。", "img": "gacha_rv1_6/diving-beetle-electrolysis-paddler-b9-rv1.png"}, {"id": "sea-urchin-magnetic-spinefort-b9-rv1", "name_ja": "磁棘ウニ・マグネスパイン", "tier": "中盤", "element": "磁力・磁場", "flavor_ja": "鉄棘に砂鉄をまとう球の要塞。磁場で全身の針を操る。", "img": "gacha_rv1_6/sea-urchin-magnetic-spinefort-b9-rv1.png"}, {"id": "whip-spider-static-weaver-b9-rv1", "name_ja": "静電サソリモドキ・スパークラッシュ", "tier": "終盤", "element": "電磁・静電気", "flavor_ja": "鞭の尾に静電を溜める蛛。逆立つ毛から雷糸が走る。", "img": "gacha_rv1_6/whip-spider-static-weaver-b9-rv1.png"}, {"id": "mantis-shrimp-shockwave-smasher-b9-rv1", "name_ja": "衝波シャコ・キャビトロン", "tier": "終盤", "element": "圧力・キャビテーション", "flavor_ja": "砕脚の一撃で水を沸かす。光るキャビテーションの泡を拳に宿す。", "img": "gacha_rv1_6/mantis-shrimp-shockwave-smasher-b9-rv1.png"}, {"id": "bone-trilobite-undead-sovereign-b9-rv1", "name_ja": "骸三葉・オッソトリロ", "tier": "ラスボス級", "element": "ダーク・骨/不死", "flavor_ja": "石化した三葉の骸が蘇る。黒曜の脈を刻む冷たき不死の王。", "img": "gacha_rv1_6/bone-trilobite-undead-sovereign-b9-rv1.png"}, {"id": "bone-stag-beetle-warden-b9-rv1", "name_ja": "骸角のクワガタ番兵", "tier": "序盤", "element": "闇／骨", "flavor_ja": "墓所の門を守る、骨と化したクワガタの番兵。あごは砕けた背骨でできている。", "img": "gacha_rv1_6/bone-stag-beetle-warden-b9-rv1.png"}, {"id": "obsidian-mantis-shrimp-b9-rv1", "name_ja": "黒曜のシャコ闘士", "tier": "序盤", "element": "闇／結晶", "flavor_ja": "黒曜石の殻を持つシャコの闘士。叩きの一撃は岩をも砕く。", "img": "gacha_rv1_6/obsidian-mantis-shrimp-b9-rv1.png"}, {"id": "cursed-magnet-crab-b9-rv1", "name_ja": "呪鉄のカニ将", "tier": "中盤", "element": "闇／磁力", "flavor_ja": "磁鉄の甲羅を持つカニの将。両のはさみは巨大な磁石で、鉄を引き寄せ握りつぶす。", "img": "gacha_rv1_6/cursed-magnet-crab-b9-rv1.png"}, {"id": "ossuary-centipede-reactor-b9-rv1", "name_ja": "骨堂のムカデ触媒", "tier": "中盤", "element": "闇／触媒（酸）", "flavor_ja": "骨堂をうごめく不死のムカデ。節々から滴る酸がおのれの骨をも溶かす。", "img": "gacha_rv1_6/ossuary-centipede-reactor-b9-rv1.png"}, {"id": "gravity-bone-scorpion-b9-rv1", "name_ja": "重力骸のサソリ", "tier": "終盤", "element": "闇／重力", "flavor_ja": "重力を喰らう骸のサソリ。尾の先には潰れた闇の核が宿り、近づくものを引き潰す。", "img": "gacha_rv1_6/gravity-bone-scorpion-b9-rv1.png"}, {"id": "black-coral-leviathan-knight-b9-rv1", "name_ja": "黒珊瑚の海騎士", "tier": "終盤", "element": "闇／結晶", "flavor_ja": "深海の闇で育った黒珊瑚の騎士。鎧そのものが生きた結晶であり、内から青白く脈打つ。", "img": "gacha_rv1_6/black-coral-leviathan-knight-b9-rv1.png"}, {"id": "obsidian-crystal-king-tortoise-b9-rv1", "name_ja": "黒晶帝の不滅亀", "tier": "ラスボス級", "element": "闇／結晶（重力）", "flavor_ja": "幾千年を生きた黒水晶の不滅亀。背の甲羅は割れた闇の宝石で、内から紫の光が脈打つ。", "img": "gacha_rv1_6/obsidian-crystal-king-tortoise-b9-rv1.png"}, {"id": "resonance-cicada-b9-rv1", "name_ja": "共鳴蝉ハウラー", "tier": "序盤", "element": "音響・共鳴", "flavor_ja": "腹の太鼓を打ち鳴らし、空気そのものを震わせて殻を割る音の虫。", "img": "gacha_rv1_6/resonance-cicada-b9-rv1.png"}, {"id": "nine-tail-kitsune-flame-b9-rv1", "name_ja": "九尾の狐ヒノカグラ", "tier": "中盤", "element": "化学・燃焼（狐火）", "flavor_ja": "九つの尾に狐火を灯す気高き霊獣。その青い炎は熱を持たぬという。", "img": "gacha_rv1_6/nine-tail-kitsune-flame-b9-rv1.png"}, {"id": "magnet-ore-tortoise-b9-rv1", "name_ja": "磁巖玄武マグネシェル", "tier": "中盤", "element": "磁力・地学", "flavor_ja": "甲羅が磁石の岩で出来た玄武。近づく鉄はすべて吸い寄せ、武器を奪う。", "img": "gacha_rv1_6/magnet-ore-tortoise-b9-rv1.png"}, {"id": "myriad-eye-oni-b9-rv1", "name_ja": "百々目鬼ヒャクガン", "tier": "中盤", "element": "光学・視覚", "flavor_ja": "腕じゅうに百の目を持つ鬼。その瞳はみな光を屈折させ、見る者を惑わす。", "img": "gacha_rv1_6/myriad-eye-oni-b9-rv1.png"}, {"id": "vermilion-phoenix-plasma-b9-rv1", "name_ja": "鳳凰スザクレイ", "tier": "終盤", "element": "プラズマ・光", "flavor_ja": "羽の一枚一枚がプラズマで編まれた不死の霊鳥。その身は太陽のかけら。", "img": "gacha_rv1_6/vermilion-phoenix-plasma-b9-rv1.png"}, {"id": "celestial-serpent-galaxy-b9-rv1", "name_ja": "星海龍神アマツミナ", "tier": "ラスボス級", "element": "天体・宇宙", "flavor_ja": "鱗の内に星々を宿す龍神。とぐろの一巻きが、ひとつの銀河を呑む。", "img": "gacha_rv1_6/celestial-serpent-galaxy-b9-rv1.png"}]; const KEY="rika2_boss_swipe_gacha_rv1_6";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
