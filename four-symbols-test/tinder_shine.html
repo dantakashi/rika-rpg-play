@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "glow-chick-shine01", "name_ja": "シャイン・ヒカリヒヨコ", "tier": "序盤", "element": "シャイン", "flavor_ja": "白と金色のふわふわなヒヨコ。おでこの印がぽわっと光る。みんなに人気者。", "img": "gacha_shine/glow-chick-shine01.png"}, {"id": "prism-sprite-shine02", "name_ja": "シャイン・プリズムようせい", "tier": "序盤", "element": "シャイン", "flavor_ja": "小さな光の妖精。背中のプリズムの羽が虹色に光る。手のひらにのるサイズ。", "img": "gacha_shine/prism-sprite-shine02.png"}, {"id": "silver-cub-shine03", "name_ja": "シャイン・ギンモウコジシ", "tier": "序盤", "element": "シャイン", "flavor_ja": "銀色の毛なみの子ライオン。おでこに光る印がある。元気いっぱいで走り回る。", "img": "gacha_shine/silver-cub-shine03.png"}, {"id": "halo-mouse-shine04", "name_ja": "シャイン・コウリンネズミ", "tier": "序盤", "element": "シャイン", "flavor_ja": "頭の上に光のわっかがある白いネズミ。ちょこちょこ動く。とても親しみやすい。", "img": "gacha_shine/halo-mouse-shine04.png"}, {"id": "crystal-snail-shine05", "name_ja": "シャイン・スイショウカタツムリ", "tier": "序盤", "element": "シャイン", "flavor_ja": "とうめいな水晶のからを持つカタツムリ。からの中がやさしく光る。ゆっくり進む。", "img": "gacha_shine/crystal-snail-shine05.png"}, {"id": "dawn-rabbit-shine06", "name_ja": "シャイン・アケボノウサギ", "tier": "序盤", "element": "シャイン", "flavor_ja": "耳の先がうす桃色に光る白いウサギ。朝日のような色をしている。よくはねる。", "img": "gacha_shine/dawn-rabbit-shine06.png"}, {"id": "lumen-jelly-shine07", "name_ja": "シャイン・ヒカリクラゲ", "tier": "序盤", "element": "シャイン", "flavor_ja": "うっすら光るまるいクラゲ。体の中の模様がやさしく光る。ふわふわただよう。", "img": "gacha_shine/lumen-jelly-shine07.png"}, {"id": "gilded-beetle-shine08", "name_ja": "シャイン・コガネカブト", "tier": "序盤", "element": "シャイン", "flavor_ja": "金色とまっ白のからを持つ小さなカブトムシ。からのすじが光る。つやつやしている。", "img": "gacha_shine/gilded-beetle-shine08.png"}, {"id": "feather-pup-shine09", "name_ja": "シャイン・ハネコイヌ", "tier": "序盤", "element": "シャイン", "flavor_ja": "小さな天使の羽が生えた白い子犬。むねがぽわっと光る。しっぽをふって喜ぶ。", "img": "gacha_shine/feather-pup-shine09.png"}, {"id": "sunmote-fox-shine10", "name_ja": "シャイン・ヒダマリギツネ", "tier": "序盤", "element": "シャイン", "flavor_ja": "日だまりのような白金色のキツネ。しっぽの先がほんのり光る。人なつっこい。", "img": "gacha_shine/sunmote-fox-shine10.png"}, {"id": "pearl-toad-shine11", "name_ja": "シャイン・シンジュガエル", "tier": "序盤", "element": "シャイン", "flavor_ja": "真珠のようにつやめく白いカエル。背中の点が青く光る。雨上がりに元気になる。", "img": "gacha_shine/pearl-toad-shine11.png"}, {"id": "radiant-moth-shine12", "name_ja": "シャイン・ヒカリガ", "tier": "序盤", "element": "シャイン", "flavor_ja": "白く光る羽に金色のもようを持つ小さなガ。羽の模様がやさしく光る。夜に集まる。", "img": "gacha_shine/radiant-moth-shine12.png"}, {"id": "crystal-frog-shine13", "name_ja": "シャイン・スイショウガエル", "tier": "序盤", "element": "シャイン", "flavor_ja": "すきとおった水晶でできたカエル。体の中で光が虹色にゆれる。コロンとしている。", "img": "gacha_shine/crystal-frog-shine13.png"}, {"id": "glimmer-deer-fawn-shine14", "name_ja": "シャイン・ヒカリコジカ", "tier": "序盤", "element": "シャイン", "flavor_ja": "金色の点がきらめく白い子ジカ。角は小さな水晶でできている。おっとりやさん。", "img": "gacha_shine/glimmer-deer-fawn-shine14.png"}, {"id": "sunbird-chick-shine15", "name_ja": "シャイン・ヒノトリビナ", "tier": "序盤", "element": "シャイン", "flavor_ja": "白と金色の羽の小さな火の鳥のヒナ。羽のすじがあたたかく光る。元気にさえずる。", "img": "gacha_shine/sunbird-chick-shine15.png"}, {"id": "radiant-lion-shine16", "name_ja": "シャイン・コウキンシシ", "tier": "中盤", "element": "シャイン", "flavor_ja": "金色に光るたてがみの白いライオン。頭の後ろに光のわが浮かぶ。気高い王者。", "img": "gacha_shine/radiant-lion-shine16.png"}, {"id": "seraph-knight-shine17", "name_ja": "シャイン・テンシキシ", "tier": "中盤", "element": "シャイン", "flavor_ja": "白金のよろいをまとった天使の騎士。背の羽はたたまれている。光の剣をふるう。", "img": "gacha_shine/seraph-knight-shine17.png"}, {"id": "prism-tiger-shine18", "name_ja": "シャイン・プリズムトラ", "tier": "中盤", "element": "シャイン", "flavor_ja": "虹色のしまもようが光る白いトラ。ツメは水晶のようにきらめく。とても速い。", "img": "gacha_shine/prism-tiger-shine18.png"}, {"id": "gilded-griffin-shine19", "name_ja": "シャイン・コガネグリフォン", "tier": "中盤", "element": "シャイン", "flavor_ja": "白金のしし身とワシの頭を持つグリフォン。羽が金色に光る。空の守り神。", "img": "gacha_shine/gilded-griffin-shine19.png"}, {"id": "crystal-stag-shine20", "name_ja": "シャイン・スイショウオオジカ", "tier": "中盤", "element": "シャイン", "flavor_ja": "水晶の角を持つ白い大ジカ。角の中で光がきらめく。森を照らす聖なる獣。", "img": "gacha_shine/crystal-stag-shine20.png"}, {"id": "light-serpent-shine21", "name_ja": "シャイン・ヒカリノオロチ", "tier": "中盤", "element": "シャイン", "flavor_ja": "白金のうろこを持つ小さな光の竜ヘビ。体のすじが金色に光る。とぐろを巻いて休む。", "img": "gacha_shine/light-serpent-shine21.png"}, {"id": "radiant-pegasus-shine22", "name_ja": "シャイン・ヒカリペガサス", "tier": "中盤", "element": "シャイン", "flavor_ja": "金色のたてがみを持つ白い天馬。羽はたたんでいる。空をかけぬける聖なる馬。", "img": "gacha_shine/radiant-pegasus-shine22.png"}, {"id": "prism-mantis-shine23", "name_ja": "シャイン・プリズムカマキリ", "tier": "中盤", "element": "シャイン", "flavor_ja": "虹色の水晶でできたカマキリ。カマも水晶でできている。光をはね返して輝く。", "img": "gacha_shine/prism-mantis-shine23.png"}, {"id": "halo-bear-shine24", "name_ja": "シャイン・コウリングマ", "tier": "中盤", "element": "シャイン", "flavor_ja": "まっ白な毛なみの大きなクマ。せなかに光る文字がうかぶ。頼れる守り神。", "img": "gacha_shine/halo-bear-shine24.png"}, {"id": "crystal-turtle-shine25", "name_ja": "シャイン・スイショウガメ", "tier": "中盤", "element": "シャイン", "flavor_ja": "水晶の甲らを持つ大きなカメ。甲らの中が金色に光る。とても守りがかたい。", "img": "gacha_shine/crystal-turtle-shine25.png"}, {"id": "gilded-phoenix-shine26", "name_ja": "シャイン・コガネフェニックス", "tier": "中盤", "element": "シャイン", "flavor_ja": "白と金色に輝く不死鳥。羽がやさしくもえるように光る。何度でもよみがえる。", "img": "gacha_shine/gilded-phoenix-shine26.png"}, {"id": "light-wolf-shine27", "name_ja": "シャイン・ヒカリオオカミ", "tier": "中盤", "element": "シャイン", "flavor_ja": "銀白色に光るオオカミ。体に金色の文字がうかぶ。月のように静かで強い。", "img": "gacha_shine/light-wolf-shine27.png"}, {"id": "prism-scarab-shine28", "name_ja": "シャイン・プリズムコガネ", "tier": "中盤", "element": "シャイン", "flavor_ja": "虹色の水晶でできた大きなコガネムシ。からが角度で色を変える。きらきら輝く。", "img": "gacha_shine/prism-scarab-shine28.png"}, {"id": "radiant-ray-shine29", "name_ja": "シャイン・ヒカリエイ", "tier": "中盤", "element": "シャイン", "flavor_ja": "白くかがやくエイのような生き物。ひれに金色の模様が光る。空をすべるように泳ぐ。", "img": "gacha_shine/radiant-ray-shine29.png"}, {"id": "crystal-golem-shine30", "name_ja": "シャイン・スイショウゴーレム", "tier": "中盤", "element": "シャイン", "flavor_ja": "光る水晶でできた人形。むねの文字がかがやく。守りも攻めもこなす聖なる番人。", "img": "gacha_shine/crystal-golem-shine30.png"}, {"id": "empyrean-treant-shine31", "name_ja": "シャイン・セイレイジュ", "tier": "終盤", "element": "シャイン", "flavor_ja": "銀色のみきと光る金色の葉を持つ聖なる大樹。みきの文字がかがやく。命をはぐくむ。", "img": "gacha_shine/empyrean-treant-shine31.png"}, {"id": "seraphim-lion-shine32", "name_ja": "シャイン・チテンシシ", "tier": "終盤", "element": "シャイン", "flavor_ja": "六枚の羽を持つ天上のライオン。たてがみが光でできている。神々しい王者。", "img": "gacha_shine/seraphim-lion-shine32.png"}, {"id": "radiant-wyvern-shine33", "name_ja": "シャイン・ヒカリワイバーン", "tier": "終盤", "element": "シャイン", "flavor_ja": "白金のうろこを持つ強い光の飛竜。体のすじが金色にもえる。空を照らして舞う。", "img": "gacha_shine/radiant-wyvern-shine33.png"}, {"id": "archangel-shine34", "name_ja": "シャイン・ダイテンシ", "tier": "終盤", "element": "シャイン", "flavor_ja": "白金のよろいをまとった大天使。何枚もの羽をたたんで立つ。光の大剣をかかげる。", "img": "gacha_shine/archangel-shine34.png"}, {"id": "radiant-behemoth-shine35", "name_ja": "シャイン・ヒカリキョジュウ", "tier": "終盤", "element": "シャイン", "flavor_ja": "白金に輝く巨大なけもの。背中に光る水晶の板がならぶ。大地をふみしめて歩く。", "img": "gacha_shine/radiant-behemoth-shine35.png"}, {"id": "prism-hydra-shine36", "name_ja": "シャイン・プリズムヒュドラ", "tier": "終盤", "element": "シャイン", "flavor_ja": "虹色の水晶でできた三つ首の竜。それぞれの頭が光を放つ。神々しくも手ごわい。", "img": "gacha_shine/prism-hydra-shine36.png"}, {"id": "solar-titan-shine37", "name_ja": "シャイン・タイヨウノキョジン", "tier": "終盤", "element": "シャイン", "flavor_ja": "白金の岩と水晶でできた太陽の巨人。むねの核から光があふれる。大地に立つ守り神。", "img": "gacha_shine/solar-titan-shine37.png"}, {"id": "radiant-colossus-shine38", "name_ja": "シャイン・ヒカリノキョヘイ", "tier": "終盤", "element": "シャイン", "flavor_ja": "光のよろいでできた巨大な天の戦士。頭の後ろに光のわが浮かぶ。聖なる力の塊。", "img": "gacha_shine/radiant-colossus-shine38.png"}, {"id": "empyreal-chimera-shine39", "name_ja": "シャイン・セイレイキマイラ", "tier": "終盤", "element": "シャイン", "flavor_ja": "光をまとった合成聖獣。背中に二つめの頭、しっぽは水晶のヘビ。三つの聖なる力を持つ。", "img": "gacha_shine/empyreal-chimera-shine39.png"}, {"id": "radiant-leviathan-shine40", "name_ja": "シャイン・ヒカリノオオウオ", "tier": "終盤", "element": "シャイン", "flavor_ja": "白金のうろこを持つ巨大な聖なる魚。体のもようが金色に光る。海を照らして泳ぐ。", "img": "gacha_shine/radiant-leviathan-shine40.png"}, {"id": "radiant-paladin-titan-shine41b", "name_ja": "シャイン・ヒカリノセイキシ", "tier": "終盤", "element": "シャイン", "flavor_ja": "白金の鎧をまとった巨大な聖騎士。頭の後ろに光のわが浮かぶ。聖なる大剣で悪をはらう。", "img": "gacha_shine/radiant-paladin-titan-shine41b.png"}, {"id": "radiant-overlord-shine41", "name_ja": "シャイン・ヒカリノマオウ", "tier": "終盤", "element": "シャイン", "flavor_ja": "白金の鎧をまとった光の竜王。むねに金色の力がながれる。気高くおごそかな王者。", "img": "gacha_shine/radiant-overlord-shine41.png"}, {"id": "celestial-dragon-shinemaster", "name_ja": "シャイン・テンコウノシンリュウ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "天の光をまとった巨大な神竜。むねに金色の文字がかがやく。すべてを照らす光の王。", "img": "gacha_shine/celestial-dragon-shinemaster.png"}, {"id": "seraph-empress-shineboss02", "name_ja": "シャイン・ヒカリノジョテイ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "白金のころもをまとった光の女帝。たくさんの羽を背に立つ。光の杖で世界を導く。", "img": "gacha_shine/seraph-empress-shineboss02.png"}, {"id": "sun-emperor-shineboss03", "name_ja": "シャイン・タイヨウノテイオウ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "光のたてがみを持つ巨大な獅子の帝王。むねに太陽の核がやどる。王者の中の王者。", "img": "gacha_shine/sun-emperor-shineboss03.png"}, {"id": "radiant-leviathan-shineboss04", "name_ja": "シャイン・ヒカリノカイジュウ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "白金の水晶のよろいガニ。ハサミは家ほど大きい。すきまから金色の光があふれる。", "img": "gacha_shine/radiant-leviathan-shineboss04.png"}, {"id": "empyrean-archon-shineboss05", "name_ja": "シャイン・テンクウノシハイシャ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "光がかたまって生まれた天空の支配者。よろいの中で金色の目が一つ輝く。聖なる力の極み。", "img": "gacha_shine/empyrean-archon-shineboss05.png"}, {"id": "life-god-shineboss06", "name_ja": "シャイン・セイメイノカミ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "光から生まれた巨大な生命の神獣。たくさんの目が金色に光る。ふれたものに命をあたえる。", "img": "gacha_shine/life-god-shineboss06.png"}, {"id": "radiant-worldserpent-shineboss07", "name_ja": "シャイン・ヒカリノダイジャ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "白金の巨大なヘビ竜。とぐろを巻いて光の山のようにそびえる。世界を照らす守護者。", "img": "gacha_shine/radiant-worldserpent-shineboss07.png"}, {"id": "dawnbringer-warlord-shineboss08", "name_ja": "シャイン・アケボノノグンオウ", "tier": "ラスボス級", "element": "シャイン", "flavor_ja": "白金の金属でできた巨大な夜明けの軍王。むねの核が金色に光る。大剣の一振りで闇をはらう。", "img": "gacha_shine/dawnbringer-warlord-shineboss08.png"}]; const KEY="rika2_boss_swipe_gacha_shine";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
