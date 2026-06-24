@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "stormcrown-herald-n1", "name_ja": "雷鳴のヘラルド", "tier": "序盤", "element": "electricity", "flavor_ja": "若き雷の使い。手のひらに小さな稲妻をためて放つ。空気がピリッとするのは、こいつが近くにいる合図だ。", "img": "gacha_n1/stormcrown-herald-n1.png"}, {"id": "tidecaller-acolyte-n1", "name_ja": "潮よびの神官", "tier": "序盤", "element": "water", "flavor_ja": "海神に仕える見習い。トライデントをひと振りすると、足もとに小さな潮が渦を巻く。塩の匂いをまとっている。", "img": "gacha_n1/tidecaller-acolyte-n1.png"}, {"id": "emberforge-cyclops-n1", "name_ja": "鍛炉のキュクロプス", "tier": "序盤", "element": "fire", "flavor_ja": "神々の武器を打つ一つ目の巨人。腕は溶けた鉄を握っても平気だ。ハンマーの一打ちで火花が舞う。", "img": "gacha_n1/emberforge-cyclops-n1.png"}, {"id": "underworld-warden-n1", "name_ja": "冥府の門番神", "tier": "中盤", "element": "dark", "flavor_ja": "死者の国を守る冷たき神。三つの犬の頭が胸からうなり、近づく者を見張る。その紫の炎は熱くない。", "img": "gacha_n1/underworld-warden-n1.png"}, {"id": "war-aspect-colossus-n1", "name_ja": "戦神のアスペクト", "tier": "中盤", "element": "fire", "flavor_ja": "戦いそのものが姿を得た神の化身。六本の腕すべてに武器が生えている。近づくと血の匂いと熱気がする。", "img": "gacha_n1/war-aspect-colossus-n1.png"}, {"id": "dawn-bearer-seraph-n1", "name_ja": "暁をはこぶ女神", "tier": "中盤", "element": "light", "flavor_ja": "夜明けをはこぶ女神。彼女が腕をひらくと、あたりが朝の光でほのかに温まる。羽は四枚たたまれている。", "img": "gacha_n1/dawn-bearer-seraph-n1.png"}, {"id": "titan-of-stone-n1", "name_ja": "原初の石巨神", "tier": "終盤", "element": "earth", "flavor_ja": "天と地が分かれる前から立つ石の巨神。歩くたびに大地が震える。胸の割れ目からはマグマがにじむ。", "img": "gacha_n1/titan-of-stone-n1.png"}, {"id": "abyssal-leviathan-god-n1", "name_ja": "深淵の海王神", "tier": "終盤", "element": "water", "flavor_ja": "光の届かぬ深海を統べる神。タコの足で海底をつかみ、トライデントひと突きで海が割れる。声は雷鳴のよう。", "img": "gacha_n1/abyssal-leviathan-god-n1.png"}, {"id": "skyfather-sovereign-n1", "name_ja": "天空の主神", "tier": "ラスボス級", "element": "electricity", "flavor_ja": "すべての神々の頂に立つ天空の王。六本の腕に稲妻を握り、ひと睨みで嵐を呼ぶ。後光は太陽のように燃える。", "img": "gacha_n1/skyfather-sovereign-n1.png"}, {"id": "primordial-chaos-maw-n1", "name_ja": "原初の混沌神", "tier": "ラスボス級", "element": "dark", "flavor_ja": "世界が生まれる前の混沌そのもの。無数の顔と腕を持ち、星々を体にまとう。すべてを呑みこむ闇が胸でうずまく。", "img": "gacha_n1/primordial-chaos-maw-n1.png"}, {"id": "rune-raven-warden-n1", "name_ja": "ルーンガラスの番神", "tier": "序盤", "element": "電気・雷光", "flavor_ja": "片目と引き換えに知をすべて飲んだ番神。甲冑に刻まれたルーンが青白く鳴く。", "img": "gacha_n1/rune-raven-warden-n1.png"}, {"id": "boar-tusk-hearth-guard-n1", "name_ja": "ヒノモリの猪兵", "tier": "序盤", "element": "燃焼・熱", "flavor_ja": "炉の火を腹に飼う猪の番兵。鎧の隙間から熾火が漏れ、踏むたび火の粉が散る。", "img": "gacha_n1/boar-tusk-hearth-guard-n1.png"}, {"id": "frost-mead-keeper-n1", "name_ja": "ヒョウミツの守り手", "tier": "序盤", "element": "状態変化・凝固", "flavor_ja": "溶けた水を瞬時に凍らせて固める霜の守り手。髭まで凍りついた寒気の巨神。", "img": "gacha_n1/frost-mead-keeper-n1.png"}, {"id": "valkyrie-storm-lance-n1", "name_ja": "戦乙女ヴァルキリエル", "tier": "中盤", "element": "電気・放電", "flavor_ja": "戦場で勇者を選び迎える戦乙女。鎧と槍を伝う雷光が、選ばれし者の魂を照らす。", "img": "gacha_n1/valkyrie-storm-lance-n1.png"}, {"id": "triple-spiral-druid-n1", "name_ja": "三螺旋のドルイド樹神", "tier": "中盤", "element": "生物・光合成", "flavor_ja": "森の知を司る六腕の樹神。樹皮を巡る緑の光は、葉が光を糧に変える命の輝き。", "img": "gacha_n1/triple-spiral-druid-n1.png"}, {"id": "thunder-ram-smith-n1", "name_ja": "雷鎚の鍛え神", "tier": "中盤", "element": "電気・磁力", "flavor_ja": "雷を打って鎚に込める牡羊の鍛冶神。角と鎚の間に走る稲妻が、鉄を引き寄せる。", "img": "gacha_n1/thunder-ram-smith-n1.png"}, {"id": "tide-serpent-sovereign-n1", "name_ja": "潮渦の蛇王神", "tier": "終盤", "element": "圧力・流体", "flavor_ja": "渦と水圧で船を砕く海の蛇王。とぐろを巻き身を支え、纏う激流が鎧を伝う。", "img": "gacha_n1/tide-serpent-sovereign-n1.png"}, {"id": "war-crow-morrigan-form-n1", "name_ja": "戦の女神 カラスメガ", "tier": "終盤", "element": "化学・腐食", "flavor_ja": "三つの顔で戦を見渡す死の女神。鎧を蝕む緑の腐食が、勝敗を朽ちさせていく。", "img": "gacha_n1/war-crow-morrigan-form-n1.png"}, {"id": "allfather-rune-colossus-n1", "name_ja": "万象の隻眼神王", "tier": "ラスボス級", "element": "重力・万有引力", "flavor_ja": "片目と引き換えに万象を見通す神々の王。拳を巡る重力の輪が、世界を引き寄せ屈服させる。", "img": "gacha_n1/allfather-rune-colossus-n1.png"}, {"id": "twilight-wolf-sovereign-n1", "name_ja": "黄昏の狼喰い神", "tier": "ラスボス級", "element": "燃焼・爆発", "flavor_ja": "黄昏に世界を呑むと予言された終末の狼神。喰らう炎が鎧の隙間から噴き、全てを灰に。", "img": "gacha_n1/twilight-wolf-sovereign-n1.png"}, {"id": "jackal-warden-acolyte-n1", "name_ja": "アヌバスの番人", "tier": "序盤", "element": "砂塵", "flavor_ja": "墓を守るために生まれた、ジャッカル頭の若き番人。砂をまとう四つの腕で侵入者を追い返す。まだ半人前だが、その牙はあなどれない。", "img": "gacha_n1/jackal-warden-acolyte-n1.png"}, {"id": "ibis-scribe-sentinel-n1", "name_ja": "トキガミ・ショキ", "tier": "序盤", "element": "結晶インク", "flavor_ja": "知恵の文字をつかさどる、トキ頭の書記神。腕にまとう結晶インクが光ると、書いた式がそのまま魔法になる。化学式を間違えると怒るらしい。", "img": "gacha_n1/ibis-scribe-sentinel-n1.png"}, {"id": "ram-horn-forge-djinn-n1", "name_ja": "ヒツジヅノの鍛冶霊", "tier": "序盤", "element": "合金", "flavor_ja": "金属を打ち鍛える、牡羊頭の鍛冶の霊。四本の腕で銅とスズを混ぜ、青銅の合金を生み出す。胸の合金は今も熱く脈打っている。", "img": "gacha_n1/ram-horn-forge-djinn-n1.png"}, {"id": "lioness-storm-sekhmet-n1", "name_ja": "シシガミ・セクメト", "tier": "中盤", "element": "雷光", "flavor_ja": "怒れる雌ライオンの女神。六本の腕がそれぞれ刃をふるい、肩を走る雷が敵をしびれさせる。彼女の咆哮は嵐を呼ぶという。", "img": "gacha_n1/lioness-storm-sekhmet-n1.png"}, {"id": "falcon-sky-warlord-n1", "name_ja": "ハヤブサの天将", "tier": "中盤", "element": "光学", "flavor_ja": "天空を統べる隼頭の将。鏡の盾と虹色の鎧が陽の光を曲げ、敵の目をくらます。光をあやつる戦いの神。", "img": "gacha_n1/falcon-sky-warlord-n1.png"}, {"id": "crocodile-flood-leviath-n1", "name_ja": "ワニガミ・スイシン", "tier": "中盤", "element": "圧力・水", "flavor_ja": "氾濫の川を支配する、ワニ頭の水神。四本の腕で水をぎゅっと圧縮し、鉄をも砕く水圧の塊を放つ。沼の底でいつも待ち構えている。", "img": "gacha_n1/crocodile-flood-leviath-n1.png"}, {"id": "serpent-chaos-tiamat-n1", "name_ja": "ゲンショ・ティアマト", "tier": "終盤", "element": "塩・酸", "flavor_ja": "海のすべての始まりとされる原初の女神。とぐろを巻く体から三つの蛇頭が伸び、塩と酸の毒霧をまとう。世界が生まれる前から、ここにいた。", "img": "gacha_n1/serpent-chaos-tiamat-n1.png"}, {"id": "elephant-gravity-titan-n1", "name_ja": "ゾウガミ・ジュウリョク", "tier": "終盤", "element": "重力", "flavor_ja": "重さそのものを支配する、象頭の巨神。八本の腕でにぎる暗黒の球は、近づくものをすべて押しつぶす。その一歩で大地がきしむ。", "img": "gacha_n1/elephant-gravity-titan-n1.png"}, {"id": "vulture-plague-pazuz-n1", "name_ja": "マジン・パズズ", "tier": "ラスボス級", "element": "毒・疫風", "flavor_ja": "病をはこぶ西風の魔神。ハゲワシの双頭と四枚の翼を持つ異形が、緑の毒霧をまとって舞い降りる。彼が通った村は、朝には静まりかえっているという。", "img": "gacha_n1/vulture-plague-pazuz-n1.png"}, {"id": "destroyer-asura-trimukha-n1", "name_ja": "ハカイシン・アスラ", "tier": "ラスボス級", "element": "終焉・核熱", "flavor_ja": "世界をひとたび終わらせ、また始めるという破壊と再生の神。三つの顔と十本の腕、額に燃える第三の眼。その後光が満ちるとき、すべては核の炎に帰す。", "img": "gacha_n1/destroyer-asura-trimukha-n1.png"}, {"id": "rakshasa-fanged-warden-b18-n1", "name_ja": "羅刹ファングウォーデン", "tier": "序盤", "element": "闇", "flavor_ja": "四本の腕に刃を握る門番の羅刹。牙と角の塊で、地獄門の最初の試練。", "img": "gacha_n1/rakshasa-fanged-warden-b18-n1.png"}, {"id": "jinn-ember-vessel-b18-n1", "name_ja": "灯火のジン", "tier": "序盤", "element": "火", "flavor_ja": "ランプから生まれた小さなジン。胸の奥に熾火を宿す精霊で、まだ若い。", "img": "gacha_n1/jinn-ember-vessel-b18-n1.png"}, {"id": "imp-grotto-tormentor-b18-n1", "name_ja": "洞窟のインプ鬼", "tier": "序盤", "element": "闇", "flavor_ja": "洞窟に巣くう下級の鬼。意地の悪い笑みでつつき回す、悪魔の使い走り。", "img": "gacha_n1/imp-grotto-tormentor-b18-n1.png"}, {"id": "asura-thricefaced-b18-n1", "name_ja": "三面のアスラ", "tier": "中盤", "element": "雷", "flavor_ja": "三つの顔で過去現在未来を睨む戦神アスラ。六腕に剣を構える半神の威。", "img": "gacha_n1/asura-thricefaced-b18-n1.png"}, {"id": "ifrit-cinder-colossus-b18-n1", "name_ja": "イフリート・シンダーロード", "tier": "中盤", "element": "火", "flavor_ja": "砂漠の火を統べるイフリート。岩肌の裂け目から溶岩の脈動が漏れる魔神。", "img": "gacha_n1/ifrit-cinder-colossus-b18-n1.png"}, {"id": "naga-rakshasi-queen-b18-n1", "name_ja": "羅刹妃ナーガ", "tier": "中盤", "element": "水", "flavor_ja": "蛇のとぐろから立ち上がる羅刹の妃。六腕に神器を握り、毒霧を纏う女魔神。", "img": "gacha_n1/naga-rakshasi-queen-b18-n1.png"}, {"id": "oni-king-thunderclad-b18-n1", "name_ja": "雷装の鬼神王", "tier": "終盤", "element": "雷", "flavor_ja": "鎧を雷で焦がす鬼神の王。四腕に鉄棍を構え、雷鳴を纏う異形の武神。", "img": "gacha_n1/oni-king-thunderclad-b18-n1.png"}, {"id": "fallen-seraph-sixwing-b18-n1", "name_ja": "堕天のセラフ", "tier": "終盤", "element": "闇", "flavor_ja": "光を捨てた六枚翼の堕天使。目隠しの奥に冷たい光を宿し、折れた炎剣を握る。", "img": "gacha_n1/fallen-seraph-sixwing-b18-n1.png"}, {"id": "asura-emperor-tenfaced-b18-n1", "name_ja": "十面阿修羅帝", "tier": "ラスボス級", "element": "無", "flavor_ja": "十の顔と二十の腕を持つ阿修羅の帝。世界を裁く巨神格、神威そのもの。", "img": "gacha_n1/asura-emperor-tenfaced-b18-n1.png"}, {"id": "demon-king-worlddevourer-b18-n1", "name_ja": "魔王ワールドデバウアー", "tier": "ラスボス級", "element": "闇", "flavor_ja": "世界を喰らうために生まれた魔王。十二の角と六腕、腹に第二の顎を持つ巨神異形。最後の壁。", "img": "gacha_n1/demon-king-worlddevourer-b18-n1.png"}, {"id": "lantern-vow-acolyte-guardian-n1", "name_ja": "ともしびのちかいヒカリヌシ", "tier": "序盤", "element": "光（光源・反射）", "flavor_ja": "灯火の社をまもる、まだ若い守り手。胸の盾からこぼれる光は、闇におびえる旅人をやさしく照らす。光がまっすぐ進むことを、その身ひとつで教えてくれる。", "img": "gacha_n1/lantern-vow-acolyte-guardian-n1.png"}, {"id": "tideguard-warden-of-the-shoal-n1", "name_ja": "なぎさのまもりびとシオガミ", "tier": "序盤", "element": "水（水圧・浮力）", "flavor_ja": "遠浅の海をまもる屈強な戦士。よろいを伝う水の膜が、深い海ほど強くのしかかる力をはね返す。重い錨づちを地につけ、どっしりと波打ちぎわに立つ。", "img": "gacha_n1/tideguard-warden-of-the-shoal-n1.png"}, {"id": "fernbloom-sentinel-of-the-grove-n1", "name_ja": "みどりのほこらヤドリギヌシ", "tier": "序盤", "element": "植物（光合成・成長）", "flavor_ja": "森のほこらに千年たたずむ、苔むした守りの巨人。胸のすきまから漏れる緑のかがやきは、光をあびて力にかえる命のしるし。根のような足で大地をつかみ、けっして倒れない。", "img": "gacha_n1/fernbloom-sentinel-of-the-grove-n1.png"}, {"id": "stormvow-valkyrie-of-the-arc-n1", "name_ja": "いかずちのおとめライメイ・ヴァルキュリア", "tier": "中盤", "element": "電気（放電・電流）", "flavor_ja": "嵐の戦場を駆ける戦乙女。よろいを這う青い稲妻は、電気が金属を伝って流れる道そのもの。鍛えた鋼の翼を広げ、ほこを構えてどっしりと大地を踏みしめる。", "img": "gacha_n1/stormvow-valkyrie-of-the-arc-n1.png"}, {"id": "lodestone-paladin-of-the-iron-oath-n1", "name_ja": "じりょくの聖騎士マグナ・パラディン", "tier": "中盤", "element": "磁力（磁界・引力）", "flavor_ja": "鉄の誓いをまもる重装の聖騎士。胸に張りつく鉄片は、磁石のまわりに引きよせられる力の線をなぞる。大盾を地に立て、何ものにも動かされぬ構えで道をふさぐ。", "img": "gacha_n1/lodestone-paladin-of-the-iron-oath-n1.png"}, {"id": "prism-champion-of-the-refracted-dawn-n1", "name_ja": "にじいろの勇者プリズマ・チャンピオン", "tier": "中盤", "element": "光（屈折・分光）", "flavor_ja": "夜明けの光をまとう、まばゆい英雄。全身のよろいが光をにじの七色に分ける姿は、プリズムを通った光そのもの。けっして見栄をきらず、足を一歩ふみ出してしっかと立つ。", "img": "gacha_n1/prism-champion-of-the-refracted-dawn-n1.png"}, {"id": "gravewell-warden-titan-of-the-deep-pull-n1", "name_ja": "おもみのまもりがみジュウリョク・ウォーデン", "tier": "終盤", "element": "重力（引力・落下）", "flavor_ja": "万物を引きよせる重みをまとう、巨大な守りの神。よろいから漏れるゆがみは、すべてを下へ引っぱる力のしるし。地をへこませて立つその足元に、近づくものは膝をつく。", "img": "gacha_n1/gravewell-warden-titan-of-the-deep-pull-n1.png"}, {"id": "resonant-warhost-of-the-thundering-choir-n1", "name_ja": "おたけびの軍神ソナタ・ウォーホスト", "tier": "終盤", "element": "音（共鳴・音波）", "flavor_ja": "戦場をふるわせる、四本腕の軍神。胸からひろがるゆがみは、空気をゆらして伝わる音の波そのもの。鐘のよろいを鳴らし、地をつかんでどっしりと敵をにらむ。", "img": "gacha_n1/resonant-warhost-of-the-thundering-choir-n1.png"}, {"id": "world-anvil-saint-of-the-burning-forge-n1", "name_ja": "とこしえの鍛冶聖神アマツ・アンヴィル", "tier": "ラスボス級", "element": "化学（合金・燃焼）", "flavor_ja": "世界そのものを打ちきたえる、六本腕の鍛冶の聖神。よろいを流れる金色のうねりは、金属が熱で溶け、混ざりあって新たな合金になる瞬間のかがやき。その槌が振り下ろされるたび、世界が鋳直されるという。", "img": "gacha_n1/world-anvil-saint-of-the-burning-forge-n1.png"}, {"id": "empyrean-dawn-archon-of-the-eternal-light-n1", "name_ja": "あまつひかりの大守神エンピレオ・アルコン", "tier": "ラスボス級", "element": "光（太陽光・スペクトル）", "flavor_ja": "天のひかりを束ねる、すべての守り手の頂点に立つ大守神。背に燃える後光は弱ることなき太陽の光、よろいに宿る七色は光のすべての色。その大剣がふり下ろされる前に、世界はまばゆさで満ちる。", "img": "gacha_n1/empyrean-dawn-archon-of-the-eternal-light-n1.png"}]; const KEY="rika2_boss_swipe_gacha_n1";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
