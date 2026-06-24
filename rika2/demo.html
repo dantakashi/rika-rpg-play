@@ -166,7 +166,7 @@
   .info-ef{font-size:14px; color:var(--ink); line-height:1.6; background:#0c1220; border:1px solid var(--line); border-radius:11px; padding:11px;}
   .info-close{text-align:center; font-size:11px; color:var(--sub); margin-top:11px;}
 
-  .qoverlay{position:absolute; inset:0; z-index:30; background:linear-gradient(160deg,#0c1326,#070a14); display:none; flex-direction:column; padding:14px;}
+  .qoverlay{position:absolute; inset:0; z-index:85; background:linear-gradient(160deg,#0c1326,#070a14); display:none; flex-direction:column; padding:14px;}   /* ★出題の器=画面(.screen60)/ドロワー(70/71)より上・あいことば(9999)より下(問題側申し送り2026-06-24)。生きてる問題が将来のメニューに覆われないよう */
   .qoverlay.show{display:flex;}
   .qctx{font-size:12px; color:var(--sub); text-align:center; margin-bottom:8px;} .qctx b{color:var(--ink);}
   .qq{font-size:21px; font-weight:800; text-align:center; line-height:1.5; padding:6px 4px;}
@@ -510,7 +510,8 @@
   </div>
 </div>
 
-<script src="quiz-engine.js"></script>
+<script src="quiz-engine.js?v=2026-06-24"></script><!-- ★?v=でキャッシュ無効化＝エンジン更新を生徒に確実に届ける(問題側申し送り)。エンジン更新時はvを上げる -->
+
 <script>
 /* ===================== §1 設定 ===================== */
 const cfg = { chargeSec:4.5, savorSec:1.3, actionSec:0.8, enemyIntervalSec:9.0, missDropPct:30, freezeOnThink:true, mpPerCorrect:12 };
@@ -1409,6 +1410,9 @@ function afterDrawerChange(){ renderDrawer();   // ドロワーは開いたま�
   if(gameState==='inventory') renderInventory(); else if(gameState==='equip') renderEquip(); }
 
 function showScreen(name){   // overlay表示の一元管理。battle時は全overlay非表示。
+  // ★ガード(問題側申し送り2026-06-24): 画面(メニュー/ホーム等)を出すとき、生きてる出題の器が残っていたら先に閉じる
+  //   ＝将来「戦闘中にメニュー/インベントリを開く」を足しても、不透明な画面が生きた問題を覆わない。
+  if(name){ const q=document.getElementById('qOverlay'); if(q && q.classList.contains('show') && typeof hideOverlay==='function') hideOverlay(); }
   ['title','home','map','accessory','inventory','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
 }
 function showTitle(){ gameState='title'; showScreen('title'); setTopbar(''); }
