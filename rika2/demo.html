@@ -347,7 +347,13 @@
   .gcard .gm{position:relative;z-index:1;font-size:10px;color:var(--gold);font-weight:700;}
   .gcard .gb{position:relative;z-index:1;font-size:9px;color:var(--good);}
   .gcard .eq{position:absolute;top:5px;right:5px;width:19px;height:19px;border-radius:6px;background:var(--gold);color:#3a230a;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;z-index:2;}
-  .gcard .slotpip{position:absolute;top:4px;left:6px;font-size:11px;z-index:2;opacity:.85;}
+  .gcard .slotpip{position:absolute;bottom:4px;left:5px;font-size:11px;z-index:2;opacity:.8;}   /* スロット=左下(NEWを左上に空ける) */
+  .gcard .newdot{position:absolute;top:4px;left:4px;width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 5px var(--bad);z-index:4;}   /* NEW=新着の赤ドット */
+  .gcard .upbadge{position:absolute;bottom:3px;right:4px;font-size:13px;z-index:3;filter:drop-shadow(0 0 3px rgba(244,201,93,.8));}   /* ✨つけ得 */
+  .inv-more{grid-column:1/-1;margin:4px 0 2px;padding:11px;border-radius:11px;background:#1d2a3f;border:1px solid var(--line);color:var(--ink);font-size:13px;font-weight:700;}
+  .inv-more:active{transform:scale(.98);}
+  .sortlbl{font-size:11px;color:var(--sub);align-self:center;margin-right:2px;}
+  .chip.newchip[aria-pressed="true"]{background:rgba(248,113,113,.14);border-color:var(--bad);color:#fca5a5;}
   .inv-empty{grid-column:1/-1;text-align:center;color:var(--sub);font-size:13px;padding:26px 0;}
   /* 売却モード */
   .inv-head-r{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
@@ -1123,10 +1129,10 @@ let gearEquip = { ares:{武器:null,頭:null,胴:null,足:null}, sera:{武器:nu
 let _accSeq = 1;
 const ACC_KEY='rika2_demo_acc_v1';
 function _freshGearEquip(){ return { ares:{武器:null,頭:null,胴:null,足:null}, sera:{武器:null,頭:null,胴:null,足:null}, gai:{武器:null,頭:null,胴:null,足:null}, mina:{武器:null,頭:null,胴:null,足:null} }; }
-function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); gearInv=s.gearInv||[]; gearEquip=Object.assign(_freshGearEquip(), s.gearEquip||{}); _accSeq=s.seq||1;
+function loadAcc(){ try{ const s=JSON.parse(localStorage.getItem(ACC_KEY)); if(s){ accInv=s.inv||[]; accEquip=Object.assign({ares:[null,null],sera:[null,null],gai:[null,null],mina:[null,null]}, s.equip||{}); gearInv=s.gearInv||[]; gearEquip=Object.assign(_freshGearEquip(), s.gearEquip||{}); _accSeq=s.seq||1; newIds=new Set(s.newIds||[]);   // ★NEW(新着)バッジの永続
   [].concat(accInv,gearInv).forEach(it=>{ if(it&&!RARITY[it.rarity]) it.rarity='R'; });   // 旧UC等の廃止レア度→Rに救済
   } }catch(e){} }
-function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, gearInv, gearEquip, seq:_accSeq})); }catch(e){} }
+function saveAcc(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify({inv:accInv, equip:accEquip, gearInv, gearEquip, seq:_accSeq, newIds:[...newIds]})); }catch(e){} }
 function accById(id){ return accInv.find(a=>a.id===id); }
 function gearById(id){ return gearInv.find(g=>g.id===id); }
 function accPctFor(cid){ let p=0; (accEquip[cid]||[]).forEach(id=>{ const a=id!=null?accById(id):null; if(a)p+=RARITY[a.rarity].pct; }); return p; }   // 装飾品メイン=全コア+%(2枠)
@@ -1141,13 +1147,13 @@ function buildLoadout(cid){ return ['jab'].concat(GEAR_SLOTS.map(s=>slotSkill(ci
 function rollRarity(){ const rareB=accMetaSum('accRare'); const ks=Object.keys(RARITY);
   const w={}; ks.forEach(k=>{ w[k]=RARITY[k].w * (k==='C'?1:(1+rareB/100)); });   // レア率%でC以外(=良レア)に寄せる。試作はC/Rのみ重みあり
   const tot=ks.reduce((s,k)=>s+w[k],0); let x=Math.random()*tot; for(const k of ks){ x-=w[k]; if(x<0)return k; } return 'C'; }
-function dropAccessory(){ const rarity=rollRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base, bonuses:rollBonuses(rarity) }; if(rIdx(rarity)>=rIdx('SSR'))a.locked=true; accInv.push(a); saveAcc(); return a; }   // ★高レア(SSR+)は自動ロック=誤売却防止
+function dropAccessory(){ const rarity=rollRarity(); const base=ACC_BASE[Math.floor(Math.random()*ACC_BASE.length)]; const a={ id:_accSeq++, rarity, base, bonuses:rollBonuses(rarity) }; if(rIdx(rarity)>=rIdx('SSR'))a.locked=true; newIds.add(a.id); accInv.push(a); saveAcc(); return a; }   // ★高レア(SSR+)は自動ロック／NEW(新着)に登録
 function dropGear(){ const slot=GEAR_SLOTS[Math.floor(Math.random()*GEAR_SLOTS.length)]; const rarity=rollRarity();   // ★役割ロックなし=スロット別共通プール
   const okPool=GEAR_POOL[slot].filter(sid=>rangeIncludes(SKILL_RANGE[sid],rarity));   // ★⑤ rangeに合うスキルだけ(そのレア度に出るスキル)
   const pool=okPool.length?okPool:GEAR_POOL[slot]; const skillId=pool[Math.floor(Math.random()*pool.length)];
   const g={ id:_accSeq++, kind:'gear', slot, skillId, equip:SKILL_EQUIP[skillId], rarity, main:rollMain(skillId,rarity), bonuses:rollBonuses(rarity) };   // ★④ main付与
   if(rIdx(rarity)>=rIdx('SSR'))g.locked=true;   // ★高レア(SSR+)は自動ロック=誤売却防止
-  gearInv.push(g); saveAcc(); return g; }
+  newIds.add(g.id); gearInv.push(g); saveAcc(); return g; }   // ★NEW(新着)に登録
 // ★初期装備=各キャラ コモンの武器1本だけ(裸スタート)。何を初期にするかは設計判断。
 const STARTER = { ares:'honoo', sera:'thunder', gai:'tateuchi', mina:'holy' };
 function grantStarters(){ Object.keys(STARTER).forEach(cid=>{ const skillId=STARTER[cid]; const g={ id:_accSeq++, kind:'gear', slot:'武器', skillId, equip:SKILL_EQUIP[skillId], rarity:'C', main:rollMain(skillId,'C'), bonuses:[] }; gearInv.push(g); gearEquip[cid]['武器']=g.id; }); saveAcc(); }
@@ -1272,6 +1278,20 @@ function fmtGold(n){ return fmt(n||0); }
 function addGold(n){ progress.gold=(progress.gold||0)+n; saveProgress(); }
 function sellKey(kind,id){ return (kind==='gear'?'g':'a')+id; }
 function rIdx(r){ return RARITY_ORDER.indexOf(r); }
+let invSort='rarity';      // 並び替え: 'rarity'(レア度順)|'power'(強い順)|'new'(新しい順)
+let invShown=0;            // ページング: 今表示している件数(性能=数百個でも一度に全部描かない)
+const INV_PAGE=60;
+let newIds=new Set();      // ★NEW(新着)バッジ: ドロップで追加・見たら外す(saveAcc/loadAccで永続)
+// ── 総合力スコア(レア度/stat差を正規化した単一値)=並び替え・つけ得判定・将来のおまかせ装備の土台 ──
+function itemPower(it){ if(!it)return 0;
+  const isGear=(it.skillId!==undefined);
+  let p = isGear ? (it.main ? it.main.v/((MAIN_VAL[it.main.stat]&&MAIN_VAL[it.main.stat].R)||it.main.v||1) : 0)
+                 : (RARITY[it.rarity].pct/(RARITY.R.pct||2));   // R基準=1.0でstat種を超えて比較可
+  accBonuses(it).forEach(b=>{ const ref=(BONUS_VAL[b.t]&&BONUS_VAL[b.t].R)||b.v||1; p+=(b.v/ref)*0.3; });   // ボーナスは控えめ加点
+  return p; }
+function slotMinEquippedPower(slot){ let mn=Infinity; ALLY_DEFS.forEach(d=>{ const gid=gearEquip[d.id][slot]; const g=gid!=null?gearById(gid):null; mn=Math.min(mn, g?itemPower(g):0); }); return mn===Infinity?0:mn; }   // 空き枠=0
+function accMinEquippedPower(){ let mn=Infinity; ALLY_DEFS.forEach(d=>{ (accEquip[d.id]||[null,null]).forEach(id=>{ const a=id!=null?accById(id):null; mn=Math.min(mn, a?itemPower(a):0); }); }); return mn===Infinity?0:mn; }
+function isUpgrade(kind,it){ const mn=kind==='gear'?slotMinEquippedPower(it.slot):accMinEquippedPower(); return itemPower(it)>mn+1e-9; }   // ★同スロットで誰か(最弱)の強化になる=つけ得。役割ロックなしなので「全キャラ最弱」基準で一意判定
 function allyById(cid){ return ALLY_DEFS.find(a=>a.id===cid); }
 function leadCid(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); return ALLY_DEFS[li].id; }
 function gearEquippedBy(id){ for(const c of Object.keys(gearEquip)) for(const s of GEAR_SLOTS) if(gearEquip[c][s]===id) return c; return null; }
@@ -1280,20 +1300,32 @@ function previewStats(cid){ const d=allyById(cid), accm=1+accPctFor(cid)/100, bf
   const fin=(key,base)=>Math.round((base+accFlat(cid,key))*accm*(bf[key]||1));
   return { str:fin('str',d.str), int:fin('int',d.int), def:fin('def',d.def), hp:fin('hp',d.hpMax), mp:fin('mp',d.mpMax),
     spd:Math.min(2.2,(d.spd+gearSpd(cid))*(bf.spd||1)), resist:accResistFor(cid) }; }
-function showInventory(){ gameState='inventory'; invFilter={tab:'gear',slot:'all',rarity:'all'}; invMode='view'; invSellSel.clear(); renderInventory(); showScreen('inventory'); setTopbar(''); }
-function invSetTab(k){ invFilter={tab:k,slot:'all',rarity:'all'}; if(k==='item')invMode='view'; invSellSel.clear(); renderInventory(); }   // 売却の選択は絞り込みを変えたらリセット(見えてる物だけ売る=取り違え防止)
-function invSetSlot(k){ invFilter.slot=k; invSellSel.clear(); renderInventory(); }
-function invSetRarity(k){ invFilter.rarity=k; invSellSel.clear(); renderInventory(); }   // ★レア度で絞る→ぜんぶ選ぶ→売る=一括レア度売却の導線
-function invSetMode(m){ invMode=m; invSellSel.clear(); renderInventory(); }
+function showInventory(){ gameState='inventory'; invFilter={tab:'gear',slot:'all',rarity:'all',newOnly:false}; invMode='view'; invSort='rarity'; invShown=INV_PAGE; invSellSel.clear(); renderInventory(); showScreen('inventory'); setTopbar(''); }
+function invSetTab(k){ invFilter={tab:k,slot:'all',rarity:'all',newOnly:false}; if(k==='item')invMode='view'; invShown=INV_PAGE; invSellSel.clear(); renderInventory(); }   // 売却の選択は絞り込みを変えたらリセット(見えてる物だけ売る=取り違え防止)
+function invSetSlot(k){ invFilter.slot=k; invShown=INV_PAGE; invSellSel.clear(); renderInventory(); }
+function invSetRarity(k){ invFilter.rarity=k; invShown=INV_PAGE; invSellSel.clear(); renderInventory(); }   // ★レア度で絞る→ぜんぶ選ぶ→売る=一括レア度売却の導線
+function invSetSort(s){ invSort=s; invShown=INV_PAGE; renderInventory(); }
+function invToggleNew(){ invFilter.newOnly=!invFilter.newOnly; invShown=INV_PAGE; invSellSel.clear(); renderInventory(); }
+function invMore(){ invShown=(invShown||INV_PAGE)+INV_PAGE; renderInventory(); }   // ★ページング=数百個でも一度に全部描かない(性能)
+function invSetMode(m){ invMode=m; invShown=INV_PAGE; invSellSel.clear(); renderInventory(); }
 function invToggleSell(kind,id){ const k=sellKey(kind,id); if(invSellSel.has(k))invSellSel.delete(k); else invSellSel.add(k); renderInventory(); }
 function invToggleLock(kind,id){ const it=kind==='gear'?gearById(id):accById(id); if(!it)return; it.locked=!it.locked;   // ★お気に入りロック=一括売却の盾
   if(it.locked) invSellSel.delete(sellKey(kind,id));   // ロックしたら売却選択から外す
   saveAcc(); renderInventory(); }
-function invSellableList(){   // いま見えている、装備中でない・ロックしていない そうび/装飾品(どうぐは売却対象外)
+function invFilteredRaw(){   // 現在の絞り込み(タブ/スロット/レア度/新着)を適用した生リスト=台帳と売却で共有(ズレ防止)
   const kind=invFilter.tab==='acc'?'acc':'gear';
   let L=(kind==='acc'?accInv:gearInv).slice();
   if(kind==='gear'&&invFilter.slot!=='all') L=L.filter(x=>x.slot===invFilter.slot);
   if(invFilter.rarity!=='all') L=L.filter(x=>x.rarity===invFilter.rarity);
+  if(invFilter.newOnly) L=L.filter(x=>newIds.has(x.id));
+  return {kind, L}; }
+function invSortList(L,kind){
+  if(invSort==='power') return L.slice().sort((a,b)=>itemPower(b)-itemPower(a) || rIdx(b.rarity)-rIdx(a.rarity) || b.id-a.id);   // 強い順
+  if(invSort==='new')   return L.slice().sort((a,b)=>b.id-a.id);                                                                 // 新しい順(id降順)
+  return L.slice().sort((a,b)=>rIdx(b.rarity)-rIdx(a.rarity) || (kind==='gear'?GEAR_SLOTS.indexOf(a.slot)-GEAR_SLOTS.indexOf(b.slot):0) || a.id-b.id);   // レア度順(既定)
+}
+function invSellableList(){   // いま見えている(絞り込み後)、装備中でない・ロックしていない そうび/装飾品
+  if(invFilter.tab==='item')return []; const {kind,L}=invFilteredRaw();
   return L.filter(x=>!x.locked && (kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id))===null).map(x=>({kind,it:x})); }
 function invSelectAllVisible(){ invSellableList().forEach(o=>invSellSel.add(sellKey(o.kind,o.it.id))); renderInventory(); }
 function invClearSell(){ invSellSel.clear(); renderInventory(); }
@@ -1331,12 +1363,15 @@ function renderInventory(){ const g=document.getElementById('invBody'); if(!g)re
   if(invMode==='sell'&&invFilter.tab!=='item'){ const t=invSellTotal();
     sellBar=`<div class="sellbar"><button class="chip" onclick="invSelectAllVisible()">ぜんぶ選ぶ</button><button class="chip" onclick="invClearSell()">えらび直す</button>`
       +`<button class="sell-go" ${t.count?'':'disabled'} onclick="invSellSelected()">💰 ${t.count}個を うる（+${fmtGold(t.gold)}G）</button></div>`; }
+  let sortRow='';
+  if(invFilter.tab!=='item'){ const so=(k,l)=>`<button class="chip" aria-pressed="${invSort===k}" onclick="invSetSort('${k}')">${l}</button>`;
+    sortRow=`<div class="chips sub"><span class="sortlbl">ならべ替え</span>${so('rarity','レア度')}${so('power','強い順')}${so('new','新しい順')}<button class="chip newchip" aria-pressed="${invFilter.newOnly}" onclick="invToggleNew()">✨新着</button></div>`; }
   const sellTgl=invFilter.tab!=='item'?`<button class="chip selltgl${invMode==='sell'?' on':''}" onclick="invSetMode('${invMode==='sell'?'view':'sell'}')">${invMode==='sell'?'✕ やめる':'💰 売る'}</button>`:'';
   const undoBar=lastSale?`<div class="undo-bar">↩️ さっき <b>${lastSale.items.length}個</b> 売った（+${fmtGold(lastSale.gold)}G）<button class="chip" onclick="invUndoSale()">もどす</button></div>`:'';
   g.innerHTML=`<div class="inv-head"><h2>🎒 もちもの台帳</h2><div class="inv-head-r"><span class="gold">💰 <b>${fmtGold(progress.gold)}</b></span>${sellTgl}</div></div>
     ${undoBar}
     ${invMode==='sell'?`<div class="sell-hint">うりたい そうびを えらんでね。<b>レア度でしぼって「ぜんぶ選ぶ」</b>で 一括も できるよ。<b>装備中・⭐ロックは うれません</b>。</div>`:''}
-    ${tabs}${sub}${rar}
+    ${tabs}${sub}${rar}${sortRow}
     <div class="inv-grid">${invCardsHtml()}</div>
     ${sellBar}
     <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showEquip()">🔮 そうびを組む →</button></div>`; }
@@ -1344,19 +1379,19 @@ function invCardsHtml(){
   if(invFilter.tab==='item'){ const cards=ITEM_DEFS.filter(it=>(items[it.id]||0)>0).map(it=>
       `<button class="gcard" style="--rc:var(--line);" onclick="openDetail('item','${it.id}')"><div class="thumb" style="background:#0c1326;">${it.emoji}</div><div class="rr" style="color:var(--sub);">×${items[it.id]}</div><div class="gn">${it.name}</div></button>`).join('');
     return cards||`<div class="inv-empty">どうぐが ありません</div>`; }
-  const kind=invFilter.tab==='acc'?'acc':'gear';
-  let L=(kind==='acc'?accInv:gearInv).slice();
-  if(kind==='gear'&&invFilter.slot!=='all') L=L.filter(x=>x.slot===invFilter.slot);
-  if(invFilter.rarity!=='all') L=L.filter(x=>x.rarity===invFilter.rarity);
-  L.sort((a,b)=>rIdx(b.rarity)-rIdx(a.rarity) || (kind==='gear'?GEAR_SLOTS.indexOf(a.slot)-GEAR_SLOTS.indexOf(b.slot):0) || a.id-b.id);
-  if(!L.length){ const filtered=(invFilter.rarity!=='all')||(kind==='gear'&&invFilter.slot!=='all');
+  const {kind,L:raw}=invFilteredRaw();
+  if(!raw.length){ const filtered=(invFilter.rarity!=='all')||(kind==='gear'&&invFilter.slot!=='all')||invFilter.newOnly;
     return `<div class="inv-empty">${filtered?'あてはまる アイテムが ないよ':'まだ ないよ。冒険で あつめよう！'}</div>`; }
+  const L=invSortList(raw,kind), total=L.length, shown=Math.min(invShown||INV_PAGE, total);
   const sell=(invMode==='sell');
-  return L.map(x=>{ const rc=RARITY[x.rarity].col;
+  const slotMin={}; if(kind==='gear')GEAR_SLOTS.forEach(s=>slotMin[s]=slotMinEquippedPower(s)); const accMin=kind==='acc'?accMinEquippedPower():0;   // ★つけ得判定を1回だけ計算(性能)
+  let html=L.slice(0,shown).map(x=>{ const rc=RARITY[x.rarity].col;
     const ico=kind==='gear'?(SKILLS[x.skillId]?SKILLS[x.skillId].emoji:'❔'):'◆';
     const nm=kind==='gear'?equipName(x):x.base;
     const gm=kind==='gear'?mainText(x):('全コア+'+RARITY[x.rarity].pct+'%');
     const pip=kind==='gear'?`<span class="slotpip">${SLOT_PIP[x.slot]||''}</span>`:'';
+    const newDot=newIds.has(x.id)?`<span class="newdot" title="あたらしい"></span>`:'';
+    const up=(itemPower(x)>(kind==='gear'?slotMin[x.slot]:accMin)+1e-9)?`<span class="upbadge" title="だれかの そうびより つよい＝つけ得">✨</span>`:'';   // ★つけ得=全キャラ同スロット最弱より強い
     const wc=kind==='gear'?gearEquippedBy(x.id):accEquippedBy(x.id), al=wc?allyById(wc):null;
     const lk=!!x.locked;   // ★お気に入りロック
     const star=`<span class="lockbtn${lk?' on':''}" onclick="event.stopPropagation();invToggleLock('${kind}',${x.id})" title="${lk?'ロック中(タップで解除)':'ロックする'}">${lk?'⭐':'☆'}</span>`;
@@ -1364,17 +1399,20 @@ function invCardsHtml(){
       if(al||lk){   // 装備中 or ロック中=売れない(保護)
         const onclick=al?`invToast('${al.name}が そうび中。はずすと うれるよ')`:`invToast('ロック中。⭐を タップで うれるよ')`;
         const badge=al?`<span class="eq lock" title="装備中">🔒</span>`:star;   // ロックは⭐(タップで解除)を出す
-        return `<button class="gcard locked" style="--rc:${rc};" onclick="${onclick}">${badge}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
+        return `<button class="gcard locked" style="--rc:${rc};" onclick="${onclick}">${newDot}${badge}${pip}${up}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
       const seld=invSellSel.has(sellKey(kind,x.id));
-      return `<button class="gcard${seld?' sel':''}" style="--rc:${rc};" onclick="invToggleSell('${kind}',${x.id})">${seld?`<span class="sellchk">✓</span>`:star}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
+      return `<button class="gcard${seld?' sel':''}" style="--rc:${rc};" onclick="invToggleSell('${kind}',${x.id})">${newDot}${seld?`<span class="sellchk">✓</span>`:star}${pip}${up}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm sellg">💰${fmtGold(sellValue(x))}G</div></button>`; }
     // view mode: 右上=装備中なら着用者emoji / それ以外は⭐ロックトグル
     const tr=al?`<span class="eq" title="${al.name}">${al.emoji}</span>`:star;
-    return `<button class="gcard${al?' worn':''}${lk&&!al?' fav':''}" style="--rc:${rc};" onclick="openDetail('${kind}',${x.id})">${tr}${pip}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm">${gm}</div></button>`;
+    return `<button class="gcard${al?' worn':''}${lk&&!al?' fav':''}" style="--rc:${rc};" onclick="openDetail('${kind}',${x.id})">${newDot}${tr}${pip}${up}<div class="thumb">${ico}</div><div class="rr">${RARITY[x.rarity].jp}</div><div class="gn">${nm}</div><div class="gm">${gm}</div></button>`;
   }).join('');
+  if(shown<total) html+=`<button class="inv-more" onclick="invMore()">もっと見る（のこり ${total-shown}）</button>`;
+  return html;
 }
 /* ── 装備詳細ドロワー(③・比較つき)＝インベントリ/そうび 両画面で共用 ── */
 let dwKind=null, dwId=null, dwWhom=null, dwAccSlot=null;
 function openDetail(kind,id,whom,accSlot){ dwKind=kind; dwId=id; dwAccSlot=(accSlot==null?null:accSlot);
+  if(kind!=='item' && newIds.has(id)){ newIds.delete(id); saveAcc(); }   // ★詳細を開いたら既読化(NEWを外す)
   if(kind==='item'){ dwWhom=null; }
   else { const wc=kind==='gear'?gearEquippedBy(id):accEquippedBy(id); dwWhom=whom||wc||leadCid(); }   // 着用中ならその人/指定/看板キャラ
   renderDrawer(); document.getElementById('dwScrim').classList.add('open'); document.getElementById('detailDrawer').classList.add('open'); }
@@ -1433,6 +1471,7 @@ function equipOnto(cid,kind,id,accSlot){
     gearEquip[cid][slot]=id; }
   else { Object.keys(accEquip).forEach(c=>accEquip[c].forEach((v,i)=>{ if(v===id)accEquip[c][i]=null; }));
     let si=accSlot; if(si==null){ const arr=accEquip[cid]||[null,null]; si=arr.indexOf(null); if(si<0)si=0; } accEquip[cid][si]=id; }
+  newIds.delete(id);   // ★装備したら既読化
   saveAcc(); }
 function dwEquip(){ if(dwKind==='item')return; equipOnto(dwWhom,dwKind,dwId,dwAccSlot); dwAccSlot=null; afterDrawerChange(); }
 function dwUnequip(){ const cid=dwWhom;
