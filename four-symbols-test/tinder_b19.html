@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>ボス選別 — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;overflow:hidden;height:100dvh}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.count{font-size:13px;color:#9aa0ad}
+.stage{position:relative;height:calc(100dvh - 150px);display:flex;align-items:center;justify-content:center;padding:10px}
+.card{position:absolute;width:min(92vw,440px);max-height:100%;background:#1d1f26;border:1px solid #2c2f3a;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);touch-action:none}
+.imgbox{aspect-ratio:1/1;
+  background-image:linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;background-color:#e9e9e9}
+.imgbox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.info{padding:12px 16px}
+.nm{font-size:22px;font-weight:800}
+.nm .tier{font-size:14px;font-weight:700;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:3px}
+.t序盤{background:#2bd47a;color:#06210f}.t中盤{background:#4aa3ff;color:#04203f}.t終盤{background:#ff9a3c;color:#311600}.tラスボス級{background:#ff5a7a;color:#33000d}
+.el{font-size:12px;color:#9aa0ad;margin-top:2px}
+.fl{font-size:14px;color:#cfd3db;margin-top:8px;line-height:1.55}
+.stamp{position:absolute;top:18px;font-size:34px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-15deg)}
+.yes{left:18px;color:#2bd47a;border-color:#2bd47a}.no{right:18px;color:#ff5a7a;border-color:#ff5a7a}
+.bar{position:fixed;bottom:0;left:0;right:0;height:90px;display:flex;align-items:center;justify-content:center;gap:22px;background:#13141a;border-top:1px solid #2c2f3a}
+.fab{width:62px;height:62px;border-radius:50%;border:none;font-size:26px;cursor:pointer;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.fab.no{background:#2a1d23;color:#ff5a7a;border:2px solid #ff5a7a}.fab.yes{background:#16271c;color:#2bd47a;border:2px solid #2bd47a}
+.fab.undo{width:48px;height:48px;font-size:18px;background:#23242c;color:#cfd3db;border:1px solid #3a3f4c}
+.done{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.done h2{color:#ffe27a;margin:0 0 8px}
+.btn{margin-top:14px;background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer}
+#out{margin-top:12px;width:min(92vw,520px);height:160px;font-family:ui-monospace,monospace;font-size:11px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px}
+.hint{font-size:11px;color:#6b7280;margin-top:6px}
+.toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><div><b>ボス選別</b> <span style="font-size:12px;color:#9aa0ad">← 無し / 有り → ・ドラッグもOK</span></div>
+  <div class="count"><span id="done_n">0</span>/<span id="total_n">0</span> ・有り<span id="yes_n">0</span></div></header>
+<div class="stage" id="stage">
+  <div class="done" id="doneScreen">
+    <h2>選別おわり！</h2>
+    <div id="summary" style="color:#cfd3db"></div>
+    <button class="btn" id="copyBtn">結果をコピー</button>
+    <div class="hint">コピーしたテキストをチャットに貼ってください（採用の系統を学習して次の50枚へ）。</div>
+    <textarea id="out" readonly></textarea>
+    <button class="btn" id="restartBtn" style="background:#3a3f4c;color:#e7e7ea">最初からやり直す</button>
+  </div>
+</div>
+<div class="bar">
+  <button class="fab no" id="bNo">✗</button>
+  <button class="fab undo" id="bUndo">↶</button>
+  <button class="fab yes" id="bYes">♥</button>
+  <button class="btn" id="bCopy" style="position:fixed;right:12px;bottom:104px;padding:8px 12px;font-size:12px">途中保存コピー</button>
+</div>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const BOSSES=[{"id": "gear-shell-beetle-b19", "name_ja": "ハグルマガニムシ", "tier": "序盤", "element": "machine", "flavor_ja": "歯車がかみ合うたび、カチカチと時を刻む小さな機械獣。回せば回すほど元気になる。", "img": "gacha_b19/gear-shell-beetle-b19.png"}, {"id": "magnet-horn-boar-b19", "name_ja": "ジリョクイノブタ", "tier": "序盤", "element": "magnet", "flavor_ja": "鼻先のN極S極でくぎや砂鉄を吸いつける、どっしり重たい突進屋。", "img": "gacha_b19/magnet-horn-boar-b19.png"}, {"id": "circuit-toad-cell-b19", "name_ja": "カイロガエル", "tier": "序盤", "element": "electricity", "flavor_ja": "おなかの電池がつながると、背中の豆電球がぽっと光る。回路がつながると元気になる。", "img": "gacha_b19/circuit-toad-cell-b19.png"}, {"id": "piston-ram-golem-b19", "name_ja": "アッシュクヒツジ", "tier": "中盤", "element": "machine", "flavor_ja": "胸の圧力計が振り切れると、頭のバネを圧縮して鉄の角で突っ込んでくる。", "img": "gacha_b19/piston-ram-golem-b19.png"}, {"id": "optic-prism-lynx-b19", "name_ja": "コウガクヤマネコ", "tier": "中盤", "element": "light", "flavor_ja": "鼻先のプリズムで光を七色に分け、レンズの眼が獲物をぴたりと捉える。", "img": "gacha_b19/optic-prism-lynx-b19.png"}, {"id": "sonic-resonance-frog-b19", "name_ja": "オンパヒキガエル", "tier": "中盤", "element": "sound", "flavor_ja": "のどの金属膜をふるわせ、空気を震わす衝撃のうなり声で敵をしびれさせる。", "img": "gacha_b19/sonic-resonance-frog-b19.png"}, {"id": "gravity-anchor-tortoise-b19", "name_ja": "ジュウリョクガメ", "tier": "終盤", "element": "gravity", "flavor_ja": "甲羅の重力核が周囲をたわませ、近づくものを地面に押しつける鉄壁の主。", "img": "gacha_b19/gravity-anchor-tortoise-b19.png"}, {"id": "alloy-forge-rhino-b19", "name_ja": "ゴウキンサイ", "tier": "終盤", "element": "fire", "flavor_ja": "体内の溶鉱炉で金属を煮立たせ、赤熱した合金の角で鉄をも溶かす巨獣。", "img": "gacha_b19/alloy-forge-rhino-b19.png"}, {"id": "electromagnet-titan-bull-b19", "name_ja": "デンジテイオウ", "tier": "ラスボス級", "element": "magnet", "flavor_ja": "肩の巨大コイルに電を流すと磁力場が荒れ狂い、鉄という鉄を引き裂いて従える電磁の帝。", "img": "gacha_b19/electromagnet-titan-bull-b19.png"}, {"id": "singularity-core-leviathan-b19", "name_ja": "トクイテンノヌシ", "tier": "ラスボス級", "element": "gravity", "flavor_ja": "胸に小さな特異点を宿し、空間ごとねじ曲げて全てを呑む、機械獣の終焉たる主。", "img": "gacha_b19/singularity-core-leviathan-b19.png"}, {"id": "ember-hatchling-drake-b19", "name_ja": "ひだねドレイク", "tier": "序盤", "element": "炎（燃焼）", "flavor_ja": "うろこのすき間から燃えるオレンジ色がもれる、まだ小さなドレイク。ものが燃えるには酸素が必要だと教えてくれる序盤の相棒。", "img": "gacha_b19/ember-hatchling-drake-b19.png"}, {"id": "bubble-pond-wyrmling-b19", "name_ja": "みずたまワイバーン", "tier": "序盤", "element": "水（状態変化）", "flavor_ja": "全身が水でぬれてつやつや光る、まるい幼いワイバーン。水が氷・水・水じょう気に姿を変えることを思い出させる序盤モンスター。", "img": "gacha_b19/bubble-pond-wyrmling-b19.png"}, {"id": "moss-back-leafdrake-b19", "name_ja": "こけしばドレイク", "tier": "序盤", "element": "植物（光合成）", "flavor_ja": "背中にコケと若葉が生えた、のんびり屋のドレイク。植物が光を浴びて栄養を作る光合成のイメージを背負った序盤の草食竜。", "img": "gacha_b19/moss-back-leafdrake-b19.png"}, {"id": "static-coil-wyvern-b19", "name_ja": "スパークワイバーン", "tier": "中盤", "element": "電気（静電気・電流）", "flavor_ja": "体の表面を青白い電気が走り回るワイバーン。静電気と電流のイメージで、近づくとバチバチと放電する中盤の好敵手。", "img": "gacha_b19/static-coil-wyvern-b19.png"}, {"id": "crystal-lattice-drake-b19", "name_ja": "けっしょうドレイク", "tier": "中盤", "element": "鉱物・結晶（地学）", "flavor_ja": "全身に鉱物の結晶が育つ、ずっしり重い装甲ドレイク。規則正しく並ぶ結晶の形が体になった、地学を象徴する中盤の強敵。", "img": "gacha_b19/crystal-lattice-drake-b19.png"}, {"id": "vapor-cloud-hydra-b19", "name_ja": "もやがすみヒュドラ", "tier": "中盤", "element": "気体・水蒸気（蒸発）", "flavor_ja": "三つの首から立ちのぼる湯気をまとう、ずんぐりしたヒュドラ。水が蒸発して気体になるイメージを背負った中盤の霧の三つ首。", "img": "gacha_b19/vapor-cloud-hydra-b19.png"}, {"id": "magma-core-bastion-dragon-b19", "name_ja": "マグマよろいリュウ", "tier": "終盤", "element": "火山・熱（地学／燃焼）", "flavor_ja": "黒い岩の装甲のすき間からマグマが赤く脈打つ、重量級のドラゴン。火山と熱エネルギーを体現する終盤の壁となる竜。", "img": "gacha_b19/magma-core-bastion-dragon-b19.png"}, {"id": "deep-pressure-leviadrake-b19", "name_ja": "しんかいレヴィドレイク", "tier": "終盤", "element": "圧力・深海（物理）", "flavor_ja": "深海の高い圧力に耐える分厚い装甲をまとった海竜。体の中から青く光り、水圧という物理を背負う終盤の海棲ドレイク。", "img": "gacha_b19/deep-pressure-leviadrake-b19.png"}, {"id": "fusion-star-sovereign-dragon-b19", "name_ja": "こうせいオウリュウ", "tier": "ラスボス級", "element": "恒星・核融合（地学／エネルギー）", "flavor_ja": "胸の中に小さな太陽を宿し、表面を恒星の炎が這う古の王竜。星が核融合で輝くしくみを体現する、ラスボス級の威容を放つドラゴン。", "img": "gacha_b19/fusion-star-sovereign-dragon-b19.png"}, {"id": "entropy-void-elder-wyrm-b19", "name_ja": "エントロピィの終竜", "tier": "ラスボス級", "element": "エネルギー・崩壊（物理の終局）", "flavor_ja": "体そのものが崩れ、すべてが乱れへ向かうエントロピーを宿した終末の古竜。秩序が壊れていく物理の終局を象徴する、最後の敵にふさわしいラスボス級ドラゴン。", "img": "gacha_b19/entropy-void-elder-wyrm-b19.png"}, {"id": "tidepool-snapclaw-scrab-b19", "name_ja": "シオダマリのハサミガニ", "tier": "序盤", "element": "水", "flavor_ja": "潮だまりの石にまぎれて獲物を待つ。ハサミを鳴らして威嚇する小さな門番。", "img": "gacha_b19/tidepool-snapclaw-scrab-b19.png"}, {"id": "rivermud-pebble-hermit-b19", "name_ja": "カワゴロモのヤドカリ", "tier": "序盤", "element": "土", "flavor_ja": "川底の小石を背負って歩く。重い宿が動かぬ盾になる、のんびり屋。", "img": "gacha_b19/rivermud-pebble-hermit-b19.png"}, {"id": "saltflat-glass-prawn-b19", "name_ja": "シオハマのガラスエビ", "tier": "序盤", "element": "風", "flavor_ja": "塩の原に湧くすきとおったエビ。光を通す体に塩がふいて白く光る。", "img": "gacha_b19/saltflat-glass-prawn-b19.png"}, {"id": "magma-vent-volcano-crab-b19", "name_ja": "ネツコウのマグマガニ", "tier": "中盤", "element": "火", "flavor_ja": "海底火山の噴気孔に巣くう。ひび割れた甲羅から熱気が立ちのぼる。", "img": "gacha_b19/magma-vent-volcano-crab-b19.png"}, {"id": "thunderclap-mantis-striker-b19", "name_ja": "イカヅチのシャコムシャ", "tier": "中盤", "element": "雷", "flavor_ja": "一撃で水をも砕く拳を持つ。鎧にまとう稲妻が打撃に乗る武闘家。", "img": "gacha_b19/thunderclap-mantis-striker-b19.png"}, {"id": "coral-reef-bastion-crab-b19", "name_ja": "サンゴトリデのモリガニ", "tier": "中盤", "element": "水", "flavor_ja": "甲羅に珊瑚礁を育てる老いた巨蟹。小魚たちが住み着く動く岩礁。", "img": "gacha_b19/coral-reef-bastion-crab-b19.png"}, {"id": "abyss-pressure-titan-crab-b19", "name_ja": "シンカイのアットウガニ", "tier": "終盤", "element": "闇", "flavor_ja": "深海の水圧に鍛えられた漆黒の巨蟹。一挟みであらゆる装甲を潰す。", "img": "gacha_b19/abyss-pressure-titan-crab-b19.png"}, {"id": "crystal-prism-shatter-shrimp-b19", "name_ja": "ホウカイのスイショウエビ", "tier": "終盤", "element": "光", "flavor_ja": "体そのものが結晶化した甲殻の覇者。砕けた光を刃に変えて斬る。", "img": "gacha_b19/crystal-prism-shatter-shrimp-b19.png"}, {"id": "primordial-trilobite-warlord-b19", "name_ja": "ゲンショのオオヨロイムシ", "tier": "ラスボス級", "element": "土", "flavor_ja": "太古の海から目覚めた甲殻の王。大地そのものを鎧とする原初の覇者。", "img": "gacha_b19/primordial-trilobite-warlord-b19.png"}, {"id": "stellar-nebula-cosmic-crab-b19", "name_ja": "セイウンのソラガニ", "tier": "ラスボス級", "element": "雷", "flavor_ja": "夜空をその身に宿した天蟹。星屑をまとう鋏が宇宙を裂く、終焉の支配者。", "img": "gacha_b19/stellar-nebula-cosmic-crab-b19.png"}, {"id": "circuit-ladybug-grub-b19", "name_ja": "キバンテントウ", "tier": "序盤", "element": "電気", "flavor_ja": "せなかの模様が電子回路になったテントウムシ。歩くたびに小さな火花がパチパチと鳴る。", "img": "gacha_b19/circuit-ladybug-grub-b19.png"}, {"id": "gear-ant-worker-b19", "name_ja": "ハグルマアリ", "tier": "序盤", "element": "無", "flavor_ja": "体の節がぜんぶ歯車でできた働きアリ。カチカチと噛み合いながら荷物を運ぶ。", "img": "gacha_b19/gear-ant-worker-b19.png"}, {"id": "crystal-pillbug-b19", "name_ja": "ケッショウダンゴ", "tier": "序盤", "element": "地", "flavor_ja": "背中から透明な結晶が生えたダンゴムシ。丸くなると鉱石のかたまりにしか見えない。", "img": "gacha_b19/crystal-pillbug-b19.png"}, {"id": "voltaic-stag-beetle-b19", "name_ja": "ライデンクワガタ", "tier": "中盤", "element": "電気", "flavor_ja": "アゴが二本の電極になったクワガタ。胸の電池がうなり、アゴの先で青い稲妻がはじける。", "img": "gacha_b19/voltaic-stag-beetle-b19.png"}, {"id": "prism-dragonfly-knight-b19", "name_ja": "プリズムヤンマ", "tier": "中盤", "element": "光", "flavor_ja": "羽がプリズムのカットガラスになったヤンマ。日の光を浴びると体のふちが虹色にきらめく。", "img": "gacha_b19/prism-dragonfly-knight-b19.png"}, {"id": "magnet-mantis-b19", "name_ja": "ジリョクカマキリ", "tier": "中盤", "element": "無", "flavor_ja": "前あしの鎌が二つのU字磁石になったカマキリ。砂鉄がまわりにびっしり張りついている。", "img": "gacha_b19/magnet-mantis-b19.png"}, {"id": "reactor-hornet-queen-b19", "name_ja": "ロカクスズメバチ", "tier": "終盤", "element": "炎", "flavor_ja": "腹が小さな原子炉になった巨大スズメバチの女王。針の先から燃える熱風を噴き出す。", "img": "gacha_b19/reactor-hornet-queen-b19.png"}, {"id": "fossil-cicada-revenant-b19", "name_ja": "コハクゼミ", "tier": "終盤", "element": "地", "flavor_ja": "琥珀に閉じこめられたまま動きだした古代のセミ。体の奥から太古の光がほのかにさす。", "img": "gacha_b19/fossil-cicada-revenant-b19.png"}, {"id": "genome-titan-beetle-b19", "name_ja": "ゲノムカブト", "tier": "ラスボス級", "element": "無", "flavor_ja": "外骨格に光るDNAの二重らせんが走る究極のカブトムシ。角が脈打つたびに塩基が明滅する。", "img": "gacha_b19/genome-titan-beetle-b19.png"}, {"id": "cosmos-scarab-sovereign-b19", "name_ja": "セイウンスカラベ", "tier": "ラスボス級", "element": "光", "flavor_ja": "甲羅の中に星々の渦をたたえた天空のスカラベ。前あしで小さな太陽をかかえて鎮座する。", "img": "gacha_b19/cosmos-scarab-sovereign-b19.png"}, {"id": "magnetite-shell-tortoise-b19", "name_ja": "ジテツガメ", "tier": "序盤", "element": "magnetism", "flavor_ja": "甲羅が磁鉄鉱でできた小ガメ。砂鉄を鎧のようにまとっている。", "img": "gacha_b19/magnetite-shell-tortoise-b19.png"}, {"id": "trilobite-trooper-b19", "name_ja": "サンヨウへいたい", "tier": "序盤", "element": "earth", "flavor_ja": "石の鎧に身を包んだ三葉虫の兵士。地面にぴったり張りつく。", "img": "gacha_b19/trilobite-trooper-b19.png"}, {"id": "boulder-back-armadillo-b19", "name_ja": "イワヨロイモグラ", "tier": "序盤", "element": "earth", "flavor_ja": "背中に花崗岩の帯甲を持つ穴掘り獣。丸まると岩そのもの。", "img": "gacha_b19/boulder-back-armadillo-b19.png"}, {"id": "alloy-plate-rhino-b19", "name_ja": "ガッキンサイ", "tier": "中盤", "element": "metal", "flavor_ja": "合金の装甲をまとった突進サイ。角はタングステン製。", "img": "gacha_b19/alloy-plate-rhino-b19.png"}, {"id": "crystal-hermit-fortress-b19", "name_ja": "ショウヨウサイ", "tier": "中盤", "element": "crystal", "flavor_ja": "結晶の塊を住処にしたヤドカリ要塞。背は紫水晶の砦。", "img": "gacha_b19/crystal-hermit-fortress-b19.png"}, {"id": "pressure-vault-turtle-b19", "name_ja": "アッリョクガメ", "tier": "中盤", "element": "pressure", "flavor_ja": "深海の水圧に耐える鋼鉄船殻のカメ。甲羅はリベット打ちの耐圧殻。", "img": "gacha_b19/pressure-vault-turtle-b19.png"}, {"id": "magnet-claw-loader-crab-b19", "name_ja": "ジリョクガニ", "tier": "終盤", "element": "magnetism", "flavor_ja": "電磁石の巨大ハサミを持つ戦闘ガニ。鉄くずを磁力で鎧にする。", "img": "gacha_b19/magnet-claw-loader-crab-b19.png"}, {"id": "obsidian-bastion-beetle-b19", "name_ja": "コクヨウヨウサイムシ", "tier": "終盤", "element": "volcanic", "flavor_ja": "黒曜石の装甲に覆われた巨大甲虫。鎧の割れ目から溶岩の光が漏れる。", "img": "gacha_b19/obsidian-bastion-beetle-b19.png"}, {"id": "tungsten-leviathan-tortoise-b19", "name_ja": "ジュウキンレイガメ", "tier": "ラスボス級", "element": "metal", "flavor_ja": "甲羅が要塞と化した太古の合金巨亀。一歩ごとに大地が鳴る。", "img": "gacha_b19/tungsten-leviathan-tortoise-b19.png"}, {"id": "geode-king-trilobite-b19", "name_ja": "ショウオウサンヨウ", "tier": "ラスボス級", "element": "crystal", "flavor_ja": "晶洞を背負う太古の三葉虫の王。割れ目から太古の光があふれる。", "img": "gacha_b19/geode-king-trilobite-b19.png"}]; const KEY="rika2_boss_swipe_gacha_b19";
+let st=JSON.parse(localStorage.getItem(KEY)||"null")||{idx:0,dec:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+document.getElementById("total_n").textContent=BOSSES.length;
+let card=null,startX=0,curX=0,dragging=false;
+
+function counts(){const y=Object.values(st.dec).filter(v=>v==="yes").length;
+  document.getElementById("done_n").textContent=Object.keys(st.dec).length;
+  document.getElementById("yes_n").textContent=y;}
+
+function build(idx){
+  const b=BOSSES[idx]; const el=document.createElement("div"); el.className="card";
+  el.innerHTML=`<div class="stamp yes">有り</div><div class="stamp no">無し</div>
+    <div class="imgbox"><img src="${b.img}" alt=""></div>
+    <div class="info"><div class="nm">${b.name_ja}<span class="tier t${b.tier}">${b.tier}</span></div>
+    <div class="el">${b.element}</div><div class="fl">${b.flavor_ja}</div></div>`;
+  el.addEventListener("pointerdown",down); el.addEventListener("pointermove",move);
+  el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+  return el;
+}
+function show(){
+  if(card){card.remove();card=null;}
+  if(st.idx>=BOSSES.length){document.getElementById("doneScreen").style.display="flex";finish();return;}
+  document.getElementById("doneScreen").style.display="none";
+  card=build(st.idx); stage.appendChild(card); counts();
+}
+function down(e){dragging=true;startX=e.clientX;curX=0;card.setPointerCapture(e.pointerId);card.style.transition="none";}
+function move(e){if(!dragging)return;curX=e.clientX-startX;card.style.transform=`translateX(${curX}px) rotate(${curX/18}deg)`;
+  card.querySelector(".yes").style.opacity=Math.max(0,Math.min(1,curX/90));
+  card.querySelector(".no").style.opacity=Math.max(0,Math.min(1,-curX/90));}
+function up(){if(!dragging)return;dragging=false;
+  if(curX>90)decide("yes");else if(curX<-90)decide("no");
+  else{card.style.transition=".2s";card.style.transform="";card.querySelector(".yes").style.opacity=0;card.querySelector(".no").style.opacity=0;}}
+function decide(v){
+  st.dec[BOSSES[st.idx].id]=v; save();
+  const dir=v==="yes"?1:-1;
+  card.style.transition=".3s ease-out";
+  card.style.transform=`translateX(${dir*140}vw) rotate(${dir*25}deg)`;
+  card.style.opacity="0";
+  setTimeout(()=>{st.idx++;save();show();},260);
+}
+function undo(){if(st.idx<=0)return;st.idx--;delete st.dec[BOSSES[st.idx].id];save();show();}
+function summaryText(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes"),no=BOSSES.filter(b=>st.dec[b.id]==="no");
+  let s=`=== ボス選別 結果 (有り${yes.length} / 無し${no.length} / 計${BOSSES.length}) ===\n【有り】\n`;
+  yes.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  s+="【無し】\n"; no.forEach(b=>s+=`- ${b.name_ja} (${b.tier}/${b.element}) [${b.id}]\n`);
+  return s;
+}
+function finish(){
+  const yes=BOSSES.filter(b=>st.dec[b.id]==="yes").length;
+  document.getElementById("summary").textContent=`有り ${yes} 体 / 無し ${BOSSES.length-yes} 体`;
+}
+function copyOut(){const s=summaryText();const o=document.getElementById("out");o.style.display="block";o.value=s;
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);},()=>{});o.select();}
+document.getElementById("bNo").onclick=()=>{if(st.idx<BOSSES.length)decide("no");};
+document.getElementById("bYes").onclick=()=>{if(st.idx<BOSSES.length)decide("yes");};
+document.getElementById("bUndo").onclick=undo;
+document.getElementById("bCopy").onclick=copyOut;
+document.getElementById("copyBtn").onclick=copyOut;
+document.getElementById("restartBtn").onclick=()=>{st={idx:0,dec:{}};save();show();};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"&&st.idx<BOSSES.length)decide("no");
+  else if(e.key==="ArrowRight"&&st.idx<BOSSES.length)decide("yes");else if(e.key==="Backspace")undo();});
+show();
+</script></body></html>
