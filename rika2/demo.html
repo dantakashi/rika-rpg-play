@@ -465,10 +465,27 @@
   .ae-btn.eq-one{font-size:15px;padding:11px;margin:10px 0 0;}
   /* ===== 装備詳細ドロワー: ワイド(680px〜)では中央モーダル化(#app右端への貼付きバグ修正) ===== */
   .dw-card{position:relative;width:100%;}
+  /* 2カラム: 左=現状装備(簡略)／右=候補(フル・情報部はスクロール枠)。狭幅=縦積み */
+  .dw-cols{display:flex;flex-direction:column;gap:11px;}
+  .dw-now{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:9px 11px 11px;}
+  .dw-now-h{font-size:11px;color:var(--sub);font-weight:800;margin-bottom:4px;letter-spacing:.04em;}
+  .dw-now .dw-top{align-items:center;}
+  .dw-now .dw-thumb{width:46px;height:46px;font-size:24px;}
+  .dw-now .dw-nm{font-size:14px;}
+  .dw-now .dw-sec{margin-top:8px;}
+  .dw-now .dw-main{font-size:15px;padding:7px 10px;}
+  .dw-empty{font-size:12px;color:var(--sub);text-align:center;line-height:1.6;padding:16px 4px;}
+  .dw-new{display:flex;flex-direction:column;min-width:0;}
+  .dw-scroll{max-height:42vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:3px;}
   @media (min-width:680px){
     .drawer{position:absolute;inset:0;width:auto;max-width:none;background:transparent;border-left:0;box-shadow:none;transform:none;display:none;align-items:center;justify-content:center;padding:24px;overflow:auto;-webkit-overflow-scrolling:touch;}
     .drawer.open{display:flex;transform:none;}
     .dw-card{width:auto;max-width:min(380px,92%);max-height:90vh;overflow:auto;background:linear-gradient(160deg,#141d33,#0b1124);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px #000c;padding:16px 16px 22px;}
+    .dw-card.dw-wide{max-width:min(680px,94%);display:flex;flex-direction:column;overflow:hidden;}
+    .dw-card.dw-wide .dw-cols{flex-direction:row;align-items:stretch;flex:1;min-height:0;gap:13px;}
+    .dw-card.dw-wide .dw-now{flex:0 0 40%;overflow-y:auto;}
+    .dw-card.dw-wide .dw-new{flex:1;min-height:0;}
+    .dw-card.dw-wide .dw-scroll{max-height:none;flex:1;}
   }
   /* ===== そうび(装備)画面の横長3カラム(キャラ＋6スロット＋もちもの) ===== */
   .eq-wrap{display:flex;flex-direction:column;gap:12px;}
@@ -1548,34 +1565,61 @@ function renderDrawer(){ const d=document.getElementById('detailDrawer'); if(!d)
   if(!it){ closeDetail(); return; }
   const r=RARITY[it.rarity], wc=isGear?gearEquippedBy(it.id):accEquippedBy(it.id), sk=isGear?SKILLS[it.skillId]:null;
   const icon=isGear?(sk?sk.emoji:'❔'):'◆', nm=isGear?equipName(it):it.base, slotLabel=isGear?it.slot:'装飾品';
-  let html=`<button class="dw-x" onclick="closeDetail()">✕</button>
-    <div class="dw-top"><div class="dw-thumb" style="--rc:${r.col};">${icon}</div>
-      <div class="dw-htxt"><div class="dw-rr">［${r.jp}］</div><div class="dw-nm">${nm}</div><div class="dw-slot">${slotLabel}${wc?`・${allyById(wc).emoji}${allyById(wc).name}が装備中`:''}</div></div></div>`;
-  if(isGear&&sk){ html+=`<div class="dw-sec"><div class="dw-sectt">スキル</div><div class="dw-skill"><div class="sk-h">${sk.emoji} ${sk.name}<span style="font-size:11px;color:var(--sub);font-weight:400;"> MP${sk.mp}</span></div><div class="sk-note">${sk.note}</div>${sk.fl?`<div class="sk-fl">「${sk.fl}」</div>`:''}</div></div>`; }
-  html+=`<div class="dw-sec"><div class="dw-sectt">${isGear?'メインステ':'メインこうか'}</div><div class="dw-main">${isGear?mainText(it):'全コア +'+r.pct+'%'}</div>
+  const cur=dwCurrentFor(it,isGear,dwWhom);   // 左パネル＝この子の今の装備(置換対象)・だれにつけるで切替
+  // ── 右(候補)のスクロール枠の中身: スキル → メインステ(評価) → ボーナス → 今との比較 → でやすさ ──
+  let info='';
+  if(isGear&&sk){ info+=`<div class="dw-sec"><div class="dw-sectt">スキル</div><div class="dw-skill"><div class="sk-h">${sk.emoji} ${sk.name}<span style="font-size:11px;color:var(--sub);font-weight:400;"> MP${sk.mp}</span></div><div class="sk-note">${sk.note}</div>${sk.fl?`<div class="sk-fl">「${sk.fl}」</div>`:''}</div></div>`; }
+  info+=`<div class="dw-sec"><div class="dw-sectt">${isGear?'メインステ':'メインこうか'}</div><div class="dw-main">${isGear?mainText(it):'全コア +'+r.pct+'%'}</div>
     <div class="dw-rate"><div class="rbar2"><i style="width:${itemBarPct(it)}%"></i></div><span class="rnum">評価 ${itemRatingPt(it)}</span></div></div>`;
   const bs=accBonuses(it);
-  if(bs.length){ html+=`<div class="dw-sec"><div class="dw-sectt">ボーナス</div><div class="dw-bon">${bs.map(b=>{ const def=BONUS_DEFS[b.t]||{pct:false}; return `<div class="brow${def.pct?' pct':''}"><span class="bi">✦</span><span>${bonusText(b)}</span></div>`; }).join('')}</div></div>`; }
-  if(isGear){ html+=`<div class="dw-sec"><div class="dw-sectt">でやすさ（出現レア度）</div>${rangeBarHtml(it.skillId)}</div>`; }
-  html+=`<div class="dw-sec"><div class="dw-sectt">だれに つける？</div><div class="dw-whom">${ALLY_DEFS.map(a=>`<button class="${a.id===dwWhom?'on':''}" onclick="dwSetWhom('${a.id}')"><span class="we">${a.emoji}</span>${a.name}</button>`).join('')}</div></div>`;
-  html+=`<div class="dw-sec">${dwCompareHtml(it,isGear)}</div>`;
-  html+=dwActHtml(it,isGear);
-  d.innerHTML='<div class="dw-card" onclick="event.stopPropagation()">'+html+'</div>'; }   // ★ワイドの中央モーダル化で背景クリック閉じ可・狭幅は透明ラッパ
-function dwCompareHtml(it,isGear){ const cid=dwWhom, ally=allyById(cid);
-  if(isGear){ const cur=gearById((gearEquip[cid]||{})[it.slot]); let rows='';
-    if(!cur){ rows=cmpRow(STAT_JP[it.main.stat],'—',fmtMain(it.main),{txt:'NEW',cls:'up'}); }
-    else if(cur.id===it.id){ rows=cmpRow(STAT_JP[it.main.stat],fmtMain(it.main),fmtMain(it.main),{txt:'装備中',cls:'eqd'}); }
-    else if(cur.main.stat!==it.main.stat){   // ★別ステは数値の大小を出さない＝誤誘導しない(両建て表示)
-      rows=cmpRow(STAT_JP[cur.main.stat],fmtMain(cur.main),'0',{txt:'別ステ',cls:'eqd'})+cmpRow(STAT_JP[it.main.stat],'0',fmtMain(it.main),{txt:'別ステ',cls:'eqd'}); }
-    else { const dv=it.main.v-cur.main.v, dd=it.main.stat==='spd'?dv.toFixed(2):Math.round(dv);
-      rows=cmpRow(STAT_JP[it.main.stat],fmtMain(cur.main),fmtMain(it.main), dv>0?{txt:'▲+'+dd,cls:'up'}:dv<0?{txt:'▼'+dd,cls:'down'}:{txt:'±0',cls:'eqd'}); }
-    const skNow=cur?SKILLS[cur.skillId]:null, skNew=SKILLS[it.skillId];   // ★装備=スキル。付け替えで使えるスキルが変わるのを明示
-    const skLine=(skNew&&(!cur||cur.skillId!==it.skillId))?`<div class="cmp-sk">スキル: ${skNow?skNow.emoji+skNow.name:'なし'} → <b>${skNew.emoji}${skNew.name}</b></div>`:'';
-    const h=cur?`いま ${ally.name} の【${it.slot}】は「${equipName(cur)}」。くらべると：`:`${ally.name} の【${it.slot}】は空き。つければ強くなる！`;
-    return `<div class="dw-cmp"><div class="cmp-h">${h}</div>${skLine}${rows}</div>`; }
-  const slots=accEquip[cid]||[null,null], filled=slots.filter(s=>s!=null).length;
-  const note=slots.indexOf(it.id)>=0?`${ally.name} が装備中。`:(filled<2?`${ally.name} の空きスロットに付くよ。`:`${ally.name} は装飾品が2つ うまってる。1つめと 入れかわるよ。`);
-  return `<div class="dw-cmp"><div class="cmp-h">${note}</div></div>`; }
+  if(bs.length){ info+=`<div class="dw-sec"><div class="dw-sectt">ボーナス</div><div class="dw-bon">${bs.map(b=>{ const def=BONUS_DEFS[b.t]||{pct:false}; return `<div class="brow${def.pct?' pct':''}"><span class="bi">✦</span><span>${bonusText(b)}</span></div>`; }).join('')}</div></div>`; }
+  info+=`<div class="dw-sec"><div class="dw-sectt">今との比較</div>${dwCompareHtml(it,isGear,cur)}</div>`;
+  if(isGear){ info+=`<div class="dw-sec"><div class="dw-sectt">でやすさ（出現レア度）</div>${rangeBarHtml(it.skillId)}</div>`; }
+  // ── 右パネル: ヘッダ → スクロール枠 → だれにつける → 装備する/とじる ──
+  const whom=`<div class="dw-sec"><div class="dw-sectt">だれに つける？</div><div class="dw-whom">${ALLY_DEFS.map(a=>`<button class="${a.id===dwWhom?'on':''}" onclick="dwSetWhom('${a.id}')"><span class="we">${a.emoji}</span>${a.name}</button>`).join('')}</div></div>`;
+  const right=`<div class="dw-new">
+    <div class="dw-top"><div class="dw-thumb" style="--rc:${r.col};">${icon}</div>
+      <div class="dw-htxt"><div class="dw-rr">［${r.jp}］</div><div class="dw-nm">${nm}</div><div class="dw-slot">${slotLabel}${wc?`・${allyById(wc).emoji}${allyById(wc).name}が装備中`:''}</div></div></div>
+    <div class="dw-scroll">${info}</div>${whom}${dwActHtml(it,isGear)}</div>`;
+  const html=`<button class="dw-x" onclick="closeDetail()">✕</button><div class="dw-cols">${dwSimplePanel(cur,isGear)}${right}</div>`;
+  d.innerHTML='<div class="dw-card dw-wide" onclick="event.stopPropagation()">'+html+'</div>'; }   // dw-wide=2カラム。ワイドは中央モーダル/狭幅は右スライド(透明ラッパ)
+const STAT_ORDER=['str','int','def','hp','mp','spd','accRare','accDrop','resist'];   // 比較行の表示順
+function itemFlatMap(it){ const m={}; if(!it)return m;   // アイテムの実ステ寄与(gear=メイン+ボーナス／acc=ボーナス。全コア%は別行)
+  if(it.skillId!==undefined && it.main) m[it.main.stat]=(m[it.main.stat]||0)+it.main.v;
+  accBonuses(it).forEach(b=>{ m[b.t]=(m[b.t]||0)+b.v; }); return m; }
+function dwCurrentFor(it,isGear,cid){   // この子の「置換される今の装備」=左パネル/比較の相手(だれにつけるで切替)
+  if(isGear) return gearById((gearEquip[cid]||{})[it.slot])||null;
+  const arr=accEquip[cid]||[null,null];
+  if(dwAccSlot!=null) return arr[dwAccSlot]!=null?accById(arr[dwAccSlot]):null;
+  const empty=arr.indexOf(null); if(empty>=0) return null;   // 空きに追加=置換なし
+  return arr[0]!=null?accById(arr[0]):null; }   // 両方埋まり=1つめと置換(equipOntoと同じ)
+function dwSimplePanel(cur,isGear){   // 左=現状装備の簡略版(アイコン+名前+スキル+メインステ+ボーナス)
+  if(!cur) return `<div class="dw-now"><div class="dw-now-h">いまの そうび</div><div class="dw-empty">（今は 空き）<br>つければ つよくなる！</div></div>`;
+  const r=RARITY[cur.rarity], sk=isGear?SKILLS[cur.skillId]:null, icon=isGear?(sk?sk.emoji:'❔'):'◆', nm=isGear?equipName(cur):cur.base;
+  let h=`<div class="dw-now"><div class="dw-now-h">いまの そうび</div>
+    <div class="dw-top"><div class="dw-thumb" style="--rc:${r.col};">${icon}</div><div class="dw-htxt"><div class="dw-rr">［${r.jp}］</div><div class="dw-nm">${nm}</div></div></div>`;
+  if(isGear&&sk) h+=`<div class="dw-sec"><div class="dw-sectt">スキル</div><div class="dw-skill"><div class="sk-h">${sk.emoji} ${sk.name}<span style="font-size:11px;color:var(--sub);font-weight:400;"> MP${sk.mp}</span></div></div></div>`;
+  h+=`<div class="dw-sec"><div class="dw-sectt">${isGear?'メインステ':'メインこうか'}</div><div class="dw-main">${isGear?mainText(cur):'全コア +'+r.pct+'%'}</div></div>`;
+  const bs=accBonuses(cur);
+  if(bs.length) h+=`<div class="dw-sec"><div class="dw-sectt">ボーナス</div><div class="dw-bon">${bs.map(b=>{const def=BONUS_DEFS[b.t]||{pct:false};return `<div class="brow${def.pct?' pct':''}"><span class="bi">✦</span><span>${bonusText(b)}</span></div>`;}).join('')}</div></div>`;
+  return h+`</div>`; }
+function dwCompareHtml(it,isGear,cur){ const cid=dwWhom, ally=allyById(cid);
+  if(cur===undefined) cur=dwCurrentFor(it,isGear,cid);
+  if(cur&&cur.id===it.id) return `<div class="dw-cmp"><div class="cmp-h">${ally.name} が 今 つけている そうびだよ。</div></div>`;
+  let skLine='';
+  if(isGear){ const skNow=cur?SKILLS[cur.skillId]:null, skNew=SKILLS[it.skillId];   // ★装備=スキル。使えるスキルが変わるのを明示
+    if(skNew&&(!cur||cur.skillId!==it.skillId)) skLine=`<div class="cmp-sk">スキル: ${skNow?skNow.emoji+skNow.name:'なし'} → <b>${skNew.emoji}${skNew.name}</b></div>`; }
+  const now=itemFlatMap(cur), nxt=itemFlatMap(it);   // ★メイン+ボーナスの全ステを集約→増減(オーナー要望=メインステ以外も)
+  let rows=STAT_ORDER.filter(k=>(now[k]||0)!==0||(nxt[k]||0)!==0).map(k=>{
+    const a=now[k]||0, b=nxt[k]||0, d=b-a, pct=!!(BONUS_DEFS[k]&&BONUS_DEFS[k].pct);
+    const fv=v=>!v?'—':((k==='spd'?(+v).toFixed(2):Math.round(v))+(pct?'%':''));
+    const dd=k==='spd'?Math.abs(d).toFixed(2):Math.round(Math.abs(d));
+    const delta=d>0?{txt:'▲+'+dd+(pct?'%':''),cls:'up'}:d<0?{txt:'▼-'+dd+(pct?'%':''),cls:'down'}:{txt:'±0',cls:'eqd'};
+    return cmpRow(STAT_JP[k]||(BONUS_DEFS[k]&&BONUS_DEFS[k].jp)||k, fv(a), fv(b), delta); }).join('');
+  if(!isGear){ const na=cur?RARITY[cur.rarity].pct:0, nb=RARITY[it.rarity].pct, d=nb-na;   // acc=全コア+%の増減
+    rows=cmpRow('全コア+%', na?('+'+na+'%'):'—', '+'+nb+'%', d>0?{txt:'▲+'+d+'%',cls:'up'}:d<0?{txt:'▼-'+Math.abs(d)+'%',cls:'down'}:{txt:'±0',cls:'eqd'})+rows; }
+  const h=cur?`いま「${isGear?equipName(cur):cur.base}」と くらべると：`:`${isGear?'【'+it.slot+'】':'装飾品'}は 空き。つければ つよくなる！`;
+  return `<div class="dw-cmp"><div class="cmp-h">${h}</div>${skLine}${rows||'<div class="cmp-h">ステの 変化は ないよ。</div>'}</div>`; }
 function dwActHtml(it,isGear){ const cid=dwWhom, ally=allyById(cid);
   const worn=isGear?(gearEquip[cid]&&gearEquip[cid][it.slot]===it.id):((accEquip[cid]||[]).indexOf(it.id)>=0);
   let act;
