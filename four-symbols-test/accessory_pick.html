@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>指輪(装飾品)アイコン レビュー — 理科RPG2</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1014;color:#e7e7ea;font-family:system-ui,"Hiragino Kaku Gothic ProN",sans-serif;padding-bottom:96px}
+header{position:sticky;top:0;z-index:5;padding:10px 14px;background:#1a1c22;border-bottom:1px solid #2c2f3a}
+header b{color:#ffe27a}.sub{font-size:12px;color:#9aa0ad;margin-top:4px;line-height:1.5}
+.w{margin:16px 10px;border-top:1px solid #23252e;padding-top:10px}
+.wh{display:flex;align-items:baseline;gap:10px;margin:0 4px 8px;flex-wrap:wrap}
+.wh .nm{font-size:17px;font-weight:800}
+.wh .badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:#2c2f3a;color:#ffe27a}
+.wh .none{margin-left:auto;font-size:12px;background:#2a1d23;color:#ff7a92;border:1px solid #ff5a7a;border-radius:8px;padding:5px 10px;cursor:pointer}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cand{background:#1d1f26;border:2px solid #2c2f3a;border-radius:12px;overflow:hidden;cursor:pointer;position:relative}
+.cand .ib{aspect-ratio:1/1;background:#11131a;display:flex;align-items:center;justify-content:center}
+.cand img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.cand .v{font-size:10px;color:#9aa0ad;padding:4px 6px;text-align:center}
+.cand.pick{border-color:#2bd47a;box-shadow:0 0 0 2px #2bd47a inset}
+.cand.pick::after{content:"採用";position:absolute;top:6px;left:6px;background:#2bd47a;color:#06210f;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px}
+.w.noned{opacity:.5}.w.noned .none{background:#ff5a7a;color:#33000d}
+@media(max-width:560px){.row{grid-template-columns:repeat(2,1fr)}}
+.bar{position:fixed;bottom:0;left:0;right:0;height:76px;display:flex;align-items:center;justify-content:center;gap:12px;background:#13141a;border-top:1px solid #2c2f3a;padding:0 12px}
+.cnt{font-size:13px;color:#cfd3db}.cnt b{color:#2bd47a;font-size:18px}
+.btn{background:#ffe27a;color:#15161a;border:none;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer}
+#out{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);width:min(94vw,620px);height:200px;display:none;background:#0b0c10;color:#cfd3db;border:1px solid #3a3f4c;border-radius:8px;padding:8px;font-family:ui-monospace,monospace;font-size:11px}
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#2bd47a;color:#08210f;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1}
+</style></head><body>
+<header><b>指輪(装飾品)アイコン レビュー</b>（32種・各4枚から1枚選ぶ）
+  <div class="sub">初版32枚＝行列24(8型×低中高)＋守りunique7＋神話1。装飾品は手続き型ドロップ＝「型×レア度」で絵が決まる(個々の名前ではない)。<br>
+  各行でベストを1枚タップ→「採用」。どれもダメなら「全部ダメ」。下のボタンで結果をコピーしてチャットに貼ってください。<b>全体の方向OKなら「accでGO」だけでも可。</b></div></header>
+<div id="root"></div>
+<div class="bar">
+  <div class="cnt">採用 <b id="pickn">0</b>/<span id="total">0</span></div>
+  <button class="btn" id="copyBtn">結果をコピー</button>
+</div>
+<textarea id="out" readonly></textarea>
+<div class="toast" id="toast">コピーしました！</div>
+<script>
+const W=[{"id": "acc_ring_low", "name_ja": "リング・低", "band": "低(C〜R)", "tag": "行列・ring", "cands": [{"img": "acc_pick/acc_ring_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_ring_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_ring_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_ring_low_v3.jpg", "v": "v3"}]}, {"id": "acc_ring_mid", "name_ja": "リング・中", "band": "中(SR〜SSR)", "tag": "行列・ring", "cands": [{"img": "acc_pick/acc_ring_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_ring_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_ring_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_ring_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_ring_high", "name_ja": "リング・高", "band": "高(UR〜LR)", "tag": "行列・ring", "cands": [{"img": "acc_pick/acc_ring_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_ring_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_ring_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_ring_high_v3.jpg", "v": "v3"}]}, {"id": "acc_omamori_low", "name_ja": "お守り・低", "band": "低(C〜R)", "tag": "行列・pouch", "cands": [{"img": "acc_pick/acc_omamori_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_omamori_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_omamori_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_omamori_low_v3.jpg", "v": "v3"}]}, {"id": "acc_omamori_mid", "name_ja": "お守り・中", "band": "中(SR〜SSR)", "tag": "行列・pouch", "cands": [{"img": "acc_pick/acc_omamori_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_omamori_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_omamori_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_omamori_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_omamori_high", "name_ja": "お守り・高", "band": "高(UR〜LR)", "tag": "行列・pouch", "cands": [{"img": "acc_pick/acc_omamori_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_omamori_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_omamori_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_omamori_high_v3.jpg", "v": "v3"}]}, {"id": "acc_pendant_low", "name_ja": "ペンダント・低", "band": "低(C〜R)", "tag": "行列・pendant", "cands": [{"img": "acc_pick/acc_pendant_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_pendant_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_pendant_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_pendant_low_v3.jpg", "v": "v3"}]}, {"id": "acc_pendant_mid", "name_ja": "ペンダント・中", "band": "中(SR〜SSR)", "tag": "行列・pendant", "cands": [{"img": "acc_pick/acc_pendant_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_pendant_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_pendant_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_pendant_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_pendant_high", "name_ja": "ペンダント・高", "band": "高(UR〜LR)", "tag": "行列・pendant", "cands": [{"img": "acc_pick/acc_pendant_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_pendant_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_pendant_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_pendant_high_v3.jpg", "v": "v3"}]}, {"id": "acc_bracelet_low", "name_ja": "ブレス・低", "band": "低(C〜R)", "tag": "行列・bangle", "cands": [{"img": "acc_pick/acc_bracelet_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_bracelet_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_bracelet_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_bracelet_low_v3.jpg", "v": "v3"}]}, {"id": "acc_bracelet_mid", "name_ja": "ブレス・中", "band": "中(SR〜SSR)", "tag": "行列・bangle", "cands": [{"img": "acc_pick/acc_bracelet_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_bracelet_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_bracelet_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_bracelet_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_bracelet_high", "name_ja": "ブレス・高", "band": "高(UR〜LR)", "tag": "行列・bangle", "cands": [{"img": "acc_pick/acc_bracelet_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_bracelet_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_bracelet_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_bracelet_high_v3.jpg", "v": "v3"}]}, {"id": "acc_amulet_low", "name_ja": "アミュレット・低", "band": "低(C〜R)", "tag": "行列・medallion", "cands": [{"img": "acc_pick/acc_amulet_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_amulet_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_amulet_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_amulet_low_v3.jpg", "v": "v3"}]}, {"id": "acc_amulet_mid", "name_ja": "アミュレット・中", "band": "中(SR〜SSR)", "tag": "行列・medallion", "cands": [{"img": "acc_pick/acc_amulet_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_amulet_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_amulet_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_amulet_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_amulet_high", "name_ja": "アミュレット・高", "band": "高(UR〜LR)", "tag": "行列・medallion", "cands": [{"img": "acc_pick/acc_amulet_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_amulet_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_amulet_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_amulet_high_v3.jpg", "v": "v3"}]}, {"id": "acc_magatama_low", "name_ja": "まが玉・低", "band": "低(C〜R)", "tag": "行列・magatama", "cands": [{"img": "acc_pick/acc_magatama_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_magatama_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_magatama_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_magatama_low_v3.jpg", "v": "v3"}]}, {"id": "acc_magatama_mid", "name_ja": "まが玉・中", "band": "中(SR〜SSR)", "tag": "行列・magatama", "cands": [{"img": "acc_pick/acc_magatama_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_magatama_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_magatama_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_magatama_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_magatama_high", "name_ja": "まが玉・高", "band": "高(UR〜LR)", "tag": "行列・magatama", "cands": [{"img": "acc_pick/acc_magatama_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_magatama_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_magatama_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_magatama_high_v3.jpg", "v": "v3"}]}, {"id": "acc_badge_low", "name_ja": "バッジ・低", "band": "低(C〜R)", "tag": "行列・crest", "cands": [{"img": "acc_pick/acc_badge_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_badge_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_badge_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_badge_low_v3.jpg", "v": "v3"}]}, {"id": "acc_badge_mid", "name_ja": "バッジ・中", "band": "中(SR〜SSR)", "tag": "行列・crest", "cands": [{"img": "acc_pick/acc_badge_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_badge_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_badge_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_badge_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_badge_high", "name_ja": "バッジ・高", "band": "高(UR〜LR)", "tag": "行列・crest", "cands": [{"img": "acc_pick/acc_badge_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_badge_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_badge_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_badge_high_v3.jpg", "v": "v3"}]}, {"id": "acc_earring_low", "name_ja": "イヤリング・低", "band": "低(C〜R)", "tag": "行列・earring", "cands": [{"img": "acc_pick/acc_earring_low_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_earring_low_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_earring_low_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_earring_low_v3.jpg", "v": "v3"}]}, {"id": "acc_earring_mid", "name_ja": "イヤリング・中", "band": "中(SR〜SSR)", "tag": "行列・earring", "cands": [{"img": "acc_pick/acc_earring_mid_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_earring_mid_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_earring_mid_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_earring_mid_v3.jpg", "v": "v3"}]}, {"id": "acc_earring_high", "name_ja": "イヤリング・高", "band": "高(UR〜LR)", "tag": "行列・earring", "cands": [{"img": "acc_pick/acc_earring_high_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_earring_high_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_earring_high_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_earring_high_v3.jpg", "v": "v3"}]}, {"id": "acc_uniq_revive", "name_ja": "不滅のフェニックス環", "band": "高(UR〜LR)", "tag": "守りunique・復活", "cands": [{"img": "acc_pick/acc_uniq_revive_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_uniq_revive_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_uniq_revive_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_uniq_revive_v3.jpg", "v": "v3"}]}, {"id": "acc_uniq_endure", "name_ja": "不動の黒曜まが玉", "band": "高(UR〜LR)", "tag": "守りunique・不屈", "cands": [{"img": "acc_pick/acc_uniq_endure_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_uniq_endure_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_uniq_endure_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_uniq_endure_v3.jpg", "v": "v3"}]}, {"id": "acc_uniq_barrier", "name_ja": "異常結界のバリア環", "band": "高(UR〜LR)", "tag": "守りunique・状態異常バリア", "cands": [{"img": "acc_pick/acc_uniq_barrier_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_uniq_barrier_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_uniq_barrier_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_uniq_barrier_v3.jpg", "v": "v3"}]}, {"id": "acc_uniq_cleanse", "name_ja": "浄めの聖蓮珠", "band": "高(UR〜LR)", "tag": "守りunique・自動おきよめ", "cands": [{"img": "acc_pick/acc_uniq_cleanse_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_uniq_cleanse_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_uniq_cleanse_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_uniq_cleanse_v3.jpg", "v": "v3"}]}, {"id": "acc_uniq_immune", "name_ja": "無毒の翡翠蛇環", "band": "高(UR〜LR)", "tag": "守りunique・毒やけど無効", "cands": [{"img": "acc_pick/acc_uniq_immune_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_uniq_immune_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_uniq_immune_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_uniq_immune_v3.jpg", "v": "v3"}]}, {"id": "acc_uniq_evade", "name_ja": "見切りの瞳玉", "band": "高(UR〜LR)", "tag": "守りunique・見切り", "cands": [{"img": "acc_pick/acc_uniq_evade_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_uniq_evade_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_uniq_evade_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_uniq_evade_v3.jpg", "v": "v3"}]}, {"id": "acc_uniq_mitigate", "name_ja": "鉄壁の守護冠", "band": "高(UR〜LR)", "tag": "守りunique・被ダメ軽減", "cands": [{"img": "acc_pick/acc_uniq_mitigate_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_uniq_mitigate_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_uniq_mitigate_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_uniq_mitigate_v3.jpg", "v": "v3"}]}, {"id": "acc_myth_four", "name_ja": "神話の四宝環", "band": "神話(LR)", "tag": "神話・四種揃い(神話)", "cands": [{"img": "acc_pick/acc_myth_four_v0.jpg", "v": "v0"}, {"img": "acc_pick/acc_myth_four_v1.jpg", "v": "v1"}, {"img": "acc_pick/acc_myth_four_v2.jpg", "v": "v2"}, {"img": "acc_pick/acc_myth_four_v3.jpg", "v": "v3"}]}]; const KEY="rika2_accessory_pick_v1";
+let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+const root=document.getElementById("root");
+document.getElementById("total").textContent=W.length;
+W.forEach(w=>{
+  const box=document.createElement("div");box.className="w";box.id="w_"+w.id;
+  if(st[w.id]==="NONE")box.classList.add("noned");
+  box.innerHTML=`<div class="wh"><span class="nm">${w.name_ja}</span>
+    <span class="badge">${w.band} / ${w.tag}</span>
+    <span class="none" data-id="${w.id}">全部ダメ</span></div>`;
+  const row=document.createElement("div");row.className="row";
+  w.cands.forEach((c,k)=>{
+    const el=document.createElement("div");el.className="cand"+(st[w.id]===k?" pick":"");
+    el.innerHTML=`<div class="ib"><img src="${c.img}" loading="lazy" alt=""></div><div class="v">${c.v}</div>`;
+    el.onclick=()=>{st[w.id]=k;box.classList.remove("noned");localStorage.setItem(KEY,JSON.stringify(st));render();};
+    row.appendChild(el);
+  });
+  box.appendChild(row);root.appendChild(box);
+});
+document.querySelectorAll(".none").forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.id;st[id]=(st[id]==="NONE")?undefined:"NONE";if(st[id]===undefined)delete st[id];localStorage.setItem(KEY,JSON.stringify(st));render();});
+function render(){
+  let n=0;
+  W.forEach(w=>{
+    const box=document.getElementById("w_"+w.id);
+    box.classList.toggle("noned",st[w.id]==="NONE");
+    box.querySelectorAll(".cand").forEach((el,k)=>el.classList.toggle("pick",st[w.id]===k));
+    if(typeof st[w.id]==="number"||st[w.id]==="NONE")n++;
+  });
+  document.getElementById("pickn").textContent=n;
+}
+function copyOut(){
+  let s=`=== 指輪(装飾品) 採用結果 ===\n`;
+  W.forEach(w=>{const v=st[w.id];
+    if(v==="NONE")s+=`- ${w.name_ja} [${w.id}] => 全部ダメ\n`;
+    else if(typeof v==="number")s+=`- ${w.name_ja} [${w.id}] => 採用 ${w.cands[v].v}\n`;
+    else s+=`- ${w.name_ja} [${w.id}] => 未選択\n`;});
+  const o=document.getElementById("out");o.style.display="block";o.value=s;o.select();
+  if(navigator.clipboard)navigator.clipboard.writeText(s).then(()=>{const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1400);},()=>{});
+}
+document.getElementById("copyBtn").onclick=copyOut;
+render();
+</script></body></html>
