@@ -492,8 +492,9 @@ function specForSkill(d){
     if(/不屈|金剛|踏止|捨て身|根性|耐え/.test(nm)){fam='buff';kind='endure';}      // 構え(致死耐え)=攻撃に見せない
     else if(arch==='機動・速度')fam='dash';
     else if(arch==='構え・自己強化'){ if(/連|止め|敵/.test(eff)){fam='slash'; if(/連/.test(eff))kind='multi'; if(el==='氷'&&/砕|凍結/.test(eff))motif='shatter'; if(/敵全体/.test(eff))aoe=true;} else {fam='buff';kind='atk';} } // ★構え名でも中身が攻撃なら斬撃(光速斬/冥府斬)
+    else if(/自分|自己/.test(eff) && /速度|加速|すばやさ|行動.*UP|手番/.test(eff) && !/敵|×|ダメージ|連|止め/.test(eff)){ fam='buff'; kind='haste'; } // ★先駆け等=自己の速度バフ(攻撃/突きに化けさせない)
     else {fam='slash'; if(arch==='多段斬')kind='multi';
-      if(/突|先駆|刺|貫/.test(nm))motif='thrust';                                       // 突き/先駆け=刺突
+      if(/突|刺|貫/.test(nm))motif='thrust';                                            // 突き=刺突(先駆けは上の自己バフへ)
       else if(el==='氷'&&(/砕|闇討ち|不意打ち|暗殺/.test(nm)||/凍結/.test(eff)))motif='shatter'; // 凍結を斬って砕く
       if(!motif&&/弱体|崩|防御ダウン|アーマー|鎧|威嚇|攻撃力ダウン/.test(nm+eff))cue='debuff';
       else if(!motif&&/やけど|火傷|まひ|麻痺|凍|毒|睡|状態異常/.test(nm+eff))cue='status'; }
