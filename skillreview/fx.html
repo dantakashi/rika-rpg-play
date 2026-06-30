@@ -507,7 +507,7 @@ function specForSkill(d){
   } else if(role==='壁'){ onRole='wall';
     if(arch==='挑発・威圧'){ if(/威圧|喝|恫喝|睨|萎縮|牽制/.test(nm)){fam='debuff';kind='atk';} else fam='taunt'; }
     else if(arch==='庇護'||arch==='陣・結界'){fam='shield';party=true;}
-    else if(arch==='盾撃'){fam=/震|地鳴|轟|大地/.test(nm)?'quake':'bash';aoe=aoe||/震|全体/.test(nm+eff);}
+    else if(arch==='盾撃'){fam=/震|地鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash';aoe=aoe||/震|衝撃|波|全体/.test(nm+eff);}
     else {fam='shield'; party=/全体|みんな|味方全員/.test(eff)||/号令|守護結界|陣/.test(nm);}
   } else if(role==='回復'){ onRole='heal';
     if(arch==='蘇生'){fam='revive';party=aoe;}
@@ -518,49 +518,102 @@ function specForSkill(d){
   if(!VAR[fam])fam='bolt';
   return {tpl:fam,fam,el,aoe,lv,kind,party,onRole};
 }
-// ===== B案: 属性を強く押し出した 斬撃 / 魔法 =====
-function slashElB(s){
-  const c=PAL[s.el], big=s.lv!=='low';
+// ===== B案 v2: 属性(色と粒) × アーキタイプ(触り心地) ＝代表スライス(斬撃/打撃/衝撃波/魔法) =====
+// 属性の動きの向き(重力)と画面tint量。無属性はtintを載せない(鋼の白閃)
+function elGrav(el){ return (el==='炎'||el==='光'||el==='聖')?-50 : el==='毒'?-60 : el==='土'?130 : el==='氷'?30 : 0; }
+function elTint(el){ return el==='無'?0:0.14; }
+// 着弾点の属性シグネチャ(点/放射インパクト用＝打撃・魔法。斬撃は方向性なので使わない)
+function elImpact(E,s,big){
+  const c=PAL[s.el], n=Math.round((big?44:26)*LV[s.lv].p);
+  if(s.el==='雷'){ electric(E,big); burst(E.x,E.y,{n:n,spd:340,size:3,col:c,life:0.45,drag:0.9,kind:'streak'}); }
+  else if(s.el==='氷'){ burst(E.x,E.y,{n:n,spd:300,size:3.2,col:c,life:0.6,grav:30,drag:0.92,kind:'spark'}); burst(E.x,E.y-8,{n:10,spd:60,size:3,col:c,life:0.8,grav:130,drag:0.96,kind:'spark'}); }
+  else if(s.el==='土'){ burst(E.x,E.y+8,{n:n,spd:200,size:4,col:c,life:0.8,grav:130,drag:0.93,kind:'spark'}); }
+  else if(s.el==='毒'){ burst(E.x,E.y+8,{n:n,spd:90,size:3.4,col:c,life:1.0,grav:-60,drag:0.95}); }
+  else if(s.el==='闇'){ burst(E.x,E.y,{n:n,spd:60,size:3.4,col:c,life:0.5,grav:0,drag:0.99,kind:'dot'}); burst(E.x,E.y,{n:n,spd:280,size:3.2,col:c,life:0.6,drag:0.92,kind:'streak'}); }
+  else { burst(E.x,E.y,{n:n,spd:300,size:3.4,col:c,life:0.7,grav:elGrav(s.el),drag:0.91,kind:'streak'}); }
+  burst(E.x,E.y,{n:12,spd:90,size:5,col:c,life:0.5});
+}
+// 斬撃: 方向性のある刃筋一閃＋斬線に沿う属性火花。★円形バースト/リング禁止
+function bSlash(s){
+  const c=PAL[s.el], big=s.lv!=='low', col=['#fff',c[0],c[1]], ang=-0.7;
   (s.aoe?[0,1]:[0]).forEach(function(idx,k){ setTimeoutFx(k*0.12,function(){
     const E=FOES[idx], A=CAST();
-    chargeGlow(A.x,A.y-10,c[0],0.13,big);
-    setTimeoutFx(0.13,function(){
-      cut(E,-0.7,{col:['#fff',c[0],c[1]],big:true,span:big?150:122});
-      tint=Math.max(tint,0.13);tintCol=c[0];
-      flash=Math.max(flash,0.42);flashCol=c[0];
-      shake=Math.max(shake,12);
-      var grav=(s.el==='炎'||s.el==='聖'||s.el==='光')?-50:(s.el==='土'?130:15);
-      burst(E.x,E.y,{n:big?46:28,spd:300,size:3.4,col:c,life:0.7,grav:grav,drag:0.91,kind:'streak'});
-      burst(E.x,E.y,{n:14,spd:90,size:5,col:c,life:0.5});
-      ring(E.x,E.y,c[0],true);ring(E.x,E.y,c[1],true,0.07);
-      hit(idx,dmgOf(s),s.lv==='high');
+    chargeGlow(A.x,A.y-10,c[0],0.12,big);
+    setTimeoutFx(0.12,function(){
+      cut(E, s.aoe?0:ang, {col:col, big:true, span:s.aoe?170:(big?150:122)});
+      tint=Math.max(tint,elTint(s.el)); tintCol=c[0];
+      flash=Math.max(flash,0.4); flashCol=c[0];
+      shake=Math.max(shake, big?13:9);
+      if(s.el!=='無') burst(E.x,E.y,{n:big?16:10,spd:300,size:2.8,col:c,life:0.45,grav:elGrav(s.el),drag:0.92,kind:'streak',dir:ang,spread:0.6});
+      if(s.kind==='multi'){ var nseg=big?3:2; hit(idx,Math.floor(dmgOf(s)/nseg),false);
+        for(var i=1;i<nseg;i++){ (function(j){ setTimeoutFx(j*0.07,function(){ cut(E,(j%2?0.7:-0.7),{col:col,big:true,span:120}); hit(idx,Math.floor(dmgOf(s)/nseg),false); }); })(i); }
+      } else { hit(idx,dmgOf(s),s.lv==='high'); }
     });
   }); });
   return {dur:(s.aoe?0.3:0)+0.95};
 }
-function magicElB(s){
-  const c=PAL[s.el], big=s.lv!=='low', aoe=s.aoe;
-  var mid={x:CW/2,y:(FOES[0].y+FOES[1].y)/2}, A=CAST(), src=aoe?mid:{x:A.x,y:A.y-10};
-  chargeGlow(src.x,src.y,c[0],0.3,true);
-  setTimeoutFx(0.3,function(){
-    tint=Math.max(tint,0.16);tintCol=c[0];
-    flash=Math.max(flash,0.5);flashCol=c[0];
-    shake=Math.max(shake,big?18:12);
-    (aoe?[0,1]:[0]).forEach(function(idx){ var E=FOES[idx];
-      burst(E.x,E.y,{n:big?90:52,spd:aoe?360:280,size:3.6,col:c,life:0.8,grav:18,drag:0.92,kind:'streak'});
-      burst(E.x,E.y,{n:20,spd:110,size:6,col:c,life:0.5});
-      ring(E.x,E.y,c[0],true);ring(E.x,E.y,c[1],true,0.08);
-      hit(idx,dmgOf(s),s.lv==='high');
-    });
-  });
-  return {dur:1.05};
+// 打撃: 鈍器の「点」衝撃＝着弾点クラック＋小リング1-2＋重い震え。★広いリング禁止
+function bBash(s){
+  const c=PAL[s.el], big=s.lv!=='low', fcol=s.el==='無'?'#fff':c[0];
+  (s.aoe?[0,1]:[0]).forEach(function(idx,k){ setTimeoutFx(k*0.1,function(){
+    const E=FOES[idx];
+    flash=Math.max(flash,0.42); flashCol=fcol;
+    shake=Math.max(shake, big?20:16);
+    addDraw(0.28,function(a){ var t=a/0.28,al=(1-t); ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=fcol;ctx.lineWidth=3*(1-t*0.5);ctx.lineCap='round';
+      for(var i=0;i<7;i++){ var aa=i/7*TAU+0.3, len=(big?54:38)*Math.min(1,t*2); ctx.beginPath();ctx.moveTo(E.x,E.y);ctx.lineTo(E.x+Math.cos(aa)*len,E.y+Math.sin(aa)*len);ctx.stroke(); }
+      ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+    ring(E.x,E.y,fcol,false);
+    if(big) ring(E.x,E.y,c[1],false,0.06);
+    elImpact(E,s,big);
+    if(s.el!=='無'){ tint=Math.max(tint,elTint(s.el)*0.7); tintCol=c[0]; }
+    hit(idx,dmgOf(s),s.lv==='high');
+  }); });
+  return {dur:(s.aoe?0.2:0)+0.7};
 }
-const ELFAMS={slash:1,bolt:1,burst:1,bigmag:1,beam:1};
-function hasB(d){ return !!ELFAMS[specForSkill(d).fam]; }
+// 衝撃波: 地面に広がる楕円リング＝面で全体に届く。★打撃(点)と差別化(常に全体)
+function bShock(s){
+  const c=PAL[s.el], big=s.lv!=='low', gy=Math.max(FOES[0].y,FOES[1].y)+18;
+  chargeGlow(CW/2, gy-30, c[0], 0.2, big);
+  setTimeoutFx(0.2,function(){
+    flash=Math.max(flash,0.4); flashCol=c[0]; shake=Math.max(shake, big?20:16);
+    if(s.el!=='無'){ tint=Math.max(tint,elTint(s.el)*0.8); tintCol=c[0]; }
+    for(var r=0;r<(big?3:2);r++){ (function(rr){ addDraw(0.55,function(a){ var t=a/0.55,al=(1-t)*0.85; ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=rr%2?c[1]:c[0];ctx.lineWidth=(big?7:5)*(1-t);ctx.beginPath();ctx.ellipse(CW/2,gy,(CW*0.5)*Math.min(1,t+rr*0.12)+20,30*Math.min(1,t+rr*0.12)+8,0,0,TAU);ctx.stroke();ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; }); })(r); }
+    [0,1].forEach(function(idx,k){ setTimeoutFx(0.05+k*0.06,function(){ var E=FOES[idx];
+      burst(E.x,E.y+14,{n:Math.round((big?22:14)*LV[s.lv].p),spd:140,size:4,col:c,life:0.8,grav:s.el==='土'?60:-50,drag:0.93});
+      hit(idx,dmgOf(s),false);
+    }); });
+  });
+  return {dur:0.85};
+}
+// 魔法: 詠唱グロー→弾が飛ぶ→着弾で破裂(★t>=1のみ・着弾前破裂NG)。属性が主役
+function bMagic(s){
+  const c=PAL[s.el], big=s.lv!=='low', A=CAST(), beam=s.fam==='beam', tgts=s.aoe?[0,1]:[0];
+  chargeGlow(A.x, A.y-12, c[0], 0.3, true);
+  if(beam){
+    setTimeoutFx(0.3,function(){ tgts.forEach(function(idx){ beamCol(FOES[idx],c[0],true); });
+      setTimeoutFx(0.18,function(){ flash=Math.max(flash,0.5);flashCol=c[0];shake=Math.max(shake,big?16:12);tint=Math.max(tint,elTint(s.el));tintCol=c[0];
+        tgts.forEach(function(idx){ var E=FOES[idx]; elImpact(E,s,big); ring(E.x,E.y,c[0],true); hit(idx,dmgOf(s),s.lv==='high'); }); });
+    });
+    return {dur:0.95};
+  }
+  tgts.forEach(function(idx,k){
+    var E=FOES[idx], t0=0.3+k*0.08, tr=big?0.26:0.2;
+    addDraw(t0+tr+0.05,function(a){ if(a<t0)return; var t=Math.min(1,(a-t0)/tr), x=A.x+(E.x-A.x)*t, y=(A.y-12)+(E.y-(A.y-12))*t-Math.sin(t*Math.PI)*30;
+      ctx.save();ctx.globalCompositeOperation='lighter';var rr=big?15:10,g=ctx.createRadialGradient(x,y,0,x,y,rr);g.addColorStop(0,'#fff');g.addColorStop(0.4,c[0]);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rr,0,TAU);ctx.fill();ctx.restore();
+      if(Math.random()<0.85)burst(x,y,{n:2,spd:34,size:2,col:c,life:0.35,drag:0.9});
+    });
+    setTimeoutFx(t0+tr,function(){ flash=Math.max(flash,0.5);flashCol=c[0];shake=Math.max(shake,big?18:12);tint=Math.max(tint,elTint(s.el));tintCol=c[0];
+      elImpact(E,s,big); ring(E.x,E.y,c[0],true); ring(E.x,E.y,c[1],true,0.08); hit(idx,dmgOf(s),s.lv==='high'); });
+  });
+  return {dur:big?0.98:0.86};
+}
+// 代表スライス: 斬撃=slash / 打撃=bash / 衝撃波=quake / 魔法=bolt,burst,bigmag,beam
+const VARB={ slash:bSlash, bash:bBash, quake:bShock, bolt:bMagic, burst:bMagic, bigmag:bMagic, beam:bMagic };
+function hasB(d){ return !!VARB[specForSkill(d).fam]; }
 function runEffect(d,ab){
   const s=specForSkill(d), fam=s.fam;
-  if(ab==='B'&&ELFAMS[fam]){ return {r:(fam==='slash'?slashElB(s):magicElB(s)),fam:fam,s:s}; }
-  const vfns=VAR[fam]||VAR.bolt; return {r:vfns[0](s),fam:fam,s:s};
+  if(ab==='B' && VARB[fam]){ return {r:VARB[fam](s), fam:fam, s:s}; }
+  const vfns=VAR[fam]||VAR.bolt; return {r:vfns[0](s), fam:fam, s:s};
 }
 let curSkill=null,curAB='A',lastPlay=null;
 function playSkill(d,ab){
