@@ -349,10 +349,10 @@ const TPL={
  buff(A,_,s){const map={atk:['#ff7b5a','#ffd27a','↑'],def:['#5ec8ff','#bfe8ff','↑'],haste:['#7ad0ff','#cffaff','»'],endure:['#cfd8e6','#fff','✊'],advance:['#ffe27a','#fff','»']};const m=map[s.kind]||map.atk,big=s.lv!=='low';const roles=s.party?Object.keys(allyEls):[curRole];roles.forEach(r=>{const T=centerOf(allyEls[r]);riseSparks(T,[m[0],m[1],'#fff'],big);ring(T.x,T.y,m[0],false);glyph(T.x,T.y-26,m[2],m[1],true);});return{dur:0.9};},
  dash(A,_,s){const E=FOES[0],L=LV[s.lv];addDraw(0.22,(a)=>{const t=a/0.22,x=A.x+(E.x-A.x)*t,y=A.y+(E.y-A.y)*t;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.sin(t*Math.PI);ctx.strokeStyle='#cfe0ff';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(x,y);ctx.stroke();ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';});setTimeoutFx(0.22,()=>{cut(E,-0.5,{col:['#fff','#cfe0ff','#7aa8ff'],big:true,span:130});flash=0.34*L.fx;shake=12*L.sh;hit(0,dmgOf(s),s.lv==='high');});return{dur:0.8};},
  ultimate(A,_,s){const cols=['#ff5a7a','#ffe27a','#7CFC8A','#7ad0ff','#b07bff','#fff'],E=FOES[0];chargeGlow(A.x,A.y-12,'#fff',0.3,true);setTimeoutFx(0.32,()=>{cut(E,-0.7,{col:['#fff','#ffe27a','#ff8a4a'],big:true,span:160});cut(E,0.7,{col:['#fff','#7ad0ff','#b07bff'],big:true,span:160});shake=12;});setTimeoutFx(0.46,()=>{flash=0.6;flashCol='#fff';shake=22;hit(0,dmgOf({lv:'high'}),true);for(let k=0;k<cols.length;k++)burst(E.x,E.y,{n:30,spd:300+k*40,size:3.4,col:[cols[k]],life:0.8,grav:30,drag:0.92,kind:'streak'});ring(E.x,E.y,'#fff',true);ring(E.x,E.y,'#ffe27a',true,0.08);});return{dur:1.5};},
- heal(A,_,s){const big=s.lv!=='low'||s.kind==='charge';if(s.kind==='charge')chargeGlow(A.x,A.y,'#7CFC8A',0.4,true);tint=0.14;tintCol='#7CFC8A';const go=()=>{allyHeal(curRole,true);riseSparks(A,['#7CFC8A','#d6ffe0','#ffe9a8'],true);ring(A.x,A.y,'#7CFC8A',true);ring(A.x,A.y,'#ffe9a8',true,0.12);glyph(A.x,A.y-46,'✚','#eafff0',true);};if(s.kind==='charge')setTimeoutFx(0.42,go);else go();if(s.kind==='ward')glyph(A.x,A.y-20,'♡','#7CFC8A',true);return{dur:s.kind==='charge'?1.2:0.95};},
- regen(A,_,s){tint=0.08;tintCol='#7CFC8A';for(let k=0;k<5;k++)setTimeoutFx(k*0.14,()=>burst(A.x+rnd(-14,14),A.y+6,{n:4,spd:36,size:3,col:['#7CFC8A','#caffd6','#a3e635'],life:1.1,grav:-90,drag:0.97,kind:'spark',spread:0.6,dir:-Math.PI/2}));ring(A.x,A.y,'#7CFC8A',false);glyph(A.x,A.y-30,'🍃','#bff7c8',true);allyHeal(curRole,false);return{dur:1.1};},
+ heal(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];if(s.kind==='charge')chargeGlow(A.x,A.y,'#7CFC8A',0.4,true);tint=0.14;tintCol='#7CFC8A';const go=()=>{roles.forEach(r=>{const T=centerOf(allyEls[r]);allyHeal(r,true);riseSparks(T,['#7CFC8A','#d6ffe0','#ffe9a8'],true);ring(T.x,T.y,'#7CFC8A',true);ring(T.x,T.y,'#ffe9a8',true,0.12);glyph(T.x,T.y-46,'✚','#eafff0',true);});};if(s.kind==='charge')setTimeoutFx(0.42,go);else go();return{dur:s.kind==='charge'?1.2:0.95};},
+ regen(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];tint=0.08;tintCol='#7CFC8A';roles.forEach(r=>{const T=centerOf(allyEls[r]);for(let k=0;k<5;k++)setTimeoutFx(k*0.14,()=>burst(T.x+rnd(-14,14),T.y+6,{n:4,spd:36,size:3,col:['#7CFC8A','#caffd6','#a3e635'],life:1.1,grav:-90,drag:0.97,kind:'spark',spread:0.6,dir:-Math.PI/2}));ring(T.x,T.y,'#7CFC8A',false);glyph(T.x,T.y-30,'🍃','#bff7c8',true);allyHeal(r,false);});return{dur:1.1};},
  revive(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];roles.forEach(r=>{const T=centerOf(allyEls[r]);beamCol(T,'#ffe9a8',true);riseSparks(T,['#ffe9a8','#fff','#ffd86b'],true,9);ring(T.x,T.y,'#ffe9a8',true);glyph(T.x,T.y-40,'✦','#fff',true);allyHeal(r,true);});flash=0.3;flashCol='#fff7d6';return{dur:1.3};},
- cleanse(A,_,s){ring(A.x,A.y,'#fff',true);ring(A.x,A.y,'#d6ffe0',true,0.1);burst(A.x,A.y,{n:26,spd:90,size:3,col:['#fff','#d6ffe0','#7CFC8A'],life:0.8,grav:-30,drag:0.93});glyph(A.x,A.y-24,'✨','#fff',true);return{dur:0.85};},
+ cleanse(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];roles.forEach(r=>{const T=centerOf(allyEls[r]);ring(T.x,T.y,'#fff',true);ring(T.x,T.y,'#d6ffe0',true,0.1);burst(T.x,T.y,{n:26,spd:90,size:3,col:['#fff','#d6ffe0','#7CFC8A'],life:0.8,grav:-30,drag:0.93});glyph(T.x,T.y-24,'✨','#fff',true);allyHeal(r,false);});return{dur:0.85};},
  beam(A,_,s){const pal=PAL[s.el],E=FOES[0];beamCol(E,pal[0],true);setTimeoutFx(0.2,()=>{flash=0.45;flashCol=pal[3];shake=12;hit(0,dmgOf(s),s.lv==='high');burst(E.x,E.y,{n:Math.round(60*LV[s.lv].p),spd:240,size:3.4,col:pal,life:0.6,grav:30,drag:0.92,kind:'streak'});ring(E.x,E.y,pal[0],true);});return{dur:0.9};}
 };
 // enemy single-target → ally
@@ -485,16 +485,18 @@ const ELMAP={火:'炎',氷:'氷',雷:'雷',光:'光',闇:'闇',地:'土',毒:'�
 function specForSkill(d){
   const role=d.r, arch=d.arch, nm=d.n||'', eff=d.eff||'', t=d.t||'';
   const hi=/LR|UR/.test(t), mid=/SR|SSR/.test(t); const lv=hi?'high':(mid?'med':'low');
-  let el=ELMAP[d.el]||'無', fam='slash', onRole=ROLE2CAST[role]||'dps', kind='', party=false;
-  let aoe=/全体|味方全員|敵全員|みんな/.test(eff)||arch==='魔法・範囲'||arch==='陣・結界';
+  let el=ELMAP[d.el]||'無', fam='slash', onRole=ROLE2CAST[role]||'dps', kind='', party=false, motif='';
+  let aoe=/全体|全員|みんな/.test(eff)||arch==='魔法・範囲'||arch==='陣・結界';
   if(role==='火力'){ onRole='dps';
-    if(arch==='機動・速度')fam='dash';
-    else if(arch==='構え・自己強化'){fam='buff';kind=/不屈|金剛|踏止|耐|捨て身/.test(nm)?'endure':'atk';}
-    else {fam='slash'; if(arch==='多段斬')kind='multi';}
+    if(/不屈|金剛|踏止|捨て身|根性|耐え/.test(nm)){fam='buff';kind='endure';}      // 構え(致死耐え)=攻撃に見せない
+    else if(arch==='機動・速度')fam='dash';
+    else if(arch==='構え・自己強化'){fam='buff';kind='atk';}
+    else {fam='slash'; if(arch==='多段斬')kind='multi'; if(/突/.test(nm))motif='thrust'; }  // 突き=刺突(斬りと区別)
     if(hi&&/滅却|超必殺|覇道|羅刹|無双|阿修羅|鬼神/.test(nm))fam='ultimate';
   } else if(role==='妨害'){ onRole='break';
     if(arch==='状態異常'){
-      if(/毒|ポイズン|ベノム|疫|プレイグ|ペスト|スポイル/.test(nm+eff))fam='dot';
+      if(/呪文|魔法ダメージ|純ダメ|×[0-9０-９]/.test(eff) && !/毒|眠|まひ|麻痺|呪い|カース|鎧|弱体|遅延|スロウ|拘束|睡|鈍/.test(nm+eff)){ fam=aoe?'burst':'bolt'; } // ★属性大魔法が毒/呪に化けるバグ修正(「呪文」は呪いでない)
+      else if(/毒|ポイズン|ベノム|疫|プレイグ|ペスト|スポイル/.test(nm+eff))fam='dot';
       else if(/眠|スリプ|ナップ/.test(nm)){fam='status';kind='sleep';}
       else if(/麻痺|まひ|パラライ/.test(nm+eff))fam='stun';
       else if(/遅延|ディレイ|スロウ|鈍|クイックダウン|テンペスト/.test(nm)){fam='status';kind='clock';}
@@ -504,111 +506,212 @@ function specForSkill(d){
       else fam='curse';
     } else if(arch==='魔法・範囲'){fam=hi?'bigmag':'burst';aoe=true;}
     else { if(/ドレイン|ドレイ|サイフォン|リーチ/.test(nm))fam='drain'; else fam='bolt'; }
+    if(/ドレイン|ドレイガ|サイフォン|リーチ/.test(nm) && !/アシッド|酸/.test(nm))motif='drain'; // 吸収=吸い込み
+    else if(/雨|レイン/.test(nm))motif='rain';                                           // アシッドレイン等=雨(アシッドは吸収でなく雨)
   } else if(role==='壁'){ onRole='wall';
     if(arch==='挑発・威圧'){ if(/威圧|喝|恫喝|睨|萎縮|牽制/.test(nm)){fam='debuff';kind='atk';} else fam='taunt'; }
     else if(arch==='庇護'||arch==='陣・結界'){fam='shield';party=true;}
-    else if(arch==='盾撃'){fam=/震|地鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash';aoe=aoe||/震|衝撃|波|全体/.test(nm+eff);}
-    else {fam='shield'; party=/全体|みんな|味方全員/.test(eff)||/号令|守護結界|陣/.test(nm);}
+    else if(arch==='盾撃'){
+      if(/ダウン|弱体/.test(eff)&&!/物理|ダメージ|打|×/.test(eff)){fam='debuff';kind='atk';}            // ★鎮め=デバフ(攻撃に化けるバグ修正)
+      else {fam=/震|地鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash';aoe=aoe||/震|衝撃|波|全体/.test(nm+eff);}
+    }
+    else if(/敵/.test(eff)&&/物理|ダメージ|×/.test(eff)){ fam=/震|鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash'; aoe=aoe||/全体|全員/.test(eff); } // ★地鳴り等=攻撃(バフに化けるバグ修正)
+    else {fam='shield'; party=/全体|みんな|全員/.test(eff)||/号令|守護結界|陣/.test(nm);}
   } else if(role==='回復'){ onRole='heal';
-    if(arch==='蘇生'){fam='revive';party=aoe;}
-    else if(arch==='状態回復・防御'){ if(/エスナ|パージ|キュア|浄化|アンフリーズ/.test(nm))fam='cleanse'; else {fam='shield';kind='ward';} party=aoe; }
+    if(/構える|ためる|チャージ|溜め/.test(nm+eff))kind='charge';                         // ★チャージ(即時に化けるバグ修正)
+    if(arch==='蘇生'){fam='revive';}
+    else if(arch==='状態回復・防御'){ if(/エスナ|パージ|キュア|浄化|アンフリーズ/.test(nm))fam='cleanse'; else {fam='shield';if(!kind)kind='ward';} }
     else { if(/ホーリー|セイクリッド|ジャッジ|グレア|グリマー|シャイン|裁き/.test(nm)&&/ダメージ|敵/.test(eff)){fam='beam';el='光';}
-           else if(/リジェネ|継続|慈雨|雨/.test(nm))fam='regen'; else fam='heal'; party=aoe; }
+           else if(/リジェネ|継続|慈雨|雨/.test(nm))fam='regen'; else fam='heal'; }
+    if(/雨|レイン/.test(nm))motif='rain';
+    party = aoe || /全体|全員|みんな|オール/.test(nm+eff);                                // ★全体回復/蘇生が単体に化けるバグ修正
   }
   if(!VAR[fam])fam='bolt';
-  return {tpl:fam,fam,el,aoe,lv,kind,party,onRole};
+  return {tpl:fam,fam,el,aoe,lv,kind,party,onRole,motif};
 }
 // ===== B案 v2: 属性(色と粒) × アーキタイプ(触り心地) ＝代表スライス(斬撃/打撃/衝撃波/魔法) =====
 // 属性の動きの向き(重力)と画面tint量。無属性はtintを載せない(鋼の白閃)
 function elGrav(el){ return (el==='炎'||el==='光'||el==='聖')?-50 : el==='毒'?-60 : el==='土'?130 : el==='氷'?30 : 0; }
 function elTint(el){ return el==='無'?0:0.14; }
-// 着弾点の属性シグネチャ(点/放射インパクト用＝打撃・魔法。斬撃は方向性なので使わない)
-function elImpact(E,s,big){
-  const c=PAL[s.el], n=Math.round((big?44:26)*LV[s.lv].p);
-  if(s.el==='雷'){ electric(E,big); burst(E.x,E.y,{n:n,spd:340,size:3,col:c,life:0.45,drag:0.9,kind:'streak'}); }
-  else if(s.el==='氷'){ burst(E.x,E.y,{n:n,spd:300,size:3.2,col:c,life:0.6,grav:30,drag:0.92,kind:'spark'}); burst(E.x,E.y-8,{n:10,spd:60,size:3,col:c,life:0.8,grav:130,drag:0.96,kind:'spark'}); }
-  else if(s.el==='土'){ burst(E.x,E.y+8,{n:n,spd:200,size:4,col:c,life:0.8,grav:130,drag:0.93,kind:'spark'}); }
-  else if(s.el==='毒'){ burst(E.x,E.y+8,{n:n,spd:90,size:3.4,col:c,life:1.0,grav:-60,drag:0.95}); }
-  else if(s.el==='闇'){ burst(E.x,E.y,{n:n,spd:60,size:3.4,col:c,life:0.5,grav:0,drag:0.99,kind:'dot'}); burst(E.x,E.y,{n:n,spd:280,size:3.2,col:c,life:0.6,drag:0.92,kind:'streak'}); }
-  else { burst(E.x,E.y,{n:n,spd:300,size:3.4,col:c,life:0.7,grav:elGrav(s.el),drag:0.91,kind:'streak'}); }
-  burst(E.x,E.y,{n:12,spd:90,size:5,col:c,life:0.5});
+// ===== ★属性シェイプ・プリミティブ＝「描くシルエット」(輪郭の個性。白黒でも見分けられる) =====
+function flameTongue(x,y,col,big){            // 炎: ゆらぐ炎舌が立ち上がる
+  var N=big?7:5;
+  for(var i=0;i<N;i++){ (function(k){ var ox=rnd(-(big?34:24),(big?34:24)), dur=0.5, ph=rnd(0,6), h=(big?78:54)*rnd(0.7,1.1), w=(big?15:11);
+    addDraw(dur,function(a){ var t=a/dur, al=Math.sin(Math.min(1,t*1.3)*Math.PI), hh=h*Math.min(1,t*1.7), bx=x+ox, by=y+8;
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;
+      var g=ctx.createLinearGradient(bx,by,bx,by-hh); g.addColorStop(0,col[0]); g.addColorStop(0.55,col[1]); g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(bx-w,by);
+      ctx.quadraticCurveTo(bx-w*0.7,by-hh*0.5, bx+Math.sin(a*9+ph)*w*0.7, by-hh);
+      ctx.quadraticCurveTo(bx+w*0.7,by-hh*0.5, bx+w,by); ctx.closePath(); ctx.fill();
+      ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; }); })(i); }
 }
-// 斬撃: 方向性のある刃筋一閃＋斬線に沿う属性火花。★円形バースト/リング禁止
+function iceShard(x,y,col,big){               // 氷: 鋭い結晶が放射状に突き出る
+  var N=big?9:6, dur=0.45;
+  for(var i=0;i<N;i++){ (function(k){ var ang=k/N*TAU+rnd(-0.18,0.18), len=(big?58:42)*rnd(0.7,1.1), wd=(big?7:5);
+    addDraw(dur,function(a){ var t=a/dur, gr=Math.min(1,t*2.4), al=(1-t)*0.95, L=len*gr;
+      ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;
+      ctx.fillStyle=col[1]; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(wd,L*0.4); ctx.lineTo(0,L); ctx.lineTo(-wd,L*0.4); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle=col[3]; ctx.lineWidth=1.3; ctx.stroke();
+      ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; }); })(i); }
+}
+function boltStrike(x,y,big){                 // 雷: 上空から枝分かれの稲妻が落ちる
+  var sx=x+rnd(-30,30), sy=4, dur=0.3;
+  for(var f=0;f<(big?3:2);f++){ (function(fk){ addDraw(dur,function(a){ if(a<fk*0.05||a>fk*0.05+0.05)return;
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.95;ctx.lineCap='round';
+    ctx.strokeStyle=fk?'#ffe27a':'#fff'; ctx.lineWidth=(big?3.4:2.4);
+    ctx.beginPath(); ctx.moveTo(sx,sy);
+    for(var seg=1;seg<=7;seg++){ var tt=seg/7, nx=sx+(x-sx)*tt+rnd(-18,18), ny=sy+(y-sy)*tt; ctx.lineTo(nx,ny);
+      if(Math.random()<0.4){ ctx.lineTo(nx+rnd(-22,22),ny+rnd(8,22)); ctx.moveTo(nx,ny); } }
+    ctx.stroke(); ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; }); })(f); }
+}
+function godRay(x,y,col,big){                 // 光: 放射状の光条＋後光
+  var N=big?12:8, dur=0.5;
+  addDraw(dur,function(a){ var t=a/dur, al=Math.sin(Math.min(1,t*1.4)*Math.PI), R=(big?72:52)*Math.min(1,t*1.6);
+    ctx.save();ctx.translate(x,y);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;
+    for(var i=0;i<N;i++){ ctx.rotate(TAU/N); ctx.fillStyle=col[1]; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(5,-R); ctx.lineTo(-5,-R); ctx.closePath(); ctx.fill(); }
+    var g=ctx.createRadialGradient(0,0,0,0,0,R*0.6); g.addColorStop(0,col[3]); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,R*0.6,0,TAU); ctx.fill();
+    ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+}
+function voidPull(x,y,col,big){               // 闇: 内へ吸い込む渦＋暗い核＋触手
+  for(var i=0;i<(big?26:16);i++){ var ang=rnd(0,TAU), rad=(big?72:50)*rnd(0.6,1); ps.push({x:x+Math.cos(ang)*rad,y:y+Math.sin(ang)*rad,vx:-Math.cos(ang)*rad*3,vy:-Math.sin(ang)*rad*3,life:0.4,max:0.4,size:3,col:pick(col),grav:0,drag:0.97,kind:'streak',rot:0,vr:0}); }
+  addDraw(0.55,function(a){ var t=a/0.55, al=Math.sin(Math.min(1,t*1.4)*Math.PI)*0.85, R=(big?46:32);
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;
+    var g=ctx.createRadialGradient(x,y,2,x,y,R); g.addColorStop(0,'rgba(20,0,30,0.9)'); g.addColorStop(0.6,col[1]); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,R,0,TAU); ctx.fill();
+    ctx.strokeStyle=col[2]; ctx.lineWidth=2; for(var k=0;k<3;k++){ var b=k/3*TAU+a*3; ctx.beginPath(); ctx.moveTo(x,y); for(var s2=0;s2<6;s2++){ var rr=s2/6*R; ctx.lineTo(x+Math.cos(b+s2*0.6)*rr, y+Math.sin(b+s2*0.6)*rr);} ctx.stroke(); }
+    ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+}
+function rockRise(x,y,col,big){               // 土: 角ばった岩塊がせり上がる＋地割れ
+  var N=big?6:4;
+  for(var i=0;i<N;i++){ (function(k){ var ox=rnd(-(big?40:28),(big?40:28)), sz=(big?22:15)*rnd(0.7,1.2), dur=0.55, rot=rnd(-0.5,0.5);
+    addDraw(dur,function(a){ var t=a/dur, up=Math.min(1,t*2)*(big?40:28), al=(1-Math.max(0,(t-0.5)*2)), bx=x+ox, by=y+10-up;
+      ctx.save();ctx.translate(bx,by);ctx.rotate(rot+t*1.5);ctx.globalAlpha=al;ctx.fillStyle=col[1];ctx.strokeStyle=col[3];ctx.lineWidth=1.4;
+      ctx.beginPath(); ctx.moveTo(-sz*0.5,sz*0.5); ctx.lineTo(sz*0.5,sz*0.4); ctx.lineTo(sz*0.4,-sz*0.5); ctx.lineTo(-sz*0.4,-sz*0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();ctx.globalAlpha=1; }); })(i); }
+  addDraw(0.4,function(a){ var t=a/0.4,al=(1-t)*0.8; ctx.save();ctx.globalAlpha=al;ctx.strokeStyle=col[2];ctx.lineWidth=3*(1-t); ctx.beginPath(); var px=x-40,py=y+14; ctx.moveTo(px,py); for(var s2=0;s2<6;s2++){ px+=rnd(8,16); py+=rnd(-5,5); ctx.lineTo(px,py);} ctx.stroke(); ctx.restore();ctx.globalAlpha=1; });
+}
+function poisonBubble(x,y,col,big){           // 毒: 膨れて弾ける泡
+  var N=big?9:6;
+  for(var i=0;i<N;i++){ (function(k){ var ox=rnd(-30,30), oy=rnd(-16,16), r0=(big?9:6)*rnd(0.6,1.2), dur=0.6, t0=k*0.05;
+    addDraw(t0+dur,function(a){ if(a<t0)return; var t=(a-t0)/dur, gr=Math.min(1,t*2), al=t<0.8?gr:(1-t)*5;
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.max(0,al);ctx.fillStyle=col[1];ctx.strokeStyle=col[0];ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.arc(x+ox,y+oy-t*8,r0*gr,0,TAU); ctx.fill(); ctx.stroke();
+      ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; }); })(i); }
+}
+function ripple(x,y,col,big){                 // 水: 地面の波紋(平たい楕円)
+  for(var r=0;r<(big?3:2);r++){ (function(rr){ addDraw(0.5,function(a){ var t=a/0.5,al=(1-t)*0.8; ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=rr%2?col[2]:col[1];ctx.lineWidth=(big?4:3)*(1-t); ctx.beginPath(); ctx.ellipse(x,y+14,(big?70:48)*Math.min(1,t+rr*0.12)+10,(big?20:14)*Math.min(1,t+rr*0.12)+4,0,0,TAU); ctx.stroke(); ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; }); })(r); }
+}
+function steelGlint(x,y,big){                 // 無: 鋼の白い弧＋火花
+  addDraw(0.2,function(a){ var t=a/0.2,al=Math.sin(t*Math.PI); ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle='#fff';ctx.lineWidth=(big?5:3.4);ctx.lineCap='round'; ctx.beginPath(); ctx.arc(x,y,(big?40:28),-0.9,0.9); ctx.stroke(); ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+  burst(x,y,{n:big?20:12,spd:300,size:2.6,col:['#fff','#cfe0ff'],life:0.4,drag:0.9,kind:'streak'});
+}
+// 属性シェイプ ディスパッチ(着弾点の輪郭＝個性の中心。色でなく形で属性を見分ける)
+function elShape(E,s,big){ var c=PAL[s.el];
+  switch(s.el){
+    case '炎': flameTongue(E.x,E.y,c,big); break;
+    case '氷': iceShard(E.x,E.y,c,big); break;
+    case '雷': boltStrike(E.x,E.y,big); electric(E,big); break;
+    case '光': godRay(E.x,E.y,c,big); break;
+    case '闇': voidPull(E.x,E.y,c,big); break;
+    case '土': rockRise(E.x,E.y,c,big); break;
+    case '毒': poisonBubble(E.x,E.y,c,big); break;
+    default: steelGlint(E.x,E.y,big);
+  }
+  burst(E.x,E.y,{n:big?10:6,spd:120,size:4,col:c,life:0.45,grav:elGrav(s.el),drag:0.92});  // 控えめな色アクセント(主役は形)
+}
+// 突く: 前方への刺突(線)。斬り(弧)と区別する別の動詞
+function thrustLine(A,E,col,big){
+  var dur=0.18;
+  addDraw(dur,function(a){ var t=a/dur, ext=Math.min(1,t*2.2), al=Math.sin(Math.min(1,t*1.4)*Math.PI), x=A.x+(E.x-A.x)*ext, y=(A.y-6)+(E.y-(A.y-6))*ext;
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.lineCap='round';
+    for(var k=0;k<3;k++){ ctx.strokeStyle=col[k]||col[col.length-1]; ctx.lineWidth=(big?9:6)-k*2.4; ctx.beginPath(); ctx.moveTo(A.x,A.y-6); ctx.lineTo(x,y); ctx.stroke(); }
+    ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+}
+// 斬撃/突き: 方向のある一閃 or 刺突 ＋ 属性シェイプ(形で個性)。連撃は順番に。★円形バースト禁止
 function bSlash(s){
-  const c=PAL[s.el], big=s.lv!=='low', col=['#fff',c[0],c[1]], ang=-0.7;
-  (s.aoe?[0,1]:[0]).forEach(function(idx,k){ setTimeoutFx(k*0.12,function(){
-    const E=FOES[idx], A=CAST();
-    chargeGlow(A.x,A.y-10,c[0],0.12,big);
-    setTimeoutFx(0.12,function(){
-      cut(E, s.aoe?0:ang, {col:col, big:true, span:s.aoe?170:(big?150:122)});
-      tint=Math.max(tint,elTint(s.el)); tintCol=c[0];
-      flash=Math.max(flash,0.4); flashCol=c[0];
-      shake=Math.max(shake, big?13:9);
-      if(s.el!=='無') burst(E.x,E.y,{n:big?16:10,spd:300,size:2.8,col:c,life:0.45,grav:elGrav(s.el),drag:0.92,kind:'streak',dir:ang,spread:0.6});
-      if(s.kind==='multi'){ var nseg=big?3:2; hit(idx,Math.floor(dmgOf(s)/nseg),false);
-        for(var i=1;i<nseg;i++){ (function(j){ setTimeoutFx(j*0.07,function(){ cut(E,(j%2?0.7:-0.7),{col:col,big:true,span:120}); hit(idx,Math.floor(dmgOf(s)/nseg),false); }); })(i); }
-      } else { hit(idx,dmgOf(s),s.lv==='high'); }
-    });
+  var c=PAL[s.el], big=s.lv!=='low', col=['#fff',c[0],c[1]], thrust=s.motif==='thrust', nseg=s.kind==='multi'?(big?3:2):1;
+  (s.aoe?[0,1]:[0]).forEach(function(idx,kk){ setTimeoutFx(kk*0.12,function(){
+    var E=FOES[idx], A=CAST(); chargeGlow(A.x,A.y-10,c[0],0.12,big);
+    for(var i=0;i<nseg;i++){ (function(j){ setTimeoutFx(0.12+j*0.13,function(){      // ★連撃は同時でなく順番に
+      if(thrust) thrustLine(A,E,col,big); else cut(E, s.aoe?0:(j%2?0.7:-0.7), {col:col,big:true,span:s.aoe?170:(big?150:122)});
+      elShape(E,s,big);
+      tint=Math.max(tint,elTint(s.el)); tintCol=c[0]; flash=Math.max(flash,0.4); flashCol=c[0]; shake=Math.max(shake, big?13:9);
+      hit(idx, nseg>1?Math.floor(dmgOf(s)/nseg):dmgOf(s), nseg===1&&s.lv==='high');
+    }); })(i); }
   }); });
-  return {dur:(s.aoe?0.3:0)+0.95};
+  return {dur:(s.aoe?0.3:0)+0.95+(nseg>1?0.26:0)};
 }
-// 打撃: 鈍器の「点」衝撃＝着弾点クラック＋小リング1-2＋重い震え。★広いリング禁止
+// 打撃: 鈍器の「点」衝撃＝着弾点クラック＋小リング＋重い震え＋属性シェイプ。★広いリング禁止
 function bBash(s){
-  const c=PAL[s.el], big=s.lv!=='low', fcol=s.el==='無'?'#fff':c[0];
-  (s.aoe?[0,1]:[0]).forEach(function(idx,k){ setTimeoutFx(k*0.1,function(){
-    const E=FOES[idx];
-    flash=Math.max(flash,0.42); flashCol=fcol;
-    shake=Math.max(shake, big?20:16);
+  var c=PAL[s.el], big=s.lv!=='low', fcol=s.el==='無'?'#fff':c[0];
+  (s.aoe?[0,1]:[0]).forEach(function(idx,kk){ setTimeoutFx(kk*0.1,function(){
+    var E=FOES[idx]; flash=Math.max(flash,0.42); flashCol=fcol; shake=Math.max(shake, big?20:16);
     addDraw(0.28,function(a){ var t=a/0.28,al=(1-t); ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=fcol;ctx.lineWidth=3*(1-t*0.5);ctx.lineCap='round';
       for(var i=0;i<7;i++){ var aa=i/7*TAU+0.3, len=(big?54:38)*Math.min(1,t*2); ctx.beginPath();ctx.moveTo(E.x,E.y);ctx.lineTo(E.x+Math.cos(aa)*len,E.y+Math.sin(aa)*len);ctx.stroke(); }
       ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
-    ring(E.x,E.y,fcol,false);
-    if(big) ring(E.x,E.y,c[1],false,0.06);
-    elImpact(E,s,big);
+    ring(E.x,E.y,fcol,false); if(big) ring(E.x,E.y,c[1],false,0.06);
+    elShape(E,s,big);
     if(s.el!=='無'){ tint=Math.max(tint,elTint(s.el)*0.7); tintCol=c[0]; }
     hit(idx,dmgOf(s),s.lv==='high');
   }); });
   return {dur:(s.aoe?0.2:0)+0.7};
 }
-// 衝撃波: 地面に広がる楕円リング＝面で全体に届く。★打撃(点)と差別化(常に全体)
+// 衝撃波: 地面に広がる楕円リング＝面で全体に届く＋属性シェイプ。★打撃(点)と差別化(常に全体)
 function bShock(s){
-  const c=PAL[s.el], big=s.lv!=='low', gy=Math.max(FOES[0].y,FOES[1].y)+18;
+  var c=PAL[s.el], big=s.lv!=='low', gy=Math.max(FOES[0].y,FOES[1].y)+18;
   chargeGlow(CW/2, gy-30, c[0], 0.2, big);
   setTimeoutFx(0.2,function(){
     flash=Math.max(flash,0.4); flashCol=c[0]; shake=Math.max(shake, big?20:16);
     if(s.el!=='無'){ tint=Math.max(tint,elTint(s.el)*0.8); tintCol=c[0]; }
     for(var r=0;r<(big?3:2);r++){ (function(rr){ addDraw(0.55,function(a){ var t=a/0.55,al=(1-t)*0.85; ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=rr%2?c[1]:c[0];ctx.lineWidth=(big?7:5)*(1-t);ctx.beginPath();ctx.ellipse(CW/2,gy,(CW*0.5)*Math.min(1,t+rr*0.12)+20,30*Math.min(1,t+rr*0.12)+8,0,0,TAU);ctx.stroke();ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; }); })(r); }
-    [0,1].forEach(function(idx,k){ setTimeoutFx(0.05+k*0.06,function(){ var E=FOES[idx];
-      burst(E.x,E.y+14,{n:Math.round((big?22:14)*LV[s.lv].p),spd:140,size:4,col:c,life:0.8,grav:s.el==='土'?60:-50,drag:0.93});
-      hit(idx,dmgOf(s),false);
-    }); });
+    [0,1].forEach(function(idx,k){ setTimeoutFx(0.05+k*0.06,function(){ elShape(FOES[idx],s,false); hit(idx,dmgOf(s),false); }); });
   });
-  return {dur:0.85};
+  return {dur:0.9};
 }
-// 魔法: 詠唱グロー→弾が飛ぶ→着弾で破裂(★t>=1のみ・着弾前破裂NG)。属性が主役
+// 降らす(雨): 上から雫が降り注ぎ、地面に波紋。範囲。
+function bRain(s){
+  var c=PAL[s.el], big=s.lv!=='low';
+  for(var d=0;d<(big?28:18);d++){ (function(k){ setTimeoutFx(k*0.03,function(){ var x=rnd(CW*0.2,CW*0.8);
+    ps.push({x:x,y:-10,vx:rnd(-10,10),vy:rnd(260,360),life:0.6,max:0.6,size:big?3.2:2.6,col:pick(c),grav:120,drag:0.99,kind:'streak',rot:0,vr:0}); }); })(d); }
+  tint=Math.max(tint,elTint(s.el)*0.7); tintCol=c[0];
+  setTimeoutFx(0.28,function(){ [0,1].forEach(function(idx){ var E=FOES[idx]; ripple(E.x,E.y,c,big); hit(idx,dmgOf(s),false); }); });
+  return {dur:1.0};
+}
+// 吸う(ドレイン): 敵→術者へ収束＋術者の回復glow
+function bDrain(s){
+  var c=PAL[s.el], big=s.lv!=='low', A=CAST(), E=FOES[0];
+  voidPull(E.x,E.y,c,big);
+  for(var k=0;k<(big?20:12);k++){ (function(j){ setTimeoutFx(j*0.02,function(){ var x=E.x+rnd(-22,22), y=E.y+rnd(-22,22);
+    ps.push({x:x,y:y,vx:(A.x-x)*1.8,vy:(A.y-y)*1.8,life:0.45,max:0.45,size:3,col:pick(c),grav:0,drag:0.99,kind:'streak',rot:0,vr:0}); }); })(k); }
+  setTimeoutFx(0.4,function(){ chargeGlow(A.x,A.y-8,c[2],0.3,true); allyHeal(curRole,false); });
+  hit(0,Math.floor(dmgOf(s)*0.7),false);
+  return {dur:0.95};
+}
+// 魔法: 詠唱グロー→弾が飛ぶ→着弾で属性シェイプが破裂(★t>=1のみ・着弾前破裂NG)。雨/吸収はmotifで分岐
 function bMagic(s){
-  const c=PAL[s.el], big=s.lv!=='low', A=CAST(), beam=s.fam==='beam', tgts=s.aoe?[0,1]:[0];
+  if(s.motif==='rain') return bRain(s);
+  if(s.motif==='drain') return bDrain(s);
+  var c=PAL[s.el], big=s.lv!=='low', A=CAST(), beam=s.fam==='beam', tgts=s.aoe?[0,1]:[0];
   chargeGlow(A.x, A.y-12, c[0], 0.3, true);
   if(beam){
     setTimeoutFx(0.3,function(){ tgts.forEach(function(idx){ beamCol(FOES[idx],c[0],true); });
       setTimeoutFx(0.18,function(){ flash=Math.max(flash,0.5);flashCol=c[0];shake=Math.max(shake,big?16:12);tint=Math.max(tint,elTint(s.el));tintCol=c[0];
-        tgts.forEach(function(idx){ var E=FOES[idx]; elImpact(E,s,big); ring(E.x,E.y,c[0],true); hit(idx,dmgOf(s),s.lv==='high'); }); });
+        tgts.forEach(function(idx){ elShape(FOES[idx],s,big); hit(idx,dmgOf(s),s.lv==='high'); }); });
     });
     return {dur:0.95};
   }
   tgts.forEach(function(idx,k){
     var E=FOES[idx], t0=0.3+k*0.08, tr=big?0.26:0.2;
     addDraw(t0+tr+0.05,function(a){ if(a<t0)return; var t=Math.min(1,(a-t0)/tr), x=A.x+(E.x-A.x)*t, y=(A.y-12)+(E.y-(A.y-12))*t-Math.sin(t*Math.PI)*30;
-      ctx.save();ctx.globalCompositeOperation='lighter';var rr=big?15:10,g=ctx.createRadialGradient(x,y,0,x,y,rr);g.addColorStop(0,'#fff');g.addColorStop(0.4,c[0]);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rr,0,TAU);ctx.fill();ctx.restore();
+      ctx.save();ctx.globalCompositeOperation='lighter';var rr=big?14:10,g=ctx.createRadialGradient(x,y,0,x,y,rr);g.addColorStop(0,'#fff');g.addColorStop(0.4,c[0]);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rr,0,TAU);ctx.fill();ctx.restore();
       if(Math.random()<0.85)burst(x,y,{n:2,spd:34,size:2,col:c,life:0.35,drag:0.9});
     });
     setTimeoutFx(t0+tr,function(){ flash=Math.max(flash,0.5);flashCol=c[0];shake=Math.max(shake,big?18:12);tint=Math.max(tint,elTint(s.el));tintCol=c[0];
-      elImpact(E,s,big); ring(E.x,E.y,c[0],true); ring(E.x,E.y,c[1],true,0.08); hit(idx,dmgOf(s),s.lv==='high'); });
+      elShape(E,s,big); hit(idx,dmgOf(s),s.lv==='high'); });
   });
-  return {dur:big?0.98:0.86};
+  return {dur:big?1.0:0.88};
 }
-// 代表スライス: 斬撃=slash / 打撃=bash / 衝撃波=quake / 魔法=bolt,burst,bigmag,beam
-const VARB={ slash:bSlash, bash:bBash, quake:bShock, bolt:bMagic, burst:bMagic, bigmag:bMagic, beam:bMagic };
+// 代表スライス: 斬撃/突き=slash / 打撃=bash / 衝撃波=quake / 魔法=bolt,burst,bigmag,beam / 雨=motif / 吸収=drain
+const VARB={ slash:bSlash, bash:bBash, quake:bShock, bolt:bMagic, burst:bMagic, bigmag:bMagic, beam:bMagic, drain:bDrain };
 function hasB(d){ return !!VARB[specForSkill(d).fam]; }
 function runEffect(d,ab){
   const s=specForSkill(d), fam=s.fam;
