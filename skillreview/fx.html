@@ -352,7 +352,7 @@ const TPL={
  heal(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];if(s.kind==='charge')chargeGlow(A.x,A.y,'#7CFC8A',0.4,true);tint=0.14;tintCol='#7CFC8A';const go=()=>{roles.forEach(r=>{const T=centerOf(allyEls[r]);allyHeal(r,true);riseSparks(T,['#7CFC8A','#d6ffe0','#ffe9a8'],true);ring(T.x,T.y,'#7CFC8A',true);ring(T.x,T.y,'#ffe9a8',true,0.12);glyph(T.x,T.y-46,'✚','#eafff0',true);});};if(s.kind==='charge')setTimeoutFx(0.42,go);else go();return{dur:s.kind==='charge'?1.2:0.95};},
  regen(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];tint=0.08;tintCol='#7CFC8A';roles.forEach(r=>{const T=centerOf(allyEls[r]);for(let k=0;k<5;k++)setTimeoutFx(k*0.14,()=>burst(T.x+rnd(-14,14),T.y+6,{n:4,spd:36,size:3,col:['#7CFC8A','#caffd6','#a3e635'],life:1.1,grav:-90,drag:0.97,kind:'spark',spread:0.6,dir:-Math.PI/2}));ring(T.x,T.y,'#7CFC8A',false);glyph(T.x,T.y-30,'🍃','#bff7c8',true);allyHeal(r,false);});return{dur:1.1};},
  revive(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];roles.forEach(r=>{const T=centerOf(allyEls[r]);beamCol(T,'#ffe9a8',true);riseSparks(T,['#ffe9a8','#fff','#ffd86b'],true,9);ring(T.x,T.y,'#ffe9a8',true);glyph(T.x,T.y-40,'✦','#fff',true);allyHeal(r,true);});flash=0.3;flashCol='#fff7d6';return{dur:1.3};},
- cleanse(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];roles.forEach(r=>{const T=centerOf(allyEls[r]);ring(T.x,T.y,'#fff',true);ring(T.x,T.y,'#d6ffe0',true,0.1);burst(T.x,T.y,{n:26,spd:90,size:3,col:['#fff','#d6ffe0','#7CFC8A'],life:0.8,grav:-30,drag:0.93});glyph(T.x,T.y-24,'✨','#fff',true);allyHeal(r,false);});return{dur:0.85};},
+ cleanse(A,_,s){const roles=s.party?Object.keys(allyEls):[curRole];roles.forEach(r=>{const T=centerOf(allyEls[r]);ring(T.x,T.y,'#fff',true);ring(T.x,T.y,'#d6ffe0',true,0.1);burst(T.x,T.y,{n:26,spd:90,size:3,col:['#fff','#d6ffe0','#7CFC8A'],life:0.8,grav:-30,drag:0.93});glyph(T.x,T.y-24,'✨','#fff',true);});return{dur:0.85};},
  beam(A,_,s){const pal=PAL[s.el],E=FOES[0];beamCol(E,pal[0],true);setTimeoutFx(0.2,()=>{flash=0.45;flashCol=pal[3];shake=12;hit(0,dmgOf(s),s.lv==='high');burst(E.x,E.y,{n:Math.round(60*LV[s.lv].p),spd:240,size:3.4,col:pal,life:0.6,grav:30,drag:0.92,kind:'streak'});ring(E.x,E.y,pal[0],true);});return{dur:0.9};}
 };
 // enemy single-target → ally
@@ -490,7 +490,7 @@ function specForSkill(d){
   if(role==='火力'){ onRole='dps';
     if(/不屈|金剛|踏止|捨て身|根性|耐え/.test(nm)){fam='buff';kind='endure';}      // 構え(致死耐え)=攻撃に見せない
     else if(arch==='機動・速度')fam='dash';
-    else if(arch==='構え・自己強化'){fam='buff';kind='atk';}
+    else if(arch==='構え・自己強化'){ if(/連|止め|敵/.test(eff)){fam='slash'; if(/連/.test(eff))kind='multi'; if(el==='氷'&&/砕|凍結/.test(eff))motif='shatter'; if(/敵全体/.test(eff))aoe=true;} else {fam='buff';kind='atk';} } // ★構え名でも中身が攻撃なら斬撃(光速斬/冥府斬)
     else {fam='slash'; if(arch==='多段斬')kind='multi';
       if(/突|先駆|刺|貫/.test(nm))motif='thrust';                                       // 突き/先駆け=刺突
       else if(el==='氷'&&(/砕|闇討ち|不意打ち|暗殺/.test(nm)||/凍結/.test(eff)))motif='shatter'; // 凍結を斬って砕く
@@ -499,7 +499,8 @@ function specForSkill(d){
     if(hi&&/滅却|超必殺|覇道|羅刹|無双|阿修羅|鬼神/.test(nm))fam='ultimate';
   } else if(role==='妨害'){ onRole='break';
     if(arch==='状態異常'){
-      if(/呪文|魔法ダメージ|純ダメ|×[0-9０-９]/.test(eff) && !/毒|眠|まひ|麻痺|呪い|カース|鎧|弱体|遅延|スロウ|拘束|睡|鈍/.test(nm+eff)){ fam=aoe?'burst':'bolt'; } // ★属性大魔法が毒/呪に化けるバグ修正(「呪文」は呪いでない)
+      if(/爆発|起爆|一斉/.test(nm+eff)){ fam=aoe?'burst':'bolt'; }                          // ★チェインイグナイト=全体起爆(攻撃)
+      else if(/呪文|魔法ダメージ|純ダメ|×[0-9０-９]/.test(eff) && !/毒|眠|まひ|麻痺|呪い|カース|鎧|弱体|遅延|スロウ|拘束|睡|鈍/.test(nm+eff)){ fam=aoe?'burst':'bolt'; } // ★属性大魔法が毒/呪に化けるバグ修正(「呪文」は呪いでない)
       else if(/毒|ポイズン|ベノム|疫|プレイグ|ペスト|スポイル/.test(nm+eff))fam='dot';
       else if(/眠|スリプ|ナップ/.test(nm)){fam='status';kind='sleep';}
       else if(/麻痺|まひ|パラライ/.test(nm+eff))fam='stun';
@@ -509,16 +510,18 @@ function specForSkill(d){
       else if(/弱体|ウィーク/.test(nm)){fam='debuff';kind='atk';}
       else fam='curse';
     } else if(arch==='魔法・範囲'){fam=hi?'bigmag':'burst';aoe=true;}
-    else { if(/ドレイン|ドレイ|サイフォン|リーチ/.test(nm))fam='drain'; else fam='bolt'; }
+    else { if(/ドレイン|ドレイ|サイフォン|リーチ/.test(nm))fam='drain'; else if(/ダメージ無し|純制御|ゲージ.*後退/.test(eff)){fam='status';kind='clock';} else fam='bolt'; } // チェイン(制御)=遅延系
     if(/ドレイン|ドレイガ|サイフォン|リーチ/.test(nm) && !/アシッド|酸/.test(nm))motif='drain'; // 吸収=吸い込み
     else if(/雨|レイン/.test(nm))motif='rain';                                           // アシッドレイン等=雨
     else if(/ストーム|嵐|旋風|ノヴァ/.test(nm))motif='gather';                            // 集まって爆ぜる
+    else if(/自分に|まとう|設置/.test(eff))motif='self';                                  // ★ポイズンミスト=自分に設置(敵を殴らない)
     var _hm=eff.match(/([2-9])連/); if(_hm)hits=+_hm[1];                                  // 「N連」=連続ヒット数
-    if(motif==='drain' && /オール|全体|全員/.test(nm+eff))aoe=true;                       // ドレインオール=全体吸収
+    if(motif==='drain')aoe=/オール|全体|全員/.test(nm+eff);                               // ★ドレインは単体・「オール」のみ全体
     if(/崩|防御ダウン|被ダメ|弱体|デバフ/.test(eff))cue='debuff';
     else if(/まひ|麻痺|やけど|火傷|凍|睡|眠/.test(eff))cue='status';                       // サンダガ(まひ)/フレアバースト(やけど)等
   } else if(role==='壁'){ onRole='wall';
-    if(arch==='挑発・威圧'){ if(/威圧|喝|恫喝|睨|萎縮|牽制/.test(nm)){fam='debuff';kind='atk';} else fam='taunt'; }
+    if(/狙い|引きつ|敵視/.test(eff)){fam='taunt'; if(/全体|全員/.test(eff))party=true;}    // ★不退/挑発結界=挑発(シールドに化けるバグ修正)
+    else if(arch==='挑発・威圧'){ if(/威圧|喝|恫喝|睨|萎縮|牽制/.test(nm)){fam='debuff';kind='atk';} else fam='taunt'; }
     else if(arch==='庇護'||arch==='陣・結界'){fam='shield';party=true;}
     else if(arch==='盾撃'){
       if(/ダウン|弱体/.test(eff)&&!/物理|ダメージ|打|×/.test(eff)){fam='debuff';kind='atk';}            // ★鎮め=デバフ(攻撃に化けるバグ修正)
@@ -527,13 +530,15 @@ function specForSkill(d){
     else if(/敵/.test(eff)&&/物理|ダメージ|×/.test(eff)){ fam=/震|鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash'; aoe=aoe||/全体|全員/.test(eff); } // ★地鳴り等=攻撃(バフに化けるバグ修正)
     else {fam='shield'; party=/全体|みんな|全員/.test(eff)||/号令|守護結界|陣/.test(nm);}
   } else if(role==='回復'){ onRole='heal';
-    if(/構える|ためる|チャージ|溜め/.test(nm+eff))kind='charge';                         // ★チャージ(即時に化けるバグ修正)
-    if(arch==='蘇生'){fam='revive';}
+    if(/構える|ためる|チャージ|溜め/.test(nm+eff))kind='charge';
+    if(/純ダメ|純AoE/.test(eff) || (/聖の光|ホーリ|セイクリッド|シャイン|グレア|グリマー|ジャッジ|裁き|光輝/.test(nm+eff) && /×/.test(eff) && !/回復=|HP回復|蘇生|リジェネ|状態異常/.test(eff))){
+      fam='beam'; el='光'; aoe=/敵全体|全体|AoE/.test(eff);                              // ★ホーリー系=敵への聖攻撃(回復に化けるバグ修正)
+    }
+    else if(arch==='蘇生')fam='revive';
     else if(arch==='状態回復・防御'){ if(/エスナ|パージ|キュア|浄化|アンフリーズ/.test(nm))fam='cleanse'; else {fam='shield';if(!kind)kind='ward';} }
-    else { if(/ホーリー|セイクリッド|ジャッジ|グレア|グリマー|シャイン|裁き/.test(nm)&&/ダメージ|敵/.test(eff)){fam='beam';el='光';}
-           else if(/リジェネ|継続|慈雨|雨/.test(nm))fam='regen'; else fam='heal'; }
+    else { if(/リジェネ|継続|慈雨|雨/.test(nm))fam='regen'; else fam='heal'; }
     if(/雨|レイン/.test(nm))motif='rain';
-    party = aoe || /全体|全員|みんな|オール/.test(nm+eff);                                // ★全体回復/蘇生が単体に化けるバグ修正
+    party = (fam!=='beam') && (aoe || /全体|全員|みんな|オール/.test(nm+eff));            // beamは敵対象=party不要／回復・蘇生は全体化
   }
   if(!VAR[fam])fam='bolt';
   return {tpl:fam,fam,el,aoe,lv,lr,kind,party,onRole,motif,cue,hits};
@@ -831,11 +836,15 @@ function b2Magic(s){
     setTimeoutFx(0.6,function(){ flash=Math.max(flash,0.55);flashCol=c[3];shake=Math.max(shake,big?22:16);tint=Math.max(tint,elTint(s.el));tintCol=c[0]; (s.aoe?[0,1]:[0]).forEach(function(idx){ elShapeRich(FOES[idx],s,true); elAura(FOES[idx],s,D-0.8); hit(idx,dmgOf(s),s.lv==='high'); }); });
     return {dur:D};
   }
-  if(s.fam==='beam' || (s.lr && !s.aoe)){                                   // ビーム放出(LR単体/holy beam)
-    var E=FOES[0]; chargeGlow(A.x,A.y-12,c[0],0.6,true);
+  if(s.fam==='beam' || (s.lr && !s.aoe)){                                   // ビーム放出(LR単体/holy beam)。★全体ビームは両方撃つ
+    var bt=s.aoe?[0,1]:[0]; chargeGlow(A.x,A.y-12,c[0],0.6,true);
     setTimeoutFx(0.6,function(){
-      addDraw(0.5,function(t){ var u=t/0.5,al=Math.sin(Math.min(1,u*1.6)*Math.PI)*0.95,w=(s.lr?40:26)*(0.7+0.3*Math.sin(t*30)); ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al; ctx.lineCap='round'; ctx.strokeStyle=c[1];ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(A.x,A.y-6);ctx.lineTo(E.x,E.y);ctx.stroke(); ctx.strokeStyle='#fff';ctx.lineWidth=w*0.4;ctx.beginPath();ctx.moveTo(A.x,A.y-6);ctx.lineTo(E.x,E.y);ctx.stroke(); ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
-      flash=Math.max(flash,0.6);flashCol=c[3];shake=Math.max(shake,22);tint=Math.max(tint,elTint(s.el));tintCol=c[0]; elShapeRich(E,s,true); elAura(E,s,D-0.9); hit(0,dmgOf(s),true);
+      flash=Math.max(flash,0.6);flashCol=c[3];shake=Math.max(shake,22);tint=Math.max(tint,elTint(s.el));tintCol=c[0];
+      bt.forEach(function(idx){ var E=FOES[idx];
+        addDraw(0.5,function(t){ var u=t/0.5,al=Math.sin(Math.min(1,u*1.6)*Math.PI)*0.95,w=(s.lr?40:26)*(0.7+0.3*Math.sin(t*30)); ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al; ctx.lineCap='round'; ctx.strokeStyle=c[1];ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(A.x,A.y-6);ctx.lineTo(E.x,E.y);ctx.stroke(); ctx.strokeStyle='#fff';ctx.lineWidth=w*0.4;ctx.beginPath();ctx.moveTo(A.x,A.y-6);ctx.lineTo(E.x,E.y);ctx.stroke(); ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+        elShapeRich(E,s,true); hit(idx,dmgOf(s),true);
+      });
+      elAura(FOES[bt[bt.length-1]],s,D-0.9);
     });
     return {dur:D};
   }
@@ -875,7 +884,7 @@ function b2Revive(s){ var roles=s.party?Object.keys(allyEls):[curRole], D=Math.m
   return {dur:D};
 }
 function b2Cleanse(s){ var roles=s.party?Object.keys(allyEls):[curRole], D=Math.max(DUR(s),0.9);
-  roles.forEach(function(r){ var T=centerOf(allyEls[r]); for(var k=0;k<2;k++)ring(T.x,T.y,k?'#d6ffe0':'#fff',true,k*0.08); for(var m=0;m<16;m++){ (function(){ setTimeoutFx(rnd(0,0.2),function(){ burst(T.x,T.y,{n:2,spd:rnd(70,150),size:3,col:['#fff','#d6ffe0','#7CFC8A'],life:0.7,grav:-20,drag:0.93}); }); })(); } glyph(T.x,T.y-24,'✨','#fff',true); allyHeal(r,false); });
+  roles.forEach(function(r){ var T=centerOf(allyEls[r]); for(var k=0;k<2;k++)ring(T.x,T.y,k?'#d6ffe0':'#fff',true,k*0.08); for(var m=0;m<16;m++){ (function(){ setTimeoutFx(rnd(0,0.2),function(){ burst(T.x,T.y,{n:2,spd:rnd(70,150),size:3,col:['#fff','#d6ffe0','#7CFC8A'],life:0.7,grav:-20,drag:0.93}); }); })(); } glyph(T.x,T.y-24,'✨','#fff',true); }); // ★浄化はHP回復しない(allyHeal除去)
   return {dur:D};
 }
 function b2Shield(s){ var roles=s.party?Object.keys(allyEls):[curRole], big=s.lv!=='low', D=Math.max(DUR(s),1.1);
@@ -892,9 +901,9 @@ function b2Debuff(s){ var m={atk:'#ff7b7b',armor:'#9aa0ad',slow:'#a78bfa'}[s.kin
   tg.forEach(function(idx){ var E=FOES[idx]; for(var k=0;k<2;k++)ring(E.x,E.y,m,false,k*0.1); downMotes(E,m,true); glyph(E.x,E.y-22,s.kind==='armor'?'🛡':'▼','#fff',false); if(s.kind==='armor')burst(E.x,E.y,{n:16,spd:140,size:3,col:['#cdd6e6','#9aa0ad'],life:0.5,drag:0.9,kind:'streak'}); });
   return {dur:D};
 }
-function b2Dot(s){ var c=PAL[s.el], poison=(s.el==='毒'), E=FOES[0], D=Math.max(DUR(s),1.2); sigil(E,poison?'#a3e635':'#ff7b3a',false); var steps=Math.floor(D/0.14);
+function b2Dot(s){ var c=PAL[s.el], poison=(s.el==='毒'), self=(s.motif==='self'), E=self?CAST():FOES[0], D=Math.max(DUR(s),1.2); sigil(E,poison?'#a3e635':'#ff7b3a',false); var steps=Math.floor(D/0.14);
   for(var k=0;k<steps;k++){ (function(t0){ setTimeoutFx(t0,function(){ if(poison){ ps.push({x:E.x+rnd(-22,22),y:E.y+10,vx:rnd(-10,10),vy:-rnd(30,60),life:0.9,max:0.9,size:rnd(3,5),col:pick(c),grav:0,drag:0.97,kind:'dot',rot:0,vr:0}); } else { burst(E.x+rnd(-18,18),E.y+8,{n:2,spd:40,size:2.6,col:c,life:0.6,grav:-70,drag:0.95,kind:'spark',dir:-Math.PI/2,spread:0.5}); } }); })(k*0.14); }
-  mistCloud(E.x,E.y,poison?['#3a5a10','#7CFC8A']:['#5a2a10','#ff7b3a'],true,LING(s)); glyph(E.x,E.y-22,poison?'☠':'🔥','#fff',true); hit(0,Math.floor(dmgOf(s)*0.5),false);
+  mistCloud(E.x,E.y,poison?['#3a5a10','#7CFC8A']:['#5a2a10','#ff7b3a'],true,LING(s)); glyph(E.x,E.y-22,poison?'☠':'🔥','#fff',true); if(!self)hit(0,Math.floor(dmgOf(s)*0.5),false); // 自分設置は敵を殴らない
   return {dur:D};
 }
 function b2Status(s){ var E=FOES[0], D=Math.max(DUR(s),0.9), ch=s.kind==='clock'?'⏱':s.kind==='sleep'?'💤':'…', col=s.kind==='clock'?'#cfe0ff':'#bfe8ff'; sigil(E,col,false); for(var k=0;k<3;k++)glyph(E.x+(k-1)*16,E.y-16-k*6,ch,col,true); burst(E.x,E.y-8,{n:14,spd:46,size:3,col:[col,'#fff'],life:0.9,grav:-20,drag:0.96,kind:'spark',dir:-Math.PI/2,spread:1.0}); return {dur:D}; }
