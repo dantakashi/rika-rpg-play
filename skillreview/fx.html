@@ -514,13 +514,15 @@ function specForSkill(d){
     else if(/雨|レイン/.test(nm))motif='rain';                                           // アシッドレイン等=雨
     else if(/ストーム|嵐|旋風|ノヴァ/.test(nm))motif='gather';                            // 集まって爆ぜる
     var _hm=eff.match(/([2-9])連/); if(_hm)hits=+_hm[1];                                  // 「N連」=連続ヒット数
+    if(motif==='drain' && /オール|全体|全員/.test(nm+eff))aoe=true;                       // ドレインオール=全体吸収
     if(/崩|防御ダウン|被ダメ|弱体|デバフ/.test(eff))cue='debuff';
+    else if(/まひ|麻痺|やけど|火傷|凍|睡|眠/.test(eff))cue='status';                       // サンダガ(まひ)/フレアバースト(やけど)等
   } else if(role==='壁'){ onRole='wall';
     if(arch==='挑発・威圧'){ if(/威圧|喝|恫喝|睨|萎縮|牽制/.test(nm)){fam='debuff';kind='atk';} else fam='taunt'; }
     else if(arch==='庇護'||arch==='陣・結界'){fam='shield';party=true;}
     else if(arch==='盾撃'){
       if(/ダウン|弱体/.test(eff)&&!/物理|ダメージ|打|×/.test(eff)){fam='debuff';kind='atk';}            // ★鎮め=デバフ(攻撃に化けるバグ修正)
-      else {fam=/震|地鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash';aoe=aoe||/震|衝撃|波|全体/.test(nm+eff);}
+      else {fam=/震|地鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash';aoe=aoe||/震|衝撃|波|全体/.test(nm+eff); if(fam==='bash'&&/連打|乱打|連撃|連/.test(nm+eff))kind='multi';} // 盾連打=連撃
     }
     else if(/敵/.test(eff)&&/物理|ダメージ|×/.test(eff)){ fam=/震|鳴|轟|大地|衝撃|波/.test(nm)?'quake':'bash'; aoe=aoe||/全体|全員/.test(eff); } // ★地鳴り等=攻撃(バフに化けるバグ修正)
     else {fam='shield'; party=/全体|みんな|全員/.test(eff)||/号令|守護結界|陣/.test(nm);}
@@ -762,8 +764,9 @@ function b2Slash(s){ var c=PAL[s.el], big=s.lv!=='low', col=['#fff',c[0],c[1]], 
       return;
     }
     for(var i=0;i<nseg;i++){ (function(j){ setTimeoutFx((big?0.2:0.14)+j*(big?0.13:0.1),function(){
-      if(s.motif==='thrust') thrustLine(A,E,col,big); else cut(E, s.aoe?0:(j%2?0.7:-0.7), {col:col,big:true,span:s.aoe?170:(big?150:122)});
-      elShapeRich(E,s,big);
+      var Eo = nseg>1 ? {x:E.x+rnd(-20,20), y:E.y+rnd(-16,16)} : E;                  // ★連斬は斬撃位置を僅かにずらす
+      if(s.motif==='thrust') thrustLine(A,Eo,col,big); else cut(Eo, s.aoe?0:(j%2?0.7:-0.7), {col:col,big:true,span:s.aoe?170:(big?150:122)});
+      elShapeRich(Eo,s,big);
       tint=Math.max(tint,elTint(s.el)); tintCol=c[0]; flash=Math.max(flash,0.42); flashCol=c[0]; shake=Math.max(shake, big?14:9);
       hit(idx, nseg>1?Math.floor(dmgOf(s)/nseg):dmgOf(s), nseg===1&&s.lv==='high');
       if(j===nseg-1){ if(big)elAura(E,s,D-((big?0.2:0.14)+j*0.13)-0.3); if(s.cue==='debuff')debuffCue(E); else if(s.cue==='status')statusCue(E,s.el); }
@@ -771,20 +774,20 @@ function b2Slash(s){ var c=PAL[s.el], big=s.lv!=='low', col=['#fff',c[0],c[1]], 
   }); });
   return {dur:D};
 }
-// 打撃: 重い点衝撃＋属性リッチ
-function b2Bash(s){ var c=PAL[s.el], big=s.lv!=='low', fcol=s.el==='無'?'#fff':c[0], D=DUR(s);
-  (s.aoe?[0,1]:[0]).forEach(function(idx,kk){ setTimeoutFx(kk*0.1,function(){ var E=FOES[idx];
-    chargeGlow(E.x,E.y-30,fcol,0.16,big);
-    setTimeoutFx(0.16,function(){
+// 打撃: 重い点衝撃＋属性リッチ。連打(kind=multi)はN回・位置をずらす
+function b2Bash(s){ var c=PAL[s.el], big=s.lv!=='low', fcol=s.el==='無'?'#fff':c[0], D=DUR(s), nseg=s.kind==='multi'?2:1;
+  (s.aoe?[0,1]:[0]).forEach(function(idx,kk){ for(var n=0;n<nseg;n++){ (function(nn){ setTimeoutFx(kk*0.1+nn*0.16,function(){ var E=FOES[idx], Eo=nseg>1?{x:E.x+rnd(-16,16),y:E.y+rnd(-12,12)}:E, last=(nn===nseg-1);
+    chargeGlow(Eo.x,Eo.y-30,fcol,nseg>1?0.1:0.16,big);
+    setTimeoutFx(nseg>1?0.1:0.16,function(){
       flash=Math.max(flash,0.5); flashCol=fcol; shake=Math.max(shake, big?24:18);
-      addDraw(0.3,function(a){ var t=a/0.3,al=(1-t); ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=fcol;ctx.lineWidth=4*(1-t*0.5);ctx.lineCap='round'; for(var i=0;i<9;i++){ var aa=i/9*TAU+0.2, len=(big?64:44)*Math.min(1,t*2); ctx.beginPath();ctx.moveTo(E.x,E.y);ctx.lineTo(E.x+Math.cos(aa)*len,E.y+Math.sin(aa)*len);ctx.stroke(); } ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
-      ring(E.x,E.y,fcol,false); if(big)ring(E.x,E.y,c[1],false,0.06);
-      elShapeRich(E,s,big); if(big)elAura(E,s,D-0.4);
+      addDraw(0.3,function(a){ var t=a/0.3,al=(1-t); ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=fcol;ctx.lineWidth=4*(1-t*0.5);ctx.lineCap='round'; for(var i=0;i<9;i++){ var aa=i/9*TAU+0.2, len=(big?64:44)*Math.min(1,t*2); ctx.beginPath();ctx.moveTo(Eo.x,Eo.y);ctx.lineTo(Eo.x+Math.cos(aa)*len,Eo.y+Math.sin(aa)*len);ctx.stroke(); } ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+      ring(Eo.x,Eo.y,fcol,false); if(big)ring(Eo.x,Eo.y,c[1],false,0.06);
+      elShapeRich(Eo,s,big&&last); if(big&&last)elAura(E,s,D-0.4);
       if(s.el!=='無'){tint=Math.max(tint,elTint(s.el)*0.8);tintCol=c[0];}
-      hit(idx,dmgOf(s),s.lv==='high');
+      hit(idx, nseg>1?Math.floor(dmgOf(s)/nseg):dmgOf(s), s.lv==='high'&&last);
     });
-  }); });
-  return {dur:D};
+  }); })(n); } });
+  return {dur:D+(nseg>1?0.16:0)};
 }
 // 衝撃波: 地面に広がる楕円リング(tierで本数)＋属性リッチ・常に全体
 function b2Shock(s){ var c=PAL[s.el], big=s.lv!=='low', gy=Math.max(FOES[0].y,FOES[1].y)+18, D=DUR(s);
@@ -806,12 +809,14 @@ function b2Rain(s){ var c=PAL[s.el], big=s.lv!=='low', D=DUR(s), ling=LING(s), s
   return {dur:D};
 }
 // 吸う(ドレイン): 吸い込み＋テザー＋術者の回復glow
-function b2Drain(s){ var c=PAL[s.el], big=s.lv!=='low', A=CAST(), E=FOES[0], D=Math.max(DUR(s),1.2);
-  voidPull(E.x,E.y,c,big);
-  addDraw(0.5,function(t){ var al=Math.sin(Math.min(1,t/0.4)*Math.PI)*0.7; ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=c[1];ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(E.x,E.y);ctx.lineTo(A.x,A.y-6);ctx.stroke();ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
-  for(var k=0;k<(big?26:16);k++){ (function(j){ setTimeoutFx(j*0.02,function(){ var x=E.x+rnd(-22,22), y=E.y+rnd(-22,22); ps.push({x:x,y:y,vx:(A.x-x)*1.8,vy:(A.y-6-y)*1.8,life:0.5,max:0.5,size:3,col:pick(c),grav:0,drag:0.99,kind:'streak',rot:0,vr:0}); }); })(k); }
+function b2Drain(s){ var c=PAL[s.el], big=s.lv!=='low', A=CAST(), D=Math.max(DUR(s),1.2), tg=s.aoe?[0,1]:[0];
+  tg.forEach(function(idx){ var E=FOES[idx];
+    voidPull(E.x,E.y,c,big);
+    addDraw(0.5,function(t){ var al=Math.sin(Math.min(1,t/0.4)*Math.PI)*0.7; ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=al;ctx.strokeStyle=c[1];ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(E.x,E.y);ctx.lineTo(A.x,A.y-6);ctx.stroke();ctx.restore();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'; });
+    for(var k=0;k<(big?22:14);k++){ (function(j){ setTimeoutFx(j*0.02,function(){ var x=E.x+rnd(-22,22), y=E.y+rnd(-22,22); ps.push({x:x,y:y,vx:(A.x-x)*1.8,vy:(A.y-6-y)*1.8,life:0.5,max:0.5,size:3,col:pick(c),grav:0,drag:0.99,kind:'streak',rot:0,vr:0}); }); })(k); }
+    hit(idx,Math.floor(dmgOf(s)*0.7),false);
+  });
   setTimeoutFx(0.45,function(){ chargeGlow(A.x,A.y-8,c[2],0.4,true); allyHeal(curRole,big); riseSparks(A,[c[1],c[2],'#fff'],true); });
-  hit(0,Math.floor(dmgOf(s)*0.7),false);
   return {dur:D};
 }
 // 魔法: 詠唱→弾(N連)→着弾で属性リッチ破裂。集まる(gather)/ビーム放出(LR単体)/雨/吸収を分岐
@@ -837,9 +842,11 @@ function b2Magic(s){
   var tgts=s.aoe?[0,1]:[0], hits=s.aoe?1:Math.min(s.hits||1,4);             // N連=連続ヒット
   chargeGlow(A.x,A.y-12,c[0],big?0.34:0.28,true);
   tgts.forEach(function(idx,kk){ for(var h=0;h<hits;h++){ (function(hh){
-    var E=FOES[idx], t0=(big?0.34:0.28)+kk*0.08+hh*0.16, tr=big?0.24:0.2;
-    addDraw(t0+tr+0.05,function(a){ if(a<t0)return; var t=Math.min(1,(a-t0)/tr), x=A.x+(E.x-A.x)*t, y=(A.y-12)+(E.y-(A.y-12))*t-Math.sin(t*Math.PI)*30; ctx.save();ctx.globalCompositeOperation='lighter';var rr=big?14:10,g=ctx.createRadialGradient(x,y,0,x,y,rr);g.addColorStop(0,'#fff');g.addColorStop(0.4,c[0]);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rr,0,TAU);ctx.fill();ctx.restore(); if(Math.random()<0.85)burst(x,y,{n:2,spd:34,size:2,col:c,life:0.35,drag:0.9}); });
-    setTimeoutFx(t0+tr,function(){ flash=Math.max(flash,0.5);flashCol=c[0];shake=Math.max(shake,big?16:12);tint=Math.max(tint,elTint(s.el));tintCol=c[0]; elShapeRich(E,s, hh===hits-1?big:false); hit(idx, hits>1?Math.floor(dmgOf(s)/hits):dmgOf(s), hh===hits-1&&s.lv==='high'); if(hh===hits-1){ if(s.cue==='debuff')debuffCue(E); if(big)elAura(E,s,D-(t0+tr)-0.2); } });
+    var E=FOES[idx], last=(hh===hits-1),
+        P = (hits>1 && !last) ? {x:E.x+rnd(-38,38), y:E.y+rnd(-26,18)} : {x:E.x, y:E.y}, // ★中心集中でなく数か所に散らす
+        t0=(big?0.34:0.28)+kk*0.08+hh*0.16, tr=big?0.24:0.2;
+    addDraw(t0+tr+0.05,function(a){ if(a<t0)return; var t=Math.min(1,(a-t0)/tr), x=A.x+(P.x-A.x)*t, y=(A.y-12)+(P.y-(A.y-12))*t-Math.sin(t*Math.PI)*30; ctx.save();ctx.globalCompositeOperation='lighter';var rr=big?14:10,g=ctx.createRadialGradient(x,y,0,x,y,rr);g.addColorStop(0,'#fff');g.addColorStop(0.4,c[0]);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rr,0,TAU);ctx.fill();ctx.restore(); if(Math.random()<0.85)burst(x,y,{n:2,spd:34,size:2,col:c,life:0.35,drag:0.9}); });
+    setTimeoutFx(t0+tr,function(){ flash=Math.max(flash,0.5);flashCol=c[0];shake=Math.max(shake,big?16:12);tint=Math.max(tint,elTint(s.el));tintCol=c[0]; elShapeRich(P,s, last?big:false); hit(idx, hits>1?Math.floor(dmgOf(s)/hits):dmgOf(s), last&&s.lv==='high'); if(last){ if(s.cue==='debuff')debuffCue(E); else if(s.cue==='status')statusCue(E,s.el); if(big)elAura(E,s,D-(t0+tr)-0.2); } });
   })(h); } });
   return {dur:D};
 }
@@ -851,9 +858,56 @@ function b2Ultimate(s){ var el=s.el!=='無'?s.el:'光', c=PAL[el], E=FOES[0], A=
   setTimeoutFx(1.7,function(){ elAura(E,su,D-1.9); });
   return {dur:D};
 }
-// A=現状v3 / B=v4「100点」。回復・バフ等は従来A(party修正済)
+// ===== 本展開: 支援(回復/壁/状態系)もB案を用意 =====
+function b2Heal(s){ var roles=s.party?Object.keys(allyEls):[curRole], D=Math.max(DUR(s),1.0), charge=s.kind==='charge'; tint=Math.max(tint,0.16);tintCol='#7CFC8A';
+  var go=function(){ roles.forEach(function(r){ var T=centerOf(allyEls[r]); allyHeal(r,true); for(var k=0;k<2;k++)ring(T.x,T.y,k?'#ffe9a8':'#7CFC8A',true,k*0.1); riseSparks(T,['#7CFC8A','#d6ffe0','#ffe9a8'],true,8); sparkleMotes(T.x,T.y-10,['#eafff0','#d6ffe0'],8,40,LING(s)); glyph(T.x,T.y-44,'✚','#eafff0',true); }); };
+  if(charge){ chargeGlow(CAST().x,CAST().y,'#7CFC8A',0.5,true); setTimeoutFx(0.5,go); } else go();
+  return {dur:charge?Math.max(D,1.3):D};
+}
+function b2Regen(s){ var roles=s.party?Object.keys(allyEls):[curRole], D=Math.max(DUR(s),1.2), rain=s.motif==='rain'; tint=Math.max(tint,0.08);tintCol='#7CFC8A';
+  roles.forEach(function(r){ var T=centerOf(allyEls[r]); allyHeal(r,false); ring(T.x,T.y,'#7CFC8A',false); var steps=Math.floor(D/0.16);
+    for(var k=0;k<steps;k++){ (function(t0){ setTimeoutFx(t0,function(){ if(rain){ ps.push({x:T.x+rnd(-22,22),y:T.y-42,vx:0,vy:rnd(120,180),life:0.6,max:0.6,size:2.6,col:pick(['#7CFC8A','#bfe3ff','#d6ffe0']),grav:60,drag:0.99,kind:'streak',rot:0,vr:0}); } else { burst(T.x+rnd(-16,16),T.y+6,{n:2,spd:30,size:2.6,col:['#7CFC8A','#caffd6','#a3e635'],life:0.9,grav:-80,drag:0.97,kind:'spark',dir:-Math.PI/2,spread:0.5}); } }); })(k*0.16); }
+    glyph(T.x,T.y-30,'🍃','#bff7c8',true); });
+  return {dur:D};
+}
+function b2Revive(s){ var roles=s.party?Object.keys(allyEls):[curRole], D=Math.max(DUR(s),1.3); flash=Math.max(flash,0.35);flashCol='#fff7d6';
+  roles.forEach(function(r){ var T=centerOf(allyEls[r]); beamCol(T,'#ffe9a8',true); riseSparks(T,['#ffe9a8','#fff','#ffd86b'],true,10); sparkleMotes(T.x,T.y-20,['#fff','#ffe9a8'],10,46,LING(s)); for(var k=0;k<2;k++)ring(T.x,T.y,'#ffe9a8',true,k*0.1); glyph(T.x,T.y-42,'✦','#fff',true); allyHeal(r,true); });
+  return {dur:D};
+}
+function b2Cleanse(s){ var roles=s.party?Object.keys(allyEls):[curRole], D=Math.max(DUR(s),0.9);
+  roles.forEach(function(r){ var T=centerOf(allyEls[r]); for(var k=0;k<2;k++)ring(T.x,T.y,k?'#d6ffe0':'#fff',true,k*0.08); for(var m=0;m<16;m++){ (function(){ setTimeoutFx(rnd(0,0.2),function(){ burst(T.x,T.y,{n:2,spd:rnd(70,150),size:3,col:['#fff','#d6ffe0','#7CFC8A'],life:0.7,grav:-20,drag:0.93}); }); })(); } glyph(T.x,T.y-24,'✨','#fff',true); allyHeal(r,false); });
+  return {dur:D};
+}
+function b2Shield(s){ var roles=s.party?Object.keys(allyEls):[curRole], big=s.lv!=='low', D=Math.max(DUR(s),1.1);
+  roles.forEach(function(r){ var T=centerOf(allyEls[r]); shieldDome(T,'#5ec8ff',Math.min(D,1.4),big&&!s.party); ring(T.x,T.y-6,'#9be8ff',false); if(s.kind==='ward')glyph(T.x,T.y-26,'✚','#bff4ff',true); allyShield(r,true); });
+  setTimeoutFx(Math.min(D,1.3),function(){ roles.forEach(function(r){allyShield(r,false);}); });
+  return {dur:D};
+}
+function b2Buff(s){ var roles=s.party?Object.keys(allyEls):[curRole], D=Math.max(DUR(s),0.9), m=({atk:['#ff7b5a','#ffd27a','↑'],def:['#5ec8ff','#bfe8ff','▲'],haste:['#7ad0ff','#cffaff','»'],endure:['#cfd8e6','#fff','✊'],advance:['#ffe27a','#fff','»']})[s.kind]||['#ff7b5a','#ffd27a','↑'];
+  roles.forEach(function(r){ var T=centerOf(allyEls[r]); riseSparks(T,[m[0],m[1],'#fff'],true,8); for(var k=0;k<2;k++)ring(T.x,T.y,m[0],false,k*0.1); sparkleMotes(T.x,T.y-10,[m[1],'#fff'],6,36,LING(s)); glyph(T.x,T.y-28,m[2],m[1],true); });
+  return {dur:D};
+}
+function b2Taunt(s){ var A=CAST(), D=Math.max(DUR(s),0.8); for(var k=0;k<3;k++)ring(A.x,A.y,'#ff6b6b',true,k*0.1); burst(A.x,A.y,{n:20,spd:90,size:3.4,col:['#ff6b6b','#ff8a8a','#fff'],life:0.7,grav:-40,drag:0.94}); glyph(A.x,A.y-26,'❗','#ff8a8a',true); return {dur:D}; }
+function b2Debuff(s){ var m={atk:'#ff7b7b',armor:'#9aa0ad',slow:'#a78bfa'}[s.kind]||'#9aa0ad', D=Math.max(DUR(s),0.85), tg=s.aoe?[0,1]:[0];
+  tg.forEach(function(idx){ var E=FOES[idx]; for(var k=0;k<2;k++)ring(E.x,E.y,m,false,k*0.1); downMotes(E,m,true); glyph(E.x,E.y-22,s.kind==='armor'?'🛡':'▼','#fff',false); if(s.kind==='armor')burst(E.x,E.y,{n:16,spd:140,size:3,col:['#cdd6e6','#9aa0ad'],life:0.5,drag:0.9,kind:'streak'}); });
+  return {dur:D};
+}
+function b2Dot(s){ var c=PAL[s.el], poison=(s.el==='毒'), E=FOES[0], D=Math.max(DUR(s),1.2); sigil(E,poison?'#a3e635':'#ff7b3a',false); var steps=Math.floor(D/0.14);
+  for(var k=0;k<steps;k++){ (function(t0){ setTimeoutFx(t0,function(){ if(poison){ ps.push({x:E.x+rnd(-22,22),y:E.y+10,vx:rnd(-10,10),vy:-rnd(30,60),life:0.9,max:0.9,size:rnd(3,5),col:pick(c),grav:0,drag:0.97,kind:'dot',rot:0,vr:0}); } else { burst(E.x+rnd(-18,18),E.y+8,{n:2,spd:40,size:2.6,col:c,life:0.6,grav:-70,drag:0.95,kind:'spark',dir:-Math.PI/2,spread:0.5}); } }); })(k*0.14); }
+  mistCloud(E.x,E.y,poison?['#3a5a10','#7CFC8A']:['#5a2a10','#ff7b3a'],true,LING(s)); glyph(E.x,E.y-22,poison?'☠':'🔥','#fff',true); hit(0,Math.floor(dmgOf(s)*0.5),false);
+  return {dur:D};
+}
+function b2Status(s){ var E=FOES[0], D=Math.max(DUR(s),0.9), ch=s.kind==='clock'?'⏱':s.kind==='sleep'?'💤':'…', col=s.kind==='clock'?'#cfe0ff':'#bfe8ff'; sigil(E,col,false); for(var k=0;k<3;k++)glyph(E.x+(k-1)*16,E.y-16-k*6,ch,col,true); burst(E.x,E.y-8,{n:14,spd:46,size:3,col:[col,'#fff'],life:0.9,grav:-20,drag:0.96,kind:'spark',dir:-Math.PI/2,spread:1.0}); return {dur:D}; }
+function b2Stun(s){ var E=FOES[0], D=Math.max(DUR(s),0.8); electric(E,true); setTimeoutFx(0.12,function(){electric(E,true);}); for(var k=0;k<2;k++)ring(E.x,E.y,'#ffe27a',true,k*0.08); burst(E.x,E.y,{n:18,spd:160,size:3,col:['#ffe27a','#fff'],life:0.5,drag:0.9,kind:'spark'}); glyph(E.x,E.y-22,'＊','#fff',false); shake=Math.max(shake,8); return {dur:D}; }
+function b2Curse(s){ var big=s.lv!=='low', D=Math.max(DUR(s),1.0), tg=s.aoe?[0,1]:[0], dc=['#9a6bff','#6b3bd0','#b07bff','#d2b8ff'];
+  tg.forEach(function(idx){ var E=FOES[idx]; voidPull(E.x,E.y,dc,big); sigil(E,'#b07bff',big); mistCloud(E.x,E.y,['#2a1040','#6b3bd0'],true,LING(s)); glyph(E.x,E.y-20,'👁','#d2b8ff',true); });
+  if(big){flash=Math.max(flash,0.2);flashCol='#3a1a5a';shake=Math.max(shake,8);}
+  return {dur:D};
+}
+// A=現状v3 / B=v4「100点」。A未整備の支援はVAR(従来・party修正済)
 const VARA={ slash:bSlash, bash:bBash, quake:bShock, bolt:bMagic, burst:bMagic, bigmag:bMagic, beam:bMagic, drain:bDrain };
-const VARB={ slash:b2Slash, bash:b2Bash, quake:b2Shock, bolt:b2Magic, burst:b2Magic, bigmag:b2Magic, beam:b2Magic, drain:b2Drain, ultimate:b2Ultimate };
+const VARB={ slash:b2Slash, bash:b2Bash, quake:b2Shock, bolt:b2Magic, burst:b2Magic, bigmag:b2Magic, beam:b2Magic, drain:b2Drain, ultimate:b2Ultimate,
+  heal:b2Heal, regen:b2Regen, revive:b2Revive, cleanse:b2Cleanse, shield:b2Shield, buff:b2Buff, taunt:b2Taunt, debuff:b2Debuff, dot:b2Dot, status:b2Status, stun:b2Stun, curse:b2Curse };
 function hasB(d){ return !!VARB[specForSkill(d).fam]; }
 function runEffect(d,ab){
   const s=specForSkill(d), fam=s.fam;
