@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>理科RPG2 スキルエフェクト プレビュー（アイコン）</title>
+<title>理科RPG2 スキルエフェクト A/B（属性強め検証）</title>
 <style>
 :root{ --bg1:#0b1020; --panel:#1a2336; --line:#2b3756; --ink:#e8eefc; --sub:#9fb0d6; --good:#34d399; --bad:#f87171; --warn:#fbbf24; --mp:#38bdf8; --gold:#f4c95d; --gold-d:#b9821f; }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -50,30 +50,28 @@ body{display:flex;flex-direction:column;}
 #csvout{width:100%;height:170px;display:none;background:#0b0c10;color:#cfd3db;border:0;border-top:1px solid #2c2f3a;padding:8px;font-family:ui-monospace,monospace;font-size:11px;}
 .el.炎{border-color:#ff8a4a;color:#ffb88a}.el.氷{border-color:#7ad0ff;color:#bfe6ff}.el.雷{border-color:#ffe27a;color:#fff0a8}.el.光{border-color:#fff3b0;color:#fffbe6}.el.土{border-color:#d8a85a;color:#ecc890}.el.毒{border-color:#a3e635;color:#cdee8a}.el.闇{border-color:#b07bff;color:#d2b8ff}.el.聖{border-color:#7CFC8A;color:#bdf5c6}.el.無{border-color:#5b6a86;color:#aebbd4}
 
-/* ===== スキルエフェクト・プレビュー(下半分) ===== */
+/* ===== スキルエフェクト A/B リスト(下半分) ===== */
 #sktool{position:sticky;top:0;z-index:5;background:#12141a;border-bottom:1px solid #2c2f3a;padding:6px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 #sktool .lab{font-size:10px;color:#9aa0ad;}
 #sktool button{background:#2c2f3a;color:#e7e7ea;border:none;border-radius:7px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;}
 #sktool button.on{background:#ffe27a;color:#15161a;}
-#sktool .vsel button.on{background:#6ea0ff;color:#06122a;}
-#sktool .chip{background:#1b2230;color:#cdd8f0;border:1px solid #2c3242;border-radius:13px;padding:4px 9px;font-size:11px;cursor:pointer;}
+#sktool .csv{background:#2bd47a;color:#06210f;}
+#sktool .chip{background:#1b2230;color:#cdd8f0;border:1px solid #2c3242;border-radius:13px;padding:4px 9px;font-size:11px;cursor:pointer;text-decoration:none;}
 #sktool .chip.on{background:#2a3a66;border-color:#6ea0ff;color:#fff;}
-#skillgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:9px;}
-.skcell{background:#101831;border:1px solid #283455;border-radius:11px;padding:7px 4px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;user-select:none;-webkit-user-select:none;}
-.skcell:active{transform:scale(.95);border-color:#6ea0ff;}
-.skcell .disc{width:54px;height:54px;border-radius:50%;overflow:hidden;background:#0c1326;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #33406b;font-size:26px;}
-.skcell .disc img{width:100%;height:100%;object-fit:contain;}
-.skcell .nm{font-size:10px;font-weight:700;line-height:1.15;color:#e6edff;}
-.skcell .el{font-size:8px;color:#8ea0c8;}
-#skdesc{position:fixed;inset:0;z-index:120;background:#000a;display:none;align-items:center;justify-content:center;padding:20px;}
-#skdesc.show{display:flex;}
-#skdesc .box{background:#141d35;border:1px solid #34406b;border-radius:14px;padding:16px 18px;max-width:340px;color:#e6edff;}
-#skdesc .dn{font-size:16px;font-weight:800;margin-bottom:4px;}
-#skdesc .dmeta{font-size:11px;color:#9fb3da;margin-bottom:8px;}
-#skdesc .deff{font-size:13px;line-height:1.5;}
-#skdesc .dfx{font-size:10px;color:#7e8db5;margin-top:8px;font-family:ui-monospace,monospace;}
-#skdesc .dclose{margin-top:12px;text-align:center;}
-#skdesc button{background:#2a3a66;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;}
+#sktool .prog{font-size:11px;color:#ffe27a;font-weight:700;}
+#sklist{padding:2px 0 40px;}
+.skrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 9px;border-bottom:1px solid #1c2742;}
+.skrow .disc{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#0c1326;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #33406b;flex:0 0 auto;font-size:20px;}
+.skrow .disc img{width:100%;height:100%;object-fit:contain;}
+.skrow .info{flex:1 1 130px;min-width:0;}
+.skrow .rn{font-size:12px;font-weight:700;color:#e6edff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.skrow .re{font-size:9.5px;color:#8ea0c8;line-height:1.25;}
+.skrow .ab{width:40px;height:38px;border-radius:8px;border:1px solid #2c3242;background:#1b2230;color:#cfe0ff;font-size:14px;font-weight:800;cursor:pointer;flex:0 0 auto;}
+.skrow .ab:active{transform:scale(.93);}
+.skrow .ab.a.sel{background:#2bd47a;color:#06210f;border-color:#2bd47a;}
+.skrow .ab.b.sel{background:#6ea0ff;color:#06122a;border-color:#6ea0ff;}
+.skrow .ab.dis{opacity:.3;cursor:not-allowed;}
+.skrow .cmt{flex:1 1 100%;background:#0f172a;border:1px solid #2c3242;color:#cdd8f0;border-radius:7px;padding:5px 8px;font-size:11px;}
 </style>
 <script src="fx_data.js"></script></head>
 <body>
@@ -99,15 +97,16 @@ body{display:flex;flex-direction:column;}
 </div></div>
 <div id="review">
   <div id="sktool">
-    <span class="lab">案</span><span class="vsel"><button data-v="0" class="on">①</button><button data-v="1">②</button><button data-v="2">③</button><button data-v="3">④</button></span>
+    <button class="csv" id="csv">📋 CSV書き出し</button>
+    <span class="prog" id="prog">0/295</span>
     <button id="slow">🐢スロー</button><button id="loop">⟳ループ</button>
-    <span class="lab">｜役割</span><span id="roleFilt"></span>
-    <a href="index.html" class="chip" style="text-decoration:none;">🎨 一覧</a>
-    <span class="lab" id="skhint" style="margin-left:auto;">タップ=発動／長押し=説明</span>
+    <a href="index.html" class="chip">🎨一覧</a>
+    <span id="roleFilt"></span>
+    <span class="lab" style="margin-left:auto;">A=現状／B=新案(属性強め:斬撃・魔法)</span>
   </div>
-  <div id="skillgrid"></div>
+  <div id="sklist"></div>
+  <textarea id="csvout" readonly style="display:none;width:100%;height:160px;background:#0b0c10;color:#cfd3db;border:0;border-top:1px solid #2c2f3a;padding:8px;font-family:ui-monospace,monospace;font-size:11px;"></textarea>
 </div>
-<div id="skdesc"><div class="box"><div class="dn"></div><div class="dmeta"></div><div class="deff"></div><div class="dfx"></div><div class="dclose"><button>とじる</button></div></div></div>
 <script>
 const app=document.getElementById('app'),cv=document.getElementById('fx'),ctx=cv.getContext('2d');
 const foeCards=[document.getElementById('foe0'),document.getElementById('foe1')];
@@ -481,13 +480,13 @@ function frame(now){let dt=(now-last)/1000;last=now;if(dt>0.05)dt=0.05;const sdt
 // ===== data + review =====
 const CONCEPTS=[{"i":"fire_slash","n":"炎の斬撃","r":"火力","e":"炎"},{"i":"ice_slash","n":"氷の斬撃","r":"火力","e":"氷"},{"i":"thunder_slash","n":"雷の斬撃","r":"火力","e":"雷"},{"i":"light_slash","n":"光の斬撃","r":"火力","e":"光"},{"i":"earth_slash","n":"大地の斬撃","r":"火力","e":"土"},{"i":"poison_slash","n":"毒の斬撃","r":"火力","e":"毒"},{"i":"plain_slash","n":"ただの斬撃","r":"火力","e":"無"},{"i":"debuff_slash","n":"弱体の斬撃","r":"火力","e":"無"},{"i":"multi_slash","n":"連続斬り","r":"火力","e":"無"},{"i":"multi_fire","n":"炎の連撃","r":"火力","e":"炎"},{"i":"multi_ice","n":"氷の連撃","r":"火力","e":"氷"},{"i":"multi_thunder","n":"雷の連撃","r":"火力","e":"雷"},{"i":"multi_light","n":"光の連撃","r":"火力","e":"光"},{"i":"aoe_slash","n":"全体薙ぎ払い","r":"火力","e":"無"},{"i":"aoe_fire_slash","n":"全体炎薙ぎ","r":"火力","e":"炎"},{"i":"aoe_ice_slash","n":"全体氷薙ぎ","r":"火力","e":"氷"},{"i":"aoe_thunder_slash","n":"全体雷薙ぎ","r":"火力","e":"雷"},{"i":"aoe_light_slash","n":"全体光薙ぎ","r":"火力","e":"光"},{"i":"aoe_earth_slash","n":"全体大地薙ぎ","r":"火力","e":"土"},{"i":"execute","n":"止め・砕き特大","r":"火力","e":"闇"},{"i":"charge_strike","n":"ためる大攻撃","r":"火力","e":"無"},{"i":"power_buff","n":"攻撃力アップ","r":"火力","e":"無"},{"i":"endure","n":"根性・致死耐え","r":"火力","e":"無"},{"i":"dash_strike","n":"踏み込み突撃","r":"火力","e":"無"},{"i":"haste_self","n":"自己加速","r":"火力","e":"無"},{"i":"lr_aoe_fire_slash","n":"劫火の大薙ぎ","r":"火力","e":"炎"},{"i":"lr_finisher","n":"超必殺の一閃","r":"火力","e":"無"},{"i":"fire_magic","n":"炎の魔法","r":"妨害","e":"炎"},{"i":"fire_magic_multi","n":"炎の連呪文","r":"妨害","e":"炎"},{"i":"ice_magic","n":"氷の魔法","r":"妨害","e":"氷"},{"i":"ice_magic_multi","n":"氷の連呪文","r":"妨害","e":"氷"},{"i":"thunder_magic","n":"雷の魔法","r":"妨害","e":"雷"},{"i":"light_magic","n":"光の魔法","r":"妨害","e":"光"},{"i":"earth_magic","n":"土の魔法","r":"妨害","e":"土"},{"i":"dark_magic","n":"闇の魔法","r":"妨害","e":"闇"},{"i":"weak_magic","n":"見習い魔法","r":"妨害","e":"無"},{"i":"aoe_magic","n":"無属性全体魔法","r":"妨害","e":"無"},{"i":"aoe_fire_magic","n":"炎の全体魔法","r":"妨害","e":"炎"},{"i":"aoe_ice_magic","n":"氷の全体魔法","r":"妨害","e":"氷"},{"i":"aoe_thunder_magic","n":"雷の全体魔法","r":"妨害","e":"雷"},{"i":"aoe_light_magic","n":"光の全体魔法","r":"妨害","e":"光"},{"i":"aoe_earth_magic","n":"土の全体魔法","r":"妨害","e":"土"},{"i":"detonate","n":"状態異常の起爆","r":"妨害","e":"無"},{"i":"poison","n":"毒付与","r":"妨害","e":"毒"},{"i":"sleep","n":"眠り付与","r":"妨害","e":"無"},{"i":"paralyze","n":"まひ付与","r":"妨害","e":"雷"},{"i":"curse","n":"呪い・弱体下地","r":"妨害","e":"闇"},{"i":"armor_break","n":"防御崩し","r":"妨害","e":"無"},{"i":"atk_down_magic","n":"攻撃力ダウン(魔)","r":"妨害","e":"無"},{"i":"drain","n":"吸収(ドレイン)","r":"妨害","e":"闇"},{"i":"delay","n":"行動遅延・拘束","r":"妨害","e":"無"},{"i":"slow","n":"鈍足","r":"妨害","e":"無"},{"i":"self_ward","n":"自己耐性・霧","r":"妨害","e":"無"},{"i":"lr_plague","n":"疫災の全体異常","r":"妨害","e":"闇"},{"i":"lr_ice_magic","n":"氷獄の大魔法","r":"妨害","e":"氷"},{"i":"lr_thunder_magic","n":"雷神の大魔法","r":"妨害","e":"雷"},{"i":"taunt","n":"挑発・敵視集め","r":"壁","e":"無"},{"i":"cover","n":"かばう・肩代わり","r":"壁","e":"無"},{"i":"guard_self","n":"自己防御・耐え","r":"壁","e":"無"},{"i":"aegis_party","n":"全体ダメージ軽減","r":"壁","e":"無"},{"i":"def_up","n":"まもり強化","r":"壁","e":"無"},{"i":"status_ward","n":"状態異常耐性(壁)","r":"壁","e":"無"},{"i":"atk_down","n":"敵攻撃力ダウン","r":"壁","e":"無"},{"i":"quake","n":"大地の衝撃波","r":"壁","e":"土"},{"i":"shield_bash","n":"盾で殴る","r":"壁","e":"無"},{"i":"rally","n":"行動ゲージ前進","r":"壁","e":"無"},{"i":"heal","n":"回復の光","r":"回復","e":"聖"},{"i":"regen","n":"継続回復(リジェネ)","r":"回復","e":"聖"},{"i":"charge_heal","n":"ためる大回復","r":"回復","e":"聖"},{"i":"auto_heal","n":"自動救命の光","r":"回復","e":"聖"},{"i":"revive","n":"蘇生","r":"回復","e":"聖"},{"i":"aoe_heal_revive","n":"全体回復＋蘇生","r":"回復","e":"聖"},{"i":"cleanse","n":"状態回復・浄化","r":"回復","e":"聖"},{"i":"ward_status","n":"状態異常バリア(回復)","r":"回復","e":"聖"},{"i":"holy_magic","n":"聖光の魔法","r":"回復","e":"光"},{"i":"heal_haste","n":"回復役の加速","r":"回復","e":"聖"}];
 const ENEMIES=[{i:'e_claw',n:'ひっかき'},{i:'e_bite',n:'かみつき'},{i:'e_lunge',n:'とびかかり'},{i:'e_tail',n:'尻尾なぎ払い(全体)'},{i:'e_breath',n:'ブレス(全体)'},{i:'e_slam',n:'たたきつけ(全体)'},{i:'e_gaze',n:'にらみ(まひ)'},{i:'e_spit',n:'どくはき'},{i:'e_curse',n:'のろい'}];
-// ===== スキル → エフェクト 対応 =====
+// ===== スキル → エフェクト 対応(arch=クリーンなバケツ名で写像) =====
 const ELMAP={火:'炎',氷:'氷',雷:'雷',光:'光',闇:'闇',地:'土',毒:'毒',風:'無',水:'氷',無:'無'};
 function specForSkill(d){
   const role=d.r, arch=d.arch, nm=d.n||'', eff=d.eff||'', t=d.t||'';
   const hi=/LR|UR/.test(t), mid=/SR|SSR/.test(t); const lv=hi?'high':(mid?'med':'low');
   let el=ELMAP[d.el]||'無', fam='slash', onRole=ROLE2CAST[role]||'dps', kind='', party=false;
-  let aoe=/全体|味方全員|敵全員|みんな/.test(eff)||/範囲|全体/.test(arch)||/オール|ガ$|ジャ$/.test(nm)||arch==='陣・結界';
+  let aoe=/全体|味方全員|敵全員|みんな/.test(eff)||arch==='魔法・範囲'||arch==='陣・結界';
   if(role==='火力'){ onRole='dps';
     if(arch==='機動・速度')fam='dash';
     else if(arch==='構え・自己強化'){fam='buff';kind=/不屈|金剛|踏止|耐|捨て身/.test(nm)?'endure':'atk';}
@@ -519,50 +518,93 @@ function specForSkill(d){
   if(!VAR[fam])fam='bolt';
   return {tpl:fam,fam,el,aoe,lv,kind,party,onRole};
 }
-let selVar=0, curSkill=null, lastPlay=null;
-function playSkill(d){
+// ===== B案: 属性を強く押し出した 斬撃 / 魔法 =====
+function slashElB(s){
+  const c=PAL[s.el], big=s.lv!=='low';
+  (s.aoe?[0,1]:[0]).forEach(function(idx,k){ setTimeoutFx(k*0.12,function(){
+    const E=FOES[idx], A=CAST();
+    chargeGlow(A.x,A.y-10,c[0],0.13,big);
+    setTimeoutFx(0.13,function(){
+      cut(E,-0.7,{col:['#fff',c[0],c[1]],big:true,span:big?150:122});
+      tint=Math.max(tint,0.13);tintCol=c[0];
+      flash=Math.max(flash,0.42);flashCol=c[0];
+      shake=Math.max(shake,12);
+      var grav=(s.el==='炎'||s.el==='聖'||s.el==='光')?-50:(s.el==='土'?130:15);
+      burst(E.x,E.y,{n:big?46:28,spd:300,size:3.4,col:c,life:0.7,grav:grav,drag:0.91,kind:'streak'});
+      burst(E.x,E.y,{n:14,spd:90,size:5,col:c,life:0.5});
+      ring(E.x,E.y,c[0],true);ring(E.x,E.y,c[1],true,0.07);
+      hit(idx,dmgOf(s),s.lv==='high');
+    });
+  }); });
+  return {dur:(s.aoe?0.3:0)+0.95};
+}
+function magicElB(s){
+  const c=PAL[s.el], big=s.lv!=='low', aoe=s.aoe;
+  var mid={x:CW/2,y:(FOES[0].y+FOES[1].y)/2}, A=CAST(), src=aoe?mid:{x:A.x,y:A.y-10};
+  chargeGlow(src.x,src.y,c[0],0.3,true);
+  setTimeoutFx(0.3,function(){
+    tint=Math.max(tint,0.16);tintCol=c[0];
+    flash=Math.max(flash,0.5);flashCol=c[0];
+    shake=Math.max(shake,big?18:12);
+    (aoe?[0,1]:[0]).forEach(function(idx){ var E=FOES[idx];
+      burst(E.x,E.y,{n:big?90:52,spd:aoe?360:280,size:3.6,col:c,life:0.8,grav:18,drag:0.92,kind:'streak'});
+      burst(E.x,E.y,{n:20,spd:110,size:6,col:c,life:0.5});
+      ring(E.x,E.y,c[0],true);ring(E.x,E.y,c[1],true,0.08);
+      hit(idx,dmgOf(s),s.lv==='high');
+    });
+  });
+  return {dur:1.05};
+}
+const ELFAMS={slash:1,bolt:1,burst:1,bigmag:1,beam:1};
+function hasB(d){ return !!ELFAMS[specForSkill(d).fam]; }
+function runEffect(d,ab){
+  const s=specForSkill(d), fam=s.fam;
+  if(ab==='B'&&ELFAMS[fam]){ return {r:(fam==='slash'?slashElB(s):magicElB(s)),fam:fam,s:s}; }
+  const vfns=VAR[fam]||VAR.bolt; return {r:vfns[0](s),fam:fam,s:s};
+}
+let curSkill=null,curAB='A',lastPlay=null;
+function playSkill(d,ab){
   ps.length=0;draws.length=0;timers.length=0;shake=0;flash=0;tint=0;fxAge=0;prevAge=0;fit();resetScene();
   FOES=[centerOf(foeImgs[0]),centerOf(foeImgs[1])];
   const s=specForSkill(d); curRole=s.onRole;
-  document.querySelectorAll('.ally-card').forEach(c=>c.classList.toggle('active',c.dataset.role===curRole));
-  const fam=s.fam, vfns=VAR[fam]||VAR.bolt, r=(vfns[selVar]||vfns[0])(s);
-  curId='sk';curVar=selVar;curSkill=d;lastPlay=function(){playSkill(d);};
-  document.getElementById('phaseHint').innerHTML='<b>'+d.n+'</b> 案'+(selVar+1)+' <span style="color:#9aa0ad">['+fam+'/'+s.el+(s.aoe?'/全体':'')+(s.party?'/全体がけ':'')+']</span>';
-  fx={dur:r.dur};
+  document.querySelectorAll('.ally-card').forEach(function(c){c.classList.toggle('active',c.dataset.role===curRole);});
+  const out=runEffect(d,ab);
+  curSkill=d;curAB=ab;curId='sk';curVar=0;lastPlay=function(){playSkill(d,ab);};
+  document.getElementById('phaseHint').innerHTML='<b>'+d.n+'</b> '+ab+'案 <span style="color:#9aa0ad">['+out.fam+'/'+s.el+(s.aoe?'/全体':'')+(s.party?'/全体がけ':'')+']</span>';
+  fx={dur:out.r.dur};
 }
-// ===== 下半分: アイコン4列グリッド =====
-const grid=document.getElementById('skillgrid');
-let roleF='all';
-function buildGrid(){
-  grid.innerHTML='';
-  SKILLDATA.filter(d=>roleF==='all'||d.r===roleF).forEach(d=>{
-    const c=document.createElement('div');c.className='skcell';
-    c.innerHTML='<div class="disc"><img loading="lazy" src="../skill_icons/'+d.f+'.png" alt="" onerror="this.parentNode.textContent=String.fromCodePoint(10024)"></div><div class="nm">'+d.n+'</div><div class="el">'+d.el+(d.t?' · '+d.t:'')+'</div>';
-    let lp=null,moved=false;
-    const start=function(){moved=false;lp=setTimeout(function(){lp=null;showDesc(d);},480);};
-    const end=function(){ if(lp){clearTimeout(lp);lp=null;if(!moved)playSkill(d);} };
-    c.addEventListener('touchstart',function(){start();},{passive:true});
-    c.addEventListener('touchmove',function(){moved=true;});
-    c.addEventListener('touchend',function(e){e.preventDefault();end();});
-    c.addEventListener('mousedown',start);
-    c.addEventListener('mouseup',end);
-    c.addEventListener('mouseleave',function(){if(lp){clearTimeout(lp);lp=null;}});
-    grid.appendChild(c);
+// ===== 採用・コメントの保存 =====
+const VKEY='rika2_fxAB_v1';
+let verdict=JSON.parse(localStorage.getItem(VKEY)||'{}');
+function saveV(){localStorage.setItem(VKEY,JSON.stringify(verdict));updProg();}
+function adopt(d,ab){ var v=verdict[d.f]||{}; v.pick=ab; verdict[d.f]=v; saveV(); markRow(d.f); playSkill(d,ab); }
+function setCmt(d,val){ var v=verdict[d.f]||{}; v.cmt=val; if(!val&&!v.pick)delete verdict[d.f]; else verdict[d.f]=v; saveV(); }
+function markRow(f){ var row=document.querySelector('.skrow[data-f="'+f+'"]'); if(!row)return; var v=verdict[f]||{}; row.querySelector('.ab.a').classList.toggle('sel',v.pick==='A'); var b=row.querySelector('.ab.b'); if(b)b.classList.toggle('sel',v.pick==='B'); }
+function updProg(){ var n=Object.values(verdict).filter(function(v){return v.pick;}).length; document.getElementById('prog').textContent=n+'/'+SKILLDATA.length; }
+// ===== 1行1スキルのA/Bリスト =====
+const list=document.getElementById('sklist'); let roleF='all';
+function buildList(){
+  list.innerHTML='';
+  SKILLDATA.filter(function(d){return roleF==='all'||d.r===roleF;}).forEach(function(d){
+    var bEnabled=hasB(d), cmt=((verdict[d.f]&&verdict[d.f].cmt)||'').replace(/"/g,'&quot;');
+    var row=document.createElement('div'); row.className='skrow'; row.dataset.f=d.f;
+    row.innerHTML='<div class="disc"><img loading="lazy" src="../skill_icons/'+d.f+'.png" onerror="this.parentNode.textContent=String.fromCodePoint(10024)"></div>'+
+      '<div class="info"><div class="rn">'+d.n+' <span style="color:#7e8db5;font-weight:400">'+d.el+'·'+(d.t||'')+'</span></div><div class="re">'+(d.eff||'')+'</div></div>'+
+      '<button class="ab a">A</button>'+
+      '<button class="ab b'+(bEnabled?'':' dis')+'"'+(bEnabled?'':' disabled')+'>B</button>'+
+      '<input class="cmt" placeholder="コメント(任意)" value="'+cmt+'">';
+    row.querySelector('.ab.a').onclick=function(){adopt(d,'A');};
+    if(bEnabled)row.querySelector('.ab.b').onclick=function(){adopt(d,'B');};
+    var ci=row.querySelector('.cmt'); ci.onchange=function(){setCmt(d,ci.value);};
+    list.appendChild(row); markRow(d.f);
   });
 }
-function showDesc(d){
-  const s=specForSkill(d); const box=document.getElementById('skdesc');
-  box.querySelector('.dn').textContent=d.n;
-  box.querySelector('.dmeta').textContent=d.r+' ・ '+d.el+' ・ '+(d.t||'')+' ・ '+d.arch;
-  box.querySelector('.deff').textContent=d.eff||'(効果データなし)';
-  box.querySelector('.dfx').textContent='エフェクト: '+s.fam+' / '+s.el+(s.aoe?' / 全体':'')+(s.party?' / 全体がけ':'')+'（案'+(selVar+1)+'）';
-  box.classList.add('show');
-}
-document.getElementById('skdesc').addEventListener('click',function(e){ if(e.target===this||e.target.tagName==='BUTTON')this.classList.remove('show'); });
-document.querySelectorAll('#sktool .vsel button').forEach(function(b){b.onclick=function(){selVar=+b.dataset.v;document.querySelectorAll('#sktool .vsel button').forEach(function(x){x.classList.toggle('on',x===b);});if(curSkill)playSkill(curSkill);};});
-var rf=document.getElementById('roleFilt');[['all','全'],['火力','火力'],['妨害','妨害'],['壁','壁'],['回復','回復']].forEach(function(p){var b=document.createElement('button');b.className='chip'+(p[0]==='all'?' on':'');b.textContent=p[1];b.onclick=function(){roleF=p[0];document.querySelectorAll('#roleFilt button').forEach(function(x){x.classList.toggle('on',x===b);});buildGrid();};rf.appendChild(b);});
+var rf=document.getElementById('roleFilt');[['all','全'],['火力','火力'],['妨害','妨害'],['壁','壁'],['回復','回復']].forEach(function(p){var b=document.createElement('button');b.className='chip'+(p[0]==='all'?' on':'');b.textContent=p[1];b.onclick=function(){roleF=p[0];document.querySelectorAll('#roleFilt button').forEach(function(x){x.classList.toggle('on',x===b);});buildList();};rf.appendChild(b);});
 document.getElementById('slow').onclick=function(){slow=!slow;this.classList.toggle('on',slow);};
 document.getElementById('loop').onclick=function(){loop=!loop;this.classList.toggle('on',loop);};
-buildGrid();
+document.getElementById('csv').onclick=function(){ var s='file,name,role,element,tier,pick,comment\n';
+  SKILLDATA.forEach(function(d){ var v=verdict[d.f]||{}, c=(v.cmt||'').replace(/"/g,'""'); s+=d.f+','+d.n+','+d.r+','+d.el+','+(d.t||'')+','+(v.pick||'')+',"'+c+'"\n'; });
+  var o=document.getElementById('csvout'); o.style.display='block'; o.value=s; o.select(); if(navigator.clipboard)navigator.clipboard.writeText(s); this.textContent='コピー済み✓'; var self=this; setTimeout(function(){self.textContent='📋 CSV書き出し';},1500); };
+buildList(); updProg();
 requestAnimationFrame(frame);
 </script></body></html>
