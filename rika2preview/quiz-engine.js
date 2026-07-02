@@ -2705,7 +2705,7 @@ const QUIZ_CSS = `
   .imgtap-hot:active{transform:scale(.97);} .imgtap-hot.ok{border-color:#fff;background:rgba(52,211,153,.35);box-shadow:0 0 0 2px var(--good,#34d399);} .imgtap-hot.ng{border-color:var(--bad,#ef4444);background:rgba(239,68,68,.32);}
   .imgtap-hint{text-align:center;color:var(--sub,#9fb0d0);font-size:13px;margin-top:6px;}
   .qfeed .rightttl{color:var(--good,#34d399);font-weight:800;text-align:center;margin-bottom:6px;font-size:16px;}
-  /* 💡ヒント(5秒後に押せる・罰なし)。#qfeed内=Quiz管轄・全答え方で共通 */
+  /* 💡ヒント(8秒後に押せる・罰なし)。#qfeed内=Quiz管轄・全答え方で共通 */
   .q-hint-btn{width:100%;margin-top:10px;padding:12px;border-radius:11px;border:2px dashed var(--gold-d,#dca22f);background:#1a1408;color:var(--gold,#f7d579);font-size:15px;font-weight:800;}
   .q-hint-btn:disabled{opacity:.55;}
   .q-hint-btn:not(:disabled){border-style:solid;box-shadow:0 0 12px #f7d57966;}
@@ -2737,7 +2737,7 @@ const Quiz = { _onResult:null, _onContinue:null, _styled:false, _order:null, _pr
     document.getElementById('qq').textContent=q.q;
     document.getElementById('qfeed').innerHTML=''; { const _qh=document.getElementById('qhead'); if(_qh)_qh.innerHTML=''; }   // ★ヘッダーのヒントボタンも出題ごとに掃除
     (Quiz._renderers[q.answerType]||Quiz._renderers.choice)(q,subj);   // ★answerTypeで答え方UIを分岐(#qans/#qimgを作る)
-    if(q.hint && (q.hint.text || q.hint.img)) Quiz._startHint();       // ★💡ヒント(あれば)。5秒後に押せる・罰なし。#qfeed内=全答え方で共通・回答後は結果で上書き
+    if(q.hint && (q.hint.text || q.hint.img)) Quiz._startHint();       // ★💡ヒント(あれば)。8秒後に押せる・罰なし。#qfeed内=全答え方で共通・回答後は結果で上書き
     document.getElementById('qOverlay').classList.add('show'); },
   _subjImg(subj){ return `<div style="text-align:center;"><div style="font-size:62px;line-height:1;">${subj.emoji}</div><div style="font-size:13px;color:${subj.color};margin-top:8px;font-weight:700;">${subj.jp}</div></div>`; },
   _qimg(q,subj){ return q.img ? `<img src="${q.img}" alt="" style="max-width:100%;max-height:240px;border-radius:12px;">` : Quiz._subjImg(subj); },   // 刺激画像(img)があれば図・なければ教科アイコン(§3.6 図を半分以上に)。imageTap以外の全答え方で共通。
@@ -2795,8 +2795,8 @@ const Quiz = { _onResult:null, _onContinue:null, _styled:false, _order:null, _pr
     document.querySelectorAll('.tile,.tf-btn,.ord-chip,.ord-go,.imgtap-hot').forEach(b=>b.disabled=true);
     const head = correct ? `<div class="rightttl">せいかい！ 「${answerLabel(curQ)}」</div>` : `<div class="wrongttl">おしい！ 正解は「${answerLabel(curQ)}」</div>`;
     document.getElementById('qfeed').innerHTML=head+`<div class="desc">💡 ${curQ.desc}</div><button class="next" onclick="Quiz._continue()">つぎへ ▶</button>`;
-    document.getElementById('qctx').innerHTML = correct ? 'よくできました！かいせつを読もう。' : 'まちがえても大丈夫。HPは減りません。'; },
-  // ── 💡ヒント(5秒後に押せる・罰なし)。q.hint={text?,img?}。受験問題でも見れば解けるよう作る想定(北極星=背伸びしても挫折しない) ──
+    document.getElementById('qctx').innerHTML = correct ? 'よくできました！かいせつを読もう。' : (Quiz._practice ? 'まちがえても大丈夫。あとで もう一度でるよ。' : 'まちがえても大丈夫。HPは減りません。'); },
+  // ── 💡ヒント(8秒後に押せる・罰なし)。q.hint={text?,img?}。受験問題でも見れば解けるよう作る想定(北極星=背伸びしても挫折しない) ──
   _startHint(){ const fb=document.getElementById('qhead')||document.getElementById('qfeed'); if(!fb)return;   // ★ヘッダーに置く=答えタイルから離して誤タップ抑制(#qhead無い旧器は#qfeedにフォールバック)
     fb.innerHTML=`<button class="q-hint-btn" id="quizHintBtn" onclick="quizShowHint()" disabled>💡 ヒント（あと8秒）</button>`;
     let left=8; Quiz._hintTimer=setInterval(()=>{ const b=document.getElementById('quizHintBtn');
@@ -2805,7 +2805,7 @@ const Quiz = { _onResult:null, _onContinue:null, _styled:false, _order:null, _pr
       if(left<=0){ clearInterval(Quiz._hintTimer); Quiz._hintTimer=null; b.disabled=false; b.textContent='💡 ヒントを見る'; }
       else b.textContent=`💡 ヒント（あと${left}秒）`; }, 1000); },
   _showHint(){ const h=curQ&&curQ.hint; if(!h)return; const b=document.getElementById('quizHintBtn');
-    if(b && b.disabled)return;                                    // まだ5秒たっていない=無効
+    if(b && b.disabled)return;                                    // まだ8秒たっていない=無効
     if(document.getElementById('quizHintPop'))return;             // 二重表示ガード
     const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     let inner=''; if(h.img)inner+=`<img src="${esc(h.img)}" alt="ヒント図">`; if(h.text)inner+=`<div class="htext">${esc(h.text)}</div>`;

@@ -132,6 +132,7 @@
   @keyframes enemyDie{ 0%{ transform:scale(1); opacity:1; } 16%{ transform:scale(1.16); filter:brightness(2.6) drop-shadow(0 0 18px #fff); } 100%{ transform:scale(.74) translateY(-12px); opacity:.22; filter:grayscale(1) brightness(1); } }
   .enemy-row{display:flex; gap:8px; justify-content:center; align-items:flex-end; flex-wrap:wrap; flex:0 0 auto;}
   .enemy-card{position:relative; text-align:center;}
+  .enemy-card.targetable{cursor:pointer;}
   .eimg{margin:0 auto; display:flex; align-items:center; justify-content:center; border-radius:13px; overflow:hidden; border:1px solid var(--line); box-shadow:0 6px 12px rgba(0,0,0,.5); max-height:48vh;}
   .eimg img{width:100%; height:100%; object-fit:cover; display:block;}
   .enemy-card.dead{opacity:.28; filter:grayscale(1);}
@@ -147,7 +148,9 @@
   @keyframes windupPulse{50%{outline-color:#fff; box-shadow:0 0 0 3px rgba(248,113,113,.22),0 6px 12px rgba(0,0,0,.5);}}
   .eattr{font-size:9px; padding:1px 6px; border-radius:99px; font-weight:700; border:1px solid; display:inline-block; margin-top:2px;}
   .ailments{display:flex; gap:3px; justify-content:center; flex-wrap:wrap; margin-top:2px; min-height:13px;}
-  .ail{font-size:10px; padding:0 5px; border-radius:6px; background:#0009; border:1px solid var(--line); line-height:1.4;}
+  .ail{font-size:10px; padding:0 5px; border-radius:6px; background:#10233c; border:1px solid #2563eb; color:#bfdbfe; line-height:1.4;}
+  .ail.debuff{background:#3a1018; border-color:#b91c1c; color:#fecaca;}
+  .ail sup{font-size:9px; margin-left:1px; color:#fff; vertical-align:super;}
   .efx{position:absolute; left:50%; top:0; transform:translateX(-50%); font-weight:900; pointer-events:none; animation:dmgFloat .9s ease-out forwards; white-space:nowrap; text-shadow:0 2px 6px #000;}
   .efx.crit{color:var(--warn);} .efx.norm{color:#fff;} .efx.dot{color:#a3e635; font-size:15px;}
   .efx.drop{animation:dropFloat 1.8s ease-out forwards; font-size:21px; font-weight:900; text-shadow:0 2px 7px #000; line-height:1.15; text-align:center;}
@@ -161,6 +164,10 @@
   .mid{flex:1 1 auto; position:relative; min-height:10px;}
   .combo-badge{position:absolute; right:8px; top:4px; font-size:11px; color:var(--warn); font-weight:700; text-shadow:0 1px 3px #000;}
   .combo-badge b{font-size:20px;}
+  .combo-badge.pop{animation:comboPop .12s ease-out;}
+  .combo-badge.hot5{color:#ffd166;}
+  .combo-badge.hot10{color:#fff1a6; text-shadow:0 0 10px rgba(251,191,36,.75),0 1px 3px #000;}
+  @keyframes comboPop{50%{transform:scale(1.12);}}
 
   .panel{flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:14px 14px 0 0; padding:9px 12px 13px; box-shadow:0 -6px 18px #0006;}
   .party{display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:9px;}
@@ -180,6 +187,7 @@
   @keyframes allyLowPulse{50%{border-color:#fb7185; box-shadow:0 0 0 2px rgba(248,113,113,.28);}}
   .ac-mp{font-size:8px; color:var(--mp); margin-top:2px; line-height:1.15;}
   .ac-shield{position:absolute; right:2px; top:1px; font-size:9px; line-height:1; max-width:88%; text-align:right; word-break:break-all;}
+  .ac-shield .ail{display:inline-block; margin-left:2px; padding:0 3px; font-size:10px;}
   .ac-down{position:absolute; inset:0; display:none; align-items:center; justify-content:center; font-size:24px;} .ally-card.downed .ac-down{display:flex;}
   .ac-fx{position:absolute; left:50%; top:-4px; transform:translateX(-50%); font-size:15px; font-weight:900; pointer-events:none; animation:dmgFloat .9s ease-out forwards; white-space:nowrap;}
   .ac-fx.heal{color:var(--good);} .ac-fx.hit{color:var(--bad);} .ally-card.hitflash{animation:hitflash .3s;}
@@ -232,8 +240,10 @@
   .qtrainbar.show{display:flex;}
   .qtrainbar .qtb-rp{font-size:12.5px; color:var(--sub);} .qtrainbar .qtb-rp b{color:var(--gold);}
   .qtrainbar .qtb-prog{font-size:12px; color:var(--sub); margin-left:2px;}
+  .qtrainbar .qtb-toast{font-size:12px; font-weight:900; padding:3px 8px; border-radius:99px; background:rgba(255,255,255,.08); border:1px solid currentColor; animation:reviewToast .6s ease-out;}
   .qtrainbar .qtb-stop{margin-left:auto; padding:6px 15px; border-radius:18px; background:#3a1c1c; border:1px solid #b91c1c; color:#fca5a5; font-size:12.5px; font-weight:700;}
   .qtrainbar .qtb-stop:active{transform:scale(.96);}
+  @keyframes reviewToast{0%{transform:translateY(5px) scale(.9);opacity:0;}100%{transform:translateY(0) scale(1);opacity:1;}}
   /* ── §Z 図版の拡大ライトボックス（タップで拡大・ピンチ/ホイールでズーム・ドラッグで移動。社会のミニ地図方式） ── */
   .qimg{position:relative;}   /* 🔍ボタンの位置基準 */
   .qzoom-btn{position:absolute; top:8px; right:8px; z-index:3; width:40px; height:40px; border-radius:11px;
@@ -252,14 +262,20 @@
   .imgzoom .iz-hint{flex:0 0 auto; text-align:center; color:var(--sub); font-size:12.5px; padding:6px 0 11px;}
 
   .dmg{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-size:30px; font-weight:900; color:#fff; pointer-events:none; animation:dmgFloat .9s ease-out forwards;}
-  @keyframes dmgFloat{0%{opacity:0; transform:translate(-50%,8px) scale(.6);}20%{opacity:1; transform:translate(-50%,-4px) scale(1.1);}100%{opacity:0; transform:translate(-50%,-40px) scale(1);}}
+  @keyframes dmgFloat{0%{opacity:0; transform:translate(calc(-50% + var(--dmg-x,0px)),8px) scale(.6);}20%{opacity:1; transform:translate(calc(-50% + var(--dmg-x,0px)),-4px) scale(1.1);}100%{opacity:0; transform:translate(calc(-50% + var(--dmg-x,0px)),-40px) scale(1);}}
   .shake{animation:shake .28s;} .shake.soft{animation:shakeSoft .18s;} @keyframes shake{0%,100%{transform:translate(0,0);}20%{transform:translate(-7px,3px);}40%{transform:translate(6px,-3px);}60%{transform:translate(-5px,2px);}80%{transform:translate(4px,-2px);}} @keyframes shakeSoft{0%,100%{transform:translate(0,0);}30%{transform:translate(-2px,1px);}60%{transform:translate(2px,-1px);}}
   .hitflash{animation:hitflash .3s;} @keyframes hitflash{0%,100%{filter:none;}40%{filter:brightness(2.2) drop-shadow(0 0 14px #fff);}}
   .particle{position:absolute; width:8px; height:8px; border-radius:50%; pointer-events:none;}
   .savor-banner{position:absolute; left:0; right:0; top:24%; text-align:center; pointer-events:none; z-index:5;}
+  .savor-banner.threat{top:19%;}
+  .savor-banner.system{top:27%;}
+  .savor-banner.exit .big{animation:savorExit .08s ease-in forwards;}
   .savor-banner .big{display:inline-block; font-size:24px; font-weight:900; padding:7px 16px; border-radius:14px; background:rgba(10,14,28,.82); border:1px solid var(--warn); color:var(--warn); text-shadow:0 2px 8px #000; animation:savorPop .35s ease-out;}
+  .savor-banner.threat .big{border-color:#fb7185; color:#fecaca; background:rgba(58,16,24,.88); box-shadow:0 0 0 2px rgba(248,113,113,.16);}
+  .savor-banner.system .big{border-color:var(--line); color:#cbd5e1; background:rgba(8,12,24,.78);}
   .savor-banner small{font-size:13px; color:#fff;}
   @keyframes savorPop{from{transform:scale(.6); opacity:0;}to{transform:scale(1); opacity:1;}}
+  @keyframes savorExit{to{transform:scale(.72); opacity:0;}}
   .flash-good{animation:fg .25s;} @keyframes fg{0%{background:rgba(52,211,153,.10);}100%{background:transparent;}}
 
   .tuner{position:absolute; inset:0; background:rgba(5,8,16,.95); z-index:40; padding:16px; overflow:auto; display:none;}
@@ -588,6 +604,16 @@
   .dw-empty{font-size:12px;color:var(--sub);text-align:center;line-height:1.6;padding:16px 4px;}
   .dw-new{display:flex;flex-direction:column;min-width:0;}
   .dw-scroll{max-height:42vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:3px;}
+  .drop-name{position:relative;}
+  .drop-upgrade{display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 6px;border-radius:99px;background:rgba(244,201,93,.14);border:1px solid rgba(244,201,93,.6);color:var(--gold);font-size:10px;font-weight:900;vertical-align:middle;}
+  .rv-card{max-width:520px;margin:14px auto 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(8,12,24,.45);text-align:left;}
+  .rv-row{margin:6px 0;}
+  .rv-top{display:flex;font-size:12px;margin-bottom:2px;}
+  .rv-sub{font-weight:700;}
+  .rv-num{margin-left:auto;color:rgba(255,255,255,.55);}
+  .rv-track{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .rv-fill{height:100%;width:0;transition:width .65s ease-out;}
+  .rv-badge{margin-left:7px;padding:2px 7px;border-radius:99px;background:rgba(244,201,93,.14);border:1px solid rgba(244,201,93,.55);color:var(--gold);font-size:12px;font-weight:900;}
   @media (min-width:680px){
     .drawer{position:absolute;inset:0;width:auto;max-width:none;background:transparent;border-left:0;box-shadow:none;transform:none;display:none;align-items:center;justify-content:center;padding:24px;overflow:auto;-webkit-overflow-scrolling:touch;}
     .drawer.open{display:flex;transform:none;}
@@ -597,6 +623,14 @@
     .dw-card.dw-wide .dw-now{flex:0 0 40%;overflow-y:auto;}
     .dw-card.dw-wide .dw-new{flex:1;min-height:0;}
     .dw-card.dw-wide .dw-scroll{max-height:none;flex:1;}
+  }
+  @media (min-width:680px){
+    .ename{font-size:14px;}
+    .eattr{font-size:12px;}
+    .ac-name{font-size:13px;}
+    .ac-role{font-size:11px;}
+    .ail{font-size:13px;}
+    .ac-shield .ail{font-size:13px;padding:0 5px;}
   }
   /* ===== そうび(装備)画面の横長3カラム(キャラ＋6スロット＋もちもの) ===== */
   .eq-wrap{display:flex;flex-direction:column;gap:12px;}
@@ -739,7 +773,7 @@
   </div>
 </div>
 
-<script src="quiz-engine.js?v=2026-06-24"></script><!-- ★?v=でキャッシュ無効化＝エンジン更新を生徒に確実に届ける(問題側申し送り)。エンジン更新時はvを上げる -->
+<script src="quiz-engine.js?v=2026-07-02"></script><!-- ★?v=でキャッシュ無効化＝エンジン更新を生徒に確実に届ける(問題側申し送り)。エンジン更新時はvを上げる -->
 
 <script>
 /* ===================== §1 設定 ===================== */
@@ -1350,7 +1384,7 @@ function renderCommand(){
   if(phase==='targeting'){ renderTargeting(); return; }
 }
 function chooseAttack(){ if(phase!=='command')return; beginAction({kind:'attack', scope:'enemy', needsQuiz:true}); }
-function chooseDefend(){ if(phase!=='command')return; activeAlly.defending=true; bigSavor('🛡️ 防御の構え'); afterAction(activeAlly.name+'は身を守った'); }
+function chooseDefend(){ if(phase!=='command')return; activeAlly.defending=true; bigSavor('🛡️ 防御の構え','player'); afterAction(activeAlly.name+'は身を守った'); }
 function openSkills(){ if(phase!=='command')return; phase='skillmenu'; renderSkillMenu(); }
 function renderSkillMenu(){ const area=document.getElementById('cmdArea'), a=activeAlly;
   document.getElementById('phaseHint').innerHTML=`✨ <b>${a.name}</b> のスキル`;
@@ -1366,11 +1400,17 @@ function openItems(){ if(phase!=='command')return; phase='itemmenu'; renderItemM
 function renderItemMenu(){ const area=document.getElementById('cmdArea');
   document.getElementById('phaseHint').textContent='🎒 アイテム（行動ゲージ消費・正解で30%に軽減）';
   area.innerHTML=`<div class="list">`+ITEM_DEFS.map(it=>{ const n=items[it.id]||0;
-    return `<button class="li${n>0?'':' dis'}" data-info="item:${it.id}" onclick="selectItem('${it.id}')"><span class="ii">${it.emoji}</span>
-      <span><span class="nn">${it.name}</span> ×${n}</span><span class="badge q">問題で軽減</span></button>`;
+    const usable=itemUsable(it), ok=n>0&&usable;
+    return `<button class="li${ok?'':' dis'}" ${ok?'':'disabled'} data-info="item:${it.id}" onclick="selectItem('${it.id}')"><span class="ii">${it.emoji}</span>
+      <span><span class="nn">${it.name}</span> ×${n}</span><span class="badge ${usable?'q':'free'}">${usable?'問題で軽減':'みんな げんきだよ'}</span></button>`;
   }).join('')+`</div><button class="back-btn" onclick="backToCommand()">◀ もどる</button>`; }
 function selectItem(id){ if(phase!=='itemmenu')return; const it=ITEM_DEFS.find(x=>x.id===id); if(!it||(items[id]||0)<=0)return;
+  if(!itemUsable(it)){ document.getElementById('phaseHint').textContent='みんな げんきだよ'; renderItemMenu(); return; }
   beginAction({kind:'item', item:it, scope:'none', needsQuiz:true}); }
+function itemUsable(it){ if(!it)return false;
+  if(it.id==='hpPotion') return allies.some(a=>a.downed || a.hp<a.hpMax);
+  if(it.id==='mpPotion') return !!(activeAlly && activeAlly.mp<activeAlly.mpMax);
+  return true; }
 function backToCommand(){ if(['skillmenu','itemmenu','targeting'].includes(phase)){ phase='command'; renderCommand(); } }
 function afterAction(hint){ document.getElementById('phaseHint').textContent=hint; if(activeAlly) activeAlly.charge=0; activeAlly=null; phase='savor'; stateTimer=cfg.actionSec; renderCommand(); }
 function queueImpactAction(ctx, impactSec, run){
@@ -1462,12 +1502,12 @@ function fdmg(c,statKey,mult,e,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
   const atk=statVal(c,statKey); const crit=(Math.random()*100 < (c.crit||10)); const cm=crit?1.5:1;
   let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e)*killer(e);
   dmg=Math.max(DMG_FLOOR,Math.min(DMG_CAP,Math.floor(dmg))); dealEnemyTarget(e,dmg,crit); return dmg; }
-function doAttack(c,e){ if(!e)return; const d=fdmg(c, c.atkStat||'str', 1.0, e); bigSavor('⚔️ こうげき '+fmt(d)); }   // 通常攻撃(主属性×1.0)＝唯一のMP回復手段(正解で+MP・resolveAnswerで加算)
+function doAttack(c,e){ if(!e)return; const d=fdmg(c, c.atkStat||'str', 1.0, e); bigSavor('⚔️ こうげき '+fmt(d),'player'); }   // 通常攻撃(主属性×1.0)＝唯一のMP回復手段(正解で+MP・resolveAnswerで加算)
 // ── スタディ・ストライク(study スタイル・Cフェーズ)＝装備非依存の一撃。育成差を消し「知識で決まる」教科強化ダンジョン用(study≠challenge＝装備固定は別)。 ──
 const STUDY_STRIKE_FRAC = 0.5;   // 正解の一撃=敵最大HPの割合(0.5→2正解で撃破)・防御無視・装備/ステ/教科キラー非依存(仮・PC調整)
 function combatStyle(){ const st=curStg(); return (st&&st.combatStyle)||'normal'; }   // 'normal'(装備が効く)|'study'(高防御→正解の一撃だけ効く)|'challenge'(装備固定=別途meta方式)。curStg()=特訓中は仮ステージ
 function studyStrike(e){ if(!e||!e.alive)return 0; const dmg=Math.max(1, Math.ceil((e.hpMax||e.hp)*STUDY_STRIKE_FRAC));
-  dealEnemyTarget(e,dmg,true); bigSavor('💥 スタディ・ストライク！ '+fmt(dmg)); return dmg; }   // ★装備非依存=fdmg/statVal/killerを通さない(敵HPの割合を直接削る・防御無視)
+  dealEnemyTarget(e,dmg,true); bigSavor('💥 スタディ・ストライク！ '+fmt(dmg),'player'); return dmg; }   // ★装備非依存=fdmg/statVal/killerを通さない(敵HPの割合を直接削る・防御無視)
 function lowAlly(){ return allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; }
 // 回復: 戦闘不能が居れば蘇生優先(HP40%)、いなければ最もHP割合の低い味方を回復。amount=実数(上限1500)。
 function healOne(amount){ let t=allies.find(a=>a.downed);
@@ -1541,10 +1581,10 @@ function refreshEnemyIntentNow(e, plan){ if(!e)return; e._intentText=enemyIntent
 function runEnemyAction(e, act){ const alive=allies.filter(a=>!a.downed); if(!alive.length){ phase='lose'; showEnd(false); return; }
   const k=act.kind;
   if(k==='aoe'){ playEnemyAoeFx(e,alive,'aoe'); alive.forEach(t=>{ const raw=Math.floor((e.atk*0.6+Math.random()*e.atk*0.2)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,raw,true); });
-    bigSavor('🐉 '+e.name+'の全体攻撃！'); screenShake('soft');
+    bigSavor('🐉 '+e.name+'の全体攻撃！','threat'); screenShake('soft');
     if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; } phase='enemyAct'; stateTimer=0.8; renderCommand(); return; }
   if(AILMENTS[k]){ const target=alive[Math.floor(Math.random()*alive.length)]; playEnemySpecialFx(e,k,[target]); applyAllyAilment(target,k);   // 検収修正: ri()未定義の参照ミス
-    bigSavor((AILMENTS[k].emoji||'⚠️')+' '+e.name+'の'+AILMENTS[k].jp+'！');
+    bigSavor((AILMENTS[k].emoji||'⚠️')+' '+e.name+'の'+AILMENTS[k].jp+'！','threat');
     phase='enemyAct'; stateTimer=0.8; renderCommand(); return; }
   if(k==='curse'||k==='special'||k==='erupt'||k==='quake'||k==='judgment'){
     const prev=e.special; e.special=(k==='special'?(prev||'erupt'):k); doEnemySpecial(e); e.special=prev; return; }
@@ -1565,7 +1605,7 @@ function enemyAttack(e){ e.charge=0; const planned=e._nextAct||planEnemyAction(e
     if(act){ prepareEnemyNextAction(e); runEnemyAction(e,act); return; } }   // ★actions があれば先取り済み行動を消費して駆動(無ければ従来)
   // 全体攻撃ボス: 毎手番 味方全員を攻撃(かばう対象外=AoE)。全体回復/被ダメ軽減で対策。
   if(!(e.actions&&e.actions.length) && planned&&planned.kind==='aoe'){ prepareEnemyNextAction(e); playEnemyAoeFx(e,alive,'aoe'); alive.forEach(t=>{ const raw=Math.floor((e.atk*0.6+Math.random()*e.atk*0.2)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,raw,true); });
-    bigSavor('🐉 '+e.name+'の全体攻撃！'); screenShake('soft');
+    bigSavor('🐉 '+e.name+'の全体攻撃！','threat'); screenShake('soft');
     if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; } phase='enemyAct'; stateTimer=0.8; renderCommand(); return; }
   // 特殊(ボス・封印で無効化)。specEvery回ごとに発動。
   if(!(e.actions&&e.actions.length) && e.special){
@@ -1591,13 +1631,13 @@ function applyAllyAilment(ally,type){ if(!ally||ally.downed)return; const base=A
   spawnAllyFx(ally, base.emoji, 'hit'); }
 // ボスの特殊行動。curse=状態異常を味方にばらまく(浄化/耐性で対策)。それ以外=全体ダメージ。封印で止められる。
 function doEnemySpecial(e){ const alive=allies.filter(a=>!a.downed); if(!alive.length){ phase='lose'; showEnd(false); return; }
-  if(e.special==='curse'){ bigSavor('😈 '+e.name+'の呪い！');
+  if(e.special==='curse'){ bigSavor('😈 '+e.name+'の呪い！','threat');
     playEnemySpecialFx(e,'curse',alive);
     const shuffled=alive.slice().sort(()=>Math.random()-0.5); const n=Math.min(2,shuffled.length);
     for(let k=0;k<n;k++) applyAllyAilment(shuffled[k], Math.random()<0.5?'poison':'burn');
     alive.forEach(t=>{ const dmg=Math.floor(e.atk*0.4*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,dmg,true); });   // 軽い全体ダメも
     screenShake('soft'); if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; } phase='enemyAct'; stateTimer=0.9; renderCommand(); return; }
-  bigSavor('⚠️ '+e.name+'の特殊！');
+  bigSavor('⚠️ '+e.name+'の特殊！','threat');
   playEnemySpecialFx(e,e.special,alive);
   alive.forEach(t=>{ const dmg=Math.floor((e.atk*0.7+Math.random()*e.atk*0.3)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,dmg,true); });
   if(e.special==='judgment'){ const t=allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; if(t){ t.ail=t.ail||{}; t.ail.burn={kind:'dot',pps:0.03,remain:8,acc:0,t:0}; spawnAllyFx(t,'🔥やけど','hit'); } }
@@ -1614,7 +1654,7 @@ function applyEnemyDamageToAlly(e,target,dmg,isAoE){
   if(target.defending){ dmg=Math.floor(dmg*0.3); target.defending=false; }
   if(target.shield>0){ const ab=Math.min(target.shield,dmg); target.shield-=ab; dmg-=ab; }
   if(target.counter && dmg>0){ target.counter=false; const ref=Math.floor(dmg*0.6)+Math.floor((target.str||0)*0.5);
-    if(e&&e.alive){ dealEnemyTarget(e,ref,false); bigSavor('↩️ カウンター '+fmt(ref)); if(e.hp<=0)checkWin(); } }
+    if(e&&e.alive){ dealEnemyTarget(e,ref,false); bigSavor('↩️ カウンター '+fmt(ref),'player'); if(e.hp<=0)checkWin(); } }
   if(target.thorns && dmg>0 && e && e.alive){ const ref=Math.floor(dmg*target.thorns.pct); if(ref>0){ dealEnemyTarget(e,ref,false); spawnEnemyFx(e,'🌵'+fmt(ref),'dot'); if(e.hp<=0)checkWin(); } }   // とげの鎧(持続反射)
   let newHp=target.hp-dmg;
   if(newHp<=0 && target.endure){ target.endure=false; newHp=1; spawnAllyFx(target,'不屈！','heal'); }
@@ -1650,10 +1690,12 @@ function nextEncounter(){ encIdx++; if(encIdx>=curEncounters().length){ stageCle
   setEncounter(encIdx); allies.forEach(a=>{ a.downed=false; a.hp=a.hpMax; a.mp=a.mpMax; a.charge=0; clearAllyBuffs(a); });
   combo=0; bumpCombo();
   if(curStg().boss && encIdx===curEncounters().length-1) flashBossWarning();   // ★最終ウェーブ=ボス→警告フラッシュ
-  else bigSavor('✓ 撃破！ つぎの相手だ');
+  else bigSavor('✓ 撃破！ つぎの相手だ','system');
   phase='charging'; renderCommand(); }
+function stageSubjectColor(){ const st=curStg(); const s=st&&Array.isArray(st.subjects)&&st.subjects[0]; return (s&&SUBJECTS[s]&&SUBJECTS[s].color)||'#fff'; }
 function spawnEnemyFx(e,text,cls,opt){ const card=document.getElementById('enemy-'+e.idx); if(!card)return; opt=opt||{}; const f=document.createElement('div'); f.className='efx '+(cls||'norm')+(opt.sr?' sr':'');
-  if(opt.color) f.style.color=opt.color;
+  if(opt.color) f.style.color=opt.color; else if(cls==='norm'||cls==='crit') f.style.color=stageSubjectColor();
+  if((cls==='norm'||cls==='crit') && !opt.noOffset) f.style.setProperty('--dmg-x', ((Math.random()<0.5?-1:1)*(20+Math.random()*20)).toFixed(0)+'px');
   if(cls==='crit') f.style.fontSize='30px'; else if(cls!=='dot'&&cls!=='drop') f.style.fontSize='22px'; if(opt.html) f.innerHTML=opt.html; else f.textContent=text;
   const attach=()=>{ if(!card.isConnected)return; card.appendChild(f); setTimeout(()=>f.remove(),opt.duration||900); };
   if(opt.delay)setTimeout(attach,opt.delay); else attach();
@@ -1664,10 +1706,14 @@ function spawnEnemyFx(e,text,cls,opt){ const card=document.getElementById('enemy
 function flashEnemy(e){ const card=document.getElementById('enemy-'+e.idx); if(card){ card.classList.add('hitflash'); setTimeout(()=>card.classList.remove('hitflash'),300); } }
 function spawnAllyFx(ally,text,cls){ const card=document.getElementById('ally-'+ally.id); if(!card)return; const f=document.createElement('div'); f.className='ac-fx '+(cls||''); f.textContent=text; card.appendChild(f); setTimeout(()=>f.remove(),900); }
 function flashAlly(ally){ const card=document.getElementById('ally-'+ally.id); if(card){ card.classList.add('hitflash'); setTimeout(()=>card.classList.remove('hitflash'),300); } }
-function bigSavor(html){ const stage=document.getElementById('stage'); const old=document.getElementById('savorBanner'); if(old)old.remove();
-  const b=document.createElement('div'); b.className='savor-banner'; b.id='savorBanner'; b.innerHTML=`<span class="big">${html}</span>`; stage.appendChild(b); setTimeout(()=>{ if(b.parentNode)b.remove(); }, Math.max(900,cfg.savorSec*1000)); }
+function bigSavor(html,variant){ const stage=document.getElementById('stage'); if(!stage)return; variant=variant||'player';
+  const old=document.getElementById('savorBanner'); if(old){ old.id=''; old.classList.add('exit'); setTimeout(()=>{ if(old.parentNode)old.remove(); },80); }
+  const b=document.createElement('div'); b.className='savor-banner '+variant; b.id='savorBanner'; b.innerHTML=`<span class="big">${html}</span>`; stage.appendChild(b); setTimeout(()=>{ if(b.parentNode)b.remove(); }, Math.max(900,cfg.savorSec*1000)); }
 function screenShake(kind){ if(_fxLite())return; const a=document.getElementById('app'); if(!a)return; const soft=kind==='soft'; a.classList.add('shake'); if(soft)a.classList.add('soft'); setTimeout(()=>{ a.classList.remove('shake'); a.classList.remove('soft'); }, soft?180:280); }
-function bumpCombo(){ const b=document.getElementById('comboBadge'); b.style.display=combo>0?'block':'none'; document.getElementById('comboN').textContent=combo; }
+function bumpCombo(){ const b=document.getElementById('comboBadge'); if(!b)return; const prev=Number(b.dataset.combo||0);
+  b.style.display=combo>0?'block':'none'; b.dataset.combo=combo; document.getElementById('comboN').textContent=combo;
+  b.classList.toggle('hot5',combo>=5); b.classList.toggle('hot10',combo>=10);
+  if(combo>prev){ b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); setTimeout(()=>b.classList.remove('pop'),140); } }
 
 /* ===================== §11 描画 ===================== */
 const _ailSig={}, _buffSig={}, _hpSig={}, _intentSig={};
@@ -1700,20 +1746,22 @@ function buildParty(){ for(const k in _buffSig)delete _buffSig[k]; for(const k i
     <div class="ac-bar atb"><i id="atb-${a.id}"></i></div>
     <div class="ac-shield" id="sh-${a.id}"></div><div class="ac-down">💀</div></div>`).join(''); }
 function pct(v,max){ return Math.max(0,Math.min(100,v/max*100)); }
-function allyBuffIcons(a){ let s=''; if(a.taunt>0)s+='😤'; if(a.reduce)s+='🔰'; if(a.atkBuff)s+='🔆'; if(a.statusResist)s+='🟣'; if(a.endure)s+='🪨'; if(a.regen)s+='🌿'; if(a.shield>0)s+='🛡'; if(a.cover>0)s+='🛡'; if(a.fade>0)s+='👻'; if(a.defending)s+='🛡️'; if(a.ail&&a.ail.poison)s+='☠️'; if(a.ail&&a.ail.burn)s+='🔥'; return s; }
+function remainSup(v){ return v>0?`<sup>${Math.max(1,Math.ceil(v))}</sup>`:''; }
+function chipHtml(emoji,kind,remain){ return `<span class="ail ${kind==='debuff'?'debuff':''}">${emoji}${remainSup(remain)}</span>`; }
+function allyBuffIcons(a){ let s=''; if(a.taunt>0)s+=chipHtml('😤','buff',a.taunt); if(a.reduce)s+=chipHtml('🔰','buff',a.reduce.remain); if(a.atkBuff)s+=chipHtml('🔆','buff',a.atkBuff.remain); if(a.statusResist)s+=chipHtml('🟣','buff',a.statusResist.remain); if(a.endure)s+=chipHtml('🪨','buff',0); if(a.regen)s+=chipHtml('🌿','buff',a.regen.remain); if(a.shield>0)s+=chipHtml('🛡','buff',0); if(a.cover>0)s+=chipHtml('🛡','buff',a.cover); if(a.fade>0)s+=chipHtml('👻','buff',a.fade); if(a.defending)s+=chipHtml('🛡️','buff',0); if(a.ail&&a.ail.poison)s+=chipHtml('☠️','debuff',a.ail.poison.remain); if(a.ail&&a.ail.burn)s+=chipHtml('🔥','debuff',a.ail.burn.remain); return s; }
 function updateUI(){
   enemies.forEach(e=>{ const hp=document.getElementById('ehp-'+e.idx), ch=document.getElementById('echg-'+e.idx), card=document.getElementById('enemy-'+e.idx); if(!card)return;
     if(hp) hp.style.width=pct(e.hp,e.hpMax)+'%'; if(ch) ch.style.width=Math.min(100,e.charge)+'%';
     const pr=document.getElementById('eprev-'+e.idx); if(pr){ const txt=enemyIntentText(e,e._nextAct); if(_intentSig[e.idx]!==txt){ _intentSig[e.idx]=txt; pr.textContent=txt; } }
-    const al=document.getElementById('eail-'+e.idx); if(al){ const keys=e.ail?Object.keys(e.ail):[]; const sig=keys.join(',');
-      if(_ailSig['e'+e.idx]!==sig){ _ailSig['e'+e.idx]=sig; al.innerHTML=keys.map(t=>AILMENTS[t]?`<span class="ail" data-info="ail:${t}">${AILMENTS[t].emoji}${AILMENTS[t].jp}</span>`:'').join(''); } }   // 差分更新(毎フレ再生成しない=低スペック実機の負荷減)
+    const al=document.getElementById('eail-'+e.idx); if(al){ const keys=e.ail?Object.keys(e.ail):[]; const sig=keys.map(k=>k+':'+Math.ceil((e.ail[k]&&e.ail[k].remain)||0)).join(',');
+      if(_ailSig['e'+e.idx]!==sig){ _ailSig['e'+e.idx]=sig; al.innerHTML=keys.map(t=>{ const a=AILMENTS[t], v=e.ail&&e.ail[t]; return a?`<span class="ail debuff" data-info="ail:${t}">${a.emoji}${a.jp}${remainSup(v&&v.remain)}</span>`:''; }).join(''); } }   // 差分更新(毎フレ再生成しない=低スペック実機の負荷減)
     card.classList.toggle('dead', !e.alive); card.classList.toggle('windup', e.alive && e.charge>=85); card.classList.toggle('targetable', phase==='targeting' && e.alive && !(pendingAction&&pendingAction.targetMode==='ally')); });
   allies.forEach(a=>{ const card=document.getElementById('ally-'+a.id); if(!card)return;
     const hpPct=pct(a.hp,a.hpMax); document.getElementById('hp-'+a.id).style.width=(a.hp>0?Math.max(2.5,hpPct):0)+'%';
     document.getElementById('mp-'+a.id).style.width=pct(a.mp,a.mpMax)+'%';
     document.getElementById('atb-'+a.id).style.width=Math.min(100,a.charge)+'%';
     const hpText=Math.max(0,Math.ceil(a.hp))+'/'+Math.max(0,Math.round(a.hpMax)); const ht=document.getElementById('hptext-'+a.id); if(ht&&_hpSig[a.id]!==hpText){ _hpSig[a.id]=hpText; ht.textContent=hpText; }
-    const sh=document.getElementById('sh-'+a.id); if(sh){ const ic=allyBuffIcons(a); if(_buffSig[a.id]!==ic){ _buffSig[a.id]=ic; sh.textContent=ic; } }
+    const sh=document.getElementById('sh-'+a.id); if(sh){ const ic=allyBuffIcons(a); if(_buffSig[a.id]!==ic){ _buffSig[a.id]=ic; sh.innerHTML=ic; } }
     card.classList.toggle('active', activeAlly===a); card.classList.toggle('downed', a.downed); card.classList.toggle('low', !a.downed && a.hp>0 && hpPct<=25); card.classList.toggle('targetable', phase==='targeting' && !!(pendingAction&&pendingAction.targetMode==='ally')); }); }
 function showEnd(win){ if(win) stageClear(); else stageDefeat(); }   // 勝=ステージクリア / 負=敗北画面(体験版の進行管理へ)
 function toggleTuner(show){ const t=document.getElementById('tuner'); if(t) t.classList.toggle('show',show); }   // 調整パネルは体験版では撤去(生徒に調整させない)。呼ばれても安全。
@@ -1729,7 +1777,7 @@ function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(prog
 function isCleared(i){ return progress.cleared.indexOf(i)>=0; }
 
 /* ===================== §A レア度＋ボーナス＋装飾品(集めのエンドの種) ===================== */
-// ★レア度ラダー=聖典どおり C / R / SR / SSR / UR / LR（UC=アンコモンは聖典に無い・廃止）。試作は C・R のみドロップ(SR以降は重み0=後日)。
+// ★レア度ラダー=聖典どおり C / R / SR / SSR / UR / LR（UC=アンコモンは聖典に無い・廃止）。wは旧遺物でrollRarity未使用。
 const RARITY = {
   C:{   jp:'コモン',       col:'#9fb0d6', pct:1.0, w:62 },
   R:{   jp:'レア',         col:'#60a5fa', pct:2.0, w:38 },
@@ -1886,9 +1934,10 @@ function htmlEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&a
 function spawnDropFx(e, d){ const key=d.item.rarity, r=RARITY[key], now=performance.now(), delay=Math.max(0,_dropFxAt-now); _dropFxAt=Math.max(now,_dropFxAt)+450;
   const html=`🎁${htmlEsc(r.jp)}`;
   spawnEnemyFx(e, '', 'drop', {duration:1800,delay,color:r.col,sr:rarityRank(key)>=2,html}); }   // E3改: 戦闘中は絵文字+レア度だけを短く浮かせる
-function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it).map(bonusText).join(' / ');
-  if(d.kind==='gear'){ const sk=SKILLS[it.skillId], mt=mainText(it); return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${equipName(it)}<div class="drop-bonus" style="color:var(--sub);">${it.slot}・${sk?skillIco(it.skillId,sk.emoji,it.rarity)+sk.name:it.skillId}</div>${(mt||bx)?`<div class="drop-bonus">${mt}${mt&&bx?' / ':''}${bx}</div>`:''}</div>`; }
-  return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.base}　＋全コア${r.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
+function upgradeBadge(kind,it){ return (typeof isUpgrade==='function'&&isUpgrade(kind,it))?'<span class="drop-upgrade">✨つけ得</span>':''; }
+function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it).map(bonusText).join(' / '), up=upgradeBadge(d.kind,it);
+  if(d.kind==='gear'){ const sk=SKILLS[it.skillId], mt=mainText(it); return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${equipName(it)}${up}<div class="drop-bonus" style="color:var(--sub);">${it.slot}・${sk?skillIco(it.skillId,sk.emoji,it.rarity)+sk.name:it.skillId}</div>${(mt||bx)?`<div class="drop-bonus">${mt}${mt&&bx?' / ':''}${bx}</div>`:''}</div>`; }
+  return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.base}${up}　＋全コア${r.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
 
 function showHome(){ gameState='home'; _inTraining=false; renderHome(); showScreen('home'); setTopbar(''); }
 function homeChangeLead(dir){ progress.lead=((progress.lead||0)+dir+ALLY_DEFS.length)%ALLY_DEFS.length; saveProgress(); renderHome(); }   // ★選んだキャラを覚える(progress.leadに保存)
@@ -1919,8 +1968,8 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
       <div class="nh-subs">
         <button onclick="startTraining()"><span class="e">📝</span>特訓</button>
         <button onclick="showReview()"><span class="e">🔁</span>復習</button>
-        <button onclick="showInventory()"><span class="e">🎒</span>インベントリ</button>
-        <button onclick="showShop()"><span class="e">🛒</span>ショップ</button>
+        <button onclick="showInventory()"><span class="e">🎒</span>もちもの</button>
+        <button onclick="showShop()"><span class="e">🛒</span>どうぐ屋</button>
         <button onclick="showSettings()"><span class="e">⚙</span>せってい</button>
         <button onclick="goPortal()"><span class="e">🏠</span>ポータル</button>
       </div>
@@ -2218,9 +2267,10 @@ function trainToast(msg){ const host=document.getElementById('screen-training');
 // ★誤答無罰: 復習は戦闘なし(敵ATK不在=全滅なし)。まちがい=「きょうの復習」に積まれるだけ。HPに触れるコードは無い。
 // ★報酬設計: 正解ごと20%＋5問正解ごと確定(1段上ティア=ソフトピティ)＋周回に最低1個の確定床。1日12個で見えない上限(学びは続く・物だけ止まる)。
 function srsRecord(correct){ try{ if(typeof Quiz!=='undefined'&&Quiz.review&&_quizQ) Quiz.review.record(_quizQ,correct); }catch(e){} }   // 戦闘/練習の正誤をSRSへ(誤答=在庫・正解はdue到来分のみ箱が進む)
-let _reviewRun=null;   // {target,n,ok,drops:[],subj:{}}
+let _reviewRun=null;   // {target,n,ok,drops:[],subj:{},dexStart:{}}
 const REVIEW_RUN_MAX=20, REVIEW_DROP_P=0.2, REVIEW_PITY_EVERY=5, REVIEW_DROP_DAYCAP=12, REVIEW_DROP_KEY='rika2_review_drops_v1';
 function _dueLabel(n){ return n>REVIEW_RUN_MAX ? (REVIEW_RUN_MAX+'問＋') : (n+'問'); }
+function reviewDexSnapshot(){ if(!(typeof Quiz!=='undefined'&&Quiz.review))return{n:0,by:{}}; return {n:Quiz.review.learnedCount(), by:Object.assign({},Quiz.review.learnedBySubject())}; }
 function reviewDropsToday(){ try{ const d=JSON.parse(localStorage.getItem(REVIEW_DROP_KEY)||'null'); const t=new Date().toDateString(); return (d&&d.day===t)?(d.n||0):0; }catch(e){ return 0; } }
 function bumpReviewDrops(){ try{ localStorage.setItem(REVIEW_DROP_KEY,JSON.stringify({day:new Date().toDateString(),n:reviewDropsToday()+1})); }catch(e){} }
 const REVIEW_TIERS=['early','mid','late','exam'];   // 復習のレア度=とっぱ済みステージの深さでゲート(E4の深さゲートを尊重・bossティアは挑戦の道専用)
@@ -2228,12 +2278,12 @@ function reviewDropTier(up){ let g=1; (progress.cleared||[]).forEach(id=>{ const
   let i=(g>=4)?3:(g>=3)?2:(g>=2)?1:0; if(up)i=Math.min(REVIEW_TIERS.length-1,i+1); return REVIEW_TIERS[i]; }
 function maybeReviewDrop(force,up){ if(!_reviewRun||reviewDropsToday()>=REVIEW_DROP_DAYCAP)return null;   // 1日の上限=学習は罰しない・報酬だけ絞る
   if(!force && Math.random()>=REVIEW_DROP_P)return null;
-  const d=rollDrop(reviewDropTier(!!up)); bumpReviewDrops(); _reviewRun.drops.push(d); return d; }
+  const d=rollDrop(reviewDropTier(!!up)); bumpReviewDrops(); _reviewRun.drops.push(d); _reviewRun.toast=d; return d; }
 function showReview(){ if(!(typeof Quiz!=='undefined'&&Quiz.review)){ homeSoon(); return; }
   gameState='review'; setTopbar(''); hideTrainBar();
   const due=Quiz.review.due();
   if(due<=0){ _reviewRun=null; renderReviewHome(); showScreen('review'); return; }
-  _reviewRun={ target:Math.min(due,REVIEW_RUN_MAX), n:0, ok:0, drops:[], subj:{} };   // 1回=最大20問(苦手な子を長丁場に閉じ込めない・残りは「つづける」)
+  _reviewRun={ target:Math.min(due,REVIEW_RUN_MAX), n:0, ok:0, drops:[], subj:{}, dexStart:reviewDexSnapshot() };   // 1回=最大20問(苦手な子を長丁場に閉じ込めない・残りは「つづける」)
   document.getElementById('reviewBody').innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)">🔁 きょうの復習…</div>';
   showScreen('review'); reviewNext(); }
 function reviewNext(){ if(!_reviewRun)return;
@@ -2248,20 +2298,27 @@ function onReviewResult(correct){ if(!_reviewRun)return; Quiz.review.record(_qui
   updateReviewBar(); }
 function onReviewContinue(){ reviewNext(); }
 function updateReviewBar(){ const b=document.getElementById('qTrainBar'); if(!b||!_reviewRun)return; b.classList.add('show');
-  b.innerHTML=`<span class="qtb-rp">🔁 きょうの復習</span><span class="qtb-prog">${Math.min(_reviewRun.n+1,_reviewRun.target)}/${_reviewRun.target}問</span><button class="qtb-stop" onclick="reviewAbort()">やめる ✕</button>`; }
+  const toast=_reviewRun.toast, tr=toast&&RARITY[toast.item.rarity];
+  b.innerHTML=`<span class="qtb-rp">🔁 きょうの復習</span><span class="qtb-prog">${Math.min(_reviewRun.n+1,_reviewRun.target)}/${_reviewRun.target}問</span>${toast?`<span class="qtb-toast" style="color:${tr.col}">🎁 ${tr.jp}</span>`:''}<button class="qtb-stop" onclick="reviewAbort()">やめる ✕</button>`;
+  if(toast){ _reviewRun.toast=null; setTimeout(()=>{ if(_reviewRun)updateReviewBar(); },1200); } }
 function reviewAbort(){ _reviewRun=null; hideTrainBar(); hideOverlay(); renderReviewHome(); showScreen('review'); }   // 途中でやめてOK(進み具合は1問ごとに保存済=消えない)
 function finishReviewRun(){ const run=_reviewRun; _reviewRun=null; hideTrainBar(); hideOverlay();
   if(!run || run.n===0){ renderReviewHome(); showScreen('review'); return; }
   if(run.drops.length===0 && reviewDropsToday()<REVIEW_DROP_DAYCAP){ const d=rollDrop(reviewDropTier(false)); bumpReviewDrops(); run.drops.push(d); }   // 確定床=がんばった周回に最低1個(運が最悪でも前進)
   renderReviewResult(run); showScreen('review'); }
-function _reviewDexHtml(){ if(!(typeof Quiz!=='undefined'&&Quiz.review))return'';
-  const tot=Quiz.count({}), n=Quiz.review.learnedCount(), by=Quiz.review.learnedBySubject();
+function _reviewDexHtml(prev){ if(!(typeof Quiz!=='undefined'&&Quiz.review))return'';
+  const tot=Quiz.count({}), n=Quiz.review.learnedCount(), by=Quiz.review.learnedBySubject(), oldN=prev?prev.n:n, oldBy=(prev&&prev.by)||by, gain=Math.max(0,n-oldN);
   const rows=SUBJ_KEYS.map(s=>{ const sub=SUBJECTS[s], den=Quiz.count({subjects:[s]}), num=Math.min(by[s]||0,den), pct=den?(num/den*100):0;
-    return `<div style="margin:6px 0"><div style="display:flex;font-size:12px;margin-bottom:2px"><span style="color:${sub.color};font-weight:700">${sub.emoji} ${sub.jp}</span><span style="margin-left:auto;color:rgba(255,255,255,.55)">${num}/${den}</span></div>
-      <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden"><div style="width:${pct.toFixed(1)}%;height:100%;background:${sub.color}"></div></div></div>`; }).join('');
-  return `<div style="max-width:520px;margin:14px auto 0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(8,12,24,.45);text-align:left">
-    <div style="display:flex;align-items:baseline"><b style="font-size:14px">📖 おぼえた図鑑</b><span style="margin-left:auto;font-size:13px;color:var(--gold);font-weight:800">${n} <span style="color:rgba(255,255,255,.5);font-weight:400">/ ${tot}</span></span></div>
+    const oldNum=Math.min(oldBy[s]||0,den), oldPct=den?(oldNum/den*100):0;
+    return `<div class="rv-row"><div class="rv-top"><span class="rv-sub" style="color:${sub.color}">${sub.emoji} ${sub.jp}</span><span class="rv-num">${num}/${den}</span></div>
+      <div class="rv-track"><div class="rv-fill" data-rv-target="${pct.toFixed(1)}" style="width:${oldPct.toFixed(1)}%;background:${sub.color}"></div></div></div>`; }).join('');
+  return `<div class="rv-card">
+    <div style="display:flex;align-items:baseline"><b style="font-size:14px">📖 おぼえた図鑑</b>${gain?`<span class="rv-badge">📖+${gain}</span>`:''}<span style="margin-left:auto;font-size:13px;color:var(--gold);font-weight:800">${n} <span style="color:rgba(255,255,255,.5);font-weight:400">/ ${tot}</span></span></div>
     <div style="font-size:11px;color:rgba(255,255,255,.5);margin:2px 0 6px">正解した問題があつまる（へらない・ふえる一方）</div>${rows}</div>`; }
+function animateReviewDex(){ requestAnimationFrame(()=>document.querySelectorAll('.rv-fill[data-rv-target]').forEach(el=>{ el.style.width=el.dataset.rvTarget+'%'; })); }
+function countUpReviewOk(target){ const el=document.getElementById('reviewOkCount'); if(!el)return; const t0=performance.now(), dur=400;
+  function step(now){ const p=Math.min(1,(now-t0)/dur); el.textContent=Math.round(target*p); if(p<1)requestAnimationFrame(step); }
+  requestAnimationFrame(step); }
 function renderReviewHome(){ const R=(typeof Quiz!=='undefined'&&Quiz.review)?Quiz.review:null; const stock=R?R.stock():0, learned=R?R.learnedCount():0, due=R?R.due():0;
   const first=(stock===0&&learned===0);   // 3状態: 説明(記録なし)／のこりあり(中断復帰)／きょうは完了
   const emo=first?'🔁':(due>0?'🔁':'✅');
@@ -2288,17 +2345,18 @@ function renderReviewResult(run){ const left=(typeof Quiz!=='undefined'&&Quiz.re
     <div style="max-width:760px;margin:0 auto;padding:18px;text-align:center">
       <div style="font-size:46px">${left>0?'✓':'🎉'}</div>
       <h2 class="scr-ttl">${left>0?'きょうのぶんは ここまで！':'今日の復習、おわり！'}</h2>
-      <div style="font-size:18px;margin:6px 0"><b style="color:var(--gold)">${run.ok} / ${run.n}</b> 問せいかい</div>
+      <div style="font-size:18px;margin:6px 0"><b style="color:var(--gold)"><span id="reviewOkCount">0</span> / ${run.n}</b> 問せいかい</div>
       ${subj?`<div style="font-size:13px;color:rgba(255,255,255,.78)">${subj} が みについてきた！</div>`:''}
       <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:3px">まちがえた問題は、わすれたころに もう一度でるよ（へらない・こわくない）</div>
       ${drops}
-      ${_reviewDexHtml()}
+      ${_reviewDexHtml(run.dexStart)}
       <div class="scr-btns" style="justify-content:center;flex-wrap:wrap;margin-top:14px">
         ${left>0?`<button class="scr-btn primary" onclick="showReview()">▶ つづける（あと ${_dueLabel(left)}）</button>`:''}
         <button class="scr-btn" onclick="showHome()">🏠 ホーム</button>
         <button class="scr-btn" onclick="startTraining()">📝 特訓</button>
       </div>
-    </div>`; }
+    </div>`;
+  animateReviewDex(); countUpReviewOk(run.ok); }
 
 /* ===================== ショップ（どうぐ屋＝高級・切り札の消耗品） ===================== */
 
@@ -2482,7 +2540,6 @@ function invSelectJunk(){ let n=0; invSellableList().forEach(o=>{ if(!isUpgrade(
 function invClearSell(){ invSellSel.clear(); renderInventory(); }
 function invSellTotal(){ let g=0,n=0; invSellSel.forEach(k=>{ const kind=k[0]==='a'?'acc':'gear', id=+k.slice(1), it=kind==='gear'?gearById(id):accById(id); if(it){ g+=sellValue(it); n++; } }); return {gold:g,count:n}; }
 function invSellSelected(){ const {gold,count}=invSellTotal(); if(!count)return;
-  if(!confirm(`そうび ${count}個を ${fmtGold(gold)}G で うりますか？\n（売ったあと「もどす」で 取り消せます）`)) return;
   const sold=[];   // ★実際に売れた物を記録=アンドゥ用
   invSellSel.forEach(k=>{ const kind=k[0]==='a'?'acc':'gear', id=+k.slice(1);
     if(kind==='gear'){ const it=gearById(id); if(it&&!it.locked&&gearEquippedBy(id)===null){ const i=gearInv.findIndex(x=>x.id===id); if(i>=0){ gearInv.splice(i,1); sold.push({kind:'gear',item:it}); } } }   // ★装備中/ロックは売らない(二重ガード)
@@ -2496,7 +2553,7 @@ function invUndoSale(){ if(!lastSale)return;   // ★誤売却の取り消し=�
 function invToast(msg){ const g=document.getElementById('invBody'); if(!g)return; const t=document.createElement('div'); t.className='inv-toast'; t.textContent=msg; g.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1800); }
 function invSaleToast(n,gold){ const g=document.getElementById('invBody'); if(!g)return; const t=document.createElement('div'); t.className='inv-toast sale';   // ★売却トースト=その場で「もどす」(数秒)
   t.innerHTML=`💰 ${n}個 うって +${fmtGold(gold)}G　<button class="toast-undo" onclick="invUndoSale()">↩️ もどす</button>`;
-  g.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },6000); }
+  g.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },10000); }
 function renderInventory(){ const g=document.getElementById('invBody'); if(!g)return;
   const total=gearInv.length+accInv.length+(items.hpPotion||0)+(items.mpPotion||0);
   const tab=(k,l,n)=>`<button class="chip" aria-pressed="${invFilter.tab===k}" onclick="invSetTab('${k}')">${l} ${n}</button>`;
@@ -2810,7 +2867,11 @@ function startStage(i, force){ if(!force && !stagePlayable(i)) return; _inTraini
   curMetaFlat = (st.meta&&st.meta.gear)||null; curLoadout = (st.meta&&st.meta.loadout)||null;   // ★メタ装備の自動切替(challengeステ)=装備相当のフラット補正＋固定loadout
   showScreen(''); applyStageBg(st); gameState='intro'; setTopbar(st.name);   // ★入場イントロ中はATB停止(gameState='intro'でupdate停止)
   showStageIntro(st, ()=>{ gameState='battle'; setTopbar(st.name); startBattle();   // イントロ後に戦闘開始
-    if(st.meta&&st.meta.label) setTimeout(()=>bigSavor('🔧 メタ装備：'+st.meta.label),140); }); }
+    if(st.meta&&st.meta.label) setTimeout(()=>bigSavor('🔧 メタ装備：'+st.meta.label,'system'),140); }); }
+
+function stageSubjectWinLine(st){ const subs=(st&&Array.isArray(st.subjects))?st.subjects:[]; if(!subs.length)return '';
+  const names=subs.map(s=>(typeof SUBJECTS!=='undefined'&&SUBJECTS[s]&&SUBJECTS[s].jp)||s).join('・');
+  return `<div class="scr-sub">${names}のもんだいで勝った！</div>`; }
 
 function stageClear(){ clearHitTimers(); if(_inTraining){ trainStrikeWin(); return; }   // ★特訓ストライクの撃破=通常クリア画面でなく特訓トップへ
   _fxFreeze=0; _trauma=0; applyTraumaShake(0);
@@ -2832,6 +2893,7 @@ function stageClear(){ clearHitTimers(); if(_inTraining){ trainStrikeWin(); retu
     <div class="big-emoji">🏆</div>
     <h2 class="scr-ttl">${st.name} クリア！</h2>
     <div class="scr-sub">${st.emoji} ${st.name}</div>
+    ${stageSubjectWinLine(st)}
     <div class="drop-card">
       <div class="drop-label">🎁 ${stageDrops.length}こ ゲット！</div>
       <div class="drop-scroll gacha">${dropCards}</div>
