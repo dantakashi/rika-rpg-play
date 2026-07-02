@@ -27,10 +27,26 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=M+PLUS+Rounded+1c:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<!-- C-1「ENDFIELD」新規フォント（2026-07-02 UI本実装B1・WORKORDER_RIKA2_UI_C1 §1-B）。既存Reggae Oneは当面残置 -->
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;700;800&family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@700;900&display=swap" rel="stylesheet">
 <style>
   :root{ --bg1:#0b1020; --panel:#1a2336; --line:#2b3756; --ink:#e8eefc; --sub:#9fb0d6;
-    --good:#34d399; --bad:#f87171; --warn:#fbbf24; --charge:#e6b34d; --mp:#38bdf8; --gold:#f4c95d; --gold-d:#b9821f;
-    --bounce:cubic-bezier(.5,1.75,.75,1.25); }
+    /* 意味色の値のみC-1化(B6検収仕上げ・意味の対応は不変・#qOverlayは凍結ブロックが旧値を再宣言済み) */
+    --good:#57d97b; --bad:#f87171; --warn:#ffcf4d; --charge:#e6b34d; --mp:#6fd0e8; --gold:#f4c95d; --gold-d:#b9821f;
+    --bounce:cubic-bezier(.5,1.75,.75,1.25);
+    /* ===== C-1「ENDFIELD」新トークン（2026-07-02 UI本実装B1・WORKORDER_RIKA2_UI_C1 §1-A）=====
+       旧トークン(--bg1/--panel/--line/--ink/--sub/--good/--bad/--warn/--mp/--gold/--gold-d)は
+       B2以降で画面ごとに置換するまで並存させる（B1では削除しない・意図的）。 */
+    --bg-0:#151310; --bg-1:#1c1a16;
+    --panel-soft:rgba(28,26,22,0.72);
+    --line-soft:rgba(58,53,44,0.55); --line-bright:#5c5340;
+    --ink-dim:#a8a08c; --ink-faint:#6f6858;
+    --accent:#f4b436; --accent-strong:#ffd166; --accent-dim:#8a6a1f; --accent-glow:rgba(244,180,54,0.45);
+    --danger:#ff5d5d;
+    --c-chem:#7ee787; --c-phys:#ffb84d; --c-bio:#ff8fa3; --c-earth:#8ab4ff;
+    --cut-s:6px; --cut-m:10px; --cut-l:16px;
+    --ease:cubic-bezier(0.2,0,0,1); --ease-snap:cubic-bezier(.5,0,.1,1);
+  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; background:linear-gradient(160deg,var(--bg1),#070a14); color:var(--ink);
     font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; overflow:hidden;}
@@ -47,58 +63,11 @@
   .debug-box .drow{display:flex; gap:7px; flex-wrap:wrap; justify-content:center;}
   .debug-box button{flex:1 1 auto; min-width:92px; background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:7px 6px; font-size:12px;}
   .debug-box .dver{text-align:center; font-size:10px; color:var(--sub); margin-top:7px;}
-  /* ===== ホーム画面＝拠点(A案:王道RPG・横長Chromebook対応・装備ドロップ主軸 / 2026-06-23) ===== */
+  /* ===== ホーム画面＝拠点 ===== */
+  /* ★旧.nh-*(2026-06-23王道RPG案)はC-1「ENDFIELD」化(B2)で全置換。新スタイルは
+     「C-1 ホーム(.hm-*)」ブロック(qOverlay凍結スコープの直前)にまとめてある。 */
   #screen-home{padding:0;}
   #homeBody{margin:0; max-width:none; width:100%; align-self:stretch; min-height:100%; display:flex; flex-direction:column; text-align:left;}
-  .nh{--gold:#f4c95d; --gold-d:#b9821f; flex:1; display:flex; flex-direction:column; min-height:100%; padding:12px 15px 13px; position:relative; overflow:hidden; background:radial-gradient(120% 80% at 30% 28%,#1b2a4d 0%,#0c1326 55%,#070a14 100%);}
-  .nh::before{content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(60% 52% at 32% 42%,rgba(244,201,93,.12),transparent 70%);}
-  .nh>*{position:relative; z-index:1;}
-  .nh button{font-family:inherit; cursor:pointer;}
-  .nh-top{display:flex; align-items:center; justify-content:space-between; gap:8px; flex:0 0 auto;}
-  .nh-prof{display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.05); border:1px solid rgba(160,200,255,.16); padding:4px 12px 4px 4px; border-radius:30px;}
-  .nh-prof .av{width:28px; height:28px; border-radius:50%; background:linear-gradient(150deg,#2a3a5e,#1a2336); display:flex; align-items:center; justify-content:center; font-size:15px; border:1px solid rgba(244,201,93,.4);}
-  .nh-prof .nm{font-size:12px; font-weight:800; color:var(--ink); font-family:'Zen Kaku Gothic New',sans-serif;}
-  .nh-prof .lv{font-size:10px; color:var(--sub);}
-  .nh-loot{display:flex; align-items:center; gap:5px; background:rgba(244,201,93,.1); border:1px solid rgba(244,201,93,.4); color:var(--gold); font-size:13px; font-weight:800; padding:5px 13px; border-radius:30px;}
-  .nh-mid{flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;}
-  .nh-char{flex:0 0 auto; position:relative; display:flex; align-items:center; justify-content:center;}
-  .nh-char .glow{position:absolute; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle,rgba(244,201,93,.3),transparent 66%);}
-  .nh-char .emo{font-size:118px; line-height:1; filter:drop-shadow(0 10px 22px rgba(0,0,0,.55)); animation:nhFloat 3.6s ease-in-out infinite;}
-  @keyframes nhFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-  .nh-panel{width:100%; max-width:430px; display:flex; flex-direction:column; gap:9px;}
-  .nh-title{text-align:center; font-family:'Reggae One',cursive; font-size:30px; line-height:1; color:#fff; text-shadow:0 2px 12px rgba(244,201,93,.4);}
-  .nh-title span{color:var(--gold);}
-  .nh-title small{display:block; font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700; font-size:9px; letter-spacing:5px; color:var(--gold); margin-top:4px;}
-  .nh-gear{display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:rgba(255,255,255,.05); border:1px solid rgba(160,200,255,.16); border-radius:11px; padding:8px 12px; color:var(--ink); font-size:12px; font-weight:800; font-family:'Zen Kaku Gothic New',sans-serif;}
-  .nh-gear .nh-gslots{display:flex; gap:4px; flex-wrap:wrap;}
-  .nh-gear .nh-gslot{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:rgba(0,0,0,.28); border:1px solid rgba(160,200,255,.22); font-size:15px; line-height:1; overflow:hidden;}   /* ★装備の枠＝あとで<img>に差し替え可 */
-  .nh-gear .nh-gslot img{width:100%; height:100%; object-fit:contain;}
-  .nh-gear .nh-gslot.acc{font-size:12px;}
-  .nh-gear .to{margin-left:auto; color:var(--gold); font-size:11px;}
-  .nh-chg{display:flex; align-items:center; gap:8px; width:100%; background:rgba(255,255,255,.05); border:1px solid rgba(244,201,93,.32); border-radius:11px; padding:6px;}
-  .nh-chg .ar{flex:0 0 auto; width:36px; height:32px; display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--gold); background:rgba(244,201,93,.1); border:0; border-radius:8px;}
-  .nh-chg .who{flex:1; text-align:center; font-size:14px; font-weight:800; color:var(--ink); font-family:'Zen Kaku Gothic New',sans-serif;}
-  .nh-chg .who small{display:block; font-size:10px; color:var(--gold); font-weight:700;}
-  .nh-cta{--bounce:cubic-bezier(.5,1.75,.65,1); display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:15px; border-radius:14px; border:0; border-bottom:4px solid var(--gold-d); background:linear-gradient(180deg,#f7d579,#dca22f); color:#3a230a; font-family:'Reggae One',cursive; font-size:21px; box-shadow:0 6px 22px rgba(244,201,93,.32); transition:transform .14s var(--bounce);}
-  .nh-cta:active{transform:scale(.97) translateY(2px); border-bottom-width:2px;}
-  .nh-review{display:flex; align-items:center; justify-content:center; gap:7px; width:100%; padding:10px; border-radius:12px; border:1px solid var(--gold); background:rgba(244,201,93,.1); color:var(--gold); font-size:14px; font-weight:800; font-family:'Zen Kaku Gothic New',sans-serif;}   /* ★復習=大事なのでホームにも(冒険の下に) */
-  .nh-review:active{transform:scale(.97);}
-  .nh-subs{display:flex; gap:8px; margin-top:9px; flex:0 0 auto;}
-  .nh-subs button{flex:1; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(160,200,255,.15); border-radius:12px; padding:9px 3px 8px; color:var(--ink); font-size:11px; font-weight:800; font-family:'Zen Kaku Gothic New',sans-serif;}
-  .nh-subs button .e{display:block; font-size:18px; margin-bottom:2px;}
-  .nh-subs button:active{transform:scale(.95);}
-  .nh-subs button.soon{opacity:.5;}
-  /* 横長Chromebook(11.6"): 立ち絵を左に大きく、メニューを右に */
-  @media (min-width:680px){
-    .nh-mid{flex-direction:row; align-items:center; gap:24px; padding:0 12px;}
-    .nh-char{flex:0 0 44%;}
-    .nh-char .emo{font-size:150px;}
-    .nh-char .glow{width:248px; height:248px;}
-    .nh-panel{flex:1; max-width:none;}
-    .nh-title{text-align:left; font-size:34px;}
-    .nh-title small{letter-spacing:6px;}
-  }
-  @media (prefers-reduced-motion:reduce){ .nh-char .emo{animation:none;} .nh-cta{transition:none;} }
 
   .stage{flex:1 1 auto; position:relative; z-index:0; display:flex; flex-direction:column; justify-content:space-between; padding:6px 10px 4px; min-height:0; overflow:hidden;}   /* ★z-index:0=重ね合わせ文脈を作る→#stageBg(z-index:-1・背景画像)が th-* グラデより前に出る(これが無いと背景画像が隠れる) */
   /* ★戦闘ステージ=テーマ別の空気感(濃紺基調+各教科のかすかな色味+足元を沈める。紫禁止・CSSグラデのみ=低スペック軽量。class は startBattle で付与) */
@@ -169,7 +138,7 @@
   .combo-badge.hot10{color:#fff1a6; text-shadow:0 0 10px rgba(251,191,36,.75),0 1px 3px #000;}
   @keyframes comboPop{50%{transform:scale(1.12);}}
 
-  .panel{flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:14px 14px 0 0; padding:9px 12px 13px; box-shadow:0 -6px 18px #0006;}
+  .cmd-panel{flex:0 0 auto; background:var(--panel); border:1px solid var(--line); border-radius:14px 14px 0 0; padding:9px 12px 13px; box-shadow:0 -6px 18px #0006;}   /* ★旧.panelから改名(B2)。C-1共通.panel(687行)と名前衝突していた=B1導入直後から戦闘バーが誤って面取りされるバグを解消 */
   .party{display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:9px;}
   .ally-card{background:#161f30; border:1px solid var(--line); border-radius:9px; padding:5px 4px 4px; text-align:center; position:relative; transition:.1s;}
   .ally-card.active{border-color:var(--warn); box-shadow:0 0 0 2px var(--warn); background:#26210f;}
@@ -460,7 +429,6 @@
   .iimg{vertical-align:middle;object-fit:contain;}   /* ★アイコン組込: 共通(コンテキストで寸法上書き) */
   .li .ii .iimg{width:1.3em;height:1.3em;}           /* スキルメニューのアイコン */
   .dw-thumb img{width:100%;height:100%;object-fit:contain;}   /* 詳細ドロワーのサムネ */
-  .nh-gslot img{width:100%;height:100%;object-fit:contain;}   /* ホームの装備枠 */
   .skico{width:1.2em;height:1.2em;border-radius:50%;vertical-align:middle;object-fit:contain;box-shadow:0 0 0 2px var(--skrc,transparent);}   /* ★スキル=丸く切り取り＋レア度枠色リング(--skrc) */
   .ec-skills .skico{width:20px;height:20px;margin:0 1px;}
   .gs-ico{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;overflow:hidden;flex:0 0 auto;background:rgba(0,0,0,.25);}   /* ★ビルド枠の装備アイコン */
@@ -654,6 +622,527 @@
     .chip,.gcard,.drawer,.drawer-scrim,.dw-cta,.eq-portrait .pe{transition:none;animation:none;transform:none;}
     .eq-statlist .srow.flash{animation:none;}
   }
+
+  /* ============================================================
+     ===== C-1「ENDFIELD」共通コンポーネント（2026-07-02 UI本実装B1）=====
+     WORKORDER_RIKA2_UI_C1_2026-07-02.md §2-B1 準拠。mock_c1.htmlから移植。
+     このバッチではどのHTMLにもまだ適用しない（新クラスのみ新設・既存画面は無変化）。
+     ============================================================ */
+  .num, .num *{ font-family:'Chakra Petch',monospace; font-variant-numeric:tabular-nums; letter-spacing:0; }
+  .heading{ font-family:'Oxanium', sans-serif; font-weight:800; letter-spacing:1px; }
+  .microtext{
+    font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--ink-faint); opacity:.55; user-select:none;
+    pointer-events:none; white-space:nowrap;
+  }
+
+  /* ---- 面取りパネル基底 ---- */
+  .panel{
+    background:var(--panel-soft);
+    border:1px solid var(--line-soft);
+    clip-path:polygon(var(--cut-m) 0,100% 0,100% calc(100% - var(--cut-m)),calc(100% - var(--cut-m)) 100%,0 100%,0 var(--cut-m));
+    position:relative;
+    backdrop-filter:blur(6px);
+    transition:border-color 120ms var(--ease);
+  }
+  .panel::before{
+    content:"";
+    position:absolute; inset:0;
+    pointer-events:none;
+    box-shadow: inset 0 0 0 1px rgba(239,233,220,0.02);
+  }
+  .panel:hover{ border-color:var(--line-bright); }
+
+  .plate-label{
+    font-family:'Oxanium', sans-serif;
+    font-weight:700;
+    font-size:10px;
+    letter-spacing:2.5px;
+    color:var(--ink-faint);
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:6px;
+  }
+  .plate-label .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 3px var(--accent-strong), 0 0 9px var(--accent-glow);
+  }
+
+  /* ---- コーナーブラケット ---- */
+  .ef-bracket{ position:relative; }
+  .ef-bracket::before, .ef-bracket::after{
+    content:""; position:absolute; width:14px; height:14px;
+    border:1.5px solid var(--accent); opacity:.7; pointer-events:none;
+    transition:opacity 120ms var(--ease), border-color 120ms var(--ease);
+    z-index:3;
+  }
+  .ef-bracket::before{ top:-1px; left:-1px; border-right:none; border-bottom:none; }
+  .ef-bracket::after{ bottom:-1px; right:-1px; border-left:none; border-top:none; }
+  .ef-bracket.idle::before, .ef-bracket.idle::after{ opacity:.25; border-color:var(--line-bright); }
+  .ef-bracket.idle:hover::before, .ef-bracket.idle:hover::after{ opacity:.6; border-color:var(--accent); }
+
+  /* ---- 押下・リップル共通（既存border-bottom疑似3Dボタンは維持・リップルは加算） ---- */
+  .pressable{position:relative; overflow:hidden;}
+  .pressable.pressed{transform:scale(0.96); filter:brightness(1.08);}
+  .ripple{
+    position:absolute; border-radius:50%;
+    background:rgba(244,180,54,0.4);
+    transform:scale(0);
+    animation:ef-rip 160ms var(--ease-snap) forwards;
+    pointer-events:none;
+  }
+  @keyframes ef-rip{ to{ transform:scale(2.6); opacity:0; } }
+
+  /* ---- ブートアップ入場（B3以降で使用予定・B1では定義のみ先出し） ---- */
+  @keyframes ef-scan-in{ 0%{clip-path:inset(0 100% 0 0);} 100%{clip-path:inset(0 0 0 0);} }
+  .ef-enter{ animation:ef-scan-in 260ms var(--ease-snap) both; }
+  @keyframes ef-face-in{ 0%{opacity:0; transform:scaleY(.96);} 100%{opacity:1; transform:scaleY(1);} }
+  .ef-enter-face{ animation:ef-face-in 300ms var(--ease-snap) both; transform-origin:center bottom; }
+  @keyframes ef-corner-lock{ 0%,100%{opacity:.3;} 50%{opacity:1;} }
+  .ef-bracket.corner-enter::before,.ef-bracket.corner-enter::after{ animation:ef-corner-lock 400ms ease-in-out 1 both; }
+  @keyframes ef-text-in{ 0%{opacity:0; transform:translateY(3px);} 100%{opacity:1; transform:translateY(0);} }
+  .ef-text-enter{ animation:ef-text-in 150ms var(--ease) both; }
+
+  @media (prefers-reduced-motion: reduce){
+    .ef-enter,.ef-enter-face,.ef-text-enter,.ef-bracket.corner-enter::before,.ef-bracket.corner-enter::after{
+      animation:none !important; opacity:1 !important; clip-path:none !important; transform:none !important;
+    }
+    .pressable.pressed{ transform:none !important; }
+    .ripple{ display:none !important; }
+  }
+
+  /* ============================================================
+     ===== C-1「ENDFIELD」ホーム（2026-07-02 UI本実装B2）=====
+     WORKORDER_RIKA2_UI_C1_2026-07-02.md §2-B2 準拠。mock_c1.htmlのDOM構造を移植。
+     ★既存.topbar(アプリ共通クロム・53行)と名前が衝突するため、ホーム側は全て .hm- 接頭辞でスコープする
+     （mock_c1側のbare名 .topbar/.stat-chip/.hero-card 等は .hm-topbar/.hm-stat-chip/.hm-hero-card に読替）。
+     #app実測は横長時max-width:1040px(1366pxではない)のため、mockの1366px3カラムを1040px基準に縮小移植。
+     680px未満(既存ブレークポイント踏襲)は1カラム積みに切替。
+     ============================================================ */
+  .hm-root{
+    /* ★--ink/--panel/--lineはB1で:rootのまま(旧値)据え置き=他の未移植画面を壊さないため。
+       ホーム(このバッチ)だけC-1新値へローカル上書き(既存の#qOverlay凍結パターンの逆方向応用)。 */
+    --ink:#efe9dc; --panel:rgba(28,26,22,0.94); --line:#3a352c;
+    padding:10px 12px 12px; display:flex; flex-direction:column; gap:10px; min-height:100%;
+    color:var(--ink);   /* ★CSS変数は子孫に再宣言されるが、colorの継承値は解決済みリテラルなのでここで明示指定が必要 */
+    background:radial-gradient(ellipse 900px 500px at 18% -10%, rgba(244,180,54,0.09), transparent 60%),
+      radial-gradient(ellipse 700px 600px at 100% 100%, rgba(126,231,135,0.05), transparent 55%), var(--bg-0);
+  }
+  /* :where()=詳細度ゼロのリセット。素の button{} だと .hm-cta 等(0,1,0)より強くなり装飾を打ち消す(検収2026-07-02で摘出) */
+  .hm-root :where(button){ font-family:inherit; cursor:pointer; color:inherit; background:none; border:none; text-align:left; }
+
+  /* ---- トップバー ---- */
+  .hm-topbar{ display:flex; align-items:center; gap:10px; padding:8px 12px; flex:0 0 auto; }
+  .hm-id{ display:flex; align-items:center; gap:8px; padding:4px 12px 4px 4px; }
+  .hm-id .av{ width:36px;height:36px;border-radius:6px; background:linear-gradient(145deg,#26221b,#18160f); border:1px solid var(--line-soft); display:flex;align-items:center;justify-content:center; font-size:17px; position:relative;
+    clip-path:polygon(var(--cut-s) 0,100% 0,100% calc(100% - var(--cut-s)),calc(100% - var(--cut-s)) 100%,0 100%,0 var(--cut-s)); }
+  .hm-id .who{ display:flex; flex-direction:column; gap:1px; }
+  .hm-id .nm{ font-size:13px; font-weight:700; }
+  .hm-id .lv{ font-size:11px; color:var(--accent); }
+  .hm-spacer{ flex:1; }
+  .hm-chip{ display:flex; align-items:center; gap:6px; padding:7px 12px; background:rgba(21,19,16,0.4); border:1px solid var(--line-soft);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .hm-chip .ic{ font-size:13px; }
+  .hm-chip .v{ font-size:14px; color:var(--warn); font-family:'M PLUS Rounded 1c', sans-serif; font-weight:900; }
+  .hm-chip .u{ font-size:9px; color:var(--ink-faint); margin-left:1px; }
+  .hm-settings{ width:36px;height:36px; display:flex;align-items:center;justify-content:center; background:rgba(21,19,16,0.4); border:1px solid var(--line-soft);
+    clip-path:polygon(var(--cut-s) 0,100% 0,100% calc(100% - var(--cut-s)),calc(100% - var(--cut-s)) 100%,0 100%,0 var(--cut-s)); font-size:15px; color:var(--ink-dim); }
+
+  /* ---- 本体レイアウト: 1カラム積み(基本)/680px+で左パーティ・右せいちょう+もちものを並べる ---- */
+  .hm-body{ display:flex; flex-direction:column; gap:10px; flex:1; min-height:0; }
+  .hm-col-side-l, .hm-col-side-r{ display:flex; flex-direction:column; gap:8px; }
+
+  /* ---- パーティ(4人) ---- */
+  .hm-party-panel{ padding:12px 10px 10px; }
+  .hm-party-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:9px; }
+  .hm-hero{ position:relative; background:linear-gradient(180deg, rgba(239,233,220,0.03), rgba(0,0,0,0.18)); border:1px solid var(--line-soft);
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    padding:7px 6px 6px; display:flex; flex-direction:column; align-items:center; gap:4px; overflow:hidden; }
+  .hm-hero::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; background:var(--role-color); box-shadow:0 0 8px var(--role-color); z-index:2; }
+  .hm-hero .frame{ width:100%; aspect-ratio:1/1; border-radius:4px; position:relative;
+    background:radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--role-color) 22%, transparent), transparent 70%),
+      repeating-linear-gradient(135deg, rgba(239,233,220,0.03) 0 2px, transparent 2px 9px), linear-gradient(180deg,#1d1a14,#17140e);
+    border:1px solid color-mix(in srgb, var(--role-color) 45%, var(--line-soft)); display:flex; align-items:center; justify-content:center; }
+  .hm-hero .silhouette{ font-size:26px; filter:drop-shadow(0 2px 5px rgba(0,0,0,.5)); }
+  .hm-hero .role-ic{ position:absolute; bottom:3px; right:3px; font-size:10px; background:rgba(15,13,10,0.75);
+    border:1px solid color-mix(in srgb, var(--role-color) 60%, var(--line-soft)); border-radius:4px; width:16px;height:16px; display:flex;align-items:center;justify-content:center; }
+  .hm-hero .hname{ font-family:'Oxanium',sans-serif; font-size:10.5px; font-weight:700; }
+  .hm-hero .hrole{ font-family:'Oxanium',sans-serif; font-size:8px; color:var(--ink-faint); letter-spacing:1px; text-transform:uppercase; }
+  .hm-hero .hbar{ width:100%; height:4px; border-radius:2px; background:rgba(239,233,220,0.06); overflow:hidden; margin-top:1px; }
+  .hm-hero .hbar i{ display:block; height:100%; background:linear-gradient(90deg, color-mix(in srgb, var(--role-color) 70%, #fff 10%), var(--role-color)); border-radius:2px; }
+  .hm-hero.focused{ box-shadow:0 0 0 1px var(--role-color), 0 0 14px 2px color-mix(in srgb, var(--role-color) 40%, transparent); }
+  .hm-hero.focused .ef-bracket::before, .hm-hero.focused .ef-bracket::after{ opacity:.9; border-color:var(--accent-strong); }
+
+  /* ---- 中央: 現在地+アリーナ+CTA ---- */
+  .hm-center{ display:flex; flex-direction:column; gap:8px; }
+  .hm-loc-panel{ padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:linear-gradient(90deg, rgba(244,180,54,0.06), transparent 60%), var(--panel-soft); flex-wrap:wrap; }
+  .hm-loc-l{ display:flex; align-items:center; gap:10px; }
+  .hm-loc-ic{ width:32px;height:32px;border-radius:4px; background:rgba(126,231,135,0.12); border:1px solid var(--c-chem); display:flex;align-items:center;justify-content:center; font-size:15px; }
+  .hm-loc-cap{ font-family:'Oxanium',sans-serif; font-size:9px; color:var(--ink-faint); letter-spacing:2px; text-transform:uppercase; }
+  .hm-loc-name{ font-size:14px; font-weight:700; }
+  .hm-loc-name .stg{ color:var(--c-chem); font-family:'Chakra Petch',monospace; margin-left:4px; }
+  .hm-prog{ display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+  .hm-prog .row{ display:flex; align-items:center; gap:8px; }
+  .hm-prog .track{ width:100px;height:6px;border-radius:3px;background:rgba(239,233,220,0.07); overflow:hidden; }
+  .hm-prog .track i{ display:block;height:100%; background:linear-gradient(90deg,#5fce77,var(--c-chem)); border-radius:3px; }
+  .hm-prog .pct{ font-size:10px; color:var(--ink-dim); }
+
+  .hm-arena{ position:relative; border:1px solid var(--line-soft); clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+    overflow:hidden; display:flex; align-items:flex-end; justify-content:center; min-height:220px; }
+  .hm-arena .bg{ position:absolute; inset:0; background-size:cover; background-position:center 38%; filter:saturate(0.72) sepia(0.12) brightness(0.6); }
+  .hm-arena .bg-scan{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(21,19,16,0.18) 0%, rgba(21,19,16,0.38) 55%, rgba(21,19,16,0.93) 100%),
+    repeating-linear-gradient(0deg, rgba(239,233,220,0.02) 0 1px, transparent 1px 3px); }
+  .hm-hud{ position:absolute; top:10px; left:14px; display:flex; flex-direction:column; gap:2px; padding:4px 8px; background:linear-gradient(90deg, rgba(21,19,16,0.45), rgba(21,19,16,0.08) 90%); }
+  .hm-hud .r1{ font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); opacity:.85; }
+  .hm-hud .r2{ font-family:'Chakra Petch',monospace; font-size:15px; font-weight:700; }
+  .hm-nextfoe{ position:absolute; top:10px; right:12px; display:flex; align-items:center; gap:7px; background:rgba(21,19,16,0.7); border:1px solid var(--line-soft);
+    padding:5px 11px 5px 5px; clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .hm-nextfoe img,.hm-nextfoe .fic{ width:28px;height:28px;object-fit:contain; filter:drop-shadow(0 0 4px rgba(244,180,54,0.35)); }
+  .hm-nextfoe .fcap{ font-family:'JetBrains Mono',monospace; font-size:7.5px; color:var(--ink-faint); letter-spacing:1px; text-transform:uppercase; opacity:.7; }
+  .hm-nextfoe .fname{ font-size:10.5px; font-weight:700; }
+  .hm-cta-wrap{ position:relative; z-index:2; width:100%; padding:0 18px 16px; display:flex; justify-content:center; }
+  .hm-cta{ position:relative; width:100%; max-width:460px; padding:13px 22px; background:linear-gradient(180deg, #ffcf6b, var(--accent) 55%, var(--accent-dim));
+    border:1px solid #ffd884; clip-path:polygon(var(--cut-l) 0,100% 0,100% calc(100% - var(--cut-l)),calc(100% - var(--cut-l)) 100%,0 100%,0 var(--cut-l));
+    color:#1c1204; font-family:'Oxanium', sans-serif; font-weight:800; font-size:18px; letter-spacing:2px;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.28), 0 8px 22px rgba(244,180,54,0.32), inset 0 1px 0 rgba(255,255,255,0.35); }
+  .hm-cta .arrow{ font-size:17px; }
+
+  /* ---- 右: せいちょうハブ+もちもの ---- */
+  .hm-growth-panel{ padding:13px 12px 12px; }
+  .hm-growth-grid{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+  .hm-growth-item{ display:flex; align-items:center; gap:10px; padding:11px 10px; background:rgba(21,19,16,0.55); border:1px solid var(--line-soft);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .hm-growth-item .gic{ width:30px;height:30px;border-radius:4px; display:flex;align-items:center;justify-content:center; font-size:14px;
+    border:1px solid var(--g-color); background:color-mix(in srgb, var(--g-color) 14%, transparent); flex-shrink:0; }
+  .hm-growth-item .gtxt{ flex:1; min-width:0; }
+  .hm-growth-item .gname{ font-family:'Oxanium',sans-serif; font-size:12px; font-weight:700; }
+  .hm-growth-item .gsub{ font-size:9.5px; color:var(--ink-faint); margin-top:1px; }
+  .hm-growth-item .gbadge{ font-family:'Chakra Petch',monospace; font-size:9px; font-weight:700; color:var(--danger);
+    background:rgba(255,93,93,0.14); border:1px solid rgba(255,93,93,0.5); padding:2px 6px; border-radius:10px; flex-shrink:0; }
+
+  .hm-items-panel{ padding:13px 12px 12px; }
+  .hm-items-panel .plate-label{ display:flex; justify-content:space-between; align-items:center; }
+  .hm-item-row{ display:flex; align-items:center; gap:10px; padding:10px 4px; }
+  .hm-item-row + .hm-item-row{ border-top:1px solid var(--line-soft); }
+  .hm-item-slot{ width:34px;height:34px;border-radius:4px; background:linear-gradient(180deg,#211d16,#18150f); border:1px solid var(--line-soft);
+    display:flex;align-items:center;justify-content:center; padding:5px; flex-shrink:0; font-size:15px; }
+  .hm-item-slot img{ width:100%;height:100%;object-fit:contain; }
+  .hm-item-info{ flex:1; min-width:0; }
+  .hm-item-info .iname{ font-size:11.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hm-item-info .irar{ font-family:'Chakra Petch',monospace; font-size:9px; color:var(--accent); letter-spacing:1px; margin-top:2px; }
+  .hm-item-go{ font-family:'Oxanium',sans-serif; font-size:9.5px; color:var(--ink-faint); border:1px solid var(--line-soft); border-radius:4px; padding:4px 8px; flex-shrink:0; }
+  .hm-empty{ font-size:11px; color:var(--ink-faint); padding:8px 4px; text-align:center; }
+
+  /* ---- 下段 ---- */
+  .hm-bottombar{ display:flex; align-items:stretch; gap:8px; flex:0 0 auto; }
+  .hm-notice{ flex:1; display:flex; align-items:center; gap:10px; padding:0 14px; min-height:52px; }
+  .hm-notice .nb-tag{ font-family:'Oxanium',sans-serif; font-weight:700; font-size:9px; letter-spacing:1px; color:var(--accent); border:1px solid var(--accent-dim); padding:2px 7px; border-radius:3px; flex-shrink:0; }
+  .hm-notice .nb-text{ font-size:11px; color:var(--ink-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hm-notice .nb-text b{ color:var(--ink); }
+  .hm-notice .nb-arrow{ margin-left:auto; color:var(--ink-faint); font-size:13px; }
+  .hm-nav{ width:84px; min-height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+  .hm-nav .nic{ font-size:16px; }
+  .hm-nav .ntxt{ font-family:'Oxanium',sans-serif; font-size:9.5px; color:var(--ink-dim); font-weight:700; }
+
+  @media (min-width:680px){
+    .hm-root{ padding:12px 16px 14px; }
+    .hm-body{ flex-direction:row; align-items:stretch; }
+    .hm-col-side-l{ flex:0 0 240px; }
+    .hm-center{ flex:1; min-width:0; }
+    .hm-col-side-r{ flex:0 0 250px; }
+    .hm-party-grid{ grid-template-columns:repeat(2,1fr); }
+    .hm-arena{ min-height:0; flex:1; }
+  }
+  @media (prefers-reduced-motion:reduce){ .hm-hero,.hm-growth-item,.hm-cta{ transition:none; } }
+
+  /* ============================================================
+     ===== C-1「ENDFIELD」画面遷移＋導線（2026-07-02 UI本実装B3）=====
+     WORKORDER_RIKA2_UI_C1_2026-07-02.md §2-B3 準拠。
+     showScreen()にブート遷移(.ef-enter系はB1で定義済・ここでは短縮版のタイミング調整のみ追加)。
+     ドロワー/モーダルの対称往復・戻る「◀」ボタンの統一・.screenの入場演出。
+     body.fx-lite（_fxLite()=真=prefers-reduced-motion含む）で即時切替にフォールバック（既存パターン踏襲・115/127/146/154/309/333行）。
+     ============================================================ */
+  /* ---- .screen入場: 短縮版ブート(線→面, ~150ms)。showScreen()がJSでクラス再付与して再生させる ---- */
+  @keyframes ef-screen-in{ 0%{clip-path:inset(0 100% 0 0); opacity:.4;} 60%{opacity:1;} 100%{clip-path:inset(0 0 0 0); opacity:1;} }
+  .screen.ef-scr-enter{ animation:ef-screen-in 150ms var(--ease-snap) both; }
+  body.fx-lite .screen.ef-scr-enter{ animation:none; clip-path:none; opacity:1; }
+
+  /* ---- ホーム初回のみ: フル尺stagger(mock_c1 §(e)9段階を移植・delay値もmock_c1のtopbar0/party60/loc80/growth120/items160/notice200/nav230-260/arena220msを踏襲) ---- */
+  .hm-root.ef-boot-full .hm-topbar{ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:0ms; }
+  .hm-root.ef-boot-full .hm-party-panel{ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:60ms; }
+  .hm-root.ef-boot-full .hm-loc-panel{ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:80ms; }
+  .hm-root.ef-boot-full .hm-growth-panel{ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:120ms; }
+  .hm-root.ef-boot-full .hm-items-panel{ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:160ms; }
+  .hm-root.ef-boot-full .hm-notice{ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:200ms; }
+  /* .hm-bottombar内は button.hm-notice→button.hm-nav→button.hm-nav の順(全て<button>)なのでnth-of-typeは2番目/3番目 */
+  .hm-root.ef-boot-full .hm-nav:nth-of-type(2){ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:230ms; }
+  .hm-root.ef-boot-full .hm-nav:nth-of-type(3){ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:260ms; }
+  .hm-root.ef-boot-full .hm-arena{ animation:ef-face-in 300ms var(--ease-snap) both; animation-delay:220ms; transform-origin:center bottom; }
+  .hm-root.ef-boot-full .hm-topbar,
+  .hm-root.ef-boot-full .hm-party-panel,
+  .hm-root.ef-boot-full .hm-loc-panel,
+  .hm-root.ef-boot-full .hm-growth-panel,
+  .hm-root.ef-boot-full .hm-items-panel,
+  .hm-root.ef-boot-full .hm-notice,
+  .hm-root.ef-boot-full .hm-nav{ transform-origin:center bottom; }
+  body.fx-lite .hm-root.ef-boot-full *{ animation:none !important; opacity:1 !important; transform:none !important; }
+
+  /* ---- ドロワー/モーダル: 対称往復(translateY+opacity)に統一 ---- */
+  .drawer-scrim{ transition:opacity 180ms var(--ease); }
+  .drawer{
+    transform:translateY(20px); opacity:0; pointer-events:none;
+    transition:transform 180ms var(--ease), opacity 180ms var(--ease);
+  }
+  .drawer.open{ transform:translateY(0); opacity:1; pointer-events:auto; }
+  body.fx-lite .drawer,body.fx-lite .drawer-scrim{ transition:none !important; }
+  @media (min-width:680px){
+    /* ワイド中央モーダル化時は.drawer自体がdisplay:none⇄flexなので、中身.dw-cardの方に対称往復を掛ける */
+    .drawer{ transform:none; opacity:1; }
+    .drawer .dw-card{ transform:translateY(20px); opacity:0; transition:transform 180ms var(--ease), opacity 180ms var(--ease); }
+    .drawer.open .dw-card{ transform:translateY(0); opacity:1; }
+    body.fx-lite .drawer .dw-card{ transition:none !important; }
+  }
+  @keyframes ef-modal-in{ 0%{transform:translateY(20px); opacity:0;} 100%{transform:translateY(0); opacity:1;} }
+  .info-modal.show .info-card{ animation:ef-modal-in 180ms var(--ease) both; }
+  body.fx-lite .info-modal.show .info-card{ animation:none !important; opacity:1 !important; transform:none !important; }
+
+  /* ---- 戻る「◀」ボタンの見た目統一: C-1トークン(面取り+罫線+ホバー) ---- */
+  .ef-back{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:9px 16px;
+    background:var(--panel-soft, rgba(21,19,16,0.55));
+    border:1px solid var(--line-soft, #3a352c);
+    color:var(--ink-dim, #a8a08c);
+    clip-path:polygon(var(--cut-s,6px) 0,100% 0,100% calc(100% - var(--cut-s,6px)),calc(100% - var(--cut-s,6px)) 100%,0 100%,0 var(--cut-s,6px));
+    font-family:'Oxanium',sans-serif; font-weight:700; font-size:13px; letter-spacing:.5px;
+    cursor:pointer;
+    transition:border-color 120ms var(--ease), color 120ms var(--ease), transform 80ms var(--ease-snap);
+  }
+  .ef-back:hover{ border-color:var(--line-bright,#5c5340); color:var(--ink,#efe9dc); }
+  .ef-back:active{ transform:scale(.96); }
+  .ef-back.ef-back-icon{ width:40px; height:40px; padding:0; justify-content:center; font-size:16px; flex:0 0 auto; }
+  body.fx-lite .ef-back{ transition:none !important; }
+  body.fx-lite .ef-back:active{ transform:none !important; }
+
+  /* ============================================================
+     ===== C-1「ENDFIELD」戦闘HUD（2026-07-02 UI本実装B4）=====
+     WORKORDER_RIKA2_UI_C1_2026-07-02.md §2-B4 準拠。
+     対象=.topbar+.stage(敵表示)+.cmd-panel の常設DOM(showScreen('')で全画面を閉じた戦闘ベースUI)。
+     ★VFX層(#battleFx canvas)・ダメージ計算・状態機械は無変更＝見た目のCSS/テンプレ装飾のみ。
+     ★#qOverlayは別スコープ(928行〜の凍結ブロック)=このブロックの影響を受けない(#qOverlay,#qOverlay *で再宣言済み)。
+     ★.hm-root(B2)と同じ手法＝:rootの旧トークンをここでC-1新値へローカル上書き。
+     ============================================================ */
+  .topbar, .stage, .cmd-panel{
+    --ink:#efe9dc; --panel:rgba(28,26,22,0.94); --panel-soft:rgba(28,26,22,0.72);
+    --line:#3a352c; --sub:var(--ink-dim);
+  }
+  .topbar{ color:var(--ink); background:rgba(21,19,16,0.35); border-bottom:1px solid var(--line-soft); }
+  .topbar .gear{ background:var(--panel-soft); border:1px solid var(--line-soft); color:var(--ink-dim);
+    clip-path:polygon(var(--cut-s) 0,100% 0,100% calc(100% - var(--cut-s)),calc(100% - var(--cut-s)) 100%,0 100%,0 var(--cut-s));
+    font-family:'Oxanium',sans-serif; font-weight:700; transition:border-color 120ms var(--ease), color 120ms var(--ease); }
+  .topbar .gear:hover{ border-color:var(--line-bright); color:var(--ink); }
+  .topbar b{ font-family:'Oxanium',sans-serif; font-weight:700; letter-spacing:.3px; }
+
+  /* ---- 敵プレート: C-1面取り(--cut-m)+罫線+ブラケット。型番風マイクロテキストは1箇所(id)のみ ----
+     ★敵スプライト自体は透過PNG=「世界に立たせる」が正。容器に不透明背景・枠・影を敷かない(検収2026-07-02:
+       B4当初の暗色gradientが背景美術を塗りつぶしていたため撤去。ターゲット可視化はoutline系(104-130行)が既に担う) */
+  .enemy-card{ padding:2px; }
+  .eimg{ background:none; border:none; border-radius:0; box-shadow:none; }
+  .ename{ font-family:'Oxanium',sans-serif; font-weight:700; letter-spacing:.2px; color:var(--ink); }
+  .ebar{ background:rgba(8,7,5,.55); border:1px solid var(--line-soft); border-radius:0;
+    clip-path:polygon(3px 0,100% 0,100% calc(100% - 3px),calc(100% - 3px) 100%,0 100%,0 3px); }
+  .ebar.hp i{ background:linear-gradient(90deg,var(--danger),#c93f3f); }
+  .echg{ background:rgba(8,7,5,.55); border-radius:0; }
+  .echg i{ background:linear-gradient(90deg,var(--accent-dim),var(--accent)); }
+  .eattr{ font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:.5px; border-radius:3px; }
+  .eprev{ font-family:'JetBrains Mono',monospace; font-size:8.5px; letter-spacing:.5px;
+    background:rgba(8,7,5,.7); border:1px solid rgba(255,93,93,.5); color:#ffb3b3; border-radius:3px; }
+  .ail{ background:rgba(21,19,16,.75); border:1px solid var(--line-bright); color:var(--ink-dim); border-radius:3px; }
+  .ail.debuff{ background:rgba(255,93,93,.14); border-color:var(--danger); color:#ffd2d2; }
+  .efx, .ac-fx{ font-family:'Chakra Petch',monospace; font-variant-numeric:tabular-nums; }
+  .efx.crit{ color:var(--accent-strong); } .efx.dot{ color:var(--good); }
+  .ac-fx.heal{ color:var(--good); } .ac-fx.hit{ color:var(--danger); }
+
+  /* ---- 味方カード: C-1面取り+絵文字はIDカード意匠の枠に収める(裸出し禁止) ---- */
+  .ally-card{ background:var(--panel-soft); border:1px solid var(--line-soft); border-radius:0;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+    padding:7px 5px 5px; }
+  .ally-card.active{ border-color:var(--accent-strong); box-shadow:0 0 0 1px var(--accent-strong), 0 0 10px 1px var(--accent-glow); background:var(--panel-soft); }
+  .ally-card.targetable{ outline-color:var(--good); }
+  .ac-emoji{ width:30px; height:30px; margin:0 auto 2px; display:flex; align-items:center; justify-content:center;
+    font-size:16px; border-radius:4px; background:rgba(15,13,10,.65);
+    border:1px solid color-mix(in srgb, var(--role-color, var(--accent)) 55%, var(--line-soft)); }
+  .ac-name{ font-family:'Oxanium',sans-serif; font-weight:700; letter-spacing:.2px; color:var(--ink); }
+  .ac-role{ font-family:'Oxanium',sans-serif; font-size:7.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--ink-faint); }
+  .ac-bar{ background:rgba(8,7,5,.55); border-radius:2px; }
+  .ac-bar.hp i{ background:linear-gradient(90deg,var(--good),#3fbf68); }
+  .ac-bar.mp i{ background:linear-gradient(90deg,var(--mp),#4fb9d6); }
+  .ac-bar.atb i{ background:linear-gradient(90deg,var(--accent-strong),var(--accent)); }
+  .ally-card.low .ac-bar.hp i{ background:linear-gradient(90deg,var(--danger),#c93f3f); }
+  .ac-mp{ font-family:'Chakra Petch',monospace; font-variant-numeric:tabular-nums; color:var(--mp); }
+
+  /* ---- いきおい(コンボ)表示: マイクロテキスト予算はここまで(敵プレートID+これで2箇所) ---- */
+  .combo-badge{ font-family:'Oxanium',sans-serif; font-weight:700; color:var(--accent); }
+  .combo-badge b{ font-family:'Chakra Petch',monospace; }
+  .combo-badge.hot5{ color:var(--accent-strong); } .combo-badge.hot10{ color:var(--accent-strong); text-shadow:0 0 10px var(--accent-glow),0 1px 3px #000; }
+
+  /* ---- コマンドバー: .cmd-panelは面取りしない(既存の下端シート形状=B2で意図的に既存維持・140行注記)。中身のボタン群をC-1化 ---- */
+  .cmd-panel{ background:var(--panel); border:1px solid var(--line-soft); border-top-color:var(--line-bright); }
+  .phase-hint{ color:var(--ink-dim); } .phase-hint b{ color:var(--ink); font-family:'Oxanium',sans-serif; font-weight:700; }
+  .cmd{ background:var(--panel-soft); border:1px solid var(--line-soft); border-radius:0;
+    clip-path:polygon(var(--cut-s) 0,100% 0,100% calc(100% - var(--cut-s)),calc(100% - var(--cut-s)) 100%,0 100%,0 var(--cut-s));
+    color:var(--ink); font-family:'Oxanium',sans-serif; }
+  .cmd .sub{ color:var(--ink-faint); }
+  .cmd.atk{ background:linear-gradient(180deg,#ffcf6b,var(--accent) 55%,var(--accent-dim)); border-color:#ffd884; color:#1c1204; }
+  .cmd.atk .sub{ color:#5a3d0a; }
+  .cmd.def{ background:linear-gradient(180deg,#1c2e38,#12222c); border-color:var(--mp); }
+  .cmd.skill{ background:linear-gradient(180deg,#132a22,#0d1f1a); border-color:var(--good); }
+  .cmd.item{ background:linear-gradient(180deg,#332813,#241c0e); border-color:var(--accent-dim); }
+  .cmd:disabled{ opacity:.35; filter:grayscale(.5); }
+  .li{ background:var(--panel-soft); border:1px solid var(--line-soft); border-radius:0;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+    color:var(--ink); transition:border-color 120ms var(--ease); }
+  .li:hover{ border-color:var(--line-bright); }
+  .li .nn{ font-family:'Oxanium',sans-serif; font-weight:700; }
+  .li .dd{ color:var(--ink-faint); }
+  .badge{ font-family:'Chakra Petch',monospace; }
+  .badge.q{ background:rgba(244,180,54,.13); color:var(--accent); border:1px solid rgba(244,180,54,.4); }
+  .badge.free{ background:rgba(111,208,232,.1); color:var(--mp); border:1px solid rgba(111,208,232,.4); }
+  .badge.mp{ background:rgba(111,208,232,.1); color:var(--mp); border:1px solid rgba(111,208,232,.4); }
+  .badge.aoe{ background:rgba(255,93,93,.12); color:#ffb3b3; border:1px solid rgba(255,93,93,.4); }
+  .back-btn{ background:var(--panel-soft); border:1px solid var(--line-soft); border-radius:0;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+    color:var(--ink-dim); font-family:'Oxanium',sans-serif; font-weight:700; transition:border-color 120ms var(--ease), color 120ms var(--ease); }
+  .back-btn:hover{ border-color:var(--line-bright); color:var(--ink); }
+  .lp-hint{ color:var(--ink-faint); }
+  @media (prefers-reduced-motion:reduce){
+    .cmd, .li, .back-btn, .ally-card, .enemy-card{ transition:none !important; }
+  }
+
+  /* ============================================================
+     ===== C-1「ENDFIELD」メニュー群（2026-07-02 UI本実装B5）=====
+     WORKORDER_RIKA2_UI_C1_2026-07-02.md §2-B5 準拠。
+     対象＝もちもの/どうぐ屋/けんきゅう/とっくん/ふくしゅう/せってい の6系統・全render関数。
+     ★B2/B4と同じ手法＝対象screenルートに:rootの旧トークンをC-1新値でローカル上書き
+       （--gold→--accent/--sub→--ink-dim/--bad→--danger等の意味対応は§1-A表のとおり）。
+       これにより.gcard/.chip/.scr-btn/.shop-*等の既存共通クラスが自動的にC-1配色になる
+       （render関数のHTML構造・onclick・機能ロジックには一切触れない）。
+     ★B6総磨き(2026-07-02)で追記=タイトル/マップ/クリア/コンプリート/敗北の5画面
+       ＋.stage-intro(ステージ入場スプラッシュ)/.info-modal(スキル説明ポップアップ)も
+       このトークン上書きに追加。grep監査(WORKORDER §2-B6)で発見=これらだけB2/B4/B5
+       どの上書きスコープにも含まれておらず、var(--gold)/var(--sub)/var(--bad)/var(--gold-d)が
+       旧値のまま可視化していた（レイアウト・背景グラデ自体はレガシーのまま=文字色/枠色の
+       トークンだけをC-1に揃える最小修正。本格的なC-1再設計は別バッチ）。
+       ★.stage-intro/.info-modalは#screen-*ではない独立オーバーレイ(#qOverlayとは別物・
+       凍結対象外)のため、idでなくクラスセレクタで追加。 */
+  #screen-inventory, #screen-accessory, #screen-shop, #screen-research,
+  #screen-training, #screen-review, #screen-settings,
+  #screen-title, #screen-map, #screen-clear, #screen-complete, #screen-defeat,
+  .stage-intro, .info-modal{
+    --ink:#efe9dc; --panel:rgba(28,26,22,0.94); --panel-soft:rgba(28,26,22,0.72);
+    --line:#3a352c; --sub:var(--ink-dim);
+    --gold:var(--accent); --gold-d:var(--accent-dim); --bad:var(--danger); --charge:var(--accent-dim);
+  }
+  #screen-inventory, #screen-accessory, #screen-shop, #screen-research,
+  #screen-training, #screen-review, #screen-settings,
+  #screen-title, #screen-map, #screen-clear, #screen-complete, #screen-defeat,
+  .stage-intro, .info-modal{ color:var(--ink); }
+  #screen-inventory::before,#screen-accessory::before{ background-image:
+      linear-gradient(rgba(239,233,220,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(239,233,220,0.03) 1px, transparent 1px); }
+
+  /* ---- ①専用プレートヘッダー（全6系統共通コンポーネント）: efPlateHeader()から生成 ----
+     「絵文字+見出し+右上ボタン」の同一テンプレ感を消す＝mock_c1の.plate-labelパターン
+     （アクセントドット＋日本語ラベル＋英字マイクロテキスト）を全画面ヘッダーに適用。 */
+  .ef-hdr{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .ef-hdr .ef-hdr-l{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .ef-hdr .plate-label{
+    font-family:'Oxanium', sans-serif; font-weight:700; font-size:11px; letter-spacing:2px;
+    color:var(--ink-faint); text-transform:uppercase; display:flex; align-items:center; gap:6px;
+  }
+  .ef-hdr .plate-label .dot{ width:6px;height:6px;border-radius:50%; background:var(--accent);
+    box-shadow:0 0 3px var(--accent-strong), 0 0 9px var(--accent-glow); flex:0 0 auto; }
+  .ef-hdr .plate-label .em{ font-size:13px; }
+  .ef-hdr .ef-hdr-jp{ font-size:19px; font-weight:900; color:var(--ink); }
+  .ef-hdr .ef-hdr-cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--ink-faint); opacity:.6; margin-top:1px; }
+  .ef-hdr .ef-hdr-r{ display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+
+  /* ---- ②カード/リスト共通コンポーネント: efCard()系ヘルパーから生成 ---- */
+  .ef-card{ display:flex; align-items:center; gap:11px; padding:12px 11px; background:var(--panel-soft);
+    border:1px solid var(--line-soft,#3a352c); clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+    transition:border-color 120ms var(--ease); }
+  .ef-card:hover{ border-color:var(--line-bright,#5c5340); }
+  .ef-card .ef-card-ic{ width:34px;height:34px;border-radius:4px; display:flex;align-items:center;justify-content:center; font-size:16px;
+    border:1px solid var(--g-color,var(--accent-dim)); background:color-mix(in srgb, var(--g-color,var(--accent)) 14%, transparent); flex-shrink:0; }
+  .ef-card .ef-card-txt{ flex:1; min-width:0; }
+  .ef-card .ef-card-name{ font-family:'Oxanium',sans-serif; font-size:13px; font-weight:700; }
+  .ef-card .ef-card-sub{ font-size:10.5px; color:var(--ink-faint); margin-top:2px; }
+  .ef-card .ef-card-badge{ font-family:'Chakra Petch',monospace; font-size:9px; font-weight:700; color:var(--danger);
+    background:rgba(255,93,93,0.14); border:1px solid rgba(255,93,93,0.5); padding:2px 6px; border-radius:10px; flex-shrink:0; }
+
+  /* ---- ③もちもの: item-row(C-1)。既存.gcard(周期表セル)は配色のみC-1化=構造は維持(検収教訓=大改造しない) ---- */
+  .gcard{ background:var(--panel-soft); border-color:var(--line-soft,#3a352c); border-radius:0;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .gcard::before{ background-image:
+    linear-gradient(rgba(239,233,220,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(239,233,220,.035) 1px,transparent 1px); }
+  .gcard .thumb{ border-radius:4px;
+    background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--rc,var(--accent)) 20%,#18150f),#18150f 72%); }
+  .gcard .gn{ font-family:'Oxanium',sans-serif; }
+  .gcard .rr{ font-family:'Chakra Petch',monospace; letter-spacing:.5px; }
+  .gcard .gm{ font-family:'Chakra Petch',monospace; }
+  /* フィルタ/ソートのピルチップ=C-1面取り+アクセント */
+  .chip{ border-radius:0; background:var(--panel-soft); border-color:var(--line-soft,#3a352c); color:var(--ink-dim);
+    font-family:'Oxanium',sans-serif; font-weight:700; letter-spacing:.2px;
+    clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+    transition:border-color 120ms var(--ease), color 120ms var(--ease); }
+  .chip[aria-pressed="true"]{ background:color-mix(in srgb, var(--accent) 14%, transparent); border-color:var(--accent); color:var(--accent); }
+
+  /* ---- 見出し類=C-1見出しフォントへ ---- */
+  .scr-ttl, .inv-head h2{ font-family:'Oxanium',sans-serif; font-weight:800; letter-spacing:.5px; color:var(--ink); }
+  .shop-nm, .ae-row .ae-c, .stage-card .sc-name{ font-family:'Oxanium',sans-serif; }
+
+  /* ---- ボタン=C-1トークン(既存の疑似3D構造は維持・色のみC-1化) ---- */
+  .scr-btn{ background:var(--panel-soft); border:1px solid var(--line-soft,#3a352c); color:var(--ink); border-radius:0;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    font-family:'Oxanium',sans-serif; font-weight:700; transition:border-color 120ms var(--ease); }
+  .scr-btn:hover{ border-color:var(--line-bright,#5c5340); }
+  .scr-btn.primary{ background:linear-gradient(180deg,#ffcf6b,var(--accent) 55%,var(--accent-dim)); border:1px solid #ffd884; border-bottom:0; color:#1c1204; font-family:'Oxanium',sans-serif; font-weight:800; }
+  .settings-card{ background:var(--panel-soft); border:1px solid var(--line-soft,#3a352c); border-radius:0;
+    clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
+  .settings-row .st-name{ font-family:'Oxanium',sans-serif; }
+  .toggle{ background:rgba(21,19,16,0.6); border-color:var(--line-soft,#3a352c); }
+  .toggle.on{ background:color-mix(in srgb, var(--good) 18%, transparent); border-color:var(--good); }
+
+  @media (prefers-reduced-motion:reduce){
+    .gcard, .chip, .ef-card, .scr-btn{ transition:none !important; }
+  }
+
+  /* ============================================================
+     ★★ #qOverlay 視覚凍結スコープ（オーナー確定2026-07-02・削除厳禁）★★
+     WORKORDER_RIKA2_UI_C1_2026-07-02.md §0鉄則2・§1-C 方式1。
+     C-1トークンを :root に追加したことで #qOverlay 配下の文字色/フォント等が
+     巻き込まれないよう、ここでレガシー値へローカル再宣言で巻き戻す。
+     新規トークンを :root に追加した場合はこのブロックにも追記が必要（§4参照）。
+     #qOverlay配下にC-1新設クラス(.panel/.pressable/.ef-bracket/.num/.heading/.microtext等)
+     を付与しないこと（quiz-engine.js側は変更対象外なので自動的に守られるが念のため）。
+     ============================================================ */
+  #qOverlay, #qOverlay *{
+    --bg-0:#0b1020; --bg-1:#0b1020;
+    --panel:#1a2336; --panel-soft:#1a2336;
+    --line:#2b3756; --line-soft:#2b3756; --line-bright:#2b3756;
+    --ink:#e8eefc; --ink-dim:#9fb0d6; --ink-faint:#9fb0d6;
+    --accent:#f4c95d; --accent-strong:#f4c95d; --accent-dim:#b9821f; --accent-glow:rgba(244,201,93,.32);
+    --good:#34d399; --danger:#f87171; --warn:#fbbf24; --mp:#38bdf8;
+    /* 旧トークン名も再宣言: オーバーレイCSS(.qctx/.qfeed等)は--sub/--bad/--gold系を参照しており、
+       B6で:rootから旧トークンを削除しても凍結画面が壊れないための保険（検収2026-07-02追記） */
+    --gold:#f4c95d; --gold-d:#b9821f; --sub:#9fb0d6; --bad:#f87171; --charge:#e6b34d;
+    /* 元のbodyフォントはOS標準スタック(Zen Kaku先頭付与なし)。凍結=フォントも変えない */
+    font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif !important;
+  }
 </style>
 </head>
 <body>
@@ -670,7 +1159,8 @@
     <div class="mid" id="mid"><div class="combo-badge" id="comboBadge" style="display:none;">🔥いきおい <b id="comboN">0</b></div></div>
   </div>
 
-  <div class="panel">
+  <div class="cmd-panel">
+    <div class="microtext" style="margin-bottom:4px;">PARTY // COMMAND</div>
     <div class="party" id="party"></div>
     <div class="phase-hint" id="phaseHint">…</div>
     <div id="cmdArea"></div>
@@ -714,7 +1204,10 @@
 
   <div class="screen" id="screen-settings">
     <div class="scr-inner">
-      <h2 class="scr-ttl">⚙ せってい</h2>
+      <div class="ef-hdr"><div class="ef-hdr-l">
+          <div class="plate-label"><span class="dot"></span><span class="em">⚙</span>せってい</div>
+          <div class="ef-hdr-cap">SYSTEM // このきの設定</div>
+        </div></div>
       <div class="settings-card">
         <button class="settings-row" type="button" onclick="toggleFxLite()" style="width:100%;background:transparent;border:0;color:inherit;text-align:left;padding:0;font:inherit;">
           <span>
@@ -724,7 +1217,7 @@
           <span class="toggle" id="fxLiteToggle" aria-hidden="true"><i></i></span>
         </button>
       </div>
-      <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>
+      <div class="scr-btns"><button class="ef-back" onclick="showHome()">◀ ホーム</button></div>
     </div>
   </div>
 
@@ -732,7 +1225,7 @@
     <div class="scr-inner">
       <h2 class="scr-ttl">🗺 ステージをえらぼう</h2>
       <div class="map-list" id="mapList"></div>
-      <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>
+      <div class="scr-btns"><button class="ef-back" onclick="showHome()">◀ ホーム</button></div>
       <div class="debug-box" id="debugBox">
         <div class="dtt">🔧 テスト用ボタン（先生にきいてね）</div>
         <div class="drow">
@@ -783,6 +1276,23 @@ function onGear(v){ const t=(+v)/100; gearV.textContent=v;
   cfg.chargeSec=+lerp(4.5,1.4,t).toFixed(2); cfg.enemyIntervalSec=+lerp(9.0,4.0,t).toFixed(2);
   charge.value=cfg.chargeSec; chargeV.textContent=cfg.chargeSec.toFixed(1);
   enemyInt.value=cfg.enemyIntervalSec; enemyV.textContent=cfg.enemyIntervalSec.toFixed(1); }
+/* ===== C-1「ENDFIELD」共通コンポーネント(2026-07-02 UI本実装B5・WORKORDER §2-B5やること1/3)=====
+   6系統(もちもの/どうぐ屋/けんきゅう/とっくん/ふくしゅう/せってい)の各render関数から呼ぶ、
+   専用プレートヘッダー+カード行の生成ヘルパー。CSSは928行手前の「C-1メニュー群」ブロック(.ef-hdr/.ef-card)。
+   9画面分バラバラに書かず、ここ1箇所から呼ぶ(コピペ禁止・§2-B5やること3)。 */
+function efPlateHeader(em, jp, cap, rightHtml){   // em=絵文字 jp=日本語ラベル cap=英字マイクロテキスト(装飾) rightHtml=右側(戻る/所持金等)
+  return `<div class="ef-hdr"><div class="ef-hdr-l">
+      <div class="plate-label"><span class="dot"></span><span class="em">${em}</span>${jp}</div>
+      ${cap?`<div class="ef-hdr-cap">${cap}</div>`:''}
+    </div><div class="ef-hdr-r">${rightHtml||''}</div></div>`; }
+function efCard(opt){   // opt={color,icon,name,sub,badge,onclick}＝せいちょうハブ的な行カード(けんきゅう/とっくん/ふくしゅう入口等で共用)
+  const badge=opt.badge?`<span class="ef-card-badge">${opt.badge}</span>`:'';
+  const tag=opt.onclick?'button':'div';
+  return `<${tag} class="ef-card"${opt.onclick?` onclick="${opt.onclick}"`:''} style="--g-color:${opt.color||'var(--accent)'};">
+      <span class="ef-card-ic">${opt.icon||''}</span>
+      <span class="ef-card-txt"><span class="ef-card-name">${opt.name||''}</span>${opt.sub?`<span class="ef-card-sub">${opt.sub}</span>`:''}</span>
+      ${badge}
+    </${tag}>`; }
 /* ===== Cフェーズ 研究(教科ポイント＋教科キラー)＝成長の背骨 ===== */
 // 教科キラー=ステージの教科に対する与ダメ倍率。問題に正解して貯めた「教科ポイント」でツリーのノードを買って伸ばす。
 // slice1=各教科に「特効(与ダメ+%)」ライン。役割色の枝(化学=状態異常/生物=回復/地学=被ダメカット)は次スライスで追加。
@@ -1374,10 +1884,10 @@ function renderCommand(){
   if(phase==='savor'){ hint.textContent='✨ …'; area.innerHTML=`<div style="text-align:center;color:var(--sub);padding:14px 0;font-size:14px;">（演出中）</div>`; return; }
   if(phase==='command'){ const a=activeAlly; hint.innerHTML=`▶ <b>${a.emoji} ${a.name}</b> の番`;
     area.innerHTML=`<div class="cmd-grid">
-      <button class="cmd atk" data-info="cmd:attack" onclick="chooseAttack()"><span class="ico">⚔️</span>攻撃</button>
-      <button class="cmd def" data-info="cmd:defend" onclick="chooseDefend()"><span class="ico">🛡️</span>防御</button>
-      <button class="cmd skill" data-info="cmd:skill" onclick="openSkills()"><span class="ico">✨</span>スキル</button>
-      <button class="cmd item" data-info="cmd:item" onclick="openItems()"><span class="ico">🎒</span>アイテム</button>
+      <button class="cmd atk pressable" data-info="cmd:attack" onclick="chooseAttack()"><span class="ico">⚔️</span>攻撃</button>
+      <button class="cmd def pressable" data-info="cmd:defend" onclick="chooseDefend()"><span class="ico">🛡️</span>防御</button>
+      <button class="cmd skill pressable" data-info="cmd:skill" onclick="openSkills()"><span class="ico">✨</span>スキル</button>
+      <button class="cmd item pressable" data-info="cmd:item" onclick="openItems()"><span class="ico">🎒</span>アイテム</button>
     </div><div class="lp-hint">💡 ボタンや状態異常を長押しで説明</div>`; return; }
   if(phase==='skillmenu'){ renderSkillMenu(); return; }
   if(phase==='itemmenu'){ renderItemMenu(); return; }
@@ -1391,9 +1901,9 @@ function renderSkillMenu(){ const area=document.getElementById('cmdArea'), a=act
   area.innerHTML=`<div class="list skill-scroll">`+a.skills.map(id=>{ const s=SKILLS[id]; const mp=skMp(s);
     const comboOk=!s.combo||combo>=s.combo, mpOk=a.mp>=mp, ok=comboOk&&mpOk;
     const why=!mpOk?`<span class="badge mp">MP不足</span>`:(!comboOk?`<span class="badge free">いきおい${s.combo}必要</span>`:(s.scope==='allEnemies'?`<span class="badge aoe">全体</span>`:(s.needsQuiz?`<span class="badge q">要・問題</span>`:`<span class="badge free">即発動</span>`)));
-    return `<button class="li${ok?'':' dis'}" data-info="skill:${id}" onclick="selectSkill('${id}')"><span class="ii">${skillIco(id,s.emoji)}</span>
-      <span><span class="nn">${s.name}</span> <span class="badge mp" style="margin:0;">${skLevelable(s)?'Lv'+skL(s).lv+'・':''}MP${mp}</span></span>${why}</button>`;
-  }).join('')+`</div><button class="back-btn" onclick="backToCommand()">◀ もどる</button>`; }
+    return `<button class="li pressable${ok?'':' dis'}" data-info="skill:${id}" onclick="selectSkill('${id}')"><span class="ii">${skillIco(id,s.emoji)}</span>
+      <span><span class="nn">${s.name}</span> <span class="badge mp num" style="margin:0;">${skLevelable(s)?'Lv'+skL(s).lv+'・':''}MP${mp}</span></span>${why}</button>`;
+  }).join('')+`</div><button class="back-btn pressable" onclick="backToCommand()">◀ もどる</button>`; }
 function selectSkill(id){ if(phase!=='skillmenu')return; const s=SKILLS[id], a=activeAlly; if(!s||a.mp<skMp(s))return; if(s.combo&&combo<s.combo)return;
   beginAction({kind:'skill', skill:s, scope:s.scope, needsQuiz:s.needsQuiz}); }
 function openItems(){ if(phase!=='command')return; phase='itemmenu'; renderItemMenu(); }
@@ -1401,9 +1911,9 @@ function renderItemMenu(){ const area=document.getElementById('cmdArea');
   document.getElementById('phaseHint').textContent='🎒 アイテム（行動ゲージ消費・正解で30%に軽減）';
   area.innerHTML=`<div class="list">`+ITEM_DEFS.map(it=>{ const n=items[it.id]||0;
     const usable=itemUsable(it), ok=n>0&&usable;
-    return `<button class="li${ok?'':' dis'}" ${ok?'':'disabled'} data-info="item:${it.id}" onclick="selectItem('${it.id}')"><span class="ii">${it.emoji}</span>
-      <span><span class="nn">${it.name}</span> ×${n}</span><span class="badge ${usable?'q':'free'}">${usable?'問題で軽減':'みんな げんきだよ'}</span></button>`;
-  }).join('')+`</div><button class="back-btn" onclick="backToCommand()">◀ もどる</button>`; }
+    return `<button class="li pressable${ok?'':' dis'}" ${ok?'':'disabled'} data-info="item:${it.id}" onclick="selectItem('${it.id}')"><span class="ii">${it.emoji}</span>
+      <span><span class="nn">${it.name}</span> <span class="num">×${n}</span></span><span class="badge ${usable?'q':'free'}">${usable?'問題で軽減':'みんな げんきだよ'}</span></button>`;
+  }).join('')+`</div><button class="back-btn pressable" onclick="backToCommand()">◀ もどる</button>`; }
 function selectItem(id){ if(phase!=='itemmenu')return; const it=ITEM_DEFS.find(x=>x.id===id); if(!it||(items[id]||0)<=0)return;
   if(!itemUsable(it)){ document.getElementById('phaseHint').textContent='みんな げんきだよ'; renderItemMenu(); return; }
   beginAction({kind:'item', item:it, scope:'none', needsQuiz:true}); }
@@ -1439,7 +1949,7 @@ function beginAction(act){ act.targetIdx=null; act.allyTarget=null; act.targetMo
   proceedAction(); }
 function renderTargeting(){ const ally=pendingAction&&pendingAction.targetMode==='ally';
   document.getElementById('phaseHint').innerHTML = ally?'🎯 <b>だれに使う？</b>（味方をタップ）':'🎯 <b>だれを狙う？</b>（敵をタップ）';
-  document.getElementById('cmdArea').innerHTML=`<button class="back-btn" onclick="backToCommand()">◀ やめる</button>`; }
+  document.getElementById('cmdArea').innerHTML=`<button class="back-btn pressable" onclick="backToCommand()">◀ やめる</button>`; }
 function onPickTarget(idx){ if(phase!=='targeting'||(pendingAction&&pendingAction.targetMode==='ally'))return; const e=enemies[idx]; if(!e||!e.alive)return; pendingAction.targetIdx=idx; proceedAction(); }
 function onPickAlly(id){ if(phase!=='targeting'||!pendingAction||pendingAction.targetMode!=='ally')return; const a=allies.find(x=>x.id===id); if(!a)return; pendingAction.allyTarget=a; proceedAction(); }   // ★味方単体スキルの対象を選ぶ
 function actionTarget(act){ if(!act)return null; return act.scope==='ally' ? act.allyTarget : enemies[act.targetIdx]; }   // ★スキルrunに渡す対象=味方スキルは選んだ味方/それ以外は対象敵
@@ -1730,21 +2240,23 @@ function buildEnemies(){ const row=document.getElementById('enemyRow'); const n=
   row.innerHTML = enemies.map(e=>{ const ab=(e.attrs||[]).map(a=>{ const s=SUBJECTS[a]; return `<span class="eattr" style="color:${s.color};border-color:${s.color};background:${s.color}1a;">${s.emoji}${s.jp}</span>`; }).join(' ');
     const inner = /\.(png|jpg|webp)$/i.test(e.img)?`<img src="${e.img}" alt="${e.name}">`:`<span style="font-size:${Math.floor(sz*0.6)}px">${e.img}</span>`;
     return `<div class="enemy-card" id="enemy-${e.idx}" onclick="onPickTarget(${e.idx})">
-      <div class="eimg" style="width:${sz}px;height:${sz}px;">${inner}</div>
+      <div class="eimg ef-bracket idle" style="width:${sz}px;height:${sz}px;">${inner}</div>
+      ${e.idx===0?`<div class="microtext" style="text-align:center;">TGT-${String(e.idx+1).padStart(2,'0')}</div>`:''}
       <div class="ename">${e.name}</div><div>${ab}</div>
       <div class="eprev" id="eprev-${e.idx}"></div>
       <div class="ailments" id="eail-${e.idx}"></div>
       <div class="ebar hp" style="width:${sz}px;"><i id="ehp-${e.idx}"></i></div>
       <div class="echg" style="width:${sz}px;"><i id="echg-${e.idx}"></i></div>
     </div>`; }).join(''); }
-function buildParty(){ for(const k in _buffSig)delete _buffSig[k]; for(const k in _hpSig)delete _hpSig[k]; document.getElementById('party').innerHTML=allies.map(a=>`
-  <div class="ally-card" id="ally-${a.id}" onclick="onPickAlly('${a.id}')">
-    <div class="ac-emoji">${a.emoji}</div><span class="ac-name">${a.name}</span><div class="ac-role">${a.role}</div>
+function buildParty(){ for(const k in _buffSig)delete _buffSig[k]; for(const k in _hpSig)delete _hpSig[k]; document.getElementById('party').innerHTML=allies.map(a=>{ const col=HOME_ROLE_COLOR[a.id]||'var(--accent)';
+  return `
+  <div class="ally-card pressable" id="ally-${a.id}" style="--role-color:${col}" onclick="onPickAlly('${a.id}')">
+    <div class="ac-emoji ef-bracket idle">${a.emoji}</div><span class="ac-name">${a.name}</span><div class="ac-role">${a.role}</div>
     <div class="ac-bar hp"><i id="hp-${a.id}"></i></div>
-    <div class="ac-mp" id="hptext-${a.id}"></div>
+    <div class="ac-mp num" id="hptext-${a.id}"></div>
     <div class="ac-bar mp"><i id="mp-${a.id}"></i></div>
     <div class="ac-bar atb"><i id="atb-${a.id}"></i></div>
-    <div class="ac-shield" id="sh-${a.id}"></div><div class="ac-down">💀</div></div>`).join(''); }
+    <div class="ac-shield" id="sh-${a.id}"></div><div class="ac-down">💀</div></div>`; }).join(''); }
 function pct(v,max){ return Math.max(0,Math.min(100,v/max*100)); }
 function remainSup(v){ return v>0?`<sup>${Math.max(1,Math.ceil(v))}</sup>`:''; }
 function chipHtml(emoji,kind,remain){ return `<span class="ail ${kind==='debuff'?'debuff':''}">${emoji}${remainSup(remain)}</span>`; }
@@ -1942,42 +2454,91 @@ function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it
 function showHome(){ gameState='home'; _inTraining=false; renderHome(); showScreen('home'); setTopbar(''); }
 function homeChangeLead(dir){ progress.lead=((progress.lead||0)+dir+ALLY_DEFS.length)%ALLY_DEFS.length; saveProgress(); renderHome(); }   // ★選んだキャラを覚える(progress.leadに保存)
 function homeEquip(cid){ showEquip(); openCharEquip(cid); }   // 装備→編成(そのキャラの詳細へ直行)
+const HOME_ROLE_COLOR = { ares:'#ff5d3d', sera:'#4dd4ff', gai:'#5c8fd6', mina:'#ffd94d' };   // ★hero-cardの測定ライン色(mock_c1踏襲)。役割(火力/妨害/壁/回復)ごとに固定
+const HOME_ROLE_EN = { ares:'ATTACKER', sera:'SUPPORT', gai:'TANK', mina:'HEALER' };          // ★英字マイクロテキスト(装飾。日本語roleは別途表示)
+// ★もちものプレビュー=直近であつめたそうび/装飾品(配列は末尾追加なので後ろから3件)
+function _homeRecentItems(){ const g=gearInv.slice(-2).reverse().map(it=>({kind:'gear',it})), a=accInv.slice(-1).reverse().map(it=>({kind:'acc',it}));
+  return g.concat(a).slice(0,3); }
+function _homeItemRowHtml(row){ const it=row.it;
+  if(row.kind==='gear'){ const nm=equipName(it), r=RARITY[it.rarity];
+    return `<div class="hm-item-row"><div class="hm-item-slot">${equipIcoByName(nm,'❔')}</div><div class="hm-item-info"><div class="iname">${htmlEsc(nm)}</div><div class="irar num" style="color:${r.col}">${it.rarity}</div></div><button class="hm-item-go pressable" onclick="showInventory()">見る</button></div>`; }
+  const r=RARITY[it.rarity];
+  return `<div class="hm-item-row"><div class="hm-item-slot">${accIco(it)}</div><div class="hm-item-info"><div class="iname">${htmlEsc(it.base)}</div><div class="irar num" style="color:${r.col}">${it.rarity}</div></div><button class="hm-item-go pressable" onclick="showInventory()">見る</button></div>`; }
 function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); const lead=ALLY_DEFS[li], cid=lead.id;
   const _rvDue=(typeof Quiz!=='undefined'&&Quiz.review)?Quiz.review.due():0;   // ★きょうの復習の件数バッジ(0でもボタンは生かす=図鑑と説明がある)
-  const cleared=progress.cleared.length, loot=gearInv.length+accInv.length;   // とっぱ数・あつめたおたから(=ドロップ主軸の表現)
-  // ★装備=「枠(.nh-gslot)」で表示＝あとで絵文字→アイコン画像に差し替えられる(中に<img>を入れるだけ)
-  const gicons=GEAR_SLOTS.map(s=>{ const sid=slotSkill(cid,s), sk=sid&&SKILLS[sid]?SKILLS[sid]:null; return `<span class="nh-gslot" title="${s}">${sid?equipIcoByName(SKILL_EQUIP[sid],(sk?sk.emoji:'')):''}</span>`; }).join('');
-  const aicons=(accEquip[cid]||[null,null]).map(id=>{ const a=id!=null?accById(id):null; return `<span class="nh-gslot acc"${a?` style="border-color:${RARITY[a.rarity].col}"`:''} title="装飾品">${a?'◆':''}</span>`; }).join('');
+  const cleared=progress.cleared.length, pct=STAGES.length?Math.round(cleared/STAGES.length*100):0;
+  const st=STAGES[curStage]||STAGES[0];                                       // ★「いまいる場所」=curStage(マップ/戦闘と同じ基準・アリーナ背景/つぎの敵もここから引く)
+  const bgUrl=(typeof bgImageFor==='function')?bgImageFor(st):'';
+  const foeId=(st.encounters&&st.encounters[0]&&st.encounters[0][0])||null, foe=foeId?MONSTER_DB[foeId]:null;
+  // ★パーティのHPバー=起動時に一度作られ以後は最新戦闘の残留状態を保つ allies[] (§3140)から読む＝実データ(新規発明の永続HPではない)
+  const heroCards=ALLY_DEFS.map((d,i)=>{ const live=allies[i]; const hp=live?live.hp:d.hpMax, hpMax=live?live.hpMax:d.hpMax;
+    const ratio=hpMax?Math.max(0,Math.min(1,hp/hpMax)):1, col=HOME_ROLE_COLOR[d.id]||'var(--accent)';
+    return `<div class="hm-hero pressable${d.id===cid?' focused':''}" style="--role-color:${col}" onclick="homeEquip('${d.id}')">
+      <div class="frame ef-bracket${d.id===cid?' corner-enter':' idle'}"><div class="silhouette">${d.emoji}</div><div class="role-ic">${d.emoji}</div></div>
+      <div class="hname">${htmlEsc(d.name)}</div>
+      <div class="hrole microtext" style="opacity:.8">${HOME_ROLE_EN[d.id]||''}</div>
+      <div class="hbar"><i style="width:${Math.round(ratio*100)}%"></i></div>
+    </div>`; }).join('');
+  const items=_homeRecentItems(), itemsHtml=items.length?items.map(_homeItemRowHtml).join('') : `<div class="hm-empty">まだ そうびが無いよ</div>`;
   document.getElementById('homeBody').innerHTML=`
-    <div class="nh">
-      <div class="nh-top">
-        <div class="nh-prof"><div class="av">🧑‍🔬</div><div><div class="nm">きみ</div><div class="lv">とっぱ ${cleared}/${STAGES.length}</div></div></div>
-        <div class="nh-loot">💰 ${fmtGold(progress.gold)}　🎁 ${loot}</div>
+    <div class="hm-root">
+      <div class="hm-topbar panel">
+        <div class="hm-id"><div class="av ef-bracket idle">🧑‍🔬</div><div class="who"><div class="nm">きみ</div><div class="lv num">とっぱ ${cleared}/${STAGES.length}</div></div></div>
+        <div class="hm-spacer"></div>
+        <div class="hm-chip"><span class="ic">💰</span><span class="v num">${fmtGold(progress.gold)}</span><span class="u">G</span></div>
+        <div class="hm-chip"><span class="ic">🎁</span><span class="v num">${gearInv.length+accInv.length}</span><span class="u">こ</span></div>
+        <button class="hm-settings pressable" onclick="showSettings()" aria-label="せってい">⚙</button>
       </div>
-      <div class="nh-mid">
-        <div class="nh-char"><div class="glow"></div><div class="emo">${lead.emoji}</div></div>
-        <div class="nh-panel">
-          <div class="nh-title">理科<span>RPG</span>2<small>S C I E N C E　R P G</small></div>
-          <button class="nh-gear" onclick="homeEquip('${cid}')">そうび <span class="nh-gslots">${gicons}${aicons}</span><span class="to">→ 編成</span></button>
-          <div class="nh-chg"><button class="ar" onclick="homeChangeLead(-1)" aria-label="前のキャラ">◀</button><div class="who">${lead.name}<small>${lead.role}</small></div><button class="ar" onclick="homeChangeLead(1)" aria-label="次のキャラ">▶</button></div>
-          <button class="nh-cta" onclick="showMap()">⚔ 冒険に出る</button>
-          <button class="nh-review" onclick="showReview()">🔁 きょうの復習${_rvDue>0?` <b style="color:var(--gold)">${_dueLabel(_rvDue)}</b>`:''}</button>
-          <button class="nh-review" onclick="showResearch()">🔬 研究（教科を育てる）</button>
+
+      <div class="hm-body">
+        <div class="hm-col-side-l">
+          <div class="hm-party-panel panel">
+            <div class="plate-label"><span class="dot"></span>PARTY // 編成中の4人</div>
+            <div class="hm-party-grid">${heroCards}</div>
+          </div>
+        </div>
+
+        <div class="hm-center">
+          <div class="hm-loc-panel panel">
+            <div class="hm-loc-l"><div class="hm-loc-ic">${st.emoji||'🧪'}</div><div><div class="hm-loc-cap">CURRENT SITE</div><div class="hm-loc-name">${htmlEsc(st.name||'')}<span class="stg num">${(curStage||0)+1}</span></div></div></div>
+            <div class="hm-prog"><div class="row"><div class="track"><i style="width:${pct}%"></i></div><div class="pct num">${pct}%</div></div></div>
+          </div>
+          <div class="hm-arena ef-bracket">
+            ${bgUrl?`<div class="bg" style="background-image:url('${bgUrl}')"></div>`:''}
+            <div class="bg-scan"></div>
+            <div class="hm-hud"><div class="r1 microtext">DEPTH SCAN</div><div class="r2 num">${htmlEsc(st.theme||'')} ${(curStage||0)+1}</div></div>
+            ${foe?`<div class="hm-nextfoe">${foe.img?`<img src="${foe.img}" alt="">`:`<span class="fic">👾</span>`}<div class="ftxt"><div class="fcap microtext">NEXT TARGET</div><div class="fname">${htmlEsc(foe.name)}</div></div></div>`:''}
+            <div class="hm-cta-wrap"><button class="hm-cta pressable" onclick="showMap()"><span>ぼうけんに出る</span><span class="arrow">▶</span></button></div>
+          </div>
+        </div>
+
+        <div class="hm-col-side-r">
+          <div class="hm-growth-panel panel">
+            <div class="plate-label"><span class="dot"></span>GROWTH LAB // せいちょう</div>
+            <div class="hm-growth-grid">
+              <div class="hm-growth-item pressable" style="--g-color:#8ab4ff" onclick="showResearch()"><div class="gic">🔭</div><div class="gtxt"><div class="gname">けんきゅう</div><div class="gsub">新しい力をひらく</div></div></div>
+              <div class="hm-growth-item pressable" style="--g-color:#f4b436" onclick="startTraining()"><div class="gic">🎯</div><div class="gtxt"><div class="gname">とっくん</div><div class="gsub">にがて分野をきたえる</div></div></div>
+              <div class="hm-growth-item pressable" style="--g-color:#7ee787" onclick="showReview()"><div class="gic">🗂</div><div class="gtxt"><div class="gname">ふくしゅう</div><div class="gsub">おぼえた図鑑をみがく</div></div>${_rvDue>0?`<div class="gbadge num">${_dueLabel(_rvDue)}</div>`:''}</div>
+            </div>
+          </div>
+          <div class="hm-items-panel panel">
+            <div class="plate-label"><span><span class="dot"></span>INVENTORY // もちもの</span></div>
+            <div class="hm-item-list">${itemsHtml}</div>
+          </div>
         </div>
       </div>
-      <div class="nh-subs">
-        <button onclick="startTraining()"><span class="e">📝</span>特訓</button>
-        <button onclick="showReview()"><span class="e">🔁</span>復習</button>
-        <button onclick="showInventory()"><span class="e">🎒</span>もちもの</button>
-        <button onclick="showShop()"><span class="e">🛒</span>どうぐ屋</button>
-        <button onclick="showSettings()"><span class="e">⚙</span>せってい</button>
-        <button onclick="goPortal()"><span class="e">🏠</span>ポータル</button>
+
+      <div class="hm-bottombar">
+        <button class="hm-notice panel pressable" onclick="showInventory()"><span class="nb-tag">🎒</span><span class="nb-text"><b>もちもの</b>そうびの一覧・整理</span><span class="nb-arrow">▶</span></button>
+        <button class="hm-nav panel pressable" onclick="showShop()"><span class="nic">🛒</span><span class="ntxt">どうぐ屋</span></button>
+        <button class="hm-nav panel pressable" onclick="showSettings()"><span class="nic">⚙</span><span class="ntxt">せってい</span></button>
+        <button class="hm-nav panel pressable" onclick="goPortal()"><span class="nic">🏠</span><span class="ntxt">ポータル</span></button>
       </div>
     </div>`;
 }
 // ★ホーム下段の🏠＝ゲームのホームでなく「ポータル(アプリ一覧)へ戻る」(オーナー指定)。dev=親launcher.html／本番(配布)=親index.html を存在確認して遷移(sengoku/数学ゲームと同方式)
 function goPortal(){ fetch('../launcher.html',{method:'HEAD'}).then(function(r){ location.href = r.ok ? '../launcher.html' : '../index.html'; }).catch(function(){ location.href='../index.html'; }); }
-function homeSoon(){ const nh=document.querySelector('.nh'); if(!nh)return; const t=document.createElement('div');   // 未実装ボタン=準備中トースト(死にボタンにしない)
+function homeSoon(){ const nh=document.querySelector('.hm-root'); if(!nh)return; const t=document.createElement('div');   // 未実装ボタン=準備中トースト(死にボタンにしない)
   t.textContent='準備中だよ（もうすぐ！）'; t.style.cssText='position:absolute; left:50%; bottom:70px; transform:translateX(-50%); z-index:5; background:rgba(8,12,24,.92); border:1px solid var(--warn); color:var(--warn); font-size:13px; font-weight:700; padding:7px 16px; border-radius:20px;';
   nh.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1500); }
 function showSettings(){ gameState='settings'; renderSettings(); showScreen('settings'); setTopbar(''); }
@@ -2015,10 +2576,10 @@ function renderResearch(){ const r=progress.research||freshResearch();
       ${nodes}</div>`; }).join('');
   document.getElementById('researchBody').innerHTML=`
     <div class="scr-inner-pad" style="max-width:1100px;margin:0 auto;padding:14px">
-      <div class="inv-head"><h2>🔬 研究（教科を育てる）</h2></div>
+      ${efPlateHeader('🔬','けんきゅう','RESEARCH LAB // 教科を育てる')}
       <p style="font-size:13px;color:rgba(255,255,255,.78);line-height:1.6">問題に正解すると<b>教科ポイント</b>がたまるよ。教科ごとに「特効」を育てると、その教科のダンジョンで<b>あたえるダメージ</b>が上がる。同じ分野ばかり解くと少しずつ伸びにくくなる（いろんな分野を解こう）。</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${cols}</div>
-      <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>
+      <div class="scr-btns"><button class="ef-back" onclick="showHome()">◀ ホーム</button></div>
     </div>`; }
 function buyKillerNode(subject, nodeId){ const r=progress.research; if(!r) return; const tree=KILLER_TREE[subject]||[]; const n=tree.find(x=>x.id===nodeId); if(!n) return;
   if(r.nodes[nodeId]) return; if(n.need&&!r.nodes[n.need]) return;            // 習得済み/前提未満は無視(UI側でも止めるが二重ガード)
@@ -2103,7 +2664,7 @@ function renderTrainHome(){
     + mkbtn('🔬','研究','教科ポイントで 特効を育てる','showResearch()','#a3e635',false);
   document.getElementById('trainingBody').innerHTML=`
     <div style="max-width:1040px;margin:0 auto;padding:14px">
-      <div class="inv-head"><h2>📝 特訓</h2><button onclick="showHome()" aria-label="ホーム" title="ホーム" style="flex:0 0 auto;width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:#222d45;color:#fff;font-size:19px;cursor:pointer">🏠</button></div>
+      ${efPlateHeader('📝','とっくん','TRAINING GROUND // にがて克服', `<button class="ef-back ef-back-icon" onclick="showHome()" aria-label="ホーム" title="ホーム">🏠</button>`)}
       <div style="font-size:12px;color:rgba(255,255,255,.6);margin:2px 0 8px">といた数だけ のびるよ（未修もふくむ）。まちがえても へらない。</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">${donuts}</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:9px 0 4px">${legend}</div>
@@ -2117,10 +2678,10 @@ function _subjPickHtml(fn){ return SUBJ_KEYS.map(s=>{ const sub=SUBJECTS[s];
 // ── ⚔️ スタディストライク(study戦闘・1ステージ仮置き) ──
 function trainStrikeMenu(){ document.getElementById('trainingBody').innerHTML=`
     <div style="max-width:1000px;margin:0 auto;padding:14px">
-      <div class="inv-head"><h2>⚔️ スタディストライク</h2></div>
+      ${efPlateHeader('⚔️','スタディストライク','STUDY STRIKE // 知識で一撃')}
       <p style="font-size:13px;color:rgba(255,255,255,.78);line-height:1.6">敵は超かたい！<b>正解すると防御を無視した一撃</b>でたおせる（装備は関係なし＝知識で勝負）。まちがえても無罰。どの教科で戦う？<br><span style="color:var(--warn)">※ステージはまだ仮置き（1つ）です。</span></p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${_subjPickHtml('startStudyStrike')}</div>
-      <div class="scr-btns"><button class="scr-btn" onclick="startTraining()">◀ もどる</button></div>
+      <div class="scr-btns"><button class="ef-back" onclick="startTraining()">◀ もどる</button></div>
     </div>`; }
 function startStudyStrike(subject){ _inTraining=true; const subs=(subject==='all')?SUBJ_KEYS.slice():[subject];
   _trainingStage={ id:-1, name:'特訓ストライク', emoji:'⚔️', theme:'総合', training:true, combatStyle:'study',
@@ -2199,7 +2760,7 @@ function trainPracticeMenu(){   // ★問題だけ=1画面(おまかせ上＋詳
   const can=total>0;
   document.getElementById('trainingBody').innerHTML=`
     <div style="max-width:1000px;margin:0 auto;padding:14px">
-      <div class="inv-head"><h2>📝 問題だけ</h2><button onclick="startTraining()" aria-label="特訓トップへ" title="特訓トップ" style="flex:0 0 auto;width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:#222d45;color:#fff;font-size:17px;cursor:pointer">◀</button></div>
+      ${efPlateHeader('📝','問題だけ','PROBLEM SET // もくもく解く', `<button class="ef-back ef-back-icon" onclick="startTraining()" aria-label="特訓トップへ" title="特訓トップ">◀</button>`)}
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0">
         <button onclick="trainQuickStart('all')" style="flex:2 1 240px;padding:16px;border-radius:14px;font-weight:800;font-size:17px;cursor:pointer;border:1px solid var(--gold);background:rgba(251,191,36,.14);color:var(--gold);text-align:left">🎲 おまかせ<div style="font-size:12px;color:rgba(255,255,255,.7);font-weight:600;margin-top:3px">ぜんぶから10問・まよったらコレ</div></button>
         <button onclick="trainQuickStart('weak')" style="flex:1 1 170px;padding:16px;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer;border:1px solid #34d399;background:rgba(52,211,153,.12);color:#34d399;text-align:left">🌱 つぎにのばす<div style="font-size:12px;color:rgba(255,255,255,.7);font-weight:600;margin-top:3px">まだ★でない分野から10問</div></button>
@@ -2247,6 +2808,7 @@ function trainAbortPractice(){ _trainPracticeActive=false; _trainCycleN=0; _trai
 function renderPracticeResult(){ _trainPracticeActive=false; hideTrainBar(); hideOverlay(); const st=_trainStats;
   document.getElementById('trainingBody').innerHTML=`
     <div style="max-width:760px;margin:0 auto;padding:18px;text-align:center">
+      ${efPlateHeader('📝','とっくん','TRAINING GROUND // けっか')}
       <div style="font-size:46px">${(st.n>0&&st.ok===st.n)?'💮':'✓'}</div>
       <h2 class="scr-ttl">${(st.n>0&&st.ok===st.n)?'全問正解！すごい':'よくがんばった'}</h2>
       <div style="font-size:20px;margin:8px 0"><b style="color:var(--gold)">${st.ok} / ${st.n}</b> 問せいかい</div>
@@ -2327,6 +2889,7 @@ function renderReviewHome(){ const R=(typeof Quiz!=='undefined'&&Quiz.review)?Qu
     :(due>0?'とちゅうで やめても だいじょうぶ（すすみは保存ずみ）。つづきから どうぞ！':'また わすれたころに出てくるよ。あしたも きてね！');
   document.getElementById('reviewBody').innerHTML=`
     <div style="max-width:760px;margin:0 auto;padding:18px;text-align:center">
+      ${efPlateHeader('🔁','ふくしゅう','REVIEW DECK // おぼえた図鑑')}
       <div style="font-size:46px">${emo}</div>
       <h2 class="scr-ttl">${ttl}</h2>
       <div style="font-size:13px;color:rgba(255,255,255,.78);line-height:1.8;margin:8px 0">${msg}</div>
@@ -2343,6 +2906,7 @@ function renderReviewResult(run){ const left=(typeof Quiz!=='undefined'&&Quiz.re
   const drops=run.drops.length?`<div style="font-size:13px;color:var(--sub);margin:12px 0 6px">🎁 ドロップ</div><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${run.drops.map(dropCardHtml).join('')}</div>`:'';
   document.getElementById('reviewBody').innerHTML=`
     <div style="max-width:760px;margin:0 auto;padding:18px;text-align:center">
+      ${efPlateHeader('🔁','ふくしゅう','REVIEW DECK // けっか')}
       <div style="font-size:46px">${left>0?'✓':'🎉'}</div>
       <h2 class="scr-ttl">${left>0?'きょうのぶんは ここまで！':'今日の復習、おわり！'}</h2>
       <div style="font-size:18px;margin:6px 0"><b style="color:var(--gold)"><span id="reviewOkCount">0</span> / ${run.n}</b> 問せいかい</div>
@@ -2374,10 +2938,10 @@ function renderShop(){ const g=progress.gold||0;
     </div>`; }).join('');
   document.getElementById('shopBody').innerHTML=`
     <div class="shop-wrap">
-      <div class="inv-head"><h2>🛒 どうぐ屋</h2><div class="inv-head-r"><span class="gold">💰 <b>${fmtGold(g)}</b></span></div></div>
+      ${efPlateHeader('🛒','どうぐ屋','SUPPLY DEPOT // きりふだの店', `<span class="gold">💰 <b>${fmtGold(g)}</b></span>`)}
       <p class="shop-lead">回復薬は<b>とっておきの切り札</b>。このゲームはMPがとても貴重だから、どうしても勝てないステージに持っていく“ここぞ”の一杯だよ。装備を売ったゴールドでそなえよう。</p>
       <div class="shop-list">${cards}</div>
-      <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showInventory()">🎒 もちもの</button></div>
+      <div class="scr-btns"><button class="ef-back" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showInventory()">🎒 もちもの</button></div>
     </div>`; }
 function buyItem(id){ const it=ITEM_DEFS.find(x=>x.id===id); if(!it)return;
   if((progress.gold||0)<SHOP_PRICE){ shopToast('ゴールドが足りないよ'); return; }
@@ -2416,7 +2980,7 @@ function renderEquip(){ const g=document.getElementById('accBody');
       return `<button class="equip-card" onclick="openCharEquip('${d.id}')"><div class="hc-emoji">${d.emoji}</div><div class="hc-name">${d.name}</div><div class="hc-role">${d.role}</div><div class="ec-skills">${sk}</div><div class="hc-pct">装飾品 +${pct}%</div></button>`; }).join('');
     g.innerHTML=`<h2 class="scr-ttl">🔮 そうび</h2><div class="acc-sub">キャラをえらんで、装備（スキル）と装飾品をつけよう。</div>
       <button class="ae-btn" onclick="showAutoEquip()">⚡ おまかせ装備（4人ぶん 自動で強く）</button>
-      <div class="equip-hub">${cards}</div><div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>`;
+      <div class="equip-hub">${cards}</div><div class="scr-btns"><button class="ef-back" onclick="showHome()">◀ ホーム</button></div>`;
     return; }
   const cid=equipCid, d=ALLY_DEFS.find(a=>a.id===cid), ps=previewStats(cid);
   // ★ステ表示=戦闘のmakeAlliesと同式(buff倍率込み・mflatはステ専用なので拠点では除外)＝旧estatの近似ズレを是正
@@ -2458,7 +3022,7 @@ function renderEquip(){ const g=document.getElementById('accBody');
         <div class="eq-secttl">装飾品（2つまで・全コア+%）</div><div class="ar-slots">${aslots}</div></div>
       <div class="eq-c3"><div class="acc-invttl">もちもの</div>${poolHtml}</div>
     </div>
-    <div class="scr-btns"><button class="scr-btn" onclick="showEquip()">◀ キャラ選択</button><button class="scr-btn" onclick="showInventory()">🎒 もちもの台帳</button></div>`;
+    <div class="scr-btns"><button class="ef-back" onclick="showEquip()">◀ キャラ選択</button><button class="scr-btn" onclick="showInventory()">🎒 もちもの台帳</button></div>`;
 }
 function gearPoolCard(x,cid){ const rc=RARITY[x.rarity].col, sk=SKILLS[x.skillId];
   const cur=gearById((gearEquip[cid]||{})[x.slot]); const up=itemPower(x)>(cur?itemPower(cur):-1);   // このキャラの今より上=↑(金)。つけ得✨(緑・全キャラ最弱基準)とは別軸
@@ -2576,13 +3140,13 @@ function renderInventory(){ const g=document.getElementById('invBody'); if(!g)re
     sortRow=`<div class="chips sub"><span class="sortlbl">ならべ替え</span>${so('rarity','レア度')}${so('power','強い順')}${so('new','新しい順')}<button class="chip newchip" aria-pressed="${invFilter.newOnly}" onclick="invToggleNew()">✨新着</button></div>`; }
   const sellTgl=invFilter.tab!=='item'?`<button class="chip selltgl${invMode==='sell'?' on':''}" onclick="invSetMode('${invMode==='sell'?'view':'sell'}')">${invMode==='sell'?'✕ やめる':'💰 売る'}</button>`:'';
   const undoBar=lastSale?`<div class="undo-bar">↩️ さっき <b>${lastSale.items.length}個</b> 売った（+${fmtGold(lastSale.gold)}G）<button class="chip" onclick="invUndoSale()">もどす</button></div>`:'';
-  g.innerHTML=`<div class="inv-head"><h2>🎒 もちもの台帳</h2><div class="inv-head-r"><span class="gold">💰 <b>${fmtGold(progress.gold)}</b></span>${sellTgl}</div></div>
+  g.innerHTML=`${efPlateHeader('🎒','もちもの','INVENTORY // そうびのだいちょう', `<span class="gold">💰 <b>${fmtGold(progress.gold)}</b></span>${sellTgl}`)}
     ${undoBar}
     ${invMode==='sell'?`<div class="sell-hint">うりたい そうびを えらんでね。<b>レア度でしぼって「ぜんぶ選ぶ」</b>で 一括も できるよ。<b>装備中・⭐ロックは うれません</b>。</div>`:''}
     ${tabs}${sub}${rar}${sortRow}
     <div class="inv-grid">${invCardsHtml()}</div>
     ${sellBar}
-    <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showEquip()">🔮 そうびを組む →</button></div>`; }
+    <div class="scr-btns"><button class="ef-back" onclick="showHome()">◀ ホーム</button><button class="scr-btn" onclick="showEquip()">🔮 そうびを組む →</button></div>`; }
 function invCardsHtml(){
   if(invFilter.tab==='item'){ const cards=ITEM_DEFS.filter(it=>(items[it.id]||0)>0).map(it=>
       `<button class="gcard" style="--rc:var(--line);" onclick="openDetail('item','${it.id}')"><div class="thumb" style="background:#0c1326;">${it.emoji}</div><div class="rr" style="color:var(--sub);">×${items[it.id]}</div><div class="gn">${it.name}</div></button>`).join('');
@@ -2791,11 +3355,28 @@ function applyAutoEquipOne(){ if(autoPlanOne&&autoPlanOneCid){ const cid=autoPla
     GEAR_SLOTS.forEach(s=>gearEquip[cid][s]=autoPlanOne.gear[s]||null); accEquip[cid]=[autoPlanOne.acc[0]||null,autoPlanOne.acc[1]||null]; saveAcc(); }
   hideAutoEquip(); if(gameState==='equip')renderEquip(); else if(gameState==='home')renderHome(); }
 
+// ★UI本実装B3(2026-07-02): 画面遷移のブートアップ演出。ホームの「初回だけフル尺」判定用(セッション内=アプリ起動ごとに1回)。
+let _homeBootPlayed=false;
 function showScreen(name){   // overlay表示の一元管理。battle時は全overlay非表示。
   // ★ガード(問題側申し送り2026-06-24): 画面(メニュー/ホーム等)を出すとき、生きてる出題の器が残っていたら先に閉じる
   //   ＝将来「戦闘中にメニュー/インベントリを開く」を足しても、不透明な画面が生きた問題を覆わない。
   if(name){ const q=document.getElementById('qOverlay'); if(q && q.classList.contains('show') && typeof hideOverlay==='function') hideOverlay(); }
-  ['title','home','map','settings','accessory','inventory','shop','research','training','review','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
+  const el=name?document.getElementById('screen-'+name):null;
+  ['title','home','map','settings','accessory','inventory','shop','research','training','review','clear','complete','defeat'].forEach(k=>{ const e=document.getElementById('screen-'+k); if(e) e.classList.toggle('show', k===name); });
+  if(el) playScreenEnter(el, name);
+}
+// ★短縮版ブート遷移(線→面, ~150ms)。_fxLite()(=reduced-motion含む)では即時切替=何もしない(CSS側body.fx-liteガードとJS側の二重ガード)。
+// reflow強制トリック=同じ画面へ連続で入っても毎回アニメを取り消し→再生成でき、連打しても状態は壊れない(クラス付け外しのみ・ロジックに影響しない)。
+function playScreenEnter(el, name){
+  if(typeof _fxLite==='function' && _fxLite()) return;
+  el.classList.remove('ef-scr-enter'); void el.offsetWidth; el.classList.add('ef-scr-enter');
+  if(name==='home'){
+    const root=el.querySelector('.hm-root');
+    if(root){
+      if(!_homeBootPlayed){ _homeBootPlayed=true; root.classList.remove('ef-boot-full'); void root.offsetWidth; root.classList.add('ef-boot-full'); }
+      else root.classList.remove('ef-boot-full');
+    }
+  }
 }
 function showTitle(){ gameState='title'; showScreen('title'); setTopbar(''); }
 let _mapView = null;   // null=ダンジョン一覧 / dungeonId=そのダンジョンのステージ一覧
@@ -2832,7 +3413,7 @@ function renderDungeonList(g,ttl){
     </button>`; }).join(''); }
 function renderDungeonStages(g,ttl){
   const d=dungeonById(_mapView); g.classList.remove('one-col'); if(ttl) ttl.textContent=`${d.emoji} ${d.name}`;
-  let html=`<button class="scr-btn dg-back" onclick="showMap()">◀ ダンジョン一覧</button>`;
+  let html=`<button class="ef-back dg-back" onclick="showMap()">◀ ダンジョン一覧</button>`;
   d.areas.forEach(a=>{
     html+=`<div class="dg-area">${a.name}</div>`;
     if(a.stageIds.length===0){ html+=`<div class="dg-soon">じゅんび中（本番づくり中）</div>`; return; }
@@ -3109,6 +3690,61 @@ requestAnimationFrame(loop);
     if(!inTap){ im.style.cursor='zoom-in'; im.onclick=function(){ openImageZoom(src); }; }
   }
   if(qimg){ new MutationObserver(decorate).observe(qimg,{childList:true,subtree:true}); decorate(); }
+})();
+</script>
+<script>
+/* ===== C-1「ENDFIELD」共通コンポーネントJS（2026-07-02 UI本実装B1・WORKORDER_RIKA2_UI_C1 §2-B1）=====
+   .pressable要素のpointerdown/up/leaveで押下フィードバック(.pressed)＋リップルを付与する共通関数。
+   契約は無改変：既存の.nh-cta等のborder-bottom疑似3Dはそのまま・ここではクラス付与とDOM追加のみ行う。
+   #qOverlay配下には.pressableを新規付与しない（凍結対象・§0鉄則2）。
+   _fxLite()（file:/localhost判定なしの通常のモーション設定）を尊重し、軽量モードではリップル生成を省略する。 */
+(function(){
+  function efSpawnRipple(el, evt){
+    if (typeof _fxLite === 'function' && _fxLite()) return;   // reduced-motion/軽量設定ではリップルなし
+    var rect = el.getBoundingClientRect();
+    var size = Math.max(rect.width, rect.height) * 1.4;
+    if (!(size > 0)) return;
+    var cx = (evt && evt.clientX) || (rect.left + rect.width / 2);
+    var cy = (evt && evt.clientY) || (rect.top + rect.height / 2);
+    var x = cx - rect.left - size / 2;
+    var y = cy - rect.top - size / 2;
+    var r = document.createElement('span');
+    r.className = 'ripple';
+    r.style.width = r.style.height = size + 'px';
+    r.style.left = x + 'px';
+    r.style.top = y + 'px';
+    el.appendChild(r);
+    setTimeout(function(){ if (r.parentNode) r.remove(); }, 200);
+  }
+  function efBindPressable(el){
+    if (!el || el.__efPressableBound) return;
+    el.__efPressableBound = true;
+    el.addEventListener('pointerdown', function(evt){
+      el.classList.add('pressed');
+      efSpawnRipple(el, evt);
+    });
+    el.addEventListener('pointerup', function(){ el.classList.remove('pressed'); });
+    el.addEventListener('pointerleave', function(){ el.classList.remove('pressed'); });
+  }
+  function efBindAllPressable(root){
+    (root || document).querySelectorAll('.pressable').forEach(efBindPressable);
+  }
+  // 初回バインド＋以降のinnerHTML書き換え(render*系)で増える.pressableも自動追従
+  efBindAllPressable(document);
+  var efMo = new MutationObserver(function(muts){
+    for (var i=0;i<muts.length;i++){
+      var added = muts[i].addedNodes;
+      for (var j=0;j<added.length;j++){
+        var n = added[j];
+        if (n.nodeType !== 1) continue;
+        if (n.classList && n.classList.contains('pressable')) efBindPressable(n);
+        if (n.querySelectorAll) efBindAllPressable(n);
+      }
+    }
+  });
+  efMo.observe(document.body, {childList:true, subtree:true});
+  // 他コードから使えるよう最小限だけグローバル公開（既存グローバルとの衝突を避けた命名）
+  window.efBindAllPressable = efBindAllPressable;
 })();
 </script>
 </body>
