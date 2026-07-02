@@ -236,7 +236,7 @@
 
   .dmg{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-size:30px; font-weight:900; color:#fff; pointer-events:none; animation:dmgFloat .9s ease-out forwards;}
   @keyframes dmgFloat{0%{opacity:0; transform:translate(-50%,8px) scale(.6);}20%{opacity:1; transform:translate(-50%,-4px) scale(1.1);}100%{opacity:0; transform:translate(-50%,-40px) scale(1);}}
-  .shake{animation:shake .28s;} @keyframes shake{0%,100%{transform:translate(0,0);}20%{transform:translate(-7px,3px);}40%{transform:translate(6px,-3px);}60%{transform:translate(-5px,2px);}80%{transform:translate(4px,-2px);}}
+  .shake{animation:shake .28s;} .shake.soft{animation:shakeSoft .18s;} @keyframes shake{0%,100%{transform:translate(0,0);}20%{transform:translate(-7px,3px);}40%{transform:translate(6px,-3px);}60%{transform:translate(-5px,2px);}80%{transform:translate(4px,-2px);}} @keyframes shakeSoft{0%,100%{transform:translate(0,0);}30%{transform:translate(-2px,1px);}60%{transform:translate(2px,-1px);}}
   .hitflash{animation:hitflash .3s;} @keyframes hitflash{0%,100%{filter:none;}40%{filter:brightness(2.2) drop-shadow(0 0 14px #fff);}}
   .particle{position:absolute; width:8px; height:8px; border-radius:50%; pointer-events:none;}
   .savor-banner{position:absolute; left:0; right:0; top:24%; text-align:center; pointer-events:none; z-index:5;}
@@ -1204,6 +1204,8 @@ function fxEnemyPoint(e){ return fxCenter(document.querySelector('#enemy-'+(e&&e
 function fxAllyPoint(a){ return fxCenter(document.getElementById('ally-'+((a&&a.id)||a))); }
 function fxCasterPoint(c){ return fxAllyPoint(c||activeAlly||allies[0]||'ares'); }
 function fxAliveTargets(target,aoe){ const list=aoe?aliveEnemies():(target&&target.alive?[target]:[aliveEnemies()[0]].filter(Boolean)); return list.map(fxEnemyPoint); }
+function fxSupportTargets(skill,caster,target){ if(skill&&skill.party) return allies.filter(a=>!a.downed).map(fxAllyPoint);
+  if(target&&target.id) return [fxAllyPoint(target)]; return [fxCasterPoint(caster)]; }
 function fxPush(p){ if(fxPs.length<FX_MAXP) fxPs.push(p); }
 function fxBurst(x,y,o){ if(_fxLite())return; const n=Math.min(o.n||8,FX_MAXP-fxPs.length), dir=o.dir==null?0:o.dir, spread=o.spread==null?FX_TAU:o.spread;
   for(let i=0;i<n;i++){ const a=dir-spread/2+Math.random()*spread, sp=(o.spd||100)*(0.45+Math.random()*0.75);
@@ -1230,19 +1232,31 @@ function fxElement(E,s,big){ const c=FX_PAL[s.el]||FX_PAL.無, ling=s.lv==='high
 }
 function fxImpact(E,s,big){ fxElement(E,s,big); if(s.el!=='無'){ fxTint=Math.max(fxTint,.08); fxTintCol=(FX_PAL[s.el]||FX_PAL.無)[0]; } fxFlash=Math.max(fxFlash,big?.34:.22); fxFlashCol=(FX_PAL[s.el]||FX_PAL.無)[0]; }
 function specForSkillFx(skillId,skill){ const sid=skillId||(skill&&SKICON_NAME&&SKICON_NAME[skill.name])||((skill&&skill.name==='ジャブ')?'jab':''); const hint=FX_ARCH[sid]; if(!hint)return null;
-  const s={id:sid||'', hint:hint||'', fam:'slash', el:FX_EL_BY_ID[sid]||'無', lv:'low', aoe:skill&&skill.scope==='allEnemies', party:false, kind:'', motif:'', cue:'', onRole:activeAlly&&activeAlly.id};
+  const s={id:sid||'', hint:hint||'', fam:'slash', el:FX_EL_BY_ID[sid]||'無', lv:'low', aoe:skill&&skill.scope==='allEnemies', party:!!(skill&&skill.party), kind:'', motif:'', cue:'', onRole:activeAlly&&activeAlly.id};
   const h=s.hint; if(/heal/.test(h))s.fam='heal'; else if(/regen/.test(h))s.fam='regen'; else if(/cleanse/.test(h))s.fam='cleanse'; else if(/shield/.test(h))s.fam='shield'; else if(/buff/.test(h))s.fam='buff'; else if(/taunt/.test(h))s.fam='taunt'; else if(/debuff/.test(h))s.fam='debuff'; else if(/dot/.test(h))s.fam='dot'; else if(/status/.test(h))s.fam='status'; else if(/stun/.test(h))s.fam='stun'; else if(/drain/.test(h))s.fam='drain'; else if(/beam/.test(h))s.fam='beam'; else if(/rain/.test(h))s.fam='rain'; else if(/quake/.test(h))s.fam='quake'; else if(/bash/.test(h))s.fam='bash'; else s.fam='slash';
   if(/multi/.test(h))s.kind='multi'; if(/thrust/.test(h))s.motif='thrust'; if(/shatter/.test(h))s.motif='shatter'; if(/armor/.test(h))s.kind='armor'; if(/slow/.test(h))s.kind='slow'; if(/clock/.test(h))s.kind='clock'; if(/sleep/.test(h))s.kind='sleep'; if(/haste/.test(h))s.kind='haste'; if(/endure/.test(h))s.kind='endure'; if(/ward/.test(h))s.kind='ward'; if(/rain/.test(h))s.motif='rain'; if(/aoe/.test(h))s.aoe=true;
   return s; }
 function beginSkillFx(dur){ const lite=_fxLite(); fxDur=lite?0:Math.max(.35,dur||1); fxAge=0; fxActive=!lite; }
 function playBasicHitFx(target,study){ if(_fxLite()||!target)return; fitSkillVfx(); const E=fxEnemyPoint(target), A=fxCasterPoint(activeAlly), col=study?['#fff','#ffe27a','#7ad0ff']:['#fff','#cfe0ff','#9fb0d6']; fxThrust(A,E,col,!!study); fxAt(.1,()=>{ fxRing(E.x,E.y,study?'#ffe27a':'#cfe0ff',!!study); fxBurst(E.x,E.y,{n:study?26:14,spd:study?280:190,size:3,col,life:.45,kind:'streak'}); }); beginSkillFx(study ? .9 : .55); }
+function enemyFxSpec(kind){ kind=kind||''; const el = kind==='poison'?'毒':(kind==='curse'||kind==='dark'?'闇':(kind==='quake'?'土':(kind==='judgment'||kind==='erupt'||kind==='burn'?'火':(kind==='paralyze'?'雷':'無'))));
+  return {el,lv:'low',fam:kind}; }
+function playEnemyHitFx(e,target){ if(_fxLite()||!e||!target)return; fitSkillVfx(); const A=fxEnemyPoint(e), T=fxAllyPoint(target), col=['#fff','#ff6b6b','#7f1d1d'];
+  fxThrust(A,T,col,false); fxAt(.12,()=>{ fxCut(T,-.65,col,false); fxRing(T.x,T.y,'#ff6b6b',false); fxBurst(T.x,T.y,{n:12,spd:210,size:2.7,col,life:.38,drag:.9,grav:90,kind:'streak'}); }); beginSkillFx(.65); }
+function playEnemyAoeFx(e,targets,kind){ if(_fxLite()||!e||!targets||!targets.length)return; fitSkillVfx(); const A=fxEnemyPoint(e), pts=targets.map(fxAllyPoint), s=enemyFxSpec(kind||'aoe'), pal=kind==='aoe'?['#ff7b3a','#ffb05a','#ffe27a','#fff']:(FX_PAL[s.el]||FX_PAL.無);
+  const y0=Math.max(40,A.y+8), y1=pts.reduce((m,p)=>m+p.y,0)/pts.length, mid=(y0+y1)/2;
+  for(let w=0;w<3;w++)fxDraw(.58+w*.08,a=>{ if(a<w*.08)return; const t=(a-w*.08)/.58, al=Math.sin(Math.min(1,t*1.25)*Math.PI)*.58, x=-fxW*.12+(fxW*1.24)*t; fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; const g=fxCtx.createLinearGradient(0,y0,0,y1); g.addColorStop(0,'rgba(255,123,58,0)'); g.addColorStop(.5,pal[0]); g.addColorStop(1,'rgba(255,123,58,0)'); fxCtx.strokeStyle=g; fxCtx.lineWidth=8-w*1.5; fxCtx.beginPath(); fxCtx.moveTo(x,y0); fxCtx.quadraticCurveTo(x+34,mid,x,y1); fxCtx.stroke(); fxCtx.restore(); });
+  pts.forEach((T,i)=>fxAt(.28+i*.05,()=>{ fxRing(T.x,T.y,pal[0],false); fxBurst(T.x,T.y,{n:14,spd:170,size:2.8,col:pal,life:.42,drag:.91,kind:'streak'}); }));
+  beginSkillFx(1.0); }
+function playEnemySpecialFx(e,kind,targets){ if(_fxLite()||!e||!targets||!targets.length)return; fitSkillVfx(); const s=enemyFxSpec(kind), pal=FX_PAL[s.el]||FX_PAL.無, pts=targets.map(fxAllyPoint);
+  pts.forEach((T,i)=>fxAt(i*.05,()=>{ fxRing(T.x,T.y,s.el==='闇'?pal[2]:pal[0],false); fxElement(T,s,false); fxBurst(T.x,T.y,{n:s.el==='毒'?10:14,spd:s.el==='闇'?95:150,size:2.8,col:pal,life:.58,drag:.93,grav:s.el==='毒'?-30:0,kind:s.el==='毒'?'dot':'streak'}); }));
+  beginSkillFx(kind==='curse'?1.05:.9); }
 function playSkillFx(skillId,skill,caster,target){ const s=specForSkillFx(skillId,skill); if(!s||_fxLite())return; fitSkillVfx(); const pal=FX_PAL[s.el]||FX_PAL.無, A=fxCasterPoint(caster), targets=fxAliveTargets(target,s.aoe), big=s.lv!=='low'; if(!targets.length && !['heal','regen','cleanse','shield','buff','taunt'].includes(s.fam))return;
   if(s.fam==='slash'){ const n=s.kind==='multi'?2:1; targets.forEach((E,k)=>fxAt(k*.1,()=>{ for(let i=0;i<n;i++)fxAt(i*.12,()=>{ const P=n>1?{x:E.x+fxRnd(-18,18),y:E.y+fxRnd(-12,12)}:E; s.motif==='thrust'?fxThrust(A,P,['#fff',pal[0],pal[1]],big):fxCut(P,s.aoe?0:(i%2?.7:-.7),['#fff',pal[0],pal[1]],true); fxImpact(P,s,big); }); })); beginSkillFx(.95+(n>1?.2:0)); return; }
   if(s.fam==='bash'||s.fam==='quake'){ targets.forEach((E,k)=>fxAt(k*.08,()=>{ fxGlow(E.x,E.y-26,pal[0],.18,big); fxAt(.16,()=>{ fxRing(E.x,E.y,pal[0],s.fam==='quake'||big); fxBurst(E.x,E.y,{n:s.fam==='quake'?30:18,spd:180,size:3.5,col:pal,life:.55,grav:s.fam==='quake'?120:0,kind:'spark'}); fxImpact(E,s,big); }); })); beginSkillFx(s.fam==='quake'?1.1:.8); return; }
   if(s.fam==='rain'){ for(let i=0;i<32;i++)fxAt(i*.035,()=>fxPush({x:fxRnd(fxW*.15,fxW*.85),y:-8,vx:fxRnd(-10,10),vy:fxRnd(250,360),life:.7,max:.7,size:3,col:fxPick(pal),grav:100,drag:.99,kind:'streak',rot:0,vr:0})); targets.forEach(E=>fxAt(.32,()=>{ fxRing(E.x,E.y+14,pal[1],true); fxImpact(E,s,big); })); beginSkillFx(1.4); return; }
   if(s.fam==='drain'){ targets.forEach(E=>{ fxElement(E,s,big); fxDraw(.55,a=>{ const al=Math.sin(Math.min(1,a/.45)*Math.PI); fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; fxCtx.strokeStyle=pal[1]; fxCtx.lineWidth=5; fxCtx.beginPath(); fxCtx.moveTo(E.x,E.y); fxCtx.lineTo(A.x,A.y); fxCtx.stroke(); fxCtx.restore(); }); }); fxAt(.45,()=>fxGlow(A.x,A.y,pal[2],.4,true)); beginSkillFx(1.2); return; }
   if(['beam','magic','stun'].includes(s.fam)){ targets.forEach((E,k)=>fxAt(k*.08,()=>{ fxGlow(A.x,A.y-10,pal[0],.28,big); fxDraw(.55,a=>{ if(a<.25)return; const t=Math.min(1,(a-.25)/.25), x=A.x+(E.x-A.x)*t, y=A.y-10+(E.y-A.y+10)*t-Math.sin(t*Math.PI)*26; fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.fillStyle=pal[0]; fxCtx.beginPath(); fxCtx.arc(x,y,big?13:9,0,FX_TAU); fxCtx.fill(); fxCtx.restore(); }); fxAt(.52,()=>{ fxImpact(E,s,true); if(s.fam==='stun')fxBurst(E.x,E.y,{n:22,spd:180,size:3,col:['#ffe27a','#fff'],life:.45,kind:'spark'}); }); })); beginSkillFx(1.05); return; }
-  if(['heal','regen','cleanse','shield','buff','taunt'].includes(s.fam)){ const T=fxCasterPoint(caster); const col=s.fam==='taunt'?'#ff6b6b':(s.fam==='shield'?'#5ec8ff':'#7CFC8A'); for(let k=0;k<2;k++)fxRing(T.x,T.y,col,true,k*.08); fxBurst(T.x,T.y+4,{n:24,spd:80,size:3,col:[col,'#fff'],life:.8,grav:-80,kind:'spark',dir:-Math.PI/2,spread:1.1}); fxGlow(T.x,T.y-10,col,.55,true); beginSkillFx(1.0); return; }
+  if(['heal','regen','cleanse','shield','buff','taunt'].includes(s.fam)){ const pts=fxSupportTargets(skill,caster,target); const col=s.fam==='taunt'?'#ff6b6b':(s.fam==='shield'?'#5ec8ff':'#7CFC8A'); pts.forEach((T,i)=>fxAt(i*.04,()=>{ for(let k=0;k<2;k++)fxRing(T.x,T.y,col,true,k*.08); fxBurst(T.x,T.y+4,{n:s.party?12:24,spd:80,size:3,col:[col,'#fff'],life:.8,grav:-80,kind:'spark',dir:-Math.PI/2,spread:1.1}); fxGlow(T.x,T.y-10,col,.55,true); })); beginSkillFx(s.party?1.15:1.0); return; }
   if(['debuff','dot','status'].includes(s.fam)){ targets.forEach(E=>{ fxRing(E.x,E.y,s.fam==='dot'?pal[0]:'#a78bfa',false); fxElement(E,s,big); fxAt(.1,()=>fxBurst(E.x,E.y,{n:18,spd:80,size:3,col:pal,life:.8,grav:s.fam==='debuff'?120:0,kind:'spark'})); }); beginSkillFx(1.0); }
 }
 function updateSkillVfx(dt){ if(!fxCtx||!fxCv)return; fitSkillVfx(); const sdt=Math.min(dt,.05); if(fxActive){ fxAge+=sdt; fxRunTimers(); if(fxAge>fxDur+.35)fxActive=false; }
@@ -1459,9 +1473,12 @@ function pickEnemyAction(e){ if(!e.actions||!e.actions.length) return null;
   return cand[cand.length-1]; }
 function runEnemyAction(e, act){ const alive=allies.filter(a=>!a.downed); if(!alive.length){ phase='lose'; showEnd(false); return; }
   const k=act.kind;
-  if(k==='aoe'){ alive.forEach(t=>{ const raw=Math.floor((e.atk*0.6+Math.random()*e.atk*0.2)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,raw,true); });
-    bigSavor('🐉 '+e.name+'の全体攻撃！'); screenShake();
+  if(k==='aoe'){ playEnemyAoeFx(e,alive,'aoe'); alive.forEach(t=>{ const raw=Math.floor((e.atk*0.6+Math.random()*e.atk*0.2)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,raw,true); });
+    bigSavor('🐉 '+e.name+'の全体攻撃！'); screenShake('soft');
     if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; } phase='enemyAct'; stateTimer=0.8; renderCommand(); return; }
+  if(AILMENTS[k]){ const target=alive[Math.floor(Math.random()*alive.length)]; playEnemySpecialFx(e,k,[target]); applyAllyAilment(target,k);   // 検収修正: ri()未定義の参照ミス
+    bigSavor((AILMENTS[k].emoji||'⚠️')+' '+e.name+'の'+AILMENTS[k].jp+'！');
+    phase='enemyAct'; stateTimer=0.8; renderCommand(); return; }
   if(k==='curse'||k==='special'||k==='erupt'||k==='quake'||k==='judgment'){
     const prev=e.special; e.special=(k==='special'?(prev||'erupt'):k); doEnemySpecial(e); e.special=prev; return; }
   // 'attack' / 未知 = 単体通常攻撃(enemyAttack の既定単体ロジックと同じ＝ヘイト/防御/暗闇/不屈は applyEnemyDamageToAlly が担う)
@@ -1478,8 +1495,8 @@ function enemyAttack(e){ e.charge=0; e._turn=(e._turn||0)+1;
   if(enemyWillFail(e)){ spawnEnemyFx(e,'…失敗','dot'); phase='enemyAct'; stateTimer=0.6; renderCommand(); return; }
   if(e.actions&&e.actions.length){ const act=pickEnemyAction(e); if(act){ runEnemyAction(e,act); return; } }   // ★actions があれば全行動をそれで駆動(無ければ従来)
   // 全体攻撃ボス: 毎手番 味方全員を攻撃(かばう対象外=AoE)。全体回復/被ダメ軽減で対策。
-  if(e.aoeAttack){ alive.forEach(t=>{ const raw=Math.floor((e.atk*0.6+Math.random()*e.atk*0.2)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,raw,true); });
-    bigSavor('🐉 '+e.name+'の全体攻撃！'); screenShake();
+  if(e.aoeAttack){ playEnemyAoeFx(e,alive,'aoe'); alive.forEach(t=>{ const raw=Math.floor((e.atk*0.6+Math.random()*e.atk*0.2)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,raw,true); });
+    bigSavor('🐉 '+e.name+'の全体攻撃！'); screenShake('soft');
     if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; } phase='enemyAct'; stateTimer=0.8; renderCommand(); return; }
   // 特殊(ボス・封印で無効化)。specEvery回ごとに発動。
   if(e.special){ e.spMeter=(e.spMeter||0)+1;
@@ -1504,20 +1521,23 @@ function applyAllyAilment(ally,type){ if(!ally||ally.downed)return; const base=A
 // ボスの特殊行動。curse=状態異常を味方にばらまく(浄化/耐性で対策)。それ以外=全体ダメージ。封印で止められる。
 function doEnemySpecial(e){ const alive=allies.filter(a=>!a.downed); if(!alive.length){ phase='lose'; showEnd(false); return; }
   if(e.special==='curse'){ bigSavor('😈 '+e.name+'の呪い！');
+    playEnemySpecialFx(e,'curse',alive);
     const shuffled=alive.slice().sort(()=>Math.random()-0.5); const n=Math.min(2,shuffled.length);
     for(let k=0;k<n;k++) applyAllyAilment(shuffled[k], Math.random()<0.5?'poison':'burn');
     alive.forEach(t=>{ const dmg=Math.floor(e.atk*0.4*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,dmg,true); });   // 軽い全体ダメも
-    screenShake(); if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; } phase='enemyAct'; stateTimer=0.9; renderCommand(); return; }
+    screenShake('soft'); if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; } phase='enemyAct'; stateTimer=0.9; renderCommand(); return; }
   bigSavor('⚠️ '+e.name+'の特殊！');
+  playEnemySpecialFx(e,e.special,alive);
   alive.forEach(t=>{ const dmg=Math.floor((e.atk*0.7+Math.random()*e.atk*0.3)*enemyAtkMul(e)); applyEnemyDamageToAlly(e,t,dmg,true); });
   if(e.special==='judgment'){ const t=allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; if(t){ t.ail=t.ail||{}; t.ail.burn={kind:'dot',pps:0.03,remain:8,acc:0,t:0}; spawnAllyFx(t,'🔥やけど','hit'); } }
-  screenShake();
+  screenShake('soft');
   if(allies.every(a=>a.downed)){ phase='lose'; showEnd(false); return; }
   phase='enemyAct'; stateTimer=0.9; renderCommand(); }
 // 味方への被ダメ適用: 防御(挑発+軽減)→シールド吸収→カウンター反射→不屈(致死耐え・HP1)→down。
 function applyEnemyDamageToAlly(e,target,dmg,isAoE){
   // かばう: 単体攻撃のみ・他の味方への攻撃を かばう中の壁が肩代わり(軽減つき)。AoE(特殊の全体)は対象にしない=壁が4連で即死しない。
   if(!isAoE){ const cov=allies.find(a=>!a.downed && a.cover>0 && a!==target); if(cov){ spawnAllyFx(target,'🛡かばう','heal'); target=cov; dmg=Math.floor(dmg*0.7); } }
+  if(!isAoE) playEnemyHitFx(e,target);
   dmg=Math.max(1,Math.floor(dmg*mitig(target.def)));                                  // ★割合防御(まもり)＝被ダメ率 K/(防+K)
   if(target.reduce && target.reduce.remain>0) dmg=Math.max(1,Math.floor(dmg*(1-target.reduce.pct)));   // 堅守などの被ダメ軽減
   if(target.defending){ dmg=Math.floor(dmg*0.3); target.defending=false; }
@@ -1530,7 +1550,7 @@ function applyEnemyDamageToAlly(e,target,dmg,isAoE){
   target.hp=Math.max(0,newHp);
   if(dmg>0) spawnAllyFx(target,'-'+dmg,'hit'); flashAlly(target);
   if(target.hp<=0){ target.downed=true; target.charge=0; clearAllyBuffs(target); }
-  screenShake(); }
+}
 
 /* ===================== §10 演出 ===================== */
 function dealEnemyTarget(e,dmg,crit){ if(!e||!e.alive)return; e.hp=Math.max(0,e.hp-dmg);
@@ -1556,7 +1576,7 @@ function spawnAllyFx(ally,text,cls){ const card=document.getElementById('ally-'+
 function flashAlly(ally){ const card=document.getElementById('ally-'+ally.id); if(card){ card.classList.add('hitflash'); setTimeout(()=>card.classList.remove('hitflash'),300); } }
 function bigSavor(html){ const stage=document.getElementById('stage'); const old=document.getElementById('savorBanner'); if(old)old.remove();
   const b=document.createElement('div'); b.className='savor-banner'; b.id='savorBanner'; b.innerHTML=`<span class="big">${html}</span>`; stage.appendChild(b); setTimeout(()=>{ if(b.parentNode)b.remove(); }, Math.max(900,cfg.savorSec*1000)); }
-function screenShake(){ if(_fxLite())return; const a=document.getElementById('app'); a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),280); }
+function screenShake(kind){ if(_fxLite())return; const a=document.getElementById('app'); if(!a)return; const soft=kind==='soft'; a.classList.add('shake'); if(soft)a.classList.add('soft'); setTimeout(()=>{ a.classList.remove('shake'); a.classList.remove('soft'); }, soft?180:280); }
 function bumpCombo(){ const b=document.getElementById('comboBadge'); b.style.display=combo>0?'block':'none'; document.getElementById('comboN').textContent=combo; }
 
 /* ===================== §11 描画 ===================== */
