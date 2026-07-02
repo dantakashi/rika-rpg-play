@@ -209,6 +209,7 @@
   .qfeed{flex:0 0 auto; margin-top:10px;} .qfeed .desc{font-size:14px; color:var(--ink); background:#0c1220; border:1px solid var(--line); border-radius:11px; padding:11px; line-height:1.55;}
   .qfeed .next{width:100%; margin-top:9px; padding:13px; border-radius:11px; background:linear-gradient(180deg,#f7d579,#dca22f); color:#3a230a; border:none; border-bottom:3px solid var(--gold-d); font-size:16px; font-weight:800;}
   .qfeed .wrongttl{color:var(--bad); font-weight:800; text-align:center; margin-bottom:6px; font-size:16px;}
+  .battle-fx{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:80;}
   /* 出題中の特訓バー(ポーズ/中断＋このサイクルの研究ポイント)。#qOverlay の子＝Quizは触らない(器のidは契約。新要素の追加は§5でゲーム側が足してよい) */
   .qtrainbar{display:none; flex:0 0 auto; align-items:center; gap:10px; margin:-2px 0 8px; padding:7px 11px; border-radius:11px; background:rgba(8,12,24,.7); border:1px solid var(--line);}
   .qtrainbar.show{display:flex;}
@@ -310,6 +311,15 @@
   .home-card .hc-pct{font-size:10px; color:var(--warn); font-weight:700;}
   .home-info{font-size:13px; color:var(--sub); text-align:center; margin-bottom:6px;}
   .home-info b{color:var(--ink);}
+  .settings-card{background:#161f30; border:1px solid var(--line); border-radius:12px; padding:14px; margin:10px 0;}
+  .settings-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .settings-row .st-name{font-size:15px; font-weight:800;}
+  .settings-row .st-desc{display:block; font-size:12px; color:var(--sub); line-height:1.5; margin-top:4px;}
+  .toggle{position:relative; width:56px; height:32px; border:1px solid var(--line); border-radius:999px; background:#0c1220; flex:0 0 auto;}
+  .toggle i{position:absolute; width:24px; height:24px; left:4px; top:3px; border-radius:50%; background:var(--sub); transition:.16s;}
+  .toggle.on{background:rgba(52,211,153,.18); border-color:var(--good);}
+  .toggle.on i{left:26px; background:var(--good);}
+  body.fx-lite .shake,body.fx-lite .hitflash,body.fx-lite .efx,body.fx-lite .ac-fx,body.fx-lite .dmg,body.fx-lite .particle,body.fx-lite .savor-banner .big{animation:none!important; transition:none!important;}
   /* 装飾品つけ替え */
   .acc-sub{font-size:12px; color:var(--sub); text-align:center; margin:2px 0 12px;}
   .acc-list{display:grid; gap:9px;}
@@ -596,7 +606,7 @@
     <div class="boss-warn" id="bossWarn"><div class="bw-txt">⚠ WARNING ⚠</div><div class="bw-sub">ボスが あらわれる！</div></div>
     <div class="stage-intro" id="stageIntro"><div class="si-dun"></div><div class="si-name"></div><div class="si-go"></div></div>
     <div class="enemy-row" id="enemyRow"></div>
-    <div class="mid" id="mid"><div class="combo-badge" id="comboBadge" style="display:none;">🔥<b id="comboN">0</b> COMBO</div></div>
+    <div class="mid" id="mid"><div class="combo-badge" id="comboBadge" style="display:none;">🔥いきおい <b id="comboN">0</b></div></div>
   </div>
 
   <div class="panel">
@@ -604,6 +614,7 @@
     <div class="phase-hint" id="phaseHint">…</div>
     <div id="cmdArea"></div>
   </div>
+  <canvas class="battle-fx" id="battleFx" aria-hidden="true"></canvas>
 
   <div class="qoverlay" id="qOverlay">
     <div class="qhead" id="qhead"></div>
@@ -640,12 +651,28 @@
 
   <div class="screen" id="screen-home"><div class="scr-inner" id="homeBody"></div></div>
 
+  <div class="screen" id="screen-settings">
+    <div class="scr-inner">
+      <h2 class="scr-ttl">⚙ せってい</h2>
+      <div class="settings-card">
+        <button class="settings-row" type="button" onclick="toggleFxLite()" style="width:100%;background:transparent;border:0;color:inherit;text-align:left;padding:0;font:inherit;">
+          <span>
+            <span class="st-name">✨えんしゅつ ひかえめ</span>
+            <span class="st-desc">がめんの ゆれや エフェクトを へらします（あとで もどせます）</span>
+          </span>
+          <span class="toggle" id="fxLiteToggle" aria-hidden="true"><i></i></span>
+        </button>
+      </div>
+      <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>
+    </div>
+  </div>
+
   <div class="screen" id="screen-map">
     <div class="scr-inner">
       <h2 class="scr-ttl">🗺 ステージをえらぼう</h2>
       <div class="map-list" id="mapList"></div>
       <div class="scr-btns"><button class="scr-btn" onclick="showHome()">◀ ホーム</button></div>
-      <div class="debug-box">
+      <div class="debug-box" id="debugBox">
         <div class="dtt">🔧 テスト用ボタン（先生にきいてね）</div>
         <div class="drow">
           <button onclick="debugUnlockAll()" title="すべてのステージをすぐ遊べるように">ぜんぶ解放</button>
@@ -1140,12 +1167,95 @@ function flashBossWarning(){ const w=document.getElementById('bossWarn'); if(!w)
 function startBattle(){ applyStageBg(curStg());   // ★背景(画像/フォールバック)を付与
   encIdx=0; stageDrops=[]; setEncounter(0); makeAllies(); combo=0;   // ★items(消耗品)は持ち越し在庫=ここでリセットしない(ショップで買った切り札を戦闘に持ち込む)
   phase='charging'; stateTimer=0; pendingAction=null; activeAlly=null; _advancing=false; _lastEnemyActed=false;   // curQ/answered は問題側(quiz-engine)の状態＝ゲーム側は触らない(Quiz.askが毎問リセット)
-  buildParty(); hideOverlay(); bumpCombo(); renderCommand(); }
+  buildParty(); hideOverlay(); bumpCombo(); renderCommand(); resetSkillVfx(); }
 function resetAll(){ startStage(curStage); }   // 「もう一度」＝今のステージをやり直す
+
+/* ===================== §4.5 スキルVFX（C-1・描画層のみ） ===================== */
+const FX_LITE_KEY='rika2_fx_lite';
+function _fxLite(){
+  const media=!!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let saved=false; try{ saved=localStorage.getItem(FX_LITE_KEY)==='1'; }catch(e){}
+  return media||saved;
+}
+function _applyFxLiteClass(){ if(document.body) document.body.classList.toggle('fx-lite', _fxLite()); }
+function _setFxLite(on){ try{ if(on)localStorage.setItem(FX_LITE_KEY,'1'); else localStorage.removeItem(FX_LITE_KEY); }catch(e){} _applyFxLiteClass(); updateFxLiteToggle(); if(_fxLite()) resetSkillVfx(); }
+try{ const mq=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)'); if(mq){ const cb=()=>{ _applyFxLiteClass(); updateFxLiteToggle(); if(_fxLite()) resetSkillVfx(); }; (mq.addEventListener?mq.addEventListener('change',cb):mq.addListener&&mq.addListener(cb)); } }catch(e){}
+_applyFxLiteClass();
+const fxCv=document.getElementById('battleFx'), fxCtx=fxCv?fxCv.getContext('2d'):null;
+const FX_MAXP=900, FX_TAU=Math.PI*2;
+const FX_PAL={火:['#ff7b3a','#ffb05a','#ffe27a','#fff'],氷:['#7ad0ff','#bfe3ff','#dff4ff','#fff'],雷:['#ffe27a','#fff6b0','#ffd24a','#fff'],光:['#fffbe6','#ffe9a8','#fff','#ffd86b'],土:['#d8a85a','#a87a40','#e8c98a','#caa46a'],毒:['#a3e635','#7CFC8A','#caff70','#dfffa0'],闇:['#9a6bff','#6b3bd0','#b07bff','#d2b8ff'],聖:['#7CFC8A','#d6ffe0','#ffe9a8','#fff'],無:['#cfe0ff','#bfe3ff','#fff','#9fb0d6']};
+const FX_EL_BY_ID={sk001:'火',sk070:'無',sk023:'無',sk079:'無',sk027:'雷',sk002:'毒',sk024:'闇',sk009:'闇',sk153:'無',sk007:'無',sk003:'無',sk032:'無',sk012:'光',sk008:'無',sk004:'無',sk033:'氷',sk026:'光',sk219:'無',sk167:'無',sk138:'無',sk235:'無',sk213:'無',sk025:'無',sk142:'無',sk131:'無',sk120:'無',sk020:'毒',sk016:'氷',sk005:'無'};
+const FX_ARCH = {
+  sk001:'slash', sk002:'dot', sk003:'taunt', sk004:'heal', sk005:'slash_multi', sk006:'magic', sk007:'debuff',
+  sk008:'regen', sk009:'status_clock', sk010:'buff_haste', sk011:'quake', sk012:'beam', sk013:'slash_aoe',
+  sk014:'magic_aoe', sk015:'status_sleep', sk016:'slash_shatter', sk020:'rain_debuff', sk023:'buff_endure',
+  sk024:'drain', sk025:'shield_ward', sk026:'cleanse', sk027:'stun_magic', sk032:'shield', sk033:'regen_rain', sk070:'buff_atk',
+  sk079:'slash_thrust', sk120:'debuff_armor', sk131:'status_clock', sk142:'debuff_slow', sk153:'bash',
+  sk167:'shield_ward', sk138:'shield_ward', sk213:'regen', sk219:'shield_ward', sk235:'heal', sk250:'regen_rain',
+  jab:'bash'
+};
+let fxW=0, fxH=0, fxPs=[], fxDraws=[], fxTimers=[], fxAge=0, fxDur=0, fxActive=false, fxFlash=0, fxFlashCol='#fff', fxTint=0, fxTintCol='#fff';
+const fxRnd=(a,b)=>a+Math.random()*(b-a), fxPick=a=>a[Math.floor(Math.random()*a.length)];
+function fitSkillVfx(){ if(!fxCv||!fxCtx)return; const r=fxCv.getBoundingClientRect(); const d=Math.min(2,window.devicePixelRatio||1); fxW=r.width; fxH=r.height;
+  const w=Math.max(1,Math.round(r.width*d)), h=Math.max(1,Math.round(r.height*d)); if(fxCv.width!==w||fxCv.height!==h){ fxCv.width=w; fxCv.height=h; } fxCtx.setTransform(d,0,0,d,0,0); }
+function resetSkillVfx(){ fxPs=[]; fxDraws=[]; fxTimers=[]; fxAge=0; fxDur=0; fxActive=false; fxFlash=0; fxTint=0; if(fxCtx){ fitSkillVfx(); fxCtx.clearRect(0,0,fxW,fxH); } }
+function fxCenter(el){ const r=el&&el.getBoundingClientRect(), c=fxCv&&fxCv.getBoundingClientRect(); return (r&&c)?{x:r.left+r.width/2-c.left,y:r.top+r.height/2-c.top}:{x:fxW/2,y:fxH/2}; }
+function fxEnemyPoint(e){ return fxCenter(document.querySelector('#enemy-'+(e&&e.idx)+' .eimg')||document.getElementById('enemy-'+(e&&e.idx))); }
+function fxAllyPoint(a){ return fxCenter(document.getElementById('ally-'+((a&&a.id)||a))); }
+function fxCasterPoint(c){ return fxAllyPoint(c||activeAlly||allies[0]||'ares'); }
+function fxAliveTargets(target,aoe){ const list=aoe?aliveEnemies():(target&&target.alive?[target]:[aliveEnemies()[0]].filter(Boolean)); return list.map(fxEnemyPoint); }
+function fxPush(p){ if(fxPs.length<FX_MAXP) fxPs.push(p); }
+function fxBurst(x,y,o){ if(_fxLite())return; const n=Math.min(o.n||8,FX_MAXP-fxPs.length), dir=o.dir==null?0:o.dir, spread=o.spread==null?FX_TAU:o.spread;
+  for(let i=0;i<n;i++){ const a=dir-spread/2+Math.random()*spread, sp=(o.spd||100)*(0.45+Math.random()*0.75);
+    fxPush({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:(o.life||0.5)*(0.75+Math.random()*0.5),max:o.life||0.5,size:(o.size||3)*(0.65+Math.random()*0.7),col:Array.isArray(o.col)?fxPick(o.col):o.col,grav:o.grav||0,drag:o.drag==null?0.94:o.drag,kind:o.kind||'dot',rot:Math.random()*FX_TAU,vr:fxRnd(-5,5)}); } }
+function fxDraw(dur,fn){ if(!_fxLite()) fxDraws.push({age:0,dur,fn}); }
+function fxAt(t,fn){ if(!_fxLite()) fxTimers.push({t,fn}); }
+function fxRunTimers(){ for(let i=fxTimers.length-1;i>=0;i--){ if(fxAge>=fxTimers[i].t){ try{fxTimers[i].fn();}catch(e){} fxTimers.splice(i,1); } } }
+function fxRing(x,y,col,big,delay){ delay=delay||0; const dur=big?0.55:0.38; fxDraw(dur+delay,a=>{ if(a<delay)return; const t=(a-delay)/dur, al=(1-t); fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al*0.85; fxCtx.strokeStyle=col; fxCtx.lineWidth=(big?8:4)*(1-t*0.5); fxCtx.beginPath(); fxCtx.arc(x,y,(big?96:54)*t+8,0,FX_TAU); fxCtx.stroke(); fxCtx.restore(); }); }
+function fxGlow(x,y,col,dur,big){ fxDraw(dur,(a)=>{ const t=a/dur, al=Math.sin(t*Math.PI), r=(big?30:18)*(0.55+t*0.5); fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; const g=fxCtx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,'#fff'); g.addColorStop(.45,col); g.addColorStop(1,'rgba(0,0,0,0)'); fxCtx.fillStyle=g; fxCtx.beginPath(); fxCtx.arc(x,y,r,0,FX_TAU); fxCtx.fill(); fxCtx.restore(); }); }
+function fxCut(E,ang,col,big){ const span=big?150:116, dx=Math.cos(ang), dy=Math.sin(ang); fxDraw(.22,a=>{ const t=a/.22, sw=Math.min(1,t*2.5), al=Math.sin(Math.min(1,t*1.5)*Math.PI); fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; fxCtx.lineCap='round';
+    const x0=E.x-dx*span/2, y0=E.y-dy*span/2; for(let k=0;k<3;k++){ fxCtx.strokeStyle=col[k]||col[0]; fxCtx.lineWidth=(big?10:6)-k*2.4; fxCtx.beginPath(); fxCtx.moveTo(x0,y0); fxCtx.lineTo(x0+dx*span*sw,y0+dy*span*sw); fxCtx.stroke(); } fxCtx.restore(); });
+  fxAt(.03,()=>fxBurst(E.x,E.y,{n:big?22:14,spd:330,size:2.5,col,life:.42,drag:.9,grav:190,kind:'streak',dir:ang,spread:.5})); }
+function fxThrust(A,E,col,big){ fxDraw(.2,a=>{ const t=a/.2, q=Math.min(1,t*2.2), al=Math.sin(Math.min(1,t*1.4)*Math.PI), x=A.x+(E.x-A.x)*q, y=A.y+(E.y-A.y)*q; fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; fxCtx.lineCap='round';
+    for(let k=0;k<3;k++){ fxCtx.strokeStyle=col[k]||col[0]; fxCtx.lineWidth=(big?9:6)-k*2.2; fxCtx.beginPath(); fxCtx.moveTo(A.x,A.y); fxCtx.lineTo(x,y); fxCtx.stroke(); } fxCtx.restore(); }); }
+function fxElement(E,s,big){ const c=FX_PAL[s.el]||FX_PAL.無, ling=s.lv==='high'?1.45:1.15;
+  if(s.el==='火'){ for(let i=0;i<(big?7:4);i++){ const ox=fxRnd(-28,28), h=fxRnd(big?44:30,big?78:52); fxDraw(.55,a=>{ const t=a/.55, al=Math.sin(Math.min(1,t*1.3)*Math.PI), y=E.y+12, x=E.x+ox; fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; fxCtx.fillStyle=c[0]; fxCtx.beginPath(); fxCtx.moveTo(x-10,y); fxCtx.quadraticCurveTo(x-6,y-h*.55,x+Math.sin(a*9)*9,y-h); fxCtx.quadraticCurveTo(x+10,y-h*.5,x+10,y); fxCtx.closePath(); fxCtx.fill(); fxCtx.restore(); }); } fxBurst(E.x,E.y,{n:big?18:10,spd:90,size:2.3,col:c,life:.8*ling,grav:-80,kind:'spark'}); }
+  else if(s.el==='氷'){ for(let i=0;i<(big?9:6);i++){ const an=i/(big?9:6)*FX_TAU+fxRnd(-.2,.2), len=fxRnd(big?42:28,big?66:44); fxDraw(.5,a=>{ const t=a/.5, L=len*Math.min(1,t*2), al=(1-t)*.9; fxCtx.save(); fxCtx.translate(E.x,E.y); fxCtx.rotate(an); fxCtx.globalAlpha=al; fxCtx.fillStyle=c[1]; fxCtx.strokeStyle=c[3]; fxCtx.beginPath(); fxCtx.moveTo(0,0); fxCtx.lineTo(6,L*.4); fxCtx.lineTo(0,L); fxCtx.lineTo(-6,L*.4); fxCtx.closePath(); fxCtx.fill(); fxCtx.stroke(); fxCtx.restore(); }); } }
+  else if(s.el==='雷'){ for(let k=0;k<(big?3:2);k++)fxDraw(.28,a=>{ if(a<k*.05||a>k*.05+.06)return; let x=E.x+fxRnd(-24,24), y=8; fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=.95; fxCtx.strokeStyle=k?'#ffe27a':'#fff'; fxCtx.lineWidth=big?3:2; fxCtx.beginPath(); fxCtx.moveTo(x,y); for(let n=1;n<=7;n++){ x+=fxRnd(-18,18); y+=(E.y-8)/7; fxCtx.lineTo(x,y); } fxCtx.stroke(); fxCtx.restore(); }); fxBurst(E.x,E.y,{n:big?26:14,spd:180,size:2.5,col:['#ffe27a','#fff'],life:.45,kind:'spark'}); }
+  else if(s.el==='光'||s.el==='聖'){ fxDraw(.55,a=>{ const t=a/.55, al=Math.sin(Math.min(1,t*1.4)*Math.PI), R=(big?72:50)*Math.min(1,t*1.6); fxCtx.save(); fxCtx.translate(E.x,E.y); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; for(let i=0;i<(big?12:8);i++){ fxCtx.rotate(FX_TAU/(big?12:8)); fxCtx.fillStyle=c[1]; fxCtx.beginPath(); fxCtx.moveTo(0,0); fxCtx.lineTo(5,-R); fxCtx.lineTo(-5,-R); fxCtx.closePath(); fxCtx.fill(); } fxCtx.restore(); }); }
+  else if(s.el==='闇'){ for(let i=0;i<(big?24:14);i++){ const a=fxRnd(0,FX_TAU), r=fxRnd(28,big?78:52); fxPush({x:E.x+Math.cos(a)*r,y:E.y+Math.sin(a)*r,vx:-Math.cos(a)*r*3,vy:-Math.sin(a)*r*3,life:.45,max:.45,size:3,col:fxPick(c),grav:0,drag:.97,kind:'streak',rot:0,vr:0}); } fxRing(E.x,E.y,c[2],big); }
+  else if(s.el==='土'){ for(let i=0;i<(big?6:4);i++){ const ox=fxRnd(-36,36), sz=fxRnd(big?15:10,big?25:17); fxDraw(.55,a=>{ const t=a/.55, up=Math.min(1,t*2)*(big?42:28), al=1-Math.max(0,(t-.5)*2); fxCtx.save(); fxCtx.translate(E.x+ox,E.y+16-up); fxCtx.rotate(t*1.5); fxCtx.globalAlpha=al; fxCtx.fillStyle=c[1]; fxCtx.strokeStyle=c[3]; fxCtx.beginPath(); fxCtx.rect(-sz/2,-sz/2,sz,sz); fxCtx.fill(); fxCtx.stroke(); fxCtx.restore(); }); } }
+  else if(s.el==='毒'){ for(let i=0;i<(big?9:5);i++){ const ox=fxRnd(-28,28), oy=fxRnd(-16,16), r=fxRnd(5,big?12:8); fxDraw(.6,a=>{ const t=a/.6, al=t<.78?t*1.3:(1-t)*4.5; fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=Math.max(0,al); fxCtx.fillStyle=c[1]; fxCtx.strokeStyle=c[0]; fxCtx.beginPath(); fxCtx.arc(E.x+ox,E.y+oy-t*8,r*Math.min(1,t*2),0,FX_TAU); fxCtx.fill(); fxCtx.stroke(); fxCtx.restore(); }); } }
+  else fxBurst(E.x,E.y,{n:big?18:10,spd:280,size:2.5,col:['#fff','#cfe0ff'],life:.42,kind:'streak'});
+}
+function fxImpact(E,s,big){ fxElement(E,s,big); if(s.el!=='無'){ fxTint=Math.max(fxTint,.08); fxTintCol=(FX_PAL[s.el]||FX_PAL.無)[0]; } fxFlash=Math.max(fxFlash,big?.34:.22); fxFlashCol=(FX_PAL[s.el]||FX_PAL.無)[0]; }
+function specForSkillFx(skillId,skill){ const sid=skillId||(skill&&SKICON_NAME&&SKICON_NAME[skill.name])||((skill&&skill.name==='ジャブ')?'jab':''); const hint=FX_ARCH[sid]; if(!hint)return null;
+  const s={id:sid||'', hint:hint||'', fam:'slash', el:FX_EL_BY_ID[sid]||'無', lv:'low', aoe:skill&&skill.scope==='allEnemies', party:false, kind:'', motif:'', cue:'', onRole:activeAlly&&activeAlly.id};
+  const h=s.hint; if(/heal/.test(h))s.fam='heal'; else if(/regen/.test(h))s.fam='regen'; else if(/cleanse/.test(h))s.fam='cleanse'; else if(/shield/.test(h))s.fam='shield'; else if(/buff/.test(h))s.fam='buff'; else if(/taunt/.test(h))s.fam='taunt'; else if(/debuff/.test(h))s.fam='debuff'; else if(/dot/.test(h))s.fam='dot'; else if(/status/.test(h))s.fam='status'; else if(/stun/.test(h))s.fam='stun'; else if(/drain/.test(h))s.fam='drain'; else if(/beam/.test(h))s.fam='beam'; else if(/rain/.test(h))s.fam='rain'; else if(/quake/.test(h))s.fam='quake'; else if(/bash/.test(h))s.fam='bash'; else s.fam='slash';
+  if(/multi/.test(h))s.kind='multi'; if(/thrust/.test(h))s.motif='thrust'; if(/shatter/.test(h))s.motif='shatter'; if(/armor/.test(h))s.kind='armor'; if(/slow/.test(h))s.kind='slow'; if(/clock/.test(h))s.kind='clock'; if(/sleep/.test(h))s.kind='sleep'; if(/haste/.test(h))s.kind='haste'; if(/endure/.test(h))s.kind='endure'; if(/ward/.test(h))s.kind='ward'; if(/rain/.test(h))s.motif='rain'; if(/aoe/.test(h))s.aoe=true;
+  return s; }
+function beginSkillFx(dur){ const lite=_fxLite(); fxDur=lite?0:Math.max(.35,dur||1); fxAge=0; fxActive=!lite; }
+function playBasicHitFx(target,study){ if(_fxLite()||!target)return; fitSkillVfx(); const E=fxEnemyPoint(target), A=fxCasterPoint(activeAlly), col=study?['#fff','#ffe27a','#7ad0ff']:['#fff','#cfe0ff','#9fb0d6']; fxThrust(A,E,col,!!study); fxAt(.1,()=>{ fxRing(E.x,E.y,study?'#ffe27a':'#cfe0ff',!!study); fxBurst(E.x,E.y,{n:study?26:14,spd:study?280:190,size:3,col,life:.45,kind:'streak'}); }); beginSkillFx(study ? .9 : .55); }
+function playSkillFx(skillId,skill,caster,target){ const s=specForSkillFx(skillId,skill); if(!s||_fxLite())return; fitSkillVfx(); const pal=FX_PAL[s.el]||FX_PAL.無, A=fxCasterPoint(caster), targets=fxAliveTargets(target,s.aoe), big=s.lv!=='low'; if(!targets.length && !['heal','regen','cleanse','shield','buff','taunt'].includes(s.fam))return;
+  if(s.fam==='slash'){ const n=s.kind==='multi'?2:1; targets.forEach((E,k)=>fxAt(k*.1,()=>{ for(let i=0;i<n;i++)fxAt(i*.12,()=>{ const P=n>1?{x:E.x+fxRnd(-18,18),y:E.y+fxRnd(-12,12)}:E; s.motif==='thrust'?fxThrust(A,P,['#fff',pal[0],pal[1]],big):fxCut(P,s.aoe?0:(i%2?.7:-.7),['#fff',pal[0],pal[1]],true); fxImpact(P,s,big); }); })); beginSkillFx(.95+(n>1?.2:0)); return; }
+  if(s.fam==='bash'||s.fam==='quake'){ targets.forEach((E,k)=>fxAt(k*.08,()=>{ fxGlow(E.x,E.y-26,pal[0],.18,big); fxAt(.16,()=>{ fxRing(E.x,E.y,pal[0],s.fam==='quake'||big); fxBurst(E.x,E.y,{n:s.fam==='quake'?30:18,spd:180,size:3.5,col:pal,life:.55,grav:s.fam==='quake'?120:0,kind:'spark'}); fxImpact(E,s,big); }); })); beginSkillFx(s.fam==='quake'?1.1:.8); return; }
+  if(s.fam==='rain'){ for(let i=0;i<32;i++)fxAt(i*.035,()=>fxPush({x:fxRnd(fxW*.15,fxW*.85),y:-8,vx:fxRnd(-10,10),vy:fxRnd(250,360),life:.7,max:.7,size:3,col:fxPick(pal),grav:100,drag:.99,kind:'streak',rot:0,vr:0})); targets.forEach(E=>fxAt(.32,()=>{ fxRing(E.x,E.y+14,pal[1],true); fxImpact(E,s,big); })); beginSkillFx(1.4); return; }
+  if(s.fam==='drain'){ targets.forEach(E=>{ fxElement(E,s,big); fxDraw(.55,a=>{ const al=Math.sin(Math.min(1,a/.45)*Math.PI); fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.globalAlpha=al; fxCtx.strokeStyle=pal[1]; fxCtx.lineWidth=5; fxCtx.beginPath(); fxCtx.moveTo(E.x,E.y); fxCtx.lineTo(A.x,A.y); fxCtx.stroke(); fxCtx.restore(); }); }); fxAt(.45,()=>fxGlow(A.x,A.y,pal[2],.4,true)); beginSkillFx(1.2); return; }
+  if(['beam','magic','stun'].includes(s.fam)){ targets.forEach((E,k)=>fxAt(k*.08,()=>{ fxGlow(A.x,A.y-10,pal[0],.28,big); fxDraw(.55,a=>{ if(a<.25)return; const t=Math.min(1,(a-.25)/.25), x=A.x+(E.x-A.x)*t, y=A.y-10+(E.y-A.y+10)*t-Math.sin(t*Math.PI)*26; fxCtx.save(); fxCtx.globalCompositeOperation='lighter'; fxCtx.fillStyle=pal[0]; fxCtx.beginPath(); fxCtx.arc(x,y,big?13:9,0,FX_TAU); fxCtx.fill(); fxCtx.restore(); }); fxAt(.52,()=>{ fxImpact(E,s,true); if(s.fam==='stun')fxBurst(E.x,E.y,{n:22,spd:180,size:3,col:['#ffe27a','#fff'],life:.45,kind:'spark'}); }); })); beginSkillFx(1.05); return; }
+  if(['heal','regen','cleanse','shield','buff','taunt'].includes(s.fam)){ const T=fxCasterPoint(caster); const col=s.fam==='taunt'?'#ff6b6b':(s.fam==='shield'?'#5ec8ff':'#7CFC8A'); for(let k=0;k<2;k++)fxRing(T.x,T.y,col,true,k*.08); fxBurst(T.x,T.y+4,{n:24,spd:80,size:3,col:[col,'#fff'],life:.8,grav:-80,kind:'spark',dir:-Math.PI/2,spread:1.1}); fxGlow(T.x,T.y-10,col,.55,true); beginSkillFx(1.0); return; }
+  if(['debuff','dot','status'].includes(s.fam)){ targets.forEach(E=>{ fxRing(E.x,E.y,s.fam==='dot'?pal[0]:'#a78bfa',false); fxElement(E,s,big); fxAt(.1,()=>fxBurst(E.x,E.y,{n:18,spd:80,size:3,col:pal,life:.8,grav:s.fam==='debuff'?120:0,kind:'spark'})); }); beginSkillFx(1.0); }
+}
+function updateSkillVfx(dt){ if(!fxCtx||!fxCv)return; fitSkillVfx(); const sdt=Math.min(dt,.05); if(fxActive){ fxAge+=sdt; fxRunTimers(); if(fxAge>fxDur+.35)fxActive=false; }
+  for(let i=fxPs.length-1;i>=0;i--){ const p=fxPs[i]; p.life-=sdt; if(p.life<=0){ fxPs.splice(i,1); continue; } p.vx*=p.drag; p.vy=p.vy*p.drag+p.grav*sdt; p.x+=p.vx*sdt; p.y+=p.vy*sdt; p.rot+=p.vr*sdt; }
+  for(let i=fxDraws.length-1;i>=0;i--){ fxDraws[i].age+=sdt; if(fxDraws[i].age>=fxDraws[i].dur)fxDraws.splice(i,1); }
+  { const d=Math.min(2,window.devicePixelRatio||1); fxCtx.setTransform(d,0,0,d,0,0); } fxCtx.clearRect(0,0,fxW,fxH); fxCtx.globalCompositeOperation='lighter';
+  fxPs.forEach(p=>{ const a=Math.max(0,Math.min(1,p.life/p.max)); fxCtx.globalAlpha=a; if(p.kind==='streak'){ const an=Math.atan2(p.vy,p.vx), len=p.size*2.4+Math.hypot(p.vx,p.vy)*.02; fxCtx.strokeStyle=p.col; fxCtx.lineWidth=p.size*.55; fxCtx.lineCap='round'; fxCtx.beginPath(); fxCtx.moveTo(p.x,p.y); fxCtx.lineTo(p.x-Math.cos(an)*len,p.y-Math.sin(an)*len); fxCtx.stroke(); } else if(p.kind==='spark'){ fxCtx.fillStyle=p.col; fxCtx.save(); fxCtx.translate(p.x,p.y); fxCtx.rotate(p.rot); fxCtx.fillRect(-p.size*.18,-p.size*1.1,p.size*.36,p.size*2.2); fxCtx.restore(); } else { const g=fxCtx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*1.6); g.addColorStop(0,p.col); g.addColorStop(.45,p.col); g.addColorStop(1,'rgba(0,0,0,0)'); fxCtx.fillStyle=g; fxCtx.beginPath(); fxCtx.arc(p.x,p.y,p.size*1.6,0,FX_TAU); fxCtx.fill(); } });
+  fxCtx.globalAlpha=1; fxCtx.globalCompositeOperation='source-over'; fxDraws.forEach(d=>{ try{ d.fn(d.age); }catch(e){} fxCtx.globalAlpha=1; fxCtx.globalCompositeOperation='source-over'; }); if(fxFlash>.01){ fxCtx.fillStyle=fxFlashCol; fxCtx.globalAlpha=fxFlash; fxCtx.fillRect(0,0,fxW,fxH); fxCtx.globalAlpha=1; fxFlash*=Math.pow(.001,sdt); } if(fxTint>.01){ fxCtx.fillStyle=fxTintCol; fxCtx.globalAlpha=fxTint; fxCtx.fillRect(0,0,fxW,fxH); fxCtx.globalAlpha=1; fxTint*=Math.pow(.2,sdt); } }
+window.addEventListener('resize',()=>fitSkillVfx());
 
 /* ===================== §5 メインループ ===================== */
 let last=performance.now();
-function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.1)dt=0.1; update(dt); updateUI(); requestAnimationFrame(loop); }
+function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.1)dt=0.1; update(dt); updateUI(); updateSkillVfx(dt); requestAnimationFrame(loop); }
 const THINK=['command','skillmenu','itemmenu','targeting','question','miss'];
 function update(dt){
   if(gameState!=='battle'||_advancing) return;   // 戦闘中のみ進める(タイトル/マップ/クリア画面では停止)。_advancing中(撃破→次ウェーブ待ち)も停止＝空コマンド/レース防止
@@ -1195,7 +1305,7 @@ function renderSkillMenu(){ const area=document.getElementById('cmdArea'), a=act
   document.getElementById('phaseHint').innerHTML=`✨ <b>${a.name}</b> のスキル`;
   area.innerHTML=`<div class="list skill-scroll">`+a.skills.map(id=>{ const s=SKILLS[id]; const mp=skMp(s);
     const comboOk=!s.combo||combo>=s.combo, mpOk=a.mp>=mp, ok=comboOk&&mpOk;
-    const why=!mpOk?`<span class="badge mp">MP不足</span>`:(!comboOk?`<span class="badge free">コンボ${s.combo}必要</span>`:(s.scope==='allEnemies'?`<span class="badge aoe">全体</span>`:(s.needsQuiz?`<span class="badge q">要・問題</span>`:`<span class="badge free">即発動</span>`)));
+    const why=!mpOk?`<span class="badge mp">MP不足</span>`:(!comboOk?`<span class="badge free">いきおい${s.combo}必要</span>`:(s.scope==='allEnemies'?`<span class="badge aoe">全体</span>`:(s.needsQuiz?`<span class="badge q">要・問題</span>`:`<span class="badge free">即発動</span>`)));
     return `<button class="li${ok?'':' dis'}" data-info="skill:${id}" onclick="selectSkill('${id}')"><span class="ii">${skillIco(id,s.emoji)}</span>
       <span><span class="nn">${s.name}</span> <span class="badge mp" style="margin:0;">${skLevelable(s)?'Lv'+skL(s).lv+'・':''}MP${mp}</span></span>${why}</button>`;
   }).join('')+`</div><button class="back-btn" onclick="backToCommand()">◀ もどる</button>`; }
@@ -1231,7 +1341,7 @@ function onPickAlly(id){ if(phase!=='targeting'||!pendingAction||pendingAction.t
 function actionTarget(act){ if(!act)return null; return act.scope==='ally' ? act.allyTarget : enemies[act.targetIdx]; }   // ★スキルrunに渡す対象=味方スキルは選んだ味方/それ以外は対象敵
 function proceedAction(){ const act=pendingAction, c=activeAlly;
   if(act.needsQuiz){ startQuestion(); }
-  else { if(act.kind==='skill'){ c.mp-=skMp(act.skill); act.skill.run(c, actionTarget(act), skL(act.skill)); } afterAction(c.name+'は'+(act.skill?act.skill.name:'行動')+'を使った'); checkWin(); } }
+  else { if(act.kind==='skill'){ const tgt=actionTarget(act); c.mp-=skMp(act.skill); playSkillFx(SKICON_NAME[act.skill.name], act.skill, c, tgt); act.skill.run(c, tgt, skL(act.skill)); } afterAction(c.name+'は'+(act.skill?act.skill.name:'行動')+'を使った'); checkWin(); } }
 
 /* ===================== §8 全画面出題（カフート式・1ソルバー） ===================== */
 let _quizQ=null;   // ★直近に出題された問題(buildQuizCtxで退避)＝正解時の教科ポイント加算で教科(s)/細目(genre)を参照
@@ -1254,13 +1364,14 @@ function resolveAnswer(correct){ const act=pendingAction, c=activeAlly; if(!act)
   if(correct){ combo++; bumpCombo(); gainSubjectPoints(); srsRecord(true);   // ★Cフェーズ: 正解で教科ポイント加算(細目=genreごとソフトキャップ)＋SRS(due到来分のみ箱が進む=§復習)
     // ★MP回復は『通常攻撃の正解』だけ＝スキルは純コスト→低コスト状態異常(まひ等)の永続化を防止(レビュー残対応)
     if(act.kind==='attack'){ if(c) c.mp=Math.min(c.mpMax,c.mp+cfg.mpPerCorrect);
+      playBasicHitFx(enemies[act.targetIdx], combatStyle()==='study');
       if(combatStyle()==='study') studyStrike(enemies[act.targetIdx]); else doAttack(c, enemies[act.targetIdx]);   // ★study=装備非依存の一撃/normal=装備が効く通常攻撃
       if(c) c.charge=0; }
-    else if(act.kind==='skill'){ c.mp-=skMp(act.skill); act.skill.run(c, actionTarget(act), skL(act.skill)); c.charge=c._tossBonus||0; c._tossBonus=0; }   // 突進など「自ゲージ+」は手番後の0リセットの代わりに少し残す
+    else if(act.kind==='skill'){ const tgt=actionTarget(act); c.mp-=skMp(act.skill); playSkillFx(SKICON_NAME[act.skill.name], act.skill, c, tgt); act.skill.run(c, tgt, skL(act.skill)); c.charge=c._tossBonus||0; c._tossBonus=0; }   // 突進など「自ゲージ+」は手番後の0リセットの代わりに少し残す
     else if(act.kind==='item'){ useItem(act.item,true,c); }
-    document.getElementById('phaseHint').textContent='COMBO '+combo+'！';
+    document.getElementById('phaseHint').textContent='いきおい '+combo+'！';
     pendingAction=null; activeAlly=null; phase='savor'; stateTimer=cfg.savorSec; renderCommand(); checkWin();
-  } else { combo=0; bumpCombo(); srsRecord(false);   // ★誤答をSRSへ(きょうの復習の在庫になるだけ=罰ではない)
+  } else { bumpCombo(); srsRecord(false);   // ★誤答をSRSへ(きょうの復習の在庫になるだけ=罰ではない)
     if(act.kind==='item'){ useItem(act.item,false,c); } else if(c){ c.charge=Math.max(0,c.charge-cfg.missDropPct); }   // 誤答=行動ゲージ−%だけ・HPは無罰(不可侵)。解説はQuiz→つぎへでafterMiss
     phase='miss'; } }
 function afterMiss(){ hideOverlay(); pendingAction=null; activeAlly=null; phase='charging'; renderCommand(); }
@@ -1272,7 +1383,7 @@ const DMG_CAP=9999, DMG_FLOOR=1, DEF_K=1000;
 function mitig(def){ return DEF_K/(Math.max(0,def||0)+DEF_K); }   // 被ダメ率(0〜1)。防御が高いほど小さい。
 // 被ダメUP倍率: 防御低下(kind:'defdown')を掛け合わせ・暴走防止に上限。
 function vulnMult(e){ let v=1; if(e&&e.ail){ Object.keys(e.ail).forEach(t=>{ const a=e.ail[t]; if(a&&a.kind==='defdown')v*=a.mul; }); } return Math.min(v,2.0); }
-function comboBonus(){ return Math.min(combo*0.04, 0.6); }   // コンボ加算(最大+60%・仮)
+function comboBonus(){ return Math.min(combo*0.04, 0.6); }   // いきおい加算(最大+60%・仮)
 function statVal(c,key){ let v=(key==='int'?(c.int||0):key==='def'?(c.def||0):(c.str||0)); if(key==='str'&&c.atkBuff)v*=c.atkBuff.mul; return v; }   // 火力=ちから(str)/魔法=かしこさ(int)。闘気はstrに乗る。
 // ★教科キラー(Cフェーズ): このステージの教科(STAGES[i].subjects)に対し、研究で育てた特効倍率(与ダメ)を乗せる。
 //   教科はモンスターでなくステージが持つ＝同じ敵でもダンジョンで特効が変わる。教科未設定ステージは1倍(特効なし)。
@@ -1280,7 +1391,7 @@ function killer(e){ const st=curStg(); const subs=(Array.isArray(st.subjects)&&s
   let m=1; subs.forEach(s=>{ m=Math.max(m, 1+killerMult(s)); }); return m; }   // 複数教科ステージは最大の特効を採用
 function killerMult(subject){ const tree=KILLER_TREE[subject]||[], owned=(progress.research&&progress.research.nodes)||{};
   let v=0; tree.forEach(n=>{ if(owned[n.id]) v+=n.killer||0; }); return v; }   // 買った特効ノードの与ダメ加算の合計
-// スキル/攻撃の与ダメ共通処理: 攻撃ステ×倍率×会心×(1+コンボ+与ダメ%)×K/(防+K)×被ダメUP×属性キラー(現1倍) → 9999上限/最低1。
+// スキル/攻撃の与ダメ共通処理: 攻撃ステ×倍率×会心×(1+いきおい+与ダメ%)×K/(防+K)×被ダメUP×属性キラー(現1倍) → 9999上限/最低1。
 function fdmg(c,statKey,mult,e,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
   const atk=statVal(c,statKey); const crit=(Math.random()*100 < (c.crit||10)); const cm=crit?1.5:1;
   let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e)*killer(e);
@@ -1436,7 +1547,7 @@ function nextEncounter(){ encIdx++; if(encIdx>=curEncounters().length){ stageCle
   phase='charging'; renderCommand(); }
 function spawnEnemyFx(e,text,cls){ const card=document.getElementById('enemy-'+e.idx); if(!card)return; const f=document.createElement('div'); f.className='efx '+(cls||'norm');
   if(cls==='crit') f.style.fontSize='30px'; else if(cls!=='dot') f.style.fontSize='22px'; f.textContent=text; card.appendChild(f); setTimeout(()=>f.remove(),900);
-  if(cls==='crit'||cls==='norm'){ const stage=document.getElementById('stage'); const r=card.getBoundingClientRect(), s=stage.getBoundingClientRect();
+  if((cls==='crit'||cls==='norm')&&!_fxLite()){ const stage=document.getElementById('stage'); const r=card.getBoundingClientRect(), s=stage.getBoundingClientRect();
     for(let i=0;i<(cls==='crit'?12:7);i++){ const p=document.createElement('div'); p.className='particle'; p.style.background=cls==='crit'?'#fbbf24':'#f87171';
       p.style.left=(r.left-s.left+r.width/2)+'px'; p.style.top=(r.top-s.top+r.height/2)+'px'; stage.appendChild(p);
       const ang=Math.random()*Math.PI*2, dist=24+Math.random()*44; p.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${Math.cos(ang)*dist}px,${Math.sin(ang)*dist}px)`,opacity:0}],{duration:500,easing:'ease-out'}); setTimeout(()=>p.remove(),500); } } }
@@ -1445,7 +1556,7 @@ function spawnAllyFx(ally,text,cls){ const card=document.getElementById('ally-'+
 function flashAlly(ally){ const card=document.getElementById('ally-'+ally.id); if(card){ card.classList.add('hitflash'); setTimeout(()=>card.classList.remove('hitflash'),300); } }
 function bigSavor(html){ const stage=document.getElementById('stage'); const old=document.getElementById('savorBanner'); if(old)old.remove();
   const b=document.createElement('div'); b.className='savor-banner'; b.id='savorBanner'; b.innerHTML=`<span class="big">${html}</span>`; stage.appendChild(b); setTimeout(()=>{ if(b.parentNode)b.remove(); }, Math.max(900,cfg.savorSec*1000)); }
-function screenShake(){ const a=document.getElementById('app'); a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),280); }
+function screenShake(){ if(_fxLite())return; const a=document.getElementById('app'); a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),280); }
 function bumpCombo(){ const b=document.getElementById('comboBadge'); b.style.display=combo>0?'block':'none'; document.getElementById('comboN').textContent=combo; }
 
 /* ===================== §11 描画 ===================== */
@@ -1651,7 +1762,7 @@ let stageDrops = [];   // このステージ(全ウェーブ)のドロップ
 function enemyIsBoss(e){ return !!(e && (e.special || e.aoeAttack || e.hpMax>=4000)); }
 function onEnemyDeath(e){ if(!e || e._dropped) return; e._dropped=true;
   const _c=document.getElementById('enemy-'+e.idx); if(_c) _c.classList.add('dying');   // ★撃破=白フラッシュ→縮小して上へフェード(倒した手応え)。updateUIの.deadと整合(最終opacity≈.22)
-  const chance = enemyIsBoss(e) ? 1.0 : 0.55;
+  const chance = enemyIsBoss(e) ? 1.0 : Math.min(0.95, 0.55*(1+accMetaSum('accDrop')/100));   // 装飾品ボーナスの配線・率の水準は後日sim較正
   if(Math.random() < chance){ const d=rollDrop(); stageDrops.push(d); spawnDropFx(e, d); } }
 function spawnDropFx(e, d){ const r=RARITY[d.item.rarity]; spawnEnemyFx(e, '🎁'+r.jp, 'crit'); }   // 敵の上に宝箱＋レア度
 function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it).map(bonusText).join(' / ');
@@ -1680,7 +1791,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
           <button class="nh-gear" onclick="homeEquip('${cid}')">そうび <span class="nh-gslots">${gicons}${aicons}</span><span class="to">→ 編成</span></button>
           <div class="nh-chg"><button class="ar" onclick="homeChangeLead(-1)" aria-label="前のキャラ">◀</button><div class="who">${lead.name}<small>${lead.role}</small></div><button class="ar" onclick="homeChangeLead(1)" aria-label="次のキャラ">▶</button></div>
           <button class="nh-cta" onclick="showMap()">⚔ 冒険に出る</button>
-          <button class="nh-review" onclick="showReview()">🔁 きょうの復習${_rvDue>0?` <b style="color:var(--gold)">${_rvDue}問</b>`:''}</button>
+          <button class="nh-review" onclick="showReview()">🔁 きょうの復習${_rvDue>0?` <b style="color:var(--gold)">${_dueLabel(_rvDue)}</b>`:''}</button>
           <button class="nh-review" onclick="showResearch()">🔬 研究（教科を育てる）</button>
         </div>
       </div>
@@ -1689,7 +1800,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
         <button onclick="showReview()"><span class="e">🔁</span>復習</button>
         <button onclick="showInventory()"><span class="e">🎒</span>インベントリ</button>
         <button onclick="showShop()"><span class="e">🛒</span>ショップ</button>
-        <button class="soon" onclick="homeSoon()"><span class="e">⚙</span>その他</button>
+        <button onclick="showSettings()"><span class="e">⚙</span>せってい</button>
         <button onclick="goPortal()"><span class="e">🏠</span>ポータル</button>
       </div>
     </div>`;
@@ -1699,6 +1810,10 @@ function goPortal(){ fetch('../launcher.html',{method:'HEAD'}).then(function(r){
 function homeSoon(){ const nh=document.querySelector('.nh'); if(!nh)return; const t=document.createElement('div');   // 未実装ボタン=準備中トースト(死にボタンにしない)
   t.textContent='準備中だよ（もうすぐ！）'; t.style.cssText='position:absolute; left:50%; bottom:70px; transform:translateX(-50%); z-index:5; background:rgba(8,12,24,.92); border:1px solid var(--warn); color:var(--warn); font-size:13px; font-weight:700; padding:7px 16px; border-radius:20px;';
   nh.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },1500); }
+function showSettings(){ gameState='settings'; renderSettings(); showScreen('settings'); setTopbar(''); }
+function updateFxLiteToggle(){ const t=document.getElementById('fxLiteToggle'); if(t)t.classList.toggle('on', _fxLite()); }
+function renderSettings(){ updateFxLiteToggle(); }
+function toggleFxLite(){ let on=false; try{ on=localStorage.getItem(FX_LITE_KEY)!=='1'; }catch(e){ on=!_fxLite(); } _setFxLite(on); }
 
 /* ===================== §研究（教科ポイント＋教科キラー＝成長の背骨・Cフェーズ） ===================== */
 // 北極星=とにかく問題を解かせる。正解→教科ポイント→教科の特効(与ダメ)を育てる→その教科のダンジョンで強くなる、の一周。
@@ -1984,6 +2099,7 @@ function trainToast(msg){ const host=document.getElementById('screen-training');
 function srsRecord(correct){ try{ if(typeof Quiz!=='undefined'&&Quiz.review&&_quizQ) Quiz.review.record(_quizQ,correct); }catch(e){} }   // 戦闘/練習の正誤をSRSへ(誤答=在庫・正解はdue到来分のみ箱が進む)
 let _reviewRun=null;   // {target,n,ok,drops:[],subj:{}}
 const REVIEW_RUN_MAX=20, REVIEW_DROP_P=0.2, REVIEW_PITY_EVERY=5, REVIEW_DROP_DAYCAP=12, REVIEW_DROP_KEY='rika2_review_drops_v1';
+function _dueLabel(n){ return n>REVIEW_RUN_MAX ? (REVIEW_RUN_MAX+'問＋') : (n+'問'); }
 function reviewDropsToday(){ try{ const d=JSON.parse(localStorage.getItem(REVIEW_DROP_KEY)||'null'); const t=new Date().toDateString(); return (d&&d.day===t)?(d.n||0):0; }catch(e){ return 0; } }
 function bumpReviewDrops(){ try{ localStorage.setItem(REVIEW_DROP_KEY,JSON.stringify({day:new Date().toDateString(),n:reviewDropsToday()+1})); }catch(e){} }
 const REVIEW_TIERS=['early','mid','late','exam'];   // 復習のレア度=とっぱ済みステージの深さでゲート(E4の深さゲートを尊重・bossティアは挑戦の道専用)
@@ -2028,7 +2144,7 @@ function _reviewDexHtml(){ if(!(typeof Quiz!=='undefined'&&Quiz.review))return''
 function renderReviewHome(){ const R=(typeof Quiz!=='undefined'&&Quiz.review)?Quiz.review:null; const stock=R?R.stock():0, learned=R?R.learnedCount():0, due=R?R.due():0;
   const first=(stock===0&&learned===0);   // 3状態: 説明(記録なし)／のこりあり(中断復帰)／きょうは完了
   const emo=first?'🔁':(due>0?'🔁':'✅');
-  const ttl=first?'きょうの復習':(due>0?`きょうの復習 のこり ${due}問`:'きょうのぶんは おわり！');
+  const ttl=first?'きょうの復習':(due>0?(due>REVIEW_RUN_MAX?`きょうのぶんは ${REVIEW_RUN_MAX}問`:`きょうの復習 のこり ${_dueLabel(due)}`):'きょうのぶんは おわり！');
   const msg=first?'まちがえた問題が ここにたまって、<b>わすれたころに もう一度</b>でるよ。<br>まずは ⚔冒険 や 📝特訓 で問題をとこう！（まちがえても へらない）'
     :(due>0?'とちゅうで やめても だいじょうぶ（すすみは保存ずみ）。つづきから どうぞ！':'また わすれたころに出てくるよ。あしたも きてね！');
   document.getElementById('reviewBody').innerHTML=`
@@ -2038,7 +2154,7 @@ function renderReviewHome(){ const R=(typeof Quiz!=='undefined'&&Quiz.review)?Qu
       <div style="font-size:13px;color:rgba(255,255,255,.78);line-height:1.8;margin:8px 0">${msg}</div>
       ${_reviewDexHtml()}
       <div class="scr-btns" style="justify-content:center;flex-wrap:wrap;margin-top:14px">
-        ${due>0?`<button class="scr-btn primary" onclick="showReview()">▶ はじめる（${due}問）</button>`:''}
+        ${due>0?`<button class="scr-btn primary" onclick="showReview()">▶ はじめる（${_dueLabel(due)}）</button>`:''}
         <button class="scr-btn${due>0?'':' primary'}" onclick="showMap()">⚔ 冒険に出る</button>
         <button class="scr-btn" onclick="startTraining()">📝 特訓</button>
         <button class="scr-btn" onclick="showHome()">🏠 ホーム</button>
@@ -2057,7 +2173,7 @@ function renderReviewResult(run){ const left=(typeof Quiz!=='undefined'&&Quiz.re
       ${drops}
       ${_reviewDexHtml()}
       <div class="scr-btns" style="justify-content:center;flex-wrap:wrap;margin-top:14px">
-        ${left>0?`<button class="scr-btn primary" onclick="showReview()">▶ つづける（あと${left}問）</button>`:''}
+        ${left>0?`<button class="scr-btn primary" onclick="showReview()">▶ つづける（あと ${_dueLabel(left)}）</button>`:''}
         <button class="scr-btn" onclick="showHome()">🏠 ホーム</button>
         <button class="scr-btn" onclick="startTraining()">📝 特訓</button>
       </div>
@@ -2501,7 +2617,7 @@ function showScreen(name){   // overlay表示の一元管理。battle時は全ov
   // ★ガード(問題側申し送り2026-06-24): 画面(メニュー/ホーム等)を出すとき、生きてる出題の器が残っていたら先に閉じる
   //   ＝将来「戦闘中にメニュー/インベントリを開く」を足しても、不透明な画面が生きた問題を覆わない。
   if(name){ const q=document.getElementById('qOverlay'); if(q && q.classList.contains('show') && typeof hideOverlay==='function') hideOverlay(); }
-  ['title','home','map','accessory','inventory','shop','research','training','review','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
+  ['title','home','map','settings','accessory','inventory','shop','research','training','review','clear','complete','defeat'].forEach(k=>{ const el=document.getElementById('screen-'+k); if(el) el.classList.toggle('show', k===name); });
 }
 function showTitle(){ gameState='title'; showScreen('title'); setTopbar(''); }
 let _mapView = null;   // null=ダンジョン一覧 / dungeonId=そのダンジョンのステージ一覧
@@ -2606,12 +2722,16 @@ function stageClear(){ if(_inTraining){ trainStrikeWin(); return; }   // ★特�
   showScreen('clear'); setTopbar('');
 }
 function stageDefeat(){ gameState='defeat';
+  const got=stageDrops.length?`<div class="drop-card"><div class="drop-label">🎁 ひろったそうび</div><div class="drop-scroll">${stageDrops.map(dropCardHtml).join('')}</div><div class="drop-note">このそうびは のこっているよ</div></div>`:'';
   document.getElementById('defeatBody').innerHTML=`
     <div class="big-emoji">😵</div>
     <h2 class="scr-ttl">ぜんめつ…</h2>
-    <div class="scr-sub">もういちど ちょうせんしよう（HPは へってもこわくない）</div>
+    <div class="scr-sub">つよい敵だった…！でも ひろったそうびと まなびは のこってるよ</div>
+    ${got}
+    <div class="drop-note">ぼうぎょや かいふくやくも きくよ</div>
     <div class="scr-btns">
       <button class="scr-btn primary" onclick="startStage(${curStage})">▶ もういちど</button>
+      <button class="scr-btn" onclick="showEquip()">🛡 そうびを見直す</button>
       <button class="scr-btn" onclick="showMap('${(dungeonOf(curStage)||{}).id||''}')">🗺 マップへ</button>
     </div>`;
   showScreen('defeat'); setTopbar('');
@@ -2627,10 +2747,11 @@ function showComplete(){ gameState='complete';
     </div>`;
   showScreen('complete'); setTopbar('');
 }
+function _isDevEnv(){ return location.protocol==='file:' || location.hostname==='localhost' || location.hostname==='127.0.0.1'; }
 function setTopbar(txt){ const el=document.getElementById('tbStage'); if(el) el.textContent=txt;
   const inBattle=(gameState==='battle');
   const back=document.getElementById('tbBack'); if(back) back.style.display=inBattle?'inline-block':'none';
-  const skip=document.getElementById('tbSkip'); if(skip) skip.style.display=inBattle?'inline-block':'none'; }   // ⏭️スキップは戦闘中だけ表示(テスト用)
+  const skip=document.getElementById('tbSkip'); if(skip) skip.style.display=(inBattle&&_isDevEnv())?'inline-block':'none'; }   // ⏭️スキップはdev環境の戦闘中だけ表示(テスト用)
 
 let _rzT=null; window.addEventListener('resize', ()=>{ clearTimeout(_rzT); _rzT=setTimeout(()=>{ try{ buildEnemies(); }catch(e){} }, 160); });   // デバウンス=連続resizeで演出が消えにくい
 
@@ -2687,13 +2808,13 @@ loadAcc();
 if(!_hadSave) grantStarters();   // ★初回=裸スタート＝各キャラにコモンの武器1本だけ配る
 // 体験版は味方/敵の器を先に1回つくっておく(updateUIが空配列でも安全だが、初回描画のため)。curStage=0で仮初期化。
 makeAllies(); buildParty(); setEncounter(0);
+if(!_isDevEnv()){ var _dbg=document.getElementById('debugBox'); if(_dbg)_dbg.remove(); }
 showTitle();
 pgInit();
 /* ===== dstudio 連携: ?dev=stage:N で直接そのステージへ（file:///localhost のみ・公開 github.io では無効） ===== */
 try{
-  var _devLocal = (location.protocol==='file:' || location.hostname==='localhost' || location.hostname==='127.0.0.1');
   var _devM = /[?&]dev=stage:(\d+)/.exec(location.search||'');
-  if(_devLocal && _devM){
+  if(_isDevEnv() && _devM){
     var _devN = Math.max(0, Math.min(parseInt(_devM[1],10)||0, STAGES.length-1));
     var _pg=document.getElementById('passgate'); if(_pg) _pg.classList.add('hide');   // あいことばを飛ばす(dev)
     progress.unlocked = Math.max(progress.unlocked, _devN);                            // 互換
