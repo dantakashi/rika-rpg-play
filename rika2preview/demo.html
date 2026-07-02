@@ -150,6 +150,12 @@
   .ail{font-size:10px; padding:0 5px; border-radius:6px; background:#0009; border:1px solid var(--line); line-height:1.4;}
   .efx{position:absolute; left:50%; top:0; transform:translateX(-50%); font-weight:900; pointer-events:none; animation:dmgFloat .9s ease-out forwards; white-space:nowrap; text-shadow:0 2px 6px #000;}
   .efx.crit{color:var(--warn);} .efx.norm{color:#fff;} .efx.dot{color:#a3e635; font-size:15px;}
+  .efx.drop{animation:dropFloat 1.8s ease-out forwards; font-size:21px; font-weight:900; text-shadow:0 2px 7px #000;}
+  .efx.drop.sr{font-size:24px;}
+  .efx.drop.sr::after{content:''; position:absolute; left:50%; top:50%; width:46px; height:46px; border:1px solid currentColor; border-radius:50%; transform:translate(-50%,-50%); opacity:.45; animation:dropRing 1.8s ease-out forwards;}
+  body.fx-lite .efx.drop.sr::after{display:none;}
+  @keyframes dropFloat{0%{opacity:0; transform:translate(-50%,8px) scale(.82);}18%{opacity:1; transform:translate(-50%,-3px) scale(1);}68%{opacity:1; transform:translate(-50%,-24px) scale(1);}100%{opacity:0; transform:translate(-50%,-42px) scale(.98);}}
+  @keyframes dropRing{0%{opacity:0; transform:translate(-50%,-50%) scale(.65);}20%{opacity:.45;}100%{opacity:0; transform:translate(-50%,-50%) scale(1.24);}}
   .enemy-card.hitflash .eimg{animation:hitflash .3s;}
 
   .mid{flex:1 1 auto; position:relative; min-height:10px;}
@@ -160,6 +166,9 @@
   .party{display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:9px;}
   .ally-card{background:#161f30; border:1px solid var(--line); border-radius:9px; padding:5px 4px 4px; text-align:center; position:relative; transition:.1s;}
   .ally-card.active{border-color:var(--warn); box-shadow:0 0 0 2px var(--warn); background:#26210f;}
+  .ally-card.juice-act{animation:allyJuiceAct .12s ease-out;}
+  @keyframes allyJuiceAct{0%{transform:translateY(0) skewX(0deg);}45%{transform:translateY(-3px) skewX(-5deg);}100%{transform:translateY(0) skewX(0deg);}}
+  body.fx-lite .ally-card.juice-act{animation:none;}
   .ally-card.targetable{outline:3px dashed var(--good); outline-offset:2px; cursor:pointer; animation:tpulse 1s infinite;}   /* ★味方ターゲット選択(緑) */
   .ally-card.downed{opacity:.42; filter:grayscale(1);}
   .ac-emoji{font-size:18px; line-height:1.1;} .ac-name{font-size:10px; font-weight:700; display:block;} .ac-role{font-size:8px; color:var(--sub); margin-bottom:1px;}
@@ -1104,6 +1113,7 @@ const ITEM_DEFS = [
 /* ===================== §4 状態 ===================== */
 let encIdx=0, enemies=[], allies=[], combo=0, items={hpPotion:3,mpPotion:2};   // items=消耗品の「持ち越し在庫」(永続=ACC_KEYに保存・戦闘ごとにリセットしない)。初期在庫は控えめ(MP薬は渋め=切り札の精神)。補充はショップ(1個1万)のみ
 let phase='charging', stateTimer=0, pendingAction=null, activeAlly=null, _advancing=false, _lastEnemyActed=false;
+let _fxFreeze=0, _trauma=0;   // B3: 戦闘クロックだけを食うヒットストップ。VFX/rAF/出題停止とは独立。
 function aliveEnemies(){ return enemies.filter(e=>e.alive); }
 // curMetaFlat(メタステの装備相当フラット補正)とcurLoadout(役割別スキル)を反映。最終ステ=(素＋装備メイン＋ボーナス＋メタ補正)×装飾品%×固有バフ。
 function makeAllies(){ const mflat=curMetaFlat||{}; allies = ALLY_DEFS.map(d=>{
@@ -1176,6 +1186,7 @@ function flashBossWarning(){ const w=document.getElementById('bossWarn'); if(!w)
 function startBattle(){ applyStageBg(curStg());   // ★背景(画像/フォールバック)を付与
   encIdx=0; stageDrops=[]; setEncounter(0); makeAllies(); combo=0;   // ★items(消耗品)は持ち越し在庫=ここでリセットしない(ショップで買った切り札を戦闘に持ち込む)
   phase='charging'; stateTimer=0; pendingAction=null; activeAlly=null; _advancing=false; _lastEnemyActed=false;   // curQ/answered は問題側(quiz-engine)の状態＝ゲーム側は触らない(Quiz.askが毎問リセット)
+  _fxFreeze=0; _trauma=0; applyTraumaShake(0);
   buildParty(); hideOverlay(); bumpCombo(); renderCommand(); resetSkillVfx(); }
 function resetAll(){ startStage(curStage); }   // 「もう一度」＝今のステージをやり直す
 
@@ -1282,8 +1293,10 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.1)dt=0.1; update(d
 const THINK=['command','skillmenu','itemmenu','targeting','question','miss'];
 function update(dt){
   if(gameState!=='battle'||_advancing) return;   // 戦闘中のみ進める(タイトル/マップ/クリア画面では停止)。_advancing中(撃破→次ウェーブ待ち)も停止＝空コマンド/レース防止
+  if(_fxFreeze>0){ _fxFreeze=Math.max(0,_fxFreeze-dt); updateTrauma(dt); return; }
   // 状態異常/バフは実時間tick(=charging/savor/enemyActの間だけ進む＝問題を解いてる/選んでる間は停止)。slow×毒の矛盾を避けるためdt依存。
   if(phase==='charging'||phase==='savor'||phase==='enemyAct') tickStatuses(dt);
+  updateTrauma(dt);
   if(_advancing) return;   // tickStatusesの毒killで撃破された可能性→以降の遷移をスキップ
   const fillEnemy = (phase==='charging'||phase==='savor'||(THINK.includes(phase)&&!cfg.freezeOnThink));
   if(fillEnemy) enemies.forEach(e=>{ if(!e.alive)return; let rate=1;
@@ -1419,12 +1432,12 @@ function fdmg(c,statKey,mult,e,opts){ opts=opts||{}; if(!e||!e.alive)return 0;
   const atk=statVal(c,statKey); const crit=(Math.random()*100 < (c.crit||10)); const cm=crit?1.5:1;
   let dmg=atk*mult*cm*(1+comboBonus()+(opts.dealt||0))*mitig(e.def)*vulnMult(e)*killer(e);
   dmg=Math.max(DMG_FLOOR,Math.min(DMG_CAP,Math.floor(dmg))); dealEnemyTarget(e,dmg,crit); return dmg; }
-function doAttack(c,e){ if(!e)return; const d=fdmg(c, c.atkStat||'str', 1.0, e); screenShake(); bigSavor('⚔️ こうげき '+fmt(d)); }   // 通常攻撃(主属性×1.0)＝唯一のMP回復手段(正解で+MP・resolveAnswerで加算)
+function doAttack(c,e){ if(!e)return; const d=fdmg(c, c.atkStat||'str', 1.0, e); bigSavor('⚔️ こうげき '+fmt(d)); }   // 通常攻撃(主属性×1.0)＝唯一のMP回復手段(正解で+MP・resolveAnswerで加算)
 // ── スタディ・ストライク(study スタイル・Cフェーズ)＝装備非依存の一撃。育成差を消し「知識で決まる」教科強化ダンジョン用(study≠challenge＝装備固定は別)。 ──
 const STUDY_STRIKE_FRAC = 0.5;   // 正解の一撃=敵最大HPの割合(0.5→2正解で撃破)・防御無視・装備/ステ/教科キラー非依存(仮・PC調整)
 function combatStyle(){ const st=curStg(); return (st&&st.combatStyle)||'normal'; }   // 'normal'(装備が効く)|'study'(高防御→正解の一撃だけ効く)|'challenge'(装備固定=別途meta方式)。curStg()=特訓中は仮ステージ
 function studyStrike(e){ if(!e||!e.alive)return 0; const dmg=Math.max(1, Math.ceil((e.hpMax||e.hp)*STUDY_STRIKE_FRAC));
-  dealEnemyTarget(e,dmg,true); screenShake(); bigSavor('💥 スタディ・ストライク！ '+fmt(dmg)); return dmg; }   // ★装備非依存=fdmg/statVal/killerを通さない(敵HPの割合を直接削る・防御無視)
+  dealEnemyTarget(e,dmg,true); bigSavor('💥 スタディ・ストライク！ '+fmt(dmg)); return dmg; }   // ★装備非依存=fdmg/statVal/killerを通さない(敵HPの割合を直接削る・防御無視)
 function lowAlly(){ return allies.filter(a=>!a.downed).sort((x,y)=>x.hp/x.hpMax-y.hp/y.hpMax)[0]; }
 // 回復: 戦闘不能が居れば蘇生優先(HP40%)、いなければ最もHP割合の低い味方を回復。amount=実数(上限1500)。
 function healOne(amount){ let t=allies.find(a=>a.downed);
@@ -1581,7 +1594,23 @@ function applyEnemyDamageToAlly(e,target,dmg,isAoE){
 }
 
 /* ===================== §10 演出 ===================== */
+function applyTraumaShake(px){ const stage=document.getElementById('stage'); if(stage) stage.style.transform = px ? `translate(${px.toFixed(1)}px,0)` : ''; }
+function updateTrauma(dt){ if(_fxLite()){ _trauma=0; applyTraumaShake(0); return; }
+  if(_trauma<=0){ applyTraumaShake(0); return; }
+  _trauma=Math.max(0,_trauma-dt*2.4);
+  const amp=_trauma*_trauma*12, dir=(Math.random()<0.5?-1:1);
+  applyTraumaShake(amp*dir); }
+function triggerAllyJuice(c){ if(_fxLite()||!c)return; const card=document.getElementById('ally-'+c.id); if(!card)return;
+  card.classList.remove('juice-act'); void card.offsetWidth; card.classList.add('juice-act'); setTimeout(()=>card.classList.remove('juice-act'),140); }
+function triggerJuiceHit(e,dmg,crit){ if(_fxLite()||!activeAlly||!e||!dmg||gameState!=='battle'||phase==='enemyAct')return;
+  const ratio=Math.max(0,Math.min(1,dmg/Math.max(1,e.hpMax||e.hp||1)));
+  const freezeMs=Math.max(40,Math.min(300,(40+ratio*200)*(crit?1.5:1)));
+  _fxFreeze=Math.max(_fxFreeze, freezeMs/1000);
+  const aoe=!!(pendingAction&&pendingAction.kind==='skill'&&pendingAction.skill&&pendingAction.skill.scope==='allEnemies');
+  _trauma=Math.min(1,_trauma+(crit?0.5:0.2)+(aoe?0.7:0));
+  triggerAllyJuice(activeAlly); }
 function dealEnemyTarget(e,dmg,crit){ if(!e||!e.alive)return; e.hp=Math.max(0,e.hp-dmg);
+  triggerJuiceHit(e,dmg,crit);
   if(e.ail&&e.ail.sleep&&e.ail.sleep.breakOnHit) delete e.ail.sleep;   // 眠りは殴ると起きる
   spawnEnemyFx(e,fmt(dmg),crit?'crit':'norm'); flashEnemy(e);
   if(e.hp<=0){ e.alive=false; e.ail={}; onEnemyDeath(e); } }
@@ -1593,8 +1622,9 @@ function nextEncounter(){ encIdx++; if(encIdx>=curEncounters().length){ stageCle
   if(curStg().boss && encIdx===curEncounters().length-1) flashBossWarning();   // ★最終ウェーブ=ボス→警告フラッシュ
   else bigSavor('✓ 撃破！ つぎの相手だ');
   phase='charging'; renderCommand(); }
-function spawnEnemyFx(e,text,cls){ const card=document.getElementById('enemy-'+e.idx); if(!card)return; const f=document.createElement('div'); f.className='efx '+(cls||'norm');
-  if(cls==='crit') f.style.fontSize='30px'; else if(cls!=='dot') f.style.fontSize='22px'; f.textContent=text; card.appendChild(f); setTimeout(()=>f.remove(),900);
+function spawnEnemyFx(e,text,cls,opt){ const card=document.getElementById('enemy-'+e.idx); if(!card)return; opt=opt||{}; const f=document.createElement('div'); f.className='efx '+(cls||'norm')+(opt.sr?' sr':'');
+  if(opt.color) f.style.color=opt.color;
+  if(cls==='crit') f.style.fontSize='30px'; else if(cls!=='dot'&&cls!=='drop') f.style.fontSize='22px'; f.textContent=text; card.appendChild(f); setTimeout(()=>f.remove(),opt.duration||900);
   if((cls==='crit'||cls==='norm')&&!_fxLite()){ const stage=document.getElementById('stage'); const r=card.getBoundingClientRect(), s=stage.getBoundingClientRect();
     for(let i=0;i<(cls==='crit'?12:7);i++){ const p=document.createElement('div'); p.className='particle'; p.style.background=cls==='crit'?'#fbbf24':'#f87171';
       p.style.left=(r.left-s.left+r.width/2)+'px'; p.style.top=(r.top-s.top+r.height/2)+'px'; stage.appendChild(p);
@@ -1676,6 +1706,9 @@ const RARITY = {
   UR:{  jp:'ウルトラレア', col:'#fbbf24', pct:6.0, w:0 },
   LR:{  jp:'レジェンド',   col:'#ff6b6b', pct:8.0, w:0 },
 };
+const RARITY_ORDER = ['C','R','SR','SSR','UR','LR'];
+function rarityRank(k){ return Math.max(0,RARITY_ORDER.indexOf(k)); }
+function sortedDrops(drops){ return (drops||[]).slice().sort((a,b)=>rarityRank((b.item||{}).rarity)-rarityRank((a.item||{}).rarity)); }
 const ACC_BASE = ['お守り','リング','ペンダント','ブレス','アミュレット','まが玉','バッジ','イヤリング'];
 // ★ボーナスステータス(FOUNDATION ⑦の指輪ボーナス枠より・プロトで効くもの)。加算コア＋loot系(レア率/ドロップ率)＋異常耐性。
 const BONUS_DEFS = { str:{jp:'ちから',pct:false}, int:{jp:'かしこさ',pct:false}, def:{jp:'まもり',pct:false}, hp:{jp:'最大HP',pct:false}, mp:{jp:'最大MP',pct:false},
@@ -1741,7 +1774,6 @@ const SKILL_RANGE = {
   tosshin:'C〜R〜SSR', delay:'C〜R〜SSR', kenshu:'C〜R〜SSR', jiu:'C〜R', slow:'C〜R〜UR' };
 const MAIN_VAL = { str:{C:7,R:80,SR:200,SSR:380,UR:600,LR:900}, int:{C:7,R:80,SR:200,SSR:380,UR:600,LR:900}, def:{C:8,R:55,SR:130,SSR:240,UR:380,LR:560},
   hp:{C:120,R:700,SR:1700,SSR:3000,UR:4800,LR:7200}, mp:{C:6,R:35,SR:80,SSR:140,UR:210,LR:310}, spd:{C:0.03,R:0.07,SR:0.11,SSR:0.16,UR:0.23,LR:0.32} };   // ★装備のメインステ=ステの大半。CとRの差が大きい(R=今のプロト最上位の手応え)
-const RARITY_ORDER = ['C','R','SR','SSR','UR','LR'];
 function rangeIncludes(range,rarity){ const p=(range||'C〜R').split('〜'); const lo=RARITY_ORDER.indexOf(p[0]), hi=RARITY_ORDER.indexOf(p[p.length-1]), i=RARITY_ORDER.indexOf(rarity); return i>=0 && i>=lo && i<=hi; }
 function rollMain(skillId,rarity){ const stat=SKILL_STAT[skillId]||'str'; const base=(MAIN_VAL[stat]&&MAIN_VAL[stat][rarity])||0;
   const v= stat==='spd' ? Math.round(base*100)/100 : Math.max(1, Math.round(base*(0.9+Math.random()*0.2))); return {stat, v}; }
@@ -1817,7 +1849,7 @@ function onEnemyDeath(e){ if(!e || e._dropped) return; e._dropped=true;
   const _c=document.getElementById('enemy-'+e.idx); if(_c) _c.classList.add('dying');   // ★撃破=白フラッシュ→縮小して上へフェード(倒した手応え)。updateUIの.deadと整合(最終opacity≈.22)
   const chance = enemyIsBoss(e) ? 1.0 : Math.min(0.95, 0.55*(1+accMetaSum('accDrop')/100));   // 装飾品ボーナスの配線・率の水準は後日sim較正
   if(Math.random() < chance){ const d=rollDrop(); stageDrops.push(d); spawnDropFx(e, d); } }
-function spawnDropFx(e, d){ const r=RARITY[d.item.rarity]; spawnEnemyFx(e, '🎁'+r.jp, 'crit'); }   // 敵の上に宝箱＋レア度
+function spawnDropFx(e, d){ const key=d.item.rarity, r=RARITY[key]; spawnEnemyFx(e, '🎁'+r.jp, 'drop', {duration:1800,color:r.col,sr:rarityRank(key)>=2}); }   // B4: 派手にせず、視認時間とレア度色だけで気づけるようにする
 function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it).map(bonusText).join(' / ');
   if(d.kind==='gear'){ const sk=SKILLS[it.skillId], mt=mainText(it); return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${equipName(it)}<div class="drop-bonus" style="color:var(--sub);">${it.slot}・${sk?skillIco(it.skillId,sk.emoji,it.rarity)+sk.name:it.skillId}</div>${(mt||bx)?`<div class="drop-bonus">${mt}${mt&&bx?' / ':''}${bx}</div>`:''}</div>`; }
   return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.base}　＋全コア${r.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
@@ -2745,6 +2777,7 @@ function startStage(i, force){ if(!force && !stagePlayable(i)) return; _inTraini
     if(st.meta&&st.meta.label) setTimeout(()=>bigSavor('🔧 メタ装備：'+st.meta.label),140); }); }
 
 function stageClear(){ if(_inTraining){ trainStrikeWin(); return; }   // ★特訓ストライクの撃破=通常クリア画面でなく特訓トップへ
+  _fxFreeze=0; _trauma=0; applyTraumaShake(0);
   gameState='clear'; const st=STAGES[curStage];
   if(!isCleared(curStage)) progress.cleared.push(curStage);
   progress.unlocked=Math.max(progress.unlocked, Math.min(curStage+1, STAGES.length-1));   // 互換用(解放判定はdungeon側)
@@ -2753,7 +2786,7 @@ function stageClear(){ if(_inTraining){ trainStrikeWin(); return; }   // ★特�
   const nxt=nextStageInDungeon(curStage);          // 同じダンジオン内の次ステージ(無ければ道クリア)
   const dgId=(dungeonOf(curStage)||{}).id||'';
   if(stageDrops.length===0) stageDrops.push(rollDrop());   // ★1ステージで最低1個は確定
-  const dropCards=stageDrops.map(dropCardHtml).join('');   // 各敵で出たドロップを最後に結果表示
+  const dropCards=sortedDrops(stageDrops).map(dropCardHtml).join('');   // レア度降順で、強い札に自然に気づけるようにする
   let primary;
   if(isFinal) primary=`<button class="scr-btn primary" onclick="showComplete()">▶ けっか</button>`;
   else if(nxt!=null) primary=`<button class="scr-btn primary" onclick="startStage(${nxt})">▶ つぎのステージへ</button>`;
@@ -2774,8 +2807,8 @@ function stageClear(){ if(_inTraining){ trainStrikeWin(); return; }   // ★特�
     </div>`;
   showScreen('clear'); setTopbar('');
 }
-function stageDefeat(){ gameState='defeat';
-  const got=stageDrops.length?`<div class="drop-card"><div class="drop-label">🎁 ひろったそうび</div><div class="drop-scroll">${stageDrops.map(dropCardHtml).join('')}</div><div class="drop-note">このそうびは のこっているよ</div></div>`:'';
+function stageDefeat(){ gameState='defeat'; _fxFreeze=0; _trauma=0; applyTraumaShake(0);
+  const got=stageDrops.length?`<div class="drop-card"><div class="drop-label">🎁 ひろったそうび</div><div class="drop-scroll">${sortedDrops(stageDrops).map(dropCardHtml).join('')}</div><div class="drop-note">このそうびは のこっているよ</div></div>`:'';
   document.getElementById('defeatBody').innerHTML=`
     <div class="big-emoji">😵</div>
     <h2 class="scr-ttl">ぜんめつ…</h2>
