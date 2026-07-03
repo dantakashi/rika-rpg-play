@@ -287,6 +287,8 @@
   .stage-card .sc-mid{flex:1 1 auto; min-width:0;}
   .stage-card .sc-name{font-size:17px; font-weight:800; line-height:1.2;}
   .stage-card .sc-theme{font-size:11px; color:var(--sub); margin-top:2px;}
+  .stage-card .sc-power{font-size:10.5px; color:var(--ink-faint); margin-top:2px;}   /* ★バッチ8: めやす戦闘力=学習軸(sc-theme)とは別行・控えめな色。強すぎる時だけ.hardでwarn色 */
+  .stage-card .sc-power.hard{color:var(--warn);}
   .stage-card .sc-flag{flex:0 0 auto; font-size:12px; font-weight:800; color:var(--warn); white-space:nowrap;}
   .stage-card.cleared .sc-flag{color:var(--good);}
   .stage-card.locked .sc-flag{color:var(--sub);}
@@ -1266,7 +1268,7 @@
   </div>
 </div>
 
-<script src="quiz-engine.js?v=2026-07-02"></script><!-- ★?v=でキャッシュ無効化＝エンジン更新を生徒に確実に届ける(問題側申し送り)。エンジン更新時はvを上げる -->
+<script src="quiz-engine.js?v=20260703"></script><!-- ★?v=でキャッシュ無効化＝エンジン更新を生徒に確実に届ける(問題側申し送り)。エンジン更新時はvを上げる -->
 
 <script>
 /* ===================== §1 設定 ===================== */
@@ -1504,16 +1506,18 @@ STAGES.forEach((st,i)=>{ st.grades = STAGE_GRADES[i] || [1,2,3]; });   // 新ス
 //    現状=試作15ステージを「ふくしゅうの洞(0-4)」＋「試作(仮)(5-14)」に割付。4教科の道＋ラスボスは中身量産まで「じゅんび中」。
 //    ★authoringの源は areas.json(dstudio)。βはここを手で同期(量産で stageIds を埋め・gate/role/学年帯を設計どおりに)。
 const DUNGEONS = [
+  // ★エリア名の学年表記→深度表記（バッチ1a・オーナー③選択 2026-07-03）: 「中3表記を見た中1は挑まない(低学年の罰に感じる)・上級ならやってやろうと思える」。
+  //   内部データ(STAGE_GRADES/st.grades/rarityTierForStage)は無変更＝表示文字列のみ。教師向け(dstudio/コメント)は学年のまま。深度Ⅰ=中1帯…深度Ⅳ=受験帯。
   { id:'entry', name:'ふくしゅうの洞', emoji:'🔰', role:'', gate:'always', blurb:'まずはここから。4教科をひとめぐり',
-    areas:[ {name:'小学校の復習',stageIds:[0,1,2,3]} ] },
+    areas:[ {name:'きほんのふくしゅう',stageIds:[0,1,2,3]} ] },
   { id:'phys', name:'いかずちの塔', emoji:'⚡', role:'火力', gate:'afterEntry', blurb:'物理の道 ― 光・力・電気・運動',
-    areas:[ {name:'光・音・力（中1）',stageIds:[4,5,6]}, {name:'電気（中2）',stageIds:[7,8,9]}, {name:'運動（中3）',stageIds:[10,11]}, {name:'受験の頂',stageIds:[12,13,14]} ] },
+    areas:[ {name:'光・音・力（深度Ⅰ）',stageIds:[4,5,6]}, {name:'電気（深度Ⅱ）',stageIds:[7,8,9]}, {name:'運動（深度Ⅲ）',stageIds:[10,11]}, {name:'ちょうせんの頂（深度Ⅳ）',stageIds:[12,13,14]} ] },
   { id:'chem', name:'まどわしの化学回廊', emoji:'🧪', role:'妨害', gate:'afterEntry', blurb:'化学の道 ― 物質・反応・イオン',
-    areas:[ {name:'物質（中1）',stageIds:[15,16,17]}, {name:'反応・化学式（中2）',stageIds:[18,19,20]}, {name:'イオン（中3）',stageIds:[21,22]}, {name:'受験の頂',stageIds:[23,24,25]} ] },
+    areas:[ {name:'物質（深度Ⅰ）',stageIds:[15,16,17]}, {name:'反応・化学式（深度Ⅱ）',stageIds:[18,19,20]}, {name:'イオン（深度Ⅲ）',stageIds:[21,22]}, {name:'ちょうせんの頂（深度Ⅳ）',stageIds:[23,24,25]} ] },
   { id:'bio', name:'いのちの森', emoji:'🌿', role:'回復', gate:'afterEntry', blurb:'生物の道 ― 植物・人体・細胞',
-    areas:[ {name:'植物・生態（中1）',stageIds:[26,27,28]}, {name:'動物・人体・細胞（中2-3）',stageIds:[29,30,31]}, {name:'受験の頂',stageIds:[32,33,34]} ] },
+    areas:[ {name:'植物・生態（深度Ⅰ）',stageIds:[26,27,28]}, {name:'動物・人体・細胞（深度Ⅱ〜Ⅲ）',stageIds:[29,30,31]}, {name:'ちょうせんの頂（深度Ⅳ）',stageIds:[32,33,34]} ] },
   { id:'earth', name:'地の道', emoji:'🌍', role:'壁', gate:'afterEntry', blurb:'地学の道 ― 大地・天気・宇宙',
-    areas:[ {name:'大地（中1）',stageIds:[35,36,37]}, {name:'天気（中2）',stageIds:[38,39,40]}, {name:'天体（中3）',stageIds:[41,42]}, {name:'受験の頂',stageIds:[43,44,45]} ] },
+    areas:[ {name:'大地（深度Ⅰ）',stageIds:[35,36,37]}, {name:'天気（深度Ⅱ）',stageIds:[38,39,40]}, {name:'天体（深度Ⅲ）',stageIds:[41,42]}, {name:'ちょうせんの頂（深度Ⅳ）',stageIds:[43,44,45]} ] },
   { id:'last', name:'天究の頂', emoji:'👑', role:'', gate:'afterFourPaths', blurb:'4本の道をクリアで解放。理科の頂上決戦',
     areas:[ {name:'四科の終焉',stageIds:[46,47,48,49,50]} ] },
 ];
@@ -1977,6 +1981,7 @@ function buildQuizCtx(q){ _quizQ=q; hideTrainBar();   // 戦闘の出題=特訓�
 
 // ★resolveAnswer＝Quiz から渡される『戦闘側の結果ハンドラ』(onResult)。問題UI/解説はQuizが持つ＝ここは戦闘反映だけ。
 function resolveAnswer(correct){ const act=pendingAction, c=activeAlly; if(!act)return;
+  if(!_inTraining && typeof diagRecord==='function') diagRecord(_quizQ, correct);   // ★サイレント診断(§6バッチ4)=冒険(スタディストライク以外)の正誤ログを裏で集計するだけ。挙動は一切変えない
   if(correct){ combo++; bumpCombo(); gainSubjectPoints(); srsRecord(true);   // ★Cフェーズ: 正解で教科ポイント加算(細目=genreごとソフトキャップ)＋SRS(due到来分のみ箱が進む=§復習)
     // ★MP回復は『通常攻撃の正解』だけ＝スキルは純コスト→低コスト状態異常(まひ等)の永続化を防止(レビュー残対応)
     if(act.kind==='attack'){ if(c) c.mp=Math.min(c.mpMax,c.mp+cfg.mpPerCorrect);
@@ -2280,11 +2285,12 @@ function toggleTuner(show){ const t=document.getElementById('tuner'); if(t) t.cl
 
 /* ===================== §M 体験版の進行（タイトル/マップ/クリア） ===================== */
 const SAVE_KEY='rika2_demo_v1';
-let progress={ unlocked:0, cleared:[], lead:0, gold:0, research:freshResearch(), training:freshTraining(), struct:'core51' };   // unlocked=互換用 / cleared=クリア済みidx配列(解放判定の基準) / lead=看板キャラ / gold=ゴールド / research=教科ポイント＋教科キラー / training=細目習熟メーター / struct=ステージ構成の版(旧15→新51で進行リセット)
+let progress={ unlocked:0, cleared:[], lead:0, gold:0, research:freshResearch(), training:freshTraining(), struct:'core51', titles:[], recommend:{}, diag:freshDiag() };   // unlocked=互換用 / cleared=クリア済みidx配列(解放判定の基準) / lead=看板キャラ / gold=ゴールド / research=教科ポイント＋教科キラー / training=細目習熟メーター / struct=ステージ構成の版(旧15→新51で進行リセット) / titles=💮テスト合格の暫定称号(§7.6・バッチ2-2新規) / recommend=推奨tierの表示キャッシュ(§7.7d・バッチ3b新規・genreDiffSolvedから毎回再計算可能=セーブ互換は気にしすぎない) / diag=サイレント診断の進行(§7.7・バッチ4新規)
 function loadProgress(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s.unlocked==='number'){
   const oldStruct = (s.struct!=='core51');   // ★旧15ステージ構成のセーブ=クリア進行だけリセット(装備/ゴールド/研究/習熟は保持)。新51ステージと通し番号が食い違うため。
-  progress={ unlocked: oldStruct?0:s.unlocked, cleared: oldStruct?[]:(s.cleared||[]), lead:s.lead||0, gold:s.gold||0, research:normResearch(s.research), training:normTraining(s.training), struct:'core51' };
-} }catch(e){} }
+  progress={ unlocked: oldStruct?0:s.unlocked, cleared: oldStruct?[]:(s.cleared||[]), lead:s.lead||0, gold:s.gold||0, research:normResearch(s.research), training:normTraining(s.training), struct:'core51', titles:Array.isArray(s.titles)?s.titles:[], recommend:{}, diag:normDiag(s.diag, s) };   // ★titles=旧セーブに無ければ[]で補完(非破壊)。recommendは常にrefreshRecommend()で作り直す(保存された値を信用しない=キャッシュなので)。diag=後方互換ベストエフォート(§8セーブ前提)=既存セーブ(diagフィールド無し)は既に正解履歴があるとみなしdone:true扱いで発火しない(normDiag内で判定)
+} }catch(e){}
+  if(typeof refreshRecommend==='function') refreshRecommend(); }   // ★バッチ3b=読込直後に一度フル再計算(既存セーブでもgenreDiffSolvedさえあれば正しく出る)
 function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); }catch(e){} }
 function isCleared(i){ return progress.cleared.indexOf(i)>=0; }
 
@@ -2451,7 +2457,15 @@ function dropCardHtml(d){ const it=d.item, r=RARITY[it.rarity], bx=accBonuses(it
   if(d.kind==='gear'){ const sk=SKILLS[it.skillId], mt=mainText(it); return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${equipName(it)}${up}<div class="drop-bonus" style="color:var(--sub);">${it.slot}・${sk?skillIco(it.skillId,sk.emoji,it.rarity)+sk.name:it.skillId}</div>${(mt||bx)?`<div class="drop-bonus">${mt}${mt&&bx?' / ':''}${bx}</div>`:''}</div>`; }
   return `<div class="drop-name" style="color:${r.col};border-color:${r.col};">［${r.jp}］${it.base}${up}　＋全コア${r.pct}%${bx?`<div class="drop-bonus">${bx}</div>`:''}</div>`; }
 
-function showHome(){ gameState='home'; _inTraining=false; renderHome(); showScreen('home'); setTopbar(''); }
+function showHome(){ gameState='home'; _inTraining=false; renderHome(); showScreen('home'); setTopbar(''); _diagShowToastOnce(); }
+// ★サイレント診断の結果表示(§4g・§6バッチ4)=一度だけ・前向きな一言のみ。数値/グラフ/「にがて」は出さない。「診断」「テスト」という語も使わない。
+function _diagShowToastOnce(){ const fr=progress.firstRunSignal; if(!fr || !fr.pendingToast) return;
+  fr.pendingToast=false; saveProgress();
+  const nh=document.querySelector('.hm-root'); if(!nh) return;
+  const t=document.createElement('div');
+  t.textContent='はじめの冒険から、キミにちょうどいい もんだいを えらんでお届けするよ';
+  t.style.cssText='position:absolute; left:50%; bottom:70px; transform:translateX(-50%); z-index:5; max-width:86%; text-align:center; background:rgba(8,12,24,.92); border:1px solid var(--gold); color:var(--gold); font-size:12.5px; font-weight:700; padding:9px 18px; border-radius:20px; line-height:1.5;';
+  nh.appendChild(t); setTimeout(()=>{ if(t.parentNode)t.remove(); },3400); }
 function homeChangeLead(dir){ progress.lead=((progress.lead||0)+dir+ALLY_DEFS.length)%ALLY_DEFS.length; saveProgress(); renderHome(); }   // ★選んだキャラを覚える(progress.leadに保存)
 function homeEquip(cid){ showEquip(); openCharEquip(cid); }   // 装備→編成(そのキャラの詳細へ直行)
 const HOME_ROLE_COLOR = { ares:'#ff5d3d', sera:'#4dd4ff', gai:'#5c8fd6', mina:'#ffd94d' };   // ★hero-cardの測定ライン色(mock_c1踏襲)。役割(火力/妨害/壁/回復)ごとに固定
@@ -2485,6 +2499,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
       <div class="hm-topbar panel">
         <div class="hm-id"><div class="av ef-bracket idle">🧑‍🔬</div><div class="who"><div class="nm">きみ</div><div class="lv num">とっぱ ${cleared}/${STAGES.length}</div></div></div>
         <div class="hm-spacer"></div>
+        <div class="hm-chip" title="パーティの戦闘力(装備・キラーで上がるよ)"><span class="ic">⚔</span><span class="v num">${fmt(partyBattlePower())}</span><span class="u">せんとうりょく</span></div>
         <div class="hm-chip"><span class="ic">💰</span><span class="v num">${fmtGold(progress.gold)}</span><span class="u">G</span></div>
         <div class="hm-chip"><span class="ic">🎁</span><span class="v num">${gearInv.length+accInv.length}</span><span class="u">こ</span></div>
         <button class="hm-settings pressable" onclick="showSettings()" aria-label="せってい">⚙</button>
@@ -2502,6 +2517,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
           <div class="hm-loc-panel panel">
             <div class="hm-loc-l"><div class="hm-loc-ic">${st.emoji||'🧪'}</div><div><div class="hm-loc-cap">CURRENT SITE</div><div class="hm-loc-name">${htmlEsc(st.name||'')}<span class="stg num">${(curStage||0)+1}</span></div></div></div>
             <div class="hm-prog"><div class="row"><div class="track"><i style="width:${pct}%"></i></div><div class="pct num">${pct}%</div></div></div>
+            ${_adventureNudgeHtml()}
           </div>
           <div class="hm-arena ef-bracket">
             ${bgUrl?`<div class="bg" style="background-image:url('${bgUrl}')"></div>`:''}
@@ -2517,7 +2533,7 @@ function renderHome(){ const li=Math.min(progress.lead||0, ALLY_DEFS.length-1); 
             <div class="plate-label"><span class="dot"></span>GROWTH LAB // せいちょう</div>
             <div class="hm-growth-grid">
               <div class="hm-growth-item pressable" style="--g-color:#8ab4ff" onclick="showResearch()"><div class="gic">🔭</div><div class="gtxt"><div class="gname">けんきゅう</div><div class="gsub">新しい力をひらく</div></div></div>
-              <div class="hm-growth-item pressable" style="--g-color:#f4b436" onclick="startTraining()"><div class="gic">🎯</div><div class="gtxt"><div class="gname">とっくん</div><div class="gsub">にがて分野をきたえる</div></div></div>
+              <div class="hm-growth-item pressable" style="--g-color:#f4b436" onclick="startTraining()"><div class="gic">🎯</div><div class="gtxt"><div class="gname">とっくん</div><div class="gsub">きたえて 💮をめざす</div></div></div>
               <div class="hm-growth-item pressable" style="--g-color:#7ee787" onclick="showReview()"><div class="gic">🗂</div><div class="gtxt"><div class="gname">ふくしゅう</div><div class="gsub">おぼえた図鑑をみがく</div></div>${_rvDue>0?`<div class="gbadge num">${_dueLabel(_rvDue)}</div>`:''}</div>
             </div>
           </div>
@@ -2562,6 +2578,12 @@ function gainSubjectPoints(){ const q=_quizQ; if(!q) return 0; const r=progress.
   recordGenreMastery(q);   // ★細目(genre)ごとの習熟メーター(特訓の進捗視覚化)も同時に進める=戦闘でも練習でも貯まる
   saveProgress(); return pts; }   // ★返り値=今回の獲得ポイント(出題中バーの「このサイクル+N」表示に使う)
 function showResearch(){ gameState='research'; renderResearch(); showScreen('research'); setTopbar(''); }
+// ★分野別「あしあと」カード(§6バッチ3a・PLAN_RIKA2_QUESTION_SYSTEM_2026-07-03)。研究画面用=表示のみ。
+// genreDiffSolved(既存・判定式は無変更)を、特訓トップと同じ難易度色分けバー(_genreBarRow)でそのまま再利用する=視覚言語を統一。
+// 文言は「様子/あしあと」のみ・数値%やレッテル語は出さない(プランP0-2の表示ルール)。
+function _researchFootprintCard(s){ const sub=SUBJECTS[s], bars=genresOf(s).map(_genreBarRow).join('');
+  return `<div style="flex:1 1 220px;min-width:200px;padding:8px 11px;border-radius:12px;border:1px solid ${sub.color}33;background:rgba(8,12,24,.25)">
+    <div style="font-weight:800;color:${sub.color};font-size:12.5px;margin-bottom:2px">${sub.emoji} ${sub.jp}</div>${bars}</div>`; }
 function renderResearch(){ const r=progress.research||freshResearch();
   const cols=SUBJ_KEYS.map(s=>{ const sub=SUBJECTS[s], pts=r.subjPoints[s]||0;
     const nodes=KILLER_TREE[s].map(n=>{ const owned=!!r.nodes[n.id], locked=n.need&&!r.nodes[n.need], can=!owned&&!locked&&pts>=n.cost;
@@ -2574,11 +2596,19 @@ function renderResearch(){ const r=progress.research||freshResearch();
     return `<div style="flex:1 1 0;min-width:150px;padding:10px;border-radius:12px;border:1px solid ${sub.color}55;background:rgba(8,12,24,.35)">
       <div style="font-weight:800;color:${sub.color};display:flex;justify-content:space-between;align-items:center">${sub.emoji} ${sub.jp}<span style="font-size:13px;color:#fff">🔬 ${pts}</span></div>
       ${nodes}</div>`; }).join('');
+  const legend=DIFF_DEFS.map(d=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:rgba(255,255,255,.7)"><i style="width:10px;height:10px;border-radius:3px;background:${d.col}"></i>${d.jp}</span>`).join('');
+  const footprint=SUBJ_KEYS.map(_researchFootprintCard).join('');
   document.getElementById('researchBody').innerHTML=`
     <div class="scr-inner-pad" style="max-width:1100px;margin:0 auto;padding:14px">
       ${efPlateHeader('🔬','けんきゅう','RESEARCH LAB // 教科を育てる')}
       <p style="font-size:13px;color:rgba(255,255,255,.78);line-height:1.6">問題に正解すると<b>教科ポイント</b>がたまるよ。教科ごとに「特効」を育てると、その教科のダンジョンで<b>あたえるダメージ</b>が上がる。同じ分野ばかり解くと少しずつ伸びにくくなる（いろんな分野を解こう）。</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">${cols}</div>
+      <div style="margin-top:18px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)">
+        <div style="font-weight:800;font-size:13px;color:rgba(255,255,255,.85);margin-bottom:2px">🧭 このぶんやの あしあと</div>
+        <div style="font-size:11.5px;color:rgba(255,255,255,.55);margin-bottom:6px">といた もんだいの ようすを ぶんやごとに あらわしたよ。💮は とっくんで もらえるよ。</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">${legend}</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">${footprint}</div>
+      </div>
       <div class="scr-btns"><button class="ef-back" onclick="showHome()">◀ ホーム</button></div>
     </div>`; }
 function buyKillerNode(subject, nodeId){ const r=progress.research; if(!r) return; const tree=KILLER_TREE[subject]||[]; const n=tree.find(x=>x.id===nodeId); if(!n) return;
@@ -2603,16 +2633,29 @@ function cycleTarget(k){ return (typeof k==='number')?k:(k==='all'?20:10); }   /
 function freshTraining(){ return { genre:{} }; }
 function normTraining(t){ t=t||{}; const g=(t.genre&&typeof t.genre==='object')?t.genre:{}; const out={genre:{}};
   Object.keys(g).forEach(k=>{ const e=g[k]||{}; const d={}; if(e.diff&&typeof e.diff==='object') Object.keys(e.diff).forEach(dk=>{ d[dk]=Math.max(0,+e.diff[dk]||0); });   // 壊れたセーブの負値はグラフ幅を歪めるので0でクランプ
-    out.genre[k]={ ok:Math.max(0,+e.ok||0), gold:!!e.gold, flower:!!e.flower, diff:d }; }); return out; }   // diff={難易度キー:解いた数}(グラフの色分け用・旧セーブはdiff無→{}で補完)
+    const okN=Math.max(0,+e.ok||0);
+    out.genre[k]={ ok:okN, gold:(!!e.gold || okN>=TRAIN_METER_FULL), flower:!!e.flower, diff:d,
+      testUnlocked:(!!e.testUnlocked || okN>=TRAIN_METER_FULL), testFails:Math.max(0,+e.testFails||0) }; }); return out; }   // diff={難易度キー:解いた数}(グラフの色分け用・旧セーブはdiff無→{}で補完)。★testUnlocked/testFailsはバッチ2-2新規(§7.6)・旧セーブ補完に加え、ok>=満タンなら読込時に解禁を追認(2-2導入前に満タン済みの旧セーブが「もう1問解くまでボタンが出ない」半端状態になるのを防ぐ・検収2026-07-03)
 function recordGenreMastery(q){ if(!q||!q.genre||!GENRE_SUBJECT[q.genre]) return; const t=progress.training; if(!t) return;
-  const gp=t.genre[q.genre]||(t.genre[q.genre]={ok:0,gold:false,flower:false,diff:{}}); if(!gp.diff) gp.diff={};
+  const gp=t.genre[q.genre]||(t.genre[q.genre]={ok:0,gold:false,flower:false,diff:{},testUnlocked:false,testFails:0}); if(!gp.diff) gp.diff={};
   gp.ok++; if(q.diff) gp.diff[q.diff]=(gp.diff[q.diff]||0)+1;   // ★難易度ごとの解いた数も記録(特訓トップのグラフ＝未修/予習…受験を色分け・未修を解けば未修分が伸びる)
-  if(gp.ok>=TRAIN_METER_FULL) gp.gold=true; }   // メーター=正解の累積・満タンで金色(テスト解禁)
+  if(gp.ok>=TRAIN_METER_FULL){ gp.gold=true; gp.testUnlocked=true; }   // メーター=正解の累積・満タンで金色(テスト解禁)。★2-1決定=解禁条件はこのgold昇格と同一(全分野一律・動的スケーリング無し)
+  if(typeof refreshRecommendOne==='function') refreshRecommendOne(q.genre); }   // ★バッチ3b=推奨tierキャッシュもここで更新(正解のたび・その分野だけ再計算=軽量)
 function subjMastery(subject){ const t=progress.training||freshTraining(); const gs=genresOf(subject);
   return { gold:gs.filter(g=>t.genre[g]&&t.genre[g].gold).length, flower:gs.filter(g=>t.genre[g]&&t.genre[g].flower).length, total:gs.length }; }
+// ── ★💮テスト(§7.6・PLAN_RIKA2_QUESTION_SYSTEM_2026-07-03 §6バッチ2-2) ──
+// 称号(暫定・テキストのみ)。ディレクターレビュー「受かっても何も変わらない空白期間を作らない」対応。ひらがなトーン・能力の値踏みでなく「やり込んだ記念」の言い回し。
+const GENRE_TITLES = { matter:'ぶっしつのたつじん', formula:'はんのうしきのたつじん', reaction:'かがくへんかのたつじん', ion:'イオンのたつじん',
+  experiment:'じっけんのたつじん', light_sound:'ひかりとおとのたつじん', force:'ちからのたつじん', electricity:'でんきのたつじん', motion:'うんどうのたつじん',
+  bio_plant:'しょくぶつのたつじん', bio_human:'からだのたつじん', bio_cell:'さいぼうのたつじん', bio_eco:'せいたいけいのたつじん',
+  earth_land:'だいちのたつじん', earth_weather:'てんきのたつじん', earth_space:'てんたいのたつじん' };
+function genreTitle(g){ return GENRE_TITLES[g] || ((GENRE_JP[g]||g)+'のたつじん'); }
+const TEST_N=10, TEST_PASS_MAX_FAILS=2;   // 10問中・誤答2問まで合格(§7.6デフォルト提案・PC調整の仮値)
+function genreTestUnlocked(g){ const t=progress.training, gp=t&&t.genre&&t.genre[g]; return !!(gp&&gp.testUnlocked); }
 // ── 状態 ──
 let _trainStats={n:0,ok:0}, _trainSubject=null, _trainCycleKey=10, _trainCycleTarget=10, _trainCycleN=0;
 let _trainCycleRP=0, _trainPracticeActive=false, _trainInclActive=false;   // _trainCycleRP=このサイクルで得た研究ポイント(出題中バー表示) / _trainPracticeActive=練習サイクル中か / _trainInclActive=このサイクルで未修を含むか(includeUnlearned)
+let _trainIsTest=false, _trainTestGenre=null;   // ★💮テスト中か(§7.6・バッチ2-2)＝既存サイクル基盤に相乗り。テスト対象の細目1つ
 let _inTraining=false, _trainingStage=null;
 function curStg(){ return (_inTraining&&_trainingStage) ? _trainingStage : (STAGES[curStage]||{}); }   // ★戦闘がステージを読む口。特訓中は仮ステージを返す(STAGESリテラルを汚さない=dstudio安全)
 
@@ -2622,6 +2665,71 @@ function startTraining(){ gameState='training'; _inTraining=false; renderTrainHo
 const _genreTotalCache={};
 function genreTotal(g){ if(_genreTotalCache[g]==null) _genreTotalCache[g]=qcount({genres:[g], includeUnlearned:true}); return _genreTotalCache[g]; }
 function genreDiffSolved(g){ const gp=(progress.training&&progress.training.genre&&progress.training.genre[g])||{}; return gp.diff||{}; }   // {難易度:解いた数}
+
+// ── ★推奨tier(§4d・§7.7d・§6バッチ3b・PLAN_RIKA2_QUESTION_SYSTEM_2026-07-03) ──
+// genreDiffSolvedを主軸に「次に手応えのある難易度」を素朴に決める。厳密さより読みやすさ優先(仮・PC調整)。
+const REC_TIER_ORDER = ['elementary','junior','mid','senior','supreme'];   // 推奨対象の並び(未修/予習は「教わる」枠なので推奨tierの対象外・§4c)
+const REC_TIER_SOLVED_NEED = 5;   // ★仮・PC調整: このdiffで正解が何問貯まったら「次のdiffが手応えありそう」と見なすか
+// あるdiffで正解がREC_TIER_SOLVED_NEED以上貯まっている最上位のdiffを探し、その「次」を推奨する。どのdiffもまだ貯まっていなければ推奨なし(null)。
+function computeRecommendTier(g){ const d=genreDiffSolved(g); let idx=-1;
+  for(let i=0;i<REC_TIER_ORDER.length;i++){ if((+d[REC_TIER_ORDER[i]]||0) >= REC_TIER_SOLVED_NEED) idx=i; }
+  if(idx<0) return null;                                    // まだどのdiffも「貯まった」と言えるほど解いていない
+  if(idx>=REC_TIER_ORDER.length-1) return null;              // 既に最上位(受験)まで貯まっている→これ以上の推奨なし
+  return REC_TIER_ORDER[idx+1]; }
+// progress.recommend[genre]={tier}は表示専用キャッシュ(毎回computeRecommendTierで再計算可能・セーブに無くても壊れない)。
+function refreshRecommend(){ if(!progress.recommend) progress.recommend={}; const out={};
+  Object.keys(GENRE_SUBJECT).forEach(g=>{ const tier=computeRecommendTier(g); if(tier) out[g]={tier}; });
+  progress.recommend=out; }
+function refreshRecommendOne(g){ if(!progress.recommend) progress.recommend={};   // 1分野だけ再計算(正解のたび呼ばれるための軽量版)
+  const tier=computeRecommendTier(g); if(tier) progress.recommend[g]={tier}; else delete progress.recommend[g]; }
+function recommendTierOf(g){ const r=progress.recommend; return (r&&r[g]&&r[g].tier)||null; }
+function _diffJp(k){ const d=DIFF_DEFS.find(x=>x.k===k); return d?d.jp:k; }
+// 練習誘導の一言(主動線・§7.7d)。損失回避の煽り("あと少し"系)は使わず、情報的フィードバック("力がついてきた")を主文言にする。数値・到達%は出さない。
+function _recommendLineHtml(g){ const tier=recommendTierOf(g); if(!tier) return '';
+  const gp=(progress.training&&progress.training.genre&&progress.training.genre[g])||{};
+  if(gp.testUnlocked && !gp.flower) return '';   // 💮テスト解禁済みの分野は既に「💮テストにちょうせん」ボタンが出るので重複させない(指示§2)
+  return `<div style="font-size:10.5px;color:rgba(255,255,255,.6);margin:1px 0 4px 2px">つぎは【${_diffJp(tier)}】が ちょうどよさそう</div>`; }
+// ── ★冒険への誘導(副・控えめ・§7.7d/指示§3)。ホームに1件だけ・条件を満たすときだけ出す。押し付けない。
+const REC_ADVENTURE_READY_COUNT = 3;   // ★仮・PC調整: recommendTierが「応用」以上まで進んだ分野がいくつあれば「深く進んでも大丈夫そう」と見なすか
+function _adventureReadyGenreCount(){ const r=progress.recommend||{}; const deepTiers={senior:1,supreme:1};
+  return Object.keys(r).filter(g=>deepTiers[r[g].tier]).length; }
+// ホームの「そろそろ深度も いけそう」一言(1件のみ・控えめ)。冒険側の進み(クリア数)がまだ浅いうちだけ出す=既にどんどん進めている生徒には出さない。
+function _adventureNudgeHtml(){ if(_adventureReadyGenreCount() < REC_ADVENTURE_READY_COUNT) return '';
+  if((progress.cleared||[]).length >= STAGES.length) return '';   // 全クリア済みなら誘導不要
+  return `<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px">ちからがついてきたよ。そろそろ深いエリアも いけそう</div>`; }
+
+// ── ★サイレント診断(§4g・§7・§6バッチ4・PLAN_RIKA2_QUESTION_SYSTEM_2026-07-03) ──
+// 「診断」「テスト」という語は生徒向けUIに一切出さない。冒険(resolveAnswer)・特訓(onPracticeResult)どちらの正誤ログもDIAG_N問集まったら完了=ハイブリッド(どちらか早い方)。
+// 挙動は変えない(誤答無罰=通常のpractice/戦闘と同じ・ヒント有無等は一切変更しない)。ログを見るだけのステルス実装。
+const DIAG_N = 8;   // ★仮・PC調整: 何問答えたら診断完了とみなすか(冒険の最初の数ステージ+特訓初回の合算で足りる粒度・小さめに設定)
+function freshDiag(){ return { n:0, correct:0, byGenre:{}, done:false, shown:false }; }
+// 後方互換ベストエフォート(§8): 既存セーブ(diagフィールドが無い=このバッチ導入前のセーブ)は、既に習熟データ(training.genre)や研究ポイントが1件でもあれば
+// 「診断不要(=もう実績があるので今さら診断しても意味がない)」とみなしdone:true扱いで発火しない。真っさらな新規セーブだけ診断を開始する。
+function normDiag(d, rawSave){ if(d && typeof d==='object' && typeof d.done==='boolean'){
+    const byGenre=(d.byGenre&&typeof d.byGenre==='object')?d.byGenre:{};
+    return { n:Math.max(0,+d.n||0), correct:Math.max(0,+d.correct||0), byGenre, done:!!d.done, shown:!!d.shown }; }
+  const hadProgress = !!(rawSave && ((rawSave.training&&rawSave.training.genre&&Object.keys(rawSave.training.genre).length) ||
+    (rawSave.research&&rawSave.research.subjPoints&&Object.values(rawSave.research.subjPoints).some(v=>+v>0)) ||
+    (rawSave.cleared&&rawSave.cleared.length)));
+  return { n:0, correct:0, byGenre:{}, done:hadProgress, shown:hadProgress };   // ★既存セーブは発火させない・新規セーブ(rawSave無し=初回起動)だけdone:falseで開始
+}
+// 正誤ログを裏で集計するだけ(挙動変更なし)。完了した瞬間だけ推奨tierの初期値を決めて、ホームの一言フラグを立てる。
+function diagRecord(q, correct){ const dg=progress.diag||(progress.diag=freshDiag()); if(dg.done) return;
+  dg.n++; if(correct) dg.correct++;
+  if(q && q.genre){ const bg=dg.byGenre[q.genre]||(dg.byGenre[q.genre]={n:0,correct:0,gradeSum:0});
+    bg.n++; if(correct) bg.correct++; const gr=(typeof gradeOf==='function')?gradeOf(q):null; if(gr!=null) bg.gradeSum+=gr; }
+  if(dg.n>=DIAG_N){ dg.done=true; _diagFinish(dg); }
+  saveProgress(); }
+// 完了時: 触れた分野だけ推奨tierの出発点を決める(§7回答=曖昧なら易しめに始めて広げる)。
+// computeRecommendTier(実績ベース)が既に値を出している分野は上書きしない=診断はあくまで「最初の値」を埋めるだけの下駄。
+function _diagFinish(dg){ Object.keys(dg.byGenre).forEach(g=>{ if(!GENRE_SUBJECT[g]) return;
+    if(recommendTierOf(g)) return;                              // 既に実績ベースの推奨があるなら診断は割り込まない
+    const bg=dg.byGenre[g]; const avgGrade=bg.n?(bg.gradeSum/bg.n):0, acc=bg.n?(bg.correct/bg.n):0;
+    // 曖昧(判定材料が薄い/正答率が中庸)なら安全側=junior(易しめ)。かなり高い正答率でグレードの高い問題を解けていた場合のみ1段上のmidを初期値にする。
+    const tier=(bg.n>=3 && acc>=0.8 && avgGrade>=3) ? 'mid' : 'junior';
+    if(!progress.recommend) progress.recommend={}; progress.recommend[g]={tier}; });
+  if(!progress.firstRunSignal) progress.firstRunSignal={};
+  progress.firstRunSignal.pendingToast=true; }   // ★ホーム初回描画で一度だけトーストを出すためのフラグ(出したらfalseに戻す・完了自体はprogress.diag.doneで判定できるので二重に持たない)
 function _donutHtml(segs,total,emoji,pct,col){ const r=30, C=2*Math.PI*r, cx=42, cy=42; let acc=0;
   const denom=Math.max(total, segs.reduce((a,b)=>a+b.v,0))||1;   // 解いた数が総数を超えても(復習で同じ問題)バーは100%でとめる
   const arcs=segs.filter(s=>s.v>0).map(s=>{ const len=s.v/denom*C;
@@ -2646,9 +2754,11 @@ function _diffBarHtml(g, h){ const s=_genreSolvedSeg(g); return `<div style="dis
 function _genreBarRow(g){ const s=_genreSolvedSeg(g);
   const gp=(progress.training&&progress.training.genre&&progress.training.genre[g])||{};
   const star=gp.flower?'💮':(gp.gold?'<span style="color:var(--gold)">★</span>':'');
+  // ★💮テスト挑戦ボタン(§7.6・2-1決定=解禁条件は既存メーター満タンと同一)。取得後は出さない(何度でも受け直せるが「テスト」導線は達成前のみ・取得後は称号として残るだけ)
+  const testBtn=(gp.testUnlocked && !gp.flower) ? `<button onclick="startGenreTest('${g}')" style="margin-left:8px;font-size:10px;padding:2px 9px;border-radius:10px;cursor:pointer;border:1px solid var(--gold);background:rgba(251,191,36,.16);color:var(--gold);font-weight:800">💮 テストにちょうせん</button>` : '';
   return `<div style="margin:5px 0">
-    <div style="display:flex;align-items:center;font-size:11px;margin-bottom:2px"><span style="color:rgba(255,255,255,.92)">${GENRE_JP[g]||g} ${star}</span><span style="margin-left:auto;color:rgba(255,255,255,.45)">${s.solved}/${s.total}</span></div>
-    ${_diffBarHtml(g)}</div>`; }
+    <div style="display:flex;align-items:center;font-size:11px;margin-bottom:2px"><span style="color:rgba(255,255,255,.92)">${GENRE_JP[g]||g} ${star}</span>${testBtn}<span style="margin-left:auto;color:rgba(255,255,255,.45)">${s.solved}/${s.total}</span></div>
+    ${_diffBarHtml(g)}${_recommendLineHtml(g)}</div>`; }
 function renderTrainHome(){
   const donuts=SUBJ_KEYS.map(_subjDonutCard).join('');
   const legend=DIFF_DEFS.map(d=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:rgba(255,255,255,.7)"><i style="width:10px;height:10px;border-radius:3px;background:${d.col}"></i>${d.jp}</span>`).join('');
@@ -2664,7 +2774,7 @@ function renderTrainHome(){
     + mkbtn('🔬','研究','教科ポイントで 特効を育てる','showResearch()','#a3e635',false);
   document.getElementById('trainingBody').innerHTML=`
     <div style="max-width:1040px;margin:0 auto;padding:14px">
-      ${efPlateHeader('📝','とっくん','TRAINING GROUND // にがて克服', `<button class="ef-back ef-back-icon" onclick="showHome()" aria-label="ホーム" title="ホーム">🏠</button>`)}
+      ${efPlateHeader('📝','とっくん','TRAINING GROUND // ぶんやを きたえる', `<button class="ef-back ef-back-icon" onclick="showHome()" aria-label="ホーム" title="ホーム">🏠</button>`)}
       <div style="font-size:12px;color:rgba(255,255,255,.6);margin:2px 0 8px">といた数だけ のびるよ（未修もふくむ）。まちがえても へらない。</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">${donuts}</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:9px 0 4px">${legend}</div>
@@ -2787,25 +2897,63 @@ function trainQuickStart(mode){ _trainCycleKey=10; _trainDiffs=new Set();
 function trainPracticeCustom(){ trainPracticeMenu(); }   // ★旧「じぶんでえらぶ」詳細＝今は1画面に統合(trainPracticeMenu)。各トグルはこれで全体を再描画(エイリアス)。
 function startPracticeCycle(){ const genres=trainGenreFilter(), subs=trainSubjsOf(genres), diffs=trainDiffFilter(), incl=trainInclUnlearned();
   const total=qcount({subjects:subs, genres:genres||undefined, diffs:diffs||undefined, includeUnlearned:incl}); if(total===0) return;   // 0なら開始しない(問題側の教科フォールバック回避＝§5注意)
+  _trainIsTest=false; _trainTestGenre=null;
   _trainGenresActive=genres; _trainSubjsActive=subs; _trainDiffsActive=diffs; _trainInclActive=incl;
   _trainCycleTarget=(_trainCycleKey==='all'||_trainCycleKey==='endless')?Math.min(total,20):cycleTarget(_trainCycleKey);   // ★範囲全部/できるだけは1サイクル最大20問に制限(苦手な子を大量問題に閉じ込めない・結果画面の「もう1サイクル」で続けられる)
   _trainCycleN=0; _trainStats={n:0,ok:0}; _trainCycleRP=0; _trainPracticeActive=true; practiceNext(); }
+// ★💮テスト開始(§7.6・バッチ2-2)＝TRAIN_CYCLES/_trainStats等の既存サイクル基盤をそのまま流用(ディレクターレビュー指定=独自のテスト状態変数を並行して作らない)。
+//   解禁条件(2-1)=既存gold(TRAIN_METER_FULL到達)と同一。出題プール=学習可能プール(未修除く・既定どおりincludeUnlearned:false)。
+function startGenreTest(g){ if(!genreTestUnlocked(g)) return; const subj=GENRE_SUBJECT[g]; if(!subj) return;
+  _trainIsTest=true; _trainTestGenre=g; _trainCycleKey='test';
+  _trainGenresActive=[g]; _trainSubjsActive=[subj]; _trainDiffsActive=null; _trainInclActive=false;
+  _trainCycleTarget=TEST_N; _trainCycleN=0; _trainStats={n:0,ok:0}; _trainCycleRP=0; _trainPracticeActive=true;
+  gameState='training'; practiceNext(); }   // ★出題は#qOverlay(showScreenと独立の器)なので既存画面(training)はそのままでよい(trainQuickStart等と同じ作法)
 function practiceNext(){ if(_trainCycleN>=_trainCycleTarget){ renderPracticeResult(); return; }
-  Quiz.ask({ subjects:_trainSubjsActive, genres:_trainGenresActive||undefined, diffs:_trainDiffsActive||undefined, includeUnlearned:_trainInclActive, mode:'practice', ctxFn:buildPracticeCtx, onResult:onPracticeResult, onContinue:onPracticeContinue });
+  Quiz.ask({ subjects:_trainSubjsActive, genres:_trainGenresActive||undefined, diffs:_trainDiffsActive||undefined, includeUnlearned:_trainInclActive, mode:(_trainIsTest?'test':'practice'), ctxFn:buildPracticeCtx, onResult:onPracticeResult, onContinue:onPracticeContinue });
   showTrainBar(); }   // ★出題の器に「ポーズ/中断＋このサイクルの研究ポイント」バーを出す
-function buildPracticeCtx(q){ _quizQ=q; const subj=SUBJECTS[q.s]||{emoji:'',jp:''}; const g=(q.genre&&GENRE_JP[q.genre])?('・'+GENRE_JP[q.genre]):''; return `${subj.emoji}<b>${subj.jp}</b>${g}　(${_trainCycleN+1}/${_trainCycleTarget})`; }
-function onPracticeResult(correct){ srsRecord(correct); _trainStats.n++; if(correct){ _trainStats.ok++; _trainCycleRP+=(gainSubjectPoints()||0); } updateTrainBar(); }   // SRS(誤答=復習の在庫)+教科ポイント+細目習熟(recordGenreMastery)・誤答無罰。獲得分をサイクル合計に積みバー更新
+function buildPracticeCtx(q){ _quizQ=q; const subj=SUBJECTS[q.s]||{emoji:'',jp:''}; const g=(q.genre&&GENRE_JP[q.genre])?('・'+GENRE_JP[q.genre]):'';
+  const lbl=_trainIsTest?'💮 テスト':''; return `${subj.emoji}<b>${subj.jp}</b>${g}${lbl?'　'+lbl:''}　(${_trainCycleN+1}/${_trainCycleTarget})`; }
+function onPracticeResult(correct){ if(!_trainIsTest && typeof diagRecord==='function') diagRecord(_quizQ, correct);   // ★サイレント診断(§6バッチ4)=特訓(💮テスト中を除く)の正誤ログも同じ集計に合流させるハイブリッド。挙動は一切変えない
+  srsRecord(correct); _trainStats.n++; if(correct){ _trainStats.ok++; _trainCycleRP+=(gainSubjectPoints()||0); } updateTrainBar(); }   // SRS(誤答=復習の在庫)+教科ポイント+細目習熟(recordGenreMastery)・誤答無罰。獲得分をサイクル合計に積みバー更新。テスト中の誤答もHP等に一切影響しない(誤答無罰)＝_trainStats.n-okで数えるだけ
 function onPracticeContinue(){ _trainCycleN++; practiceNext(); }
 // ── 出題中バー(ポーズ/中断＋このサイクルの研究ポイント)。#qTrainBar=#qOverlay の子(Quizは触らない=器のidは契約・新要素はゲーム側が足してよい §5)。練習中のみ.show ──
 function showTrainBar(){ const b=document.getElementById('qTrainBar'); if(b)b.classList.add('show'); updateTrainBar(); }
 function hideTrainBar(){ const b=document.getElementById('qTrainBar'); if(b)b.classList.remove('show'); }
 function updateTrainBar(){ const b=document.getElementById('qTrainBar'); if(!b)return;
   b.innerHTML=`<span class="qtb-rp">🔬 このサイクル <b>+${_trainCycleRP}</b></span><span class="qtb-prog">${Math.min(_trainCycleN+1,_trainCycleTarget)}/${_trainCycleTarget}問</span><button class="qtb-stop" onclick="trainAbortPractice()">やめる ✕</button>`; }
-function trainAbortPractice(){ _trainPracticeActive=false; _trainCycleN=0; _trainStats={n:0,ok:0};   // ★中断=このサイクルを止めて特訓トップへ(研究ポイントは1問ごとに保存済=消えない)
+function trainAbortPractice(){ _trainPracticeActive=false; _trainCycleN=0; _trainStats={n:0,ok:0}; _trainIsTest=false; _trainTestGenre=null;   // ★中断=このサイクルを止めて特訓トップへ(研究ポイントは1問ごとに保存済=消えない)
   hideTrainBar(); hideOverlay(); gameState='training'; renderTrainHome(); showScreen('training');
   if(_trainCycleRP>0) setTimeout(()=>trainToast('🔬 けんきゅうポイント +'+_trainCycleRP+' は ほぞんされたよ'),60);
   _trainCycleRP=0; }
+// ★💮テスト結果の判定＋書き込み(§7.6)。合格=誤答2問まで(TEST_PASS_MAX_FAILS)→flower=true(自動・勝手につく)。testFailsは次回テスト開始時にリセットのみ(累積して見せる「失敗の実績」にはしない)。
+function _settleGenreTest(){ const g=_trainTestGenre; if(!g) return {passed:false,fails:0};
+  const t=progress.training||(progress.training=freshTraining()); const gp=t.genre[g]||(t.genre[g]={ok:0,gold:false,flower:false,diff:{},testUnlocked:true,testFails:0});
+  const fails=Math.max(0,_trainStats.n-_trainStats.ok);   // 誤答数=このテストの出題数-正解数(1サイクル=常にTEST_N問)
+  gp.testFails=fails;   // 一時値(次回開始でリセットのみ・失敗ログとして蓄積しない)
+  const passed = fails<=TEST_PASS_MAX_FAILS;
+  if(passed && !gp.flower){ gp.flower=true; if(!progress.titles) progress.titles=[]; const ttl=genreTitle(g); if(progress.titles.indexOf(ttl)<0) progress.titles.push(ttl); }
+  return {passed,fails}; }
 function renderPracticeResult(){ _trainPracticeActive=false; hideTrainBar(); hideOverlay(); const st=_trainStats;
+  if(_trainIsTest){ const g=_trainTestGenre, res=_settleGenreTest();
+    const closeIn=Math.max(0,res.fails-TEST_PASS_MAX_FAILS);   // ★あと何問おしいだけだったか(0=既に合格圏)。負値クランプで「あと0問」等の変な表示を避ける
+    saveProgress();   // 💮/称号は即保存(セーブ後方互換=既存欠損補完のnormTrainingが吸収)
+    document.getElementById('trainingBody').innerHTML=`
+    <div style="max-width:760px;margin:0 auto;padding:18px;text-align:center">
+      ${efPlateHeader('💮','とっくん','TRAINING GROUND // テストのけっか')}
+      <div style="font-size:46px">${res.passed?'💮':'📝'}</div>
+      <h2 class="scr-ttl">${GENRE_JP[g]||g}のテスト</h2>
+      <div style="font-size:20px;margin:8px 0"><b style="color:var(--gold)">${st.ok} / ${st.n}</b> 問せいかい</div>
+      ${res.passed
+        ? `<div style="font-size:15px;color:var(--gold);font-weight:800;margin:6px 0">💮 マスターの証をゲット！「${genreTitle(g)}」のしょうごうをもらったよ</div>`
+        : (closeIn<=2
+            ? `<div style="font-size:14px;color:rgba(255,255,255,.85);margin:6px 0">おしい！ もう${closeIn}問せいかいできたら💮だったよ。なにも へってないよ。またいつでも ちょうせんできるよ。</div>`
+            : `<div style="font-size:14px;color:rgba(255,255,255,.85);margin:6px 0">よくがんばった！ なにも へってないよ。またいつでも ちょうせんできるよ。</div>`)}
+      <div class="scr-btns" style="justify-content:center;flex-wrap:wrap">
+        <button class="scr-btn primary" onclick="startGenreTest('${g}')">▶ もう一度ちょうせん</button>
+        <button class="scr-btn" onclick="trainPracticeMenu()">📝 練習にもどる</button>
+        <button class="scr-btn" onclick="startTraining()">🏠 特訓トップ</button>
+      </div>
+    </div>`; showScreen('training'); _trainIsTest=false; _trainTestGenre=null; return; }
   document.getElementById('trainingBody').innerHTML=`
     <div style="max-width:760px;margin:0 auto;padding:18px;text-align:center">
       ${efPlateHeader('📝','とっくん','TRAINING GROUND // けっか')}
@@ -3310,6 +3458,28 @@ function autoEquipPlan(){   // 貪欲割当=(キャラ,枠,装備)のfitness降�
   return plan; }
 function autoEquipApplyNoSave(plan){ ALLY_DEFS.forEach(d=>{ GEAR_SLOTS.forEach(s=>gearEquip[d.id][s]=plan[d.id].gear[s]||null); accEquip[d.id]=[plan[d.id].acc[0]||null, plan[d.id].acc[1]||null]; }); }
 function charPowerNum(cid){ const ps=previewStats(cid); return Math.round(ps.str+ps.int+ps.def+ps.hp/10); }   // ざっくり戦力(プレビュー表示用)
+// ★§バッチ8(戦闘力表示・PLAN_RIKA2_QUESTION_SYSTEM_2026-07-03 §8末尾「戦闘力表示」): パーティ4人の合計ステ×教科キラー補正を「1つの数字」にまとめる。
+//   rika1の思想(engine.js getTotalStrength)を踏襲=子どもが即読できる1数字。ダメージ計算式(fdmg/killer等)は不変・表示専用の派生値。
+//   係数は仮値(sim較正フェーズで確定・PLAN §8)。3定数(MONSTER_DB/STAGES/STAGE_GRADES)・enemyMulそのものには一切触れない。
+const BATTLE_POWER_CFG = {
+  killerRefBonus: 0.60,              // 仮・sim較正で確定: 教科キラー補正の基準値=KILLER_MULT_MAX(満タン0.60)と同値。定数化はTDZ回避のため直書き(KILLER_MULT_MAXはこの後の行で定義される)
+  killerCorrMax: 0.3,                // 仮・sim較正で確定: キラー満タンで戦闘力+30%まで乗る上限
+  stageBase: 30,                     // 仮・sim較正で確定: enemyMul=1相当のステージのめやす戦闘力(初期パーティ=素ステ4人合計約150が最序盤で警告色にならない値を仮採用)
+  stageMul: 380,                     // 仮・sim較正で確定: enemyMulの傾き(rika1のbossRecHpCoef/AtkCoefに相当する線形近似)
+  warnRatio: 0.8,                    // 仮・sim較正で確定: 自分の戦闘力がめやす×この比率未満なら「ちょっと強い」warn表示
+};
+function partyKillerCorrection(){   // 4教科ぶんのキラー特効(0〜0.60)を平均し、戦闘力への補正係数(1〜1+killerCorrMax)に正規化
+  const avg=SUBJ_KEYS.reduce((s,k)=>s+killerMult(k),0)/SUBJ_KEYS.length;
+  return 1 + BATTLE_POWER_CFG.killerCorrMax * Math.min(1, avg/BATTLE_POWER_CFG.killerRefBonus); }
+function partyBattlePower(){   // ★表示用の「1つの数字」=パーティ4人の合計ステ(charPowerNum・装備込み)×キラー補正
+  const base=ALLY_DEFS.reduce((s,d)=>s+charPowerNum(d.id),0);
+  return Math.round(base*partyKillerCorrection()); }
+function stageBattlePowerGuide(st){   // ★ステージの「めやす戦闘力」=既存enemyMulから逆算する仮式(dstudio互換・STAGESへ焼き込まない)
+  if(!st) return 0; const mul=st.enemyMul||1;
+  return Math.round((BATTLE_POWER_CFG.stageBase+BATTLE_POWER_CFG.stageMul*mul)/10)*10; }
+function stagePowerReadiness(st){   // 'ok'=いけそう(通常色) / 'warn'=ちょっと強い(warn色)。2段のみ(学習軸の推奨tier/深度とは混ぜない)
+  const rec=stageBattlePowerGuide(st); if(rec<=0) return 'ok';
+  return partyBattlePower()>=rec*BATTLE_POWER_CFG.warnRatio ? 'ok' : 'warn'; }
 let autoPlan=null;
 function showAutoEquip(){ const plan=autoEquipPlan();
   const before={}; ALLY_DEFS.forEach(d=>before[d.id]=charPowerNum(d.id));
@@ -3418,11 +3588,13 @@ function renderDungeonStages(g,ttl){
     html+=`<div class="dg-area">${a.name}</div>`;
     if(a.stageIds.length===0){ html+=`<div class="dg-soon">じゅんび中（本番づくり中）</div>`; return; }
     html+=a.stageIds.map(i=>{ const st=STAGES[i]; if(!st) return ''; const locked=!stagePlayable(i); const cl=isCleared(i);
+      const readiness=locked?'':stagePowerReadiness(st);   // ★バッチ8: 学習軸(推奨tier/深度)とは別軸=いけそう(通常色)/ちょっと強い(warn色)の2段のみ
       return `<button class="stage-card${locked?' locked':''}${cl?' cleared':''}" ${locked?'':`onclick="startStage(${i})"`}>
         <div class="sc-emoji">${locked?'🔒':st.emoji}</div>
         <div class="sc-mid">
           <div class="sc-name">${locked?'？？？':st.name}</div>
           <div class="sc-theme">${locked?'ロック':st.theme+'のもんだい'}</div>
+          ${locked?'':`<div class="sc-power num ${readiness==='warn'?'hard':''}">めやす ⚔${fmt(stageBattlePowerGuide(st))}</div>`}
         </div>
         <div class="sc-flag">${cl?'✓ クリア':(locked?'ロック':'▶ ちょうせん')}</div>
       </button>`; }).join('');
@@ -3506,6 +3678,25 @@ function stageClear(){ clearHitTimers(); if(_inTraining){ trainStrikeWin(); retu
     });
   })();
 }
+// ★§6バッチ6(壁での文脈ジャンプ・PLAN_RIKA2_QUESTION_SYSTEM_2026-07-03 §7.7b/§6): 敗北画面から研究/特訓への1本道の導線。
+// 判定は「粗い代替指標」(プラン注記どおり厳密な想定与ダメ計算は較正フェーズ送り)＝
+//   負けたステージの教科(curStg().subjects)のうち、教科キラー特効がまだ満タン(3段/60%)でない教科が1つでもあれば「育てると楽になるよ」を研究画面へ、
+//   無ければ(教科が無い/全教科すでに満タン)特訓への一般的な誘導にフォールバック。押し付けないため1個だけ表示。
+const KILLER_MULT_MAX=0.60;   // KILLER_TREE 3段(0.10+0.20+0.30)の満タン値。ここを超えて伸ばせない教科は「育てる余地なし」判定
+function _defeatJumpTarget(){ const st=curStg()||{}; const subs=(Array.isArray(st.subjects)&&st.subjects.length)?st.subjects:[];
+  const growable=subs.find(s=>killerMult(s)<KILLER_MULT_MAX-1e-9);   // 1つでも伸ばせる教科があれば研究へ(複数教科ステージは最初に見つかったものを案内)
+  if(growable) return {kind:'research', subject:growable};
+  return {kind:'training'}; }   // 教科なし/判定あいまい/全教科すでに満タン→とっくんへの一般フォールバック
+function _defeatJumpHtml(){ const j=_defeatJumpTarget();
+  if(j.kind==='research'){ const sub=SUBJECTS[j.subject];
+    return `<div class="drop-note" style="margin-top:10px">🔬 <b style="color:${sub.color}">${sub.jp}キラー</b>を育てると 楽になるよ</div>
+      <div class="scr-btns"><button class="scr-btn" onclick="jumpToResearchFrom('${j.subject}')">🔬 ${sub.jp}キラーを育てる</button></div>`; }
+  return `<div class="drop-note" style="margin-top:10px">📝 とっくんで ちからをためよう</div>
+    <div class="scr-btns"><button class="scr-btn" onclick="startTraining()">📝 とっくんへ</button></div>`; }
+// 研究画面へ飛んだとき対象教科の列が目に入るよう軽くスクロール(既存レイアウトは4教科横並びで既に見えているため最小限の配慮)。
+function jumpToResearchFrom(subject){ showResearch();
+  setTimeout(()=>{ try{ const cols=document.querySelectorAll('#researchBody [style*="min-width:150px"]');
+    const idx=SUBJ_KEYS.indexOf(subject); const el=cols&&cols[idx]; if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest', inline:'nearest'}); }catch(e){} }, 0); }
 function stageDefeat(){ gameState='defeat'; clearHitTimers(); _fxFreeze=0; _trauma=0; applyTraumaShake(0);
   const got=stageDrops.length?`<div class="drop-card"><div class="drop-label">🎁 ひろったそうび</div><div class="drop-scroll">${sortedDrops(stageDrops).map(dropCardHtml).join('')}</div><div class="drop-note">このそうびは のこっているよ</div></div>`:'';
   document.getElementById('defeatBody').innerHTML=`
@@ -3518,7 +3709,8 @@ function stageDefeat(){ gameState='defeat'; clearHitTimers(); _fxFreeze=0; _trau
       <button class="scr-btn primary" onclick="startStage(${curStage})">▶ もういちど</button>
       <button class="scr-btn" onclick="showEquip()">🛡 そうびを見直す</button>
       <button class="scr-btn" onclick="showMap('${(dungeonOf(curStage)||{}).id||''}')">🗺 マップへ</button>
-    </div>`;
+    </div>
+    ${_defeatJumpHtml()}`;
   showScreen('defeat'); setTopbar('');
 }
 function showComplete(){ gameState='complete';

@@ -2724,9 +2724,10 @@ const SCENES = {
 /* ===== 問題エンジン(Quiz)＝戦闘から分離。combat も 練習/復習/実力測定 も同じ窓口 Quiz.ask を呼ぶ(戦闘を知らない) ===== */
 // Quiz.ask({ subjects:[出題範囲], ctxFn?:()=>文脈html, ctx?:文脈html, onResult:(correct)=>{}, onContinue:()=>{} })
 // 正誤の判定・表示・解説(無罰)は Quiz が持つ。呼び出し側は『範囲を渡し、正誤を受け取る』だけ。答え方(answerType)が増えても接点は不変。
-const Quiz = { _onResult:null, _onContinue:null, _styled:false, _order:null, _practice:false, _hintTimer:null,
+const Quiz = { _onResult:null, _onContinue:null, _styled:false, _order:null, _practice:false, _test:false, _hintTimer:null,
   ask(opts){ Quiz._onResult=opts.onResult||null; Quiz._onContinue=opts.onContinue||null; answered=false; _reviewingKey=null;   // 通常出題=復習中フラグを必ず消す(§6のdueガードが戦闘の正解で誤爆しない)
-    Quiz._practice = (opts.mode==='practice');   // 練習モード=正解でも解説を見せる(未修の教える形式に対応)。戦闘は非練習＝正解は即。
+    Quiz._practice = (opts.mode==='practice' || opts.mode==='test');   // 練習/テストモード=正解でも解説を見せる(未修の教える形式・テストは振り返り用)。戦闘は非練習＝正解は即。
+    Quiz._test = (opts.mode==='test');   // ★💮テスト(§7.6・PLAN_RIKA2_QUESTION_SYSTEM_2026-07-03 §6バッチ2-2)＝ヒント抑制のみの最小分岐。#qOverlayのDOM/CSS/answerType描画は無変更。
     curQ=drawQuestion(opts.subjects||['chemistry'], { diffs:opts.diffs, grades:opts.grades, genres:opts.genres, includeUnlearned:!!opts.includeUnlearned });   // 戦闘は未指定=従来どおり全範囲。§5でゲームが許容レンジ(diffs/grades)＋特訓の細目(genres)を渡す。
     Quiz._render(opts.ctxFn?opts.ctxFn(curQ):(opts.ctx||'')); },   // ctxFnには出題された問題を渡す(ゲーム側はcurQグローバルを読まなくてよい)
   count(opts){ return countQuestions(opts||{}); },   // §5特訓: 条件に合う問題数(GENRES列挙＋件数で「おすすめ細目」「習熟の分母」「テスト可否」を判断)
@@ -2737,7 +2738,7 @@ const Quiz = { _onResult:null, _onContinue:null, _styled:false, _order:null, _pr
     document.getElementById('qq').textContent=q.q;
     document.getElementById('qfeed').innerHTML=''; { const _qh=document.getElementById('qhead'); if(_qh)_qh.innerHTML=''; }   // ★ヘッダーのヒントボタンも出題ごとに掃除
     (Quiz._renderers[q.answerType]||Quiz._renderers.choice)(q,subj);   // ★answerTypeで答え方UIを分岐(#qans/#qimgを作る)
-    if(q.hint && (q.hint.text || q.hint.img)) Quiz._startHint();       // ★💡ヒント(あれば)。8秒後に押せる・罰なし。#qfeed内=全答え方で共通・回答後は結果で上書き
+    if(q.hint && (q.hint.text || q.hint.img) && !Quiz._test) Quiz._startHint();   // ★💡ヒント(あれば)。8秒後に押せる・罰なし。#qfeed内=全答え方で共通・回答後は結果で上書き。★テスト中(mode:'test')はヒント無し(§7.6=ヒント無しがテストの定義)
     document.getElementById('qOverlay').classList.add('show'); },
   _subjImg(subj){ return `<div style="text-align:center;"><div style="font-size:62px;line-height:1;">${subj.emoji}</div><div style="font-size:13px;color:${subj.color};margin-top:8px;font-weight:700;">${subj.jp}</div></div>`; },
   _qimg(q,subj){ return q.img ? `<img src="${q.img}" alt="" style="max-width:100%;max-height:240px;border-radius:12px;">` : Quiz._subjImg(subj); },   // 刺激画像(img)があれば図・なければ教科アイコン(§3.6 図を半分以上に)。imageTap以外の全答え方で共通。
