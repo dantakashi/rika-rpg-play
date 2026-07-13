@@ -16,7 +16,14 @@
   .card.drag{transition:none}
   .card img{width:100%;height:100%;object-fit:contain;pointer-events:none}
   .card .label{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;background:#000a;font-size:13px}
-  .stamp{position:absolute;top:18px;font-size:30px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-12deg);pointer-events:none}
+  /* ペア比較カード（同モチーフ2枚並べ・タップで片方採用） */
+  .card.pair{aspect-ratio:auto;height:calc(100% - 40px);display:flex;gap:4px;padding-bottom:34px}
+  .card.pair .half{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+  .card.pair .half img{flex:1;min-height:0;width:100%;object-fit:contain;pointer-events:none}
+  .card.pair .half .sub{font-size:11px;text-align:center;background:#0008;padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.pair .half .pick{margin:6px;padding:12px 0;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;color:#fff;background:var(--ok);cursor:pointer}
+  .card.pair .half.win{outline:4px solid var(--ok);outline-offset:-4px}
+  .stamp{position:absolute;top:18px;font-size:30px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-12deg);pointer-events:none;z-index:3}
   .stamp.ok{left:14px;color:var(--ok);border-color:var(--ok)}
   .stamp.ng{right:14px;color:var(--ng);border-color:var(--ng);transform:rotate(12deg)}
   .bar{position:fixed;bottom:0;left:0;right:0;padding:12px 14px 22px;display:flex;gap:10px;z-index:10;background:linear-gradient(#2b262200,#2b2622 40%)}
@@ -39,12 +46,12 @@
 <body>
 <div class="top"><b id="title">画像ティンダー検収</b><span id="prog"></span></div>
 <div class="stage" id="stage"></div>
-<div class="hint">→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント</div>
+<div class="hint" id="hint">→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント</div>
 <div class="bar">
   <button class="b-undo" onclick="undo()">↩</button>
   <button class="b-ng" onclick="decide('NG')">✗ 不採用</button>
   <button class="b-fix" onclick="openFix()">✏ 修正</button>
-  <button class="b-ok" onclick="decide('OK')">◎ 採用</button>
+  <button class="b-ok" id="okbtn" onclick="decide('OK')">◎ 採用</button>
 </div>
 <div class="overlay" id="ov">
   <div class="panel">
@@ -64,221 +71,248 @@
 </div>
 <script>
 // ===== バッチ定義（ここだけ差し替えれば使い回せる） =====
-const SHEET = "モンスター夜ラン第1弾";
+// 1枚カード: {f:"ファイル名", t:"ラベル"}
+// ペア比較 : {pair:["A.png","B.png"], t:"モチーフ名", ta:"Aの説明", tb:"Bの説明"}
+//            → 画像下のボタンで片方採用（もう片方は自動で不採用）・←スワイプ/✗=両方不採用
+const SHEET = "モンスター量産 第2弾(昼ラン227体)";
 const IMGDIR = "imgs/";
 const ITEMS = [
-  {f:"cute_cave_batbaby_c_idle.webp", t:"かわいい·洞｜こうもりの赤ちゃん｜ちびかわ·idle"},
-  {f:"cute_cave_batbaby_h_attack.webp", t:"かわいい·洞｜こうもりの赤ちゃん｜パステルマスコット·attack"},
-  {f:"cute_cave_glowshroom_h_idle.webp", t:"かわいい·洞｜ひかりキノコの子｜パステルマスコット·idle"},
-  {f:"cute_cave_glowshroom_e_attack.webp", t:"かわいい·洞｜ひかりキノコの子｜水彩絵本·attack"},
-  {f:"cute_cave_pebble_e_idle.webp", t:"かわいい·洞｜小石のこども｜水彩絵本·idle"},
-  {f:"cute_cave_pebble_b_attack.webp", t:"かわいい·洞｜小石のこども｜アニメ塗り·attack"},
-  {f:"cute_cave_dewdrop_b_idle.webp", t:"かわいい·洞｜しずくスライム｜アニメ塗り·idle"},
-  {f:"cute_cave_dewdrop_c_attack.webp", t:"かわいい·洞｜しずくスライム｜ちびかわ·attack"},
-  {f:"cute_cave_molechild_c_idle.webp", t:"かわいい·洞｜ちびモグラ｜ちびかわ·idle"},
-  {f:"cute_cave_molechild_h_attack.webp", t:"かわいい·洞｜ちびモグラ｜パステルマスコット·attack"},
-  {f:"cute_thunder_staticham_c_idle.webp", t:"かわいい·雷｜静電気ハムスター｜ちびかわ·idle"},
-  {f:"cute_thunder_staticham_h_attack.webp", t:"かわいい·雷｜静電気ハムスター｜パステルマスコット·attack"},
-  {f:"cute_thunder_bulbfairy_h_idle.webp", t:"かわいい·雷｜まめでんきゅうの精｜パステルマスコット·idle"},
-  {f:"cute_thunder_bulbfairy_e_attack.webp", t:"かわいい·雷｜まめでんきゅうの精｜水彩絵本·attack"},
-  {f:"cute_thunder_magnetfly_e_idle.webp", t:"かわいい·雷｜磁石のちょうちょ｜水彩絵本·idle"},
-  {f:"cute_thunder_magnetfly_b_attack.webp", t:"かわいい·雷｜磁石のちょうちょ｜アニメ塗り·attack"},
-  {f:"cute_thunder_cloudpuff_b_idle.webp", t:"かわいい·雷｜子雷雲｜アニメ塗り·idle"},
-  {f:"cute_thunder_cloudpuff_c_attack.webp", t:"かわいい·雷｜子雷雲｜ちびかわ·attack"},
-  {f:"cute_thunder_coilkitten_c_idle.webp", t:"かわいい·雷｜コイルの子ねこ｜ちびかわ·idle"},
-  {f:"cute_thunder_coilkitten_h_attack.webp", t:"かわいい·雷｜コイルの子ねこ｜パステルマスコット·attack"},
-  {f:"cute_chem_testtube_c_idle.webp", t:"かわいい·化｜試験管の子おばけ｜ちびかわ·idle"},
-  {f:"cute_chem_testtube_h_attack.webp", t:"かわいい·化｜試験管の子おばけ｜パステルマスコット·attack"},
-  {f:"cute_chem_litmuschame_h_idle.webp", t:"かわいい·化｜リトマスカメレオン｜パステルマスコット·idle"},
-  {f:"cute_chem_litmuschame_e_attack.webp", t:"かわいい·化｜リトマスカメレオン｜水彩絵本·attack"},
-  {f:"cute_chem_soapbunny_e_idle.webp", t:"かわいい·化｜あわあわうさぎ｜水彩絵本·idle"},
-  {f:"cute_chem_soapbunny_b_attack.webp", t:"かわいい·化｜あわあわうさぎ｜アニメ塗り·attack"},
-  {f:"cute_chem_sugarfairy_b_idle.webp", t:"かわいい·化｜砂糖の結晶ようせい｜アニメ塗り·idle"},
-  {f:"cute_chem_sugarfairy_c_attack.webp", t:"かわいい·化｜砂糖の結晶ようせい｜ちびかわ·attack"},
-  {f:"cute_chem_sodapop_c_idle.webp", t:"かわいい·化｜炭酸のぷくぷく｜ちびかわ·idle"},
-  {f:"cute_chem_sodapop_h_attack.webp", t:"かわいい·化｜炭酸のぷくぷく｜パステルマスコット·attack"},
-  {f:"cute_forest_acornguard_c_idle.webp", t:"かわいい·森｜どんぐりの兵隊｜ちびかわ·idle"},
-  {f:"cute_forest_acornguard_h_attack.webp", t:"かわいい·森｜どんぐりの兵隊｜パステルマスコット·attack"},
-  {f:"cute_forest_leaffairy_h_idle.webp", t:"かわいい·森｜葉っぱのようせい｜パステルマスコット·idle"},
-  {f:"cute_forest_leaffairy_e_attack.webp", t:"かわいい·森｜葉っぱのようせい｜水彩絵本·attack"},
-  {f:"cute_forest_ladybird_e_idle.webp", t:"かわいい·森｜てんとうむしのちびたん｜水彩絵本·idle"},
-  {f:"cute_forest_ladybird_b_attack.webp", t:"かわいい·森｜てんとうむしのちびたん｜アニメ塗り·attack"},
-  {f:"cute_forest_budbaby_b_idle.webp", t:"かわいい·森｜花のつぼみベビー｜アニメ塗り·idle"},
-  {f:"cute_forest_budbaby_c_attack.webp", t:"かわいい·森｜花のつぼみベビー｜ちびかわ·attack"},
-  {f:"cute_forest_snailkid_c_idle.webp", t:"かわいい·森｜かたつむりの子｜ちびかわ·idle"},
-  {f:"cute_forest_snailkid_h_attack.webp", t:"かわいい·森｜かたつむりの子｜パステルマスコット·attack"},
-  {f:"cute_forest_mijinko_h_idle.webp", t:"かわいい·森｜ミジンコの妖精｜パステルマスコット·idle"},
-  {f:"cute_forest_mijinko_e_attack.webp", t:"かわいい·森｜ミジンコの妖精｜水彩絵本·attack"},
-  {f:"cute_earth_ammobaby_c_idle.webp", t:"かわいい·地｜アンモナイトの子｜ちびかわ·idle"},
-  {f:"cute_earth_ammobaby_h_attack.webp", t:"かわいい·地｜アンモナイトの子｜パステルマスコット·attack"},
-  {f:"cute_earth_cloudsheep_h_idle.webp", t:"かわいい·地｜雲のこひつじ｜パステルマスコット·idle"},
-  {f:"cute_earth_cloudsheep_e_attack.webp", t:"かわいい·地｜雲のこひつじ｜水彩絵本·attack"},
-  {f:"cute_earth_starbit_e_idle.webp", t:"かわいい·地｜星のちびすけ｜水彩絵本·idle"},
-  {f:"cute_earth_starbit_b_attack.webp", t:"かわいい·地｜星のちびすけ｜アニメ塗り·attack"},
-  {f:"cute_earth_crystalhog_b_idle.webp", t:"かわいい·地｜水晶のはりねずみ｜アニメ塗り·idle"},
-  {f:"cute_earth_crystalhog_c_attack.webp", t:"かわいい·地｜水晶のはりねずみ｜ちびかわ·attack"},
-  {f:"cute_earth_sandbaby_c_idle.webp", t:"かわいい·地｜砂の子｜ちびかわ·idle"},
-  {f:"cute_earth_sandbaby_h_attack.webp", t:"かわいい·地｜砂の子｜パステルマスコット·attack"},
-  {f:"cute_generic_rainbowchick_c_idle.webp", t:"かわいい·汎｜虹のヒヨコ｜ちびかわ·idle"},
-  {f:"cute_generic_rainbowchick_h_attack.webp", t:"かわいい·汎｜虹のヒヨコ｜パステルマスコット·attack"},
-  {f:"cute_generic_notesprite_h_idle.webp", t:"かわいい·汎｜おんぷの精｜パステルマスコット·idle"},
-  {f:"cute_generic_notesprite_e_attack.webp", t:"かわいい·汎｜おんぷの精｜水彩絵本·attack"},
-  {f:"cute_generic_prismcat_e_idle.webp", t:"かわいい·汎｜プリズムのねこ｜水彩絵本·idle"},
-  {f:"cute_generic_prismcat_b_attack.webp", t:"かわいい·汎｜プリズムのねこ｜アニメ塗り·attack"},
-  {f:"cute_generic_ghostbroom_b_idle.webp", t:"かわいい·汎｜ちびゴースト｜アニメ塗り·idle"},
-  {f:"cute_generic_ghostbroom_c_attack.webp", t:"かわいい·汎｜ちびゴースト｜ちびかわ·attack"},
-  {f:"mob_cave_cavebat_a_idle.webp", t:"ざこ·洞｜洞窟オオコウモリ｜精細ゲームCG·idle"},
-  {f:"mob_cave_cavebat_d_attack.webp", t:"ざこ·洞｜洞窟オオコウモリ｜ダーク油彩·attack"},
-  {f:"mob_cave_rocklizard_d_idle.webp", t:"ざこ·洞｜岩肌トカゲ｜ダーク油彩·idle"},
-  {f:"mob_cave_rocklizard_g_attack.webp", t:"ざこ·洞｜岩肌トカゲ｜リアルクリーチャー·attack"},
-  {f:"mob_cave_mossbeast_g_idle.webp", t:"ざこ·洞｜ひかりゴケの獣｜リアルクリーチャー·idle"},
-  {f:"mob_cave_mossbeast_a_attack.webp", t:"ざこ·洞｜ひかりゴケの獣｜精細ゲームCG·attack"},
-  {f:"mob_cave_stalagolem_a_idle.webp", t:"ざこ·洞｜鍾乳石ゴーレム｜精細ゲームCG·idle"},
-  {f:"mob_cave_stalagolem_d_attack.webp", t:"ざこ·洞｜鍾乳石ゴーレム｜ダーク油彩·attack"},
-  {f:"mob_cave_cavespider_d_idle.webp", t:"ざこ·洞｜洞窟グモ｜ダーク油彩·idle"},
-  {f:"mob_cave_cavespider_g_attack.webp", t:"ざこ·洞｜洞窟グモ｜リアルクリーチャー·attack"},
-  {f:"mob_cave_tunnelworm_g_idle.webp", t:"ざこ·洞｜地底ワーム｜リアルクリーチャー·idle"},
-  {f:"mob_cave_tunnelworm_a_attack.webp", t:"ざこ·洞｜地底ワーム｜精細ゲームCG·attack"},
-  {f:"mob_thunder_plasmajelly_a_idle.webp", t:"ざこ·雷｜プラズマクラゲ｜精細ゲームCG·idle"},
-  {f:"mob_thunder_plasmajelly_b_attack.webp", t:"ざこ·雷｜プラズマクラゲ｜アニメ塗り·attack"},
-  {f:"mob_thunder_eelfiend_b_idle.webp", t:"ざこ·雷｜電気ウナギの魔物｜アニメ塗り·idle"},
-  {f:"mob_thunder_eelfiend_g_attack.webp", t:"ざこ·雷｜電気ウナギの魔物｜リアルクリーチャー·attack"},
-  {f:"mob_thunder_magnegolem_g_idle.webp", t:"ざこ·雷｜磁力ゴーレム｜リアルクリーチャー·idle"},
-  {f:"mob_thunder_magnegolem_a_attack.webp", t:"ざこ·雷｜磁力ゴーレム｜精細ゲームCG·attack"},
-  {f:"mob_thunder_stormhawk_a_idle.webp", t:"ざこ·雷｜雷鳥の戦士｜精細ゲームCG·idle"},
-  {f:"mob_thunder_stormhawk_b_attack.webp", t:"ざこ·雷｜雷鳥の戦士｜アニメ塗り·attack"},
-  {f:"mob_thunder_coilsnake_b_idle.webp", t:"ざこ·雷｜コイルヘビ｜アニメ塗り·idle"},
-  {f:"mob_thunder_coilsnake_g_attack.webp", t:"ざこ·雷｜コイルヘビ｜リアルクリーチャー·attack"},
-  {f:"mob_thunder_staticwolf_g_idle.webp", t:"ざこ·雷｜静電気オオカミ｜リアルクリーチャー·idle"},
-  {f:"mob_thunder_staticwolf_a_attack.webp", t:"ざこ·雷｜静電気オオカミ｜精細ゲームCG·attack"},
-  {f:"mob_thunder_batteryknight_a_idle.webp", t:"ざこ·雷｜充電池の兵士｜精細ゲームCG·idle"},
-  {f:"mob_thunder_batteryknight_b_attack.webp", t:"ざこ·雷｜充電池の兵士｜アニメ塗り·attack"},
-  {f:"mob_thunder_sonicbat_b_idle.webp", t:"ざこ·雷｜音波コウモリ｜アニメ塗り·idle"},
-  {f:"mob_thunder_sonicbat_g_attack.webp", t:"ざこ·雷｜音波コウモリ｜リアルクリーチャー·attack"},
-  {f:"mob_thunder_prismknight_g_idle.webp", t:"ざこ·雷｜プリズムの騎士｜リアルクリーチャー·idle"},
-  {f:"mob_thunder_prismknight_a_attack.webp", t:"ざこ·雷｜プリズムの騎士｜精細ゲームCG·attack"},
-  {f:"mob_thunder_springpuppet_a_idle.webp", t:"ざこ·雷｜ばねのカラクリ兵｜精細ゲームCG·idle"},
-  {f:"mob_thunder_springpuppet_b_attack.webp", t:"ざこ·雷｜ばねのカラクリ兵｜アニメ塗り·attack"},
-  {f:"mob_thunder_stormsprite_b_idle.webp", t:"ざこ·雷｜嵐の精霊｜アニメ塗り·idle"},
-  {f:"mob_thunder_stormsprite_g_attack.webp", t:"ざこ·雷｜嵐の精霊｜リアルクリーチャー·attack"},
-  {f:"mob_chem_acidslime_a_idle.webp", t:"ざこ·化｜酸のスライム｜精細ゲームCG·idle"},
-  {f:"mob_chem_acidslime_d_attack.webp", t:"ざこ·化｜酸のスライム｜ダーク油彩·attack"},
-  {f:"mob_chem_gascloud_d_idle.webp", t:"ざこ·化｜毒ガス雲の魔物｜ダーク油彩·idle"},
-  {f:"mob_chem_gascloud_g_attack.webp", t:"ざこ·化｜毒ガス雲の魔物｜リアルクリーチャー·attack"},
-  {f:"mob_chem_rustknight_g_idle.webp", t:"ざこ·化｜さび鎧の騎士｜リアルクリーチャー·idle"},
-  {f:"mob_chem_rustknight_a_attack.webp", t:"ざこ·化｜さび鎧の騎士｜精細ゲームCG·attack"},
-  {f:"mob_chem_flamewisp_a_idle.webp", t:"ざこ·化｜炎の精霊｜精細ゲームCG·idle"},
-  {f:"mob_chem_flamewisp_d_attack.webp", t:"ざこ·化｜炎の精霊｜ダーク油彩·attack"},
-  {f:"mob_chem_frostwraith_d_idle.webp", t:"ざこ·化｜氷晶のレイス｜ダーク油彩·idle"},
-  {f:"mob_chem_frostwraith_g_attack.webp", t:"ざこ·化｜氷晶のレイス｜リアルクリーチャー·attack"},
-  {f:"mob_chem_metalamoeba_g_idle.webp", t:"ざこ·化｜液体金属アメーバ｜リアルクリーチャー·idle"},
-  {f:"mob_chem_metalamoeba_a_attack.webp", t:"ざこ·化｜液体金属アメーバ｜精細ゲームCG·attack"},
-  {f:"mob_chem_saltgolem_a_idle.webp", t:"ざこ·化｜塩の結晶ゴーレム｜精細ゲームCG·idle"},
-  {f:"mob_chem_saltgolem_d_attack.webp", t:"ざこ·化｜塩の結晶ゴーレム｜ダーク油彩·attack"},
-  {f:"mob_chem_steamdjinn_d_idle.webp", t:"ざこ·化｜蒸気のジン｜ダーク油彩·idle"},
-  {f:"mob_chem_steamdjinn_g_attack.webp", t:"ざこ·化｜蒸気のジン｜リアルクリーチャー·attack"},
-  {f:"mob_chem_potionimp_g_idle.webp", t:"ざこ·化｜ポーション瓶の小悪魔｜リアルクリーチャー·idle"},
-  {f:"mob_chem_potionimp_a_attack.webp", t:"ざこ·化｜ポーション瓶の小悪魔｜精細ゲームCG·attack"},
-  {f:"mob_chem_coppergoyle_a_idle.webp", t:"ざこ·化｜銅のガーゴイル｜精細ゲームCG·idle"},
-  {f:"mob_chem_coppergoyle_d_attack.webp", t:"ざこ·化｜銅のガーゴイル｜ダーク油彩·attack"},
-  {f:"mob_chem_mistwolf_d_idle.webp", t:"ざこ·化｜ドライアイスの霧オオカミ｜ダーク油彩·idle"},
-  {f:"mob_chem_mistwolf_g_attack.webp", t:"ざこ·化｜ドライアイスの霧オオカミ｜リアルクリーチャー·attack"},
-  {f:"mob_forest_flytrap_a_idle.webp", t:"ざこ·森｜食虫植物のワナ獣｜精細ゲームCG·idle"},
-  {f:"mob_forest_flytrap_b_attack.webp", t:"ざこ·森｜食虫植物のワナ獣｜アニメ塗り·attack"},
-  {f:"mob_forest_shroomwarrior_b_idle.webp", t:"ざこ·森｜キノコの重戦士｜アニメ塗り·idle"},
-  {f:"mob_forest_shroomwarrior_g_attack.webp", t:"ざこ·森｜キノコの重戦士｜リアルクリーチャー·attack"},
-  {f:"mob_forest_vineserpent_g_idle.webp", t:"ざこ·森｜ツタの絞めヘビ｜リアルクリーチャー·idle"},
-  {f:"mob_forest_vineserpent_a_attack.webp", t:"ざこ·森｜ツタの絞めヘビ｜精細ゲームCG·attack"},
-  {f:"mob_forest_soldierant_a_idle.webp", t:"ざこ·森｜大アリの兵隊｜精細ゲームCG·idle"},
-  {f:"mob_forest_soldierant_b_attack.webp", t:"ざこ·森｜大アリの兵隊｜アニメ塗り·attack"},
-  {f:"mob_forest_mantisblade_b_idle.webp", t:"ざこ·森｜カマキリの剣士｜アニメ塗り·idle"},
-  {f:"mob_forest_mantisblade_g_attack.webp", t:"ざこ·森｜カマキリの剣士｜リアルクリーチャー·attack"},
-  {f:"mob_forest_barktreant_g_idle.webp", t:"ざこ·森｜樹皮のトレント｜リアルクリーチャー·idle"},
-  {f:"mob_forest_barktreant_a_attack.webp", t:"ざこ·森｜樹皮のトレント｜精細ゲームCG·attack"},
-  {f:"mob_forest_pollenmoth_a_idle.webp", t:"ざこ·森｜花粉の大蛾｜精細ゲームCG·idle"},
-  {f:"mob_forest_pollenmoth_b_attack.webp", t:"ざこ·森｜花粉の大蛾｜アニメ塗り·attack"},
-  {f:"mob_forest_rootgolem_b_idle.webp", t:"ざこ·森｜根っこのゴーレム｜アニメ塗り·idle"},
-  {f:"mob_forest_rootgolem_g_attack.webp", t:"ざこ·森｜根っこのゴーレム｜リアルクリーチャー·attack"},
-  {f:"mob_forest_mossdeer_g_idle.webp", t:"ざこ·森｜苔角の鹿｜リアルクリーチャー·idle"},
-  {f:"mob_forest_mossdeer_a_attack.webp", t:"ざこ·森｜苔角の鹿｜精細ゲームCG·attack"},
-  {f:"mob_forest_beetleshield_a_idle.webp", t:"ざこ·森｜甲虫の盾持ち｜精細ゲームCG·idle"},
-  {f:"mob_forest_beetleshield_b_attack.webp", t:"ざこ·森｜甲虫の盾持ち｜アニメ塗り·attack"},
-  {f:"mob_forest_photolizard_b_idle.webp", t:"ざこ·森｜光合成トカゲ｜アニメ塗り·idle"},
-  {f:"mob_forest_photolizard_g_attack.webp", t:"ざこ·森｜光合成トカゲ｜リアルクリーチャー·attack"},
-  {f:"mob_forest_swarmbee_g_idle.webp", t:"ざこ·森｜狂暴バチの群れ｜リアルクリーチャー·idle"},
-  {f:"mob_forest_swarmbee_a_attack.webp", t:"ざこ·森｜狂暴バチの群れ｜精細ゲームCG·attack"},
-  {f:"mob_earth_rockgolem_a_idle.webp", t:"ざこ·地｜岩石ゴーレム｜精細ゲームCG·idle"},
-  {f:"mob_earth_rockgolem_b_attack.webp", t:"ざこ·地｜岩石ゴーレム｜アニメ塗り·attack"},
-  {f:"mob_earth_crystalcrab_b_idle.webp", t:"ざこ·地｜結晶のカニ｜アニメ塗り·idle"},
-  {f:"mob_earth_crystalcrab_g_attack.webp", t:"ざこ·地｜結晶のカニ｜リアルクリーチャー·attack"},
-  {f:"mob_earth_fossilraptor_g_idle.webp", t:"ざこ·地｜化石の恐竜兵｜リアルクリーチャー·idle"},
-  {f:"mob_earth_fossilraptor_a_attack.webp", t:"ざこ·地｜化石の恐竜兵｜精細ゲームCG·attack"},
-  {f:"mob_earth_sandstormdjinn_a_idle.webp", t:"ざこ·地｜砂嵐のジン｜精細ゲームCG·idle"},
-  {f:"mob_earth_sandstormdjinn_b_attack.webp", t:"ざこ·地｜砂嵐のジン｜アニメ塗り·attack"},
-  {f:"mob_earth_lavalizard_b_idle.webp", t:"ざこ·地｜溶岩トカゲ｜アニメ塗り·idle"},
-  {f:"mob_earth_lavalizard_g_attack.webp", t:"ざこ·地｜溶岩トカゲ｜リアルクリーチャー·attack"},
-  {f:"mob_earth_tornadosprite_g_idle.webp", t:"ざこ·地｜竜巻の精｜リアルクリーチャー·idle"},
-  {f:"mob_earth_tornadosprite_a_attack.webp", t:"ざこ·地｜竜巻の精｜精細ゲームCG·attack"},
-  {f:"mob_earth_hailyeti_a_idle.webp", t:"ざこ·地｜ひょうの雪男｜精細ゲームCG·idle"},
-  {f:"mob_earth_hailyeti_b_attack.webp", t:"ざこ·地｜ひょうの雪男｜アニメ塗り·attack"},
-  {f:"mob_earth_meteorwolf_b_idle.webp", t:"ざこ·地｜流れ星のウルフ｜アニメ塗り·idle"},
-  {f:"mob_earth_meteorwolf_g_attack.webp", t:"ざこ·地｜流れ星のウルフ｜リアルクリーチャー·attack"},
-  {f:"mob_earth_faultsnake_g_idle.webp", t:"ざこ·地｜断層のヘビ｜リアルクリーチャー·idle"},
-  {f:"mob_earth_faultsnake_a_attack.webp", t:"ざこ·地｜断層のヘビ｜精細ゲームCG·attack"},
-  {f:"mob_earth_bombdevil_a_idle.webp", t:"ざこ·地｜火山弾の悪魔｜精細ゲームCG·idle"},
-  {f:"mob_earth_bombdevil_b_attack.webp", t:"ざこ·地｜火山弾の悪魔｜アニメ塗り·attack"},
-  {f:"boss_thunder_voltdragon_a_idle.webp", t:"ボス·雷｜高圧電流のドラゴン｜精細ゲームCG·idle"},
-  {f:"boss_thunder_voltdragon_d_attack.webp", t:"ボス·雷｜高圧電流のドラゴン｜ダーク油彩·attack"},
-  {f:"boss_thunder_polargolem_d_idle.webp", t:"ボス·雷｜磁極の双頭ゴーレム｜ダーク油彩·idle"},
-  {f:"boss_thunder_polargolem_g_attack.webp", t:"ボス·雷｜磁極の双頭ゴーレム｜リアルクリーチャー·attack"},
-  {f:"boss_thunder_stormroc_g_idle.webp", t:"ボス·雷｜嵐を呼ぶ大鷲｜リアルクリーチャー·idle"},
-  {f:"boss_thunder_stormroc_a_attack.webp", t:"ボス·雷｜嵐を呼ぶ大鷲｜精細ゲームCG·attack"},
-  {f:"boss_thunder_plasmatitan_a_idle.webp", t:"ボス·雷｜プラズマの巨人｜精細ゲームCG·idle"},
-  {f:"boss_thunder_plasmatitan_d_attack.webp", t:"ボス·雷｜プラズマの巨人｜ダーク油彩·attack"},
-  {f:"boss_chem_acidserpent_a_idle.webp", t:"ボス·化｜酸の大蛇｜精細ゲームCG·idle"},
-  {f:"boss_chem_acidserpent_d_attack.webp", t:"ボス·化｜酸の大蛇｜ダーク油彩·attack"},
-  {f:"boss_chem_blazewyrm_d_idle.webp", t:"ボス·化｜燃焼の巨竜｜ダーク油彩·idle"},
-  {f:"boss_chem_blazewyrm_g_attack.webp", t:"ボス·化｜燃焼の巨竜｜リアルクリーチャー·attack"},
-  {f:"boss_chem_mercurygiant_g_idle.webp", t:"ボス·化｜液体金属の巨人｜リアルクリーチャー·idle"},
-  {f:"boss_chem_mercurygiant_a_attack.webp", t:"ボス·化｜液体金属の巨人｜精細ゲームCG·attack"},
-  {f:"boss_chem_frostqueen_a_idle.webp", t:"ボス·化｜氷晶の大魔女｜精細ゲームCG·idle"},
-  {f:"boss_chem_frostqueen_d_attack.webp", t:"ボス·化｜氷晶の大魔女｜ダーク油彩·attack"},
-  {f:"boss_forest_eldertreant_a_idle.webp", t:"ボス·森｜大樹の守護者｜精細ゲームCG·idle"},
-  {f:"boss_forest_eldertreant_d_attack.webp", t:"ボス·森｜大樹の守護者｜ダーク油彩·attack"},
-  {f:"boss_forest_queenbee_d_idle.webp", t:"ボス·森｜女王蜂の魔虫｜ダーク油彩·idle"},
-  {f:"boss_forest_queenbee_g_attack.webp", t:"ボス·森｜女王蜂の魔虫｜リアルクリーチャー·attack"},
-  {f:"boss_forest_flytrapking_g_idle.webp", t:"ボス·森｜食虫植物の王｜リアルクリーチャー·idle"},
-  {f:"boss_forest_flytrapking_a_attack.webp", t:"ボス·森｜食虫植物の王｜精細ゲームCG·attack"},
-  {f:"boss_forest_myceliabehemoth_a_idle.webp", t:"ボス·森｜菌糸のベヒーモス｜精細ゲームCG·idle"},
-  {f:"boss_forest_myceliabehemoth_d_attack.webp", t:"ボス·森｜菌糸のベヒーモス｜ダーク油彩·attack"},
-  {f:"boss_earth_magmadragon_a_idle.webp", t:"ボス·地｜溶岩の巨竜｜精細ゲームCG·idle"},
-  {f:"boss_earth_magmadragon_d_attack.webp", t:"ボス·地｜溶岩の巨竜｜ダーク油彩·attack"},
-  {f:"boss_earth_fossiltyrant_d_idle.webp", t:"ボス·地｜化石の暴君竜｜ダーク油彩·idle"},
-  {f:"boss_earth_fossiltyrant_g_attack.webp", t:"ボス·地｜化石の暴君竜｜リアルクリーチャー·attack"},
-  {f:"boss_earth_typhoonspirit_g_idle.webp", t:"ボス·地｜台風の大精霊｜リアルクリーチャー·idle"},
-  {f:"boss_earth_typhoonspirit_a_attack.webp", t:"ボス·地｜台風の大精霊｜精細ゲームCG·attack"},
-  {f:"boss_earth_starserpent_a_idle.webp", t:"ボス·地｜星喰いの大蛇｜精細ゲームCG·idle"},
-  {f:"boss_earth_starserpent_d_attack.webp", t:"ボス·地｜星喰いの大蛇｜ダーク油彩·attack"},
-  {f:"boss_final_chimerafour_a_idle.webp", t:"ボス·終｜四科のキメラ｜精細ゲームCG·idle"},
-  {f:"boss_final_chimerafour_d_attack.webp", t:"ボス·終｜四科のキメラ｜ダーク油彩·attack"},
-  {f:"boss_final_voidhorror_d_idle.webp", t:"ボス·終｜宇宙の異形｜ダーク油彩·idle"},
-  {f:"boss_final_voidhorror_g_attack.webp", t:"ボス·終｜宇宙の異形｜リアルクリーチャー·attack"},
-  {f:"boss_final_clockworkgod_g_idle.webp", t:"ボス·終｜時計仕掛けの天体神｜リアルクリーチャー·idle"},
-  {f:"boss_final_clockworkgod_a_attack.webp", t:"ボス·終｜時計仕掛けの天体神｜精細ゲームCG·attack"},
-  {f:"boss_final_abysslord_a_idle.webp", t:"ボス·終｜深淵の大魔王｜精細ゲームCG·idle"},
-  {f:"boss_final_abysslord_d_attack.webp", t:"ボス·終｜深淵の大魔王｜ダーク油彩·attack"},
-  {f:"cute_flask_attack.webp", t:"かわいい·化｜フラスコおばけ｜アニメ塗り·attack"},
-  {f:"boss_dark_poisondragon.webp", t:"ボス·化｜毒の竜｜ダーク油彩·attack"},
-  {f:"boss_real_rocktitan.webp", t:"ボス·地｜岩と水晶の巨獣｜リアルクリーチャー·idle"},
-  {f:"boss_seisai_thunderlord.webp", t:"ボス·雷｜雷の獣神｜精細ゲームCG·attack"},
+  {"f": "boss_forest_queenbee2_p_attack.webp", "t": "ボス·森｜女王蜂の魔虫(再)｜ポケ風デフォルメ·attack"},
+  {"f": "mob_forest_swarmbee2_p_attack.webp", "t": "ざこ·森｜ハチの群れ獣(再)｜ポケ風デフォルメ·attack"},
+  {"f": "mob_forest_pollenmoth2_p_attack.webp", "t": "ざこ·森｜花粉の大蛾(再)｜ポケ風デフォルメ·attack"},
+  {"f": "mob_cave_cavespider2_q_attack.webp", "t": "ざこ·洞｜洞窟グモ(再)｜コミック調·attack"},
+  {"f": "mob_forest_fireflylamp_p_attack.webp", "t": "ざこ·森｜ホタルの提灯持ち｜ポケ風デフォルメ·attack"},
+  {"f": "mob_thunder_circuitspider_p_attack.webp", "t": "ざこ·雷｜回路基板のクモ｜ポケ風デフォルメ·attack"},
+  {"f": "mob_forest_ladyknight_q_attack.webp", "t": "ざこ·森｜テントウムシの盾騎士｜コミック調·attack"},
+  {"f": "mob_forest_kabutogladiator_q_attack.webp", "t": "ざこ·森｜カブトムシの角闘士｜コミック調·attack"},
+  {"f": "mob_cave_stalagscorpion_p_idle.webp", "t": "ざこ·洞｜石筍サソリ｜ポケ風デフォルメ·idle"},
+  {"f": "mob_chem_acidcaterpillar_q_attack.webp", "t": "ざこ·化｜塩酸の腐食イモムシ｜コミック調·attack"},
+  {"f": "cute_thunder_magnetfly2_h_attack.webp", "t": "かわいい·雷｜磁石のちょうちょ(再)｜パステルマスコット·attack"},
+  {"f": "cute_thunder_cloudpuff2_h_attack.webp", "t": "かわいい·雷｜子雷雲(再)｜パステルマスコット·attack"},
+  {"f": "cute_forest_budbaby2_h_attack.webp", "t": "かわいい·森｜花のつぼみベビー(再)｜パステルマスコット·attack"},
+  {"f": "cute_earth_starbit2_h_attack.webp", "t": "かわいい·地｜星のちびすけ(再)｜パステルマスコット·attack"},
+  {"f": "cute_generic_prismcat2_h_idle.webp", "t": "かわいい·汎｜プリズムのねこ(再)｜パステルマスコット·idle"},
+  {"f": "cute_cave_icebaby_h_attack.webp", "t": "かわいい·洞｜つららの赤ちゃん｜パステルマスコット·attack"},
+  {"f": "cute_cave_mossball_h_attack.webp", "t": "かわいい·洞｜ひかりゴケの毛玉｜パステルマスコット·attack"},
+  {"f": "cute_cave_puddlesprite_h_attack.webp", "t": "かわいい·洞｜水たまりの精｜パステルマスコット·attack"},
+  {"f": "cute_cave_echochild_h_attack.webp", "t": "かわいい·洞｜やまびこの子｜パステルマスコット·attack"},
+  {"f": "cute_cave_umbrellabat_h_idle.webp", "t": "かわいい·洞｜コウモリ傘の子｜パステルマスコット·idle"},
+  {"f": "cute_thunder_jellybaby_h_attack.webp", "t": "かわいい·雷｜でんきクラゲの子｜パステルマスコット·attack"},
+  {"f": "cute_thunder_staticballoon_h_attack.webp", "t": "かわいい·雷｜ビリビリ風船｜パステルマスコット·attack"},
+  {"f": "cute_thunder_compasskid_h_idle.webp", "t": "かわいい·雷｜方位磁石の子｜パステルマスコット·idle"},
+  {"f": "cute_thunder_thundertanuki_h_attack.webp", "t": "かわいい·雷｜雷太鼓の子だぬき｜パステルマスコット·attack"},
+  {"f": "cute_thunder_magnetpup_p_idle.webp", "t": "かわいい·雷｜磁石の子犬｜ポケ風デフォルメ·idle"},
+  {"f": "cute_chem_beakerfish_h_attack.webp", "t": "かわいい·化｜ビーカーの金魚｜パステルマスコット·attack"},
+  {"f": "cute_chem_litmusplane_h_attack.webp", "t": "かわいい·化｜リトマス紙飛行機｜パステルマスコット·attack"},
+  {"f": "cute_chem_saltchild_h_attack.webp", "t": "かわいい·化｜塩の子｜パステルマスコット·attack"},
+  {"f": "cute_chem_bubblebaby_h_attack.webp", "t": "かわいい·化｜シャボン玉の子｜パステルマスコット·attack"},
+  {"f": "cute_chem_jellyexperiment_b_attack.webp", "t": "かわいい·化｜ぷるぷる実験体｜アニメ塗り·attack"},
+  {"f": "cute_forest_leafdragonet_h_attack.webp", "t": "かわいい·森｜葉っぱ竜の子｜パステルマスコット·attack"},
+  {"f": "cute_forest_dandelionpuff_h_attack.webp", "t": "かわいい·森｜たんぽぽ綿毛の子｜パステルマスコット·attack"},
+  {"f": "cute_forest_pineconesoldier_h_attack.webp", "t": "かわいい·森｜まつぼっくり兵｜パステルマスコット·attack"},
+  {"f": "cute_forest_dewfairy_h_attack.webp", "t": "かわいい·森｜露のしずく妖精｜パステルマスコット·attack"},
+  {"f": "cute_forest_mossballpet_h_idle.webp", "t": "かわいい·森｜苔玉のペット｜パステルマスコット·idle"},
+  {"f": "cute_earth_lavamanju_h_idle.webp", "t": "かわいい·地｜溶岩まんじゅう｜パステルマスコット·idle"},
+  {"f": "cute_earth_moonbunny_h_attack.webp", "t": "かわいい·地｜月の子うさぎ｜パステルマスコット·attack"},
+  {"f": "cute_earth_ashchild_h_attack.webp", "t": "かわいい·地｜火山灰の子｜パステルマスコット·attack"},
+  {"f": "cute_earth_raincloudkid_h_attack.webp", "t": "かわいい·地｜雨雲の子｜パステルマスコット·attack"},
+  {"f": "cute_earth_harukaze_b_attack.webp", "t": "かわいい·地｜春一番の子風｜アニメ塗り·attack"},
+  {"f": "cute_generic_erasersprite_b_attack.webp", "t": "かわいい·汎｜消しゴムの精｜アニメ塗り·attack"},
+  {"f": "cute_generic_doodlemon_b_attack.webp", "t": "かわいい·汎｜落書きモンスター｜アニメ塗り·attack"},
+  {"f": "cute_generic_chalkkid_b_attack.webp", "t": "かわいい·汎｜チョークの子｜アニメ塗り·attack"},
+  {"f": "cute_generic_rulerknight_b_attack.webp", "t": "かわいい·汎｜定規の剣士｜アニメ塗り·attack"},
+  {"f": "cute_generic_gogglepup_b_idle.webp", "t": "かわいい·汎｜実験メガネの子犬｜アニメ塗り·idle"},
+  {"f": "mob_cave_giantcatfish_d_attack.webp", "t": "ざこ·洞｜暗闇の大ナマズ｜ダーク油彩·attack"},
+  {"f": "mob_cave_crystalguardian_a_idle.webp", "t": "ざこ·洞｜水晶洞窟の番人｜精細ゲームCG·idle"},
+  {"f": "mob_cave_cavein_golem_d_attack.webp", "t": "ざこ·洞｜落盤ゴーレム｜ダーク油彩·attack"},
+  {"f": "mob_cave_lakemaster_d_idle.webp", "t": "ざこ·洞｜地底湖の主｜ダーク油彩·idle"},
+  {"f": "mob_cave_icicledragonet_a_attack.webp", "t": "ざこ·洞｜つらら竜｜精細ゲームCG·attack"},
+  {"f": "mob_cave_echobeast_b_attack.webp", "t": "ざこ·洞｜反響のこだま獣｜アニメ塗り·attack"},
+  {"f": "mob_cave_saltbeast_a_attack.webp", "t": "ざこ·洞｜岩塩の獣｜精細ゲームCG·attack"},
+  {"f": "mob_cave_glowserpent_d_idle.webp", "t": "ざこ·洞｜光苔の大蛇｜ダーク油彩·idle"},
+  {"f": "mob_cave_cliffgoat_b_attack.webp", "t": "ざこ·洞｜断崖の山羊鬼｜アニメ塗り·attack"},
+  {"f": "mob_cave_stalactitespear_a_idle.webp", "t": "ざこ·洞｜鍾乳石の槍兵｜精細ゲームCG·idle"},
+  {"f": "mob_cave_aquifersnake_b_attack.webp", "t": "ざこ·洞｜地下水脈の水蛇｜アニメ塗り·attack"},
+  {"f": "mob_cave_cavejelly_b_attack.webp", "t": "ざこ·洞｜洞窟クラゲ｜アニメ塗り·attack"},
+  {"f": "mob_cave_ghostbear_d_attack.webp", "t": "ざこ·洞｜洞穴グマの亡霊｜ダーク油彩·attack"},
+  {"f": "mob_cave_minecartfiend_b_attack.webp", "t": "ざこ·洞｜トロッコの魔物｜アニメ塗り·attack"},
+  {"f": "mob_cave_darkmole_a_attack.webp", "t": "ざこ·洞｜闇夜の大モグラ｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_lightningrod_a_idle.webp", "t": "ざこ·雷｜避雷針の騎士｜精細ゲームCG·idle"},
+  {"f": "mob_thunder_magnetbull_a_attack.webp", "t": "ざこ·雷｜電磁石の闘牛｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_motorwarrior_b_attack.webp", "t": "ざこ·雷｜モーターの回転武者｜アニメ塗り·attack"},
+  {"f": "mob_thunder_shockeel_b_attack.webp", "t": "ざこ·雷｜感電ウツボ｜アニメ塗り·attack"},
+  {"f": "mob_thunder_stormrider_a_attack.webp", "t": "ざこ·雷｜雷雲の乗り手｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_dynamogoblin_b_idle.webp", "t": "ざこ·雷｜発電機ゴブリン｜アニメ塗り·idle"},
+  {"f": "mob_thunder_thundercatfish_b_attack.webp", "t": "ざこ·雷｜雷ナマズ｜アニメ塗り·attack"},
+  {"f": "mob_thunder_staticporcupine_a_attack.webp", "t": "ざこ·雷｜帯電ヤマアラシ｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_speakergolem_a_attack.webp", "t": "ざこ·雷｜スピーカーゴーレム｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_fibersprite_b_attack.webp", "t": "ざこ·雷｜光ファイバーの精｜アニメ塗り·attack"},
+  {"f": "mob_thunder_teslatower_a_attack.webp", "t": "ざこ·雷｜テスラコイルの塔人｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_deadbattery_b_attack.webp", "t": "ざこ·雷｜電池切れのゾンビロボ｜アニメ塗り·attack"},
+  {"f": "mob_thunder_thunderdrummer_b_attack.webp", "t": "ざこ·雷｜雷の太鼓打ち｜アニメ塗り·attack"},
+  {"f": "mob_thunder_fieldhoop_a_attack.webp", "t": "ざこ·雷｜磁界の輪くぐり獣｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_staticpuff_b_idle.webp", "t": "ざこ·雷｜静電気の綿毛球｜アニメ塗り·idle"},
+  {"f": "mob_thunder_plugblades_b_idle.webp", "t": "ざこ·雷｜プラグの双剣士｜アニメ塗り·idle"},
+  {"f": "mob_thunder_stormaxe_a_attack.webp", "t": "ざこ·雷｜雷斧の蛮族｜精細ゲームCG·attack"},
+  {"f": "mob_thunder_radiowraith_b_attack.webp", "t": "ざこ·雷｜ラジオの怪電波｜アニメ塗り·attack"},
+  {"f": "mob_chem_sulfurdevil_d_attack.webp", "t": "ざこ·化｜硫黄の悪魔｜ダーク油彩·attack"},
+  {"f": "mob_chem_twinneutral_a_attack.webp", "t": "ざこ·化｜中和の双頭獣｜精細ゲームCG·attack"},
+  {"f": "mob_chem_oxygenwolf_a_attack.webp", "t": "ざこ·化｜酸素の白狼｜精細ゲームCG·attack"},
+  {"f": "mob_chem_hydrogenhorse_b_attack.webp", "t": "ざこ·化｜水素の青い火馬｜アニメ塗り·attack"},
+  {"f": "mob_chem_stinkwraith_d_attack.webp", "t": "ざこ·化｜アンモニアの臭気霊｜ダーク油彩·attack"},
+  {"f": "mob_chem_gypsumstatue_d_attack.webp", "t": "ざこ·化｜結晶化する石膏像｜ダーク油彩·attack"},
+  {"f": "mob_chem_co2serpent_b_attack.webp", "t": "ざこ·化｜炭酸の泡蛇｜アニメ塗り·attack"},
+  {"f": "mob_chem_ironsandbeast_a_attack.webp", "t": "ざこ·化｜砂鉄の獣｜精細ゲームCG·attack"},
+  {"f": "mob_chem_mirrordoppel_d_attack.webp", "t": "ざこ·化｜銀鏡のドッペルゲンガー｜ダーク油彩·attack"},
+  {"f": "mob_chem_limewraith_d_idle.webp", "t": "ざこ·化｜石灰水の白濁霊｜ダーク油彩·idle"},
+  {"f": "mob_chem_steamhound_b_attack.webp", "t": "ざこ·化｜沸騰湯気の犬｜アニメ塗り·attack"},
+  {"f": "mob_chem_distilllamp_a_attack.webp", "t": "ざこ·化｜蒸留器のランプ精｜精細ゲームCG·attack"},
+  {"f": "mob_chem_plasticslime_b_attack.webp", "t": "ざこ·化｜プラスチックのスライム｜アニメ塗り·attack"},
+  {"f": "mob_chem_rubberbouncer_b_attack.webp", "t": "ざこ·化｜ゴム弾性の跳ね獣｜アニメ塗り·attack"},
+  {"f": "mob_chem_catalystcheetah_a_attack.webp", "t": "ざこ·化｜触媒の加速獣｜精細ゲームCG·attack"},
+  {"f": "mob_chem_goldleafwyvern_a_idle.webp", "t": "ざこ·化｜金箔の飛竜｜精細ゲームCG·idle"},
+  {"f": "mob_chem_ferrofluidpanther_d_attack.webp", "t": "ざこ·化｜磁性流体の黒豹｜ダーク油彩·attack"},
+  {"f": "mob_forest_oakbrawler_a_attack.webp", "t": "ざこ·森｜樫の大枝殴り｜精細ゲームCG·attack"},
+  {"f": "mob_forest_toadstooldancer_b_attack.webp", "t": "ざこ·森｜毒キノコの踊り子｜アニメ塗り·attack"},
+  {"f": "mob_forest_pitchertrap_a_idle.webp", "t": "ざこ·森｜ウツボカズラの罠｜精細ゲームCG·idle"},
+  {"f": "mob_forest_flowerfencer_b_attack.webp", "t": "ざこ·森｜花の剣舞士｜アニメ塗り·attack"},
+  {"f": "mob_forest_bamboopikes_a_attack.webp", "t": "ざこ·森｜竹の槍衾｜精細ゲームCG·attack"},
+  {"f": "mob_forest_vinepuppeteer_d_attack.webp", "t": "ざこ·森｜蔦の吊り人形師｜ダーク油彩·attack"},
+  {"f": "mob_forest_bonedeer_d_idle.webp", "t": "ざこ·森｜森の骨鹿｜ダーク油彩·idle"},
+  {"f": "mob_forest_bogmaster_d_attack.webp", "t": "ざこ·森｜苔の沼主｜ダーク油彩·attack"},
+  {"f": "mob_forest_nutbomber_b_attack.webp", "t": "ざこ·森｜木の実爆弾リス｜アニメ塗り·attack"},
+  {"f": "mob_forest_veinwyvern_a_attack.webp", "t": "ざこ·森｜葉脈の翼竜｜精細ゲームCG·attack"},
+  {"f": "mob_forest_birchskeleton_d_attack.webp", "t": "ざこ·森｜白樺の白骨兵｜ダーク油彩·attack"},
+  {"f": "mob_forest_amberbeast_a_attack.webp", "t": "ざこ·森｜松脂の琥珀獣｜精細ゲームCG·attack"},
+  {"f": "mob_forest_sprouttroll_b_attack.webp", "t": "ざこ·森｜芽吹きのトロール｜アニメ塗り·attack"},
+  {"f": "mob_forest_mistdeer_d_idle.webp", "t": "ざこ·森｜森霧の幻鹿｜ダーク油彩·idle"},
+  {"f": "mob_forest_sakurablade_b_attack.webp", "t": "ざこ·森｜桜吹雪の剣士｜アニメ塗り·attack"},
+  {"f": "mob_forest_rootsnare_a_attack.webp", "t": "ざこ·森｜根っこの絞め罠｜精細ゲームCG·attack"},
+  {"f": "mob_forest_giantsalamander_b_attack.webp", "t": "ざこ·森｜大山椒魚の主｜アニメ塗り·attack"},
+  {"f": "mob_forest_leafmoldgolem_d_attack.webp", "t": "ざこ·森｜腐葉土のゴーレム｜ダーク油彩·attack"},
+  {"f": "mob_earth_riftjaw_d_attack.webp", "t": "ざこ·地｜地割れの顎｜ダーク油彩·attack"},
+  {"f": "mob_earth_basaltsoldier_a_attack.webp", "t": "ざこ·地｜玄武岩の六角兵｜精細ゲームCG·attack"},
+  {"f": "mob_earth_volcaniclightning_d_attack.webp", "t": "ざこ·地｜火山雷の鬼｜ダーク油彩·attack"},
+  {"f": "mob_earth_cumulonimbus_a_attack.webp", "t": "ざこ·地｜積乱雲の巨人｜精細ゲームCG·attack"},
+  {"f": "mob_earth_hailgunner_b_attack.webp", "t": "ざこ·地｜ひょうの散弾兵｜アニメ塗り·attack"},
+  {"f": "mob_earth_obsidianwolf_a_attack.webp", "t": "ざこ·地｜黒曜石の刃狼｜精細ゲームCG·attack"},
+  {"f": "mob_earth_hourglassghoul_d_idle.webp", "t": "ざこ·地｜砂時計の亡者｜ダーク油彩·idle"},
+  {"f": "mob_earth_craterlord_a_idle.webp", "t": "ざこ·地｜クレーターの主｜精細ゲームCG·idle"},
+  {"f": "mob_earth_ammontank_b_attack.webp", "t": "ざこ·地｜アンモナイト戦車｜アニメ塗り·attack"},
+  {"f": "mob_earth_tsunamimaw_d_attack.webp", "t": "ざこ·地｜津波の大口｜ダーク油彩·attack"},
+  {"f": "mob_earth_geocompass_a_attack.webp", "t": "ざこ·地｜地磁気の方位獣｜精細ゲームCG·attack"},
+  {"f": "mob_earth_limestonedragon_a_idle.webp", "t": "ざこ·地｜石灰岩の白竜｜精細ゲームCG·idle"},
+  {"f": "mob_earth_eclipsehound_d_attack.webp", "t": "ざこ·地｜月食の影犬｜ダーク油彩·attack"},
+  {"f": "mob_earth_coronaserpent_a_attack.webp", "t": "ざこ·地｜日食の光輪蛇｜精細ゲームCG·attack"},
+  {"f": "mob_earth_meteorpack_b_attack.webp", "t": "ざこ·地｜流星群の群狼｜アニメ塗り·attack"},
+  {"f": "mob_earth_platetortoise_a_idle.webp", "t": "ざこ·地｜プレートの重戦車亀｜精細ゲームCG·idle"},
+  {"f": "mob_earth_epicentermole_b_attack.webp", "t": "ざこ·地｜震源のモグラ大王｜アニメ塗り·attack"},
+  {"f": "mob_earth_onsenoni_b_attack.webp", "t": "ざこ·地｜温泉の湯気鬼｜アニメ塗り·attack"},
+  {"f": "mob_earth_glaciermammoth_a_attack.webp", "t": "ざこ·地｜氷河のマンモス｜精細ゲームCG·attack"},
+  {"f": "mob_earth_stardustsandman_b_attack.webp", "t": "ざこ·地｜星屑の砂男｜アニメ塗り·attack"},
+  {"f": "mob_earth_rockslideboar_a_attack.webp", "t": "ざこ·地｜岩なだれの猪｜精細ゲームCG·attack"},
+  {"f": "boss_thunder_thunderemperor_d_attack.webp", "t": "ボス·雷｜雷帝の獣王｜ダーク油彩·attack"},
+  {"f": "boss_thunder_railgunmachina_a_attack.webp", "t": "ボス·雷｜超電磁の機神｜精細ゲームCG·attack"},
+  {"f": "boss_thunder_stormhydra_d_attack.webp", "t": "ボス·雷｜嵐の九頭竜｜ダーク油彩·attack"},
+  {"f": "boss_thunder_plasmaphoenix_a_attack.webp", "t": "ボス·雷｜プラズマの火の鳥｜精細ゲームCG·attack"},
+  {"f": "boss_thunder_polartortoise_g_attack.webp", "t": "ボス·雷｜磁極の大亀｜リアルクリーチャー·attack"},
+  {"f": "boss_thunder_stormwhale_d_attack.webp", "t": "ボス·雷｜雷雲の大鯨｜ダーク油彩·attack"},
+  {"f": "boss_thunder_powerplantdragon_a_attack.webp", "t": "ボス·雷｜発電所の暴走機竜｜精細ゲームCG·attack"},
+  {"f": "boss_chem_aquaregia_d_attack.webp", "t": "ボス·化｜王水の腐食竜｜ダーク油彩·attack"},
+  {"f": "boss_chem_detonationtwins_d_attack.webp", "t": "ボス·化｜爆鳴気の双竜｜ダーク油彩·attack"},
+  {"f": "boss_chem_alchemygiant_a_attack.webp", "t": "ボス·化｜錬金の触媒巨人｜精細ゲームCG·attack"},
+  {"f": "boss_chem_fusiontitan_a_attack.webp", "t": "ボス·化｜化合の合体巨人｜精細ゲームCG·attack"},
+  {"f": "boss_chem_nitrogenempress_d_attack.webp", "t": "ボス·化｜液体窒素の氷帝｜ダーク油彩·attack"},
+  {"f": "boss_chem_sulfurbaphomet_d_attack.webp", "t": "ボス·化｜硫化の黒山羊魔神｜ダーク油彩·attack"},
+  {"f": "boss_chem_sodiumbeast_g_attack.webp", "t": "ボス·化｜金属ナトリウムの爆炎獣｜リアルクリーチャー·attack"},
+  {"f": "boss_forest_eldermother_d_attack.webp", "t": "ボス·森｜太古の大樹母神｜ダーク油彩·attack"},
+  {"f": "boss_forest_myceliumking_d_attack.webp", "t": "ボス·森｜菌糸網の地下王｜ダーク油彩·attack"},
+  {"f": "boss_forest_salamanderlord_g_attack.webp", "t": "ボス·森｜大山椒魚の霊主｜リアルクリーチャー·attack"},
+  {"f": "boss_forest_owlsage_a_attack.webp", "t": "ボス·森｜森の梟賢王｜精細ゲームCG·attack"},
+  {"f": "boss_forest_vinestrangler_d_attack.webp", "t": "ボス·森｜蔦の絞殺公｜ダーク油彩·attack"},
+  {"f": "boss_forest_mossgrizzly_g_attack.webp", "t": "ボス·森｜苔の巨熊｜リアルクリーチャー·attack"},
+  {"f": "boss_forest_autumnstag_a_attack.webp", "t": "ボス·森｜紅葉の炎鹿王｜精細ゲームCG·attack"},
+  {"f": "boss_earth_quakedragon_d_attack.webp", "t": "ボス·地｜大地震の巨竜｜ダーク油彩·attack"},
+  {"f": "boss_earth_tornadoserpentgod_a_attack.webp", "t": "ボス·地｜巨大竜巻の蛇神｜精細ゲームCG·attack"},
+  {"f": "boss_earth_mammothking_g_attack.webp", "t": "ボス·地｜氷河期のマンモス王｜リアルクリーチャー·attack"},
+  {"f": "boss_earth_pyroclasticdemon_d_attack.webp", "t": "ボス·地｜火砕流の魔神｜ダーク油彩·attack"},
+  {"f": "boss_earth_fullmoonwolf_d_attack.webp", "t": "ボス·地｜満月の狼王｜ダーク油彩·attack"},
+  {"f": "boss_earth_solarflarelion_a_attack.webp", "t": "ボス·地｜太陽フレアの獅子｜精細ゲームCG·attack"},
+  {"f": "boss_earth_stratatortoise_g_attack.webp", "t": "ボス·地｜地層の古代亀神｜リアルクリーチャー·attack"},
+  {"f": "boss_final_tetraarchangel_a_attack.webp", "t": "ボス·終｜四元素の融合天使｜精細ゲームCG·attack"},
+  {"f": "boss_final_antimatterhorror_d_attack.webp", "t": "ボス·終｜反物質の異形｜ダーク油彩·attack"},
+  {"f": "boss_final_blackholedevourer_d_attack.webp", "t": "ボス·終｜ブラックホールの喰らい手｜ダーク油彩·attack"},
+  {"f": "boss_final_supernovaphoenix_a_attack.webp", "t": "ボス·終｜超新星の火の鳥｜精細ゲームCG·attack"},
+  {"f": "boss_final_galaxyserpentgod_d_attack.webp", "t": "ボス·終｜銀河渦の大蛇神｜ダーク油彩·attack"},
+  {"f": "boss_final_chronogearking_a_attack.webp", "t": "ボス·終｜時空の歯車皇｜精細ゲームCG·attack"},
+  {"f": "boss_final_absolutezeroreaper_d_attack.webp", "t": "ボス·終｜絶対零度の死神｜ダーク油彩·attack"},
+  {"f": "boss_thunder_raijinoni_i_attack.webp", "t": "ボス·雷｜雷神の和太鼓鬼｜墨絵和風·attack"},
+  {"f": "boss_earth_fujinbag_i_attack.webp", "t": "ボス·地｜風神の袋持ち｜墨絵和風·attack"},
+  {"f": "mob_forest_koidragon_i_attack.webp", "t": "ざこ·森｜鯉の滝登り竜｜墨絵和風·attack"},
+  {"f": "mob_chem_kitsunebi_i_attack.webp", "t": "ざこ·化｜狐火の九尾｜墨絵和風·attack"},
+  {"f": "cute_cave_karakasa_i_idle.webp", "t": "かわいい·洞｜唐傘おばけの子｜墨絵和風·idle"},
+  {"f": "boss_final_sumidragon_i_attack.webp", "t": "ボス·終｜墨流しの龍｜墨絵和風·attack"},
+  {"f": "mob_earth_hannyarock_i_idle.webp", "t": "ざこ·地｜般若の岩面鬼｜墨絵和風·idle"},
+  {"f": "mob_thunder_glasspeacock_j_attack.webp", "t": "ざこ·雷｜光の孔雀｜ステンドグラス·attack"},
+  {"f": "boss_final_rosewindowangel_j_attack.webp", "t": "ボス·終｜薔薇窓の天使｜ステンドグラス·attack"},
+  {"f": "cute_forest_kaleidobutterfly_j_idle.webp", "t": "かわいい·森｜万華鏡の蝶｜ステンドグラス·idle"},
+  {"f": "mob_earth_constellationdeer_j_attack.webp", "t": "ざこ·地｜星座の大鹿｜ステンドグラス·attack"},
+  {"f": "mob_cave_glassanglerfish_j_idle.webp", "t": "ざこ·洞｜ガラスの深海魚｜ステンドグラス·idle"},
+  {"f": "boss_chem_cathedrallion_j_attack.webp", "t": "ボス·化｜聖堂の守護獅子｜ステンドグラス·attack"},
+  {"f": "cute_generic_mosaicbird_j_attack.webp", "t": "かわいい·汎｜太陽のモザイク鳥｜ステンドグラス·attack"},
+  {"f": "cute_generic_pixelhero_k_attack.webp", "t": "かわいい·汎｜8bitの勇者スライム｜ドット絵·attack"},
+  {"f": "boss_earth_pixeldragon_k_attack.webp", "t": "ボス·地｜ドットの火竜｜ドット絵·attack"},
+  {"f": "cute_thunder_pixelmomonga_k_attack.webp", "t": "かわいい·雷｜ドット絵の雷モモンガ｜ドット絵·attack"},
+  {"f": "mob_cave_pixelskeleton_k_attack.webp", "t": "ざこ·洞｜ドットの骸骨剣士｜ドット絵·attack"},
+  {"f": "mob_chem_pixelwizard_k_attack.webp", "t": "ざこ·化｜ドットの毒魔道士｜ドット絵·attack"},
+  {"f": "mob_forest_pixelwolf_k_attack.webp", "t": "ざこ·森｜ドットの森狼｜ドット絵·attack"},
+  {"f": "mob_final_pixelufo_k_attack.webp", "t": "ざこ·終｜ドットのUFO｜ドット絵·attack"},
+  {"f": "cute_generic_oritsuru_l_attack.webp", "t": "かわいい·汎｜折り鶴の使い｜折り紙·attack"},
+  {"f": "mob_earth_origamishishimai_l_attack.webp", "t": "ざこ·地｜折り紙の獅子舞｜折り紙·attack"},
+  {"f": "boss_forest_origamidragon_l_attack.webp", "t": "ボス·森｜折り紙の竜｜折り紙·attack"},
+  {"f": "mob_thunder_origamisamurai_l_attack.webp", "t": "ざこ·雷｜折り紙の兜武者｜折り紙·attack"},
+  {"f": "cute_forest_origamifrog_l_attack.webp", "t": "かわいい·森｜折り紙のカエル｜折り紙·attack"},
+  {"f": "mob_cave_origamighostship_l_idle.webp", "t": "ざこ·洞｜折り紙の船幽霊｜折り紙·idle"},
+  {"f": "cute_earth_origamistar_l_idle.webp", "t": "かわいい·地｜折り紙の星｜折り紙·idle"},
+  {"f": "mob_thunder_neonwolf_m_attack.webp", "t": "ざこ·雷｜ネオンの電脳狼｜ネオン·attack"},
+  {"f": "mob_chem_neonpotion_m_attack.webp", "t": "ざこ·化｜ネオン薬瓶の精｜ネオン·attack"},
+  {"f": "cute_cave_neonjelly_m_idle.webp", "t": "かわいい·洞｜ネオンクラゲ｜ネオン·idle"},
+  {"f": "boss_thunder_neonknight_m_attack.webp", "t": "ボス·雷｜ネオンの騎士王｜ネオン·attack"},
+  {"f": "boss_chem_neontesttubedragon_m_attack.webp", "t": "ボス·化｜ネオン試験管龍｜ネオン·attack"},
+  {"f": "cute_generic_neonfairy_m_idle.webp", "t": "かわいい·汎｜ネオンサインの妖精｜ネオン·idle"},
+  {"f": "mob_earth_neonstarsnake_m_attack.webp", "t": "ざこ·地｜ネオンの星図蛇｜ネオン·attack"},
+  {"f": "mob_earth_clayvolcano_n_attack.webp", "t": "ざこ·地｜粘土の火山獣｜クレイ·attack"},
+  {"f": "cute_chem_clayflask_n_idle.webp", "t": "かわいい·化｜粘土のフラスコ獣｜クレイ·idle"},
+  {"f": "mob_earth_claydino_n_attack.webp", "t": "ざこ·地｜粘土の恐竜｜クレイ·attack"},
+  {"f": "cute_thunder_claythundercloud_n_attack.webp", "t": "かわいい·雷｜粘土の雷雲｜クレイ·attack"},
+  {"f": "mob_forest_claytroll_n_attack.webp", "t": "ざこ·森｜粘土の森トロール｜クレイ·attack"},
+  {"f": "cute_cave_claybat_n_attack.webp", "t": "かわいい·洞｜粘土のコウモリ｜クレイ·attack"},
+  {"f": "cute_thunder_feltmagnetbear_o_idle.webp", "t": "かわいい·雷｜フェルトの磁石くま｜フェルト·idle"},
+  {"f": "cute_forest_feltmushroom_o_attack.webp", "t": "かわいい·森｜フェルトのきのこ｜フェルト·attack"},
+  {"f": "cute_generic_yarncatdragon_o_attack.webp", "t": "かわいい·汎｜毛糸玉の猫竜｜フェルト·attack"},
+  {"f": "cute_earth_feltfossil_o_idle.webp", "t": "かわいい·地｜フェルトの化石｜フェルト·idle"},
+  {"f": "cute_earth_feltyeti_o_attack.webp", "t": "かわいい·地｜フェルトの雪男｜フェルト·attack"},
+  {"f": "cute_chem_feltbottle_o_idle.webp", "t": "かわいい·化｜フェルトのおばけ瓶｜フェルト·idle"},
+  {"f": "mob_chem_sparklizard_p_attack.webp", "t": "ざこ·化｜火花のトカゲ｜ポケ風デフォルメ·attack"},
+  {"f": "cute_earth_rockturtle_p_attack.webp", "t": "かわいい·地｜岩の子亀｜ポケ風デフォルメ·attack"},
+  {"f": "cute_forest_dewbird_p_attack.webp", "t": "かわいい·森｜露草の小鳥｜ポケ風デフォルメ·attack"},
+  {"f": "mob_thunder_orbfloat_p_attack.webp", "t": "ざこ·雷｜電気だまの浮遊獣｜ポケ風デフォルメ·attack"},
+  {"f": "mob_cave_oremole_p_attack.webp", "t": "ざこ·洞｜鉱石食いのモグラ獣｜ポケ風デフォルメ·attack"},
+  {"f": "mob_earth_goofygolem_q_attack.webp", "t": "ざこ·地｜とぼけた岩巨人｜コミック調·attack"},
+  {"f": "mob_chem_foxpeddler_q_attack.webp", "t": "ざこ·化｜薬売りのキツネ｜コミック調·attack"},
+  {"f": "mob_forest_rootbigman_q_attack.webp", "t": "ざこ·森｜根っこの大男｜コミック調·attack"},
+  {"f": "mob_thunder_funnyraioni_q_attack.webp", "t": "ざこ·雷｜ひょうきんな雷鬼｜コミック調·attack"},
+  {"f": "mob_cave_treasuremimic_q_attack.webp", "t": "ざこ·洞｜宝箱ミミック｜コミック調·attack"},
+  {"f": "boss_final_vainlittledragon_q_attack.webp", "t": "ボス·終｜見栄っ張りの小竜王｜コミック調·attack"},
 ];
 // =======================================================
 const KEY="tinder_"+SHEET;
 let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+function itemKey(it){return it.pair ? it.pair[0]+"|"+it.pair[1] : it.f;}
 let idx=Object.keys(st).filter(k=>!k.startsWith("_")).length ? nextUndone() : 0;
 let history=[];
 document.getElementById("title").textContent=SHEET;
-function nextUndone(){for(let i=0;i<ITEMS.length;i++){if(!st[ITEMS[i].f])return i;}return ITEMS.length;}
+function nextUndone(){for(let i=0;i<ITEMS.length;i++){if(!st[itemKey(ITEMS[i])])return i;}return ITEMS.length;}
 function save(){localStorage.setItem(KEY,JSON.stringify(st));}
 const stage=document.getElementById("stage");
 let card=null,sx=0,sy=0,dx=0,dragging=false,lastTap=0;
@@ -288,17 +322,40 @@ function render(){
   if(idx>=ITEMS.length){finish();return;}
   document.getElementById("done").classList.remove("on");
   const it=ITEMS[idx];
-  card=document.createElement("div");card.className="card";
-  card.innerHTML='<img src="'+IMGDIR+it.f+'" draggable="false">'+
-    '<div class="stamp ok">採用</div><div class="stamp ng">不採用</div>'+
-    '<div class="label">'+(idx+1)+"体目: "+it.t+"</div>";
+  card=document.createElement("div");
+  if(it.pair){
+    card.className="card pair";
+    card.innerHTML=
+      '<div class="half"><img src="'+IMGDIR+it.pair[0]+'" draggable="false">'+
+        '<div class="sub">'+(it.ta||"A")+'</div><button class="pick" onclick="pick(0,event)">◀ こっちを採用</button></div>'+
+      '<div class="half"><img src="'+IMGDIR+it.pair[1]+'" draggable="false">'+
+        '<div class="sub">'+(it.tb||"B")+'</div><button class="pick" onclick="pick(1,event)">こっちを採用 ▶</button></div>'+
+      '<div class="stamp ng">両方不採用</div>'+
+      '<div class="label">'+(idx+1)+"件目(比較): "+it.t+"</div>";
+    document.getElementById("hint").textContent="ボタン=片方採用　←スワイプ/✗=両方不採用　ダブルタップ=✏修正";
+    document.getElementById("okbtn").style.display="none";
+  }else{
+    card.className="card";
+    card.innerHTML='<img src="'+IMGDIR+it.f+'" draggable="false">'+
+      '<div class="stamp ok">採用</div><div class="stamp ng">不採用</div>'+
+      '<div class="label">'+(idx+1)+"体目: "+it.t+"</div>";
+    document.getElementById("hint").textContent="→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント";
+    document.getElementById("okbtn").style.display="";
+  }
   stage.appendChild(card);
   card.addEventListener("pointerdown",pd);
   card.addEventListener("pointermove",pm);
   card.addEventListener("pointerup",pu);
   card.addEventListener("pointercancel",pu);
 }
+function pick(side,ev){
+  if(ev){ev.stopPropagation();}
+  const it=ITEMS[idx];if(!it||!it.pair)return;
+  const half=card.querySelectorAll(".half")[side];if(half)half.classList.add("win");
+  decide(side===0?"A":"B");
+}
 function pd(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains("pick"))return;
   const now=Date.now();
   if(now-lastTap<300){lastTap=0;openFix();return;}
   lastTap=now;
@@ -307,36 +364,42 @@ function pd(e){
 }
 function pm(e){
   if(!dragging)return;
+  const it=ITEMS[idx];
   dx=e.clientX-sx;const dy=e.clientY-sy;
+  if(it.pair&&dx>0)dx=0; // ペアは右スワイプ採用なし（どっちか選べないため）
   card.style.transform="translate("+dx+"px,"+(dy*0.3)+"px) rotate("+(dx/18)+"deg)";
-  card.querySelector(".stamp.ok").style.opacity=dx>40?Math.min((dx-40)/80,1):0;
+  const ok=card.querySelector(".stamp.ok");
+  if(ok)ok.style.opacity=dx>40?Math.min((dx-40)/80,1):0;
   card.querySelector(".stamp.ng").style.opacity=dx<-40?Math.min((-dx-40)/80,1):0;
 }
 function pu(){
   if(!dragging)return;dragging=false;card.classList.remove("drag");
-  if(dx>90){decide("OK");}
+  const it=ITEMS[idx];
+  if(dx>90&&!it.pair){decide("OK");}
   else if(dx<-90){decide("NG");}
   else{card.style.transform="";card.querySelectorAll(".stamp").forEach(s=>s.style.opacity=0);}
 }
 function decide(v,note){
   if(idx>=ITEMS.length)return;
-  const it=ITEMS[idx];
-  st[it.f]={v:v,t:it.t};if(note)st[it.f].note=note;
-  history.push(it.f);save();
-  if(card){card.style.transform="translate("+(v==="OK"?1:(v==="NG"?-1:0))*window.innerWidth+"px,-40px) rotate("+(v==="OK"?20:-20)+"deg)";card.style.opacity=0;}
+  const it=ITEMS[idx];const k=itemKey(it);
+  st[k]={v:v,t:it.t};if(note)st[k].note=note;
+  if(it.pair){st[k].a=it.pair[0];st[k].b=it.pair[1];}
+  history.push(k);save();
+  if(card){const dir=(v==="OK"||v==="A"||v==="B")?1:(v==="NG"?-1:0);card.style.transform="translate("+dir*window.innerWidth+"px,-40px) rotate("+dir*20+"deg)";card.style.opacity=0;}
   idx++;setTimeout(render,180);
 }
 function undo(){
   if(!history.length)return;
-  const f=history.pop();delete st[f];save();
-  idx=ITEMS.findIndex(it=>it.f===f);render();
+  const k=history.pop();delete st[k];save();
+  idx=ITEMS.findIndex(it=>itemKey(it)===k);render();
 }
-function openFix(){if(idx>=ITEMS.length)return;document.getElementById("fixnote").value=(st[ITEMS[idx].f]&&st[ITEMS[idx].f].note)||"";document.getElementById("ov").classList.add("on");}
+function openFix(){if(idx>=ITEMS.length)return;const k=itemKey(ITEMS[idx]);document.getElementById("fixnote").value=(st[k]&&st[k].note)||"";document.getElementById("ov").classList.add("on");}
 function closeFix(){document.getElementById("ov").classList.remove("on");}
 function saveFix(){const n=document.getElementById("fixnote").value.trim();closeFix();decide("FIX",n||"(コメントなし)");}
 function finish(){
-  const c={OK:0,NG:0,FIX:0};Object.keys(st).forEach(k=>{if(!k.startsWith("_"))c[st[k].v]=(c[st[k].v]||0)+1;});
-  document.getElementById("counts").innerHTML="◎採用 "+(c.OK||0)+"　✗不採用 "+(c.NG||0)+"　✏修正 "+(c.FIX||0);
+  const c={};Object.keys(st).forEach(k=>{if(!k.startsWith("_"))c[st[k].v]=(c[st[k].v]||0)+1;});
+  const adopt=(c.OK||0)+(c.A||0)+(c.B||0);
+  document.getElementById("counts").innerHTML="◎採用 "+adopt+"　✗不採用 "+(c.NG||0)+"　✏修正 "+(c.FIX||0);
   document.getElementById("done").classList.add("on");
 }
 function copyResult(btn){
