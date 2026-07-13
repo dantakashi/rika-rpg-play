@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>画像ティンダー検収</title>
+<style>
+  :root{--ok:#5b8a72;--ng:#c0564a;--fix:#4a6fb5}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:#2b2622;color:#f4ede2}
+  .top{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;z-index:10;background:linear-gradient(#2b2622,#2b262200)}
+  .top b{font-size:15px}
+  #prog{font-weight:700;font-size:14px;color:#d8c9a8}
+  .stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:64px 12px 130px}
+  .card{position:absolute;width:min(92vw,540px);max-height:calc(100% - 190px);aspect-ratio:1/1;border-radius:20px;background:repeating-conic-gradient(#3a332d 0 25%,#453c34 0 50%) 0 0/28px 28px;box-shadow:0 10px 40px #000a;touch-action:none;user-select:none;overflow:hidden;transition:transform .25s,opacity .25s}
+  .card.drag{transition:none}
+  .card img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+  .card .label{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;background:#000a;font-size:13px}
+  /* ペア比較カード（同モチーフ2枚並べ・タップで片方採用） */
+  .card.pair{aspect-ratio:auto;height:calc(100% - 40px);display:flex;gap:4px;padding-bottom:34px}
+  .card.pair .half{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+  .card.pair .half img{flex:1;min-height:0;width:100%;object-fit:contain;pointer-events:none}
+  .card.pair .half .sub{font-size:11px;text-align:center;background:#0008;padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.pair .half .pick{margin:6px;padding:12px 0;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;color:#fff;background:var(--ok);cursor:pointer}
+  .card.pair .half.win{outline:4px solid var(--ok);outline-offset:-4px}
+  .stamp{position:absolute;top:18px;font-size:30px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-12deg);pointer-events:none;z-index:3}
+  .stamp.ok{left:14px;color:var(--ok);border-color:var(--ok)}
+  .stamp.ng{right:14px;color:var(--ng);border-color:var(--ng);transform:rotate(12deg)}
+  .bar{position:fixed;bottom:0;left:0;right:0;padding:12px 14px 22px;display:flex;gap:10px;z-index:10;background:linear-gradient(#2b262200,#2b2622 40%)}
+  .bar button{flex:1;font:inherit;font-weight:800;font-size:15px;padding:14px 0;border-radius:14px;border:none;cursor:pointer;color:#fff}
+  .b-ng{background:var(--ng)}.b-fix{background:var(--fix)}.b-ok{background:var(--ok)}.b-undo{background:#6b6259;flex:.6}
+  .hint{position:fixed;bottom:92px;left:0;right:0;text-align:center;font-size:12px;color:#b7a98d;z-index:9}
+  .overlay{position:fixed;inset:0;background:#000c;z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.on{display:flex}
+  .panel{background:#f6f1e7;color:#3c302c;border-radius:16px;padding:16px;width:min(92vw,480px)}
+  .panel textarea{width:100%;min-height:90px;font:inherit;font-size:14px;border:1px solid #d9c5ab;border-radius:10px;padding:8px}
+  .panel .row{display:flex;gap:10px;margin-top:10px}
+  .panel button{flex:1;font:inherit;font-weight:700;padding:12px 0;border-radius:12px;border:none;color:#fff;cursor:pointer}
+  .done{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px;text-align:center}
+  .done.on{display:flex}
+  .done .counts{font-size:16px;line-height:2}
+  .done button{font:inherit;font-weight:800;font-size:16px;padding:14px 26px;border-radius:14px;border:none;background:var(--fix);color:#fff;cursor:pointer}
+  .done textarea{width:min(92vw,520px);min-height:110px;font-size:12px;border-radius:10px;border:none;padding:8px;display:none}
+</style>
+</head>
+<body>
+<div class="top"><b id="title">画像ティンダー検収</b><span id="prog"></span></div>
+<div class="stage" id="stage"></div>
+<div class="hint" id="hint">→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント</div>
+<div class="bar">
+  <button class="b-undo" onclick="undo()">↩</button>
+  <button class="b-ng" onclick="decide('NG')">✗ 不採用</button>
+  <button class="b-fix" onclick="openFix()">✏ 修正</button>
+  <button class="b-ok" id="okbtn" onclick="decide('OK')">◎ 採用</button>
+</div>
+<div class="overlay" id="ov">
+  <div class="panel">
+    <b>✏ 修正コメント</b>（どう直してほしいか）
+    <textarea id="fixnote" placeholder="例: もっと赤く／目を大きく／向きを右に"></textarea>
+    <div class="row">
+      <button style="background:#9aa2ab" onclick="closeFix()">やめる</button>
+      <button style="background:var(--fix)" onclick="saveFix()">修正として記録</button>
+    </div>
+  </div>
+</div>
+<div class="done" id="done">
+  <h2>完了！</h2>
+  <div class="counts" id="counts"></div>
+  <button onclick="copyResult(this)">📋 結果をコピー（チャットに貼り付け）</button>
+  <textarea id="dump" readonly onclick="this.select()"></textarea>
+</div>
+<script>
+// ===== バッチ定義（ここだけ差し替えれば使い回せる） =====
+// 1枚カード: {f:"ファイル名", t:"ラベル"}
+// ペア比較 : {pair:["A.png","B.png"], t:"モチーフ名", ta:"Aの説明", tb:"Bの説明"}
+//            → 画像下のボタンで片方採用（もう片方は自動で不採用）・←スワイプ/✗=両方不採用
+const SHEET = "第5弾ティンダーA(魔界-エジプト144)";
+const IMGDIR = "imgs/";
+const ITEMS = [
+  {"f": "mob_makai_chainwarden_d_attack.webp", "t": "ざこ·魔界｜鎖鎌の看守悪魔｜ダーク油彩·attack"},
+  {"f": "mob_makai_violetwitch_d_attack.webp", "t": "ざこ·魔界｜紫炎の魔女｜ダーク油彩·attack"},
+  {"f": "mob_makai_poisonbutler_d_attack.webp", "t": "ざこ·魔界｜魔界の毒杯の給仕｜ダーク油彩·attack"},
+  {"f": "mob_makai_forgedevil_d_attack.webp", "t": "ざこ·魔界｜魔炉の鍛冶悪魔｜ダーク油彩·attack"},
+  {"f": "mob_makai_firedrinker_d_attack.webp", "t": "ざこ·魔界｜魔界の火酒の酔師｜ダーク油彩·attack"},
+  {"f": "mob_makai_voidcloak_d_attack.webp", "t": "ざこ·魔界｜虚空歩きの外套｜ダーク油彩·attack"},
+  {"f": "mob_makai_borsword_d_attack.webp", "t": "ざこ·魔界｜二足魔豚の大鉈兵｜ダーク油彩·attack"},
+  {"f": "mob_makai_gallowsbell_d_attack.webp", "t": "ざこ·魔界｜逆さ吊りの処刑鐘｜ダーク油彩·attack"},
+  {"f": "mob_makai_walkingcage_d_attack.webp", "t": "ざこ·魔界｜魔界の投獄檻｜ダーク油彩·attack"},
+  {"f": "mob_makai_thornwhip_d_attack.webp", "t": "ざこ·魔界｜茨の鞭打ち悪魔｜ダーク油彩·attack"},
+  {"f": "mob_makai_flamearcher_a_attack.webp", "t": "ざこ·魔界｜魔界の焔羽の射手｜精細ゲームCG·attack"},
+  {"f": "mob_makai_keymaster_d_attack.webp", "t": "ざこ·魔界｜獄門の鍵番｜ダーク油彩·attack"},
+  {"f": "mob_makai_gatetentacle_d_attack.webp", "t": "ざこ·魔界｜奈落門の触手｜ダーク油彩·attack"},
+  {"f": "mob_makai_organfiend_m_attack.webp", "t": "ざこ·魔界｜魔界オルガン弾き｜ネオン·attack"},
+  {"f": "midboss_makai_dualwhiplord_d_attack.webp", "t": "中ボス·魔界｜魔界の獄長｜ダーク油彩·attack"},
+  {"f": "midboss_makai_dragoonlord_d_attack.webp", "t": "中ボス·魔界｜魔界の竜騎兵長｜ダーク油彩·attack"},
+  {"f": "midboss_makai_abyssjaw_d_attack.webp", "t": "中ボス·魔界｜深淵の大顎｜ダーク油彩·attack"},
+  {"f": "midboss_makai_starmage_a_attack.webp", "t": "中ボス·魔界｜魔眼の大占星術師｜精細ゲームCG·attack"},
+  {"f": "boss_makai_fallenmarshal_d_attack.webp", "t": "ボス·魔界｜堕天の魔元帥｜ダーク油彩·attack"},
+  {"f": "boss_makai_abyssarm_d_attack.webp", "t": "ボス·魔界｜奈落の巨腕｜ダーク油彩·attack"},
+  {"f": "neta_makai_patissier_q_attack.webp", "t": "ネタ·魔界｜魔界のパティシエ悪魔｜コミック調·attack"},
+  {"f": "neta_makai_ramenstand_q_attack.webp", "t": "ネタ·魔界｜魔界ラーメン屋台の店主｜コミック調·attack"},
+  {"f": "cute_makai_candlenewt_k_idle.webp", "t": "かわいい·魔界｜尻尾ろうそくの子イモリ｜ドット絵·idle"},
+  {"f": "cute_makai_gutterbaby_k_idle.webp", "t": "かわいい·魔界｜ちびガーゴイルの雨どい番｜ドット絵·idle"},
+  {"f": "mob_zombie_coffinporter_d_attack.webp", "t": "ざこ·ゾンビ｜棺桶背負いの運び屋｜ダーク油彩·attack"},
+  {"f": "mob_zombie_tombthrower_d_attack.webp", "t": "ざこ·ゾンビ｜墓石の投擲亡者｜ダーク油彩·attack"},
+  {"f": "mob_zombie_mudcrawler_d_attack.webp", "t": "ざこ·ゾンビ｜這い寄る腐土の塊｜ダーク油彩·attack"},
+  {"f": "mob_zombie_magiciancorpse_d_attack.webp", "t": "ざこ·ゾンビ｜ゾンビの奇術師｜ダーク油彩·attack"},
+  {"f": "mob_zombie_hearsedriver_d_attack.webp", "t": "ざこ·ゾンビ｜霊柩馬車の御者｜ダーク油彩·attack"},
+  {"f": "mob_zombie_stumppuller_d_attack.webp", "t": "ざこ·ゾンビ｜墓場の切り株抜き｜ダーク油彩·attack"},
+  {"f": "mob_zombie_waxwalker_d_attack.webp", "t": "ざこ·ゾンビ｜屍蝋の蝋燭亡者｜ダーク油彩·attack"},
+  {"f": "mob_zombie_bannercorpse_d_attack.webp", "t": "ざこ·ゾンビ｜ゾンビの旗手｜ダーク油彩·attack"},
+  {"f": "mob_zombie_barbercorpse_q_attack.webp", "t": "ざこ·ゾンビ｜ゾンビの理髪師｜コミック調·attack"},
+  {"f": "mob_zombie_carpentercorpse_q_attack.webp", "t": "ざこ·ゾンビ｜ゾンビの大工｜コミック調·attack"},
+  {"f": "mob_zombie_swamplord_d_attack.webp", "t": "ざこ·ゾンビ｜腐敗沼の主｜ダーク油彩·attack"},
+  {"f": "mob_zombie_molecorpse_b_attack.webp", "t": "ざこ·ゾンビ｜墓場のモグラ亡者｜アニメ塗り·attack"},
+  {"f": "mob_zombie_reaperapprentice_d_attack.webp", "t": "ざこ·ゾンビ｜死神の見習い｜ダーク油彩·attack"},
+  {"f": "mob_zombie_corpseflower_d_attack.webp", "t": "ざこ·ゾンビ｜屍花の大輪｜ダーク油彩·attack"},
+  {"f": "midboss_zombie_archbishopcorpse_d_attack.webp", "t": "中ボス·ゾンビ｜墓場の大主教｜ダーク油彩·attack"},
+  {"f": "midboss_zombie_corpsechariot_d_attack.webp", "t": "中ボス·ゾンビ｜屍山血河の戦車｜ダーク油彩·attack"},
+  {"f": "midboss_zombie_stitchsisters_d_attack.webp", "t": "中ボス·ゾンビ｜双子の縫合姉妹｜ダーク油彩·attack"},
+  {"f": "midboss_zombie_deathexecutor_d_attack.webp", "t": "中ボス·ゾンビ｜大鎌の死神執行官｜ダーク油彩·attack"},
+  {"f": "boss_zombie_cathedralcorpse_d_attack.webp", "t": "ボス·ゾンビ｜亡者の大聖堂｜ダーク油彩·attack"},
+  {"f": "boss_zombie_flylord_d_attack.webp", "t": "ボス·ゾンビ｜疫病の蠅王｜ダーク油彩·attack"},
+  {"f": "neta_zombie_zombieidol_q_attack.webp", "t": "ネタ·ゾンビ｜ゾンビのアイドル｜コミック調·attack"},
+  {"f": "neta_zombie_deliverycorpse_k_attack.webp", "t": "ネタ·ゾンビ｜ゾンビの宅配便｜ドット絵·attack"},
+  {"f": "cute_zombie_patchbear_k_idle.webp", "t": "かわいい·ゾンビ｜継ぎ接ぎの子ぐまゾンビ｜ドット絵·idle"},
+  {"f": "cute_zombie_bonebird_k_idle.webp", "t": "かわいい·ゾンビ｜骨の小鳥｜ドット絵·idle"},
+  {"f": "mob_jigoku_bloodfisher_i_attack.webp", "t": "ざこ·地獄｜血の池の釣り鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_needlporter_i_attack.webp", "t": "ざこ·地獄｜針の山の運搬鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_chainweight_i_attack.webp", "t": "ざこ·地獄｜灼熱の鎖分銅鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_stonestacker_i_attack.webp", "t": "ざこ·地獄｜賽の河原の石積み鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_hellpainter_i_attack.webp", "t": "ざこ·地獄｜地獄絵図の筆鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_datsueba_i_attack.webp", "t": "ざこ·地獄｜奪衣婆｜墨絵和風·attack"},
+  {"f": "mob_jigoku_stampjudge_i_attack.webp", "t": "ざこ·地獄｜地獄の判子押し鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_tollkeeper_i_attack.webp", "t": "ざこ·地獄｜六文銭の関守鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_firewalker_i_attack.webp", "t": "ざこ·地獄｜灼熱の火渡り鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_bathscrubber_i_attack.webp", "t": "ざこ·地獄｜溶岩風呂の垢すり鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_needlefish_i_attack.webp", "t": "ざこ·地獄｜針千本のハリセンボン鬼｜墨絵和風·attack"},
+  {"f": "mob_jigoku_bonechime_i_attack.webp", "t": "ざこ·地獄｜骨風鈴の亡者｜墨絵和風·attack"},
+  {"f": "mob_jigoku_tilebreaker_d_attack.webp", "t": "ざこ·地獄｜獄炎の瓦割り鬼｜ダーク油彩·attack"},
+  {"f": "mob_jigoku_higanbana_i_attack.webp", "t": "ざこ·地獄｜彼岸花の畑の番人｜墨絵和風·attack"},
+  {"f": "midboss_jigoku_gokanking_i_attack.webp", "t": "中ボス·地獄｜五官王の裁き人｜墨絵和風·attack"},
+  {"f": "midboss_jigoku_twinsumo_i_attack.webp", "t": "中ボス·地獄｜双頭の獄卒力士｜墨絵和風·attack"},
+  {"f": "midboss_jigoku_boltkeeper_i_attack.webp", "t": "中ボス·地獄｜地獄の門の大閂鬼｜墨絵和風·attack"},
+  {"f": "midboss_jigoku_catfishlord_i_attack.webp", "t": "中ボス·地獄｜血の池の大鯰｜墨絵和風·attack"},
+  {"f": "boss_jigoku_shinkoking_i_attack.webp", "t": "ボス·地獄｜秦広王の裁き｜墨絵和風·attack"},
+  {"f": "boss_jigoku_cauldronlord_i_attack.webp", "t": "ボス·地獄｜地獄の大釜の主｜墨絵和風·attack"},
+  {"f": "neta_jigoku_radiooni_q_attack.webp", "t": "ネタ·地獄｜地獄のラジオ体操鬼｜コミック調·attack"},
+  {"f": "neta_jigoku_healthcheck_q_attack.webp", "t": "ネタ·地獄｜閻魔の健康診断｜コミック調·attack"},
+  {"f": "cute_jigoku_clubdebut_k_idle.webp", "t": "かわいい·地獄｜金棒デビューの子鬼｜ドット絵·idle"},
+  {"f": "cute_jigoku_bathfrog_k_attack.webp", "t": "かわいい·地獄｜湯加減見習いの子ガエル｜ドット絵·attack"},
+  {"f": "mob_vampire_bloodsculptor_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜血晶の彫刻家｜ダーク油彩·attack"},
+  {"f": "mob_vampire_dullahan_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜首なし騎士デュラハン｜ダーク油彩·attack"},
+  {"f": "mob_vampire_chandelier_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜血染めシャンデリアの精｜ダーク油彩·attack"},
+  {"f": "mob_vampire_moongladiator_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜月光の剣闘士｜ダーク油彩·attack"},
+  {"f": "mob_vampire_mosquitolady_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜吸血蚊の淑女｜ダーク油彩·attack"},
+  {"f": "mob_vampire_bloodletterer_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜血文字の呪術師｜ダーク油彩·attack"},
+  {"f": "mob_vampire_sarcophagus_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜石棺の重戦士｜ダーク油彩·attack"},
+  {"f": "mob_vampire_rosewindow_j_attack.webp", "t": "ざこ·ドラキュラ伝説｜薔薇窓の堕天使｜ステンドグラス·attack"},
+  {"f": "mob_vampire_gemthief_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜紅玉の宝石泥棒｜ダーク油彩·attack"},
+  {"f": "mob_vampire_waltzdancer_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜夜会服の踊り子｜ダーク油彩·attack"},
+  {"f": "mob_vampire_ravenlady_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜夜烏の令嬢｜ダーク油彩·attack"},
+  {"f": "mob_vampire_rosegardener_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜血薔薇の庭師｜ダーク油彩·attack"},
+  {"f": "mob_vampire_traitorknight_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜銀十字の裏切り騎士｜ダーク油彩·attack"},
+  {"f": "mob_vampire_bloodfountain_d_attack.webp", "t": "ざこ·ドラキュラ伝説｜血の噴水の精｜ダーク油彩·attack"},
+  {"f": "midboss_vampire_bloodmoonwolf_d_attack.webp", "t": "中ボス·ドラキュラ伝説｜血月の狼将｜ダーク油彩·attack"},
+  {"f": "midboss_vampire_countess_d_attack.webp", "t": "中ボス·ドラキュラ伝説｜血の伯爵夫人｜ダーク油彩·attack"},
+  {"f": "midboss_vampire_cryptguardian_d_attack.webp", "t": "中ボス·ドラキュラ伝説｜棺の大守衛｜ダーク油彩·attack"},
+  {"f": "midboss_vampire_alchemistfiend_a_attack.webp", "t": "中ボス·ドラキュラ伝説｜紅の錬金釜の魔人｜精細ゲームCG·attack"},
+  {"f": "boss_vampire_grailmaster_d_attack.webp", "t": "ボス·ドラキュラ伝説｜血の大聖杯の主｜ダーク油彩·attack"},
+  {"f": "boss_vampire_eternalprincess_d_attack.webp", "t": "ボス·ドラキュラ伝説｜千年の吸血姫｜ダーク油彩·attack"},
+  {"f": "neta_vampire_garlicphobia_q_attack.webp", "t": "ネタ·ドラキュラ伝説｜ニンニク恐怖症の吸血鬼｜コミック調·attack"},
+  {"f": "neta_vampire_tomatobrewer_q_attack.webp", "t": "ネタ·ドラキュラ伝説｜トマトジュース密造家｜コミック調·attack"},
+  {"f": "cute_vampire_batpostman_k_idle.webp", "t": "かわいい·ドラキュラ伝説｜子蝙蝠の郵便屋｜ドット絵·idle"},
+  {"f": "cute_vampire_coffinnapper_k_idle.webp", "t": "かわいい·ドラキュラ伝説｜棺桶ベッドのお昼寝の子｜ドット絵·idle"},
+  {"f": "mob_myth_moonhuntress_a_attack.webp", "t": "ざこ·神話｜月の女神の狩人｜精細ゲームCG·attack"},
+  {"f": "mob_myth_hippocampus_a_attack.webp", "t": "ざこ·神話｜波頭の海馬騎兵｜精細ゲームCG·attack"},
+  {"f": "mob_myth_appledragon_a_attack.webp", "t": "ざこ·神話｜黄金林檎の番竜｜精細ゲームCG·attack"},
+  {"f": "mob_myth_wingedherald_a_attack.webp", "t": "ざこ·神話｜翼サンダルの伝令｜精細ゲームCG·attack"},
+  {"f": "mob_myth_slinggiant_a_attack.webp", "t": "ざこ·神話｜投石紐の巨人兵｜精細ゲームCG·attack"},
+  {"f": "mob_myth_bronzeboxer_a_attack.webp", "t": "ざこ·神話｜青銅の拳闘士｜精細ゲームCG·attack"},
+  {"f": "mob_myth_vinesatyr_a_attack.webp", "t": "ざこ·神話｜葡萄蔓の狂宴獣人｜精細ゲームCG·attack"},
+  {"f": "mob_myth_springnymph_a_attack.webp", "t": "ざこ·神話｜泉の水精ニンフ｜精細ゲームCG·attack"},
+  {"f": "mob_myth_discusthrower_b_attack.webp", "t": "ざこ·神話｜疾風の円盤兵｜アニメ塗り·attack"},
+  {"f": "mob_myth_fateweaver_F_attack.webp", "t": "ざこ·神話｜運命の糸の織り手｜万華鏡·attack"},
+  {"f": "mob_myth_bronzebull_a_attack.webp", "t": "ざこ·神話｜青銅の猛牛｜精細ゲームCG·attack"},
+  {"f": "mob_myth_earthborn_d_attack.webp", "t": "ざこ·神話｜半人半蛇の大地の子｜ダーク油彩·attack"},
+  {"f": "mob_myth_dreamshepherd_a_attack.webp", "t": "ざこ·神話｜眠りの神の羊飼い｜精細ゲームCG·attack"},
+  {"f": "mob_myth_starhound_b_attack.webp", "t": "ざこ·神話｜猟犬座の星犬｜アニメ塗り·attack"},
+  {"f": "midboss_myth_hundredeyes_a_attack.webp", "t": "中ボス·神話｜百眼の番人｜精細ゲームCG·attack"},
+  {"f": "midboss_myth_demigodhero_a_attack.webp", "t": "中ボス·神話｜半神の大力士｜精細ゲームCG·attack"},
+  {"f": "midboss_myth_tridentcaptain_a_attack.webp", "t": "中ボス·神話｜海神の三叉戟衛長｜精細ゲームCG·attack"},
+  {"f": "midboss_myth_furyavenger_d_attack.webp", "t": "中ボス·神話｜復讐の三女神の一柱｜ダーク油彩·attack"},
+  {"f": "boss_myth_sunchariot_a_attack.webp", "t": "ボス·神話｜太陽神の炎車｜精細ゲームCG·attack"},
+  {"f": "boss_myth_earthmother_a_attack.webp", "t": "ボス·神話｜大地母神の巨像｜精細ゲームCG·attack"},
+  {"f": "neta_myth_oraclepigeon_q_attack.webp", "t": "ネタ·神話｜神託のハト｜コミック調·attack"},
+  {"f": "neta_myth_laurelseller_q_attack.webp", "t": "ネタ·神話｜月桂冠売り｜コミック調·attack"},
+  {"f": "cute_myth_pegasusfoal_k_idle.webp", "t": "かわいい·神話｜子ペガサスの初飛行｜ドット絵·idle"},
+  {"f": "cute_myth_waxwingkid_k_idle.webp", "t": "かわいい·神話｜ロウの羽の練習生｜ドット絵·idle"},
+  {"f": "mob_egypt_thothscribe_a_attack.webp", "t": "ざこ·エジプト｜トトの書記官｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_sekhmetwarrior_a_attack.webp", "t": "ざこ·エジプト｜セクメトの獅子戦士｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_hippoguard_a_attack.webp", "t": "ざこ·エジプト｜ナイルのカバの重兵｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_sandstormdjinn_a_attack.webp", "t": "ざこ·エジプト｜砂嵐のジン｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_mirrorsoldier_a_attack.webp", "t": "ざこ·エジプト｜日輪の反射鏡兵｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_scarabshield_a_attack.webp", "t": "ざこ·エジプト｜青いスカラベの盾兵｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_antlionpit_a_attack.webp", "t": "ざこ·エジプト｜砂漠の大蟻地獄｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_sandwarrior_G_attack.webp", "t": "ざこ·エジプト｜砂絵の戦士｜砂絵·attack"},
+  {"f": "mob_egypt_obeliskgolem_r_attack.webp", "t": "ざこ·エジプト｜生きるオベリスク｜壁画レリーフ·attack"},
+  {"f": "mob_egypt_mummycat_b_attack.webp", "t": "ざこ·エジプト｜ミイラ猫の絡み手｜アニメ塗り·attack"},
+  {"f": "mob_egypt_hourglasssage_a_attack.webp", "t": "ざこ·エジプト｜砂時計の大魔術師｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_ibispriest_a_attack.webp", "t": "ざこ·エジプト｜トキの神官鳥｜精細ゲームCG·attack"},
+  {"f": "mob_egypt_firelizard_b_attack.webp", "t": "ざこ·エジプト｜聖火壺の火蜥蜴｜アニメ塗り·attack"},
+  {"f": "mob_egypt_locustlord_b_attack.webp", "t": "ざこ·エジプト｜蝗害の大バッタ｜アニメ塗り·attack"},
+  {"f": "midboss_egypt_anubisjudge_a_attack.webp", "t": "中ボス·エジプト｜アヌビスの裁定官｜精細ゲームCG·attack"},
+  {"f": "midboss_egypt_mummycroc_a_attack.webp", "t": "中ボス·エジプト｜ミイラ鰐の川の主｜精細ゲームCG·attack"},
+  {"f": "midboss_egypt_royalcurse_a_attack.webp", "t": "中ボス·エジプト｜王家の呪いの具現｜精細ゲームCG·attack"},
+  {"f": "midboss_egypt_cobragen_a_attack.webp", "t": "中ボス·エジプト｜王笏の大コブラ将｜精細ゲームCG·attack"},
+  {"f": "boss_egypt_setbeast_a_attack.webp", "t": "ボス·エジプト｜セトの嵐獣｜精細ゲームCG·attack"},
+  {"f": "boss_egypt_apophis_a_attack.webp", "t": "ボス·エジプト｜闇喰らいの大蛇｜精細ゲームCG·attack"},
+  {"f": "neta_egypt_overwrapped_q_attack.webp", "t": "ネタ·エジプト｜包帯ぐるぐる巻きすぎミイラ｜コミック調·attack"},
+  {"f": "neta_egypt_kotatsucat_q_attack.webp", "t": "ネタ·エジプト｜ピラミッド型こたつの猫神｜コミック調·attack"},
+  {"f": "cute_egypt_camelkid_k_idle.webp", "t": "かわいい·エジプト｜子ラクダの水売り｜ドット絵·idle"},
+  {"f": "cute_egypt_minimummy_k_idle.webp", "t": "かわいい·エジプト｜ちびミイラの追いかけっこ｜ドット絵·idle"},
+];
+// =======================================================
+const KEY="tinder_"+SHEET;
+let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+function itemKey(it){return it.pair ? it.pair[0]+"|"+it.pair[1] : it.f;}
+let idx=Object.keys(st).filter(k=>!k.startsWith("_")).length ? nextUndone() : 0;
+let history=[];
+document.getElementById("title").textContent=SHEET;
+function nextUndone(){for(let i=0;i<ITEMS.length;i++){if(!st[itemKey(ITEMS[i])])return i;}return ITEMS.length;}
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+let card=null,sx=0,sy=0,dx=0,dragging=false,lastTap=0;
+function render(){
+  stage.innerHTML="";
+  document.getElementById("prog").textContent=Math.min(idx,ITEMS.length)+" / "+ITEMS.length;
+  if(idx>=ITEMS.length){finish();return;}
+  document.getElementById("done").classList.remove("on");
+  const it=ITEMS[idx];
+  card=document.createElement("div");
+  if(it.pair){
+    card.className="card pair";
+    card.innerHTML=
+      '<div class="half"><img src="'+IMGDIR+it.pair[0]+'" draggable="false">'+
+        '<div class="sub">'+(it.ta||"A")+'</div><button class="pick" onclick="pick(0,event)">◀ こっちを採用</button></div>'+
+      '<div class="half"><img src="'+IMGDIR+it.pair[1]+'" draggable="false">'+
+        '<div class="sub">'+(it.tb||"B")+'</div><button class="pick" onclick="pick(1,event)">こっちを採用 ▶</button></div>'+
+      '<div class="stamp ng">両方不採用</div>'+
+      '<div class="label">'+(idx+1)+"件目(比較): "+it.t+"</div>";
+    document.getElementById("hint").textContent="ボタン=片方採用　←スワイプ/✗=両方不採用　ダブルタップ=✏修正";
+    document.getElementById("okbtn").style.display="none";
+  }else{
+    card.className="card";
+    card.innerHTML='<img src="'+IMGDIR+it.f+'" draggable="false">'+
+      '<div class="stamp ok">採用</div><div class="stamp ng">不採用</div>'+
+      '<div class="label">'+(idx+1)+"体目: "+it.t+"</div>";
+    document.getElementById("hint").textContent="→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント";
+    document.getElementById("okbtn").style.display="";
+  }
+  stage.appendChild(card);
+  card.addEventListener("pointerdown",pd);
+  card.addEventListener("pointermove",pm);
+  card.addEventListener("pointerup",pu);
+  card.addEventListener("pointercancel",pu);
+}
+function pick(side,ev){
+  if(ev){ev.stopPropagation();}
+  const it=ITEMS[idx];if(!it||!it.pair)return;
+  const half=card.querySelectorAll(".half")[side];if(half)half.classList.add("win");
+  decide(side===0?"A":"B");
+}
+function pd(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains("pick"))return;
+  const now=Date.now();
+  if(now-lastTap<300){lastTap=0;openFix();return;}
+  lastTap=now;
+  dragging=true;sx=e.clientX;sy=e.clientY;dx=0;card.classList.add("drag");
+  card.setPointerCapture(e.pointerId);
+}
+function pm(e){
+  if(!dragging)return;
+  const it=ITEMS[idx];
+  dx=e.clientX-sx;const dy=e.clientY-sy;
+  if(it.pair&&dx>0)dx=0; // ペアは右スワイプ採用なし（どっちか選べないため）
+  card.style.transform="translate("+dx+"px,"+(dy*0.3)+"px) rotate("+(dx/18)+"deg)";
+  const ok=card.querySelector(".stamp.ok");
+  if(ok)ok.style.opacity=dx>40?Math.min((dx-40)/80,1):0;
+  card.querySelector(".stamp.ng").style.opacity=dx<-40?Math.min((-dx-40)/80,1):0;
+}
+function pu(){
+  if(!dragging)return;dragging=false;card.classList.remove("drag");
+  const it=ITEMS[idx];
+  if(dx>90&&!it.pair){decide("OK");}
+  else if(dx<-90){decide("NG");}
+  else{card.style.transform="";card.querySelectorAll(".stamp").forEach(s=>s.style.opacity=0);}
+}
+function decide(v,note){
+  if(idx>=ITEMS.length)return;
+  const it=ITEMS[idx];const k=itemKey(it);
+  st[k]={v:v,t:it.t};if(note)st[k].note=note;
+  if(it.pair){st[k].a=it.pair[0];st[k].b=it.pair[1];}
+  history.push(k);save();
+  if(card){const dir=(v==="OK"||v==="A"||v==="B")?1:(v==="NG"?-1:0);card.style.transform="translate("+dir*window.innerWidth+"px,-40px) rotate("+dir*20+"deg)";card.style.opacity=0;}
+  idx++;setTimeout(render,180);
+}
+function undo(){
+  if(!history.length)return;
+  const k=history.pop();delete st[k];save();
+  idx=ITEMS.findIndex(it=>itemKey(it)===k);render();
+}
+function openFix(){if(idx>=ITEMS.length)return;const k=itemKey(ITEMS[idx]);document.getElementById("fixnote").value=(st[k]&&st[k].note)||"";document.getElementById("ov").classList.add("on");}
+function closeFix(){document.getElementById("ov").classList.remove("on");}
+function saveFix(){const n=document.getElementById("fixnote").value.trim();closeFix();decide("FIX",n||"(コメントなし)");}
+function finish(){
+  const c={};Object.keys(st).forEach(k=>{if(!k.startsWith("_"))c[st[k].v]=(c[st[k].v]||0)+1;});
+  const adopt=(c.OK||0)+(c.A||0)+(c.B||0);
+  document.getElementById("counts").innerHTML="◎採用 "+adopt+"　✗不採用 "+(c.NG||0)+"　✏修正 "+(c.FIX||0);
+  document.getElementById("done").classList.add("on");
+}
+function copyResult(btn){
+  // 軽量書き出し: tを落としv(+note/pair)だけ=チャット貼り付けの文字数上限対策(2026-07-13/227体で切れた)
+  const ans={};Object.keys(st).forEach(k=>{if(k.startsWith("_"))return;const e=st[k];
+    if(e.note||e.a){const o={v:e.v};if(e.note)o.note=e.note;if(e.a){o.a=e.a;o.b=e.b;}ans[k]=o;}
+    else ans[k]=e.v;});
+  const out={sheet:SHEET,answers:ans};const txt=JSON.stringify(out);
+  const dump=document.getElementById("dump");dump.style.display="block";dump.value=txt;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{btn.textContent="コピーしました ✓";},()=>{btn.textContent="下の欄を長押しでコピー";});
+  }else{btn.textContent="下の欄を長押しでコピー";}
+}
+render();
+</script>
+</body>
+</html>
