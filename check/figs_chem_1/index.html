@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>図版検収① 化学(13/17/22/23/28) 8枚</title><style>
+ :root{color-scheme:dark}
+ *{box-sizing:border-box} body{font-family:sans-serif;margin:0;background:#12151c;color:#e8e8ee}
+ header{position:sticky;top:0;background:#0d0f14;padding:10px 14px;border-bottom:1px solid #262b36;z-index:5}
+ h1{font-size:.95rem;margin:0 0 6px} .bar{height:6px;background:#262b36;border-radius:3px;overflow:hidden}
+ .fill{height:100%;background:#f0b429;width:0} .n{float:right;color:#9aa;font-size:.85rem}
+ main{max-width:760px;margin:0 auto;padding:16px}
+ .card{background:#1b1f28;border:1px solid #2b3140;border-radius:14px;padding:14px;margin-bottom:14px}
+ .u{color:#f0b429;font-weight:bold;font-size:.9rem} .usage{color:#9fb3c8;font-size:.85rem;margin:2px 0 8px}
+ img{width:100%;border-radius:10px;background:#fff;display:block}
+ .cap{color:#c8d0da;font-size:.85rem;margin:8px 0}
+ .btns{display:flex;gap:8px;margin-top:10px} button{flex:1;border:0;border-radius:10px;padding:12px;font-size:1rem;font-weight:bold;cursor:pointer}
+ .ok{background:#2e9e6b;color:#fff} .ng{background:#f0b429;color:#1b1f28} .skip{background:#333a46;color:#cdd;flex:0 0 64px}
+ textarea{width:100%;margin-top:8px;background:#0f1218;color:#e8e8ee;border:1px solid #2b3140;border-radius:8px;padding:8px;font-size:.95rem}
+ .done{background:#2e9e6b;color:#fff} .marked{outline:2px solid #f0b429}
+ #fin{display:none;text-align:center;padding:30px} #fin textarea{height:160px;font-family:monospace;font-size:.75rem}
+ .copy{background:#f0b429;color:#1b1f28;max-width:280px;margin:12px auto 0}
+</style></head><body>
+<header><h1>図版検収① 化学(13/17/22/23/28) 8枚 <span class="n" id="n">0 / 0</span></h1><div class="bar"><div class="fill" id="f"></div></div></header>
+<main id="m"></main>
+<div id="fin"><h2>全部おわり！</h2><p>下のボタンで結果をコピーして、チャットに貼り付けてください。</p>
+<textarea id="out" readonly></textarea><button class="copy" onclick="cp()">📋 結果をコピー</button></div>
+<script>
+const ITEMS=[{"file": "card_bunrui_tree.webp", "unit": "u_chem_13 化学式を覚える", "usage": "【13-T1】【13-T2】物質の分類ツリー", "caption": "純物質→単体/化合物。混合物も。「いまここ＝単体/化合物」の印つき（オーナー赤入れ『樹形図が欲しい』対応）。"}, {"file": "card_single_compound.webp", "unit": "u_chem_13 化学式を覚える", "usage": "【13-P2】単体と化合物の仕分け", "caption": "1種類の粒だけ＝単体（酸素・水素・銅）／2種類以上＝化合物（水・二酸化炭素）。粒の色の数で分ける。"}, {"file": "card_cucl2_observe.webp", "unit": "u_chem_22 電気分解でイオンを見る", "usage": "【22-P2】【22-T1】観察（結果だけ）", "caption": "塩化銅水溶液に電流→−極に赤いもの・＋極にあわ。イオン・矢印・物質名は出さない（おどろきの段階）。"}, {"file": "card_copper_chloride_electrolysis.webp", "unit": "u_chem_22 電気分解でイオンを見る", "usage": "【22-P3】〜【22-T6】しくみ（教える用）", "caption": "＋の粒は−極へ・−の粒は＋極へ。−極に銅・＋極に塩素。Cu²⁺/Cl⁻の記号は使わず色分けの粒で。"}, {"file": "card_ion_balance.webp", "unit": "u_chem_23 イオンと原子のなり立ち", "usage": "【23-P2】【23-T1】【23-T3】", "caption": "原子＝原子核＋と電子−が同じ数でつり合う／電子が1個ぬけると陽イオン（＋）になる。電子が外へ飛び出す図。"}, {"file": "card_nacl_ionize.webp", "unit": "u_chem_23 イオンと原子のなり立ち", "usage": "【23-T6】電離（提案・オーナー判断待ち）", "caption": "食塩の結晶が水にとけて、＋の粒と−の粒が水全体にちらばる＝電離。※カーネルは提案図・要否ご判断ください。"}, {"file": "card_daniell_cross.webp", "unit": "u_chem_28 ダニエル電池", "usage": "【28-P2】〜【28-T3】断面", "caption": "2部屋＋素焼きの仕切り。亜鉛（−極）がとけて＋の粒に／銅（＋極）に銅がつく／電子が導線を左→右へ流れる。"}, {"file": "card_cuo_c_transfer.webp", "unit": "u_chem_17 酸素をとる変化", "usage": "【17-T4】酸素の受けわたし", "caption": "酸化銅（黒）＋炭素→銅（赤）＋二酸化炭素。酸素が炭素の方へ移る。酸化銅→銅＝還元／炭素→二酸化炭素＝酸化を1枚に。"}]; const KEY="figs_"+location.pathname;
+let ans=JSON.parse(localStorage.getItem(KEY)||"{}");
+const m=document.getElementById('m');
+ITEMS.forEach((it,i)=>{
+ const c=document.createElement('div');c.className='card';c.id='c'+i;
+ c.innerHTML=`<div class="u">${it.unit}</div><div class="usage">${it.usage||''}</div>
+ <img src="${it.file}" alt="">
+ <div class="cap">${it.caption||''}</div>
+ <div class="btns"><button class="ok" onclick="mark(${i},'OK')">◎ OK</button>
+ <button class="ng" onclick="mark(${i},'NG')">✏ 気になる</button>
+ <button class="skip" onclick="mark(${i},'SKIP')">⏭</button></div>
+ <textarea placeholder="ひとこと（気になる点・直したい所）" oninput="note(${i},this.value)"></textarea>`;
+ m.appendChild(c);
+ if(ans[it.file]){c.classList.add(ans[it.file].v==='OK'?'done':'marked');c.querySelector('textarea').value=ans[it.file].note||''}
+});
+function upd(){const d=Object.keys(ans).length;document.getElementById('n').textContent=d+' / '+ITEMS.length;
+ document.getElementById('f').style.width=(100*d/ITEMS.length)+'%';
+ if(d>=ITEMS.length){document.getElementById('fin').style.display='block';
+  document.getElementById('out').value=JSON.stringify({sheet:"図版検収① 化学(13/17/22/23/28) 8枚",done:d,answers:ans},null,1)}}
+function mark(i,v){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{},{v:v});
+ localStorage.setItem(KEY,JSON.stringify(ans));const c=document.getElementById('c'+i);
+ c.classList.toggle('done',v==='OK');c.classList.toggle('marked',v!=='OK');upd();
+ const nx=document.getElementById('c'+(i+1));if(nx)nx.scrollIntoView({behavior:'smooth',block:'center'})}
+function note(i,t){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{v:'NG'},{note:t});localStorage.setItem(KEY,JSON.stringify(ans))}
+function cp(){const o=document.getElementById('out');o.select();
+ navigator.clipboard.writeText(o.value).then(()=>alert('コピーしました')).catch(()=>{o.focus()})}
+upd();
+</script></body></html>
