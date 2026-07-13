@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>モンスター図鑑</title>
+<style>
+  :root{--bg:#241f1b;--card:#332c26;--ink:#f4ede2;--sub:#b7a98d;--acc:#d8a24a;--del:#c0564a}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:var(--bg);color:var(--ink)}
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(var(--bg) 82%,#241f1b00);padding:10px 14px 6px}
+  header h1{font-size:17px;margin:0 0 6px;display:flex;align-items:baseline;gap:10px}
+  header h1 small{font-size:12px;color:var(--sub);font-weight:400}
+  .filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .chip{font:inherit;font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid #5a4f43;background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--acc);border-color:var(--acc);color:#241f1b;font-weight:700}
+  select,input[type=search]{font:inherit;font-size:12px;padding:5px 8px;border-radius:10px;border:1px solid #5a4f43;background:var(--card);color:var(--ink)}
+  input[type=search]{width:130px}
+  .delbtn{font:inherit;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;border:2px solid var(--del);background:transparent;color:#e8a49b;cursor:pointer;margin-left:auto}
+  .delbtn.on{background:var(--del);color:#fff}
+  main{padding:4px 14px 90px}
+  h2{font-size:14px;color:var(--acc);margin:18px 0 8px;border-bottom:1px solid #4a4036;padding-bottom:4px}
+  h2 small{color:var(--sub);font-weight:400;font-size:11px;margin-left:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
+  .cell{position:relative;background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer;border:2px solid transparent}
+  .cell img{display:block;width:100%;aspect-ratio:1/1;object-fit:contain;background:repeating-conic-gradient(#3a332d 0 25%,#413931 0 50%) 0 0/22px 22px}
+  .cell .nm{font-size:10.5px;padding:3px 5px 2px;line-height:1.25;min-height:2.7em}
+  .cell .tg{font-size:9px;color:var(--sub);padding:0 5px 4px}
+  .cell.marked{border-color:var(--del)}
+  .cell.marked::after{content:"🗑";position:absolute;top:4px;right:4px;font-size:16px;background:#0009;border-radius:8px;padding:2px 4px}
+  .badge{position:absolute;top:4px;left:4px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:#0009;color:#ffd9a0}
+  .empty{color:var(--sub);text-align:center;padding:40px 0}
+  /* 拡大ビュー */
+  .view{position:fixed;inset:0;z-index:30;background:#000d;display:none;align-items:center;justify-content:center;flex-direction:column;padding:16px}
+  .view.on{display:flex}
+  .view img{max-width:min(92vw,560px);max-height:66vh;object-fit:contain;border-radius:14px;background:repeating-conic-gradient(#3a332d 0 25%,#413931 0 50%) 0 0/28px 28px}
+  .view .meta{margin-top:10px;text-align:center;font-size:14px;line-height:1.7}
+  .view .meta .t{color:var(--sub);font-size:12px}
+  .view .row{display:flex;gap:10px;margin-top:12px}
+  .view button{font:inherit;font-weight:700;font-size:14px;padding:10px 20px;border-radius:12px;border:none;cursor:pointer;color:#fff}
+  .v-close{background:#6b6259}.v-del{background:var(--del)}
+  /* 削除依頼フッター */
+  .delbar{position:fixed;bottom:0;left:0;right:0;z-index:20;background:linear-gradient(#241f1b00,#241f1b 40%);padding:14px;display:none;gap:10px;align-items:center;justify-content:center}
+  .delbar.on{display:flex}
+  .delbar b{color:#e8a49b}
+  .delbar button{font:inherit;font-weight:800;font-size:14px;padding:12px 18px;border-radius:12px;border:none;cursor:pointer;color:#fff}
+  .d-copy{background:var(--del)}.d-clear{background:#6b6259}
+  .delbar textarea{position:fixed;bottom:70px;left:14px;right:14px;min-height:80px;font-size:11px;border-radius:10px;border:none;padding:8px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>🗾 モンスター図鑑 <small id="cnt"></small></h1>
+  <div class="filters" id="fConcept"></div>
+  <div class="filters" style="margin-top:5px">
+    <span id="fClass"></span>
+    <select id="fStyle"><option value="">画風: すべて</option></select>
+    <select id="fMotion"><option value="">動き: すべて</option><option value="attack">attack</option><option value="idle">idle</option></select>
+    <input type="search" id="fText" placeholder="🔍 なまえ検索">
+    <button class="delbtn" id="delmode" onclick="toggleDel()">🗑 削除依頼モード</button>
+  </div>
+</header>
+<main id="main"></main>
+<div class="view" id="view" onclick="closeView()">
+  <img id="vimg" src="">
+  <div class="meta" id="vmeta"></div>
+  <div class="row">
+    <button class="v-close" onclick="closeView()">とじる</button>
+    <button class="v-del" id="vdel" onclick="markFromView(event)">🗑 削除依頼に入れる</button>
+  </div>
+</div>
+<div class="delbar" id="delbar">
+  <b id="delcnt"></b>
+  <button class="d-copy" onclick="copyDel(this)">📋 削除依頼をコピー</button>
+  <button class="d-clear" onclick="clearDel()">全解除</button>
+  <textarea id="deldump" readonly onclick="this.select()"></textarea>
+</div>
+<script>
+// ===== データ（make_zukan.pyが差し替える） =====
+// {f:サムネ, n:名前, g:コンセプト和名, c:class, s:画風和名, m:motion, r:run名, o:原本ファイル名}
+const IMGDIR = "imgs/";
+const DATA = [
+  {"f": "night1__cute_cave_batbaby_h_attack.webp", "n": "こうもりの赤ちゃん", "g": "洞くつ", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_cave_batbaby_h_attack.png"},
+  {"f": "night1__cute_cave_glowshroom_h_idle.webp", "n": "ひかりキノコの子", "g": "洞くつ", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "night1", "o": "cute_cave_glowshroom_h_idle.png"},
+  {"f": "night1__cute_cave_pebble_b_attack.webp", "n": "小石のこども", "g": "洞くつ", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "cute_cave_pebble_b_attack.png"},
+  {"f": "night1__cute_cave_dewdrop_c_attack.webp", "n": "しずくスライム", "g": "洞くつ", "c": "cute", "s": "ちびかわ", "m": "attack", "r": "night1", "o": "cute_cave_dewdrop_c_attack.png"},
+  {"f": "night1__cute_cave_molechild_h_attack.webp", "n": "ちびモグラ", "g": "洞くつ", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_cave_molechild_h_attack.png"},
+  {"f": "night1__cute_thunder_staticham_h_attack.webp", "n": "静電気ハムスター", "g": "雷", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_thunder_staticham_h_attack.png"},
+  {"f": "night1__cute_thunder_bulbfairy_e_attack.webp", "n": "まめでんきゅうの精", "g": "雷", "c": "cute", "s": "水彩絵本", "m": "attack", "r": "night1", "o": "cute_thunder_bulbfairy_e_attack.png"},
+  {"f": "night1__cute_thunder_coilkitten_h_attack.webp", "n": "コイルの子ねこ", "g": "雷", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_thunder_coilkitten_h_attack.png"},
+  {"f": "night1__cute_chem_testtube_h_attack.webp", "n": "試験管の子おばけ", "g": "化学", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_chem_testtube_h_attack.png"},
+  {"f": "night1__cute_chem_litmuschame_h_idle.webp", "n": "リトマスカメレオン", "g": "化学", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "night1", "o": "cute_chem_litmuschame_h_idle.png"},
+  {"f": "night1__cute_chem_soapbunny_b_attack.webp", "n": "あわあわうさぎ", "g": "化学", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "cute_chem_soapbunny_b_attack.png"},
+  {"f": "night1__cute_chem_sugarfairy_b_idle.webp", "n": "砂糖の結晶ようせい", "g": "化学", "c": "cute", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "cute_chem_sugarfairy_b_idle.png"},
+  {"f": "night1__cute_chem_sodapop_h_attack.webp", "n": "炭酸のぷくぷく", "g": "化学", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_chem_sodapop_h_attack.png"},
+  {"f": "night1__cute_forest_acornguard_h_attack.webp", "n": "どんぐりの兵隊", "g": "森", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_forest_acornguard_h_attack.png"},
+  {"f": "night1__cute_forest_leaffairy_h_idle.webp", "n": "葉っぱのようせい", "g": "森", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "night1", "o": "cute_forest_leaffairy_h_idle.png"},
+  {"f": "night1__cute_forest_ladybird_b_attack.webp", "n": "てんとうむしのちびたん", "g": "森", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "cute_forest_ladybird_b_attack.png"},
+  {"f": "night1__cute_forest_snailkid_h_attack.webp", "n": "かたつむりの子", "g": "森", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_forest_snailkid_h_attack.png"},
+  {"f": "night1__cute_forest_mijinko_h_idle.webp", "n": "ミジンコの妖精", "g": "森", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "night1", "o": "cute_forest_mijinko_h_idle.png"},
+  {"f": "night1__cute_earth_ammobaby_h_attack.webp", "n": "アンモナイトの子", "g": "大地", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_earth_ammobaby_h_attack.png"},
+  {"f": "night1__cute_earth_cloudsheep_h_idle.webp", "n": "雲のこひつじ", "g": "大地", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "night1", "o": "cute_earth_cloudsheep_h_idle.png"},
+  {"f": "night1__cute_earth_crystalhog_c_attack.webp", "n": "水晶のはりねずみ", "g": "大地", "c": "cute", "s": "ちびかわ", "m": "attack", "r": "night1", "o": "cute_earth_crystalhog_c_attack.png"},
+  {"f": "night1__cute_earth_sandbaby_h_attack.webp", "n": "砂の子", "g": "大地", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_earth_sandbaby_h_attack.png"},
+  {"f": "night1__cute_generic_rainbowchick_h_attack.webp", "n": "虹のヒヨコ", "g": "汎用", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "night1", "o": "cute_generic_rainbowchick_h_attack.png"},
+  {"f": "night1__cute_generic_notesprite_h_idle.webp", "n": "おんぷの精", "g": "汎用", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "night1", "o": "cute_generic_notesprite_h_idle.png"},
+  {"f": "night1__cute_generic_ghostbroom_c_attack.webp", "n": "ちびゴースト", "g": "汎用", "c": "cute", "s": "ちびかわ", "m": "attack", "r": "night1", "o": "cute_generic_ghostbroom_c_attack.png"},
+  {"f": "night1__mob_cave_cavebat_d_attack.webp", "n": "洞窟オオコウモリ", "g": "洞くつ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "mob_cave_cavebat_d_attack.png"},
+  {"f": "night1__mob_cave_rocklizard_d_idle.webp", "n": "岩肌トカゲ", "g": "洞くつ", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "night1", "o": "mob_cave_rocklizard_d_idle.png"},
+  {"f": "night1__mob_cave_mossbeast_a_attack.webp", "n": "ひかりゴケの獣", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_cave_mossbeast_a_attack.png"},
+  {"f": "night1__mob_cave_stalagolem_a_idle.webp", "n": "鍾乳石ゴーレム", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "mob_cave_stalagolem_a_idle.png"},
+  {"f": "night1__mob_cave_tunnelworm_a_attack.webp", "n": "地底ワーム", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_cave_tunnelworm_a_attack.png"},
+  {"f": "night1__mob_thunder_plasmajelly_b_attack.webp", "n": "プラズマクラゲ", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "mob_thunder_plasmajelly_b_attack.png"},
+  {"f": "night1__mob_thunder_eelfiend_b_idle.webp", "n": "電気ウナギの魔物", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_thunder_eelfiend_b_idle.png"},
+  {"f": "night1__mob_thunder_magnegolem_a_attack.webp", "n": "磁力ゴーレム", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_thunder_magnegolem_a_attack.png"},
+  {"f": "night1__mob_thunder_stormhawk_a_idle.webp", "n": "雷鳥の戦士", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "mob_thunder_stormhawk_a_idle.png"},
+  {"f": "night1__mob_thunder_coilsnake_g_attack.webp", "n": "コイルヘビ", "g": "雷", "c": "mob", "s": "リアルクリーチャー", "m": "attack", "r": "night1", "o": "mob_thunder_coilsnake_g_attack.png"},
+  {"f": "night1__mob_thunder_staticwolf_g_idle.webp", "n": "静電気オオカミ", "g": "雷", "c": "mob", "s": "リアルクリーチャー", "m": "idle", "r": "night1", "o": "mob_thunder_staticwolf_g_idle.png"},
+  {"f": "night1__mob_thunder_batteryknight_a_idle.webp", "n": "充電池の兵士", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "mob_thunder_batteryknight_a_idle.png"},
+  {"f": "night1__mob_thunder_sonicbat_b_idle.webp", "n": "音波コウモリ", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_thunder_sonicbat_b_idle.png"},
+  {"f": "night1__mob_thunder_prismknight_a_attack.webp", "n": "プリズムの騎士", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_thunder_prismknight_a_attack.png"},
+  {"f": "night1__mob_thunder_springpuppet_b_attack.webp", "n": "ばねのカラクリ兵", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "mob_thunder_springpuppet_b_attack.png"},
+  {"f": "night1__mob_thunder_stormsprite_b_idle.webp", "n": "嵐の精霊", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_thunder_stormsprite_b_idle.png"},
+  {"f": "night1__mob_chem_acidslime_d_attack.webp", "n": "酸のスライム", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "mob_chem_acidslime_d_attack.png"},
+  {"f": "night1__mob_chem_gascloud_g_attack.webp", "n": "毒ガス雲の魔物", "g": "化学", "c": "mob", "s": "リアルクリーチャー", "m": "attack", "r": "night1", "o": "mob_chem_gascloud_g_attack.png"},
+  {"f": "night1__mob_chem_rustknight_a_attack.webp", "n": "さび鎧の騎士", "g": "化学", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_chem_rustknight_a_attack.png"},
+  {"f": "night1__mob_chem_flamewisp_d_attack.webp", "n": "炎の精霊", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "mob_chem_flamewisp_d_attack.png"},
+  {"f": "night1__mob_chem_frostwraith_d_idle.webp", "n": "氷晶のレイス", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "night1", "o": "mob_chem_frostwraith_d_idle.png"},
+  {"f": "night1__mob_chem_metalamoeba_a_attack.webp", "n": "液体金属アメーバ", "g": "化学", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_chem_metalamoeba_a_attack.png"},
+  {"f": "night1__mob_chem_saltgolem_d_attack.webp", "n": "塩の結晶ゴーレム", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "mob_chem_saltgolem_d_attack.png"},
+  {"f": "night1__mob_chem_steamdjinn_d_idle.webp", "n": "蒸気のジン", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "night1", "o": "mob_chem_steamdjinn_d_idle.png"},
+  {"f": "night1__mob_chem_potionimp_a_attack.webp", "n": "ポーション瓶の小悪魔", "g": "化学", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_chem_potionimp_a_attack.png"},
+  {"f": "night1__mob_chem_coppergoyle_d_attack.webp", "n": "銅のガーゴイル", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "mob_chem_coppergoyle_d_attack.png"},
+  {"f": "night1__mob_chem_mistwolf_d_idle.webp", "n": "ドライアイスの霧オオカミ", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "night1", "o": "mob_chem_mistwolf_d_idle.png"},
+  {"f": "night1__mob_forest_flytrap_a_idle.webp", "n": "食虫植物のワナ獣", "g": "森", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "mob_forest_flytrap_a_idle.png"},
+  {"f": "night1__mob_forest_shroomwarrior_b_idle.webp", "n": "キノコの重戦士", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_forest_shroomwarrior_b_idle.png"},
+  {"f": "night1__mob_forest_vineserpent_g_idle.webp", "n": "ツタの絞めヘビ", "g": "森", "c": "mob", "s": "リアルクリーチャー", "m": "idle", "r": "night1", "o": "mob_forest_vineserpent_g_idle.png"},
+  {"f": "night1__mob_forest_soldierant_b_attack.webp", "n": "大アリの兵隊", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "mob_forest_soldierant_b_attack.png"},
+  {"f": "night1__mob_forest_mantisblade_b_idle.webp", "n": "カマキリの剣士", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_forest_mantisblade_b_idle.png"},
+  {"f": "night1__mob_forest_barktreant_a_attack.webp", "n": "樹皮のトレント", "g": "森", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_forest_barktreant_a_attack.png"},
+  {"f": "night1__mob_forest_rootgolem_b_idle.webp", "n": "根っこのゴーレム", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_forest_rootgolem_b_idle.png"},
+  {"f": "night1__mob_forest_mossdeer_g_idle.webp", "n": "苔角の鹿", "g": "森", "c": "mob", "s": "リアルクリーチャー", "m": "idle", "r": "night1", "o": "mob_forest_mossdeer_g_idle.png"},
+  {"f": "night1__mob_forest_beetleshield_b_attack.webp", "n": "甲虫の盾持ち", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "mob_forest_beetleshield_b_attack.png"},
+  {"f": "night1__mob_forest_photolizard_b_idle.webp", "n": "光合成トカゲ", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_forest_photolizard_b_idle.png"},
+  {"f": "night1__mob_earth_rockgolem_b_attack.webp", "n": "岩石ゴーレム", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "mob_earth_rockgolem_b_attack.png"},
+  {"f": "night1__mob_earth_crystalcrab_b_idle.webp", "n": "結晶のカニ", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_earth_crystalcrab_b_idle.png"},
+  {"f": "night1__mob_earth_fossilraptor_a_attack.webp", "n": "化石の恐竜兵", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_earth_fossilraptor_a_attack.png"},
+  {"f": "night1__mob_earth_sandstormdjinn_b_attack.webp", "n": "砂嵐のジン", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "mob_earth_sandstormdjinn_b_attack.png"},
+  {"f": "night1__mob_earth_lavalizard_b_idle.webp", "n": "溶岩トカゲ", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_earth_lavalizard_b_idle.png"},
+  {"f": "night1__mob_earth_tornadosprite_a_attack.webp", "n": "竜巻の精", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_earth_tornadosprite_a_attack.png"},
+  {"f": "night1__mob_earth_hailyeti_a_idle.webp", "n": "ひょうの雪男", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "mob_earth_hailyeti_a_idle.png"},
+  {"f": "night1__mob_earth_meteorwolf_b_idle.webp", "n": "流れ星のウルフ", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "night1", "o": "mob_earth_meteorwolf_b_idle.png"},
+  {"f": "night1__mob_earth_faultsnake_a_attack.webp", "n": "断層のヘビ", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "mob_earth_faultsnake_a_attack.png"},
+  {"f": "night1__mob_earth_bombdevil_a_idle.webp", "n": "火山弾の悪魔", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "mob_earth_bombdevil_a_idle.png"},
+  {"f": "night1__boss_thunder_voltdragon_a_idle.webp", "n": "高圧電流のドラゴン", "g": "雷", "c": "boss", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "boss_thunder_voltdragon_a_idle.png"},
+  {"f": "night1__boss_thunder_polargolem_g_attack.webp", "n": "磁極の双頭ゴーレム", "g": "雷", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "night1", "o": "boss_thunder_polargolem_g_attack.png"},
+  {"f": "night1__boss_thunder_stormroc_a_attack.webp", "n": "嵐を呼ぶ大鷲", "g": "雷", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "boss_thunder_stormroc_a_attack.png"},
+  {"f": "night1__boss_thunder_plasmatitan_a_idle.webp", "n": "プラズマの巨人", "g": "雷", "c": "boss", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "boss_thunder_plasmatitan_a_idle.png"},
+  {"f": "night1__boss_chem_acidserpent_a_idle.webp", "n": "酸の大蛇", "g": "化学", "c": "boss", "s": "精細ゲームCG", "m": "idle", "r": "night1", "o": "boss_chem_acidserpent_a_idle.png"},
+  {"f": "night1__boss_chem_blazewyrm_d_idle.webp", "n": "燃焼の巨竜", "g": "化学", "c": "boss", "s": "ダーク油彩", "m": "idle", "r": "night1", "o": "boss_chem_blazewyrm_d_idle.png"},
+  {"f": "night1__boss_chem_mercurygiant_a_attack.webp", "n": "液体金属の巨人", "g": "化学", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "boss_chem_mercurygiant_a_attack.png"},
+  {"f": "night1__boss_chem_frostqueen_d_attack.webp", "n": "氷晶の大魔女", "g": "化学", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_chem_frostqueen_d_attack.png"},
+  {"f": "night1__boss_forest_eldertreant_d_attack.webp", "n": "大樹の守護者", "g": "森", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_forest_eldertreant_d_attack.png"},
+  {"f": "night1__boss_forest_flytrapking_a_attack.webp", "n": "食虫植物の王", "g": "森", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "boss_forest_flytrapking_a_attack.png"},
+  {"f": "night1__boss_forest_myceliabehemoth_d_attack.webp", "n": "菌糸のベヒーモス", "g": "森", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_forest_myceliabehemoth_d_attack.png"},
+  {"f": "night1__boss_earth_magmadragon_d_attack.webp", "n": "溶岩の巨竜", "g": "大地", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_earth_magmadragon_d_attack.png"},
+  {"f": "night1__boss_earth_fossiltyrant_d_idle.webp", "n": "化石の暴君竜", "g": "大地", "c": "boss", "s": "ダーク油彩", "m": "idle", "r": "night1", "o": "boss_earth_fossiltyrant_d_idle.png"},
+  {"f": "night1__boss_earth_typhoonspirit_a_attack.webp", "n": "台風の大精霊", "g": "大地", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "boss_earth_typhoonspirit_a_attack.png"},
+  {"f": "night1__boss_earth_starserpent_d_attack.webp", "n": "星喰いの大蛇", "g": "大地", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_earth_starserpent_d_attack.png"},
+  {"f": "night1__boss_final_chimerafour_d_attack.webp", "n": "四科のキメラ", "g": "終焉", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_final_chimerafour_d_attack.png"},
+  {"f": "night1__boss_final_voidhorror_g_attack.webp", "n": "宇宙の異形", "g": "終焉", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "night1", "o": "boss_final_voidhorror_g_attack.png"},
+  {"f": "night1__boss_final_clockworkgod_g_idle.webp", "n": "時計仕掛けの天体神", "g": "終焉", "c": "boss", "s": "リアルクリーチャー", "m": "idle", "r": "night1", "o": "boss_final_clockworkgod_g_idle.png"},
+  {"f": "night1__boss_final_abysslord_d_attack.webp", "n": "深淵の大魔王", "g": "終焉", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_final_abysslord_d_attack.png"},
+  {"f": "night1__cute_flask_attack.webp", "n": "フラスコおばけ", "g": "化学", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "night1", "o": "cute_flask_attack.png"},
+  {"f": "night1__boss_dark_poisondragon.webp", "n": "毒の竜", "g": "化学", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "night1", "o": "boss_dark_poisondragon.png"},
+  {"f": "night1__boss_real_rocktitan.webp", "n": "岩と水晶の巨獣", "g": "大地", "c": "boss", "s": "リアルクリーチャー", "m": "idle", "r": "night1", "o": "boss_real_rocktitan.png"},
+  {"f": "night1__boss_seisai_thunderlord.webp", "n": "雷の獣神", "g": "雷", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "night1", "o": "boss_seisai_thunderlord.png"},
+  {"f": "day2__boss_forest_queenbee2_p_attack.webp", "n": "女王蜂の魔虫(再)", "g": "森", "c": "boss", "s": "ポケ風デフォルメ", "m": "attack", "r": "day2", "o": "boss_forest_queenbee2_p_attack.png"},
+  {"f": "day2__mob_forest_pollenmoth2_p_attack.webp", "n": "花粉の大蛾(再)", "g": "森", "c": "mob", "s": "ポケ風デフォルメ", "m": "attack", "r": "day2", "o": "mob_forest_pollenmoth2_p_attack.png"},
+  {"f": "day2__mob_forest_fireflylamp_p_attack.webp", "n": "ホタルの提灯持ち", "g": "森", "c": "mob", "s": "ポケ風デフォルメ", "m": "attack", "r": "day2", "o": "mob_forest_fireflylamp_p_attack.png"},
+  {"f": "day2__mob_thunder_circuitspider_p_attack.webp", "n": "回路基板のクモ", "g": "雷", "c": "mob", "s": "ポケ風デフォルメ", "m": "attack", "r": "day2", "o": "mob_thunder_circuitspider_p_attack.png"},
+  {"f": "day2__mob_forest_ladyknight_q_attack.webp", "n": "テントウムシの盾騎士", "g": "森", "c": "mob", "s": "コミック調", "m": "attack", "r": "day2", "o": "mob_forest_ladyknight_q_attack.png"},
+  {"f": "day2__mob_cave_stalagscorpion_p_idle.webp", "n": "石筍サソリ", "g": "洞くつ", "c": "mob", "s": "ポケ風デフォルメ", "m": "idle", "r": "day2", "o": "mob_cave_stalagscorpion_p_idle.png"},
+  {"f": "day2__mob_chem_acidcaterpillar_q_attack.webp", "n": "塩酸の腐食イモムシ", "g": "化学", "c": "mob", "s": "コミック調", "m": "attack", "r": "day2", "o": "mob_chem_acidcaterpillar_q_attack.png"},
+  {"f": "day2__cute_thunder_cloudpuff2_h_attack.webp", "n": "子雷雲(再)", "g": "雷", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_thunder_cloudpuff2_h_attack.png"},
+  {"f": "day2__cute_cave_icebaby_h_attack.webp", "n": "つららの赤ちゃん", "g": "洞くつ", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_cave_icebaby_h_attack.png"},
+  {"f": "day2__cute_cave_mossball_h_attack.webp", "n": "ひかりゴケの毛玉", "g": "洞くつ", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_cave_mossball_h_attack.png"},
+  {"f": "day2__cute_cave_echochild_h_attack.webp", "n": "やまびこの子", "g": "洞くつ", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_cave_echochild_h_attack.png"},
+  {"f": "day2__cute_thunder_jellybaby_h_attack.webp", "n": "でんきクラゲの子", "g": "雷", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_thunder_jellybaby_h_attack.png"},
+  {"f": "day2__cute_thunder_compasskid_h_idle.webp", "n": "方位磁石の子", "g": "雷", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "day2", "o": "cute_thunder_compasskid_h_idle.png"},
+  {"f": "day2__cute_chem_beakerfish_h_attack.webp", "n": "ビーカーの金魚", "g": "化学", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_chem_beakerfish_h_attack.png"},
+  {"f": "day2__cute_chem_saltchild_h_attack.webp", "n": "塩の子", "g": "化学", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_chem_saltchild_h_attack.png"},
+  {"f": "day2__cute_chem_jellyexperiment_b_attack.webp", "n": "ぷるぷる実験体", "g": "化学", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "cute_chem_jellyexperiment_b_attack.png"},
+  {"f": "day2__cute_forest_leafdragonet_h_attack.webp", "n": "葉っぱ竜の子", "g": "森", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_forest_leafdragonet_h_attack.png"},
+  {"f": "day2__cute_forest_pineconesoldier_h_attack.webp", "n": "まつぼっくり兵", "g": "森", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_forest_pineconesoldier_h_attack.png"},
+  {"f": "day2__cute_forest_mossballpet_h_idle.webp", "n": "苔玉のペット", "g": "森", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "day2", "o": "cute_forest_mossballpet_h_idle.png"},
+  {"f": "day2__cute_earth_lavamanju_h_idle.webp", "n": "溶岩まんじゅう", "g": "大地", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "day2", "o": "cute_earth_lavamanju_h_idle.png"},
+  {"f": "day2__cute_earth_moonbunny_h_attack.webp", "n": "月の子うさぎ", "g": "大地", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_earth_moonbunny_h_attack.png"},
+  {"f": "day2__cute_earth_ashchild_h_attack.webp", "n": "火山灰の子", "g": "大地", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_earth_ashchild_h_attack.png"},
+  {"f": "day2__cute_earth_raincloudkid_h_attack.webp", "n": "雨雲の子", "g": "大地", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "day2", "o": "cute_earth_raincloudkid_h_attack.png"},
+  {"f": "day2__cute_generic_erasersprite_b_attack.webp", "n": "消しゴムの精", "g": "汎用", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "cute_generic_erasersprite_b_attack.png"},
+  {"f": "day2__cute_generic_chalkkid_b_attack.webp", "n": "チョークの子", "g": "汎用", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "cute_generic_chalkkid_b_attack.png"},
+  {"f": "day2__mob_cave_giantcatfish_d_attack.webp", "n": "暗闇の大ナマズ", "g": "洞くつ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_cave_giantcatfish_d_attack.png"},
+  {"f": "day2__mob_cave_crystalguardian_a_idle.webp", "n": "水晶洞窟の番人", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_cave_crystalguardian_a_idle.png"},
+  {"f": "day2__mob_cave_cavein_golem_d_attack.webp", "n": "落盤ゴーレム", "g": "洞くつ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_cave_cavein_golem_d_attack.png"},
+  {"f": "day2__mob_cave_lakemaster_d_idle.webp", "n": "地底湖の主", "g": "洞くつ", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "day2", "o": "mob_cave_lakemaster_d_idle.png"},
+  {"f": "day2__mob_cave_icicledragonet_a_attack.webp", "n": "つらら竜", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_cave_icicledragonet_a_attack.png"},
+  {"f": "day2__mob_cave_echobeast_b_attack.webp", "n": "反響のこだま獣", "g": "洞くつ", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_cave_echobeast_b_attack.png"},
+  {"f": "day2__mob_cave_saltbeast_a_attack.webp", "n": "岩塩の獣", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_cave_saltbeast_a_attack.png"},
+  {"f": "day2__mob_cave_glowserpent_d_idle.webp", "n": "光苔の大蛇", "g": "洞くつ", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "day2", "o": "mob_cave_glowserpent_d_idle.png"},
+  {"f": "day2__mob_cave_stalactitespear_a_idle.webp", "n": "鍾乳石の槍兵", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_cave_stalactitespear_a_idle.png"},
+  {"f": "day2__mob_cave_aquifersnake_b_attack.webp", "n": "地下水脈の水蛇", "g": "洞くつ", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_cave_aquifersnake_b_attack.png"},
+  {"f": "day2__mob_cave_cavejelly_b_attack.webp", "n": "洞窟クラゲ", "g": "洞くつ", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_cave_cavejelly_b_attack.png"},
+  {"f": "day2__mob_cave_ghostbear_d_attack.webp", "n": "洞穴グマの亡霊", "g": "洞くつ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_cave_ghostbear_d_attack.png"},
+  {"f": "day2__mob_cave_minecartfiend_b_attack.webp", "n": "トロッコの魔物", "g": "洞くつ", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_cave_minecartfiend_b_attack.png"},
+  {"f": "day2__mob_cave_darkmole_a_attack.webp", "n": "闇夜の大モグラ", "g": "洞くつ", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_cave_darkmole_a_attack.png"},
+  {"f": "day2__mob_thunder_lightningrod_a_idle.webp", "n": "避雷針の騎士", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_thunder_lightningrod_a_idle.png"},
+  {"f": "day2__mob_thunder_magnetbull_a_attack.webp", "n": "電磁石の闘牛", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_thunder_magnetbull_a_attack.png"},
+  {"f": "day2__mob_thunder_motorwarrior_b_attack.webp", "n": "モーターの回転武者", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_thunder_motorwarrior_b_attack.png"},
+  {"f": "day2__mob_thunder_shockeel_b_attack.webp", "n": "感電ウツボ", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_thunder_shockeel_b_attack.png"},
+  {"f": "day2__mob_thunder_stormrider_a_attack.webp", "n": "雷雲の乗り手", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_thunder_stormrider_a_attack.png"},
+  {"f": "day2__mob_thunder_dynamogoblin_b_idle.webp", "n": "発電機ゴブリン", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "day2", "o": "mob_thunder_dynamogoblin_b_idle.png"},
+  {"f": "day2__mob_thunder_thundercatfish_b_attack.webp", "n": "雷ナマズ", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_thunder_thundercatfish_b_attack.png"},
+  {"f": "day2__mob_thunder_staticporcupine_a_attack.webp", "n": "帯電ヤマアラシ", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_thunder_staticporcupine_a_attack.png"},
+  {"f": "day2__mob_thunder_speakergolem_a_attack.webp", "n": "スピーカーゴーレム", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_thunder_speakergolem_a_attack.png"},
+  {"f": "day2__mob_thunder_fibersprite_b_attack.webp", "n": "光ファイバーの精", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_thunder_fibersprite_b_attack.png"},
+  {"f": "day2__mob_thunder_teslatower_a_attack.webp", "n": "テスラコイルの塔人", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_thunder_teslatower_a_attack.png"},
+  {"f": "day2__mob_thunder_deadbattery_b_attack.webp", "n": "電池切れのゾンビロボ", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_thunder_deadbattery_b_attack.png"},
+  {"f": "day2__mob_thunder_thunderdrummer_b_attack.webp", "n": "雷の太鼓打ち", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_thunder_thunderdrummer_b_attack.png"},
+  {"f": "day2__mob_thunder_staticpuff_b_idle.webp", "n": "静電気の綿毛球", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "day2", "o": "mob_thunder_staticpuff_b_idle.png"},
+  {"f": "day2__mob_thunder_plugblades_b_idle.webp", "n": "プラグの双剣士", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "idle", "r": "day2", "o": "mob_thunder_plugblades_b_idle.png"},
+  {"f": "day2__mob_thunder_stormaxe_a_attack.webp", "n": "雷斧の蛮族", "g": "雷", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_thunder_stormaxe_a_attack.png"},
+  {"f": "day2__mob_thunder_radiowraith_b_attack.webp", "n": "ラジオの怪電波", "g": "雷", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_thunder_radiowraith_b_attack.png"},
+  {"f": "day2__mob_chem_sulfurdevil_d_attack.webp", "n": "硫黄の悪魔", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_chem_sulfurdevil_d_attack.png"},
+  {"f": "day2__mob_chem_twinneutral_a_attack.webp", "n": "中和の双頭獣", "g": "化学", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_chem_twinneutral_a_attack.png"},
+  {"f": "day2__mob_chem_oxygenwolf_a_attack.webp", "n": "酸素の白狼", "g": "化学", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_chem_oxygenwolf_a_attack.png"},
+  {"f": "day2__mob_chem_hydrogenhorse_b_attack.webp", "n": "水素の青い火馬", "g": "化学", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_chem_hydrogenhorse_b_attack.png"},
+  {"f": "day2__mob_chem_stinkwraith_d_attack.webp", "n": "アンモニアの臭気霊", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_chem_stinkwraith_d_attack.png"},
+  {"f": "day2__mob_chem_gypsumstatue_d_attack.webp", "n": "結晶化する石膏像", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_chem_gypsumstatue_d_attack.png"},
+  {"f": "day2__mob_chem_co2serpent_b_attack.webp", "n": "炭酸の泡蛇", "g": "化学", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_chem_co2serpent_b_attack.png"},
+  {"f": "day2__mob_chem_ironsandbeast_a_attack.webp", "n": "砂鉄の獣", "g": "化学", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_chem_ironsandbeast_a_attack.png"},
+  {"f": "day2__mob_chem_mirrordoppel_d_attack.webp", "n": "銀鏡のドッペルゲンガー", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_chem_mirrordoppel_d_attack.png"},
+  {"f": "day2__mob_chem_limewraith_d_idle.webp", "n": "石灰水の白濁霊", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "day2", "o": "mob_chem_limewraith_d_idle.png"},
+  {"f": "day2__mob_chem_plasticslime_b_attack.webp", "n": "プラスチックのスライム", "g": "化学", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_chem_plasticslime_b_attack.png"},
+  {"f": "day2__mob_chem_rubberbouncer_b_attack.webp", "n": "ゴム弾性の跳ね獣", "g": "化学", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_chem_rubberbouncer_b_attack.png"},
+  {"f": "day2__mob_chem_goldleafwyvern_a_idle.webp", "n": "金箔の飛竜", "g": "化学", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_chem_goldleafwyvern_a_idle.png"},
+  {"f": "day2__mob_chem_ferrofluidpanther_d_attack.webp", "n": "磁性流体の黒豹", "g": "化学", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_chem_ferrofluidpanther_d_attack.png"},
+  {"f": "day2__mob_forest_oakbrawler_a_attack.webp", "n": "樫の大枝殴り", "g": "森", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_forest_oakbrawler_a_attack.png"},
+  {"f": "day2__mob_forest_pitchertrap_a_idle.webp", "n": "ウツボカズラの罠", "g": "森", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_forest_pitchertrap_a_idle.png"},
+  {"f": "day2__mob_forest_flowerfencer_b_attack.webp", "n": "花の剣舞士", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_forest_flowerfencer_b_attack.png"},
+  {"f": "day2__mob_forest_bamboopikes_a_attack.webp", "n": "竹の槍衾", "g": "森", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_forest_bamboopikes_a_attack.png"},
+  {"f": "day2__mob_forest_vinepuppeteer_d_attack.webp", "n": "蔦の吊り人形師", "g": "森", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_forest_vinepuppeteer_d_attack.png"},
+  {"f": "day2__mob_forest_bonedeer_d_idle.webp", "n": "森の骨鹿", "g": "森", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "day2", "o": "mob_forest_bonedeer_d_idle.png"},
+  {"f": "day2__mob_forest_bogmaster_d_attack.webp", "n": "苔の沼主", "g": "森", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_forest_bogmaster_d_attack.png"},
+  {"f": "day2__mob_forest_nutbomber_b_attack.webp", "n": "木の実爆弾リス", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_forest_nutbomber_b_attack.png"},
+  {"f": "day2__mob_forest_veinwyvern_a_attack.webp", "n": "葉脈の翼竜", "g": "森", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_forest_veinwyvern_a_attack.png"},
+  {"f": "day2__mob_forest_birchskeleton_d_attack.webp", "n": "白樺の白骨兵", "g": "森", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_forest_birchskeleton_d_attack.png"},
+  {"f": "day2__mob_forest_mistdeer_d_idle.webp", "n": "森霧の幻鹿", "g": "森", "c": "mob", "s": "ダーク油彩", "m": "idle", "r": "day2", "o": "mob_forest_mistdeer_d_idle.png"},
+  {"f": "day2__mob_forest_sakurablade_b_attack.webp", "n": "桜吹雪の剣士", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_forest_sakurablade_b_attack.png"},
+  {"f": "day2__mob_forest_rootsnare_a_attack.webp", "n": "根っこの絞め罠", "g": "森", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_forest_rootsnare_a_attack.png"},
+  {"f": "day2__mob_forest_giantsalamander_b_attack.webp", "n": "大山椒魚の主", "g": "森", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_forest_giantsalamander_b_attack.png"},
+  {"f": "day2__mob_forest_leafmoldgolem_d_attack.webp", "n": "腐葉土のゴーレム", "g": "森", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_forest_leafmoldgolem_d_attack.png"},
+  {"f": "day2__mob_earth_basaltsoldier_a_attack.webp", "n": "玄武岩の六角兵", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_earth_basaltsoldier_a_attack.png"},
+  {"f": "day2__mob_earth_volcaniclightning_d_attack.webp", "n": "火山雷の鬼", "g": "大地", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_earth_volcaniclightning_d_attack.png"},
+  {"f": "day2__mob_earth_hailgunner_b_attack.webp", "n": "ひょうの散弾兵", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_earth_hailgunner_b_attack.png"},
+  {"f": "day2__mob_earth_obsidianwolf_a_attack.webp", "n": "黒曜石の刃狼", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_earth_obsidianwolf_a_attack.png"},
+  {"f": "day2__mob_earth_craterlord_a_idle.webp", "n": "クレーターの主", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_earth_craterlord_a_idle.png"},
+  {"f": "day2__mob_earth_ammontank_b_attack.webp", "n": "アンモナイト戦車", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_earth_ammontank_b_attack.png"},
+  {"f": "day2__mob_earth_geocompass_a_attack.webp", "n": "地磁気の方位獣", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_earth_geocompass_a_attack.png"},
+  {"f": "day2__mob_earth_limestonedragon_a_idle.webp", "n": "石灰岩の白竜", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_earth_limestonedragon_a_idle.png"},
+  {"f": "day2__mob_earth_eclipsehound_d_attack.webp", "n": "月食の影犬", "g": "大地", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "mob_earth_eclipsehound_d_attack.png"},
+  {"f": "day2__mob_earth_coronaserpent_a_attack.webp", "n": "日食の光輪蛇", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_earth_coronaserpent_a_attack.png"},
+  {"f": "day2__mob_earth_platetortoise_a_idle.webp", "n": "プレートの重戦車亀", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "day2", "o": "mob_earth_platetortoise_a_idle.png"},
+  {"f": "day2__mob_earth_epicentermole_b_attack.webp", "n": "震源のモグラ大王", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_earth_epicentermole_b_attack.png"},
+  {"f": "day2__mob_earth_onsenoni_b_attack.webp", "n": "温泉の湯気鬼", "g": "大地", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "day2", "o": "mob_earth_onsenoni_b_attack.png"},
+  {"f": "day2__mob_earth_glaciermammoth_a_attack.webp", "n": "氷河のマンモス", "g": "大地", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "mob_earth_glaciermammoth_a_attack.png"},
+  {"f": "day2__boss_thunder_thunderemperor_d_attack.webp", "n": "雷帝の獣王", "g": "雷", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_thunder_thunderemperor_d_attack.png"},
+  {"f": "day2__boss_thunder_railgunmachina_a_attack.webp", "n": "超電磁の機神", "g": "雷", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_thunder_railgunmachina_a_attack.png"},
+  {"f": "day2__boss_thunder_stormhydra_d_attack.webp", "n": "嵐の九頭竜", "g": "雷", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_thunder_stormhydra_d_attack.png"},
+  {"f": "day2__boss_thunder_plasmaphoenix_a_attack.webp", "n": "プラズマの火の鳥", "g": "雷", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_thunder_plasmaphoenix_a_attack.png"},
+  {"f": "day2__boss_thunder_polartortoise_g_attack.webp", "n": "磁極の大亀", "g": "雷", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "day2", "o": "boss_thunder_polartortoise_g_attack.png"},
+  {"f": "day2__boss_thunder_stormwhale_d_attack.webp", "n": "雷雲の大鯨", "g": "雷", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_thunder_stormwhale_d_attack.png"},
+  {"f": "day2__boss_thunder_powerplantdragon_a_attack.webp", "n": "発電所の暴走機竜", "g": "雷", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_thunder_powerplantdragon_a_attack.png"},
+  {"f": "day2__boss_chem_aquaregia_d_attack.webp", "n": "王水の腐食竜", "g": "化学", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_chem_aquaregia_d_attack.png"},
+  {"f": "day2__boss_chem_detonationtwins_d_attack.webp", "n": "爆鳴気の双竜", "g": "化学", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_chem_detonationtwins_d_attack.png"},
+  {"f": "day2__boss_chem_alchemygiant_a_attack.webp", "n": "錬金の触媒巨人", "g": "化学", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_chem_alchemygiant_a_attack.png"},
+  {"f": "day2__boss_chem_fusiontitan_a_attack.webp", "n": "化合の合体巨人", "g": "化学", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_chem_fusiontitan_a_attack.png"},
+  {"f": "day2__boss_chem_nitrogenempress_d_attack.webp", "n": "液体窒素の氷帝", "g": "化学", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_chem_nitrogenempress_d_attack.png"},
+  {"f": "day2__boss_chem_sulfurbaphomet_d_attack.webp", "n": "硫化の黒山羊魔神", "g": "化学", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_chem_sulfurbaphomet_d_attack.png"},
+  {"f": "day2__boss_chem_sodiumbeast_g_attack.webp", "n": "金属ナトリウムの爆炎獣", "g": "化学", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "day2", "o": "boss_chem_sodiumbeast_g_attack.png"},
+  {"f": "day2__boss_forest_eldermother_d_attack.webp", "n": "太古の大樹母神", "g": "森", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_forest_eldermother_d_attack.png"},
+  {"f": "day2__boss_forest_myceliumking_d_attack.webp", "n": "菌糸網の地下王", "g": "森", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_forest_myceliumking_d_attack.png"},
+  {"f": "day2__boss_forest_owlsage_a_attack.webp", "n": "森の梟賢王", "g": "森", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_forest_owlsage_a_attack.png"},
+  {"f": "day2__boss_forest_vinestrangler_d_attack.webp", "n": "蔦の絞殺公", "g": "森", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_forest_vinestrangler_d_attack.png"},
+  {"f": "day2__boss_forest_mossgrizzly_g_attack.webp", "n": "苔の巨熊", "g": "森", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "day2", "o": "boss_forest_mossgrizzly_g_attack.png"},
+  {"f": "day2__boss_forest_autumnstag_a_attack.webp", "n": "紅葉の炎鹿王", "g": "森", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_forest_autumnstag_a_attack.png"},
+  {"f": "day2__boss_earth_quakedragon_d_attack.webp", "n": "大地震の巨竜", "g": "大地", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_earth_quakedragon_d_attack.png"},
+  {"f": "day2__boss_earth_tornadoserpentgod_a_attack.webp", "n": "巨大竜巻の蛇神", "g": "大地", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_earth_tornadoserpentgod_a_attack.png"},
+  {"f": "day2__boss_earth_mammothking_g_attack.webp", "n": "氷河期のマンモス王", "g": "大地", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "day2", "o": "boss_earth_mammothking_g_attack.png"},
+  {"f": "day2__boss_earth_pyroclasticdemon_d_attack.webp", "n": "火砕流の魔神", "g": "大地", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_earth_pyroclasticdemon_d_attack.png"},
+  {"f": "day2__boss_earth_fullmoonwolf_d_attack.webp", "n": "満月の狼王", "g": "大地", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_earth_fullmoonwolf_d_attack.png"},
+  {"f": "day2__boss_earth_stratatortoise_g_attack.webp", "n": "地層の古代亀神", "g": "大地", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "day2", "o": "boss_earth_stratatortoise_g_attack.png"},
+  {"f": "day2__boss_final_tetraarchangel_a_attack.webp", "n": "四元素の融合天使", "g": "終焉", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_final_tetraarchangel_a_attack.png"},
+  {"f": "day2__boss_final_antimatterhorror_d_attack.webp", "n": "反物質の異形", "g": "終焉", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_final_antimatterhorror_d_attack.png"},
+  {"f": "day2__boss_final_blackholedevourer_d_attack.webp", "n": "ブラックホールの喰らい手", "g": "終焉", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_final_blackholedevourer_d_attack.png"},
+  {"f": "day2__boss_final_supernovaphoenix_a_attack.webp", "n": "超新星の火の鳥", "g": "終焉", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_final_supernovaphoenix_a_attack.png"},
+  {"f": "day2__boss_final_galaxyserpentgod_d_attack.webp", "n": "銀河渦の大蛇神", "g": "終焉", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_final_galaxyserpentgod_d_attack.png"},
+  {"f": "day2__boss_final_chronogearking_a_attack.webp", "n": "時空の歯車皇", "g": "終焉", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "day2", "o": "boss_final_chronogearking_a_attack.png"},
+  {"f": "day2__boss_final_absolutezeroreaper_d_attack.webp", "n": "絶対零度の死神", "g": "終焉", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "day2", "o": "boss_final_absolutezeroreaper_d_attack.png"},
+  {"f": "day2__boss_thunder_raijinoni_i_attack.webp", "n": "雷神の和太鼓鬼", "g": "雷", "c": "boss", "s": "墨絵和風", "m": "attack", "r": "day2", "o": "boss_thunder_raijinoni_i_attack.png"},
+  {"f": "day2__boss_earth_fujinbag_i_attack.webp", "n": "風神の袋持ち", "g": "大地", "c": "boss", "s": "墨絵和風", "m": "attack", "r": "day2", "o": "boss_earth_fujinbag_i_attack.png"},
+  {"f": "day2__mob_forest_koidragon_i_attack.webp", "n": "鯉の滝登り竜", "g": "森", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "day2", "o": "mob_forest_koidragon_i_attack.png"},
+  {"f": "day2__mob_chem_kitsunebi_i_attack.webp", "n": "狐火の九尾", "g": "化学", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "day2", "o": "mob_chem_kitsunebi_i_attack.png"},
+  {"f": "day2__cute_cave_karakasa_i_idle.webp", "n": "唐傘おばけの子", "g": "洞くつ", "c": "cute", "s": "墨絵和風", "m": "idle", "r": "day2", "o": "cute_cave_karakasa_i_idle.png"},
+  {"f": "day2__boss_final_sumidragon_i_attack.webp", "n": "墨流しの龍", "g": "終焉", "c": "boss", "s": "墨絵和風", "m": "attack", "r": "day2", "o": "boss_final_sumidragon_i_attack.png"},
+  {"f": "day2__mob_earth_hannyarock_i_idle.webp", "n": "般若の岩面鬼", "g": "大地", "c": "mob", "s": "墨絵和風", "m": "idle", "r": "day2", "o": "mob_earth_hannyarock_i_idle.png"},
+  {"f": "day2__mob_thunder_glasspeacock_j_attack.webp", "n": "光の孔雀", "g": "雷", "c": "mob", "s": "ステンドグラス", "m": "attack", "r": "day2", "o": "mob_thunder_glasspeacock_j_attack.png"},
+  {"f": "day2__boss_final_rosewindowangel_j_attack.webp", "n": "薔薇窓の天使", "g": "終焉", "c": "boss", "s": "ステンドグラス", "m": "attack", "r": "day2", "o": "boss_final_rosewindowangel_j_attack.png"},
+  {"f": "day2__cute_forest_kaleidobutterfly_j_idle.webp", "n": "万華鏡の蝶", "g": "森", "c": "cute", "s": "ステンドグラス", "m": "idle", "r": "day2", "o": "cute_forest_kaleidobutterfly_j_idle.png"},
+  {"f": "day2__mob_cave_glassanglerfish_j_idle.webp", "n": "ガラスの深海魚", "g": "洞くつ", "c": "mob", "s": "ステンドグラス", "m": "idle", "r": "day2", "o": "mob_cave_glassanglerfish_j_idle.png"},
+  {"f": "day2__boss_chem_cathedrallion_j_attack.webp", "n": "聖堂の守護獅子", "g": "化学", "c": "boss", "s": "ステンドグラス", "m": "attack", "r": "day2", "o": "boss_chem_cathedrallion_j_attack.png"},
+  {"f": "day2__cute_generic_mosaicbird_j_attack.webp", "n": "太陽のモザイク鳥", "g": "汎用", "c": "cute", "s": "ステンドグラス", "m": "attack", "r": "day2", "o": "cute_generic_mosaicbird_j_attack.png"},
+  {"f": "day2__cute_generic_pixelhero_k_attack.webp", "n": "8bitの勇者スライム", "g": "汎用", "c": "cute", "s": "ドット絵", "m": "attack", "r": "day2", "o": "cute_generic_pixelhero_k_attack.png"},
+  {"f": "day2__boss_earth_pixeldragon_k_attack.webp", "n": "ドットの火竜", "g": "大地", "c": "boss", "s": "ドット絵", "m": "attack", "r": "day2", "o": "boss_earth_pixeldragon_k_attack.png"},
+  {"f": "day2__cute_thunder_pixelmomonga_k_attack.webp", "n": "ドット絵の雷モモンガ", "g": "雷", "c": "cute", "s": "ドット絵", "m": "attack", "r": "day2", "o": "cute_thunder_pixelmomonga_k_attack.png"},
+  {"f": "day2__mob_cave_pixelskeleton_k_attack.webp", "n": "ドットの骸骨剣士", "g": "洞くつ", "c": "mob", "s": "ドット絵", "m": "attack", "r": "day2", "o": "mob_cave_pixelskeleton_k_attack.png"},
+  {"f": "day2__mob_chem_pixelwizard_k_attack.webp", "n": "ドットの毒魔道士", "g": "化学", "c": "mob", "s": "ドット絵", "m": "attack", "r": "day2", "o": "mob_chem_pixelwizard_k_attack.png"},
+  {"f": "day2__mob_forest_pixelwolf_k_attack.webp", "n": "ドットの森狼", "g": "森", "c": "mob", "s": "ドット絵", "m": "attack", "r": "day2", "o": "mob_forest_pixelwolf_k_attack.png"},
+  {"f": "day2__mob_final_pixelufo_k_attack.webp", "n": "ドットのUFO", "g": "終焉", "c": "mob", "s": "ドット絵", "m": "attack", "r": "day2", "o": "mob_final_pixelufo_k_attack.png"},
+  {"f": "day2__cute_generic_oritsuru_l_attack.webp", "n": "折り鶴の使い", "g": "汎用", "c": "cute", "s": "折り紙", "m": "attack", "r": "day2", "o": "cute_generic_oritsuru_l_attack.png"},
+  {"f": "day2__mob_earth_origamishishimai_l_attack.webp", "n": "折り紙の獅子舞", "g": "大地", "c": "mob", "s": "折り紙", "m": "attack", "r": "day2", "o": "mob_earth_origamishishimai_l_attack.png"},
+  {"f": "day2__boss_forest_origamidragon_l_attack.webp", "n": "折り紙の竜", "g": "森", "c": "boss", "s": "折り紙", "m": "attack", "r": "day2", "o": "boss_forest_origamidragon_l_attack.png"},
+  {"f": "day2__mob_thunder_origamisamurai_l_attack.webp", "n": "折り紙の兜武者", "g": "雷", "c": "mob", "s": "折り紙", "m": "attack", "r": "day2", "o": "mob_thunder_origamisamurai_l_attack.png"},
+  {"f": "day2__cute_forest_origamifrog_l_attack.webp", "n": "折り紙のカエル", "g": "森", "c": "cute", "s": "折り紙", "m": "attack", "r": "day2", "o": "cute_forest_origamifrog_l_attack.png"},
+  {"f": "day2__mob_cave_origamighostship_l_idle.webp", "n": "折り紙の船幽霊", "g": "洞くつ", "c": "mob", "s": "折り紙", "m": "idle", "r": "day2", "o": "mob_cave_origamighostship_l_idle.png"},
+  {"f": "day2__mob_thunder_neonwolf_m_attack.webp", "n": "ネオンの電脳狼", "g": "雷", "c": "mob", "s": "ネオン", "m": "attack", "r": "day2", "o": "mob_thunder_neonwolf_m_attack.png"},
+  {"f": "day2__mob_chem_neonpotion_m_attack.webp", "n": "ネオン薬瓶の精", "g": "化学", "c": "mob", "s": "ネオン", "m": "attack", "r": "day2", "o": "mob_chem_neonpotion_m_attack.png"},
+  {"f": "day2__cute_cave_neonjelly_m_idle.webp", "n": "ネオンクラゲ", "g": "洞くつ", "c": "cute", "s": "ネオン", "m": "idle", "r": "day2", "o": "cute_cave_neonjelly_m_idle.png"},
+  {"f": "day2__boss_thunder_neonknight_m_attack.webp", "n": "ネオンの騎士王", "g": "雷", "c": "boss", "s": "ネオン", "m": "attack", "r": "day2", "o": "boss_thunder_neonknight_m_attack.png"},
+  {"f": "day2__boss_chem_neontesttubedragon_m_attack.webp", "n": "ネオン試験管龍", "g": "化学", "c": "boss", "s": "ネオン", "m": "attack", "r": "day2", "o": "boss_chem_neontesttubedragon_m_attack.png"},
+  {"f": "day2__cute_generic_neonfairy_m_idle.webp", "n": "ネオンサインの妖精", "g": "汎用", "c": "cute", "s": "ネオン", "m": "idle", "r": "day2", "o": "cute_generic_neonfairy_m_idle.png"},
+  {"f": "day2__mob_earth_neonstarsnake_m_attack.webp", "n": "ネオンの星図蛇", "g": "大地", "c": "mob", "s": "ネオン", "m": "attack", "r": "day2", "o": "mob_earth_neonstarsnake_m_attack.png"},
+  {"f": "day2__cute_earth_rockturtle_p_attack.webp", "n": "岩の子亀", "g": "大地", "c": "cute", "s": "ポケ風デフォルメ", "m": "attack", "r": "day2", "o": "cute_earth_rockturtle_p_attack.png"},
+  {"f": "day2__cute_forest_dewbird_p_attack.webp", "n": "露草の小鳥", "g": "森", "c": "cute", "s": "ポケ風デフォルメ", "m": "attack", "r": "day2", "o": "cute_forest_dewbird_p_attack.png"},
+  {"f": "day2__mob_earth_goofygolem_q_attack.webp", "n": "とぼけた岩巨人", "g": "大地", "c": "mob", "s": "コミック調", "m": "attack", "r": "day2", "o": "mob_earth_goofygolem_q_attack.png"},
+  {"f": "day2__mob_chem_foxpeddler_q_attack.webp", "n": "薬売りのキツネ", "g": "化学", "c": "mob", "s": "コミック調", "m": "attack", "r": "day2", "o": "mob_chem_foxpeddler_q_attack.png"},
+  {"f": "day2__mob_forest_rootbigman_q_attack.webp", "n": "根っこの大男", "g": "森", "c": "mob", "s": "コミック調", "m": "attack", "r": "day2", "o": "mob_forest_rootbigman_q_attack.png"},
+  {"f": "day2__mob_cave_treasuremimic_q_attack.webp", "n": "宝箱ミミック", "g": "洞くつ", "c": "mob", "s": "コミック調", "m": "attack", "r": "day2", "o": "mob_cave_treasuremimic_q_attack.png"},
+  {"f": "concept1__cute_makai_makainyanko_k_idle.webp", "n": "魔界の黒猫悪魔", "g": "魔界", "c": "cute", "s": "ドット絵", "m": "idle", "r": "concept1", "o": "cute_makai_makainyanko_k_idle.png"},
+  {"f": "concept1__mob_makai_gatekeeper_d_attack.webp", "n": "魔界門の門番", "g": "魔界", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_makai_gatekeeper_d_attack.png"},
+  {"f": "concept1__mob_makai_shadowhound_d_attack.webp", "n": "影の魔犬", "g": "魔界", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_makai_shadowhound_d_attack.png"},
+  {"f": "concept1__mob_makai_lavaimp_b_attack.webp", "n": "溶岩インプ兵", "g": "魔界", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_makai_lavaimp_b_attack.png"},
+  {"f": "concept1__mob_makai_hornedknight_a_attack.webp", "n": "魔界の角騎士", "g": "魔界", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_makai_hornedknight_a_attack.png"},
+  {"f": "concept1__mob_makai_batwingimp_b_attack.webp", "n": "蝙蝠羽の小悪魔", "g": "魔界", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_makai_batwingimp_b_attack.png"},
+  {"f": "concept1__mob_makai_chaosjelly_b_attack.webp", "n": "混沌のゼリー悪魔", "g": "魔界", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_makai_chaosjelly_b_attack.png"},
+  {"f": "concept1__mob_makai_darkpriest_d_attack.webp", "n": "魔界の司祭", "g": "魔界", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_makai_darkpriest_d_attack.png"},
+  {"f": "concept1__boss_makai_demonlord_d_attack.webp", "n": "魔界大公", "g": "魔界", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_makai_demonlord_d_attack.png"},
+  {"f": "concept1__boss_makai_voidqueen_d_attack.webp", "n": "虚無の女王", "g": "魔界", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_makai_voidqueen_d_attack.png"},
+  {"f": "concept1__cute_zombie_zombiepup_q_attack.webp", "n": "ゾンビの子犬", "g": "ゾンビ", "c": "cute", "s": "コミック調", "m": "attack", "r": "concept1", "o": "cute_zombie_zombiepup_q_attack.png"},
+  {"f": "concept1__cute_zombie_pumpkinzombie_k_attack.webp", "n": "カボチャ頭の小ゾンビ", "g": "ゾンビ", "c": "cute", "s": "ドット絵", "m": "attack", "r": "concept1", "o": "cute_zombie_pumpkinzombie_k_attack.png"},
+  {"f": "concept1__mob_zombie_zombiesoldier_q_attack.webp", "n": "よろけゾンビ兵", "g": "ゾンビ", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_zombie_zombiesoldier_q_attack.png"},
+  {"f": "concept1__mob_zombie_graveworm_b_attack.webp", "n": "墓場の大ミミズ", "g": "ゾンビ", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_zombie_graveworm_b_attack.png"},
+  {"f": "concept1__mob_zombie_boneknight_a_idle.webp", "n": "骨の重騎士", "g": "ゾンビ", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "concept1", "o": "mob_zombie_boneknight_a_idle.png"},
+  {"f": "concept1__mob_zombie_ghoulchef_q_attack.webp", "n": "ゾンビの料理長", "g": "ゾンビ", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_zombie_ghoulchef_q_attack.png"},
+  {"f": "concept1__mob_zombie_zombiecrow_d_attack.webp", "n": "ゾンビ大鴉", "g": "ゾンビ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_zombie_zombiecrow_d_attack.png"},
+  {"f": "concept1__mob_zombie_ragdollgolem_d_attack.webp", "n": "継ぎ接ぎのゴーレム", "g": "ゾンビ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_zombie_ragdollgolem_d_attack.png"},
+  {"f": "concept1__mob_zombie_plaguerat_b_attack.webp", "n": "疫病の大ネズミ", "g": "ゾンビ", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_zombie_plaguerat_b_attack.png"},
+  {"f": "concept1__boss_zombie_zombieking_d_attack.webp", "n": "墓場の王", "g": "ゾンビ", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_zombie_zombieking_d_attack.png"},
+  {"f": "concept1__boss_zombie_necroconductor_d_attack.webp", "n": "死霊の指揮者", "g": "ゾンビ", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_zombie_necroconductor_d_attack.png"},
+  {"f": "concept1__boss_zombie_patchtitan_a_attack.webp", "n": "縫合の巨人", "g": "ゾンビ", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_zombie_patchtitan_a_attack.png"},
+  {"f": "concept1__cute_jigoku_enmapup_k_idle.webp", "n": "閻魔の子分わんこ", "g": "地獄", "c": "cute", "s": "ドット絵", "m": "idle", "r": "concept1", "o": "cute_jigoku_enmapup_k_idle.png"},
+  {"f": "concept1__mob_jigoku_gokusotsu_i_attack.webp", "n": "赤鬼の獄卒", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "mob_jigoku_gokusotsu_i_attack.png"},
+  {"f": "concept1__mob_jigoku_aooni_i_attack.webp", "n": "青鬼の岩投げ", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "mob_jigoku_aooni_i_attack.png"},
+  {"f": "concept1__mob_jigoku_harimountain_d_attack.webp", "n": "針山の大亀", "g": "地獄", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_jigoku_harimountain_d_attack.png"},
+  {"f": "concept1__mob_jigoku_magmacarp_d_attack.webp", "n": "灼熱池の緋鯉", "g": "地獄", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_jigoku_magmacarp_d_attack.png"},
+  {"f": "concept1__mob_jigoku_hitodama_b_attack.webp", "n": "火の玉の親分", "g": "地獄", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_jigoku_hitodama_b_attack.png"},
+  {"f": "concept1__mob_jigoku_sanzuboatman_i_attack.webp", "n": "三途の渡し守", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "mob_jigoku_sanzuboatman_i_attack.png"},
+  {"f": "concept1__mob_jigoku_ondydrummer_i_attack.webp", "n": "雷鳴の獄卒鼓手", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "mob_jigoku_ondydrummer_i_attack.png"},
+  {"f": "concept1__boss_jigoku_enmaking_i_attack.webp", "n": "閻魔大王", "g": "地獄", "c": "boss", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "boss_jigoku_enmaking_i_attack.png"},
+  {"f": "concept1__boss_jigoku_wheeldragon_d_attack.webp", "n": "獄炎の車輪竜", "g": "地獄", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_jigoku_wheeldragon_d_attack.png"},
+  {"f": "concept1__boss_jigoku_gokuenbird_d_attack.webp", "n": "獄炎の怪鳥", "g": "地獄", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_jigoku_gokuenbird_d_attack.png"},
+  {"f": "concept1__mob_vampire_vampireknight_a_attack.webp", "n": "緋色の吸血騎士", "g": "ドラキュラ伝説", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_vampire_vampireknight_a_attack.png"},
+  {"f": "concept1__mob_vampire_werewolf_d_attack.webp", "n": "満月の狼男", "g": "ドラキュラ伝説", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_vampire_werewolf_d_attack.png"},
+  {"f": "concept1__mob_vampire_gargoyle_a_attack.webp", "n": "目覚めるガーゴイル", "g": "ドラキュラ伝説", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_vampire_gargoyle_a_attack.png"},
+  {"f": "concept1__mob_vampire_coffinmimic_d_attack.webp", "n": "棺桶のミミック", "g": "ドラキュラ伝説", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_vampire_coffinmimic_d_attack.png"},
+  {"f": "concept1__mob_vampire_batbutler_q_attack.webp", "n": "蝙蝠の執事", "g": "ドラキュラ伝説", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_vampire_batbutler_q_attack.png"},
+  {"f": "concept1__mob_vampire_mistlady_d_attack.webp", "n": "霧の貴婦人", "g": "ドラキュラ伝説", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_vampire_mistlady_d_attack.png"},
+  {"f": "concept1__boss_vampire_dracula_d_attack.webp", "n": "真祖の吸血伯爵", "g": "ドラキュラ伝説", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_vampire_dracula_d_attack.png"},
+  {"f": "concept1__boss_vampire_rosequeen_j_attack.webp", "n": "薔薇の吸血女王", "g": "ドラキュラ伝説", "c": "boss", "s": "ステンドグラス", "m": "attack", "r": "concept1", "o": "boss_vampire_rosequeen_j_attack.png"},
+  {"f": "concept1__boss_vampire_castlegolem_a_attack.webp", "n": "歩く古城の巨人", "g": "ドラキュラ伝説", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_vampire_castlegolem_a_attack.png"},
+  {"f": "concept1__cute_myth_babyharpy_b_attack.webp", "n": "ハーピーのひな", "g": "神話", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "cute_myth_babyharpy_b_attack.png"},
+  {"f": "concept1__mob_myth_minotaur_a_attack.webp", "n": "迷宮のミノタウロス", "g": "神話", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_myth_minotaur_a_attack.png"},
+  {"f": "concept1__mob_myth_harpywind_b_attack.webp", "n": "ハーピーの風使い", "g": "神話", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_myth_harpywind_b_attack.png"},
+  {"f": "concept1__mob_myth_cerberus_d_attack.webp", "n": "冥府の番犬", "g": "神話", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_myth_cerberus_d_attack.png"},
+  {"f": "concept1__mob_myth_medusarcher_d_attack.webp", "n": "石視の射手", "g": "神話", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_myth_medusarcher_d_attack.png"},
+  {"f": "concept1__mob_myth_centaurlancer_a_attack.webp", "n": "ケンタウロスの槍騎兵", "g": "神話", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_myth_centaurlancer_a_attack.png"},
+  {"f": "concept1__mob_myth_sirenwave_b_attack.webp", "n": "セイレーンの歌姫", "g": "神話", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_myth_sirenwave_b_attack.png"},
+  {"f": "concept1__mob_myth_cyclopssmith_a_attack.webp", "n": "一つ目の鍛冶巨人", "g": "神話", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_myth_cyclopssmith_a_attack.png"},
+  {"f": "concept1__boss_myth_hydra_d_attack.webp", "n": "九頭のヒュドラ", "g": "神話", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_myth_hydra_d_attack.png"},
+  {"f": "concept1__boss_myth_titanatlas_a_attack.webp", "n": "天球の巨神", "g": "神話", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_myth_titanatlas_a_attack.png"},
+  {"f": "concept1__boss_myth_goldgriffin_a_attack.webp", "n": "黄金のグリフォン", "g": "神話", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_myth_goldgriffin_a_attack.png"},
+  {"f": "concept1__cute_egypt_scarabbaby_p_idle.webp", "n": "ふんころがしの子", "g": "エジプト", "c": "cute", "s": "ポケ風デフォルメ", "m": "idle", "r": "concept1", "o": "cute_egypt_scarabbaby_p_idle.png"},
+  {"f": "concept1__cute_egypt_sandkitten_k_idle.webp", "n": "砂漠の子スフィンクス", "g": "エジプト", "c": "cute", "s": "ドット絵", "m": "idle", "r": "concept1", "o": "cute_egypt_sandkitten_k_idle.png"},
+  {"f": "concept1__mob_egypt_anubisguard_a_attack.webp", "n": "アヌビスの神殿兵", "g": "エジプト", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_egypt_anubisguard_a_attack.png"},
+  {"f": "concept1__mob_egypt_mummysoldier_q_attack.webp", "n": "包帯のミイラ兵", "g": "エジプト", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_egypt_mummysoldier_q_attack.png"},
+  {"f": "concept1__mob_egypt_sandserpent_a_attack.webp", "n": "流砂の大蛇", "g": "エジプト", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_egypt_sandserpent_a_attack.png"},
+  {"f": "concept1__mob_egypt_pharaohhawk_b_attack.webp", "n": "ファラオの隼", "g": "エジプト", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_egypt_pharaohhawk_b_attack.png"},
+  {"f": "concept1__mob_egypt_pyramidgolem_a_attack.webp", "n": "ピラミッドのゴーレム", "g": "エジプト", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_egypt_pyramidgolem_a_attack.png"},
+  {"f": "concept1__mob_egypt_muralwarrior_r_attack.webp", "n": "壁画から出る戦士", "g": "エジプト", "c": "mob", "s": "壁画レリーフ", "m": "attack", "r": "concept1", "o": "mob_egypt_muralwarrior_r_attack.png"},
+  {"f": "concept1__mob_egypt_goldscorpion_b_attack.webp", "n": "黄金のサソリ", "g": "エジプト", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_egypt_goldscorpion_b_attack.png"},
+  {"f": "concept1__boss_egypt_sphinxriddler_a_attack.webp", "n": "謎かけの大スフィンクス", "g": "エジプト", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_egypt_sphinxriddler_a_attack.png"},
+  {"f": "concept1__boss_egypt_pharaohlich_d_attack.webp", "n": "黄金のファラオの霊", "g": "エジプト", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_egypt_pharaohlich_d_attack.png"},
+  {"f": "concept1__boss_egypt_ammitbeast_a_attack.webp", "n": "アメミットの審判獣", "g": "エジプト", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_egypt_ammitbeast_a_attack.png"},
+  {"f": "concept1__cute_deepsea_anglerbaby_k_idle.webp", "n": "チョウチンアンコウの子", "g": "深海", "c": "cute", "s": "ドット絵", "m": "idle", "r": "concept1", "o": "cute_deepsea_anglerbaby_k_idle.png"},
+  {"f": "concept1__cute_deepsea_pearlclam_h_attack.webp", "n": "真珠の子貝", "g": "深海", "c": "cute", "s": "パステルマスコット", "m": "attack", "r": "concept1", "o": "cute_deepsea_pearlclam_h_attack.png"},
+  {"f": "concept1__mob_deepsea_giantsquid_a_attack.webp", "n": "大王イカの触腕兵", "g": "深海", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_deepsea_giantsquid_a_attack.png"},
+  {"f": "concept1__mob_deepsea_gulpereel_b_attack.webp", "n": "フウセンウナギの大口", "g": "深海", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_deepsea_gulpereel_b_attack.png"},
+  {"f": "concept1__mob_deepsea_deepjelly_m_attack.webp", "n": "深海クラゲの提灯", "g": "深海", "c": "mob", "s": "ネオン", "m": "attack", "r": "concept1", "o": "mob_deepsea_deepjelly_m_attack.png"},
+  {"f": "concept1__mob_deepsea_anglerknight_a_attack.webp", "n": "アンコウの提灯騎士", "g": "深海", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_deepsea_anglerknight_a_attack.png"},
+  {"f": "concept1__mob_deepsea_isopodroller_p_attack.webp", "n": "グソクムシの鉄球兵", "g": "深海", "c": "mob", "s": "ポケ風デフォルメ", "m": "attack", "r": "concept1", "o": "mob_deepsea_isopodroller_p_attack.png"},
+  {"f": "concept1__mob_deepsea_ventcrab_a_attack.webp", "n": "熱水噴出孔のカニ", "g": "深海", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_deepsea_ventcrab_a_attack.png"},
+  {"f": "concept1__boss_deepsea_krakenlord_d_attack.webp", "n": "海淵のクラーケン王", "g": "深海", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_deepsea_krakenlord_d_attack.png"},
+  {"f": "concept1__boss_deepsea_lightwhale_m_attack.webp", "n": "深海の光鯨", "g": "深海", "c": "boss", "s": "ネオン", "m": "attack", "r": "concept1", "o": "boss_deepsea_lightwhale_m_attack.png"},
+  {"f": "concept1__boss_deepsea_trenchserpent_a_attack.webp", "n": "海溝の大海蛇", "g": "深海", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_deepsea_trenchserpent_a_attack.png"},
+  {"f": "concept1__cute_wa_kappakid_b_attack.webp", "n": "河童の子", "g": "和妖怪", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "cute_wa_kappakid_b_attack.png"},
+  {"f": "concept1__cute_wa_kitsunemenko_l_idle.webp", "n": "狐面の子狐", "g": "和妖怪", "c": "cute", "s": "折り紙", "m": "idle", "r": "concept1", "o": "cute_wa_kitsunemenko_l_idle.png"},
+  {"f": "concept1__mob_wa_tengu_i_attack.webp", "n": "天狗の羽団扇武者", "g": "和妖怪", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "mob_wa_tengu_i_attack.png"},
+  {"f": "concept1__mob_wa_kamaitachi_b_attack.webp", "n": "鎌鼬の旋風", "g": "和妖怪", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_wa_kamaitachi_b_attack.png"},
+  {"f": "concept1__mob_wa_karakurisamurai_a_attack.webp", "n": "からくり侍", "g": "和妖怪", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_wa_karakurisamurai_a_attack.png"},
+  {"f": "concept1__mob_wa_nurikabe_q_attack.webp", "n": "ぬりかべ", "g": "和妖怪", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_wa_nurikabe_q_attack.png"},
+  {"f": "concept1__mob_wa_chochinobake_i_attack.webp", "n": "提灯おばけ", "g": "和妖怪", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "mob_wa_chochinobake_i_attack.png"},
+  {"f": "concept1__mob_wa_komainu_a_attack.webp", "n": "狛犬の阿形", "g": "和妖怪", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_wa_komainu_a_attack.png"},
+  {"f": "concept1__boss_wa_yamatanoorochi_i_attack.webp", "n": "八岐の大蛇", "g": "和妖怪", "c": "boss", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "boss_wa_yamatanoorochi_i_attack.png"},
+  {"f": "concept1__boss_wa_shutendoji_d_attack.webp", "n": "酒呑童子の鬼王", "g": "和妖怪", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_wa_shutendoji_d_attack.png"},
+  {"f": "concept1__boss_wa_daitengu_i_attack.webp", "n": "大天狗", "g": "和妖怪", "c": "boss", "s": "墨絵和風", "m": "attack", "r": "concept1", "o": "boss_wa_daitengu_i_attack.png"},
+  {"f": "concept1__cute_china_pandamonk_b_attack.webp", "n": "子パンダの拳法家", "g": "中華", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "cute_china_pandamonk_b_attack.png"},
+  {"f": "concept1__mob_china_jiangshi_q_attack.webp", "n": "キョンシーの跳ね兵", "g": "中華", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_china_jiangshi_q_attack.png"},
+  {"f": "concept1__mob_china_longdancer_b_attack.webp", "n": "龍舞の踊り手", "g": "中華", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_china_longdancer_b_attack.png"},
+  {"f": "concept1__mob_china_drunkenmaster_q_attack.webp", "n": "酔拳の老師", "g": "中華", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_china_drunkenmaster_q_attack.png"},
+  {"f": "concept1__mob_china_terracotta_a_attack.webp", "n": "兵馬俑の戦士", "g": "中華", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_china_terracotta_a_attack.png"},
+  {"f": "concept1__mob_china_pipaplayer_b_attack.webp", "n": "琵琶の楽士", "g": "中華", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_china_pipaplayer_b_attack.png"},
+  {"f": "concept1__mob_china_wokgeneral_q_attack.webp", "n": "中華鍋の炎将軍", "g": "中華", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_china_wokgeneral_q_attack.png"},
+  {"f": "concept1__mob_china_kungfutiger_b_attack.webp", "n": "拳法の白虎", "g": "中華", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_china_kungfutiger_b_attack.png"},
+  {"f": "concept1__boss_china_qilin_a_attack.webp", "n": "麒麟の聖獣", "g": "中華", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_china_qilin_a_attack.png"},
+  {"f": "concept1__boss_china_goldendragon_b_attack.webp", "n": "五爪の黄金龍", "g": "中華", "c": "boss", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "boss_china_goldendragon_b_attack.png"},
+  {"f": "concept1__boss_china_monkeyking_q_attack.webp", "n": "如意棒の猿王", "g": "中華", "c": "boss", "s": "コミック調", "m": "attack", "r": "concept1", "o": "boss_china_monkeyking_q_attack.png"},
+  {"f": "concept1__cute_viking_snowlambshield_h_idle.webp", "n": "雪原の子羊戦士", "g": "ヴァイキング", "c": "cute", "s": "パステルマスコット", "m": "idle", "r": "concept1", "o": "cute_viking_snowlambshield_h_idle.png"},
+  {"f": "concept1__mob_viking_raidwarrior_a_attack.webp", "n": "斧の襲撃兵", "g": "ヴァイキング", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_viking_raidwarrior_a_attack.png"},
+  {"f": "concept1__mob_viking_shieldmaiden_a_idle.webp", "n": "盾の乙女戦士", "g": "ヴァイキング", "c": "mob", "s": "精細ゲームCG", "m": "idle", "r": "concept1", "o": "mob_viking_shieldmaiden_a_idle.png"},
+  {"f": "concept1__mob_viking_icebearserker_d_attack.webp", "n": "白熊の狂戦士", "g": "ヴァイキング", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_viking_icebearserker_d_attack.png"},
+  {"f": "concept1__mob_viking_ghostlongship_d_attack.webp", "n": "幽霊ドラッカー船", "g": "ヴァイキング", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_viking_ghostlongship_d_attack.png"},
+  {"f": "concept1__mob_viking_runeseer_d_attack.webp", "n": "ルーンの予言者", "g": "ヴァイキング", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_viking_runeseer_d_attack.png"},
+  {"f": "concept1__mob_viking_hornblower_b_attack.webp", "n": "角笛の戦士", "g": "ヴァイキング", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_viking_hornblower_b_attack.png"},
+  {"f": "concept1__mob_viking_icetroll_a_attack.webp", "n": "氷のトロール", "g": "ヴァイキング", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_viking_icetroll_a_attack.png"},
+  {"f": "concept1__boss_viking_fenrirchained_g_attack.webp", "n": "鎖のフェンリル狼", "g": "ヴァイキング", "c": "boss", "s": "リアルクリーチャー", "m": "attack", "r": "concept1", "o": "boss_viking_fenrirchained_g_attack.png"},
+  {"f": "concept1__boss_viking_jormunserpent_d_attack.webp", "n": "世界蛇の大渦", "g": "ヴァイキング", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_viking_jormunserpent_d_attack.png"},
+  {"f": "concept1__boss_viking_valkyrielord_a_attack.webp", "n": "戦乙女の隊長", "g": "ヴァイキング", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_viking_valkyrielord_a_attack.png"},
+  {"f": "concept1__cute_sweets_macaronslime_n_attack.webp", "n": "マカロンのスライム", "g": "お菓子の国", "c": "cute", "s": "クレイ", "m": "attack", "r": "concept1", "o": "cute_sweets_macaronslime_n_attack.png"},
+  {"f": "concept1__cute_sweets_cottonbunny_o_idle.webp", "n": "綿あめのうさぎ", "g": "お菓子の国", "c": "cute", "s": "フェルト", "m": "idle", "r": "concept1", "o": "cute_sweets_cottonbunny_o_idle.png"},
+  {"f": "concept1__mob_sweets_chocogolem_n_attack.webp", "n": "チョコレートのゴーレム", "g": "お菓子の国", "c": "mob", "s": "クレイ", "m": "attack", "r": "concept1", "o": "mob_sweets_chocogolem_n_attack.png"},
+  {"f": "concept1__mob_sweets_cookieknight_n_attack.webp", "n": "クッキーの兵隊", "g": "お菓子の国", "c": "mob", "s": "クレイ", "m": "attack", "r": "concept1", "o": "mob_sweets_cookieknight_n_attack.png"},
+  {"f": "concept1__mob_sweets_sodajelly_h_attack.webp", "n": "ソーダゼリーのクラゲ", "g": "お菓子の国", "c": "mob", "s": "パステルマスコット", "m": "attack", "r": "concept1", "o": "mob_sweets_sodajelly_h_attack.png"},
+  {"f": "concept1__mob_sweets_popcornbomber_q_attack.webp", "n": "ポップコーンの爆兵", "g": "お菓子の国", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_sweets_popcornbomber_q_attack.png"},
+  {"f": "concept1__boss_sweets_cakequeen_h_attack.webp", "n": "ケーキ城の女王", "g": "お菓子の国", "c": "boss", "s": "パステルマスコット", "m": "attack", "r": "concept1", "o": "boss_sweets_cakequeen_h_attack.png"},
+  {"f": "concept1__boss_sweets_candydragon_z_attack.webp", "n": "飴細工の竜", "g": "お菓子の国", "c": "boss", "s": "ガラス細工", "m": "attack", "r": "concept1", "o": "boss_sweets_candydragon_z_attack.png"},
+  {"f": "concept1__cute_steampunk_gearmouse_q_idle.webp", "n": "ネジ巻きネズミ", "g": "蒸気機関都市", "c": "cute", "s": "コミック調", "m": "idle", "r": "concept1", "o": "cute_steampunk_gearmouse_q_idle.png"},
+  {"f": "concept1__cute_steampunk_steampup_k_idle.webp", "n": "蒸気の子犬ロボ", "g": "蒸気機関都市", "c": "cute", "s": "ドット絵", "m": "idle", "r": "concept1", "o": "cute_steampunk_steampup_k_idle.png"},
+  {"f": "concept1__mob_steampunk_pistonboxer_a_attack.webp", "n": "ピストンの拳闘士", "g": "蒸気機関都市", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_steampunk_pistonboxer_a_attack.png"},
+  {"f": "concept1__mob_steampunk_boilergolem_a_attack.webp", "n": "ボイラーのゴーレム", "g": "蒸気機関都市", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_steampunk_boilergolem_a_attack.png"},
+  {"f": "concept1__mob_steampunk_smokewyrm_d_attack.webp", "n": "煙突の煙竜", "g": "蒸気機関都市", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "mob_steampunk_smokewyrm_d_attack.png"},
+  {"f": "concept1__boss_steampunk_steamtrain_a_attack.webp", "n": "暴走機関車の鋼獣", "g": "蒸気機関都市", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "boss_steampunk_steamtrain_a_attack.png"},
+  {"f": "concept1__boss_steampunk_airshipadmiral_q_attack.webp", "n": "飛行船の提督", "g": "蒸気機関都市", "c": "boss", "s": "コミック調", "m": "attack", "r": "concept1", "o": "boss_steampunk_airshipadmiral_q_attack.png"},
+  {"f": "concept1__cute_space_starjelly_m_idle.webp", "n": "星屑のクラゲ", "g": "星界", "c": "cute", "s": "ネオン", "m": "idle", "r": "concept1", "o": "cute_space_starjelly_m_idle.png"},
+  {"f": "concept1__cute_space_cometpup_b_attack.webp", "n": "彗星の子犬", "g": "星界", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "cute_space_cometpup_b_attack.png"},
+  {"f": "concept1__mob_space_meteorgolem_a_attack.webp", "n": "隕石のゴーレム", "g": "星界", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "concept1", "o": "mob_space_meteorgolem_a_attack.png"},
+  {"f": "concept1__mob_space_satellitecrab_q_attack.webp", "n": "人工衛星のカニ", "g": "星界", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_space_satellitecrab_q_attack.png"},
+  {"f": "concept1__mob_space_nebulaowl_j_attack.webp", "n": "星雲のフクロウ", "g": "星界", "c": "mob", "s": "ステンドグラス", "m": "attack", "r": "concept1", "o": "mob_space_nebulaowl_j_attack.png"},
+  {"f": "concept1__mob_space_gravitymantis_m_attack.webp", "n": "重力のカマキリ", "g": "星界", "c": "mob", "s": "ネオン", "m": "attack", "r": "concept1", "o": "mob_space_gravitymantis_m_attack.png"},
+  {"f": "concept1__boss_space_blackstardragon_m_attack.webp", "n": "黒い星の竜", "g": "星界", "c": "boss", "s": "ネオン", "m": "attack", "r": "concept1", "o": "boss_space_blackstardragon_m_attack.png"},
+  {"f": "concept1__boss_space_zodiacgod_j_attack.webp", "n": "星座盤の神", "g": "星界", "c": "boss", "s": "ステンドグラス", "m": "attack", "r": "concept1", "o": "boss_space_zodiacgod_j_attack.png"},
+  {"f": "concept1__cute_school_chalkghost_t_attack.webp", "n": "黒板消しのおばけ", "g": "学校の怪談", "c": "cute", "s": "黒板チョークアート", "m": "attack", "r": "concept1", "o": "cute_school_chalkghost_t_attack.png"},
+  {"f": "concept1__mob_school_testwraith_b_attack.webp", "n": "満点テストの怨霊", "g": "学校の怪談", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "concept1", "o": "mob_school_testwraith_b_attack.png"},
+  {"f": "concept1__mob_school_sciencerobot_k_attack.webp", "n": "理科室の壊れロボ", "g": "学校の怪談", "c": "mob", "s": "ドット絵", "m": "attack", "r": "concept1", "o": "mob_school_sciencerobot_k_attack.png"},
+  {"f": "concept1__boss_school_midnightprincipal_s_attack.webp", "n": "真夜中の校長の影", "g": "学校の怪談", "c": "boss", "s": "切り絵影絵", "m": "attack", "r": "concept1", "o": "boss_school_midnightprincipal_s_attack.png"},
+  {"f": "concept1__boss_school_vaultdemon_q_attack.webp", "n": "跳び箱の魔神", "g": "学校の怪談", "c": "boss", "s": "コミック調", "m": "attack", "r": "concept1", "o": "boss_school_vaultdemon_q_attack.png"},
+  {"f": "concept1__cute_circus_balloonpoodle_q_idle.webp", "n": "風船のプードル", "g": "夜のサーカス", "c": "cute", "s": "コミック調", "m": "idle", "r": "concept1", "o": "cute_circus_balloonpoodle_q_idle.png"},
+  {"f": "concept1__cute_circus_sealjuggler_b_idle.webp", "n": "玉乗りのアザラシ", "g": "夜のサーカス", "c": "cute", "s": "アニメ塗り", "m": "idle", "r": "concept1", "o": "cute_circus_sealjuggler_b_idle.png"},
+  {"f": "concept1__mob_circus_flamejuggler_q_attack.webp", "n": "火のジャグラー道化", "g": "夜のサーカス", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_circus_flamejuggler_q_attack.png"},
+  {"f": "concept1__mob_circus_trapezephantom_m_attack.webp", "n": "空中ブランコの幻影", "g": "夜のサーカス", "c": "mob", "s": "ネオン", "m": "attack", "r": "concept1", "o": "mob_circus_trapezephantom_m_attack.png"},
+  {"f": "concept1__mob_circus_strongbear_q_attack.webp", "n": "力自慢の熊", "g": "夜のサーカス", "c": "mob", "s": "コミック調", "m": "attack", "r": "concept1", "o": "mob_circus_strongbear_q_attack.png"},
+  {"f": "concept1__mob_circus_mirrorclown_j_attack.webp", "n": "鏡迷路の道化", "g": "夜のサーカス", "c": "mob", "s": "ステンドグラス", "m": "attack", "r": "concept1", "o": "mob_circus_mirrorclown_j_attack.png"},
+  {"f": "concept1__boss_circus_ringmasterdevil_d_attack.webp", "n": "夜のサーカス団長", "g": "夜のサーカス", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "concept1", "o": "boss_circus_ringmasterdevil_d_attack.png"},
+  {"f": "concept1__boss_circus_carouselbeast_j_attack.webp", "n": "回転木馬の悪夢獣", "g": "夜のサーカス", "c": "boss", "s": "ステンドグラス", "m": "attack", "r": "concept1", "o": "boss_circus_carouselbeast_j_attack.png"},
+  {"f": "concept1__mob_wild_ukiyoewave_u_attack.webp", "n": "大波の海坊主", "g": "画風実験", "c": "mob", "s": "浮世絵木版", "m": "attack", "r": "concept1", "o": "mob_wild_ukiyoewave_u_attack.png"},
+  {"f": "concept1__mob_wild_kirieraven_s_attack.webp", "n": "切り絵の大鴉", "g": "画風実験", "c": "mob", "s": "切り絵影絵", "m": "attack", "r": "concept1", "o": "mob_wild_kirieraven_s_attack.png"},
+  {"f": "concept1__boss_wild_emakidragon_x_attack.webp", "n": "絵巻の雲龍", "g": "画風実験", "c": "boss", "s": "絵巻物", "m": "attack", "r": "concept1", "o": "boss_wild_emakidragon_x_attack.png"},
+  {"f": "concept1__mob_wild_lowpolyfox_v_attack.webp", "n": "ローポリの結晶狐", "g": "画風実験", "c": "mob", "s": "ローポリ3D", "m": "attack", "r": "concept1", "o": "mob_wild_lowpolyfox_v_attack.png"},
+  {"f": "concept1__mob_wild_graffitishark_w_attack.webp", "n": "グラフィティのサメ", "g": "画風実験", "c": "mob", "s": "グラフィティ", "m": "attack", "r": "concept1", "o": "mob_wild_graffitishark_w_attack.png"},
+  {"f": "concept1__mob_wild_glasskoi_z_attack.webp", "n": "ガラス細工の錦鯉", "g": "画風実験", "c": "mob", "s": "ガラス細工", "m": "attack", "r": "concept1", "o": "mob_wild_glasskoi_z_attack.png"},
+  {"f": "deepen1__mob_makai_bonewyvern_d_attack.webp", "n": "骨翼の魔鳥", "g": "魔界", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_makai_bonewyvern_d_attack.png"},
+  {"f": "deepen1__mob_makai_darkexecutioner_d_attack.webp", "n": "魔界の処刑人", "g": "魔界", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_makai_darkexecutioner_d_attack.png"},
+  {"f": "deepen1__mob_makai_imppyromancer_d_attack.webp", "n": "火術のインプ長", "g": "魔界", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_makai_imppyromancer_d_attack.png"},
+  {"f": "deepen1__mob_makai_abysseye_d_attack.webp", "n": "深淵の大眼球", "g": "魔界", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_makai_abysseye_d_attack.png"},
+  {"f": "deepen1__mob_makai_makaiknightess_a_attack.webp", "n": "魔界の女騎士", "g": "魔界", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_makai_makaiknightess_a_attack.png"},
+  {"f": "deepen1__midboss_makai_hellgeneral_d_attack.webp", "n": "魔界軍の将軍", "g": "魔界", "c": "midboss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "midboss_makai_hellgeneral_d_attack.png"},
+  {"f": "deepen1__midboss_makai_chaosarchdemon_d_attack.webp", "n": "混沌の大悪魔", "g": "魔界", "c": "midboss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "midboss_makai_chaosarchdemon_d_attack.png"},
+  {"f": "deepen1__cute_makai_babydevilbat_k_idle.webp", "n": "魔界のこうもり赤ちゃん", "g": "魔界", "c": "cute", "s": "ドット絵", "m": "idle", "r": "deepen1", "o": "cute_makai_babydevilbat_k_idle.png"},
+  {"f": "deepen1__cute_makai_lilshadow_b_attack.webp", "n": "影の子おばけ", "g": "魔界", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "cute_makai_lilshadow_b_attack.png"},
+  {"f": "deepen1__mob_zombie_skeletonlancer_d_attack.webp", "n": "骸骨馬の槍騎士", "g": "ゾンビ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_zombie_skeletonlancer_d_attack.png"},
+  {"f": "deepen1__mob_zombie_gravekeeper_d_attack.webp", "n": "墓守の亡者", "g": "ゾンビ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_zombie_gravekeeper_d_attack.png"},
+  {"f": "deepen1__mob_zombie_banshee_d_attack.webp", "n": "嘆きのバンシー", "g": "ゾンビ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_zombie_banshee_d_attack.png"},
+  {"f": "deepen1__mob_zombie_rottingtreant_d_attack.webp", "n": "朽ち木のトレント", "g": "ゾンビ", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_zombie_rottingtreant_d_attack.png"},
+  {"f": "deepen1__mob_zombie_zombiebride_q_attack.webp", "n": "ゾンビの花嫁", "g": "ゾンビ", "c": "mob", "s": "コミック調", "m": "attack", "r": "deepen1", "o": "mob_zombie_zombiebride_q_attack.png"},
+  {"f": "deepen1__midboss_zombie_corpsemountain_d_attack.webp", "n": "亡者の山のゴーレム", "g": "ゾンビ", "c": "midboss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "midboss_zombie_corpsemountain_d_attack.png"},
+  {"f": "deepen1__midboss_zombie_plaguedoctor_d_attack.webp", "n": "ペスト医の死霊", "g": "ゾンビ", "c": "midboss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "midboss_zombie_plaguedoctor_d_attack.png"},
+  {"f": "deepen1__cute_zombie_zombiehamster_k_attack.webp", "n": "ゾンビのハムスター", "g": "ゾンビ", "c": "cute", "s": "ドット絵", "m": "attack", "r": "deepen1", "o": "cute_zombie_zombiehamster_k_attack.png"},
+  {"f": "deepen1__mob_jigoku_onibouzu_i_attack.webp", "n": "鬼坊主の読経兵", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "mob_jigoku_onibouzu_i_attack.png"},
+  {"f": "deepen1__mob_jigoku_kanabomaster_i_attack.webp", "n": "金棒二刀の獄卒長", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "mob_jigoku_kanabomaster_i_attack.png"},
+  {"f": "deepen1__mob_jigoku_jigokuchou_i_attack.webp", "n": "地獄蝶", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "mob_jigoku_jigokuchou_i_attack.png"},
+  {"f": "deepen1__mob_jigoku_kamayudeoni_i_attack.webp", "n": "釜茹での鬼", "g": "地獄", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "mob_jigoku_kamayudeoni_i_attack.png"},
+  {"f": "deepen1__midboss_jigoku_gozu_i_attack.webp", "n": "牛頭の獄卒長", "g": "地獄", "c": "midboss", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "midboss_jigoku_gozu_i_attack.png"},
+  {"f": "deepen1__midboss_jigoku_mezu_i_attack.webp", "n": "馬頭の獄卒長", "g": "地獄", "c": "midboss", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "midboss_jigoku_mezu_i_attack.png"},
+  {"f": "deepen1__mob_vampire_vampireviolinist_d_attack.webp", "n": "吸血鬼のバイオリニスト", "g": "ドラキュラ伝説", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_vampire_vampireviolinist_d_attack.png"},
+  {"f": "deepen1__mob_vampire_silverhunter_d_attack.webp", "n": "銀の狩人の亡霊", "g": "ドラキュラ伝説", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_vampire_silverhunter_d_attack.png"},
+  {"f": "deepen1__mob_vampire_bloodalchemist_d_attack.webp", "n": "紅の錬金術師", "g": "ドラキュラ伝説", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_vampire_bloodalchemist_d_attack.png"},
+  {"f": "deepen1__mob_vampire_nightmarehorse_d_attack.webp", "n": "悪夢の黒馬", "g": "ドラキュラ伝説", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_vampire_nightmarehorse_d_attack.png"},
+  {"f": "deepen1__mob_vampire_rosegargoyle_j_attack.webp", "n": "薔薇のガーゴイル", "g": "ドラキュラ伝説", "c": "mob", "s": "ステンドグラス", "m": "attack", "r": "deepen1", "o": "mob_vampire_rosegargoyle_j_attack.png"},
+  {"f": "deepen1__midboss_vampire_vampireduke_d_attack.webp", "n": "若き吸血公爵", "g": "ドラキュラ伝説", "c": "midboss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "midboss_vampire_vampireduke_d_attack.png"},
+  {"f": "deepen1__midboss_vampire_headmaid_a_attack.webp", "n": "紅の従者長", "g": "ドラキュラ伝説", "c": "midboss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "midboss_vampire_headmaid_a_attack.png"},
+  {"f": "deepen1__cute_vampire_minicape_k_idle.webp", "n": "ちびマントのこうもり", "g": "ドラキュラ伝説", "c": "cute", "s": "ドット絵", "m": "idle", "r": "deepen1", "o": "cute_vampire_minicape_k_idle.png"},
+  {"f": "deepen1__mob_myth_pegasusknight_a_attack.webp", "n": "天馬の騎士", "g": "神話", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_myth_pegasusknight_a_attack.png"},
+  {"f": "deepen1__mob_myth_talosbronze_a_attack.webp", "n": "青銅の巨人タロス", "g": "神話", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_myth_talosbronze_a_attack.png"},
+  {"f": "deepen1__mob_myth_nemeanlion_a_attack.webp", "n": "黄金毛皮の獅子", "g": "神話", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_myth_nemeanlion_a_attack.png"},
+  {"f": "deepen1__mob_myth_stymphalbird_b_attack.webp", "n": "青銅羽の怪鳥", "g": "神話", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_myth_stymphalbird_b_attack.png"},
+  {"f": "deepen1__midboss_myth_minotaurking_a_attack.webp", "n": "ミノタウロスの王", "g": "神話", "c": "midboss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "midboss_myth_minotaurking_a_attack.png"},
+  {"f": "deepen1__midboss_myth_gorgonqueen_d_attack.webp", "n": "ゴルゴンの女王", "g": "神話", "c": "midboss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "midboss_myth_gorgonqueen_d_attack.png"},
+  {"f": "deepen1__cute_myth_babyunicorn_b_attack.webp", "n": "ユニコーンの子", "g": "神話", "c": "cute", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "cute_myth_babyunicorn_b_attack.png"},
+  {"f": "deepen1__cute_myth_cloudcupid_k_attack.webp", "n": "雲の弓の子天使", "g": "神話", "c": "cute", "s": "ドット絵", "m": "attack", "r": "deepen1", "o": "cute_myth_cloudcupid_k_attack.png"},
+  {"f": "deepen1__mob_egypt_horusguard_a_attack.webp", "n": "ホルスの槍兵", "g": "エジプト", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_egypt_horusguard_a_attack.png"},
+  {"f": "deepen1__mob_egypt_scorpionchariot_a_attack.webp", "n": "黄金サソリの戦車", "g": "エジプト", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_egypt_scorpionchariot_a_attack.png"},
+  {"f": "deepen1__mob_egypt_muralarcher_r_attack.webp", "n": "壁画の弓兵", "g": "エジプト", "c": "mob", "s": "壁画レリーフ", "m": "attack", "r": "deepen1", "o": "mob_egypt_muralarcher_r_attack.png"},
+  {"f": "deepen1__midboss_egypt_tombguardian_a_attack.webp", "n": "王墓の大ミイラ", "g": "エジプト", "c": "midboss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "midboss_egypt_tombguardian_a_attack.png"},
+  {"f": "deepen1__cute_egypt_tinypyramid_k_idle.webp", "n": "ちびピラミッドの精", "g": "エジプト", "c": "cute", "s": "ドット絵", "m": "idle", "r": "deepen1", "o": "cute_egypt_tinypyramid_k_idle.png"},
+  {"f": "deepen1__cute_egypt_ankhbird_p_idle.webp", "n": "アンクの小鳥", "g": "エジプト", "c": "cute", "s": "ポケ風デフォルメ", "m": "idle", "r": "deepen1", "o": "cute_egypt_ankhbird_p_idle.png"},
+  {"f": "deepen1__mob_deepsea_viperfishlancer_a_attack.webp", "n": "ホウライエソの槍騎士", "g": "深海", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_deepsea_viperfishlancer_a_attack.png"},
+  {"f": "deepen1__mob_deepsea_dumbomage_b_attack.webp", "n": "メンダコの浮遊術士", "g": "深海", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_deepsea_dumbomage_b_attack.png"},
+  {"f": "deepen1__mob_deepsea_abyssalknight_a_attack.webp", "n": "深海甲冑の騎士", "g": "深海", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_deepsea_abyssalknight_a_attack.png"},
+  {"f": "deepen1__mob_deepsea_lanterneelmage_m_attack.webp", "n": "発光ウナギの魔導士", "g": "深海", "c": "mob", "s": "ネオン", "m": "attack", "r": "deepen1", "o": "mob_deepsea_lanterneelmage_m_attack.png"},
+  {"f": "deepen1__mob_deepsea_pressuregolem_a_attack.webp", "n": "水圧のゴーレム", "g": "深海", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_deepsea_pressuregolem_a_attack.png"},
+  {"f": "deepen1__midboss_deepsea_goblinsharkbrute_a_attack.webp", "n": "ミツクリザメの荒くれ", "g": "深海", "c": "midboss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "midboss_deepsea_goblinsharkbrute_a_attack.png"},
+  {"f": "deepen1__midboss_deepsea_jellyempress_m_attack.webp", "n": "クラゲの女帝", "g": "深海", "c": "midboss", "s": "ネオン", "m": "attack", "r": "deepen1", "o": "midboss_deepsea_jellyempress_m_attack.png"},
+  {"f": "deepen1__cute_deepsea_babyoarfish_k_idle.webp", "n": "リュウグウノツカイの子", "g": "深海", "c": "cute", "s": "ドット絵", "m": "idle", "r": "deepen1", "o": "cute_deepsea_babyoarfish_k_idle.png"},
+  {"f": "deepen1__mob_wa_yukionna_i_attack.webp", "n": "雪女の吹雪使い", "g": "和妖怪", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "mob_wa_yukionna_i_attack.png"},
+  {"f": "deepen1__mob_wa_wanyudo_i_attack.webp", "n": "輪入道", "g": "和妖怪", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "mob_wa_wanyudo_i_attack.png"},
+  {"f": "deepen1__mob_wa_nekomata_i_attack.webp", "n": "猫又の二尾剣士", "g": "和妖怪", "c": "mob", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "mob_wa_nekomata_i_attack.png"},
+  {"f": "deepen1__mob_wa_origamininja_l_attack.webp", "n": "折り紙の手裏剣忍", "g": "和妖怪", "c": "mob", "s": "折り紙", "m": "attack", "r": "deepen1", "o": "mob_wa_origamininja_l_attack.png"},
+  {"f": "deepen1__midboss_wa_gashadokuro_i_attack.webp", "n": "がしゃどくろ", "g": "和妖怪", "c": "midboss", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "midboss_wa_gashadokuro_i_attack.png"},
+  {"f": "deepen1__midboss_wa_tsuchigumo_i_attack.webp", "n": "土蜘蛛の武者", "g": "和妖怪", "c": "midboss", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "midboss_wa_tsuchigumo_i_attack.png"},
+  {"f": "deepen1__mob_china_swordsaint_b_attack.webp", "n": "剣仙の風剣士", "g": "中華", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_china_swordsaint_b_attack.png"},
+  {"f": "deepen1__mob_china_operamask_b_attack.webp", "n": "変面の芸人", "g": "中華", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_china_operamask_b_attack.png"},
+  {"f": "deepen1__mob_china_taichimaster_b_attack.webp", "n": "太極の老仙", "g": "中華", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_china_taichimaster_b_attack.png"},
+  {"f": "deepen1__midboss_china_dragonhorsegeneral_b_attack.webp", "n": "龍馬の将軍", "g": "中華", "c": "midboss", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "midboss_china_dragonhorsegeneral_b_attack.png"},
+  {"f": "deepen1__midboss_china_whitesnakelady_b_attack.webp", "n": "白蛇夫人", "g": "中華", "c": "midboss", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "midboss_china_whitesnakelady_b_attack.png"},
+  {"f": "deepen1__mob_viking_frostgiantyouth_a_attack.webp", "n": "霜の若巨人", "g": "ヴァイキング", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_viking_frostgiantyouth_a_attack.png"},
+  {"f": "deepen1__mob_viking_skaldbard_a_attack.webp", "n": "戦歌の吟遊詩人", "g": "ヴァイキング", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_viking_skaldbard_a_attack.png"},
+  {"f": "deepen1__mob_viking_valhallaguard_a_attack.webp", "n": "戦盾の衛兵", "g": "ヴァイキング", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_viking_valhallaguard_a_attack.png"},
+  {"f": "deepen1__mob_viking_icebreakeraxe_a_attack.webp", "n": "流氷割りの大斧兵", "g": "ヴァイキング", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_viking_icebreakeraxe_a_attack.png"},
+  {"f": "deepen1__midboss_viking_jotunnlord_a_attack.webp", "n": "霜の巨人領主", "g": "ヴァイキング", "c": "midboss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "midboss_viking_jotunnlord_a_attack.png"},
+  {"f": "deepen1__midboss_viking_skollwolf_g_attack.webp", "n": "日蝕の狼", "g": "ヴァイキング", "c": "midboss", "s": "リアルクリーチャー", "m": "attack", "r": "deepen1", "o": "midboss_viking_skollwolf_g_attack.png"},
+  {"f": "deepen1__cute_viking_valkyriechick_k_idle.webp", "n": "ワルキューレのひよこ", "g": "ヴァイキング", "c": "cute", "s": "ドット絵", "m": "idle", "r": "deepen1", "o": "cute_viking_valkyriechick_k_idle.png"},
+  {"f": "deepen1__cute_pirate_parrotcabin_k_idle.webp", "n": "オウムの見習い水夫", "g": "海賊", "c": "cute", "s": "ドット絵", "m": "idle", "r": "deepen1", "o": "cute_pirate_parrotcabin_k_idle.png"},
+  {"f": "deepen1__mob_pirate_cutlassskeleton_b_attack.webp", "n": "曲刀の骸骨海賊", "g": "海賊", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_pirate_cutlassskeleton_b_attack.png"},
+  {"f": "deepen1__mob_pirate_cannoncrab_b_attack.webp", "n": "大砲樽のヤドカリ", "g": "海賊", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_pirate_cannoncrab_b_attack.png"},
+  {"f": "deepen1__mob_pirate_ghostmate_d_attack.webp", "n": "幽霊一等航海士", "g": "海賊", "c": "mob", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "mob_pirate_ghostmate_d_attack.png"},
+  {"f": "deepen1__mob_pirate_krakenette_b_attack.webp", "n": "子クラーケンの水兵", "g": "海賊", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_pirate_krakenette_b_attack.png"},
+  {"f": "deepen1__midboss_pirate_chestkeeper_d_attack.webp", "n": "深海の宝箱番", "g": "海賊", "c": "midboss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "midboss_pirate_chestkeeper_d_attack.png"},
+  {"f": "deepen1__boss_pirate_ghostcaptain_d_attack.webp", "n": "幽霊海賊船長", "g": "海賊", "c": "boss", "s": "ダーク油彩", "m": "attack", "r": "deepen1", "o": "boss_pirate_ghostcaptain_d_attack.png"},
+  {"f": "deepen1__boss_pirate_plunderdragon_b_attack.webp", "n": "財宝の竜", "g": "海賊", "c": "boss", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "boss_pirate_plunderdragon_b_attack.png"},
+  {"f": "deepen1__mob_ninja_kunoichi_b_attack.webp", "n": "紅のくノ一", "g": "忍者の里", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_ninja_kunoichi_b_attack.png"},
+  {"f": "deepen1__mob_ninja_oniwaban_b_attack.webp", "n": "御庭番の大男", "g": "忍者の里", "c": "mob", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "mob_ninja_oniwaban_b_attack.png"},
+  {"f": "deepen1__mob_ninja_shadowclone_s_attack.webp", "n": "影分身の抜け殻", "g": "忍者の里", "c": "mob", "s": "切り絵影絵", "m": "attack", "r": "deepen1", "o": "mob_ninja_shadowclone_s_attack.png"},
+  {"f": "deepen1__midboss_ninja_joninshadow_i_attack.webp", "n": "上忍の影", "g": "忍者の里", "c": "midboss", "s": "墨絵和風", "m": "attack", "r": "deepen1", "o": "midboss_ninja_joninshadow_i_attack.png"},
+  {"f": "deepen1__boss_ninja_satoleader_b_attack.webp", "n": "里の頭領", "g": "忍者の里", "c": "boss", "s": "アニメ塗り", "m": "attack", "r": "deepen1", "o": "boss_ninja_satoleader_b_attack.png"},
+  {"f": "deepen1__boss_ninja_kagemushaking_s_attack.webp", "n": "影武者の王", "g": "忍者の里", "c": "boss", "s": "切り絵影絵", "m": "attack", "r": "deepen1", "o": "boss_ninja_kagemushaking_s_attack.png"},
+  {"f": "deepen1__mob_library_livingdictionary_q_attack.webp", "n": "生きた大辞典", "g": "真夜中の大図書館", "c": "mob", "s": "コミック調", "m": "attack", "r": "deepen1", "o": "mob_library_livingdictionary_q_attack.png"},
+  {"f": "deepen1__mob_library_quillknight_q_attack.webp", "n": "羽根ペンの騎士", "g": "真夜中の大図書館", "c": "mob", "s": "コミック調", "m": "attack", "r": "deepen1", "o": "mob_library_quillknight_q_attack.png"},
+  {"f": "deepen1__midboss_library_overduewraith_x_attack.webp", "n": "延滞本の怨霊", "g": "真夜中の大図書館", "c": "midboss", "s": "絵巻物", "m": "attack", "r": "deepen1", "o": "midboss_library_overduewraith_x_attack.png"},
+  {"f": "deepen1__boss_library_grandarchivist_q_attack.webp", "n": "大司書の魔人", "g": "真夜中の大図書館", "c": "boss", "s": "コミック調", "m": "attack", "r": "deepen1", "o": "boss_library_grandarchivist_q_attack.png"},
+  {"f": "deepen1__boss_library_storybookdragon_j_attack.webp", "n": "飛び出す絵本の竜", "g": "真夜中の大図書館", "c": "boss", "s": "ステンドグラス", "m": "attack", "r": "deepen1", "o": "boss_library_storybookdragon_j_attack.png"},
+  {"f": "deepen1__cute_frost_snowlanternbaby_k_idle.webp", "n": "雪灯籠の子", "g": "氷雪の城", "c": "cute", "s": "ドット絵", "m": "idle", "r": "deepen1", "o": "cute_frost_snowlanternbaby_k_idle.png"},
+  {"f": "deepen1__mob_frost_icemirrorknight_a_attack.webp", "n": "氷鏡の騎士", "g": "氷雪の城", "c": "mob", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "mob_frost_icemirrorknight_a_attack.png"},
+  {"f": "deepen1__mob_frost_auroraserpent_j_attack.webp", "n": "オーロラの氷蛇", "g": "氷雪の城", "c": "mob", "s": "ステンドグラス", "m": "attack", "r": "deepen1", "o": "mob_frost_auroraserpent_j_attack.png"},
+  {"f": "deepen1__midboss_frost_glacierbear_a_attack.webp", "n": "氷河の大熊", "g": "氷雪の城", "c": "midboss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "midboss_frost_glacierbear_a_attack.png"},
+  {"f": "deepen1__boss_frost_icequeen_a_attack.webp", "n": "氷雪の女王", "g": "氷雪の城", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "boss_frost_icequeen_a_attack.png"},
+  {"f": "deepen1__boss_frost_permafrostking_a_attack.webp", "n": "永久凍土の巨人王", "g": "氷雪の城", "c": "boss", "s": "精細ゲームCG", "m": "attack", "r": "deepen1", "o": "boss_frost_permafrostking_a_attack.png"},
+  {"f": "deepen1__mob_wild_makiecrane_A_attack.webp", "n": "蒔絵の鶴武者", "g": "画風実験", "c": "mob", "s": "蒔絵", "m": "attack", "r": "deepen1", "o": "mob_wild_makiecrane_A_attack.png"},
+  {"f": "deepen1__mob_wild_hologramstag_D_attack.webp", "n": "ホログラムの星鹿", "g": "画風実験", "c": "mob", "s": "ホログラム", "m": "attack", "r": "deepen1", "o": "mob_wild_hologramstag_D_attack.png"},
+];
+// ================================================
+const CLASS_JP={cute:"かわいい",mob:"ざこ",midboss:"中ボス",boss:"ボス",neta:"ネタ"};
+const CLASS_ORDER={cute:0,mob:1,midboss:2,boss:3,neta:4};
+const KEY="zukan_del_v1";
+let del=new Set(JSON.parse(localStorage.getItem(KEY)||"[]"));
+let delMode=false, viewIdx=-1;
+const F={g:"",c:"",s:"",m:"",q:""};
+
+const concepts=[...new Set(DATA.map(d=>d.g))];
+const styles=[...new Set(DATA.map(d=>d.s))].sort();
+function chip(label,val,key,parent){
+  const b=document.createElement("button");b.className="chip"+((F[key]===val)?" on":"");
+  b.textContent=label;b.onclick=()=>{F[key]=(F[key]===val)?"":val;renderFilters();renderGrid();};
+  parent.appendChild(b);
+}
+function renderFilters(){
+  const fc=document.getElementById("fConcept");fc.innerHTML="";
+  concepts.forEach(g=>chip(g+"("+DATA.filter(d=>d.g===g).length+")",g,"g",fc));
+  const fl=document.getElementById("fClass");fl.innerHTML="";
+  Object.keys(CLASS_ORDER).forEach(c=>{if(DATA.some(d=>d.c===c))chip(CLASS_JP[c],c,"c",fl);});
+}
+const selS=document.getElementById("fStyle");
+styles.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;selS.appendChild(o);});
+selS.onchange=()=>{F.s=selS.value;renderGrid();};
+document.getElementById("fMotion").onchange=e=>{F.m=e.target.value;renderGrid();};
+document.getElementById("fText").oninput=e=>{F.q=e.target.value.trim();renderGrid();};
+
+function filtered(){
+  return DATA.map((d,i)=>({d,i})).filter(({d})=>
+    (!F.g||d.g===F.g)&&(!F.c||d.c===F.c)&&(!F.s||d.s===F.s)&&(!F.m||d.m===F.m)&&
+    (!F.q||d.n.includes(F.q)));
+}
+function delKey(d){return d.r+"/"+d.o;}
+function renderGrid(){
+  const list=filtered();
+  document.getElementById("cnt").textContent=list.length+" / "+DATA.length+"体";
+  const main=document.getElementById("main");main.innerHTML="";
+  if(!list.length){main.innerHTML='<div class="empty">該当なし</div>';return;}
+  // コンセプト→クラス→画風の順で並べる=そっくりさんが隣に来る
+  const groups={};
+  list.forEach(x=>{(groups[x.d.g]=groups[x.d.g]||[]).push(x);});
+  concepts.filter(g=>groups[g]).forEach(g=>{
+    const arr=groups[g].sort((a,b)=>(CLASS_ORDER[a.d.c]-CLASS_ORDER[b.d.c])||a.d.s.localeCompare(b.d.s)||a.d.n.localeCompare(b.d.n));
+    const h=document.createElement("h2");h.innerHTML=g+"<small>"+arr.length+"体</small>";main.appendChild(h);
+    const grid=document.createElement("div");grid.className="grid";
+    arr.forEach(({d,i})=>{
+      const c=document.createElement("div");c.className="cell"+(del.has(delKey(d))?" marked":"");
+      c.innerHTML='<span class="badge">'+CLASS_JP[d.c]+'</span><img loading="lazy" src="'+IMGDIR+d.f+'"><div class="nm">'+d.n+'</div><div class="tg">'+d.s+"・"+d.m+'</div>';
+      c.onclick=()=>{delMode?toggleMark(d):openView(i);};
+      grid.appendChild(c);
+    });
+    main.appendChild(grid);
+  });
+}
+function toggleMark(d){
+  const k=delKey(d);del.has(k)?del.delete(k):del.add(k);
+  localStorage.setItem(KEY,JSON.stringify([...del]));
+  renderGrid();renderDelbar();
+}
+function toggleDel(){
+  delMode=!delMode;
+  document.getElementById("delmode").classList.toggle("on",delMode);
+  renderDelbar();
+}
+function renderDelbar(){
+  const bar=document.getElementById("delbar");
+  bar.classList.toggle("on",delMode||del.size>0);
+  document.getElementById("delcnt").textContent="🗑 "+del.size+"体";
+}
+function openView(i){
+  viewIdx=i;const d=DATA[i];
+  document.getElementById("vimg").src=IMGDIR+d.f;
+  document.getElementById("vmeta").innerHTML="<b>"+d.n+"</b><br><span class='t'>"+d.g+"・"+CLASS_JP[d.c]+"・"+d.s+"・"+d.m+"・["+d.r+"]</span>";
+  document.getElementById("vdel").textContent=del.has(delKey(d))?"🗑 削除依頼を取り消す":"🗑 削除依頼に入れる";
+  document.getElementById("view").classList.add("on");
+}
+function closeView(){document.getElementById("view").classList.remove("on");}
+function markFromView(ev){ev.stopPropagation();if(viewIdx<0)return;toggleMark(DATA[viewIdx]);closeView();}
+function clearDel(){if(!confirm("削除依頼のマークを全部消す？"))return;del.clear();localStorage.setItem(KEY,"[]");renderGrid();renderDelbar();}
+function copyDel(btn){
+  const byRun={};[...del].forEach(k=>{const p=k.indexOf("/");const r=k.slice(0,p),f=k.slice(p+1);(byRun[r]=byRun[r]||[]).push(f);});
+  const txt=JSON.stringify({zukan_delete:byRun});
+  const dump=document.getElementById("deldump");dump.style.display="block";dump.value=txt;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{btn.textContent="コピーしました ✓";},()=>{btn.textContent="下の欄を長押しでコピー";});
+  }else{btn.textContent="下の欄を長押しでコピー";}
+}
+renderFilters();renderGrid();renderDelbar();
+</script>
+</body>
+</html>
