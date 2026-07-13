@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>図版検収③ 化学14/16/20/21+生物08 (16枚)</title><style>
+ :root{color-scheme:dark}
+ *{box-sizing:border-box} body{font-family:sans-serif;margin:0;background:#12151c;color:#e8e8ee}
+ header{position:sticky;top:0;background:#0d0f14;padding:10px 14px;border-bottom:1px solid #262b36;z-index:5}
+ h1{font-size:.95rem;margin:0 0 6px} .bar{height:6px;background:#262b36;border-radius:3px;overflow:hidden}
+ .fill{height:100%;background:#f0b429;width:0} .n{float:right;color:#9aa;font-size:.85rem}
+ main{max-width:760px;margin:0 auto;padding:16px}
+ .card{background:#1b1f28;border:1px solid #2b3140;border-radius:14px;padding:14px;margin-bottom:14px}
+ .u{color:#f0b429;font-weight:bold;font-size:.9rem} .usage{color:#9fb3c8;font-size:.85rem;margin:2px 0 8px}
+ img{width:100%;border-radius:10px;background:#fff;display:block}
+ .cap{color:#c8d0da;font-size:.85rem;margin:8px 0}
+ .btns{display:flex;gap:8px;margin-top:10px} button{flex:1;border:0;border-radius:10px;padding:12px;font-size:1rem;font-weight:bold;cursor:pointer}
+ .ok{background:#2e9e6b;color:#fff} .ng{background:#f0b429;color:#1b1f28} .skip{background:#333a46;color:#cdd;flex:0 0 64px}
+ textarea{width:100%;margin-top:8px;background:#0f1218;color:#e8e8ee;border:1px solid #2b3140;border-radius:8px;padding:8px;font-size:.95rem}
+ .done{background:#2e9e6b;color:#fff} .marked{outline:2px solid #f0b429}
+ #fin{display:none;text-align:center;padding:30px} #fin textarea{height:160px;font-family:monospace;font-size:.75rem}
+ .copy{background:#f0b429;color:#1b1f28;max-width:280px;margin:12px auto 0}
+</style></head><body>
+<header><h1>図版検収③ 化学14/16/20/21+生物08 (16枚) <span class="n" id="n">0 / 0</span></h1><div class="bar"><div class="fill" id="f"></div></div></header>
+<main id="m"></main>
+<div id="fin"><h2>全部おわり！</h2><p>下のボタンで結果をコピーして、チャットに貼り付けてください。</p>
+<textarea id="out" readonly></textarea><button class="copy" onclick="cp()">📋 結果をコピー</button></div>
+<script>
+const ITEMS=[{"file": "card_fes_magnet.webp", "unit": "u_chem_14 結びつけてみる（鉄+硫黄）", "usage": "【14-P2】", "caption": "磁石は、熱する前の鉄粉にはつく／熱したあとの硫化鉄にはつかない（おどろき用）"}, {"file": "card_fes_change.webp", "unit": "u_chem_14 結びつけてみる（鉄+硫黄）", "usage": "【14-T2】", "caption": "鉄粉（灰）＋硫黄粉（黄）を熱すると、黒い硫化鉄という別の1つの物質になる"}, {"file": "card_steelwool_balance.webp", "unit": "u_chem_16 燃える変化（酸化）", "usage": "【16-P2】【16-T2】", "caption": "スチールウールを燃やすと1.0g→1.4gに重くなる（ふえた分＝くっついた酸素）"}, {"file": "card_join_iron.webp", "unit": "u_chem_16 燃える変化（酸化）", "usage": "【16-T1】", "caption": "鉄の粉に空気中の酸素がくっつく情景図（u_chem_18の銅版と共通生成器・情景図スタイルに統一）"}, {"file": "card_citric_temp_drop.webp", "unit": "u_chem_20 発熱・吸熱反応", "usage": "【20-P2】", "caption": "クエン酸＋重そうを水にまぜると、火も氷もないのに温度が20℃→8℃に下がる（おどろき用）"}, {"file": "card_heat_two_directions.webp", "unit": "u_chem_20 発熱・吸熱反応", "usage": "【20-P3】【20-T1】", "caption": "熱を出す発熱反応（赤）と、まわりの熱をうばう吸熱反応（青）の二方向"}, {"file": "card_kairo_coldpack_compare.webp", "unit": "u_chem_20 発熱・吸熱反応", "usage": "【20-T4】【20-T5】", "caption": "カイロ＝温度が上がる発熱／冷却パック＝温度が下がる吸熱（温度計の向きで見分ける）"}, {"file": "card_electrolyte_compare.webp", "unit": "u_chem_21 電流が流れる水溶液", "usage": "【21-P2】【21-T1】", "caption": "食塩水は豆電球がつく／砂糖水はつかない（装置と点灯結果だけ・粒は描かない＝先渡し防止）"}, {"file": "card_ion_carrier.webp", "unit": "u_chem_21 電流が流れる水溶液", "usage": "【21-T4】", "caption": "食塩水＝電気を運ぶ粒（イオン）がある／砂糖水＝とけた粒はあるが電気を運ばない、の描き分け"}, {"file": "card_bag_transpiration.webp", "unit": "u_bio_08 蒸散・水の通り道", "usage": "【08-P2】", "caption": "えだに透明ぶくろをかぶせると内側に水てきがつく（実験の表・答えは載せない＝おどろき用）"}, {"file": "card_stomata.webp", "unit": "u_bio_08 蒸散・水の通り道", "usage": "【08-T1】", "caption": "2つの孔辺細胞にはさまれた気孔の拡大＝水蒸気が出る（葉の表より裏に多い）"}, {"file": "card_stem_cross.webp", "unit": "u_bio_08 蒸散・水の通り道", "usage": "【08-T3】", "caption": "茎の断面＝内側に道管（水・青）・外側に師管（養分・緑）、束ねて維管束"}, {"file": "p_citric_mix.webp", "unit": "u_chem_20 発熱・吸熱反応", "usage": "【20-P1】", "caption": "クエン酸と重そうを水にまぜて発泡する情景（AI写真・Sol生成・温度の答えは写さない）"}, {"file": "cold_pack.webp", "unit": "u_chem_20 発熱・吸熱反応", "usage": "【20-T3】", "caption": "瞬間冷却パックの袋（AI写真・Sol生成・ロゴ文字なし）"}, {"file": "t2_electrolytes.webp", "unit": "u_chem_21 電流が流れる水溶液", "usage": "【21-T2】", "caption": "電解質の例＝食塩・白い薬品・青い塩化銅（AI写真・Sol生成・読める文字なし）"}, {"file": "t3_nonelectrolytes.webp", "unit": "u_chem_21 電流が流れる水溶液", "usage": "【21-T3】", "caption": "非電解質の例＝砂糖・エタノール（AI写真・Sol生成・読める文字なし）"}]; const KEY="figs_"+location.pathname;
+let ans=JSON.parse(localStorage.getItem(KEY)||"{}");
+const m=document.getElementById('m');
+ITEMS.forEach((it,i)=>{
+ const c=document.createElement('div');c.className='card';c.id='c'+i;
+ c.innerHTML=`<div class="u">${it.unit}</div><div class="usage">${it.usage||''}</div>
+ <img src="${it.file}" alt="">
+ <div class="cap">${it.caption||''}</div>
+ <div class="btns"><button class="ok" onclick="mark(${i},'OK')">◎ OK</button>
+ <button class="ng" onclick="mark(${i},'NG')">✏ 気になる</button>
+ <button class="skip" onclick="mark(${i},'SKIP')">⏭</button></div>
+ <textarea placeholder="ひとこと（気になる点・直したい所）" oninput="note(${i},this.value)"></textarea>`;
+ m.appendChild(c);
+ if(ans[it.file]){c.classList.add(ans[it.file].v==='OK'?'done':'marked');c.querySelector('textarea').value=ans[it.file].note||''}
+});
+function upd(){const d=Object.keys(ans).length;document.getElementById('n').textContent=d+' / '+ITEMS.length;
+ document.getElementById('f').style.width=(100*d/ITEMS.length)+'%';
+ if(d>=ITEMS.length){document.getElementById('fin').style.display='block';
+  document.getElementById('out').value=JSON.stringify({sheet:"図版検収③ 化学14/16/20/21+生物08 (16枚)",done:d,answers:ans},null,1)}}
+function mark(i,v){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{},{v:v});
+ localStorage.setItem(KEY,JSON.stringify(ans));const c=document.getElementById('c'+i);
+ c.classList.toggle('done',v==='OK');c.classList.toggle('marked',v!=='OK');upd();
+ const nx=document.getElementById('c'+(i+1));if(nx)nx.scrollIntoView({behavior:'smooth',block:'center'})}
+function note(i,t){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{v:'NG'},{note:t});localStorage.setItem(KEY,JSON.stringify(ans))}
+function cp(){const o=document.getElementById('out');o.select();
+ navigator.clipboard.writeText(o.value).then(()=>alert('コピーしました')).catch(()=>{o.focus()})}
+upd();
+</script></body></html>
