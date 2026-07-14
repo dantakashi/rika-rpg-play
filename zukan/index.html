@@ -18,6 +18,10 @@
   input[type=search]{width:130px}
   .delbtn{font:inherit;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;border:2px solid var(--del);background:transparent;color:#e8a49b;cursor:pointer;margin-left:auto}
   .delbtn.on{background:var(--del);color:#fff}
+  .fbtn{font:inherit;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;border:1px solid var(--acc);background:transparent;color:var(--acc);cursor:pointer}
+  .fbtn.active{background:var(--acc);color:#241f1b}
+  #fpanel{display:none;padding-top:5px}
+  #fpanel.open{display:block}
   main{padding:4px 14px 90px}
   h2{font-size:14px;color:var(--acc);margin:18px 0 8px;border-bottom:1px solid #4a4036;padding-bottom:4px}
   h2 small{color:var(--sub);font-weight:400;font-size:11px;margin-left:8px}
@@ -51,13 +55,18 @@
 <body>
 <header>
   <h1>🗾 モンスター図鑑 <small id="cnt"></small></h1>
-  <div class="filters" id="fConcept"></div>
-  <div class="filters" style="margin-top:5px">
-    <span id="fClass"></span>
-    <select id="fStyle"><option value="">画風: すべて</option></select>
-    <select id="fMotion"><option value="">動き: すべて</option><option value="attack">attack</option><option value="idle">idle</option></select>
-    <input type="search" id="fText" placeholder="🔍 なまえ検索">
+  <div class="filters">
+    <button class="fbtn" id="ftoggle" onclick="toggleFilters()">🔍 しぼりこみ ▼</button>
     <button class="delbtn" id="delmode" onclick="toggleDel()">🗑 削除依頼モード</button>
+  </div>
+  <div id="fpanel">
+    <div class="filters" id="fConcept"></div>
+    <div class="filters" style="margin-top:5px">
+      <span id="fClass"></span>
+      <select id="fStyle"><option value="">画風: すべて</option></select>
+      <select id="fMotion"><option value="">動き: すべて</option><option value="attack">attack</option><option value="idle">idle</option></select>
+      <input type="search" id="fText" placeholder="🔍 なまえ検索">
+    </div>
   </div>
 </header>
 <main id="main"></main>
@@ -1151,12 +1160,25 @@ function renderFilters(){
   concepts.forEach(g=>chip(g+"("+DATA.filter(d=>d.g===g).length+")",g,"g",fc));
   const fl=document.getElementById("fClass");fl.innerHTML="";
   Object.keys(CLASS_ORDER).forEach(c=>{if(DATA.some(d=>d.c===c))chip(CLASS_JP[c],c,"c",fl);});
+  updateFtoggle();
+}
+function activeFilterCount(){return ["g","c","s","m","q"].filter(k=>F[k]).length;}
+function updateFtoggle(){
+  const n=activeFilterCount();
+  const open=document.getElementById("fpanel").classList.contains("open");
+  const b=document.getElementById("ftoggle");
+  b.textContent="🔍 しぼりこみ"+(n?"中("+n+")":"")+(open?" ▲":" ▼");
+  b.classList.toggle("active",n>0);
+}
+function toggleFilters(){
+  document.getElementById("fpanel").classList.toggle("open");
+  updateFtoggle();
 }
 const selS=document.getElementById("fStyle");
 styles.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;selS.appendChild(o);});
-selS.onchange=()=>{F.s=selS.value;renderGrid();};
-document.getElementById("fMotion").onchange=e=>{F.m=e.target.value;renderGrid();};
-document.getElementById("fText").oninput=e=>{F.q=e.target.value.trim();renderGrid();};
+selS.onchange=()=>{F.s=selS.value;updateFtoggle();renderGrid();};
+document.getElementById("fMotion").onchange=e=>{F.m=e.target.value;updateFtoggle();renderGrid();};
+document.getElementById("fText").oninput=e=>{F.q=e.target.value.trim();updateFtoggle();renderGrid();};
 
 function filtered(){
   return DATA.map((d,i)=>({d,i})).filter(({d})=>
