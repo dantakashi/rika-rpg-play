@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>生物B2-B5 シーン画像(Sol・19枚)</title><style>
+ :root{color-scheme:dark}
+ *{box-sizing:border-box} body{font-family:sans-serif;margin:0;background:#12151c;color:#e8e8ee}
+ header{position:sticky;top:0;background:#0d0f14;padding:10px 14px;border-bottom:1px solid #262b36;z-index:5}
+ h1{font-size:.95rem;margin:0 0 6px} .bar{height:6px;background:#262b36;border-radius:3px;overflow:hidden}
+ .fill{height:100%;background:#f0b429;width:0} .n{float:right;color:#9aa;font-size:.85rem}
+ main{max-width:760px;margin:0 auto;padding:16px}
+ .card{background:#1b1f28;border:1px solid #2b3140;border-radius:14px;padding:14px;margin-bottom:14px}
+ .u{color:#f0b429;font-weight:bold;font-size:.9rem} .usage{color:#9fb3c8;font-size:.85rem;margin:2px 0 8px}
+ img{width:100%;border-radius:10px;background:#fff;display:block}
+ .cap{color:#c8d0da;font-size:.85rem;margin:8px 0}
+ .btns{display:flex;gap:8px;margin-top:10px} button{flex:1;border:0;border-radius:10px;padding:12px;font-size:1rem;font-weight:bold;cursor:pointer}
+ .ok{background:#2e9e6b;color:#fff} .ng{background:#f0b429;color:#1b1f28} .skip{background:#333a46;color:#cdd;flex:0 0 64px}
+ textarea{width:100%;margin-top:8px;background:#0f1218;color:#e8e8ee;border:1px solid #2b3140;border-radius:8px;padding:8px;font-size:.95rem}
+ .done{background:#2e9e6b;color:#fff} .marked{outline:2px solid #f0b429}
+ #fin{display:none;text-align:center;padding:30px} #fin textarea{height:160px;font-family:monospace;font-size:.75rem}
+ .copy{background:#f0b429;color:#1b1f28;max-width:280px;margin:12px auto 0}
+</style></head><body>
+<header><h1>生物B2-B5 シーン画像(Sol・19枚) <span class="n" id="n">0 / 0</span></h1><div class="bar"><div class="fill" id="f"></div></div></header>
+<main id="m"></main>
+<div id="fin"><h2>全部おわり！</h2><p>下のボタンで結果をコピーして、チャットに貼り付けてください。</p>
+<textarea id="out" readonly></textarea><button class="copy" onclick="cp()">📋 結果をコピー</button></div>
+<script>
+const ITEMS=[{"file": "u_bio_05__p2_whale.webp", "unit": "u_bio_05 【Sol】", "usage": "p2_whale", "caption": "クジラが海をおよぐイメージ・カードサイズ／肺呼吸・息つぎ・乳育ては描かない＝答えを先渡ししない"}, {"file": "u_bio_06__o_onion_micro.webp", "unit": "u_bio_06 【Sol】", "usage": "o_onion_micro", "caption": "玉ねぎの皮の顕微鏡像＝レンガ状の部屋がびっしり・部品名や答えは入れない"}, {"file": "u_bio_06__t2_stained_nucleus.webp", "unit": "u_bio_06 【Sol】", "usage": "t2_stained_nucleus", "caption": "酢酸カーミン液で赤く染まった核が見える細胞の像・カードサイズ・印なし"}, {"file": "u_bio_07__p2_iodine_leaves.webp", "unit": "u_bio_07 【Sol】", "usage": "p2_iodine_leaves", "caption": "2枚の葉＝光を当てた葉が青むらさき／暗所の葉は染まらない・実物色・カードサイズ／光合成の式・しくみは載せない"}, {"file": "u_bio_09__rice_chewing.webp", "unit": "u_bio_09 【Sol】", "usage": "rice_chewing", "caption": "ごはんを口でよく噛んでいる身近な場面イメージ・しくみや答えは描かない"}, {"file": "u_bio_10__p1_hold_breath.webp", "unit": "u_bio_10 【Sol】", "usage": "p1_hold_breath", "caption": "息を止めている場面のイメージ・答えは載せない・印なし"}, {"file": "u_bio_12__p1_hot_pot.webp", "unit": "u_bio_12 【Sol】", "usage": "p1_hot_pot", "caption": "熱いなべに手がふれる瞬間の場面イメージ・経路や答えは見せない"}, {"file": "u_bio_13__p1_arm_flex.webp", "unit": "u_bio_13 【Sol】", "usage": "p1_arm_flex", "caption": "うでを曲げて内側の力こぶが盛り上がる場面・伸ばしたときの答えは見せない"}, {"file": "u_bio_13__p2_arm_extend.webp", "unit": "u_bio_13 【Sol】", "usage": "p2_arm_extend", "caption": "うでを伸ばして力こぶがゆるみ外側がかたくなる場面・中の筋肉のしくみは描かない"}, {"file": "u_bio_14__p2_root_tip.webp", "unit": "u_bio_14 【Sol】", "usage": "p2_root_tip", "caption": "タマネギの根の先の顕微鏡像＝先っぽの一点に染色体が見えている細胞がぎっしり・場面イメージ／しくみ・答えの文字は載せない"}, {"file": "u_bio_15__p1_strawberry_runner.webp", "unit": "u_bio_15 【Sol】", "usage": "p1_strawberry_runner", "caption": "イチゴがランナーをのばして先に子株ができている情景。子株が親とそっくりかは示さない＝答えを先渡ししない"}, {"file": "u_bio_15__p2_strawberry_compare.webp", "unit": "u_bio_15 【Sol】", "usage": "p2_strawberry_compare", "caption": "ランナーでふえた子株＝そろってそっくり／タネから育てた株＝実の大きさが1株ずつバラバラ、の対比イメージ"}, {"file": "u_bio_17__lottery.webp", "unit": "u_bio_17 【Sol】", "usage": "lottery", "caption": "2つの箱からくじを1本ずつ引く場面のイメージ・同じ確からしさの雰囲気"}, {"file": "u_bio_17__pea_seeds.webp", "unit": "u_bio_17 【Sol】", "usage": "pea_seeds", "caption": "エンドウの丸い種子としわの種子を並べた実物イメージ"}, {"file": "u_bio_18__research_use.webp", "unit": "u_bio_18 【Sol】", "usage": "research_use", "caption": "品種改良・医療・調査など、DNAの知識が暮らしで使われる身近な場面イメージ"}, {"file": "u_bio_19__p1_whale.webp", "unit": "u_bio_19 【Sol】", "usage": "p1_whale", "caption": "クジラが海を泳ぐ場面・ひれの中の骨は見せない＝答えを先渡ししない"}, {"file": "u_bio_20__p_forest_floor.webp", "unit": "u_bio_20 【Sol】", "usage": "p_forest_floor", "caption": "森の地面に落ち葉がつもっている自然の場面・答えは先渡ししない"}, {"file": "u_bio_20__t4_decomposers.webp", "unit": "u_bio_20 【Sol】", "usage": "t4_decomposers", "caption": "たおれた木や落ち葉にキノコ・カビが生えている場面イメージ・印なし"}, {"file": "u_bio_22__p_breath.webp", "unit": "u_bio_22 【Sol】", "usage": "p_breath", "caption": "寒い日に息を白く吐く場面のイメージ・カードサイズ／この先のめぐり＝答えは載せない"}]; const KEY="figs_"+location.pathname;
+let ans=JSON.parse(localStorage.getItem(KEY)||"{}");
+const m=document.getElementById('m');
+ITEMS.forEach((it,i)=>{
+ const c=document.createElement('div');c.className='card';c.id='c'+i;
+ c.innerHTML=`<div class="u">${it.unit}</div><div class="usage">${it.usage||''}</div>
+ <img src="${it.file}" alt="">
+ <div class="cap">${it.caption||''}</div>
+ <div class="btns"><button class="ok" onclick="mark(${i},'OK')">◎ OK</button>
+ <button class="ng" onclick="mark(${i},'NG')">✏ 気になる</button>
+ <button class="skip" onclick="mark(${i},'SKIP')">⏭</button></div>
+ <textarea placeholder="ひとこと（気になる点・直したい所）" oninput="note(${i},this.value)"></textarea>`;
+ m.appendChild(c);
+ if(ans[it.file]){c.classList.add(ans[it.file].v==='OK'?'done':'marked');c.querySelector('textarea').value=ans[it.file].note||''}
+});
+function upd(){const d=Object.keys(ans).length;document.getElementById('n').textContent=d+' / '+ITEMS.length;
+ document.getElementById('f').style.width=(100*d/ITEMS.length)+'%';
+ if(d>=ITEMS.length){document.getElementById('fin').style.display='block';
+  document.getElementById('out').value=JSON.stringify({sheet:"生物B2-B5 シーン画像(Sol・19枚)",done:d,answers:ans},null,1)}}
+function mark(i,v){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{},{v:v});
+ localStorage.setItem(KEY,JSON.stringify(ans));const c=document.getElementById('c'+i);
+ c.classList.toggle('done',v==='OK');c.classList.toggle('marked',v!=='OK');upd();
+ const nx=document.getElementById('c'+(i+1));if(nx)nx.scrollIntoView({behavior:'smooth',block:'center'})}
+function note(i,t){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{v:'NG'},{note:t});localStorage.setItem(KEY,JSON.stringify(ans))}
+function cp(){const o=document.getElementById('out');o.select();
+ navigator.clipboard.writeText(o.value).then(()=>alert('コピーしました')).catch(()=>{o.focus()})}
+upd();
+</script></body></html>

@@ -1,0 +1,116 @@
+[
+ {
+  "file": "u_bio_05__p2_whale.png",
+  "unit": "u_bio_05 【Sol】",
+  "usage": "p2_whale",
+  "caption": "クジラが海をおよぐイメージ・カードサイズ／肺呼吸・息つぎ・乳育ては描かない＝答えを先渡ししない"
+ },
+ {
+  "file": "u_bio_06__o_onion_micro.png",
+  "unit": "u_bio_06 【Sol】",
+  "usage": "o_onion_micro",
+  "caption": "玉ねぎの皮の顕微鏡像＝レンガ状の部屋がびっしり・部品名や答えは入れない"
+ },
+ {
+  "file": "u_bio_06__t2_stained_nucleus.png",
+  "unit": "u_bio_06 【Sol】",
+  "usage": "t2_stained_nucleus",
+  "caption": "酢酸カーミン液で赤く染まった核が見える細胞の像・カードサイズ・印なし"
+ },
+ {
+  "file": "u_bio_07__p2_iodine_leaves.png",
+  "unit": "u_bio_07 【Sol】",
+  "usage": "p2_iodine_leaves",
+  "caption": "2枚の葉＝光を当てた葉が青むらさき／暗所の葉は染まらない・実物色・カードサイズ／光合成の式・しくみは載せない"
+ },
+ {
+  "file": "u_bio_09__rice_chewing.png",
+  "unit": "u_bio_09 【Sol】",
+  "usage": "rice_chewing",
+  "caption": "ごはんを口でよく噛んでいる身近な場面イメージ・しくみや答えは描かない"
+ },
+ {
+  "file": "u_bio_10__p1_hold_breath.png",
+  "unit": "u_bio_10 【Sol】",
+  "usage": "p1_hold_breath",
+  "caption": "息を止めている場面のイメージ・答えは載せない・印なし"
+ },
+ {
+  "file": "u_bio_12__p1_hot_pot.png",
+  "unit": "u_bio_12 【Sol】",
+  "usage": "p1_hot_pot",
+  "caption": "熱いなべに手がふれる瞬間の場面イメージ・経路や答えは見せない"
+ },
+ {
+  "file": "u_bio_13__p1_arm_flex.png",
+  "unit": "u_bio_13 【Sol】",
+  "usage": "p1_arm_flex",
+  "caption": "うでを曲げて内側の力こぶが盛り上がる場面・伸ばしたときの答えは見せない"
+ },
+ {
+  "file": "u_bio_13__p2_arm_extend.png",
+  "unit": "u_bio_13 【Sol】",
+  "usage": "p2_arm_extend",
+  "caption": "うでを伸ばして力こぶがゆるみ外側がかたくなる場面・中の筋肉のしくみは描かない"
+ },
+ {
+  "file": "u_bio_14__p2_root_tip.png",
+  "unit": "u_bio_14 【Sol】",
+  "usage": "p2_root_tip",
+  "caption": "タマネギの根の先の顕微鏡像＝先っぽの一点に染色体が見えている細胞がぎっしり・場面イメージ／しくみ・答えの文字は載せない"
+ },
+ {
+  "file": "u_bio_15__p1_strawberry_runner.png",
+  "unit": "u_bio_15 【Sol】",
+  "usage": "p1_strawberry_runner",
+  "caption": "イチゴがランナーをのばして先に子株ができている情景。子株が親とそっくりかは示さない＝答えを先渡ししない"
+ },
+ {
+  "file": "u_bio_15__p2_strawberry_compare.png",
+  "unit": "u_bio_15 【Sol】",
+  "usage": "p2_strawberry_compare",
+  "caption": "ランナーでふえた子株＝そろってそっくり／タネから育てた株＝実の大きさが1株ずつバラバラ、の対比イメージ"
+ },
+ {
+  "file": "u_bio_17__lottery.png",
+  "unit": "u_bio_17 【Sol】",
+  "usage": "lottery",
+  "caption": "2つの箱からくじを1本ずつ引く場面のイメージ・同じ確からしさの雰囲気"
+ },
+ {
+  "file": "u_bio_17__pea_seeds.png",
+  "unit": "u_bio_17 【Sol】",
+  "usage": "pea_seeds",
+  "caption": "エンドウの丸い種子としわの種子を並べた実物イメージ"
+ },
+ {
+  "file": "u_bio_18__research_use.png",
+  "unit": "u_bio_18 【Sol】",
+  "usage": "research_use",
+  "caption": "品種改良・医療・調査など、DNAの知識が暮らしで使われる身近な場面イメージ"
+ },
+ {
+  "file": "u_bio_19__p1_whale.png",
+  "unit": "u_bio_19 【Sol】",
+  "usage": "p1_whale",
+  "caption": "クジラが海を泳ぐ場面・ひれの中の骨は見せない＝答えを先渡ししない"
+ },
+ {
+  "file": "u_bio_20__p_forest_floor.png",
+  "unit": "u_bio_20 【Sol】",
+  "usage": "p_forest_floor",
+  "caption": "森の地面に落ち葉がつもっている自然の場面・答えは先渡ししない"
+ },
+ {
+  "file": "u_bio_20__t4_decomposers.png",
+  "unit": "u_bio_20 【Sol】",
+  "usage": "t4_decomposers",
+  "caption": "たおれた木や落ち葉にキノコ・カビが生えている場面イメージ・印なし"
+ },
+ {
+  "file": "u_bio_22__p_breath.png",
+  "unit": "u_bio_22 【Sol】",
+  "usage": "p_breath",
+  "caption": "寒い日に息を白く吐く場面のイメージ・カードサイズ／この先のめぐり＝答えは載せない"
+ }
+]
