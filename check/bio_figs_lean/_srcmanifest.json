@@ -1,0 +1,7 @@
+[
+ {"file":"sketch_good_bad.png","unit":"lean実験 u_bio_01","usage":"良いスケッチと悪いスケッチ","caption":"最小プロンプト『良いスケッチと悪いスケッチを表す挿絵』だけ→✓✗マーク自作・完璧"},
+ {"file":"flower_parts.png","unit":"lean実験 u_bio_02","usage":"花のつくり","caption":"『花のつくりを表す断面の挿絵』→日本語ラベル10個(柱頭/花柱/子房/胚珠/やく/花糸/花弁/がく/花托/花柄)全正確"},
+ {"file":"mono_di.png","unit":"lean実験 u_bio_04","usage":"単子葉/双子葉","caption":"『単子葉類と双子葉類をくらべる挿絵』→見出し＋茎断面(散在/輪)まで正確"},
+ {"file":"cell_compare.png","unit":"lean実験 u_bio_06","usage":"細胞くらべ","caption":"『植物の細胞と動物の細胞をくらべる挿絵』→美麗(くらべる名詞→ラベルは省略)"},
+ {"file":"photosynthesis.png","unit":"lean実験 u_bio_07","usage":"光合成","caption":"『光合成のしくみを表す挿絵』→分子モデルで美麗(しくみ名詞→絵で表現)"}
+]

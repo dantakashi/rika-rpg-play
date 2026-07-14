@@ -34,5 +34,9 @@
  "bio_figs_scenes": {
   "title": "生物B2-B5 シーン画像(Sol) 検収",
   "date": "2026-07-15"
+ },
+ "bio_figs_lean": {
+  "title": "生物 lean発注テスト(Sol・短い一文)",
+  "date": "2026-07-15"
  }
 }
