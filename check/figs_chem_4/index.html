@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>図版検収④ 01/03/04 card10+写真11 (21枚)</title><style>
+ :root{color-scheme:dark}
+ *{box-sizing:border-box} body{font-family:sans-serif;margin:0;background:#12151c;color:#e8e8ee}
+ header{position:sticky;top:0;background:#0d0f14;padding:10px 14px;border-bottom:1px solid #262b36;z-index:5}
+ h1{font-size:.95rem;margin:0 0 6px} .bar{height:6px;background:#262b36;border-radius:3px;overflow:hidden}
+ .fill{height:100%;background:#f0b429;width:0} .n{float:right;color:#9aa;font-size:.85rem}
+ main{max-width:760px;margin:0 auto;padding:16px}
+ .card{background:#1b1f28;border:1px solid #2b3140;border-radius:14px;padding:14px;margin-bottom:14px}
+ .u{color:#f0b429;font-weight:bold;font-size:.9rem} .usage{color:#9fb3c8;font-size:.85rem;margin:2px 0 8px}
+ img{width:100%;border-radius:10px;background:#fff;display:block}
+ .cap{color:#c8d0da;font-size:.85rem;margin:8px 0}
+ .btns{display:flex;gap:8px;margin-top:10px} button{flex:1;border:0;border-radius:10px;padding:12px;font-size:1rem;font-weight:bold;cursor:pointer}
+ .ok{background:#2e9e6b;color:#fff} .ng{background:#f0b429;color:#1b1f28} .skip{background:#333a46;color:#cdd;flex:0 0 64px}
+ textarea{width:100%;margin-top:8px;background:#0f1218;color:#e8e8ee;border:1px solid #2b3140;border-radius:8px;padding:8px;font-size:.95rem}
+ .done{background:#2e9e6b;color:#fff} .marked{outline:2px solid #f0b429}
+ #fin{display:none;text-align:center;padding:30px} #fin textarea{height:160px;font-family:monospace;font-size:.75rem}
+ .copy{background:#f0b429;color:#1b1f28;max-width:280px;margin:12px auto 0}
+</style></head><body>
+<header><h1>図版検収④ 01/03/04 card10+写真11 (21枚) <span class="n" id="n">0 / 0</span></h1><div class="bar"><div class="fill" id="f"></div></div></header>
+<main id="m"></main>
+<div id="fin"><h2>全部おわり！</h2><p>下のボタンで結果をコピーして、チャットに貼り付けてください。</p>
+<textarea id="out" readonly></textarea><button class="copy" onclick="cp()">📋 結果をコピー</button></div>
+<script>
+const ITEMS=[{"file": "card_metal_five_properties.webp", "unit": "u_chem_01 ものの見分け方（金属/非金属）", "usage": "【01-P3】【01-T1】", "caption": "金属の5つの性質＝金属光沢・電気を通す・熱を伝える・展性・延性（延性は今回の赤入れで追加）"}, {"file": "card_metal_nonmetal_sort.webp", "unit": "u_chem_01 ものの見分け方", "usage": "【01-T3】【01-T5】", "caption": "5品を金属3（1円玉・アルミホイル・鉄くぎ）／非金属2（木のわりばし・ガラスのコップ）に分ける仕分け図"}, {"file": "p1_five_items.webp", "unit": "u_chem_01 ものの見分け方", "usage": "【01-P1】", "caption": "5つの日用品（1円玉・木のわりばし・アルミホイル・ガラスのコップ・鉄くぎ）＝AI写真・Sol（分類ラベルなし）"}, {"file": "p2_shine_magnet.webp", "unit": "u_chem_01 ものの見分け方", "usage": "【01-P2】", "caption": "みがいて光るプラスチックと、磁石を近づけた銅・アルミ＝AI写真・Sol（光る=金属ではない/磁石につかない金属もある）"}, {"file": "t2_magnet_samples.webp", "unit": "u_chem_01 ものの見分け方", "usage": "【01-T2】", "caption": "鉄・銅・アルミニウムの金属片と棒磁石＝AI写真・Sol"}, {"file": "t4_burn_samples.webp", "unit": "u_chem_01 ものの見分け方", "usage": "【01-T4】", "caption": "砂糖・プラスチック・食塩・鉄を並べた実物＝AI写真・Sol（炎や実験操作は描かない）"}, {"file": "card_white_powder_matrix.webp", "unit": "u_chem_03 白い粉の正体をさぐる", "usage": "【03-P2】【03-P3】【03-T5】", "caption": "3粉×3調べ方（水・加熱・ヨウ素液）の反応マトリクス。砂糖もかたくり粉も加熱で黒くこげる／決め手はヨウ素液"}, {"file": "card_starch_iodine_teach.webp", "unit": "u_chem_03 白い粉の正体をさぐる", "usage": "【03-T4】", "caption": "デンプン＋ヨウ素液で青むらさきになる（教える用・印なし）"}, {"file": "three_white_powders.webp", "unit": "u_chem_03 白い粉の正体をさぐる", "usage": "【03-P1】", "caption": "見た目そっくりな白い粉3つ＝AI写真・Sol（時計皿に少量ずつ）"}, {"file": "powder_closeup.webp", "unit": "u_chem_03 白い粉の正体をさぐる", "usage": "【03-T1】", "caption": "白い粉のクローズアップ＝AI写真・Sol（見た目では区別しにくい質感）"}, {"file": "dissolving_test.webp", "unit": "u_chem_03 白い粉の正体をさぐる", "usage": "【03-T2】", "caption": "水に粉を入れてかき混ぜる実験の情景＝AI写真・Sol"}, {"file": "heating_sugar.webp", "unit": "u_chem_03 白い粉の正体をさぐる", "usage": "【03-T3】", "caption": "燃焼さじで白い粉を加熱し黒くこげはじめる＝AI写真・Sol"}, {"file": "card_gas_two_clues.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-T1】", "caption": "集め方を決める2つの性質＝①水にとけるか→②空気との重さ、の分岐フロー"}, {"file": "card_gas_collection_map.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-P3】【04-T2】", "caption": "2つの性質→3つの集め方（水上/下方/上方置換）の装置＋対応（二酸化炭素は水上置換法側）"}, {"file": "card_gas_burn_property.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-T3】", "caption": "可燃性（自分が燃える水素）／助燃性（ほかを燃やす酸素）の対比＝新設T3の用語導入"}, {"file": "card_gas_reactions_1.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-T4】", "caption": "酸素＝線香が激しく燃える／水素＝ポンと燃える"}, {"file": "card_gas_reactions_2.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-T5】", "caption": "二酸化炭素＝石灰水が白くにごる／アンモニア＝赤色リトマス紙が青色に"}, {"file": "card_gas_collection_and_test.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-T6】", "caption": "集め方と見分け方を、気体の性質でひとつに結ぶまとめ図"}, {"file": "p1_invisible_gas.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-P1】", "caption": "炭酸飲料から気泡が立ちのぼる情景＝AI写真・Sol"}, {"file": "p2_gas_bottles.webp", "unit": "u_chem_04 気体を集めて見分ける", "usage": "【04-P2】", "caption": "口の向きがちがう3本の集気びん（上向き/下向き/水そう内）＝AI写真・Sol（方法名なし）"}, {"file": "t3_stem_cross.webp", "unit": "u_bio_08 蒸散・水の通り道（茎断面の作り直し）", "usage": "【08-T3】", "caption": "★matplotlib版がうまくいかず→AI画像に切替（オーナー指示）。双子葉の茎の横断面＝維管束が輪に並ぶ・しずく型・内外2トーン＝AI画像・Sol"}]; const KEY="figs_"+location.pathname;
+let ans=JSON.parse(localStorage.getItem(KEY)||"{}");
+const m=document.getElementById('m');
+ITEMS.forEach((it,i)=>{
+ const c=document.createElement('div');c.className='card';c.id='c'+i;
+ c.innerHTML=`<div class="u">${it.unit}</div><div class="usage">${it.usage||''}</div>
+ <img src="${it.file}" alt="">
+ <div class="cap">${it.caption||''}</div>
+ <div class="btns"><button class="ok" onclick="mark(${i},'OK')">◎ OK</button>
+ <button class="ng" onclick="mark(${i},'NG')">✏ 気になる</button>
+ <button class="skip" onclick="mark(${i},'SKIP')">⏭</button></div>
+ <textarea placeholder="ひとこと（気になる点・直したい所）" oninput="note(${i},this.value)"></textarea>`;
+ m.appendChild(c);
+ if(ans[it.file]){c.classList.add(ans[it.file].v==='OK'?'done':'marked');c.querySelector('textarea').value=ans[it.file].note||''}
+});
+function upd(){const d=Object.keys(ans).length;document.getElementById('n').textContent=d+' / '+ITEMS.length;
+ document.getElementById('f').style.width=(100*d/ITEMS.length)+'%';
+ if(d>=ITEMS.length){document.getElementById('fin').style.display='block';
+  document.getElementById('out').value=JSON.stringify({sheet:"図版検収④ 01/03/04 card10+写真11 (21枚)",done:d,answers:ans},null,1)}}
+function mark(i,v){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{},{v:v});
+ localStorage.setItem(KEY,JSON.stringify(ans));const c=document.getElementById('c'+i);
+ c.classList.toggle('done',v==='OK');c.classList.toggle('marked',v!=='OK');upd();
+ const nx=document.getElementById('c'+(i+1));if(nx)nx.scrollIntoView({behavior:'smooth',block:'center'})}
+function note(i,t){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{v:'NG'},{note:t});localStorage.setItem(KEY,JSON.stringify(ans))}
+function cp(){const o=document.getElementById('out');o.select();
+ navigator.clipboard.writeText(o.value).then(()=>alert('コピーしました')).catch(()=>{o.focus()})}
+upd();
+</script></body></html>
