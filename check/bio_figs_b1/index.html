@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>生物B1 図版くらべ(Sol版/私版)</title><style>
+ :root{color-scheme:dark}
+ *{box-sizing:border-box} body{font-family:sans-serif;margin:0;background:#12151c;color:#e8e8ee}
+ header{position:sticky;top:0;background:#0d0f14;padding:10px 14px;border-bottom:1px solid #262b36;z-index:5}
+ h1{font-size:.95rem;margin:0 0 6px} .bar{height:6px;background:#262b36;border-radius:3px;overflow:hidden}
+ .fill{height:100%;background:#f0b429;width:0} .n{float:right;color:#9aa;font-size:.85rem}
+ main{max-width:760px;margin:0 auto;padding:16px}
+ .card{background:#1b1f28;border:1px solid #2b3140;border-radius:14px;padding:14px;margin-bottom:14px}
+ .u{color:#f0b429;font-weight:bold;font-size:.9rem} .usage{color:#9fb3c8;font-size:.85rem;margin:2px 0 8px}
+ img{width:100%;border-radius:10px;background:#fff;display:block}
+ .cap{color:#c8d0da;font-size:.85rem;margin:8px 0}
+ .btns{display:flex;gap:8px;margin-top:10px} button{flex:1;border:0;border-radius:10px;padding:12px;font-size:1rem;font-weight:bold;cursor:pointer}
+ .ok{background:#2e9e6b;color:#fff} .ng{background:#f0b429;color:#1b1f28} .skip{background:#333a46;color:#cdd;flex:0 0 64px}
+ textarea{width:100%;margin-top:8px;background:#0f1218;color:#e8e8ee;border:1px solid #2b3140;border-radius:8px;padding:8px;font-size:.95rem}
+ .done{background:#2e9e6b;color:#fff} .marked{outline:2px solid #f0b429}
+ #fin{display:none;text-align:center;padding:30px} #fin textarea{height:160px;font-family:monospace;font-size:.75rem}
+ .copy{background:#f0b429;color:#1b1f28;max-width:280px;margin:12px auto 0}
+</style></head><body>
+<header><h1>生物B1 図版くらべ(Sol版/私版) <span class="n" id="n">0 / 0</span></h1><div class="bar"><div class="fill" id="f"></div></div></header>
+<main id="m"></main>
+<div id="fin"><h2>全部おわり！</h2><p>下のボタンで結果をコピーして、チャットに貼り付けてください。</p>
+<textarea id="out" readonly></textarea><button class="copy" onclick="cp()">📋 結果をコピー</button></div>
+<script>
+const ITEMS=[{"file": "sol__p1_two_students.webp", "unit": "u_bio_01 【Sol版】", "usage": "P1 観察の場面", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_sketch_good_bad.webp", "unit": "u_bio_01 【Sol版】", "usage": "P2/T1 スケッチ良い/悪い", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "mine__card_sketch_good_bad.webp", "unit": "u_bio_01 【私版matplotlib】", "usage": "P2/T1 スケッチ良い/悪い", "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"}, {"file": "sol__card_loupe_use.webp", "unit": "u_bio_01 【Sol版】", "usage": "T4 ルーペの使い方", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "mine__card_loupe_use.webp", "unit": "u_bio_01 【私版matplotlib】", "usage": "T4 ルーペの使い方", "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"}, {"file": "sol__p_flower_fruit.webp", "unit": "u_bio_02 【Sol版】", "usage": "P1/P2 花→実", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_flower_parts.webp", "unit": "u_bio_02 【Sol版】", "usage": "T1/T2 花の断面", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_ovary_to_fruit.webp", "unit": "u_bio_02 【Sol版】", "usage": "T4 子房→果実・胚珠→種子", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_naked_seed.webp", "unit": "u_bio_02 【Sol版】", "usage": "T5 被子/裸子", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__p1_moss_fern.webp", "unit": "u_bio_03 【Sol版】", "usage": "P1 コケとシダ", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__p2_spore_sori.webp", "unit": "u_bio_03 【Sol版】", "usage": "P2 胞子のう", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_leaf.webp", "unit": "u_bio_03 【Sol版】", "usage": "T1 葉脈と気孔", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_root.webp", "unit": "u_bio_03 【Sol版】", "usage": "T2 根毛と根の2タイプ", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_spore_plant.webp", "unit": "u_bio_03 【Sol版】", "usage": "T4 胞子でふえる", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_fern_moss_compare.webp", "unit": "u_bio_03 【Sol版】", "usage": "T5 シダ/コケ対比", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__p_ine_himawari.webp", "unit": "u_bio_04 【Sol版】", "usage": "P1 イネとヒマワリ", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "sol__card_dichotomy_method.webp", "unit": "u_bio_04 【Sol版】", "usage": "T1 線引きで仕分け", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "mine__card_dichotomy_method.webp", "unit": "u_bio_04 【私版matplotlib】", "usage": "T1 線引きで仕分け", "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"}, {"file": "sol__card_seed_line.webp", "unit": "u_bio_04 【Sol版】", "usage": "T2 種子/胞子の線", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "mine__card_seed_line.webp", "unit": "u_bio_04 【私版matplotlib】", "usage": "T2 種子/胞子の線", "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"}, {"file": "sol__card_shibou_line.webp", "unit": "u_bio_04 【Sol版】", "usage": "T3 子房あり/なし", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "mine__card_shibou_line.webp", "unit": "u_bio_04 【私版matplotlib】", "usage": "T3 子房あり/なし", "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"}, {"file": "sol__card_mono_di_compare.webp", "unit": "u_bio_04 【Sol版】", "usage": "T4 単子葉/双子葉 対比表", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "mine__card_mono_di_compare.webp", "unit": "u_bio_04 【私版matplotlib】", "usage": "T4 単子葉/双子葉 対比表", "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"}, {"file": "sol__card_plant_dichotomy.webp", "unit": "u_bio_04 【Sol版】", "usage": "T5 分類の樹形図", "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"}, {"file": "mine__card_plant_dichotomy.webp", "unit": "u_bio_04 【私版matplotlib】", "usage": "T5 分類の樹形図", "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"}]; const KEY="figs_"+location.pathname;
+let ans=JSON.parse(localStorage.getItem(KEY)||"{}");
+const m=document.getElementById('m');
+ITEMS.forEach((it,i)=>{
+ const c=document.createElement('div');c.className='card';c.id='c'+i;
+ c.innerHTML=`<div class="u">${it.unit}</div><div class="usage">${it.usage||''}</div>
+ <img src="${it.file}" alt="">
+ <div class="cap">${it.caption||''}</div>
+ <div class="btns"><button class="ok" onclick="mark(${i},'OK')">◎ OK</button>
+ <button class="ng" onclick="mark(${i},'NG')">✏ 気になる</button>
+ <button class="skip" onclick="mark(${i},'SKIP')">⏭</button></div>
+ <textarea placeholder="ひとこと（気になる点・直したい所）" oninput="note(${i},this.value)"></textarea>`;
+ m.appendChild(c);
+ if(ans[it.file]){c.classList.add(ans[it.file].v==='OK'?'done':'marked');c.querySelector('textarea').value=ans[it.file].note||''}
+});
+function upd(){const d=Object.keys(ans).length;document.getElementById('n').textContent=d+' / '+ITEMS.length;
+ document.getElementById('f').style.width=(100*d/ITEMS.length)+'%';
+ if(d>=ITEMS.length){document.getElementById('fin').style.display='block';
+  document.getElementById('out').value=JSON.stringify({sheet:"生物B1 図版くらべ(Sol版/私版)",done:d,answers:ans},null,1)}}
+function mark(i,v){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{},{v:v});
+ localStorage.setItem(KEY,JSON.stringify(ans));const c=document.getElementById('c'+i);
+ c.classList.toggle('done',v==='OK');c.classList.toggle('marked',v!=='OK');upd();
+ const nx=document.getElementById('c'+(i+1));if(nx)nx.scrollIntoView({behavior:'smooth',block:'center'})}
+function note(i,t){const it=ITEMS[i];ans[it.file]=Object.assign(ans[it.file]||{v:'NG'},{note:t});localStorage.setItem(KEY,JSON.stringify(ans))}
+function cp(){const o=document.getElementById('out');o.select();
+ navigator.clipboard.writeText(o.value).then(()=>alert('コピーしました')).catch(()=>{o.focus()})}
+upd();
+</script></body></html>

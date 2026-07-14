@@ -1,0 +1,158 @@
+[
+ {
+  "file": "sol__p1_two_students.png",
+  "unit": "u_bio_01 【Sol版】",
+  "usage": "P1 観察の場面",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_sketch_good_bad.png",
+  "unit": "u_bio_01 【Sol版】",
+  "usage": "P2/T1 スケッチ良い/悪い",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "mine__card_sketch_good_bad.png",
+  "unit": "u_bio_01 【私版matplotlib】",
+  "usage": "P2/T1 スケッチ良い/悪い",
+  "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"
+ },
+ {
+  "file": "sol__card_loupe_use.png",
+  "unit": "u_bio_01 【Sol版】",
+  "usage": "T4 ルーペの使い方",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "mine__card_loupe_use.png",
+  "unit": "u_bio_01 【私版matplotlib】",
+  "usage": "T4 ルーペの使い方",
+  "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"
+ },
+ {
+  "file": "sol__p_flower_fruit.png",
+  "unit": "u_bio_02 【Sol版】",
+  "usage": "P1/P2 花→実",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_flower_parts.png",
+  "unit": "u_bio_02 【Sol版】",
+  "usage": "T1/T2 花の断面",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_ovary_to_fruit.png",
+  "unit": "u_bio_02 【Sol版】",
+  "usage": "T4 子房→果実・胚珠→種子",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_naked_seed.png",
+  "unit": "u_bio_02 【Sol版】",
+  "usage": "T5 被子/裸子",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__p1_moss_fern.png",
+  "unit": "u_bio_03 【Sol版】",
+  "usage": "P1 コケとシダ",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__p2_spore_sori.png",
+  "unit": "u_bio_03 【Sol版】",
+  "usage": "P2 胞子のう",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_leaf.png",
+  "unit": "u_bio_03 【Sol版】",
+  "usage": "T1 葉脈と気孔",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_root.png",
+  "unit": "u_bio_03 【Sol版】",
+  "usage": "T2 根毛と根の2タイプ",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_spore_plant.png",
+  "unit": "u_bio_03 【Sol版】",
+  "usage": "T4 胞子でふえる",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_fern_moss_compare.png",
+  "unit": "u_bio_03 【Sol版】",
+  "usage": "T5 シダ/コケ対比",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__p_ine_himawari.png",
+  "unit": "u_bio_04 【Sol版】",
+  "usage": "P1 イネとヒマワリ",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "sol__card_dichotomy_method.png",
+  "unit": "u_bio_04 【Sol版】",
+  "usage": "T1 線引きで仕分け",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "mine__card_dichotomy_method.png",
+  "unit": "u_bio_04 【私版matplotlib】",
+  "usage": "T1 線引きで仕分け",
+  "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"
+ },
+ {
+  "file": "sol__card_seed_line.png",
+  "unit": "u_bio_04 【Sol版】",
+  "usage": "T2 種子/胞子の線",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "mine__card_seed_line.png",
+  "unit": "u_bio_04 【私版matplotlib】",
+  "usage": "T2 種子/胞子の線",
+  "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"
+ },
+ {
+  "file": "sol__card_shibou_line.png",
+  "unit": "u_bio_04 【Sol版】",
+  "usage": "T3 子房あり/なし",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "mine__card_shibou_line.png",
+  "unit": "u_bio_04 【私版matplotlib】",
+  "usage": "T3 子房あり/なし",
+  "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"
+ },
+ {
+  "file": "sol__card_mono_di_compare.png",
+  "unit": "u_bio_04 【Sol版】",
+  "usage": "T4 単子葉/双子葉 対比表",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "mine__card_mono_di_compare.png",
+  "unit": "u_bio_04 【私版matplotlib】",
+  "usage": "T4 単子葉/双子葉 対比表",
+  "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"
+ },
+ {
+  "file": "sol__card_plant_dichotomy.png",
+  "unit": "u_bio_04 【Sol版】",
+  "usage": "T5 分類の樹形図",
+  "caption": "Sol(AI画像生成)版。絵は美しいが日本語ラベルは省略/苦手。"
+ },
+ {
+  "file": "mine__card_plant_dichotomy.png",
+  "unit": "u_bio_04 【私版matplotlib】",
+  "usage": "T5 分類の樹形図",
+  "caption": "私版(matplotlib・Opus作)。ラベルは正確だが絵は素朴。"
+ }
+]
