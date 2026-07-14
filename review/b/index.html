@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>画像ティンダー検収</title>
+<style>
+  :root{--ok:#5b8a72;--ng:#c0564a;--fix:#4a6fb5}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:#2b2622;color:#f4ede2}
+  .top{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;z-index:10;background:linear-gradient(#2b2622,#2b262200)}
+  .top b{font-size:15px}
+  #prog{font-weight:700;font-size:14px;color:#d8c9a8}
+  .stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:64px 12px 130px}
+  .card{position:absolute;width:min(92vw,540px);max-height:calc(100% - 190px);aspect-ratio:1/1;border-radius:20px;background:repeating-conic-gradient(#3a332d 0 25%,#453c34 0 50%) 0 0/28px 28px;box-shadow:0 10px 40px #000a;touch-action:none;user-select:none;overflow:hidden;transition:transform .25s,opacity .25s}
+  .card.drag{transition:none}
+  .card img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+  .card .label{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;background:#000a;font-size:13px}
+  /* ペア比較カード（同モチーフ2枚並べ・タップで片方採用） */
+  .card.pair{aspect-ratio:auto;height:calc(100% - 40px);display:flex;gap:4px;padding-bottom:34px}
+  .card.pair .half{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+  .card.pair .half img{flex:1;min-height:0;width:100%;object-fit:contain;pointer-events:none}
+  .card.pair .half .sub{font-size:11px;text-align:center;background:#0008;padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.pair .half .pick{margin:6px;padding:12px 0;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;color:#fff;background:var(--ok);cursor:pointer}
+  .card.pair .half.win{outline:4px solid var(--ok);outline-offset:-4px}
+  .stamp{position:absolute;top:18px;font-size:30px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-12deg);pointer-events:none;z-index:3}
+  .stamp.ok{left:14px;color:var(--ok);border-color:var(--ok)}
+  .stamp.ng{right:14px;color:var(--ng);border-color:var(--ng);transform:rotate(12deg)}
+  .bar{position:fixed;bottom:0;left:0;right:0;padding:12px 14px 22px;display:flex;gap:10px;z-index:10;background:linear-gradient(#2b262200,#2b2622 40%)}
+  .bar button{flex:1;font:inherit;font-weight:800;font-size:15px;padding:14px 0;border-radius:14px;border:none;cursor:pointer;color:#fff}
+  .b-ng{background:var(--ng)}.b-fix{background:var(--fix)}.b-ok{background:var(--ok)}.b-undo{background:#6b6259;flex:.6}
+  .hint{position:fixed;bottom:92px;left:0;right:0;text-align:center;font-size:12px;color:#b7a98d;z-index:9}
+  .overlay{position:fixed;inset:0;background:#000c;z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.on{display:flex}
+  .panel{background:#f6f1e7;color:#3c302c;border-radius:16px;padding:16px;width:min(92vw,480px)}
+  .panel textarea{width:100%;min-height:90px;font:inherit;font-size:14px;border:1px solid #d9c5ab;border-radius:10px;padding:8px}
+  .panel .row{display:flex;gap:10px;margin-top:10px}
+  .panel button{flex:1;font:inherit;font-weight:700;padding:12px 0;border-radius:12px;border:none;color:#fff;cursor:pointer}
+  .done{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px;text-align:center}
+  .done.on{display:flex}
+  .done .counts{font-size:16px;line-height:2}
+  .done button{font:inherit;font-weight:800;font-size:16px;padding:14px 26px;border-radius:14px;border:none;background:var(--fix);color:#fff;cursor:pointer}
+  .done textarea{width:min(92vw,520px);min-height:110px;font-size:12px;border-radius:10px;border:none;padding:8px;display:none}
+</style>
+</head>
+<body>
+<div class="top"><b id="title">画像ティンダー検収</b><span id="prog"></span></div>
+<div class="stage" id="stage"></div>
+<div class="hint" id="hint">→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント</div>
+<div class="bar">
+  <button class="b-undo" onclick="undo()">↩</button>
+  <button class="b-ng" onclick="decide('NG')">✗ 不採用</button>
+  <button class="b-fix" onclick="openFix()">✏ 修正</button>
+  <button class="b-ok" id="okbtn" onclick="decide('OK')">◎ 採用</button>
+</div>
+<div class="overlay" id="ov">
+  <div class="panel">
+    <b>✏ 修正コメント</b>（どう直してほしいか）
+    <textarea id="fixnote" placeholder="例: もっと赤く／目を大きく／向きを右に"></textarea>
+    <div class="row">
+      <button style="background:#9aa2ab" onclick="closeFix()">やめる</button>
+      <button style="background:var(--fix)" onclick="saveFix()">修正として記録</button>
+    </div>
+  </div>
+</div>
+<div class="done" id="done">
+  <h2>完了！</h2>
+  <div class="counts" id="counts"></div>
+  <button onclick="copyResult(this)">📋 結果をコピー（チャットに貼り付け）</button>
+  <textarea id="dump" readonly onclick="this.select()"></textarea>
+</div>
+<script>
+// ===== バッチ定義（ここだけ差し替えれば使い回せる） =====
+// 1枚カード: {f:"ファイル名", t:"ラベル"}
+// ペア比較 : {pair:["A.png","B.png"], t:"モチーフ名", ta:"Aの説明", tb:"Bの説明"}
+//            → 画像下のボタンで片方採用（もう片方は自動で不採用）・←スワイプ/✗=両方不採用
+const SHEET = "第10弾B(中ボス進化95)";
+const IMGDIR = "imgs/";
+const ITEMS = [
+  {"f": "shinka_deepen1__midboss_makai_hellgeneral_d_attack.webp", "t": "中ボス·魔界｜魔界軍の将軍（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_deepen1__midboss_makai_chaosarchdemon_d_attack.webp", "t": "中ボス·魔界｜混沌の大悪魔（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_deepen1__midboss_zombie_corpsemountain_d_attack.webp", "t": "中ボス·ゾンビ｜亡者の山のゴーレム（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_deepen1__midboss_zombie_plaguedoctor_d_attack.webp", "t": "中ボス·ゾンビ｜ペスト医の死霊（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_deepen1__midboss_jigoku_gozu_i_attack.webp", "t": "中ボス·地獄｜牛頭の獄卒長（進化）｜墨絵和風·attack"},
+  {"f": "shinka_deepen1__midboss_jigoku_mezu_i_attack.webp", "t": "中ボス·地獄｜馬頭の獄卒長（進化）｜墨絵和風·attack"},
+  {"f": "shinka_deepen1__midboss_vampire_vampireduke_d_attack.webp", "t": "中ボス·ドラキュラ伝説｜若き吸血公爵（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_deepen1__midboss_vampire_headmaid_a_attack.webp", "t": "中ボス·ドラキュラ伝説｜紅の従者長（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_deepen1__midboss_deepsea_goblinsharkbrute_a_attack.webp", "t": "中ボス·深海｜ミツクリザメの荒くれ（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_deepen1__midboss_deepsea_jellyempress_m_attack.webp", "t": "中ボス·深海｜クラゲの女帝（進化）｜ネオン·attack"},
+  {"f": "shinka_deepen1__midboss_wa_gashadokuro_i_attack.webp", "t": "中ボス·和妖怪｜がしゃどくろ（進化）｜墨絵和風·attack"},
+  {"f": "shinka_deepen1__midboss_wa_tsuchigumo_i_attack.webp", "t": "中ボス·和妖怪｜土蜘蛛の武者（進化）｜墨絵和風·attack"},
+  {"f": "shinka_deepen1__midboss_china_whitesnakelady_b_attack.webp", "t": "中ボス·中華｜白蛇夫人（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_deepen1__midboss_viking_jotunnlord_a_attack.webp", "t": "中ボス·ヴァイキング｜霜の巨人領主（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_deepen1__midboss_pirate_chestkeeper_d_attack.webp", "t": "中ボス·海賊｜深海の宝箱番（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_deepen1__midboss_ninja_joninshadow_i_attack.webp", "t": "中ボス·忍者の里｜上忍の影（進化）｜墨絵和風·attack"},
+  {"f": "shinka_deepen1__midboss_library_overduewraith_x_attack.webp", "t": "中ボス·真夜中の大図書館｜延滞本の怨霊（進化）｜絵巻物·attack"},
+  {"f": "shinka_night5__midboss_makai_dragoonlord_d_attack.webp", "t": "中ボス·魔界｜魔界の竜騎兵長（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_night5__midboss_makai_abyssjaw_d_attack.webp", "t": "中ボス·魔界｜深淵の大顎（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_night5__midboss_makai_starmage_a_attack.webp", "t": "中ボス·魔界｜魔眼の大占星術師（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_zombie_archbishopcorpse_d_attack.webp", "t": "中ボス·ゾンビ｜墓場の大主教（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_night5__midboss_zombie_corpsechariot_d_attack.webp", "t": "中ボス·ゾンビ｜屍山血河の戦車（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_night5__midboss_zombie_deathexecutor_d_attack.webp", "t": "中ボス·ゾンビ｜大鎌の死神執行官（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_night5__midboss_jigoku_gokanking_i_attack.webp", "t": "中ボス·地獄｜五官王の裁き人（進化）｜墨絵和風·attack"},
+  {"f": "shinka_night5__midboss_jigoku_twinsumo_i_attack.webp", "t": "中ボス·地獄｜双頭の獄卒力士（進化）｜墨絵和風·attack"},
+  {"f": "shinka_night5__midboss_jigoku_boltkeeper_i_attack.webp", "t": "中ボス·地獄｜地獄の門の大閂鬼（進化）｜墨絵和風·attack"},
+  {"f": "shinka_night5__midboss_jigoku_catfishlord_i_attack.webp", "t": "中ボス·地獄｜血の池の大鯰（進化）｜墨絵和風·attack"},
+  {"f": "shinka_night5__midboss_vampire_bloodmoonwolf_d_attack.webp", "t": "中ボス·ドラキュラ伝説｜血月の狼将（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_night5__midboss_vampire_countess_d_attack.webp", "t": "中ボス·ドラキュラ伝説｜血の伯爵夫人（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_night5__midboss_vampire_alchemistfiend_a_attack.webp", "t": "中ボス·ドラキュラ伝説｜紅の錬金釜の魔人（進化）｜精細ゲームCG·attack"},
+  {"pair": ["shinka_night5__midboss_egypt_cobragen_a_attack.webp", "shinka_run6__midboss_egypt_cobragen_b_attack.webp"], "t": "中ボス·エジプト｜王笏の大コブラ将（進化）", "ta": "精細ゲームCG·attack", "tb": "アニメ塗り·attack"},
+  {"f": "shinka_night5__midboss_deepsea_seascorpion_a_attack.webp", "t": "中ボス·深海｜大ウミサソリの古代甲将（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_deepsea_horseshoefort_a_attack.webp", "t": "中ボス·深海｜巨大カブトガニの城塞（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_deepsea_clioneangel_m_attack.webp", "t": "中ボス·深海｜流氷の大天使クリオネ（進化）｜ネオン·attack"},
+  {"f": "shinka_night5__midboss_deepsea_methanegiant_a_attack.webp", "t": "中ボス·深海｜燃える氷の巨人（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_wa_omukade_i_attack.webp", "t": "中ボス·和妖怪｜大百足の武者（進化）｜墨絵和風·attack"},
+  {"f": "shinka_night5__midboss_wa_onyudo_i_attack.webp", "t": "中ボス·和妖怪｜大入道の見越し（進化）｜墨絵和風·attack"},
+  {"f": "shinka_night5__midboss_wa_oboroguruma_x_attack.webp", "t": "中ボス·和妖怪｜朧車の牛車鬼（進化）｜絵巻物·attack"},
+  {"f": "shinka_night5__midboss_wa_karajishi_A_attack.webp", "t": "中ボス·和妖怪｜唐獅子牡丹の大獅子（進化）｜蒔絵·attack"},
+  {"f": "shinka_night5__midboss_china_leigong_b_attack.webp", "t": "中ボス·中華｜雷公の太鼓神（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_night5__midboss_china_goldencrow_b_attack.webp", "t": "中ボス·中華｜三本足の金烏（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_night5__midboss_china_flamebuffalo_b_attack.webp", "t": "中ボス·中華｜火焔山の炎牛魔（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_night5__midboss_viking_boarchief_a_attack.webp", "t": "中ボス·ヴァイキング｜猪頭の狂戦隊長（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_viking_stormrower_a_attack.webp", "t": "中ボス·ヴァイキング｜嵐を漕ぐ大船長（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_viking_stormeagle_a_attack.webp", "t": "中ボス·ヴァイキング｜大鷲の羽嵐の主（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_pirate_twincannon_b_attack.webp", "t": "中ボス·海賊｜双頭の大砲将（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_night5__midboss_pirate_crescentduelist_b_attack.webp", "t": "中ボス·海賊｜三日月刀の決闘士（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_night5__midboss_ninja_toadsage_i_attack.webp", "t": "中ボス·忍者の里｜大蝦蟇の術師（進化）｜墨絵和風·attack"},
+  {"f": "shinka_night5__midboss_ninja_wiremaster_b_attack.webp", "t": "中ボス·忍者の里｜鋼糸の傀儡忍（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_night5__midboss_library_doorgolem_q_attack.webp", "t": "中ボス·真夜中の大図書館｜禁書庫の大扉番（進化）｜コミック調·attack"},
+  {"f": "shinka_night5__midboss_library_clockkeeper_q_attack.webp", "t": "中ボス·真夜中の大図書館｜図書館の大時計守（進化）｜コミック調·attack"},
+  {"f": "shinka_night5__midboss_frost_avalancheboar_a_attack.webp", "t": "中ボス·氷雪の城｜雪崩の大猪（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_night5__midboss_frost_sabertooth_g_attack.webp", "t": "中ボス·氷雪の城｜氷河期の剣歯虎（進化）｜リアルクリーチャー·attack"},
+  {"f": "shinka_run6__midboss_myth_minotaurking_b_attack.webp", "t": "中ボス·神話｜ミノタウロスの王（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_egypt_tombguardian_b_attack.webp", "t": "中ボス·エジプト｜王墓の大ミイラ（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_myth_hundredeyes_b_attack.webp", "t": "中ボス·神話｜百眼の番人（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_myth_demigodhero_b_attack.webp", "t": "中ボス·神話｜半神の大力士（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_myth_tridentcaptain_b_attack.webp", "t": "中ボス·神話｜海神の三叉戟衛長（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_egypt_mummycroc_b_attack.webp", "t": "中ボス·エジプト｜ミイラ鰐の川の主（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_egypt_royalcurse_b_attack.webp", "t": "中ボス·エジプト｜王家の呪いの具現（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_china_wallgeneral_b_attack.webp", "t": "中ボス·中華｜万里の長城の大守将（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_china_peacockqueen_b_attack.webp", "t": "中ボス·中華｜西王母の大孔雀（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_arthur_greenknight_b_attack.webp", "t": "中ボス·アーサー王伝説｜緑の騎士（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_arthur_ladyofthelake_b_attack.webp", "t": "中ボス·アーサー王伝説｜湖の大精（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_arthur_usurperknight_b_attack.webp", "t": "中ボス·アーサー王伝説｜王座簒奪の黒鎧卿（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_arthur_merlinphantom_b_attack.webp", "t": "中ボス·アーサー王伝説｜大魔術師の幻影（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_dino_spinolord_b_attack.webp", "t": "中ボス·恐竜の火山島｜棘背の大スピノ（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_dino_lavaeater_b_attack.webp", "t": "中ボス·恐竜の火山島｜火山の火喰い竜（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run6__midboss_ennichi_hanabispirit_b_attack.webp", "t": "中ボス·夏祭りの縁日｜花火の大輪の精（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_myth_gorgonqueen_b_attack.webp", "t": "中ボス·神話｜ゴルゴンの女王（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_makai_armorykeeper_m_attack.webp", "t": "中ボス·魔界｜魔界兵器庫の番人（進化）｜ネオン·attack"},
+  {"f": "shinka_run7__midboss_makai_ramfiend_d_attack.webp", "t": "中ボス·魔界｜攻城槌の大悪魔（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_run7__midboss_zombie_palanquinguard_d_attack.webp", "t": "中ボス·ゾンビ｜大棺の運柩衛兵長（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_run7__midboss_jigoku_keneoou_i_attack.webp", "t": "中ボス·地獄｜懸衣翁の枝振り（進化）｜墨絵和風·attack"},
+  {"f": "shinka_run7__midboss_vampire_batgentleman_d_attack.webp", "t": "中ボス·ドラキュラ伝説｜大蝙蝠の紳士卿（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_run7__midboss_egypt_glyphwall_b_attack.webp", "t": "中ボス·エジプト｜生きたヒエログリフの壁（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_deepsea_tubewormtower_a_attack.webp", "t": "中ボス·深海｜ハオリムシの塔の主（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_run7__midboss_china_qiongqi_b_attack.webp", "t": "中ボス·中華｜四凶・窮奇の翼虎（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_pirate_maelstromwitch_d_attack.webp", "t": "中ボス·海賊｜渦潮の海魔女（進化）｜ダーク油彩·attack"},
+  {"f": "shinka_run7__midboss_pirate_cursedadmiral_b_attack.webp", "t": "中ボス·海賊｜呪い金貨の半骨提督（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_ninja_pipesmoker_b_attack.webp", "t": "中ボス·忍者の里｜煙管の煙輪頭目（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_library_herebedragon_E_attack.webp", "t": "中ボス·真夜中の大図書館｜古地図の海竜（進化）｜銅版画·attack"},
+  {"f": "shinka_run7__midboss_library_scribemonk_q_attack.webp", "t": "中ボス·真夜中の大図書館｜速記の十本ペン僧（進化）｜コミック調·attack"},
+  {"f": "shinka_run7__midboss_library_dampmaster_q_attack.webp", "t": "中ボス·真夜中の大図書館｜湿気の霧の主（進化）｜コミック調·attack"},
+  {"f": "shinka_run7__midboss_frost_juhyomonster_a_attack.webp", "t": "中ボス·氷雪の城｜樹氷の大精（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_run7__midboss_frost_frozenfalls_a_attack.webp", "t": "中ボス·氷雪の城｜凍瀑の主（進化）｜精細ゲームCG·attack"},
+  {"f": "shinka_run7__midboss_arthur_lakeknightblue_b_attack.webp", "t": "中ボス·アーサー王伝説｜湖育ちの青騎士（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_arthur_phantomcastle_b_attack.webp", "t": "中ボス·アーサー王伝説｜幻の城の大魔女（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_dino_mosasaur_b_attack.webp", "t": "中ボス·恐竜の火山島｜海の暴君モササウルス（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_dino_eldertriceratops_b_attack.webp", "t": "中ボス·恐竜の火山島｜大長老の三角竜（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_ennichi_dashifloat_b_attack.webp", "t": "中ボス·夏祭りの縁日｜歩く大山車（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_ennichi_targetking_b_attack.webp", "t": "中ボス·夏祭りの縁日｜的の大王（進化）｜アニメ塗り·attack"},
+  {"f": "shinka_run7__midboss_ennichi_emahorse_b_attack.webp", "t": "中ボス·夏祭りの縁日｜大絵馬の駆け馬（進化）｜アニメ塗り·attack"},
+];
+// =======================================================
+const KEY="tinder_"+SHEET;
+let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+function itemKey(it){return it.pair ? it.pair[0]+"|"+it.pair[1] : it.f;}
+let idx=Object.keys(st).filter(k=>!k.startsWith("_")).length ? nextUndone() : 0;
+let history=[];
+document.getElementById("title").textContent=SHEET;
+function nextUndone(){for(let i=0;i<ITEMS.length;i++){if(!st[itemKey(ITEMS[i])])return i;}return ITEMS.length;}
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+let card=null,sx=0,sy=0,dx=0,dragging=false,lastTap=0;
+function render(){
+  stage.innerHTML="";
+  document.getElementById("prog").textContent=Math.min(idx,ITEMS.length)+" / "+ITEMS.length;
+  if(idx>=ITEMS.length){finish();return;}
+  document.getElementById("done").classList.remove("on");
+  const it=ITEMS[idx];
+  card=document.createElement("div");
+  if(it.pair){
+    card.className="card pair";
+    card.innerHTML=
+      '<div class="half"><img src="'+IMGDIR+it.pair[0]+'" draggable="false">'+
+        '<div class="sub">'+(it.ta||"A")+'</div><button class="pick" onclick="pick(0,event)">◀ こっちを採用</button></div>'+
+      '<div class="half"><img src="'+IMGDIR+it.pair[1]+'" draggable="false">'+
+        '<div class="sub">'+(it.tb||"B")+'</div><button class="pick" onclick="pick(1,event)">こっちを採用 ▶</button></div>'+
+      '<div class="stamp ng">両方不採用</div>'+
+      '<div class="label">'+(idx+1)+"件目(比較): "+it.t+"</div>";
+    document.getElementById("hint").textContent="ボタン=片方採用　←スワイプ/✗=両方不採用　ダブルタップ=✏修正";
+    document.getElementById("okbtn").style.display="none";
+  }else{
+    card.className="card";
+    card.innerHTML='<img src="'+IMGDIR+it.f+'" draggable="false">'+
+      '<div class="stamp ok">採用</div><div class="stamp ng">不採用</div>'+
+      '<div class="label">'+(idx+1)+"体目: "+it.t+"</div>";
+    document.getElementById("hint").textContent="→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント";
+    document.getElementById("okbtn").style.display="";
+  }
+  stage.appendChild(card);
+  card.addEventListener("pointerdown",pd);
+  card.addEventListener("pointermove",pm);
+  card.addEventListener("pointerup",pu);
+  card.addEventListener("pointercancel",pu);
+}
+function pick(side,ev){
+  if(ev){ev.stopPropagation();}
+  const it=ITEMS[idx];if(!it||!it.pair)return;
+  const half=card.querySelectorAll(".half")[side];if(half)half.classList.add("win");
+  decide(side===0?"A":"B");
+}
+function pd(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains("pick"))return;
+  const now=Date.now();
+  if(now-lastTap<300){lastTap=0;openFix();return;}
+  lastTap=now;
+  dragging=true;sx=e.clientX;sy=e.clientY;dx=0;card.classList.add("drag");
+  card.setPointerCapture(e.pointerId);
+}
+function pm(e){
+  if(!dragging)return;
+  const it=ITEMS[idx];
+  dx=e.clientX-sx;const dy=e.clientY-sy;
+  if(it.pair&&dx>0)dx=0; // ペアは右スワイプ採用なし（どっちか選べないため）
+  card.style.transform="translate("+dx+"px,"+(dy*0.3)+"px) rotate("+(dx/18)+"deg)";
+  const ok=card.querySelector(".stamp.ok");
+  if(ok)ok.style.opacity=dx>40?Math.min((dx-40)/80,1):0;
+  card.querySelector(".stamp.ng").style.opacity=dx<-40?Math.min((-dx-40)/80,1):0;
+}
+function pu(){
+  if(!dragging)return;dragging=false;card.classList.remove("drag");
+  const it=ITEMS[idx];
+  if(dx>90&&!it.pair){decide("OK");}
+  else if(dx<-90){decide("NG");}
+  else{card.style.transform="";card.querySelectorAll(".stamp").forEach(s=>s.style.opacity=0);}
+}
+function decide(v,note){
+  if(idx>=ITEMS.length)return;
+  const it=ITEMS[idx];const k=itemKey(it);
+  st[k]={v:v,t:it.t};if(note)st[k].note=note;
+  if(it.pair){st[k].a=it.pair[0];st[k].b=it.pair[1];}
+  history.push(k);save();
+  if(card){const dir=(v==="OK"||v==="A"||v==="B")?1:(v==="NG"?-1:0);card.style.transform="translate("+dir*window.innerWidth+"px,-40px) rotate("+dir*20+"deg)";card.style.opacity=0;}
+  idx++;setTimeout(render,180);
+}
+function undo(){
+  if(!history.length)return;
+  const k=history.pop();delete st[k];save();
+  idx=ITEMS.findIndex(it=>itemKey(it)===k);render();
+}
+function openFix(){if(idx>=ITEMS.length)return;const k=itemKey(ITEMS[idx]);document.getElementById("fixnote").value=(st[k]&&st[k].note)||"";document.getElementById("ov").classList.add("on");}
+function closeFix(){document.getElementById("ov").classList.remove("on");}
+function saveFix(){const n=document.getElementById("fixnote").value.trim();closeFix();decide("FIX",n||"(コメントなし)");}
+function finish(){
+  const c={};Object.keys(st).forEach(k=>{if(!k.startsWith("_"))c[st[k].v]=(c[st[k].v]||0)+1;});
+  const adopt=(c.OK||0)+(c.A||0)+(c.B||0);
+  document.getElementById("counts").innerHTML="◎採用 "+adopt+"　✗不採用 "+(c.NG||0)+"　✏修正 "+(c.FIX||0);
+  document.getElementById("done").classList.add("on");
+}
+function copyResult(btn){
+  // 軽量書き出し: tを落としv(+note/pair)だけ=チャット貼り付けの文字数上限対策(2026-07-13/227体で切れた)
+  const ans={};Object.keys(st).forEach(k=>{if(k.startsWith("_"))return;const e=st[k];
+    if(e.note||e.a){const o={v:e.v};if(e.note)o.note=e.note;if(e.a){o.a=e.a;o.b=e.b;}ans[k]=o;}
+    else ans[k]=e.v;});
+  const out={sheet:SHEET,answers:ans};const txt=JSON.stringify(out);
+  const dump=document.getElementById("dump");dump.style.display="block";dump.value=txt;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{btn.textContent="コピーしました ✓";},()=>{btn.textContent="下の欄を長押しでコピー";});
+  }else{btn.textContent="下の欄を長押しでコピー";}
+}
+render();
+</script>
+</body>
+</html>
