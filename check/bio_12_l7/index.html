@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>u_bio_12 L7試作版(refutation3拍子+自己説明)</title>
+<style>
+:root{--bg:#12151c;--card:#1c2230;--ink:#e8ecf5;--sub:#9aa5b8;--gold:#e7b34c;--ok:#3dbb7c;--warn:#e0a83a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Yu Gothic UI","Hiragino Sans",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{position:sticky;top:0;background:#12151cee;padding:10px 14px;border-bottom:1px solid #2a3245;z-index:5}
+.bar{height:8px;background:#2a3245;border-radius:4px;overflow:hidden;margin-top:6px}
+.bar>div{height:100%;background:var(--gold);width:0%;transition:width .25s}
+.hrow{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub)}
+main{flex:1;display:flex;justify-content:center;padding:14px}
+.stage{width:100%;max-width:640px}
+.unitcard,.card{background:var(--card);border:1px solid #2a3245;border-radius:14px;padding:18px 16px;margin-bottom:10px}
+.uid{color:var(--gold);font-size:13px;letter-spacing:.04em}
+h2{font-size:18px;margin:4px 0 2px}
+.meta{color:var(--sub);font-size:12px;margin-bottom:8px}
+.q{background:#232c40;border-left:4px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 12px;margin:7px 0;font-size:16.5px;line-height:1.75}
+.li{padding:7px 4px;font-size:15.5px;line-height:1.7;border-bottom:1px dashed #2a3245}
+.ctx{color:var(--sub);font-size:12.5px;line-height:1.6;margin-top:10px;border-top:1px solid #2a3245;padding-top:8px}
+.ctx .q,.ctx .li{background:none;border:none;font-size:12.5px;padding:2px 0;color:var(--sub)}
+.btns{display:flex;gap:8px;margin-top:14px}
+.btns button{flex:1;padding:14px 4px;font-size:15px;border:none;border-radius:12px;color:#fff;font-weight:700;cursor:pointer}
+.b-ok{background:var(--ok)}.b-warn{background:var(--warn);color:#241a03}.b-skip{background:#39415552}
+.b-yes{background:var(--ok)}.b-no{background:#c75454}
+.tags{display:none;margin-top:10px;gap:6px;flex-wrap:wrap}
+.tags.open{display:flex}
+.tag{padding:8px 10px;border-radius:20px;border:1px solid var(--gold);color:var(--gold);font-size:13px;cursor:pointer;background:none}
+.tag.on{background:var(--gold);color:#241a03;font-weight:700}
+textarea{width:100%;margin-top:8px;background:#101420;color:var(--ink);border:1px solid #2a3245;border-radius:8px;padding:10px;font-size:15px;min-height:64px;display:none}
+textarea.open{display:block}
+.send{display:none;margin-top:8px;width:100%;padding:12px;border:none;border-radius:12px;background:var(--gold);color:#241a03;font-weight:700;font-size:15px;cursor:pointer}
+.send.open{display:block}
+.nav{display:flex;justify-content:space-between;margin-top:4px}
+.nav button{background:none;border:none;color:var(--sub);font-size:14px;padding:10px;cursor:pointer}
+.big{font-size:22px;font-weight:800;margin:6px 0}
+.done{white-space:pre-wrap;background:#101420;border:1px solid #2a3245;border-radius:8px;padding:10px;font-size:12px;max-height:200px;overflow:auto;margin-top:10px}
+.exbtn{width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-size:16px;margin-top:10px;cursor:pointer}
+.summary{color:var(--sub);font-size:14px;line-height:1.9}
+.col{margin:9px 0;border:1px dashed var(--gold);border-radius:10px;background:#1a2130;overflow:hidden}
+.col>summary{list-style:none;cursor:pointer;padding:11px 13px;color:var(--gold);font-weight:700;font-size:14.5px}
+.col>summary::-webkit-details-marker{display:none}
+.col>summary::before{content:"▸ ";}
+.col[open]>summary::before{content:"▾ ";}
+.colbody{padding:2px 13px 12px}
+.colbody .q{background:#12161f;border-left-color:#5a6b8c;font-size:15px}
+</style></head><body>
+<header>
+  <div class="hrow"><span id="htitle">u_bio_12 L7試作版(refutation3拍子+自己説明)</span><span id="hcount"></span></div>
+  <div class="bar"><div id="hbar"></div></div>
+</header>
+<main><div class="stage" id="stage"></div></main>
+<script>
+const ITEMS = [{"type": "unit", "uid": "u_bio_12", "name": "刺激と反応", "n": 11, "nc": 4}, {"type": "card", "uid": "u_bio_12", "id": "u_bio_12-R", "title": "レディネスチェック", "meta": "", "screenHtml": "<div class=\"li\">- 【12-R1】[新規] つぎのうち、音を聞き取る体の部分はどれか。 → <b>耳</b>（選: 目／耳／鼻／舌）</div>\n<div class=\"li\">- 【12-R2】[新規] 熱いなべにうっかりさわったとき、その「熱さ」を感じ取る体の部分はどれか。 → <b>皮ふ</b>（選: 皮ふ／かみの毛／つめ／ほね）</div>\n<div class=\"q\">つまずいたときの誘いコピー（弱点表示ではなく招待状のトーン・第2.5条）:</div>\n<div class=\"q\">「<b>体のどこで何を感じているか、思い出しておくと、このあとの話がつながりやすくなるよ</b>」→ 該当の教えるカードへのボタンがそっと光る</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_12", "id": "12-P1", "title": "予想（Predict）", "meta": "どれを選んでも正誤なし・「なるほど」で次へ／図: cimg/u_bio_12/p1_hot_pot.png（新規AI・熱いなべに手がふれる瞬間の場面／答え＝経路は見せない）", "screenHtml": "<div class=\"q\">熱いなべに、うっかり手がふれてしまった。</div>\n<div class=\"q\">すると、「あつい！」と思うより先に、手がぱっと引っこんでいる。</div>\n<div class=\"q\">ふつうは、考えてから体を動かすはずなのに。</div>\n<div class=\"q\">なんで、考える前に動けるんだろう？</div>\n<div class=\"q\">「本当は一瞬で考えている」／「体が先に動いて、あとで気づく」／「手が自分で決めて動いている」</div>", "ctxHtml": "<div class=\"q\"></div>"}, {"type": "card", "uid": "u_bio_12", "id": "12-P2", "title": "おどろき（Observe）", "meta": "図なし（時間差の驚きは文で見せる・経路の図はたね明かし以降）", "screenHtml": "<div class=\"q\">調べてみると——じつは、手を引っこめたあとで「あつい！」と感じている。</div>\n<div class=\"q\">感じるより先に、もう体は動いていたんだ。</div>\n<div class=\"q\">「あつい」と気づく場所（脳）まで信号がとどくのを、待っていない。</div>\n<div class=\"q\">なのに、ちゃんと手は引っこんでいる。信号は、どこを通っているんだろう？</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_12", "id": "12-P3", "title": "たね明かし（Explain）", "meta": "", "screenHtml": "<div class=\"q\">外からのしげき（熱・光・音など）を<b>刺激</b>という。刺激は、目や耳や皮ふで受け取られ、<b>神経</b>を通って信号として伝わる。</div>\n<div class=\"q\">ふだんの反応は、信号が脳まで行って、脳で判断してから命令が出る——という遠回り。</div>\n<div class=\"q\">でも、とっさに手を引っこめるときは、信号が脳まで行かず、<b>脊髄（せきずい）</b>で折り返す近道を通る。脳の判断を待たないから、速い。これを<b>反射</b>という。</div>\n<div class=\"q\">「考えてから動く」と思っていたのに——体には、考えるより先に動く近道があったんだ。</div>", "ctxHtml": "<div class=\"li\">---</div>"}, {"type": "card", "uid": "u_bio_12", "id": "12-T1", "title": "感覚器官——刺激を受け取る入口", "meta": "（種別: 概念／図: card_sense_organs.png 新規・カードサイズ＝目・耳・鼻・舌・皮ふと、受け取る刺激の対応・印なし）", "screenHtml": "<div class=\"q\">外からの刺激を受け取る体の部分を、まとめて<b>感覚器官（かんかくきかん）</b>という。</div>\n<div class=\"q\">目は光を、耳は音を、鼻はにおいを、舌は味を受け取る。皮ふは、温度やいたみ、ふれた感じを受け取る。</div>\n<div class=\"q\">感覚器官ごとに、受け取れる刺激が決まっているんだ。</div>\n<div class=\"q\">どの感覚器官も、受け取った刺激をそのまま体の中へ——信号にして送り出す入口なんだ。</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_12", "id": "12-T2", "title": "神経の道——受け取る神経・命令する神経・中心", "meta": "（種別: 概念／図なし）", "screenHtml": "<div class=\"q\">受け取った刺激の信号は、<b>神経</b>という道を通って伝わる。神経には役わりのちがう2種類がある。</div>\n<div class=\"q\">感覚器官が受け取った信号を、体の中心へ伝えるのが<b>感覚神経</b>。</div>\n<div class=\"q\">中心からの命令を、筋肉へ伝えるのが<b>運動神経</b>。</div>\n<div class=\"q\">そして、信号を判断して命令を出す中心が、<b>脳と脊髄（せきずい）</b>。この2つをまとめて<b>中枢神経（ちゅうすうしんけい）</b>という。</div>\n<div class=\"q\">感覚神経で受け取り、中枢神経で判断し、運動神経で命令する。信号は、この順に流れていくんだ。</div>\n<details class=\"col\"><summary>中枢のほかの神経は？を見る</summary><div class=\"colbody\"><div class=\"q\">中枢神経（脳と脊髄）から、体のすみずみへ枝分かれして伸びていく神経を、まとめて<b>末しょう神経（まっしょうしんけい）</b>という。</div>\n<div class=\"q\">感覚神経も運動神経も、この末しょう神経のなかま。「中心（中枢）」と「そこから伸びる道（末しょう）」の2つに分けて呼んでいる、というわけ。</div></div></details>", "ctxHtml": "<div class=\"q\"></div>\n<div class=\"li\">---</div>"}, {"type": "card", "uid": "u_bio_12", "id": "12-Q1", "title": "確認クイズ・セット1（感覚器官と神経の種類の節目・3問の類題・すべて既存流用・4択）", "meta": "", "screenHtml": "<div class=\"li\">- Q1 [既存・基礎] 目や耳のように、外界からの刺激を受け取る器官を何というか。 → <b>感覚器官</b>（選: 感覚器官／運動器官／消化器官／排出器官）</div>\n<div class=\"li\">- Q2 [既存・基礎] 感覚器官で受け取った刺激の信号を中枢へ伝える神経はどれか。 → <b>感覚神経</b>（選: 感覚神経／運動神経／交感神経のみ／中枢神経）</div>\n<div class=\"li\">- Q3 [既存・基礎] 脳とせきずいをまとめて何という？ → <b>中枢神経</b>（選: 末しょう神経／感覚神経／運動神経／中枢神経）</div>", "ctxHtml": "<div class=\"li\">※3問とも「はたらきから、その器官・神経の名前を選ぶ」同型・同難度（基礎）でそろえた類題セット。似た名前の神経（感覚神経／運動神経／中枢神経／末しょう神経）を選び分けるのが本題なので4択のまま（第4.7条の例外＝内容が選び分けを要求する時）。</div>\n<div class=\"li\">※設計メモ: 3問とも既存プール（bio_human・mid＝画面表記「基礎」）の用語同定4択。感覚器官（T1）→感覚神経（T2の受け取る側）→中枢神経（T2の中心）と、カードの流れどおりに並べた。カーネルは第1セットを「入門×3」と指定するが、神経の種類を答える既存問題は基礎にしか実在しないため、同難度でそろえる原則（第4.2条）を優先し基礎×3にそろえた（§12.0調整3）。★Q2の選択肢「交感神経のみ」は、他の3つ（感覚神経／運動神経／中枢神経）と形がわずかにそろっていない（第4.6条）＝<b>DB是正候補としてオーナー確認に回す</b>（勝手に直さない・§12.5）。原稿では原文どおり引用。</div>\n<div class=\"li\">---</div>"}, {"type": "card", "uid": "u_bio_12", "id": "12-T3", "title": "意識する反応——脳を通る遠回り", "meta": "（種別: 概念／図: card_reflex_path.png 新規・上下2段の対比図の上段＝意識する反応の経路／印なし）", "screenHtml": "<div class=\"q\">ふだん、考えてする動きは、信号がこの順に流れる。</div>\n<div class=\"q\">刺激 → 感覚器官 → <b>感覚神経</b> → 脊髄 → <b>脳</b>（ここで判断する）→ 脊髄 → <b>運動神経</b> → 筋肉。</div>\n<div class=\"q\">「ボールが来た、右へよけよう」と、脳で判断してから命令が出る。</div>\n<div class=\"q\">脳まで行って、判断して、もどってくる。だからこれは、少し時間のかかる<b>遠回り</b>なんだ。</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_12", "id": "12-T4", "title": "反射——脊髄で折り返す近道", "meta": "（種別: 概念／図: card_reflex_path.png 新規・同じ図の下段＝反射の経路／印なし）", "screenHtml": "<div class=\"q\">ところが、熱いものに手がふれたときは、ちがう道を通る。</div>\n<div class=\"q\">刺激 → 感覚器官 → 感覚神経 → <b>脊髄（ここで折り返す）</b> → 運動神経 → 筋肉。</div>\n<div class=\"q\">信号が<b>脳まで行かず、脊髄で折り返して</b>命令が出る。だから、考えるより先に手が引っこむ。</div>\n<div class=\"q\">このような、意識とは関係なく起こるすばやい反応を<b>反射</b>という。脳を通らない近道だから、速いんだ。</div>\n<details class=\"col\"><summary>なんで脳を通さない近道があるの？を見る</summary><div class=\"colbody\"><div class=\"q\">熱いものにふれたとき、脳で「あつい」と判断してから命令を出していたら、そのあいだにやけどしてしまう。</div>\n<div class=\"q\">脊髄で折り返す近道なら、脳の判断を待たずに、一瞬で手を引っこめられる。</div>\n<div class=\"q\">危ないものから体をすばやく守るための、近道——これが反射のしくみだよ。</div></div></details>", "ctxHtml": "<div class=\"q\"></div>"}, {"type": "card", "uid": "u_bio_12", "id": "12-T5", "title": "ひとこと、自分で考える", "meta": "（種別: 自己説明・正誤なし・答えはタップで開く／図なし）※L7＝自己説明。生徒が理由を自分の言葉で作る機会（初学者向けにヒントの足場つき・憲法第4.9条）", "screenHtml": "<div class=\"q\">反射は、意識する反応より<b>ずっと速い</b>。なんで速いんだろう——<b>自分の言葉で言ってみて</b>。</div>\n<div class=\"q\">（ヒント: 信号は「脳まで行く」？ それとも「脊髄で折り返す」？ さっきの近道を思い出して）</div>\n<details class=\"col\"><summary>自分で言えたら、答えを見る</summary><div class=\"colbody\"><div class=\"q\"><b>脳まで行かず、脊髄で折り返す近道</b>だから速い。脳の判断を待たないぶん、時間が短くてすむ。</div>\n<div class=\"q\">頭の中で「脳を通らないから」と言えていたら、このしくみはもうバッチリだ。</div></div></details>", "ctxHtml": "<div class=\"q\"></div>"}, {"type": "card", "uid": "u_bio_12", "id": "12-Q2", "title": "確認クイズ・セット2（反応と反射の節目・3問の類題・4択）", "meta": "", "screenHtml": "<div class=\"li\">- Q1 [既存・基礎] 熱いものに思わず手を引っこめるような、意識とは関係なく起こるすばやい反応を何といいますか。 → <b>反射</b>（選: 感覚／反射／記憶／意識的な反応）</div>\n<div class=\"li\">- Q2 [既存・基礎] 熱いものに思わず手を引っこめる反射で、命令の信号を出す中枢はおもにどこですか。 → <b>せきずい</b>（選: 小脳／延髄／せきずい／大脳）</div>\n<div class=\"li\">- Q3 [新規] つぎのうち、反射にあてはまるのはどれか。 → <b>こんろの火にうっかりふれて、思わず手を引っこめる</b>（選: こんろの火にうっかりふれて、思わず手を引っこめる／青信号を見て、横断歩道をわたる／名前をよばれて、声のほうをふり向く／とけいを見て、時こくを読み取る）</div>", "ctxHtml": "<div class=\"li\">※この節目は少し難しめ。冒頭に <b>「今回は少し難しめ！ がんばって！」</b> を表示（第4.7条）。3問とも「反射とはどんな反応か・その信号はどこで折り返すか」を問う同型・同難度（基礎）。反射と意識する反応を区別するのが本題なので4択。</div>\n<div class=\"li\">※設計メモ: Q1（反射という名前）→Q2（折り返す中枢＝せきずい）と、既存の基礎2問で「何が・どこで」を確かめる。Q3は「反射の例を選ぶ」＝カーネル指定の同型だがプールに実在しないため[新規]（カーネル「同型が薄ければ新規×1〜2」指定どおり）。Q3の3つの誤答は、どれも脳で判断してからする<b>意識的な反応</b>で、答えだけが<b>反射</b>（単一の明確な区別・第4.6条）。選択肢はすべて「〜する」場面の形にそろえた。答えの並びはQ1=反射（2番目）・Q2=せきずい（3番目）・Q3=1番目でカンの偏りを避けた。Q2の既存選択肢「延髄」は反射に関わる中枢の一つだが、東書の本文が「せきずい」を反射の代表中枢として扱うためそのまま採用（原文引用）。</div>\n<div class=\"li\">---</div>"}, {"type": "check", "uid": "u_bio_12", "id": "u_bio_12-確認1", "textHtml": "<b>【12-Q1】Q2 の選択肢「交感神経のみ」のDB是正</b>: 他の3つ（感覚神経／運動神経／中枢神経）が「○○神経」の名前なのに、1つだけ「交感神経のみ」と“のみ”がついて形がそろわない（第4.6条＝異質な選択肢は消去法で解けてしまう）。また交感神経は中学の範囲を超える語。<b>「運動神経」等の素直な神経名に是正してよいか</b>（GOが出たらDB→引用原稿を同期。出るまでは原文のまま）。"}, {"type": "check", "uid": "u_bio_12", "id": "u_bio_12-確認2", "textHtml": "<b>レディネスを[新規]日常2問にした判断</b>: 既存プールの下位diff問はほぼ「感覚器官」を答えにする問題で、T1で初めて教える語の先渡しになる（第5条）。そこで語を出さない日常2問（耳・皮ふ）に置きかえた。<b>この方針でよいか</b>（既存流用にこだわらず、先渡し回避を優先した）。"}, {"type": "check", "uid": "u_bio_12", "id": "u_bio_12-確認3", "textHtml": "<b>確認クイズを2セットとも基礎（mid）でそろえた判断</b>: カーネルは第1セットを「入門」指定だが、神経の種類を答える既存問題は基礎にしか無く、同難度そろえ（第4.2条）を優先して基礎×3にした。<b>問題ないか</b>。"}, {"type": "check", "uid": "u_bio_12", "id": "u_bio_12-確認4", "textHtml": "<b>図版</b>: card_reflex_path（意識する反応＝脳を通る遠回り／反射＝脊髄で折り返す近道の上下対比・矢印つき・印なし）を matplotlib で新規作成予定（数値でなく経路の向きが意味を持つ図＝第7条の自作①）。P1の場面図（熱いなべに手）とT1の対応図はイメージ寄り＝AI生成／matplotlibの候補。<b>この3枚で過不足ないか</b>（落とす図があればご指示を）。 ---"}];
+const KEY = "rika2_review_" + "u_bio_12 L7\u8a66\u4f5c\u7248(refutation3\u62cd\u5b50+\u81ea\u5df1\u8aac\u660e)";
+let res = {}; try{ res = JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){}
+let pos = +(localStorage.getItem(KEY+"_pos")||0);
+const tappable = ITEMS.filter(i=>i.type!=="unit").length;
+function save(){ localStorage.setItem(KEY, JSON.stringify(res)); localStorage.setItem(KEY+"_pos", pos); }
+function doneCount(){ return Object.keys(res).length; }
+function header(){
+  document.getElementById("hcount").textContent = doneCount()+" / "+tappable;
+  document.getElementById("hbar").style.width = (100*doneCount()/tappable)+"%";
+}
+function go(d){ pos=Math.max(0,Math.min(ITEMS.length,pos+d)); save(); render(); window.scrollTo(0,0); }
+function mark(id, verdict){
+  const t=[...document.querySelectorAll(".tag.on")].map(x=>x.textContent);
+  const note=(document.getElementById("note")||{}).value||"";
+  res[id]={v:verdict,tags:t,note:note}; save(); go(1);
+}
+function render(){
+  header();
+  const st=document.getElementById("stage");
+  if(pos>=ITEMS.length){ st.innerHTML=exportView(); return; }
+  const it=ITEMS[pos];
+  const nav='<div class="nav"><button onclick="go(-1)">← まえへ</button><button onclick="go(1)">とばす →</button></div>';
+  if(it.type==="unit"){
+    st.innerHTML='<div class="unitcard"><div class="uid">'+it.uid+'</div><div class="big">'+it.name+'</div>'+
+    '<div class="summary">カード '+it.n+'枚 ＋ 確認 '+it.nc+'件。<br>読む→ピンとくれば ◎OK、引っかかれば ✏。<br>迷ったら ⏭あとで（いつでも戻れる）。</div>'+
+    '<div class="btns"><button class="b-ok" onclick="go(1)">はじめる</button></div></div>'+nav;
+    return;
+  }
+  const prev=res[it.id];
+  const badge=prev?('<span style="color:var(--gold)">［回答済: '+prev.v+'］</span>'):'';
+  if(it.type==="card"){
+    st.innerHTML='<div class="card"><div class="uid">'+it.uid+'｜【'+it.id+'】'+badge+'</div>'+
+    '<h2>'+it.title+'</h2><div class="meta">'+it.meta+'</div>'+ it.screenHtml +
+    (it.ctxHtml?('<div class="ctx">'+it.ctxHtml+'</div>'):'')+
+    '<div class="btns">'+
+    '<button class="b-ok" onclick="mark(\''+it.id+'\',\'OK\')">◎ OK</button>'+
+    '<button class="b-warn" onclick="openWarn()">✏ 気になる</button>'+
+    '<button class="b-skip" onclick="mark(\''+it.id+'\',\'あとで\')">⏭</button></div>'+
+    '<div class="tags" id="tags">'+
+    ['ことばが大人','ことばが幼い','教室でこう言わない','理科的にあやしい','長い','その他']
+      .map(t=>'<button class="tag" onclick="this.classList.toggle(\'on\')">'+t+'</button>').join('')+'</div>'+
+    '<textarea id="note" placeholder="ひとこと（任意・1語でもOK）"></textarea>'+
+    '<button class="send" id="send" onclick="mark(\''+it.id+'\',\'気になる\')">この内容で送る</button>'+nav;
+  } else {
+    st.innerHTML='<div class="card"><div class="uid">'+it.uid+'｜確認 '+badge+'</div>'+
+    '<div class="q">'+it.textHtml+'</div>'+
+    '<div class="btns">'+
+    '<button class="b-yes" onclick="mark(\''+it.id+'\',\'はい\')">はい</button>'+
+    '<button class="b-no" onclick="mark(\''+it.id+'\',\'いいえ\')">いいえ</button>'+
+    '<button class="b-skip" onclick="mark(\''+it.id+'\',\'あとで\')">⏭</button></div>'+
+    '<textarea id="note" class="open" placeholder="補足（任意）"></textarea>'+nav;
+  }
+}
+function openWarn(){
+  document.getElementById("tags").classList.add("open");
+  document.getElementById("note").classList.add("open");
+  document.getElementById("send").classList.add("open");
+}
+function exportView(){
+  const out={sheet:"u_bio_12 L7\u8a66\u4f5c\u7248(refutation3\u62cd\u5b50+\u81ea\u5df1\u8aac\u660e)",done:doneCount(),total:tappable,answers:res};
+  const s=JSON.stringify(out,null,1);
+  const warn=Object.entries(res).filter(([k,v])=>v.v==="気になる"||v.v==="いいえ").length;
+  const esc=s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  return '<div class="unitcard"><div class="big">おつかれさまでした 🎉</div>'+
+  '<div class="summary">回答 '+doneCount()+'/'+tappable+'（✏気になる・いいえ: '+warn+'件）<br>'+
+  '<b>下の枠の中身が結果のすべて</b>です。「📋 結果をコピー」→ Claudeに貼り付けで回収完了。<br>'+
+  '<span style="color:var(--warn)">※このHTMLファイル自体には回答は保存されません（回答はこのブラウザの中）。必ずコピーか💾で外に出してください。</span></div>'+
+  '<button class="exbtn" style="background:var(--gold);color:#241a03" onclick="navigator.clipboard.writeText(document.getElementById(\'exp\').value).then(()=>this.textContent=\'✓ コピーしました（Claudeに貼ってください）\')">📋 結果をコピー</button>'+
+  '<button class="exbtn" style="background:#2a3245;color:#e8ecf5" onclick="dl()">💾 review_result.json で保存</button>'+
+  '<textarea id="exp" class="open done" readonly>'+esc+'</textarea>'+
+  '<div class="nav"><button onclick="go(-1)">← もどる</button><button onclick="pos=0;go(0)">最初から見直す</button></div></div>';
+}
+function dl(){
+  const b=new Blob([document.getElementById("exp").value],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(b);
+  a.download="review_result.json"; a.click();
+}
+render();
+</script></body></html>
