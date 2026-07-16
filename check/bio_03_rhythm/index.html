@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>u_bio_03 認知リズム実験版(進行実況を削った稿)</title>
+<style>
+:root{--bg:#12151c;--card:#1c2230;--ink:#e8ecf5;--sub:#9aa5b8;--gold:#e7b34c;--ok:#3dbb7c;--warn:#e0a83a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Yu Gothic UI","Hiragino Sans",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{position:sticky;top:0;background:#12151cee;padding:10px 14px;border-bottom:1px solid #2a3245;z-index:5}
+.bar{height:8px;background:#2a3245;border-radius:4px;overflow:hidden;margin-top:6px}
+.bar>div{height:100%;background:var(--gold);width:0%;transition:width .25s}
+.hrow{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub)}
+main{flex:1;display:flex;justify-content:center;padding:14px}
+.stage{width:100%;max-width:640px}
+.unitcard,.card{background:var(--card);border:1px solid #2a3245;border-radius:14px;padding:18px 16px;margin-bottom:10px}
+.uid{color:var(--gold);font-size:13px;letter-spacing:.04em}
+h2{font-size:18px;margin:4px 0 2px}
+.meta{color:var(--sub);font-size:12px;margin-bottom:8px}
+.q{background:#232c40;border-left:4px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 12px;margin:7px 0;font-size:16.5px;line-height:1.75}
+.li{padding:7px 4px;font-size:15.5px;line-height:1.7;border-bottom:1px dashed #2a3245}
+.ctx{color:var(--sub);font-size:12.5px;line-height:1.6;margin-top:10px;border-top:1px solid #2a3245;padding-top:8px}
+.ctx .q,.ctx .li{background:none;border:none;font-size:12.5px;padding:2px 0;color:var(--sub)}
+.btns{display:flex;gap:8px;margin-top:14px}
+.btns button{flex:1;padding:14px 4px;font-size:15px;border:none;border-radius:12px;color:#fff;font-weight:700;cursor:pointer}
+.b-ok{background:var(--ok)}.b-warn{background:var(--warn);color:#241a03}.b-skip{background:#39415552}
+.b-yes{background:var(--ok)}.b-no{background:#c75454}
+.tags{display:none;margin-top:10px;gap:6px;flex-wrap:wrap}
+.tags.open{display:flex}
+.tag{padding:8px 10px;border-radius:20px;border:1px solid var(--gold);color:var(--gold);font-size:13px;cursor:pointer;background:none}
+.tag.on{background:var(--gold);color:#241a03;font-weight:700}
+textarea{width:100%;margin-top:8px;background:#101420;color:var(--ink);border:1px solid #2a3245;border-radius:8px;padding:10px;font-size:15px;min-height:64px;display:none}
+textarea.open{display:block}
+.send{display:none;margin-top:8px;width:100%;padding:12px;border:none;border-radius:12px;background:var(--gold);color:#241a03;font-weight:700;font-size:15px;cursor:pointer}
+.send.open{display:block}
+.nav{display:flex;justify-content:space-between;margin-top:4px}
+.nav button{background:none;border:none;color:var(--sub);font-size:14px;padding:10px;cursor:pointer}
+.big{font-size:22px;font-weight:800;margin:6px 0}
+.done{white-space:pre-wrap;background:#101420;border:1px solid #2a3245;border-radius:8px;padding:10px;font-size:12px;max-height:200px;overflow:auto;margin-top:10px}
+.exbtn{width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-size:16px;margin-top:10px;cursor:pointer}
+.summary{color:var(--sub);font-size:14px;line-height:1.9}
+.col{margin:9px 0;border:1px dashed var(--gold);border-radius:10px;background:#1a2130;overflow:hidden}
+.col>summary{list-style:none;cursor:pointer;padding:11px 13px;color:var(--gold);font-weight:700;font-size:14.5px}
+.col>summary::-webkit-details-marker{display:none}
+.col>summary::before{content:"▸ ";}
+.col[open]>summary::before{content:"▾ ";}
+.colbody{padding:2px 13px 12px}
+.colbody .q{background:#12161f;border-left-color:#5a6b8c;font-size:15px}
+</style></head><body>
+<header>
+  <div class="hrow"><span id="htitle">u_bio_03 認知リズム実験版(進行実況を削った稿)</span><span id="hcount"></span></div>
+  <div class="bar"><div id="hbar"></div></div>
+</header>
+<main><div class="stage" id="stage"></div></main>
+<script>
+const ITEMS = [{"type": "unit", "uid": "u_bio_03", "name": "葉・根のつくり、種子をつくらない植物", "n": 11, "nc": 3}, {"type": "card", "uid": "u_bio_03", "id": "u_bio_03-R", "title": "レディネスチェック", "meta": "", "screenHtml": "<div class=\"li\">- 【03-R1】[既存・入門] 花のつくりを外側から順に正しく並べたものはどれか。 → <b>がく→花弁→おしべ→めしべ</b>（選: めしべ→おしべ→花弁→がく／花弁→がく→おしべ→めしべ／がく→花弁→おしべ→めしべ／おしべ→めしべ→花弁→がく）</div>\n<div class=\"li\">- 【03-R2】[既存・入門] 受粉したあと、成長して果実になる部分はどれか。 → <b>子房</b>（選: やく／柱頭／花弁／子房）</div>\n<div class=\"li\">- 【03-R3】[既存・入門] 受粉したあと、成長して種子になる部分はどれか。 → <b>胚珠</b>（選: 胚珠／子房／がく／やく）</div>\n<div class=\"q\">つまずいたときの誘いコピー（弱点表示ではなく招待状のトーン・憲法第2.5条・2.6条）:</div>\n<div class=\"q\">「<b>花のつくりを見なおしておくと、このあとの「種子をつくらない植物」の話がくっきりするよ</b>」→ 該当の教えるカードへのボタンがそっと光る</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_03", "id": "03-P1", "title": "予想（Predict）", "meta": "どれを選んでも正誤なし・「なるほど」で次へ ※図: cimg/u_bio_03/p1_moss_fern.png（ジメジメした所に生えるコケとシダの場面イメージ・答えは写さない）", "screenHtml": "<div class=\"q\">タンポポやサクラは、花をさかせ、種子（たね）で仲間をふやす。</div>\n<div class=\"q\">でも、じめじめした所に生えるコケやシダを見ると、コケはほかの植物よりずっと小さく、花らしいものも見あたらない。</div>\n<div class=\"q\">こんなに小さなコケや、シダのなかまも、やっぱり種子をつくって仲間をふやしているのかな？　それとも、種子とはちがう、別のやり方でふえているんだろうか。</div>\n<div class=\"q\">「種子をつくってふえる」／「種子はなく、別のやり方でふえる」／「花をさかせて種子をつくる」</div>", "ctxHtml": "<div class=\"q\"></div>"}, {"type": "card", "uid": "u_bio_03", "id": "03-P2", "title": "おどろき（Observe）", "meta": "図: cimg/u_bio_03/p2_spore_sori.png（シダの葉の裏についた粒々＝胞子のうの拡大イメージだけ。しくみの説明・ラベルは載せない）", "screenHtml": "<div class=\"q\">コケにもシダにも、種子はないんだ。花もさかない。</div>\n<div class=\"q\">かわりに、シダの葉の裏を見ると、こまかい粉のような小さなつぶがびっしりついている。</div>\n<div class=\"q\">このつぶをまき散らして、コケやシダは仲間をふやしている。</div>\n<div class=\"q\">種子がなくても、ちゃんとふえる、別のやり方を持っているんだ。</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_03", "id": "03-P3", "title": "たね明かし（Explain）", "meta": "", "screenHtml": "<div class=\"q\">この、粉のような小さなつぶを<b>胞子（ほうし）</b>という。</div>\n<div class=\"q\">植物には、種子で仲間をふやす仲間（<b>種子植物</b>）と、種子をつくらず胞子でふえる仲間（シダ・コケ）がいる。</div>\n<div class=\"q\">シダ・コケは、花もさかず、種子もつくらない。かわりに胞子でふえる。</div>\n<div class=\"q\">では、その胞子とは何なのか。まずは、植物の体——葉と根のつくり——から見ていこう。</div>", "ctxHtml": "<div class=\"li\">---</div>"}, {"type": "card", "uid": "u_bio_03", "id": "03-T1", "title": "葉のつくり——葉脈と気孔", "meta": "（種別: 概念／図: card_leaf.png 新規・カードサイズ＝葉に通るすじ（葉脈）と、葉の裏の小さな穴（気孔）＋それを囲む孔辺細胞の位置だけ・印なし）", "screenHtml": "<div class=\"q\">葉をよく見ると、すじがたくさん通っている。</div>\n<div class=\"q\">このすじを<b>葉脈（ようみゃく）</b>という。中に、水や養分の通り道が通っているんだ。</div>\n<div class=\"q\">それから、葉の裏には、目に見えないくらい小さな穴がたくさんあいている。</div>\n<div class=\"q\">この穴を<b>気孔（きこう）</b>という。ここから、水蒸気や気体が出入りするんだ。気孔は、葉の表より<b>裏に多い</b>。</div>\n<div class=\"q\">気孔のまわりには、三日月のような形をした<b>孔辺細胞（こうへんさいぼう）</b>が2つある。この2つがふくらんだり縮んだりして、気孔をあけたり閉じたりしているんだ。</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_03", "id": "03-T2", "title": "根のつくり——根毛と、2つのタイプ", "meta": "（種別: 概念／図: card_root.png 新規・カードサイズ＝根の先の細い毛（根毛）と、根の形が2タイプあることだけ・印なし・分類名は書かない）", "screenHtml": "<div class=\"q\">根の先を虫めがねで見ると、細い毛がたくさん生えている。</div>\n<div class=\"q\">この毛を<b>根毛（こんもう）</b>という。根毛が土のすき間に入りこんで、水を吸っているんだ。</div>\n<div class=\"q\">毛がたくさんあるぶん、土とふれる面が広くなって、水を吸いやすい。</div>\n<div class=\"q\">それから、根の形をくらべると、大きく2つのタイプがある。太い1本の根から細い根が出るタイプと、細い根が同じくらいの太さでたくさん広がるタイプ。この形のちがいは、あとで植物をなかま分けするときの、大きな手がかりになる。</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_03", "id": "03-Q1", "title": "確認クイズ・セット1（葉・根のつくりの節目・4択の類題3問）", "meta": "", "screenHtml": "<div class=\"li\">- Q1 [既存・入門] 葉に見られる、すじのように通っている維管束の通り道を何というか。 → <b>葉脈</b>（選: 根毛／子房／葉脈／気孔）</div>\n<div class=\"li\">- Q2 [新規] 根の先にたくさん生えていて、水を吸うのに役立つ細い毛を何というか。 → <b>根毛</b>（選: 根毛／葉脈／気孔／子房）</div>\n<div class=\"li\">- Q3 [新規] 葉の裏に多くあって、水蒸気や気体が出入りする小さな穴を何というか。 → <b>気孔</b>（選: 気孔／根毛／葉脈／胚珠）</div>", "ctxHtml": "<div class=\"li\">※3問とも「葉・根のつくりの名前を選び分ける」同型・同難度（入門）でそろえた類題セット。似たつくりの名前の中から正しいものを選ぶのが本題なので4択のまま（憲法4.7条の例外＝内容が選び分けを要求する時。u_bio_08【08-Q1】と同じ判断）。</div>\n<div class=\"li\">※設計メモ: Q1は既存プール（bio_plant・junior・行169）を原文どおり引用。Q2（根毛）・Q3（気孔）は既存に同難度・同形式の入門4択がそろわず（根毛の既存は行180＝mid、気孔の既存は行164＝選択肢に説明つき/なしが混じり第4.6条の「異質な選択肢」に触れる）、Q1と同じ「◯◯を何というか」の単語えらび4択で[新規]をそろえた（第4.2条）。選択肢は葉脈・根毛・気孔・子房・胚珠という同じつくり語のプールから引き、品詞・長さをそろえた（第4.6条）。答えの並びは葉脈・根毛・気孔でカンの偏りを避けた。</div>\n<div class=\"li\">---</div>"}, {"type": "card", "uid": "u_bio_03", "id": "03-T3", "title": "種子をつくらない植物——シダとコケ", "meta": "（種別: 概念／図なし・P1/P2で実物は見せた）", "screenHtml": "<div class=\"q\">世の中の植物が、ぜんぶ種子で仲間をふやすわけじゃない。</div>\n<div class=\"q\">シダ（イヌワラビなど）やコケ（ゼニゴケなど）は、<b>花もさかず、種子もつくらない</b>。</div>\n<div class=\"q\">タンポポやサクラのように、めしべ・おしべ・子房・胚珠があって種子ができる——そういうつくりを、そもそも持っていないんだ。</div>\n<div class=\"q\">じゃあ、種子がないのに、どうやって仲間をふやしているんだろう。</div>", "ctxHtml": ""}, {"type": "card", "uid": "u_bio_03", "id": "03-T4", "title": "かわりに胞子でふえる", "meta": "（種別: 概念／図: card_spore_plant.png 新規・カードサイズ＝シダの胞子のうから胞子がとび出す流れ・コケの胞子のうも並べる・花粉や種子とは分けて描く・印なし）", "screenHtml": "<div class=\"q\">答えが、導入で見た<b>胞子（ほうし）</b>。</div>\n<div class=\"q\">シダは、葉の裏にある<b>胞子のう</b>という小さなふくろの中で胞子をつくる。ふくろがはじけて、胞子が飛び散る。</div>\n<div class=\"q\">コケも、細い柄の先にある胞子のうから胞子をとばす。</div>\n<div class=\"q\">飛んだ胞子が、しめった地面に落ちて育つと、また新しいシダやコケになる。</div>\n<div class=\"q\">種子植物は種子で、シダ・コケは胞子で——<b>ふえ方がちがう</b>、というのが、植物の仲間を見分ける大事な目じるしになるんだ。</div>\n<details class=\"col\"><summary>胞子と種子って、どうちがうの？</summary><div class=\"colbody\"><div class=\"q\">胞子も種子も、どちらも小さなつぶ。同じものに見えるけれど、中身がぜんぜんちがう。</div>\n<div class=\"q\">種子には、芽が出るときの養分（お弁当のような部分）が入っている。だから種子は少し大きくて重く、数はそれほど多くない。</div>\n<div class=\"q\">胞子には、その養分がない。目に見えないくらい小さくて軽く、風にのって遠くまで飛んでいく。そのぶん、いちどにたくさんつくって、たくさん飛ばす作戦なんだ。</div>\n<div class=\"q\">お弁当を持たせて少なく送り出すのが種子、身軽にして数で勝負するのが胞子。ふやし方の作戦がちがうんだ。</div></div></details>", "ctxHtml": "<div class=\"q\"></div>"}, {"type": "card", "uid": "u_bio_03", "id": "03-Q2", "title": "確認クイズ・セット2（種子をつくらない植物・胞子の節目・4択の類題3問）", "meta": "", "screenHtml": "<div class=\"li\">- Q1 [既存・入門] 次のうち、種子をつくらず胞子でふえる植物はどれか。 → <b>イヌワラビ</b>（選: イヌワラビ／エンドウ／イチョウ／アブラナ）</div>\n<div class=\"li\">- Q2 [新規] 次のうち、種子をつくらず胞子でふえる植物はどれか。 → <b>ゼニゴケ</b>（選: ゼニゴケ／サクラ／マツ／タンポポ）</div>\n<div class=\"li\">- Q3 [新規] シダやコケが、種子のかわりに、まき散らして仲間をふやすつぶを何というか。 → <b>胞子</b>（選: 胞子／種子／花粉／果実）</div>", "ctxHtml": "<div class=\"li\">※3問とも「種子をつくらず胞子でふえる植物・胞子」を問う同型・同難度（入門）の類題セット。</div>\n<div class=\"li\">※設計メモ: Q1は既存プール（bio_plant・junior・行159）を原文どおり引用（シダの例＝イヌワラビ）。Q2は同型の[新規]（コケの例＝ゼニゴケ／まちがいの選択肢はすべて種子植物にそろえた）。Q3は胞子（T4の核心の語）の単語えらび4択で、選択肢を胞子・種子・花粉・果実というふえ方に関わる語でそろえた。3問とも「種子をつくらず胞子でふえる」という同じ1つの概念を、植物さがし2問＋語の確認1問で問う入門4択（第4.2条）。答えの並びはイヌワラビ・ゼニゴケ・胞子でカンの偏りを避けた。</div>\n<div class=\"li\">---</div>"}, {"type": "card", "uid": "u_bio_03", "id": "03-T5", "title": "シダとコケのちがい——体のつくりで見分ける", "meta": "（種別: 概念／図: card_fern_moss_compare.png 新規・カードサイズ＝シダ（根・茎・葉の区別あり）とコケ（区別なし・仮根）の対比・印なし）", "screenHtml": "<div class=\"q\">同じ「胞子でふえる仲間」でも、シダとコケは体のつくりがちがう。</div>\n<div class=\"q\">シダには、<b>根・茎・葉のはっきりした区別がある</b>。水や養分の通り道（維管束）も通っていて、けっこう植物らしい形をしている。</div>\n<div class=\"q\">いっぽうコケには、根・茎・葉の区別がない。根のように見える部分（仮根）はあるけれど、これはおもに体を地面にとめておくためのもの。水は、体の表面全体からしみこませて取り入れているんだ。</div>\n<div class=\"q\">ふえ方（胞子）は同じでも、体のつくりを見ると、シダとコケは見分けられる。これが、種子をつくらない植物の中の分かれ道だよ。</div>\n<details class=\"col\"><summary>もっと先の世界を見る</summary><div class=\"colbody\"><div class=\"q\">コケやシダのなかまは、じつは大むかしから地上にいる、とても古い植物。</div>\n<div class=\"q\">まだ地上に花も種子もなかったころ、いちばん先に陸に広がったのが、コケやシダの祖先だった。大きなシダが森をつくっていた時代もある。その森がうもれてできたのが、いまの石炭のもと。</div>\n<div class=\"q\">種子や花をつける植物が広がるのは、それよりずっとあとの話。植物がどう移りかわってきたかは、高校や、その先で待っているよ。</div></div></details>", "ctxHtml": "<div class=\"q\"></div>\n<div class=\"li\">---</div>"}, {"type": "check", "uid": "u_bio_03", "id": "u_bio_03-確認1", "textHtml": "<b>確認クイズ・セット1を4択にした判断</b>: 葉脈/根毛/気孔など、似たつくりの名前を選び分けるのが本題なので、u_bio_08【08-Q1】と同じく4択のままにしました（憲法4.7条は「既定2択・選び分けを要求する時だけ4択」）。ここは2択より4択が合っている、という判断でよいですか？"}, {"type": "check", "uid": "u_bio_03", "id": "u_bio_03-確認2", "textHtml": "<b>根の2タイプの名前を出さないこと</b>: T2で「根に2タイプの形がある」ことだけ地ならしし、主根・側根・ひげ根の名前は次の u_bio_04（分類）に回しました（カーネルnotes準拠）。この線引きでよいですか？"}, {"type": "check", "uid": "u_bio_03", "id": "u_bio_03-確認3", "textHtml": "<b>図版6枚</b>（cimg 2枚＝実物イメージ・matplotlib 4枚＝つくりの模式図）: この構成で作ってよいですか。とくに P2 の「シダの葉の裏の胞子のう」の実物イメージ（Sol生成）は、理科的に正しく見えるかを画像入りタップシートで最終確認いただきたいです。 ---"}];
+const KEY = "rika2_review_" + "u_bio_03 \u8a8d\u77e5\u30ea\u30ba\u30e0\u5b9f\u9a13\u7248(\u9032\u884c\u5b9f\u6cc1\u3092\u524a\u3063\u305f\u7a3f)";
+let res = {}; try{ res = JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){}
+let pos = +(localStorage.getItem(KEY+"_pos")||0);
+const tappable = ITEMS.filter(i=>i.type!=="unit").length;
+function save(){ localStorage.setItem(KEY, JSON.stringify(res)); localStorage.setItem(KEY+"_pos", pos); }
+function doneCount(){ return Object.keys(res).length; }
+function header(){
+  document.getElementById("hcount").textContent = doneCount()+" / "+tappable;
+  document.getElementById("hbar").style.width = (100*doneCount()/tappable)+"%";
+}
+function go(d){ pos=Math.max(0,Math.min(ITEMS.length,pos+d)); save(); render(); window.scrollTo(0,0); }
+function mark(id, verdict){
+  const t=[...document.querySelectorAll(".tag.on")].map(x=>x.textContent);
+  const note=(document.getElementById("note")||{}).value||"";
+  res[id]={v:verdict,tags:t,note:note}; save(); go(1);
+}
+function render(){
+  header();
+  const st=document.getElementById("stage");
+  if(pos>=ITEMS.length){ st.innerHTML=exportView(); return; }
+  const it=ITEMS[pos];
+  const nav='<div class="nav"><button onclick="go(-1)">← まえへ</button><button onclick="go(1)">とばす →</button></div>';
+  if(it.type==="unit"){
+    st.innerHTML='<div class="unitcard"><div class="uid">'+it.uid+'</div><div class="big">'+it.name+'</div>'+
+    '<div class="summary">カード '+it.n+'枚 ＋ 確認 '+it.nc+'件。<br>読む→ピンとくれば ◎OK、引っかかれば ✏。<br>迷ったら ⏭あとで（いつでも戻れる）。</div>'+
+    '<div class="btns"><button class="b-ok" onclick="go(1)">はじめる</button></div></div>'+nav;
+    return;
+  }
+  const prev=res[it.id];
+  const badge=prev?('<span style="color:var(--gold)">［回答済: '+prev.v+'］</span>'):'';
+  if(it.type==="card"){
+    st.innerHTML='<div class="card"><div class="uid">'+it.uid+'｜【'+it.id+'】'+badge+'</div>'+
+    '<h2>'+it.title+'</h2><div class="meta">'+it.meta+'</div>'+ it.screenHtml +
+    (it.ctxHtml?('<div class="ctx">'+it.ctxHtml+'</div>'):'')+
+    '<div class="btns">'+
+    '<button class="b-ok" onclick="mark(\''+it.id+'\',\'OK\')">◎ OK</button>'+
+    '<button class="b-warn" onclick="openWarn()">✏ 気になる</button>'+
+    '<button class="b-skip" onclick="mark(\''+it.id+'\',\'あとで\')">⏭</button></div>'+
+    '<div class="tags" id="tags">'+
+    ['ことばが大人','ことばが幼い','教室でこう言わない','理科的にあやしい','長い','その他']
+      .map(t=>'<button class="tag" onclick="this.classList.toggle(\'on\')">'+t+'</button>').join('')+'</div>'+
+    '<textarea id="note" placeholder="ひとこと（任意・1語でもOK）"></textarea>'+
+    '<button class="send" id="send" onclick="mark(\''+it.id+'\',\'気になる\')">この内容で送る</button>'+nav;
+  } else {
+    st.innerHTML='<div class="card"><div class="uid">'+it.uid+'｜確認 '+badge+'</div>'+
+    '<div class="q">'+it.textHtml+'</div>'+
+    '<div class="btns">'+
+    '<button class="b-yes" onclick="mark(\''+it.id+'\',\'はい\')">はい</button>'+
+    '<button class="b-no" onclick="mark(\''+it.id+'\',\'いいえ\')">いいえ</button>'+
+    '<button class="b-skip" onclick="mark(\''+it.id+'\',\'あとで\')">⏭</button></div>'+
+    '<textarea id="note" class="open" placeholder="補足（任意）"></textarea>'+nav;
+  }
+}
+function openWarn(){
+  document.getElementById("tags").classList.add("open");
+  document.getElementById("note").classList.add("open");
+  document.getElementById("send").classList.add("open");
+}
+function exportView(){
+  const out={sheet:"u_bio_03 \u8a8d\u77e5\u30ea\u30ba\u30e0\u5b9f\u9a13\u7248(\u9032\u884c\u5b9f\u6cc1\u3092\u524a\u3063\u305f\u7a3f)",done:doneCount(),total:tappable,answers:res};
+  const s=JSON.stringify(out,null,1);
+  const warn=Object.entries(res).filter(([k,v])=>v.v==="気になる"||v.v==="いいえ").length;
+  const esc=s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  return '<div class="unitcard"><div class="big">おつかれさまでした 🎉</div>'+
+  '<div class="summary">回答 '+doneCount()+'/'+tappable+'（✏気になる・いいえ: '+warn+'件）<br>'+
+  '<b>下の枠の中身が結果のすべて</b>です。「📋 結果をコピー」→ Claudeに貼り付けで回収完了。<br>'+
+  '<span style="color:var(--warn)">※このHTMLファイル自体には回答は保存されません（回答はこのブラウザの中）。必ずコピーか💾で外に出してください。</span></div>'+
+  '<button class="exbtn" style="background:var(--gold);color:#241a03" onclick="navigator.clipboard.writeText(document.getElementById(\'exp\').value).then(()=>this.textContent=\'✓ コピーしました（Claudeに貼ってください）\')">📋 結果をコピー</button>'+
+  '<button class="exbtn" style="background:#2a3245;color:#e8ecf5" onclick="dl()">💾 review_result.json で保存</button>'+
+  '<textarea id="exp" class="open done" readonly>'+esc+'</textarea>'+
+  '<div class="nav"><button onclick="go(-1)">← もどる</button><button onclick="pos=0;go(0)">最初から見直す</button></div></div>';
+}
+function dl(){
+  const b=new Blob([document.getElementById("exp").value],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(b);
+  a.download="review_result.json"; a.click();
+}
+render();
+</script></body></html>
