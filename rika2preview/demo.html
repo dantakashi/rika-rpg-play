@@ -1399,29 +1399,36 @@ const MONSTER_DB = {
   eb_god: { name:"不動の大地神", img:"mimg/m_eb_god.png", hp:1450, def:85, atk:76, attrs:["earth"], resist:{"sleep": 0.5, "freeze": 0.4, "paralyze": 0.3} },
   // ★要画像: 地学の道ラスボス(大地神・不動)
   tb_omega: { name:"天究の四凶", img:"mimg/m_tb_omega.png", hp:2200, def:50, atk:95, attrs:["physics", "chemistry", "biology", "earth"] },
-  // ★形態変化ボス実証1号=5幕フルコース(オーナー原案2026-07-16): 素体→覚醒(本気)→超巨大化(禁忌の宝珠・背景変化・部位=右拳/左足)→幕間(弱った素体の差し込み)→最終モード(捨て身の秘術)。
-  //   巨大化フェーズのHPプール=宝珠。部位はDPS検問(倒せないと被弾がかさむ=負けたられんしゅう導線・いたずらな高ハードルにだけしない)。数値は実機検収用の仮置き。
-  kaidan_demonlord: { name:"魔界大公", img:"mimg/kaidan_demonlord_f1.png", hp:4200, def:16, atk:60, attrs:["chemistry"],
+  // ★形態変化ボス実証1号=6プール登山構成(オーナー再設計2026-07-16夜):
+  //   素体→覚醒→【巨大化=巨人は背景画になり、左足→(前進)→右拳→(到達)→コアを1体ずつ攻略】→崩落→幕間(弱った素体)→背水(禁術・オーラマシマシ)。
+  //   セリフは全変身「preLine(転換前)→演出→line(転換後・別内容)」の二段。DPS検問は肯定(負け→れんしゅう導線)。数値は実機検収用の仮置き。
+  kaidan_demonlord: { name:"魔界大公", img:"mimg/kaidan_demonlord_f1.png", hp:4600, def:16, atk:60, attrs:["chemistry"],
     forms:[
-      { img:"mimg/kaidan_demonlord_f1.png", name:"魔界大公", hpShare:0.16, atkMul:1.0, spdMul:1.0,
+      { img:"mimg/kaidan_demonlord_f1.png", name:"魔界大公", hpShare:0.13, atkMul:1.0, spdMul:1.0,
         actions:[ {kind:'attack', cond:{always:1}, rating:5} ] },
-      { img:"mimg/kaidan_demonlord_f3.png", name:"魔界大公・覚醒", hpShare:0.22, atkMul:1.2, spdMul:1.4, fx:'awaken',
-        actions:[ {kind:'attack', cond:{always:1}, rating:5}, {kind:'aoe', cond:{turn:{start:3,every:3}}, rating:9} ],
-        line:"🔥「よかろう……本気を見せてやる！」" },
-      { img:"mimg/kaidan_demonlord_giant.png", name:"魔界大公・超巨大化", hpShare:0.26, atkMul:1.5, spdMul:0.45, fx:'giant',
-        bg:"bgimg/bossbg_last.png", parts:['kaidan_fist','kaidan_foot'],
-        actions:[ {kind:'aoe', cond:{always:1}, rating:5} ],
-        line:"🟣「禁忌の宝珠よ、我に山をも越える体躯を！」……宝珠(本体のHP)をこわせ！" },
-      { img:"mimg/kaidan_demonlord_final.png", name:"背水の大公", hpShare:0.36, atkMul:2.1, spdMul:0.6, fx:'hishou',
-        weakImg:"mimg/kaidan_demonlord_weak.png",
-        actions:[ {kind:'attack', cond:{always:1}, rating:5} ],
-        line:"🌑「……秘術解放。この身を薪として、貴様らを討つ」" },
+      { img:"mimg/kaidan_demonlord_f3.png", name:"魔界大公・覚醒", hpShare:0.18, atkMul:1.2, spdMul:1.4, fx:'awaken',
+        preLine:"👿「よかろう……我の本気、見せてやろう」",
+        line:"🔥「——これが魔界の頂の力だ！」",
+        actions:[ {kind:'attack', cond:{always:1}, rating:5}, {kind:'aoe', cond:{turn:{start:3,every:3}}, rating:9} ] },
+      { img:"mimg/kaidan_demonlord_foot.png", name:"大公の左足", hpShare:0.14, atkMul:1.35, spdMul:0.9, fx:'giant',
+        bg:"bgimg/bg_kaidan_giant.png",
+        preLine:"🟣「小癪な……禁忌の宝珠よ、我に山をも越える体躯を！」",
+        line:"⚔ 巨大な左足が立ちはだかる——砕いて道を開け！",
+        actions:[ {kind:'attack', cond:{always:1}, rating:4}, {kind:'aoe', cond:{turn:{start:3,every:3}}, rating:9} ] },
+      { img:"mimg/kaidan_demonlord_fist.png", name:"大公の右拳", hpShare:0.15, atkMul:1.5, spdMul:1.1, fx:'approach',
+        preLine:"✨ 左足を砕いた！ 巨体へ駆け上がる——",
+        line:"⚔ 巨大な右拳が振り上がる——退けろ！",
+        actions:[ {kind:'attack', cond:{always:1}, rating:5} ] },
+      { img:"mimg/kaidan_core.png", name:"禁忌の宝珠(コア)", hpShare:0.12, atkMul:1.2, spdMul:1.3, fx:'approach',
+        preLine:"✨ 右拳を退けた！ ついに胸元のコアへ到達——",
+        line:"💥 宝珠がむき出しだ——いまこそ砕け！",
+        actions:[ {kind:'attack', cond:{always:1}, rating:5} ] },
+      { img:"mimg/kaidan_demonlord_final2.png", name:"背水の大公", hpShare:0.28, atkMul:2.1, spdMul:0.6, fx:'hishou',
+        bg:"bgimg/bossbg_last.png", weakImg:"mimg/kaidan_demonlord_weak.png",
+        preLine:"💥 宝珠が砕けた——巨体が崩れ落ちていく！",
+        line:"🌑「……秘術解放。この身を薪として、貴様らを討つ」",
+        actions:[ {kind:'attack', cond:{always:1}, rating:5} ] },
     ] },
-  // ★超巨大化の部位(時限圧=生きている限り殴られ続ける。壊せば脅威が消える=B14部位破壊)
-  kaidan_fist: { name:"大公の右拳", img:"mimg/kaidan_demonlord_fist.png", hp:520, def:22, atk:74, attrs:["physics"],
-    actions:[ {kind:'attack', cond:{always:1}, rating:5} ] },
-  kaidan_foot: { name:"大公の左足", img:"mimg/kaidan_demonlord_foot.png", hp:560, def:24, atk:64, attrs:["earth"],
-    actions:[ {kind:'attack', cond:{always:1}, rating:4}, {kind:'aoe', cond:{turn:{start:3,every:3}}, rating:9} ] },
 };
 // ★体験版=5ステージ。各ステージ＝1〜2ウェーブ。drop＝コモン〜レアの装備フレーバー(テンプレ装備なので見た目だけ・実ステは不変)。cfg＝難度の上り。
 // enemyMul=敵ステ倍率(段階強化)。boss=単品ボス。meta=ステージ専用のメタ装備(pow=ステ倍率/loadout=役割別スキル/label=表示)。
@@ -2273,7 +2280,8 @@ let _formFx=null;
 function bossTransform(e){ if(_formFx)_formFx.finish();   // 多段ヒットで連続発火しても前の演出を畳んでから
   const next=e.formIdx+1, f=e.forms[next]; let applied=false;
   const fx=f.fx||'flash';
-  const FXLEN={flash:2.8, awaken:4.6, giant:5.8, hishou:7.2};
+  const FXLEN={flash:2.8, awaken:5.2, giant:6.4, approach:2.6, hishou:7.8};
+  if(f.preLine) bigSavor(f.preLine,'system');   // ★セリフ二段構造(オーナーFB): 転換前のセリフ→演出→転換後に別のセリフ(line)
   _fxFreeze=Math.max(_fxFreeze, FXLEN[fx]||2.8);   // 戦闘クロックだけ停止(B3ヒットストップ機構流用・rAF/DOMアニメは動く)
   const stage=document.getElementById('stage');
   const ov=document.createElement('div'); ov.className='form-ov'; if(stage)stage.appendChild(ov);
@@ -2286,32 +2294,39 @@ function bossTransform(e){ if(_formFx)_formFx.finish();   // 多段ヒットで�
     bigSavor(f.line||('⚡ '+(f.name||e.name)+' に変身した！'),'system'); _fxFreeze=Math.min(_fxFreeze,0.4); updateUI(); };
   _formFx={finish:finish};
   ov.onclick=finish;   // 確定3: タップでスキップ
-  if(fx==='awaken'){          // 第2幕: 本気の覚醒(ポケモン進化式=じっくり焦らす)
-    T(()=>ov.classList.add('gold'),20);                                  // 予兆=金のオーラが満ちる
-    T(()=>screenShake('soft'),1000);
-    T(()=>{ ov.classList.remove('gold'); ov.classList.add('on'); },1800);  // 白光化
-    T(()=>{ ov.classList.add('on2'); screenShake(); },2500);
-    T(apply,2700);                                                        // 白のピークで差し替え
-    T(()=>ov.classList.remove('on','on2'),3400);
-    T(finish,4400);
-  } else if(fx==='giant'){    // 第3幕: 超巨大化(フラッシュでなく「闇とスケール」で見せる)
-    T(()=>ov.classList.add('dark'),20);                                   // 暗転
-    T(()=>screenShake(),800); T(()=>screenShake(),1500); T(()=>screenShake(),2200);   // 地響き連打
-    T(apply,2500);                                                        // 闇の底で: 背景差し替え+部位スポーン+巨体化
-    T(()=>screenShake(),3000);
-    T(()=>{ ov.classList.remove('dark'); ov.classList.add('on'); screenShake(); },3800);   // 明転+白閃=巨影のお披露目
-    T(()=>ov.classList.remove('on'),4600);
-    T(finish,5600);
-  } else if(fx==='hishou'){   // 第4幕: 宝珠破壊→幕間(弱った素体・静寂)→捨て身の秘術
-    T(()=>{ ov.classList.add('on2'); screenShake(); },20);                // 宝珠が砕ける白閃
+  if(fx==='awaken'){          // 覚醒(ポケモン進化式=じっくり焦らす)。preLine表示のため頭に間を置く
+    T(()=>ov.classList.add('gold'),600);                                 // 予兆=金のオーラが満ちる
+    T(()=>screenShake('soft'),1600);
+    T(()=>{ ov.classList.remove('gold'); ov.classList.add('on'); },2400);  // 白光化
+    T(()=>{ ov.classList.add('on2'); screenShake(); },3100);
+    T(apply,3300);                                                        // 白のピークで差し替え
+    T(()=>ov.classList.remove('on','on2'),4000);
+    T(finish,5000);
+  } else if(fx==='giant'){    // 超巨大化(フラッシュでなく「闇とスケール」で見せる)。明転すると巨人が背景になっている
+    T(()=>ov.classList.add('dark'),700);                                  // preLineを読ませてから暗転
+    T(()=>screenShake(),1500); T(()=>screenShake(),2200); T(()=>screenShake(),2900);   // 地響き連打
+    T(apply,3200);                                                        // 闇の底で: 背景=巨人に差し替え+敵カード=左足へ
+    T(()=>screenShake(),3700);
+    T(()=>{ ov.classList.remove('dark'); ov.classList.add('on'); screenShake(); },4400);   // 明転+白閃=巨影のお披露目
+    T(()=>ov.classList.remove('on'),5200);
+    T(finish,6200);
+  } else if(fx==='approach'){ // 前進の場面転換(足を砕いた→駆け上がる/拳を退けた→到達): 短い暗転ワイプ
+    T(()=>ov.classList.add('dim'),500);                                   // preLineを読ませてから薄暗転
+    T(()=>screenShake('soft'),900);
+    T(apply,1300);                                                        // 次の部位へ差し替え
+    T(()=>ov.classList.remove('dim'),1800);
+    T(finish,2400);
+  } else if(fx==='hishou'){   // 宝珠破壊→巨体崩落→幕間(弱った素体・静寂)→捨て身の秘術
+    T(()=>{ ov.classList.add('on2'); screenShake(); },500);               // 宝珠が砕ける白閃
+    T(()=>screenShake(),1100); T(()=>screenShake(),1600);                 // 崩落の地響き
     T(()=>{ ov.classList.remove('on2'); ov.classList.add('dim');
-            if(f.weakImg) setBeatImg(f.weakImg,'……'); },800);             // 幕間: 傷つき膝をつく素体。静寂(2.7秒なにも起きない)
-    T(()=>{ ov.classList.remove('dim'); ov.classList.add('gold'); },3500);  // 秘術詠唱の金光
-    T(()=>screenShake('soft'),4600);
-    T(()=>ov.classList.add('on2'),5500);
-    T(apply,5700);                                                        // 光の中で最終形態へ
-    T(()=>ov.classList.remove('gold','on2'),6200);
-    T(finish,7000);
+            if(f.weakImg) setBeatImg(f.weakImg,'……'); },1900);            // 幕間: 崩れた巨体の中、傷つき膝をつく素体。静寂
+    T(()=>{ ov.classList.remove('dim'); ov.classList.add('gold'); },4400);  // 秘術詠唱の金光
+    T(()=>screenShake('soft'),5400);
+    T(()=>ov.classList.add('on2'),6100);
+    T(apply,6300);                                                        // 光の中で最終形態へ(背景も戻る=巨体消滅)
+    T(()=>ov.classList.remove('gold','on2'),6800);
+    T(finish,7600);
   } else {                    // 従来: 二段フラッシュ+地響き(量産ボスの最低保証)
     screenShake();
     T(()=>ov.classList.add('on'),20);
