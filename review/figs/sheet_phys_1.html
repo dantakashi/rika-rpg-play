@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>画像ティンダー検収</title>
+<style>
+  :root{--ok:#5b8a72;--ng:#c0564a;--fix:#4a6fb5}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:#2b2622;color:#f4ede2}
+  .top{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;z-index:10;background:linear-gradient(#2b2622,#2b262200)}
+  .top b{font-size:15px}
+  #prog{font-weight:700;font-size:14px;color:#d8c9a8}
+  .stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:64px 12px 130px}
+  .card{position:absolute;width:min(92vw,540px);max-height:calc(100% - 190px);aspect-ratio:1/1;border-radius:20px;background:repeating-conic-gradient(#3a332d 0 25%,#453c34 0 50%) 0 0/28px 28px;box-shadow:0 10px 40px #000a;touch-action:none;user-select:none;overflow:hidden;transition:transform .25s,opacity .25s}
+  .card.drag{transition:none}
+  .card img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+  .card .label{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;background:#000a;font-size:13px}
+  /* ペア比較カード（同モチーフ2枚並べ・タップで片方採用） */
+  .card.pair{aspect-ratio:auto;height:calc(100% - 40px);display:flex;gap:4px;padding-bottom:34px}
+  .card.pair .half{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+  .card.pair .half img{flex:1;min-height:0;width:100%;object-fit:contain;pointer-events:none}
+  .card.pair .half .sub{font-size:11px;text-align:center;background:#0008;padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.pair .half .pick{margin:6px;padding:12px 0;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;color:#fff;background:var(--ok);cursor:pointer}
+  .card.pair .half.win{outline:4px solid var(--ok);outline-offset:-4px}
+  .stamp{position:absolute;top:18px;font-size:30px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-12deg);pointer-events:none;z-index:3}
+  .stamp.ok{left:14px;color:var(--ok);border-color:var(--ok)}
+  .stamp.ng{right:14px;color:var(--ng);border-color:var(--ng);transform:rotate(12deg)}
+  .bar{position:fixed;bottom:0;left:0;right:0;padding:12px 14px 22px;display:flex;gap:10px;z-index:10;background:linear-gradient(#2b262200,#2b2622 40%)}
+  .bar button{flex:1;font:inherit;font-weight:800;font-size:15px;padding:14px 0;border-radius:14px;border:none;cursor:pointer;color:#fff}
+  .b-ng{background:var(--ng)}.b-fix{background:var(--fix)}.b-ok{background:var(--ok)}.b-undo{background:#6b6259;flex:.6}
+  .hint{position:fixed;bottom:92px;left:0;right:0;text-align:center;font-size:12px;color:#b7a98d;z-index:9}
+  .overlay{position:fixed;inset:0;background:#000c;z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.on{display:flex}
+  .panel{background:#f6f1e7;color:#3c302c;border-radius:16px;padding:16px;width:min(92vw,480px)}
+  .panel textarea{width:100%;min-height:90px;font:inherit;font-size:14px;border:1px solid #d9c5ab;border-radius:10px;padding:8px}
+  .panel .row{display:flex;gap:10px;margin-top:10px}
+  .panel button{flex:1;font:inherit;font-weight:700;padding:12px 0;border-radius:12px;border:none;color:#fff;cursor:pointer}
+  .done{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px;text-align:center}
+  .done.on{display:flex}
+  .done .counts{font-size:16px;line-height:2}
+  .done button{font:inherit;font-weight:800;font-size:16px;padding:14px 26px;border-radius:14px;border:none;background:var(--fix);color:#fff;cursor:pointer}
+  .done textarea{width:min(92vw,520px);min-height:110px;font-size:12px;border-radius:10px;border:none;padding:8px;display:none}
+</style>
+</head>
+<body>
+<div class="top"><b id="title">画像ティンダー検収</b><span id="prog"></span></div>
+<div class="stage" id="stage"></div>
+<div class="hint" id="hint">→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント</div>
+<div class="bar">
+  <button class="b-undo" onclick="undo()">↩</button>
+  <button class="b-ng" onclick="decide('NG')">✗ 不採用</button>
+  <button class="b-fix" onclick="openFix()">✏ 修正</button>
+  <button class="b-ok" id="okbtn" onclick="decide('OK')">◎ 採用</button>
+</div>
+<div class="overlay" id="ov">
+  <div class="panel">
+    <b>✏ 修正コメント</b>（どう直してほしいか）
+    <textarea id="fixnote" placeholder="例: もっと赤く／目を大きく／向きを右に"></textarea>
+    <div class="row">
+      <button style="background:#9aa2ab" onclick="closeFix()">やめる</button>
+      <button style="background:var(--fix)" onclick="saveFix()">修正として記録</button>
+    </div>
+  </div>
+</div>
+<div class="done" id="done">
+  <h2>完了！</h2>
+  <div class="counts" id="counts"></div>
+  <button onclick="copyResult(this)">📋 結果をコピー（チャットに貼り付け）</button>
+  <textarea id="dump" readonly onclick="this.select()"></textarea>
+</div>
+<script>
+// ===== バッチ定義（ここだけ差し替えれば使い回せる） =====
+// 1枚カード: {f:"ファイル名", t:"ラベル"}
+// ペア比較 : {pair:["A.png","B.png"], t:"モチーフ名", ta:"Aの説明", tb:"Bの説明"}
+//            → 画像下のボタンで片方採用（もう片方は自動で不採用）・←スワイプ/✗=両方不採用
+const SHEET = "理科図版 物理 1/2";
+const IMGDIR = "imgs/";
+const ITEMS = [
+  {"f": "fig_0108.webp", "t": "[光・音] 凸レンズの実像と虚像のちがい"},
+  {"f": "fig_0109.webp", "t": "[光・音] 凸レンズの光の進み方と実像の作図(焦点・光軸)"},
+  {"f": "fig_0110.webp", "t": "[光・音] 凸レンズで物体を焦点内に置いたときの虚像の作図"},
+  {"f": "fig_0111.webp", "t": "[光・音] 光の反射(入射角=反射角)の模式図"},
+  {"f": "fig_0112.webp", "t": "[光・音] 光が水・ガラスで屈折するようす(入射角と屈折角)"},
+  {"f": "fig_0113.webp", "t": "[光・音] 大きい音/小さい音・高い音/低い音の波形比較"},
+  {"f": "fig_0114.webp", "t": "[光・音] オシロスコープの音の波形(振幅と振動数)"},
+  {"f": "fig_0115.webp", "t": "[光・音] 全反射(臨界角を超えた光が境界で反射)"},
+  {"f": "fig_0116.webp", "t": "[光・音] 平行なガラス板を通る光が平行にずれて出る屈折の作図"},
+  {"f": "fig_0117.webp", "t": "[光・音] 凸レンズで物体の位置(焦点距離との関係)による像の種類・大きさ・向きの一覧表"},
+  {"f": "fig_0118.webp", "t": "[光・音] 屈折で水中のコイン・棒が浮き上がって見える作図"},
+  {"f": "fig_0119.webp", "t": "[光・音] 音の波形で振幅・波長・1回の振動を示したラベル付き図"},
+  {"f": "fig_0120.webp", "t": "[力・圧力] 浮力のしくみ(上面と下面の水圧差)"},
+  {"f": "fig_0121.webp", "t": "[力・圧力] 力の三要素(作用点・向き・大きさ)を矢印で表す"},
+  {"f": "fig_0122.webp", "t": "[力・圧力] ばねの伸びと力のグラフ(フックの法則)"},
+  {"f": "fig_0123.webp", "t": "[力・圧力] 圧力=力÷面積(スポンジ・スキー板の例)"},
+  {"f": "fig_0124.webp", "t": "[力・圧力] 2力のつり合い(一直線上・逆向き・同じ大きさ)"},
+  {"f": "fig_0125.webp", "t": "[力・圧力] 水圧は深いほど大きく全方向にはたらく"},
+  {"f": "fig_0126.webp", "t": "[力・圧力] 物体を水に入れるとばねばかりの値が減る(浮力を求める)実験図"},
+  {"f": "fig_0127.webp", "t": "[力・圧力] 1目盛りを何Nとして力の大きさを矢印の長さで作図するきまりの図"},
+  {"f": "fig_0128.webp", "t": "[力・圧力] 重力・垂直抗力・摩擦力・弾性力・磁力など力の種類を例で示す図"},
+  {"f": "fig_0129.webp", "t": "[力・圧力] 机の上の物体にはたらく重力と垂直抗力のつり合い図"},
+  {"f": "fig_0130.webp", "t": "[力・圧力] スポンジの上に向きをかえて置いた物体の圧力を比べる作図(接地面積と圧力)"},
+  {"f": "fig_0131.webp", "t": "[電流・電気] 電磁誘導と誘導電流"},
+  {"f": "fig_0132.webp", "t": "[電流・電気] 電流がつくる磁界（向きと右ねじの法則）"},
+  {"f": "fig_0133.webp", "t": "[電流・電気] 電流が磁界から受ける力とモーターのしくみ"},
+  {"f": "fig_0134.webp", "t": "[電流・電気] 電流計を直列につなぐ(±端子)"},
+  {"f": "fig_0135.webp", "t": "[電流・電気] 電源・抵抗・電球・スイッチ等の電気用図記号"},
+  {"f": "fig_0136.webp", "t": "[電流・電気] まっすぐな導線・コイルの電流がつくる磁界(右ねじ)"},
+  {"f": "fig_0137.webp", "t": "[電流・電気] コイルと鉄心の電磁石のしくみ"},
+  {"f": "fig_0138.webp", "t": "[電流・電気] 磁石を出し入れして電流が流れる電磁誘導"},
+  {"f": "fig_0139.webp", "t": "[電流・電気] 磁界中の電流が受ける力(フレミング左手)"},
+  {"f": "fig_0140.webp", "t": "[電流・電気] 棒磁石のまわりの磁界(磁力線・鉄粉)"},
+  {"f": "fig_0141.webp", "t": "[電流・電気] モーター(整流子)のしくみ"},
+  {"f": "fig_0142.webp", "t": "[電流・電気] 電圧と電流の比例グラフ(オームの法則・抵抗)"},
+  {"f": "fig_0143.webp", "t": "[電流・電気] 並列回路の回路図(電流・電圧の関係)"},
+  {"f": "fig_0144.webp", "t": "[電流・電気] 直列回路の回路図(電流・電圧の関係)"},
+  {"f": "fig_0145.webp", "t": "[電流・電気] 電圧計を並列につなぐ(±端子)"},
+  {"f": "fig_0146.webp", "t": "[電流・電気] 電流計の3端子(50mA/500mA/5A)と目盛りの読み方の図"},
+  {"f": "fig_0147.webp", "t": "[電流・電気] 乾電池・豆電球・導線の実物のつなぎ方を回路図に書きかえる対応図"},
+  {"f": "fig_0148.webp", "t": "[電流・電気] 電流の向き(+→−)と電子の流れる向き(−→+)が逆であることの図"},
+  {"f": "fig_0149.webp", "t": "[電流・電気] 電熱線で水を温め電力と上昇温度の関係を調べる実験装置図"},
+  {"f": "fig_0150.webp", "t": "[電流・電気] 磁石を入れるときと出すときで誘導電流の向きが逆になる図"},
+  {"f": "fig_0151.webp", "t": "[電流・電気] 並列回路で枝分かれと合流の電流の和を示す図"},
+  {"f": "fig_0152.webp", "t": "[電流・電気] 並列回路で各部分に同じ電圧が加わることを示す図"},
+  {"f": "fig_0153.webp", "t": "[電流・電気] 直線電流の向きと磁界の向きを表す右ねじの法則の図"},
+  {"f": "fig_0154.webp", "t": "[電流・電気] 直列回路の各点で電流が等しいことを矢印と数値で示す図"},
+  {"f": "fig_0155.webp", "t": "[電流・電気] 直列回路で各抵抗に加わる電圧の和=全体の電圧を示す図"},
+  {"f": "fig_0156.webp", "t": "[電流・電気] コイル(ソレノイド)に電流を流したときの磁界とN極S極の図"},
+  {"f": "fig_0157.webp", "t": "[電流・電気] U字形磁石の間の導線に電流を流すと動く実験装置図"},
+  {"f": "fig_0158.webp", "t": "[運動・エネルギー] だんだん速くなる運動（斜面・自由落下）"},
+  {"f": "fig_0159.webp", "t": "[運動・エネルギー] 力学的エネルギーの保存"},
+  {"f": "fig_0160.webp", "t": "[運動・エネルギー] 位置エネルギーと運動エネルギーの移り変わり"},
+  {"f": "fig_0161.webp", "t": "[運動・エネルギー] 力の合成と分解"},
+  {"f": "fig_0162.webp", "t": "[運動・エネルギー] 等速直線運動と速さのグラフ"},
+  {"f": "fig_0163.webp", "t": "[運動・エネルギー] 仕事の求め方と仕事の原理"},
+  {"f": "fig_0164.webp", "t": "[運動・エネルギー] 2力の合成(平行四辺形の法則)"},
+  {"f": "fig_0165.webp", "t": "[運動・エネルギー] 力の分解(斜面上の重力の分解)"},
+  {"f": "fig_0166.webp", "t": "[運動・エネルギー] 斜面を下る台車の運動(だんだん速くなる)"},
+  {"f": "fig_0167.webp", "t": "[運動・エネルギー] 慣性(だるま落とし・電車の急発進)"},
+  {"f": "fig_0168.webp", "t": "[運動・エネルギー] 力学的エネルギーの保存(ふりこ・ジェットコースター)"},
+  {"f": "fig_0169.webp", "t": "[運動・エネルギー] 定滑車・動滑車と仕事の原理"},
+  {"f": "fig_0170.webp", "t": "[運動・エネルギー] 記録タイマーの打点テープで速さを調べる"},
+  {"f": "fig_0171.webp", "t": "[運動・エネルギー] 等速直線運動・加速する運動の速さ-時間グラフ"},
+  {"f": "fig_0172.webp", "t": "[運動・エネルギー] 仕事=力×距離(物体を持ち上げる)"},
+  {"f": "fig_0173.webp", "t": "[運動・エネルギー] 物体が落ちるほど速くなる自由落下の運動図(等間隔→広がる)"},
+  {"f": "fig_0174.webp", "t": "[運動・エネルギー] 斜面を使って物体を持ち上げる仕事と仕事の原理の図"},
+  {"f": "fig_0175.webp", "t": "[運動・エネルギー] 動滑車で引く力は半分・引く距離は2倍になる作図"},
+  {"f": "fig_0176.webp", "t": "[運動・エネルギー] ふりこの各位置での位置エネルギーと運動エネルギーの移り変わりの図"},
+  {"f": "fig_0177.webp", "t": "[運動・エネルギー] 高さのちがうレールを転がる球の力学的エネルギー保存の図"},
+  {"f": "fig_0178.webp", "t": "[運動・エネルギー] 速さ=移動距離÷時間の公式と単位(m/s・km/h)の図"},
+  {"f": "fig_0179.webp", "t": "[運動・エネルギー] 記録タイマーのテープを一定打点ごとに切って速さの変化を棒グラフにする図"},
+  {"f": "fig_0180.webp", "t": "[運動・エネルギー] 等速直線運動の移動距離-時間グラフ(原点を通る直線)"},
+  {"f": "fig_0420.webp", "t": "[光・音] 全反射の応用（光ファイバー・虹のしくみ）"},
+  {"f": "fig_0421.webp", "t": "[光・音] 平面鏡の像のでき方(対称な位置にできる虚像)"},
+  {"f": "fig_0422.webp", "t": "[光・音] 雷の光と音のずれ(音の速さを求める)"},
+  {"f": "fig_0423.webp", "t": "[光・音] おんさ・弦の振動と音の発生"},
+  {"f": "fig_0424.webp", "t": "[光・音] プリズムで白色光が虹色に分かれる(分散)"},
+  {"f": "fig_0425.webp", "t": "[光・音] でこぼこした面での乱反射(光がいろいろな方向へ反射)の模式図"},
+  {"f": "fig_0426.webp", "t": "[光・音] 音が壁で反射してやまびこ(反響)が返る・距離を求める図"},
+  {"f": "fig_0427.webp", "t": "[光・音] 1秒間の振動回数=振動数(Hz)を波形で示す図"},
+  {"f": "fig_0428.webp", "t": "[光・音] 光源・凸レンズ・スクリーンを光学台に並べて実像を映す実験装置図"},
+  {"f": "fig_0429.webp", "t": "[光・音] 光の直進(光源から直線で進む・かげのでき方)の基礎図"},
+  {"f": "fig_0430.webp", "t": "[光・音] 合わせ鏡(2枚の鏡)で像が複数できる作図"},
+  {"f": "fig_0431.webp", "t": "[光・音] モノコード(弦の長さ・太さ・張りと音の高さ)の実験図"},
+  {"f": "fig_0432.webp", "t": "[光・音] 物体が特定の色の光を反射してその色に見えるしくみの図"},
+  {"f": "fig_0433.webp", "t": "[光・音] 光ファイバーの中を全反射でくり返し進む光の図"},
+  {"f": "fig_0434.webp", "t": "[光・音] 2枚の鏡で光を曲げる潜望鏡(ペリスコープ)の光路図"},
+  {"f": "fig_0435.webp", "t": "[光・音] ピンホールカメラ(針穴写真機)で上下左右逆さの像ができるしくみ"},
+  {"f": "fig_0436.webp", "t": "[光・音] 水滴の中での屈折・反射・分散で虹ができるしくみの図"},
+  {"f": "fig_0437.webp", "t": "[光・音] 真空鈴(ベルジャー)で空気を抜くと音が聞こえなくなる実験図"},
+  {"f": "fig_0438.webp", "t": "[光・音] 光の三原色(赤・緑・青)が重なって白色になる図"},
+  {"f": "fig_0439.webp", "t": "[力・圧力] 3力のつり合いと作図"},
+  {"f": "fig_0440.webp", "t": "[力・圧力] 大気圧(空き缶つぶし・マグデブルク半球)"},
+  {"f": "fig_0441.webp", "t": "[力・圧力] 質量と重さの違い(地球と月)"},
+  {"f": "fig_0442.webp", "t": "[力・圧力] ばねばかりで力の大きさをはかる"},
+  {"f": "fig_0443.webp", "t": "[力・圧力] 空気を入れたボールと抜いたボールの重さを比べ大気圧につなげる図"},
+  {"f": "fig_0444.webp", "t": "[力・圧力] おしちぢめたばねがもとに戻ろうとする弾性力の図"},
+  {"f": "fig_0445.webp", "t": "[力・圧力] 重力と浮力の大小で物体が浮く・沈む・つり合うのちがいの図"},
+  {"f": "fig_0446.webp", "t": "[力・圧力] 100gの物体にはたらく重力=約1N(ニュートン)を示す図"},
+  {"f": "fig_0447.webp", "t": "[力・圧力] 引く力と逆向きにはたらく摩擦力の矢印図"},
+  {"f": "fig_0448.webp", "t": "[力・圧力] 物体にはたらく重力を重心から下向きの矢印で表す図"},
+  {"f": "fig_0449.webp", "t": "[力・圧力] 圧力の単位Pa(N/㎡)・1㎡あたりの力を示す図"},
+  {"f": "fig_0450.webp", "t": "[力・圧力] おもりの数とばねの伸びを記録した表(フックの法則の実験データ)"},
+  {"f": "fig_0451.webp", "t": "[力・圧力] つるしたおもりにはたらく3つの力(2本の糸の張力と重力)のつり合い作図"},
+  {"f": "fig_0452.webp", "t": "[力・圧力] 水銀柱で大気圧の大きさを示すトリチェリの実験図"},
+  {"f": "fig_0453.webp", "t": "[力・圧力] 側面に高さちがいの穴をあけたペットボトルから水が出る勢いで水圧を示す実験図"},
+  {"f": "fig_0454.webp", "t": "[力・圧力] 水中でゴム膜がへこむ向き・深さで水圧を調べる装置図"},
+  {"f": "fig_0455.webp", "t": "[電流・電気] 抵抗の大きさを決めるもの（材質・長さ・太さ）"},
+  {"f": "fig_0456.webp", "t": "[電流・電気] 直流と交流の波形の違い"},
+  {"f": "fig_0457.webp", "t": "[電流・電気] 電熱線の発熱量を調べる実験(電力・熱量)"},
+  {"f": "fig_0458.webp", "t": "[電流・電気] 抵抗の直列・並列の合成抵抗"},
+  {"f": "fig_0459.webp", "t": "[電流・電気] 静電気(下じきと髪・しりぞけ合う電気)"},
+  {"f": "fig_0460.webp", "t": "[電流・電気] 乾電池の直列・並列つなぎと豆電球の明るさの比較(小学校)"},
+  {"f": "fig_0461.webp", "t": "[電流・電気] 真空放電管の陰極線(電子の流れ)が電極で曲がる実験図"},
+  {"f": "fig_0462.webp", "t": "[電流・電気] 磁石のまわりに方位磁針を置いて磁界の向きを調べる図"},
+  {"f": "fig_0463.webp", "t": "[電流・電気] 電力量=電力×時間(Wh・kWh)を示す図"},
+  {"f": "fig_0464.webp", "t": "[電流・電気] 検流計(ガルバノメーター)で弱い電流の向きを調べる図"},
+  {"f": "fig_0465.webp", "t": "[電流・電気] コイルを回して電磁誘導で発電する発電機のしくみ図"},
+  {"f": "fig_0466.webp", "t": "[電流・電気] 電力(W)ごとの水温の上昇を時間で示す比例グラフ"},
+];
+// =======================================================
+const KEY="tinder_"+SHEET;
+let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+function itemKey(it){return it.pair ? it.pair[0]+"|"+it.pair[1] : it.f;}
+let idx=Object.keys(st).filter(k=>!k.startsWith("_")).length ? nextUndone() : 0;
+let history=[];
+document.getElementById("title").textContent=SHEET;
+function nextUndone(){for(let i=0;i<ITEMS.length;i++){if(!st[itemKey(ITEMS[i])])return i;}return ITEMS.length;}
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+let card=null,sx=0,sy=0,dx=0,dragging=false,lastTap=0;
+function render(){
+  stage.innerHTML="";
+  document.getElementById("prog").textContent=Math.min(idx,ITEMS.length)+" / "+ITEMS.length;
+  if(idx>=ITEMS.length){finish();return;}
+  document.getElementById("done").classList.remove("on");
+  const it=ITEMS[idx];
+  card=document.createElement("div");
+  if(it.pair){
+    card.className="card pair";
+    card.innerHTML=
+      '<div class="half"><img src="'+IMGDIR+it.pair[0]+'" draggable="false">'+
+        '<div class="sub">'+(it.ta||"A")+'</div><button class="pick" onclick="pick(0,event)">◀ こっちを採用</button></div>'+
+      '<div class="half"><img src="'+IMGDIR+it.pair[1]+'" draggable="false">'+
+        '<div class="sub">'+(it.tb||"B")+'</div><button class="pick" onclick="pick(1,event)">こっちを採用 ▶</button></div>'+
+      '<div class="stamp ng">両方不採用</div>'+
+      '<div class="label">'+(idx+1)+"件目(比較): "+it.t+"</div>";
+    document.getElementById("hint").textContent="ボタン=片方採用　←スワイプ/✗=両方不採用　ダブルタップ=✏修正";
+    document.getElementById("okbtn").style.display="none";
+  }else{
+    card.className="card";
+    card.innerHTML='<img src="'+IMGDIR+it.f+'" draggable="false">'+
+      '<div class="stamp ok">採用</div><div class="stamp ng">不採用</div>'+
+      '<div class="label">'+(idx+1)+"体目: "+it.t+"</div>";
+    document.getElementById("hint").textContent="→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント";
+    document.getElementById("okbtn").style.display="";
+  }
+  stage.appendChild(card);
+  card.addEventListener("pointerdown",pd);
+  card.addEventListener("pointermove",pm);
+  card.addEventListener("pointerup",pu);
+  card.addEventListener("pointercancel",pu);
+}
+function pick(side,ev){
+  if(ev){ev.stopPropagation();}
+  const it=ITEMS[idx];if(!it||!it.pair)return;
+  const half=card.querySelectorAll(".half")[side];if(half)half.classList.add("win");
+  decide(side===0?"A":"B");
+}
+function pd(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains("pick"))return;
+  const now=Date.now();
+  if(now-lastTap<300){lastTap=0;openFix();return;}
+  lastTap=now;
+  dragging=true;sx=e.clientX;sy=e.clientY;dx=0;card.classList.add("drag");
+  card.setPointerCapture(e.pointerId);
+}
+function pm(e){
+  if(!dragging)return;
+  const it=ITEMS[idx];
+  dx=e.clientX-sx;const dy=e.clientY-sy;
+  if(it.pair&&dx>0)dx=0; // ペアは右スワイプ採用なし（どっちか選べないため）
+  card.style.transform="translate("+dx+"px,"+(dy*0.3)+"px) rotate("+(dx/18)+"deg)";
+  const ok=card.querySelector(".stamp.ok");
+  if(ok)ok.style.opacity=dx>40?Math.min((dx-40)/80,1):0;
+  card.querySelector(".stamp.ng").style.opacity=dx<-40?Math.min((-dx-40)/80,1):0;
+}
+function pu(){
+  if(!dragging)return;dragging=false;card.classList.remove("drag");
+  const it=ITEMS[idx];
+  if(dx>90&&!it.pair){decide("OK");}
+  else if(dx<-90){decide("NG");}
+  else{card.style.transform="";card.querySelectorAll(".stamp").forEach(s=>s.style.opacity=0);}
+}
+function decide(v,note){
+  if(idx>=ITEMS.length)return;
+  const it=ITEMS[idx];const k=itemKey(it);
+  st[k]={v:v,t:it.t};if(note)st[k].note=note;
+  if(it.pair){st[k].a=it.pair[0];st[k].b=it.pair[1];}
+  history.push(k);save();
+  if(card){const dir=(v==="OK"||v==="A"||v==="B")?1:(v==="NG"?-1:0);card.style.transform="translate("+dir*window.innerWidth+"px,-40px) rotate("+dir*20+"deg)";card.style.opacity=0;}
+  idx++;setTimeout(render,180);
+}
+function undo(){
+  if(!history.length)return;
+  const k=history.pop();delete st[k];save();
+  idx=ITEMS.findIndex(it=>itemKey(it)===k);render();
+}
+function openFix(){if(idx>=ITEMS.length)return;const k=itemKey(ITEMS[idx]);document.getElementById("fixnote").value=(st[k]&&st[k].note)||"";document.getElementById("ov").classList.add("on");}
+function closeFix(){document.getElementById("ov").classList.remove("on");}
+function saveFix(){const n=document.getElementById("fixnote").value.trim();closeFix();decide("FIX",n||"(コメントなし)");}
+function finish(){
+  const c={};Object.keys(st).forEach(k=>{if(!k.startsWith("_"))c[st[k].v]=(c[st[k].v]||0)+1;});
+  const adopt=(c.OK||0)+(c.A||0)+(c.B||0);
+  document.getElementById("counts").innerHTML="◎採用 "+adopt+"　✗不採用 "+(c.NG||0)+"　✏修正 "+(c.FIX||0);
+  document.getElementById("done").classList.add("on");
+}
+function copyResult(btn){
+  // 軽量書き出し: tを落としv(+note/pair)だけ=チャット貼り付けの文字数上限対策(2026-07-13/227体で切れた)
+  const ans={};Object.keys(st).forEach(k=>{if(k.startsWith("_"))return;const e=st[k];
+    if(e.note||e.a){const o={v:e.v};if(e.note)o.note=e.note;if(e.a){o.a=e.a;o.b=e.b;}ans[k]=o;}
+    else ans[k]=e.v;});
+  const out={sheet:SHEET,answers:ans};const txt=JSON.stringify(out);
+  const dump=document.getElementById("dump");dump.style.display="block";dump.value=txt;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{btn.textContent="コピーしました ✓";},()=>{btn.textContent="下の欄を長押しでコピー";});
+  }else{btn.textContent="下の欄を長押しでコピー";}
+}
+render();
+</script>
+</body>
+</html>

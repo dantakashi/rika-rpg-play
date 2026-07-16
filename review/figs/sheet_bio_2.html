@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>画像ティンダー検収</title>
+<style>
+  :root{--ok:#5b8a72;--ng:#c0564a;--fix:#4a6fb5}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:#2b2622;color:#f4ede2}
+  .top{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;z-index:10;background:linear-gradient(#2b2622,#2b262200)}
+  .top b{font-size:15px}
+  #prog{font-weight:700;font-size:14px;color:#d8c9a8}
+  .stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:64px 12px 130px}
+  .card{position:absolute;width:min(92vw,540px);max-height:calc(100% - 190px);aspect-ratio:1/1;border-radius:20px;background:repeating-conic-gradient(#3a332d 0 25%,#453c34 0 50%) 0 0/28px 28px;box-shadow:0 10px 40px #000a;touch-action:none;user-select:none;overflow:hidden;transition:transform .25s,opacity .25s}
+  .card.drag{transition:none}
+  .card img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+  .card .label{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;background:#000a;font-size:13px}
+  /* ペア比較カード（同モチーフ2枚並べ・タップで片方採用） */
+  .card.pair{aspect-ratio:auto;height:calc(100% - 40px);display:flex;gap:4px;padding-bottom:34px}
+  .card.pair .half{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+  .card.pair .half img{flex:1;min-height:0;width:100%;object-fit:contain;pointer-events:none}
+  .card.pair .half .sub{font-size:11px;text-align:center;background:#0008;padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.pair .half .pick{margin:6px;padding:12px 0;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;color:#fff;background:var(--ok);cursor:pointer}
+  .card.pair .half.win{outline:4px solid var(--ok);outline-offset:-4px}
+  .stamp{position:absolute;top:18px;font-size:30px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-12deg);pointer-events:none;z-index:3}
+  .stamp.ok{left:14px;color:var(--ok);border-color:var(--ok)}
+  .stamp.ng{right:14px;color:var(--ng);border-color:var(--ng);transform:rotate(12deg)}
+  .bar{position:fixed;bottom:0;left:0;right:0;padding:12px 14px 22px;display:flex;gap:10px;z-index:10;background:linear-gradient(#2b262200,#2b2622 40%)}
+  .bar button{flex:1;font:inherit;font-weight:800;font-size:15px;padding:14px 0;border-radius:14px;border:none;cursor:pointer;color:#fff}
+  .b-ng{background:var(--ng)}.b-fix{background:var(--fix)}.b-ok{background:var(--ok)}.b-undo{background:#6b6259;flex:.6}
+  .hint{position:fixed;bottom:92px;left:0;right:0;text-align:center;font-size:12px;color:#b7a98d;z-index:9}
+  .overlay{position:fixed;inset:0;background:#000c;z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.on{display:flex}
+  .panel{background:#f6f1e7;color:#3c302c;border-radius:16px;padding:16px;width:min(92vw,480px)}
+  .panel textarea{width:100%;min-height:90px;font:inherit;font-size:14px;border:1px solid #d9c5ab;border-radius:10px;padding:8px}
+  .panel .row{display:flex;gap:10px;margin-top:10px}
+  .panel button{flex:1;font:inherit;font-weight:700;padding:12px 0;border-radius:12px;border:none;color:#fff;cursor:pointer}
+  .done{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px;text-align:center}
+  .done.on{display:flex}
+  .done .counts{font-size:16px;line-height:2}
+  .done button{font:inherit;font-weight:800;font-size:16px;padding:14px 26px;border-radius:14px;border:none;background:var(--fix);color:#fff;cursor:pointer}
+  .done textarea{width:min(92vw,520px);min-height:110px;font-size:12px;border-radius:10px;border:none;padding:8px;display:none}
+</style>
+</head>
+<body>
+<div class="top"><b id="title">画像ティンダー検収</b><span id="prog"></span></div>
+<div class="stage" id="stage"></div>
+<div class="hint" id="hint">→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント</div>
+<div class="bar">
+  <button class="b-undo" onclick="undo()">↩</button>
+  <button class="b-ng" onclick="decide('NG')">✗ 不採用</button>
+  <button class="b-fix" onclick="openFix()">✏ 修正</button>
+  <button class="b-ok" id="okbtn" onclick="decide('OK')">◎ 採用</button>
+</div>
+<div class="overlay" id="ov">
+  <div class="panel">
+    <b>✏ 修正コメント</b>（どう直してほしいか）
+    <textarea id="fixnote" placeholder="例: もっと赤く／目を大きく／向きを右に"></textarea>
+    <div class="row">
+      <button style="background:#9aa2ab" onclick="closeFix()">やめる</button>
+      <button style="background:var(--fix)" onclick="saveFix()">修正として記録</button>
+    </div>
+  </div>
+</div>
+<div class="done" id="done">
+  <h2>完了！</h2>
+  <div class="counts" id="counts"></div>
+  <button onclick="copyResult(this)">📋 結果をコピー（チャットに貼り付け）</button>
+  <textarea id="dump" readonly onclick="this.select()"></textarea>
+</div>
+<script>
+// ===== バッチ定義（ここだけ差し替えれば使い回せる） =====
+// 1枚カード: {f:"ファイル名", t:"ラベル"}
+// ペア比較 : {pair:["A.png","B.png"], t:"モチーフ名", ta:"Aの説明", tb:"Bの説明"}
+//            → 画像下のボタンで片方採用（もう片方は自動で不採用）・←スワイプ/✗=両方不採用
+const SHEET = "理科図版 生物 2/2";
+const IMGDIR = "imgs/";
+const ITEMS = [
+  {"f": "fig_0546.webp", "t": "[細胞・生殖] 顕微鏡の視野で像が逆向きに見え・プレパラートを動かす向きの図"},
+  {"f": "fig_0547.webp", "t": "[細胞・生殖] エンドウの丸い種子・しわの種子など対立形質の例の図"},
+  {"f": "fig_0548.webp", "t": "[細胞・生殖] 池の水中の微小な生物(ミジンコ・ボルボックス・ケイソウ)の図"},
+  {"f": "fig_0549.webp", "t": "[細胞・生殖] スライドガラス・カバーガラス・気泡を入れないプレパラート作成の図"},
+  {"f": "fig_0550.webp", "t": "[細胞・生殖] ゾウリムシ・ミカヅキモ・アメーバなど単細胞生物の模式図"},
+  {"f": "fig_0551.webp", "t": "[細胞・生殖] 染色体・遺伝子・DNAの関係"},
+  {"f": "fig_0552.webp", "t": "[細胞・生殖] 生物の進化と相同器官(セキツイ動物の進化の順)"},
+  {"f": "fig_0553.webp", "t": "[細胞・生殖] 受精と発生の流れ(受精卵→胚→からだ)"},
+  {"f": "fig_0554.webp", "t": "[細胞・生殖] ヒトの子が母親のおなかで育つしくみ"},
+  {"f": "fig_0555.webp", "t": "[生物と環境] 土の中の微生物(菌類・細菌類)の模式図"},
+  {"f": "fig_0556.webp", "t": "[生物と環境] 光合成と呼吸でめぐる酸素・二酸化炭素の循環の模式図"},
+  {"f": "fig_0557.webp", "t": "[生物と環境] 土の上ずみ液とデンプンで微生物の分解を調べる実験の図"},
+  {"f": "fig_0558.webp", "t": "[生物と環境] 食物連鎖を通じて有害物質が高次の消費者に濃縮される図"},
+  {"f": "fig_0559.webp", "t": "[生物と環境] 菌類(カビ・キノコ・菌糸)と細菌類(乳酸菌・大腸菌)の比較図"},
+  {"f": "fig_0560.webp", "t": "[生物と環境] 外来種の増加が在来種・生態系のつり合いをくずす例の図"},
+  {"f": "fig_0561.webp", "t": "[生物と環境] 分解者が有機物を無機物に変え生産者に戻す物質循環の図"},
+  {"f": "fig_0562.webp", "t": "[生物と環境] 食べる・食べられるの関係で数量がつり合いに戻る変化の図"},
+  {"f": "fig_0563.webp", "t": "[生物と環境] 生物濃縮と外来種が生態系をくずすしくみ"},
+  {"f": "fig_0564.webp", "t": "[生物と環境] 分解者のはたらき(菌類・細菌類による分解)"},
+  {"f": "fig_0565.webp", "t": "[生物と環境] 生物の数量のつり合い(数量ピラミッド)"},
+];
+// =======================================================
+const KEY="tinder_"+SHEET;
+let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+function itemKey(it){return it.pair ? it.pair[0]+"|"+it.pair[1] : it.f;}
+let idx=Object.keys(st).filter(k=>!k.startsWith("_")).length ? nextUndone() : 0;
+let history=[];
+document.getElementById("title").textContent=SHEET;
+function nextUndone(){for(let i=0;i<ITEMS.length;i++){if(!st[itemKey(ITEMS[i])])return i;}return ITEMS.length;}
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+let card=null,sx=0,sy=0,dx=0,dragging=false,lastTap=0;
+function render(){
+  stage.innerHTML="";
+  document.getElementById("prog").textContent=Math.min(idx,ITEMS.length)+" / "+ITEMS.length;
+  if(idx>=ITEMS.length){finish();return;}
+  document.getElementById("done").classList.remove("on");
+  const it=ITEMS[idx];
+  card=document.createElement("div");
+  if(it.pair){
+    card.className="card pair";
+    card.innerHTML=
+      '<div class="half"><img src="'+IMGDIR+it.pair[0]+'" draggable="false">'+
+        '<div class="sub">'+(it.ta||"A")+'</div><button class="pick" onclick="pick(0,event)">◀ こっちを採用</button></div>'+
+      '<div class="half"><img src="'+IMGDIR+it.pair[1]+'" draggable="false">'+
+        '<div class="sub">'+(it.tb||"B")+'</div><button class="pick" onclick="pick(1,event)">こっちを採用 ▶</button></div>'+
+      '<div class="stamp ng">両方不採用</div>'+
+      '<div class="label">'+(idx+1)+"件目(比較): "+it.t+"</div>";
+    document.getElementById("hint").textContent="ボタン=片方採用　←スワイプ/✗=両方不採用　ダブルタップ=✏修正";
+    document.getElementById("okbtn").style.display="none";
+  }else{
+    card.className="card";
+    card.innerHTML='<img src="'+IMGDIR+it.f+'" draggable="false">'+
+      '<div class="stamp ok">採用</div><div class="stamp ng">不採用</div>'+
+      '<div class="label">'+(idx+1)+"体目: "+it.t+"</div>";
+    document.getElementById("hint").textContent="→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント";
+    document.getElementById("okbtn").style.display="";
+  }
+  stage.appendChild(card);
+  card.addEventListener("pointerdown",pd);
+  card.addEventListener("pointermove",pm);
+  card.addEventListener("pointerup",pu);
+  card.addEventListener("pointercancel",pu);
+}
+function pick(side,ev){
+  if(ev){ev.stopPropagation();}
+  const it=ITEMS[idx];if(!it||!it.pair)return;
+  const half=card.querySelectorAll(".half")[side];if(half)half.classList.add("win");
+  decide(side===0?"A":"B");
+}
+function pd(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains("pick"))return;
+  const now=Date.now();
+  if(now-lastTap<300){lastTap=0;openFix();return;}
+  lastTap=now;
+  dragging=true;sx=e.clientX;sy=e.clientY;dx=0;card.classList.add("drag");
+  card.setPointerCapture(e.pointerId);
+}
+function pm(e){
+  if(!dragging)return;
+  const it=ITEMS[idx];
+  dx=e.clientX-sx;const dy=e.clientY-sy;
+  if(it.pair&&dx>0)dx=0; // ペアは右スワイプ採用なし（どっちか選べないため）
+  card.style.transform="translate("+dx+"px,"+(dy*0.3)+"px) rotate("+(dx/18)+"deg)";
+  const ok=card.querySelector(".stamp.ok");
+  if(ok)ok.style.opacity=dx>40?Math.min((dx-40)/80,1):0;
+  card.querySelector(".stamp.ng").style.opacity=dx<-40?Math.min((-dx-40)/80,1):0;
+}
+function pu(){
+  if(!dragging)return;dragging=false;card.classList.remove("drag");
+  const it=ITEMS[idx];
+  if(dx>90&&!it.pair){decide("OK");}
+  else if(dx<-90){decide("NG");}
+  else{card.style.transform="";card.querySelectorAll(".stamp").forEach(s=>s.style.opacity=0);}
+}
+function decide(v,note){
+  if(idx>=ITEMS.length)return;
+  const it=ITEMS[idx];const k=itemKey(it);
+  st[k]={v:v,t:it.t};if(note)st[k].note=note;
+  if(it.pair){st[k].a=it.pair[0];st[k].b=it.pair[1];}
+  history.push(k);save();
+  if(card){const dir=(v==="OK"||v==="A"||v==="B")?1:(v==="NG"?-1:0);card.style.transform="translate("+dir*window.innerWidth+"px,-40px) rotate("+dir*20+"deg)";card.style.opacity=0;}
+  idx++;setTimeout(render,180);
+}
+function undo(){
+  if(!history.length)return;
+  const k=history.pop();delete st[k];save();
+  idx=ITEMS.findIndex(it=>itemKey(it)===k);render();
+}
+function openFix(){if(idx>=ITEMS.length)return;const k=itemKey(ITEMS[idx]);document.getElementById("fixnote").value=(st[k]&&st[k].note)||"";document.getElementById("ov").classList.add("on");}
+function closeFix(){document.getElementById("ov").classList.remove("on");}
+function saveFix(){const n=document.getElementById("fixnote").value.trim();closeFix();decide("FIX",n||"(コメントなし)");}
+function finish(){
+  const c={};Object.keys(st).forEach(k=>{if(!k.startsWith("_"))c[st[k].v]=(c[st[k].v]||0)+1;});
+  const adopt=(c.OK||0)+(c.A||0)+(c.B||0);
+  document.getElementById("counts").innerHTML="◎採用 "+adopt+"　✗不採用 "+(c.NG||0)+"　✏修正 "+(c.FIX||0);
+  document.getElementById("done").classList.add("on");
+}
+function copyResult(btn){
+  // 軽量書き出し: tを落としv(+note/pair)だけ=チャット貼り付けの文字数上限対策(2026-07-13/227体で切れた)
+  const ans={};Object.keys(st).forEach(k=>{if(k.startsWith("_"))return;const e=st[k];
+    if(e.note||e.a){const o={v:e.v};if(e.note)o.note=e.note;if(e.a){o.a=e.a;o.b=e.b;}ans[k]=o;}
+    else ans[k]=e.v;});
+  const out={sheet:SHEET,answers:ans};const txt=JSON.stringify(out);
+  const dump=document.getElementById("dump");dump.style.display="block";dump.value=txt;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{btn.textContent="コピーしました ✓";},()=>{btn.textContent="下の欄を長押しでコピー";});
+  }else{btn.textContent="下の欄を長押しでコピー";}
+}
+render();
+</script>
+</body>
+</html>

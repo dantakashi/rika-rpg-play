@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>画像ティンダー検収</title>
+<style>
+  :root{--ok:#5b8a72;--ng:#c0564a;--fix:#4a6fb5}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:#2b2622;color:#f4ede2}
+  .top{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;z-index:10;background:linear-gradient(#2b2622,#2b262200)}
+  .top b{font-size:15px}
+  #prog{font-weight:700;font-size:14px;color:#d8c9a8}
+  .stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:64px 12px 130px}
+  .card{position:absolute;width:min(92vw,540px);max-height:calc(100% - 190px);aspect-ratio:1/1;border-radius:20px;background:repeating-conic-gradient(#3a332d 0 25%,#453c34 0 50%) 0 0/28px 28px;box-shadow:0 10px 40px #000a;touch-action:none;user-select:none;overflow:hidden;transition:transform .25s,opacity .25s}
+  .card.drag{transition:none}
+  .card img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+  .card .label{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;background:#000a;font-size:13px}
+  /* ペア比較カード（同モチーフ2枚並べ・タップで片方採用） */
+  .card.pair{aspect-ratio:auto;height:calc(100% - 40px);display:flex;gap:4px;padding-bottom:34px}
+  .card.pair .half{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+  .card.pair .half img{flex:1;min-height:0;width:100%;object-fit:contain;pointer-events:none}
+  .card.pair .half .sub{font-size:11px;text-align:center;background:#0008;padding:3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.pair .half .pick{margin:6px;padding:12px 0;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;color:#fff;background:var(--ok);cursor:pointer}
+  .card.pair .half.win{outline:4px solid var(--ok);outline-offset:-4px}
+  .stamp{position:absolute;top:18px;font-size:30px;font-weight:900;padding:4px 14px;border:4px solid;border-radius:12px;opacity:0;transform:rotate(-12deg);pointer-events:none;z-index:3}
+  .stamp.ok{left:14px;color:var(--ok);border-color:var(--ok)}
+  .stamp.ng{right:14px;color:var(--ng);border-color:var(--ng);transform:rotate(12deg)}
+  .bar{position:fixed;bottom:0;left:0;right:0;padding:12px 14px 22px;display:flex;gap:10px;z-index:10;background:linear-gradient(#2b262200,#2b2622 40%)}
+  .bar button{flex:1;font:inherit;font-weight:800;font-size:15px;padding:14px 0;border-radius:14px;border:none;cursor:pointer;color:#fff}
+  .b-ng{background:var(--ng)}.b-fix{background:var(--fix)}.b-ok{background:var(--ok)}.b-undo{background:#6b6259;flex:.6}
+  .hint{position:fixed;bottom:92px;left:0;right:0;text-align:center;font-size:12px;color:#b7a98d;z-index:9}
+  .overlay{position:fixed;inset:0;background:#000c;z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.on{display:flex}
+  .panel{background:#f6f1e7;color:#3c302c;border-radius:16px;padding:16px;width:min(92vw,480px)}
+  .panel textarea{width:100%;min-height:90px;font:inherit;font-size:14px;border:1px solid #d9c5ab;border-radius:10px;padding:8px}
+  .panel .row{display:flex;gap:10px;margin-top:10px}
+  .panel button{flex:1;font:inherit;font-weight:700;padding:12px 0;border-radius:12px;border:none;color:#fff;cursor:pointer}
+  .done{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px;text-align:center}
+  .done.on{display:flex}
+  .done .counts{font-size:16px;line-height:2}
+  .done button{font:inherit;font-weight:800;font-size:16px;padding:14px 26px;border-radius:14px;border:none;background:var(--fix);color:#fff;cursor:pointer}
+  .done textarea{width:min(92vw,520px);min-height:110px;font-size:12px;border-radius:10px;border:none;padding:8px;display:none}
+</style>
+</head>
+<body>
+<div class="top"><b id="title">画像ティンダー検収</b><span id="prog"></span></div>
+<div class="stage" id="stage"></div>
+<div class="hint" id="hint">→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント</div>
+<div class="bar">
+  <button class="b-undo" onclick="undo()">↩</button>
+  <button class="b-ng" onclick="decide('NG')">✗ 不採用</button>
+  <button class="b-fix" onclick="openFix()">✏ 修正</button>
+  <button class="b-ok" id="okbtn" onclick="decide('OK')">◎ 採用</button>
+</div>
+<div class="overlay" id="ov">
+  <div class="panel">
+    <b>✏ 修正コメント</b>（どう直してほしいか）
+    <textarea id="fixnote" placeholder="例: もっと赤く／目を大きく／向きを右に"></textarea>
+    <div class="row">
+      <button style="background:#9aa2ab" onclick="closeFix()">やめる</button>
+      <button style="background:var(--fix)" onclick="saveFix()">修正として記録</button>
+    </div>
+  </div>
+</div>
+<div class="done" id="done">
+  <h2>完了！</h2>
+  <div class="counts" id="counts"></div>
+  <button onclick="copyResult(this)">📋 結果をコピー（チャットに貼り付け）</button>
+  <textarea id="dump" readonly onclick="this.select()"></textarea>
+</div>
+<script>
+// ===== バッチ定義（ここだけ差し替えれば使い回せる） =====
+// 1枚カード: {f:"ファイル名", t:"ラベル"}
+// ペア比較 : {pair:["A.png","B.png"], t:"モチーフ名", ta:"Aの説明", tb:"Bの説明"}
+//            → 画像下のボタンで片方採用（もう片方は自動で不採用）・←スワイプ/✗=両方不採用
+const SHEET = "理科図版 地学 1/2";
+const IMGDIR = "imgs/";
+const ITEMS = [
+  {"f": "fig_0046.webp", "t": "[大地・地層] 震源・震央・震源の深さの位置関係を示す模式図"},
+  {"f": "fig_0047.webp", "t": "[大地・地層] 当時の環境を示す示相化石(サンゴ=暖かく浅い海など)の図"},
+  {"f": "fig_0048.webp", "t": "[大地・地層] 正断層・逆断層の力のはたらき方の模式図"},
+  {"f": "fig_0049.webp", "t": "[大地・地層] 地層が横からの力で波打って曲がるしゅう曲の模式図"},
+  {"f": "fig_0050.webp", "t": "[大地・地層] 火山岩・深成岩を色(白っぽい〜黒っぽい)で分類した表(流紋岩・花こう岩など)"},
+  {"f": "fig_0051.webp", "t": "[大地・地層] 火山岩の斑状組織と深成岩の等粒状組織の比較模式図"},
+  {"f": "fig_0052.webp", "t": "[大地・地層] 地質年代を示す示準化石(サンヨウチュウ・アンモナイト・ビカリア)の図"},
+  {"f": "fig_0053.webp", "t": "[大地・地層] 地下のマグマだまり・火道・噴火する火山の断面模式図"},
+  {"f": "fig_0054.webp", "t": "[大地・地層] 無色鉱物(石英・長石)と有色鉱物(黒雲母・カクセン石・輝石・カンラン石)の図"},
+  {"f": "fig_0055.webp", "t": "[大地・地層] 日本付近の4つのプレートの分布と沈み込み帯の模式図"},
+  {"f": "fig_0056.webp", "t": "[大地・地層] れき岩・砂岩・泥岩の粒の大きさによる分類模式図"},
+  {"f": "fig_0057.webp", "t": "[大地・地層] 地震計の記録に見るP波(初期微動)・S波(主要動)と初期微動継続時間の図"},
+  {"f": "fig_0058.webp", "t": "[大地・地層] 川から海へ運ばれた土砂が堆積して地層ができる模式図(れき・砂・泥の分かれ方)"},
+  {"f": "fig_0059.webp", "t": "[大地・地層] マグマのねばりけによる火山の形3タイプ(楯状・成層・ドーム状)の模式図"},
+  {"f": "fig_0060.webp", "t": "[大地・地層] 中生代の示準化石アンモナイトの化石写真"},
+  {"f": "fig_0061.webp", "t": "[大地・地層] 緊急地震速報のしくみ(P波→S波)"},
+  {"f": "fig_0062.webp", "t": "[大地・地層] 古生代・中生代・新生代の区分と代表的な生物を示す地質年代表"},
+  {"f": "fig_0063.webp", "t": "[大地・地層] 花こう岩の表面拡大(石英・長石・黒雲母の等粒状組織)の写真"},
+  {"f": "fig_0064.webp", "t": "[大地・地層] マグニチュード(地震の規模)と震度(ゆれの強さ)の違いの図"},
+  {"f": "fig_0065.webp", "t": "[大地・地層] 流紋岩・安山岩・玄武岩/花こう岩・閃緑岩・斑れい岩の6種の分類対応表"},
+  {"f": "fig_0066.webp", "t": "[大地・地層] 川の上流・中流・下流で侵食・運搬・堆積がどう変わるかの模式図"},
+  {"f": "fig_0067.webp", "t": "[大地・地層] 海溝で海洋プレートが沈み込み大陸プレートに引きずられる断面図"},
+  {"f": "fig_0068.webp", "t": "[大地・地層] 古生代の示準化石サンヨウチュウ(三葉虫)の化石写真"},
+  {"f": "fig_0069.webp", "t": "[大地・地層] V字谷・扇状地・三角州など川がつくる地形の模式図"},
+  {"f": "fig_0070.webp", "t": "[大地・地層] 火山弾・火山れき・火山灰・軽石・溶岩など火山噴出物の種類の図"},
+  {"f": "fig_0071.webp", "t": "[天気・気象] 乾球の示度と乾湿の差から湿度を求める湿度表"},
+  {"f": "fig_0072.webp", "t": "[天気・気象] 気温と飽和水蒸気量の曲線・露点・湿度の関係グラフ"},
+  {"f": "fig_0073.webp", "t": "[天気・気象] 乾球温度計・湿球温度計(乾湿計)の読み取りの図"},
+  {"f": "fig_0074.webp", "t": "[天気・気象] ピストン付きフラスコで空気を膨張させ雲をつくる実験装置図"},
+  {"f": "fig_0075.webp", "t": "[天気・気象] 寒気が暖気を押し上げ積乱雲ができる寒冷前線の断面図"},
+  {"f": "fig_0076.webp", "t": "[天気・気象] 金属コップを冷やしてくもり始める露点を調べる実験の図"},
+  {"f": "fig_0077.webp", "t": "[天気・気象] 温帯低気圧に寒冷前線と温暖前線がともなう模式図(北半球)"},
+  {"f": "fig_0078.webp", "t": "[天気・気象] 暖気が寒気の上をはい上がり乱層雲ができる温暖前線の断面図"},
+  {"f": "fig_0079.webp", "t": "[天気・気象] 蒸発・雲・降水・川・海をめぐる水のじゅんかんの模式図"},
+  {"f": "fig_0080.webp", "t": "[天気・気象] 日本の四季と気団（季節の天気）"},
+  {"f": "fig_0081.webp", "t": "[天気・気象] 湿度の求め方（計算のしくみ）"},
+  {"f": "fig_0082.webp", "t": "[天気・気象] ほう和水蒸気量と湿度の関係"},
+  {"f": "fig_0083.webp", "t": "[天気・気象] 水のじゅんかん（じょう発と雲）"},
+  {"f": "fig_0084.webp", "t": "[天体・宇宙] 地球の自転と天体の日周運動(東から西へ)の模式図"},
+  {"f": "fig_0085.webp", "t": "[天体・宇宙] 日食(太陽-月-地球)と月食(太陽-地球-月)の位置関係の模式図"},
+  {"f": "fig_0086.webp", "t": "[天体・宇宙] 地球・月・太陽の位置関係と月の満ち欠けの模式図"},
+  {"f": "fig_0087.webp", "t": "[天体・宇宙] 地球の公転と季節ごとに見える星座(年周運動)の模式図"},
+  {"f": "fig_0088.webp", "t": "[天体・宇宙] 太陽と8つの惑星(地球型・木星型)の並びの模式図"},
+  {"f": "fig_0089.webp", "t": "[天体・宇宙] 北の空(北極星中心の円)と東西南の空の星の動きの図"},
+  {"f": "fig_0090.webp", "t": "[天体・宇宙] 地軸の傾きと夏至・冬至・春秋分の太陽の南中高度・通り道の模式図"},
+  {"f": "fig_0091.webp", "t": "[天体・宇宙] 太陽の黒点と、黒点の移動から自転がわかる観察の図"},
+  {"f": "fig_0092.webp", "t": "[天体・宇宙] 金星の位置による満ち欠けと大きさの変化(よいの明星・明けの明星)の模式図"},
+  {"f": "fig_0093.webp", "t": "[天体・宇宙] 地軸を中心に1日1回地球が自転するようすの図"},
+  {"f": "fig_0094.webp", "t": "[天体・宇宙] 月が地球を公転し太陽の光の当たる側が変わる満ち欠けの原因図"},
+  {"f": "fig_0095.webp", "t": "[天体・宇宙] 水星から海王星まで8つの惑星の大きさをそろえて比べた図"},
+  {"f": "fig_0096.webp", "t": "[天体・宇宙] 夏至・冬至・春秋分で変わる太陽の出る位置・通り道の比較図"},
+  {"f": "fig_0097.webp", "t": "[天体・宇宙] 地球との距離で金星の満ち欠けと見かけの大きさが変わる図"},
+  {"f": "fig_0098.webp", "t": "[天体・宇宙] 地軸が傾いたまま公転し光の当たり方が変わって季節が生じる図"},
+  {"f": "fig_0099.webp", "t": "[天体・宇宙] 地球の公転で季節ごとに見える星座が変わる(黄道12星座)図"},
+  {"f": "fig_0100.webp", "t": "[天体・宇宙] 日食と月食のちがい"},
+  {"f": "fig_0101.webp", "t": "[天体・宇宙] 月の満ち欠けのしくみ"},
+  {"f": "fig_0102.webp", "t": "[天体・宇宙] 季節がうまれるしくみ（地軸のかたむき）"},
+  {"f": "fig_0103.webp", "t": "[天体・宇宙] 太陽系の惑星のなかま"},
+  {"f": "fig_0104.webp", "t": "[天体・宇宙] 星の日周運動と地球の自転"},
+  {"f": "fig_0105.webp", "t": "[天体・宇宙] 星の年周運動と地球の公転"},
+  {"f": "fig_0106.webp", "t": "[天体・宇宙] 太陽の日周運動（1日の動き）"},
+  {"f": "fig_0107.webp", "t": "[天体・宇宙] 金星の見え方と満ち欠け"},
+  {"f": "fig_0318.webp", "t": "[大地・地層] 複数地点の地層を柱状に表しかぎ層で対比する柱状図"},
+  {"f": "fig_0319.webp", "t": "[大地・地層] 石灰岩に塩酸をかけて二酸化炭素が発生する実験の図"},
+  {"f": "fig_0320.webp", "t": "[大地・地層] 海洋プレートが大陸プレートの下に沈み込み地震が起こる断面図"},
+  {"f": "fig_0321.webp", "t": "[大地・地層] 震源距離と地震波の到達時間の関係グラフ(走時曲線)"},
+  {"f": "fig_0322.webp", "t": "[大地・地層] 地表に現れた活断層のずれの模式図・写真"},
+  {"f": "fig_0323.webp", "t": "[大地・地層] 黒っぽい火山岩・玄武岩の標本写真"},
+  {"f": "fig_0324.webp", "t": "[大地・地層] 有色鉱物・黒雲母の薄くはがれる性質(へき開)の図"},
+  {"f": "fig_0325.webp", "t": "[大地・地層] 溶岩が冷えて固まってできた柱状節理の写真"},
+  {"f": "fig_0326.webp", "t": "[大地・地層] かつて一つだった大陸パンゲアが分かれた大陸移動の図"},
+  {"f": "fig_0327.webp", "t": "[大地・地層] あたたかく浅い海を示す示相化石・サンゴの図"},
+  {"f": "fig_0328.webp", "t": "[大地・地層] 震央を中心に震度が広がる震度分布図(等震度線)"},
+  {"f": "fig_0329.webp", "t": "[大地・地層] 無色鉱物・長石の鉱物標本写真"},
+  {"f": "fig_0330.webp", "t": "[大地・地層] 古生代の示準化石フズリナの化石写真"},
+  {"f": "fig_0331.webp", "t": "[大地・地層] 下が粗く上ほど細かくなる級化層理(級化成層)の模式図"},
+  {"f": "fig_0332.webp", "t": "[大地・地層] 運搬されるうちに角がとれて丸くなる土砂の粒の図"},
+  {"f": "fig_0333.webp", "t": "[大地・地層] 火山・地震の被害想定を示すハザードマップの例"},
+  {"f": "fig_0334.webp", "t": "[大地・地層] 生物の遺がいからできた石灰岩・チャートの堆積岩の図"},
+  {"f": "fig_0335.webp", "t": "[大地・地層] 地震で砂地が液状化して噴砂・建物が傾く現象の模式図"},
+  {"f": "fig_0336.webp", "t": "[大地・地層] ルーペ(虫めがね)の正しい持ち方で岩石・地層を観察する図"},
+  {"f": "fig_0337.webp", "t": "[大地・地層] 黒曜石(ガラス質)と軽石(多孔質)の見た目の比較図"},
+  {"f": "fig_0338.webp", "t": "[大地・地層] 有色鉱物・カンラン石(オリーブ色の粒)の標本写真"},
+  {"f": "fig_0339.webp", "t": "[大地・地層] 初期微動継続時間が震源距離に比例する関係のグラフ"},
+  {"f": "fig_0340.webp", "t": "[大地・地層] 火山岩の斑状組織で斑晶と石基を示したラベル付き模式図"},
+  {"f": "fig_0341.webp", "t": "[大地・地層] 無色鉱物・石英(水晶)の結晶の標本写真"},
+  {"f": "fig_0342.webp", "t": "[大地・地層] 火成岩・堆積岩・変成岩が移り変わる岩石サイクルの模式図"},
+  {"f": "fig_0343.webp", "t": "[大地・地層] 海嶺で海洋プレートがつくられ広がる海洋底拡大の模式図"},
+  {"f": "fig_0344.webp", "t": "[大地・地層] 流れる水で運ばれた土が層になって積もる小学校のしくみ図"},
+  {"f": "fig_0345.webp", "t": "[大地・地層] 石灰岩が水にとけてできた鍾乳洞・つらら石の図"},
+  {"f": "fig_0346.webp", "t": "[大地・地層] がけ(露頭)に見える縞模様の地層の写真"},
+  {"f": "fig_0347.webp", "t": "[大地・地層] 海底の堆積→隆起→侵食→再堆積の地層形成の順序図"},
+  {"f": "fig_0348.webp", "t": "[大地・地層] 海底の断層がずれて津波が発生・伝わるしくみの模式図"},
+  {"f": "fig_0349.webp", "t": "[大地・地層] 火山灰が積もってかたまった凝灰岩(かぎ層によく使う)の図"},
+  {"f": "fig_0350.webp", "t": "[大地・地層] 地層が一度陸になり再び堆積した不整合の模式図"},
+  {"f": "fig_0351.webp", "t": "[大地・地層] 新生代の示準化石ビカリアの化石写真"},
+  {"f": "fig_0352.webp", "t": "[大地・地層] 岩石が風化し侵食されるはたらきの模式図"},
+  {"f": "fig_0353.webp", "t": "[大地・地層] 地震の発生時刻・震源きょりの求め方"},
+  {"f": "fig_0354.webp", "t": "[天気・気象] 昼の海風・夜の陸風が起こるしくみの模式図"},
+  {"f": "fig_0355.webp", "t": "[天気・気象] 高気圧の下降気流・低気圧の上昇気流と地上の風の模式図"},
+  {"f": "fig_0356.webp", "t": "[天気・気象] 台風の構造(目・うずまき)と進路の模式図"},
+  {"f": "fig_0357.webp", "t": "[天気・気象] 蒸発・凝結・降水と海陸風・大気の大循環の模式図"},
+  {"f": "fig_0358.webp", "t": "[天気・気象] 冬の西高東低の気圧配置(シベリア高気圧)の天気図"},
+  {"f": "fig_0359.webp", "t": "[天気・気象] 全国の雨量・気温を自動観測するアメダスの観測の図"},
+  {"f": "fig_0360.webp", "t": "[天気・気象] 風向をはかる風向計と風速をはかる風速計の図"},
+  {"f": "fig_0361.webp", "t": "[天気・気象] 気圧をはかるアネロイド気圧計のしくみの図"},
+  {"f": "fig_0362.webp", "t": "[天気・気象] 対流圏・成層圏・オゾン層など大気の層構造の図"},
+  {"f": "fig_0363.webp", "t": "[天気・気象] 1日の気温が昼すぎに最高になる変化を表すグラフ(小学校)"},
+  {"f": "fig_0364.webp", "t": "[天気・気象] 積乱雲・乱層雲・巻雲・積雲など雲の種類(十種雲形)の図"},
+  {"f": "fig_0365.webp", "t": "[天気・気象] 山をこえた風で風下が高温になるフェーン現象の模式図"},
+  {"f": "fig_0366.webp", "t": "[天気・気象] 寒冷前線通過で気温が急に下がり風向が変わるグラフ"},
+  {"f": "fig_0367.webp", "t": "[天気・気象] 偏西風・貿易風など地球規模の大気の大循環の模式図"},
+  {"f": "fig_0368.webp", "t": "[天気・気象] 等圧線の間隔がせまいほど風が強いことを示す天気図の図"},
+  {"f": "fig_0369.webp", "t": "[天気・気象] 夏の南高北低・小笠原気団におおわれる天気図"},
+  {"f": "fig_0370.webp", "t": "[天気・気象] 春・秋の移動性高気圧と低気圧が交互に来て天気が周期変化する図"},
+  {"f": "fig_0371.webp", "t": "[天気・気象] 空気の重さによる大気圧とヘクトパスカルの単位の図"},
+  {"f": "fig_0372.webp", "t": "[天気・気象] 北半球で高気圧は時計回りに吹き出し低気圧は反時計回りに吹き込む図"},
+  {"f": "fig_0373.webp", "t": "[天気・気象] 晴れた夜に地表が冷えて霜ができる放射冷却の図"},
+  {"f": "fig_0374.webp", "t": "[天気・気象] 雲の中で水滴・氷の粒が成長し雨や雪になるしくみの図"},
+  {"f": "fig_0375.webp", "t": "[天気・気象] 実際の水蒸気量÷飽和水蒸気量×100で湿度を求める計算図"},
+];
+// =======================================================
+const KEY="tinder_"+SHEET;
+let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+function itemKey(it){return it.pair ? it.pair[0]+"|"+it.pair[1] : it.f;}
+let idx=Object.keys(st).filter(k=>!k.startsWith("_")).length ? nextUndone() : 0;
+let history=[];
+document.getElementById("title").textContent=SHEET;
+function nextUndone(){for(let i=0;i<ITEMS.length;i++){if(!st[itemKey(ITEMS[i])])return i;}return ITEMS.length;}
+function save(){localStorage.setItem(KEY,JSON.stringify(st));}
+const stage=document.getElementById("stage");
+let card=null,sx=0,sy=0,dx=0,dragging=false,lastTap=0;
+function render(){
+  stage.innerHTML="";
+  document.getElementById("prog").textContent=Math.min(idx,ITEMS.length)+" / "+ITEMS.length;
+  if(idx>=ITEMS.length){finish();return;}
+  document.getElementById("done").classList.remove("on");
+  const it=ITEMS[idx];
+  card=document.createElement("div");
+  if(it.pair){
+    card.className="card pair";
+    card.innerHTML=
+      '<div class="half"><img src="'+IMGDIR+it.pair[0]+'" draggable="false">'+
+        '<div class="sub">'+(it.ta||"A")+'</div><button class="pick" onclick="pick(0,event)">◀ こっちを採用</button></div>'+
+      '<div class="half"><img src="'+IMGDIR+it.pair[1]+'" draggable="false">'+
+        '<div class="sub">'+(it.tb||"B")+'</div><button class="pick" onclick="pick(1,event)">こっちを採用 ▶</button></div>'+
+      '<div class="stamp ng">両方不採用</div>'+
+      '<div class="label">'+(idx+1)+"件目(比較): "+it.t+"</div>";
+    document.getElementById("hint").textContent="ボタン=片方採用　←スワイプ/✗=両方不採用　ダブルタップ=✏修正";
+    document.getElementById("okbtn").style.display="none";
+  }else{
+    card.className="card";
+    card.innerHTML='<img src="'+IMGDIR+it.f+'" draggable="false">'+
+      '<div class="stamp ok">採用</div><div class="stamp ng">不採用</div>'+
+      '<div class="label">'+(idx+1)+"体目: "+it.t+"</div>";
+    document.getElementById("hint").textContent="→スワイプ=採用　←スワイプ=不採用　ダブルタップ=✏修正コメント";
+    document.getElementById("okbtn").style.display="";
+  }
+  stage.appendChild(card);
+  card.addEventListener("pointerdown",pd);
+  card.addEventListener("pointermove",pm);
+  card.addEventListener("pointerup",pu);
+  card.addEventListener("pointercancel",pu);
+}
+function pick(side,ev){
+  if(ev){ev.stopPropagation();}
+  const it=ITEMS[idx];if(!it||!it.pair)return;
+  const half=card.querySelectorAll(".half")[side];if(half)half.classList.add("win");
+  decide(side===0?"A":"B");
+}
+function pd(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains("pick"))return;
+  const now=Date.now();
+  if(now-lastTap<300){lastTap=0;openFix();return;}
+  lastTap=now;
+  dragging=true;sx=e.clientX;sy=e.clientY;dx=0;card.classList.add("drag");
+  card.setPointerCapture(e.pointerId);
+}
+function pm(e){
+  if(!dragging)return;
+  const it=ITEMS[idx];
+  dx=e.clientX-sx;const dy=e.clientY-sy;
+  if(it.pair&&dx>0)dx=0; // ペアは右スワイプ採用なし（どっちか選べないため）
+  card.style.transform="translate("+dx+"px,"+(dy*0.3)+"px) rotate("+(dx/18)+"deg)";
+  const ok=card.querySelector(".stamp.ok");
+  if(ok)ok.style.opacity=dx>40?Math.min((dx-40)/80,1):0;
+  card.querySelector(".stamp.ng").style.opacity=dx<-40?Math.min((-dx-40)/80,1):0;
+}
+function pu(){
+  if(!dragging)return;dragging=false;card.classList.remove("drag");
+  const it=ITEMS[idx];
+  if(dx>90&&!it.pair){decide("OK");}
+  else if(dx<-90){decide("NG");}
+  else{card.style.transform="";card.querySelectorAll(".stamp").forEach(s=>s.style.opacity=0);}
+}
+function decide(v,note){
+  if(idx>=ITEMS.length)return;
+  const it=ITEMS[idx];const k=itemKey(it);
+  st[k]={v:v,t:it.t};if(note)st[k].note=note;
+  if(it.pair){st[k].a=it.pair[0];st[k].b=it.pair[1];}
+  history.push(k);save();
+  if(card){const dir=(v==="OK"||v==="A"||v==="B")?1:(v==="NG"?-1:0);card.style.transform="translate("+dir*window.innerWidth+"px,-40px) rotate("+dir*20+"deg)";card.style.opacity=0;}
+  idx++;setTimeout(render,180);
+}
+function undo(){
+  if(!history.length)return;
+  const k=history.pop();delete st[k];save();
+  idx=ITEMS.findIndex(it=>itemKey(it)===k);render();
+}
+function openFix(){if(idx>=ITEMS.length)return;const k=itemKey(ITEMS[idx]);document.getElementById("fixnote").value=(st[k]&&st[k].note)||"";document.getElementById("ov").classList.add("on");}
+function closeFix(){document.getElementById("ov").classList.remove("on");}
+function saveFix(){const n=document.getElementById("fixnote").value.trim();closeFix();decide("FIX",n||"(コメントなし)");}
+function finish(){
+  const c={};Object.keys(st).forEach(k=>{if(!k.startsWith("_"))c[st[k].v]=(c[st[k].v]||0)+1;});
+  const adopt=(c.OK||0)+(c.A||0)+(c.B||0);
+  document.getElementById("counts").innerHTML="◎採用 "+adopt+"　✗不採用 "+(c.NG||0)+"　✏修正 "+(c.FIX||0);
+  document.getElementById("done").classList.add("on");
+}
+function copyResult(btn){
+  // 軽量書き出し: tを落としv(+note/pair)だけ=チャット貼り付けの文字数上限対策(2026-07-13/227体で切れた)
+  const ans={};Object.keys(st).forEach(k=>{if(k.startsWith("_"))return;const e=st[k];
+    if(e.note||e.a){const o={v:e.v};if(e.note)o.note=e.note;if(e.a){o.a=e.a;o.b=e.b;}ans[k]=o;}
+    else ans[k]=e.v;});
+  const out={sheet:SHEET,answers:ans};const txt=JSON.stringify(out);
+  const dump=document.getElementById("dump");dump.style.display="block";dump.value=txt;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{btn.textContent="コピーしました ✓";},()=>{btn.textContent="下の欄を長押しでコピー";});
+  }else{btn.textContent="下の欄を長押しでコピー";}
+}
+render();
+</script>
+</body>
+</html>
