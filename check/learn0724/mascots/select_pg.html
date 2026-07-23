@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ペンギン20案 — えらぶ</title>
+<style>
+body{margin:0; background:#f6f4ef; color:#3b3a36; font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif; padding:20px;}
+h1{font-size:18px; margin:0 0 4px;} .sub{color:#8a857a; font-size:13px; margin-bottom:16px;}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px;}
+.card{background:#fff; border:2px solid #e5e0d5; border-radius:14px; padding:10px; text-align:center; cursor:pointer; position:relative;}
+.card img{width:100%; aspect-ratio:1; object-fit:contain; background:repeating-conic-gradient(#f0ede6 0 25%, #fff 0 50%) 0 0/24px 24px; border-radius:10px;}
+.card .nm{font-weight:800; margin-top:6px; font-size:13.5px;}
+.card.pick{border-color:#0FA9A0; box-shadow:0 0 0 3px #0FA9A033;}
+.card .mark{position:absolute; top:8px; left:8px; font-size:24px; display:none;}
+.card.pick .mark{display:block;}
+.bar{position:fixed; bottom:14px; left:50%; transform:translateX(-50%); background:#3b3a36; color:#fff; border-radius:99px; padding:10px 20px; font-weight:700; display:flex; gap:14px; align-items:center;}
+.bar button{border:none; border-radius:99px; padding:6px 14px; font-weight:800; cursor:pointer; background:#fff;}
+a.back{color:#8a857a;}
+</style>
+</head>
+<body>
+<h1>🐧 ペンギン20案（第2便）</h1>
+<div class="sub">気に入ったものをタップ（複数OK）→「結果をコピー」か、番号をチャットで。第1便10案は <a class="back" href="select.html">こちら</a>。</div>
+<div class="grid" id="grid"></div>
+<div class="bar"><span id="stat">えらんだ: 0</span><button onclick="copyRes()">📋 結果をコピー</button></div>
+<script>
+const IDEAS = [
+ ["pg_01_mortarboard.png","P1 角帽の学者"],["pg_02_labcoat.png","P2 白衣+タブレット"],
+ ["pg_03_teacher.png","P3 先生(指し棒)"],["pg_04_chalk.png","P4 黒板とチョーク"],
+ ["pg_05_books.png","P5 本の山"],["pg_06_gakuran.png","P6 詰襟の生徒"],
+ ["pg_07_loupe.png","P7 虫めがね"],["pg_08_flask.png","P8 フラスコ(青緑液)"],
+ ["pg_09_microscope.png","P9 顕微鏡"],["pg_10_globe.png","P10 地球儀"],
+ ["pg_11_telescope.png","P11 望遠鏡と星"],["pg_12_idea.png","P12 ひらめき電球"],
+ ["pg_13_note.png","P13 ノートで勉強"],["pg_14_cheer.png","P14 応援ポンポン"],
+ ["pg_15_hanamaru.png","P15 花丸はんこ"],["pg_16_stopwatch.png","P16 ストップウォッチ"],
+ ["pg_17_magnet.png","P17 U字磁石"],["pg_18_chick.png","P18 ヒナと絵本"],
+ ["pg_19_scarf.png","P19 賢者マフラー"],["pg_20_rocket.png","P20 ロケット"],
+];
+const picks = new Set();
+const grid = document.getElementById("grid");
+IDEAS.forEach(([f,n],i)=>{
+  const c = document.createElement("div"); c.className="card";
+  c.innerHTML = `<span class="mark">◎</span><img src="${f}" loading="lazy" onerror="this.style.opacity=.15"><div class="nm">${n}</div>`;
+  c.onclick = ()=>{ c.classList.toggle("pick"); c.classList.contains("pick")?picks.add(n.split(" ")[0]):picks.delete(n.split(" ")[0]);
+    document.getElementById("stat").textContent = "えらんだ: " + picks.size; };
+  grid.appendChild(c);
+});
+function copyRes(){ const s = "ペンギン採用: " + [...picks].join(", ");
+  navigator.clipboard && navigator.clipboard.writeText(s); alert(s + "\nコピーしました"); }
+</script>
+</body>
+</html>

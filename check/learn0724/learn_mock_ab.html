@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>りかの練習ノート（仮）— 統合案AB</title>
+<!--
+  ★統合案AB（2026-07-23）＝ベースA「フェザー」＋Bの花丸文化を移植。オーナー確定「A＋B。ベースはAだが、花丸の表現が良い」。
+  ■オーナー4指摘の反映内容（今回の本丸）:
+    1) 脱Duolingo色: 緑#58CC02は全廃。主色をCSS変数--acc系に集約し、既定テーマ＝ティール#0D9F96(C2で0FA9A0を濃色化)/#0B7E77/#E3F6F4。
+       トップバーに切替チップ「ティール/ブルー/アンバー」（タップ即切替・保存なし）。可変なのは「正解・前進・主ボタン」系のみ。
+       色→意味の辞書は不変: 情報青#1CB0F6・報酬金#FFC800・特別紫#CE82FF・誤答解説青#1368CE・朱#D32F27(C1でE8382Fを濃色化)=花丸/はんこ専用（全テーマ不変）。
+    2) Chromebook横長最適化(1366×768): カードは図あり=左図・右本文の2カラム、図なし=1カラムmax-width900px。
+       カードは縦いっぱいに固定枠で置き、長い本文だけカード内部スクロール（.kin）。
+    3) ★タップ位置の下部固定（最重要）: 画面下端に高さ一定120pxの「アクションゾーン」(#azone・position:fixed)。
+       主ボタン(つぎへ/つづける)は常に同一矩形（.azprimary=right:28px/bottom:29px/210×62固定）。選択肢はゾーン内に横並び
+       （○✕=大2つ・3択/4択=横並び・文言8字以上は2×2）。回答後はシート(#sheet)がゾーンの上にスライドインし、
+       「つづける」は「つぎへ」と同じ座標＝下部同じ場所のクリック連打で「答える→つづける→答える」が流れる。バーストも同ゾーン。
+    4) キャラは仮: MASCOT_SRC 1変数に集約（差し替え前提）＋「仮キャラ（投票中）」バッジ。
+  ■Bから移植した花丸文化: 花丸ストロークSVG(自作パス・dashoffset1.2秒・朱ペン)＝全問正解バースト/ユニット完走の瞬間。
+    先生スタンプ階段(完了画面)＝≤5割みました◎/6-7割よくできました/8-9割たいへんよくできました(二重枠)/全問=金枠はなまる。
+    押印=scale(1.6)→1.0+微回転+低音1発。誤答シートに小さな「みました◎」。方眼ノート背景は持ち込まない（A基調の白）。
+  ■Aから引き継ぎ（壊さない）: バースト10問(誤答微前進・末尾再挿入・16px進捗バー)・コンボ演出のみ(2から表示/節目3・5・7)・
+    完了スタット3枚カウントアップ・canvas紙吹雪・WebAudioチャイム(コンボでピッチ上昇/🔊トグル)・ポイント2階建て・
+    ミッション3本+宝箱・もくじ/道/ホーム/検収モード(◎✏⏭タグメモJSONコピー互換)・prefers-reduced-motion。
+    禁止事項: 赤✕・シェイク・日またぎストリーク・期限煽り・悲しむキャラ・能力ほめ。
+  ・単一HTML・外部CDN/フォント/画像URL禁止。ローカル画像は mimg/m_chibi-spark-pup.png のみ(全imgにonerror非表示)。
+  ・確認: rpg-devサーバ → http://localhost:9100/rika2/learn_mock_ab.html （1366×768横長で）
+  §目次: §1テーマ/配色 §2レイアウト §3立体ボタン §4ホーム/ミッション/宝箱 §5もくじ §6道 §7カードビューア2層
+         §8アクションゾーン/シート §9バースト §10完了画面 §11花丸/はんこ(B移植) §12演出 §13検収 §14reduced-motion §15撮影モード
+         §16設定モーダル/はじまりのあいさつ(C4) §17みなおしリスト(C5)
+         [JS] §A データ §B 状態 §C ナビ/テーマ §D ホーム/ミッション §E もくじ/道 §F カードビューア §G ゾーン/シート共通
+              §H バースト §I 完了画面 §J 花丸/はんこ §K 紙吹雪 §L 音 §M 検収 §P 設定/あいさつ(C4) §Q みなおし/復帰(C5)
+              §R a11y統治(C8=キーボード/フォーカス/SR) §O 撮影フック(?shot=) §N 初期化
+-->
+<style>
+/* ═══ §1 テーマ/配色（--acc系のみ可変・辞書色は不変）
+   ★C1コントラスト整流(2026-07-23): 文字用インクは背景ごとに実測4.5:1以上（値は磨き台帳§2理由表）。
+     --sub 8A8A8A→6E6E6E(白上5.1)・--sub-dk=グレー地上の文字(5.3)・--gold-ink=白/淡金地の金文字(6.25/5.68)・
+     --gold-on=濃金(#FFC800)地の文字(5.86)・--purple-ink=紫文字(5.7)・--acc-ink=淡acc地のacc文字(テーマ別・全て5.0+)。
+     朱E8382F(4.17)→D32F27(4.99)=色相維持で最小濃色化。塗り・影・枠は従来変数のまま（非テキスト3:1は別途）。
+   ★C2タイポ整流(同日): 7段スケール--fs-1〜7(比率1.12〜1.20・本文16px下限・例外=判子/○×記号=幾何拘束のみ)。
+     --acc 0FA9A0→0D9F96(白文字3.27=19px太字は大文字判定で3:1合格)・--acc-fg新設=acc塗り面の文字色(既定#fff・amberのみ濃茶4A3800=5.30)。
+   ★C3レイアウト格子(同日): 全margin/padding/gapを8px格子{8,16,24,32,48}+補助4へ整流(Sol実測97件をClaude監査)。
+     12px=8+4複合の正当例外=ピル/チップの横パディング・入力欄・44pxターゲット確保のみ(各所コメント)。
+     負マージン/吹き出し矢印/判子・宝箱の内部座標=幾何例外。影の3段=フラット(影なし)/--sh-card(接地4px)/--sh-float(浮遊)。
+     左ナビ--navw 230→184px・カード内は「上2:下3」光学中心(死んだ中央置き廃止)。 ═══ */
+:root{
+  --fs-1:11px; --fs-2:12.5px; --fs-3:14px; --fs-4:16px; --fs-5:19px; --fs-6:22.5px; --fs-7:27px;  /* 7段タイポスケール(C2) */
+  --navw:184px;                                                           /* 左ナビ幅(C3: 230→184=8×23。ナビは目的地リストで主役ではない) */
+  --sh-card:0 4px 0 var(--gray);                                          /* 影3段(C3): カード=接地(ハード4px)。押しボタンのledgeは色連動の同段 */
+  --sh-float:0 8px 24px rgba(60,60,60,.22);                               /* 影3段(C3): 浮遊=オーバーレイ専用(モーダル/ピル/ポップ)。フラット=影なし */
+  --acc:#0D9F96; --acc-fg:#fff; --acc-dk:#0B7E77; --acc-lt:#5ED9D1; --acc-bg:#E3F6F4;   /* 既定=ティール(理科のフラスコ液) */
+  --acc-ink:#0A6B65;
+  --blue:#1CB0F6; --blue-dk:#1899D6; --blue-bg:#E7F5FD; --info-ink:#1368CE;
+  --gold:#FFC800; --gold-dk:#E6A800; --gold-bg:#FFF4CE;
+  --gold-ink:#7A5C00; --gold-on:#5C4500;
+  --purple:#CE82FF; --purple-dk:#A560E8; --purple-bg:#F6EBFF; --purple-ink:#7A3DB8;
+  --shu:#D32F27;                                                          /* 朱=花丸/はんこ専用・全テーマ不変 */
+  --gray:#E5E5E5; --gray-dk:#CFCFCF;
+  --ink:#3C3C3C; --sub:#6E6E6E; --sub-dk:#5C5C5C;  /* C10掃除: 未使用変数--r(参照ゼロ)を削除 */
+  --azh:120px;                                                            /* アクションゾーン高さ(一定) */
+}
+body[data-theme="blue"]{ --acc:#3E7BFA; --acc-dk:#2C5CD6; --acc-lt:#9DB9FC; --acc-bg:#E8EFFD; --acc-ink:#2C5CD6; }
+body[data-theme="amber"]{ --acc:#F59F00; --acc-dk:#C77F00; --acc-lt:#FBCB66; --acc-bg:#FDF3E0; --acc-ink:#8A5800; --acc-fg:#4A3800;
+  --bar:var(--acc-ink); }                                                 /* amberはacc-dk2.57✗→acc-ink4.79(C4 sbarと同じ救済) */
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+/* ★C8 a11y(§2d-15): focusリング統一=キーボード操作時のみ(:focus-visible)3px ink・offset2px。
+   2px以上+周囲3:1(白上10.4・灰E5E5E5上7.0=全下地で合格)の実務基準。青系は色→意味辞書(情報/誤答解説)と衝突するためink採用 */
+:focus-visible{outline:3px solid var(--ink); outline-offset:2px;}
+/* C8: スクリーンリーダー専用テキスト(live region用)。display:noneだと読まれないためクリップ方式 */
+.vh{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;}
+body{--bar:var(--acc-dk);  /* C6(§2d-12)進捗バー塗り=前進のテーマ色系(トラック灰3.86/4.59)。★C9是正: :root宣言だとvar()がhtml側のteal値で先に確定し、blueテーマへ漏れていた(実測#0B7E77)→テーマ属性と同じbodyで解決させる */
+  margin:0; background:#FFFFFF; color:var(--ink);
+  font-family:"Yu Gothic UI","Hiragino Kaku Gothic ProN","BIZ UDPGothic",Meiryo,sans-serif;
+  font-size:var(--fs-4); line-height:1.7; font-weight:600;}
+button{font-family:inherit;}
+h2.vtitle{font-size:var(--fs-6); line-height:1.3; font-weight:800; letter-spacing:-.02em; margin:4px 0 16px;}
+img{max-width:100%;}
+
+/* ═══ §2 レイアウト ═══ */
+.app{display:grid; grid-template-columns:var(--navw) 1fr; grid-template-rows:60px 1fr; height:100vh;}
+.topbar{grid-column:1/3; display:flex; align-items:center; gap:8px; padding:0 16px;
+  background:#fff; border-bottom:2px solid var(--gray);}
+.brand{font-weight:800; font-size:var(--fs-5); letter-spacing:-.01em; display:flex; align-items:center; gap:8px;}
+.brand .beta{font-size:var(--fs-1); background:var(--purple-bg); color:var(--purple-ink); border-radius:99px; padding:4px 8px; font-weight:800;}
+.top-right{margin-left:auto; display:flex; align-items:center; gap:8px;}
+.themebar{display:flex; gap:8px; margin-right:8px;}  /* 8=隣接ターゲット間隔の下限(台帳2a) */
+.thchip{display:flex; align-items:center; gap:4px; border:2px solid var(--gray); background:#fff; border-radius:99px;
+  padding:4px 12px; min-height:32px; font-size:var(--fs-1); font-weight:800; color:var(--sub); cursor:pointer;}
+.thchip i{width:12px; height:12px; border-radius:99px; display:block; border:1px solid rgba(0,0,0,.08);}
+.thchip.act{border-color:var(--acc); color:var(--acc-ink); background:var(--acc-bg);}
+.thchip.act::before{content:"✓";}  /* C9(Sol審査員#9): 選択状態を色以外でも(1.4.1)。flexのgap:4が間隔を担う */
+.ptchip{display:flex; align-items:center; gap:4px; background:var(--gold-bg); border:2px solid var(--gold);
+  border-radius:99px; padding:4px 16px; min-height:32px; font-weight:800; color:var(--gold-ink); cursor:default;}
+.ptchip.big{font-size:var(--fs-5); display:inline-flex; padding:8px 16px;}
+.sndbtn{border:2px solid var(--gray); background:#fff; border-radius:16px; padding:4px 8px; min-height:32px; font-size:var(--fs-4);
+  cursor:pointer; box-shadow:0 4px 0 var(--gray);}
+.sndbtn:active{transform:translateY(4px); box-shadow:none;}
+.revtoggle{border:2px solid var(--gray); background:#fff; color:var(--sub); font-weight:800;
+  border-radius:16px; padding:4px 16px; min-height:32px; font-size:var(--fs-2); cursor:pointer; box-shadow:0 4px 0 var(--gray);}
+.revtoggle:active{transform:translateY(4px); box-shadow:none;}
+.revtoggle.on{background:var(--purple-bg); border-color:var(--purple); color:var(--purple-ink); box-shadow:0 4px 0 var(--purple);}
+
+.nav{background:#fff; border-right:2px solid var(--gray); padding:16px 8px; display:flex; flex-direction:column; gap:8px;}
+.nav button{display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:2px solid transparent;
+  background:#fff; padding:8px 12px; min-height:44px; border-radius:16px; font-size:var(--fs-3); font-weight:800; color:var(--sub);
+  cursor:pointer; box-shadow:0 4px 0 transparent;}  /* 横12=8+4複合(ピル/コンパクト正当例外・台帳§2c3) */
+.nav button:hover{border-color:var(--gray); box-shadow:0 4px 0 var(--gray);}
+.nav button:active{transform:translateY(4px); box-shadow:none;}
+.nav button.act{background:var(--blue-bg); border-color:var(--blue); color:var(--info-ink); box-shadow:0 4px 0 var(--blue);}
+.nav .navnote{margin-top:auto; font-size:var(--fs-1); color:var(--sub); padding:8px; border-top:2px dashed var(--gray); line-height:1.6; font-weight:600;}
+.badge{margin-left:auto; font-size:var(--fs-1); background:var(--gold); color:var(--gold-on); border-radius:99px; padding:4px 8px; font-weight:800;}
+.badge.gray{background:var(--gray); color:var(--sub-dk);}
+
+.main{overflow-y:auto; padding:24px 32px;}
+.view{display:none; max-width:1020px; margin:0 auto;}
+.view.show{display:block;}
+/* ★下部固定レイアウト時(unit/burst/result)＝mainはスクロールせず、AZ分の下余白を確保 */
+body.azview .main{overflow:hidden; padding:8px 24px calc(var(--azh) + 8px); display:flex; flex-direction:column;}
+body.azview .view.show{display:flex; flex-direction:column; flex:1; min-height:0; max-width:1140px; width:100%; margin:0 auto;}
+.hcard{background:#fff; border:2px solid var(--gray); border-radius:20px; box-shadow:var(--sh-card); padding:24px;}
+.kicker{font-size:var(--fs-2); color:var(--sub); font-weight:800; letter-spacing:.05em;}
+.maswrap{position:relative; display:inline-block;}
+.tempbadge{position:absolute; left:50%; bottom:-6px; transform:translateX(-50%); font-size:var(--fs-1); background:#fff;
+  border:1px solid var(--gray-dk); color:var(--sub); border-radius:99px; padding:4px 8px; white-space:nowrap; font-weight:800;}
+
+/* ═══ §3 立体ボタン ═══ */
+.b3{border:none; border-radius:16px; font-weight:800; cursor:pointer; padding:12px 24px; min-height:44px;  /* 縦12=8+4複合(44pxターゲット確保の例外) */ font-size:var(--fs-4); letter-spacing:-.01em; color:#fff;}
+.b3:active{transform:translateY(4px); box-shadow:none !important;}
+.b3.acc{background:var(--acc); color:var(--acc-fg); box-shadow:0 4px 0 var(--acc-dk);
+  font-size:var(--fs-5);}  /* C8実測: 16pxだと白×acc4.5未満(teal3.27/blue3.88)→主アクションはfs-5=19px太字の大文字判定3:1(azprimary.accと同律・C2表の取りこぼし) */
+.b3.white{background:#fff; color:var(--info-ink); border:2px solid var(--gray); box-shadow:0 4px 0 var(--gray);}
+.b3.slim{padding:8px 16px; min-height:44px; font-size:var(--fs-3);}
+/* C10掃除: .b3.blue/.b3.big=定義のみで参照ゼロ(全1756行grep)→削除。誤答青の主ボタンは.azprimary.blueが現役 */
+
+/* ═══ §4 ホーム/ミッション/宝箱 ═══ */
+.hero2{display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-bottom:16px;}
+.hcol{display:flex; flex-direction:column; gap:16px;}
+.hcol .hcard{flex:1 1 0; min-height:0; overflow:hidden;}  /* C3: 右列2枚を厳密に等分（min-height:autoの床で9px差が出るためmin-height:0。食い込みは下パディング24px内=安全） */
+.mrow{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.mrow img{width:82px; flex:none;}
+.bubble{background:#fff; border:2px solid var(--gray); border-radius:16px; padding:8px 16px; font-weight:800; font-size:var(--fs-3); position:relative;}
+.bubble::before{content:""; position:absolute; left:-8px; top:50%; margin-top:-6px; border:6px solid transparent; border-right-color:var(--gray); border-left:none;}
+.hero2 h3{margin:4px 0 4px; font-size:var(--fs-6); line-height:1.35; font-weight:800; letter-spacing:-.02em;}
+.unitline{color:var(--sub); font-size:var(--fs-2);}
+.pblue{height:16px; background:var(--gray); border-radius:8px; overflow:hidden; margin:8px 0 16px;}  /* C6(§2d-13): 12→16=格子値。ホームの主進捗が細すぎた */
+.pblue i{display:block; height:100%; border-radius:8px; background:var(--bar); transition:width .3s ease-out;}
+.pblue.mini{height:12px; margin:4px 0 0;}  /* C6(§2d-13): 10→12(8+4複合) */
+.pttoday{font-size:var(--fs-2); color:var(--sub); margin-top:4px;}
+.pttoday b{color:var(--ink); font-size:var(--fs-4);}
+.pttotal{font-size:var(--fs-6); font-weight:800; color:var(--gold-ink); margin-top:4px; letter-spacing:-.01em; font-variant-numeric:tabular-nums;}
+.soonline{font-size:var(--fs-4); font-weight:800; margin:4px 0 8px;}
+.soontag{font-size:var(--fs-1); color:var(--sub-dk); background:var(--gray); border-radius:99px; padding:4px 8px; margin-left:4px; font-weight:800;}
+.hgrid2{display:grid; grid-template-columns:1.5fr 1fr; gap:16px;}  /* C3: 1.05fr→1.5fr=上段hero2と縦の目地を一直線に（画面全体を1つの格子に） */
+.gradebar{display:flex; gap:8px; align-items:center; margin:8px 0;}
+.gradebar .g{font-weight:800; width:36px;}
+.gradebar .gp{flex:1; margin:0;}
+.homefoot{font-size:var(--fs-2); color:var(--sub); margin-top:16px;}  /* 16=別ブロックの区切り */
+.mission{display:flex; align-items:center; gap:16px; padding:8px 0; border-bottom:2px dashed var(--gray);}
+.mission:last-child{border-bottom:none;}
+.mission .mtext{flex:1;}
+.mission .mname{font-weight:800; font-size:var(--fs-3);}
+.mission .mcount{font-weight:800; color:var(--sub); font-size:var(--fs-2); width:74px; text-align:right; font-variant-numeric:tabular-nums;}
+.mission .mcount.donec{color:var(--gold-ink);}
+/* 宝箱(銅/銀/金)＝CSSのみ・報酬メタル表現は不変 */
+.chest{position:relative; width:44px; height:42px; flex:none;}
+.chest .lid{position:absolute; left:0; top:5px; width:44px; height:16px; border-radius:8px 8px 3px 3px; z-index:2; transform-origin:left bottom;}
+.chest .box{position:absolute; left:2px; bottom:0; width:40px; height:23px; border-radius:3px 3px 7px 7px;}
+.chest .box::after{content:""; position:absolute; left:50%; top:-2px; margin-left:-4px; width:8px; height:10px; border-radius:3px; background:rgba(255,255,255,.55);}
+.chest .shine{position:absolute; left:50%; top:-4px; transform:translateX(-50%); opacity:0; font-size:var(--fs-3); z-index:3;}
+.chest.bronze .lid{background:#CD7F32;} .chest.bronze .box{background:#A3641F;}
+.chest.silver .lid{background:#DDDDDD;} .chest.silver .box{background:#BFBFBF;}
+.chest.gold .lid{background:var(--gold);} .chest.gold .box{background:var(--gold-dk);}
+.chest.open .lid{transform:translate(-2px,-10px) rotate(-34deg);}
+.chest.open .shine{opacity:1; transform:translateX(-50%) translateY(-8px);}
+.chest.open.fresh .lid{animation:lidJump .7s cubic-bezier(0.34,1.56,0.64,1) forwards;}
+.chest.open.fresh .shine{animation:shinePop .7s .25s ease-out forwards;}
+@keyframes lidJump{0%{transform:rotate(0);} 45%{transform:translate(-2px,-15px) rotate(-40deg);} 70%{transform:translate(-2px,-7px) rotate(-28deg);} 100%{transform:translate(-2px,-10px) rotate(-34deg);}}
+@keyframes shinePop{from{opacity:0; transform:translateX(-50%);} to{opacity:1; transform:translateX(-50%) translateY(-8px);}}
+
+/* ═══ §5 もくじ ═══ */
+.tabs{display:flex; gap:8px; margin-bottom:16px;}
+.tabs button{border:2px solid var(--gray); background:#fff; border-radius:16px; padding:8px 16px; min-height:44px; font-size:var(--fs-3); font-weight:800; cursor:pointer; color:var(--sub); box-shadow:0 4px 0 var(--gray);}
+.tabs button:active{transform:translateY(4px); box-shadow:none;}
+.tabs button.act{background:var(--blue-bg); border-color:var(--blue); color:var(--info-ink); box-shadow:0 4px 0 var(--blue);}
+.tanmoku{display:flex; flex-direction:column; gap:16px;}
+.tan{padding:16px 24px;}
+/* C6: 準備中カードのopacity.7を廃止(コントラスト毀損)→明示色+破線枠+低い行で「まだ無い」を表現。作業中の単元カードが主役に立つ */
+.tan.soon{cursor:pointer; padding:8px 24px; border-style:dashed; background:#FAFAFA;}
+.tan.soon h4{color:var(--sub-dk);}
+.tan.soon .schip{background:var(--gray); color:var(--sub-dk);}
+.tan .tanhead{display:flex; align-items:center; gap:8px; cursor:pointer;}
+.tan .schip{font-size:var(--fs-1); font-weight:800; border-radius:8px; padding:4px 8px; background:var(--blue-bg); color:var(--info-ink); flex:none;}
+.tan h4{margin:0; font-size:var(--fs-4); font-weight:800; letter-spacing:-.01em;}
+.tan .tsub{color:var(--sub); font-size:var(--fs-2); margin-left:8px; font-weight:700;}  /* C3: margin-left:auto廃止=右端1190px流し→題名の直後へ（視線の断絶をなくす） */
+.tan .tanbar{width:96px; flex:none; margin:0 0 0 8px;}  /* C6: 章の進捗を文字+バーの二重表現で一目に(C9: 文言は「N中nつおわったよ」=分母明記・Sol審査員#13/中2#9) */
+.mokunote{display:flex; align-items:center; gap:16px; font-size:var(--fs-3); color:var(--sub-dk); font-weight:700; padding:8px 24px;}  /* C6: 全部準備中の学年タブの空状態 */
+/* C3: 6行×全幅の間延び（文字↔ひらくが実測880px）→2列グリッド。行内距離が半減し、一覧も1画面に収まる */
+.ulist{margin:16px 0 0; padding:4px 0 0; list-style:none; border-top:2px dashed var(--gray);
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,auto); grid-auto-flow:column; column-gap:32px;}
+  /* auto-flow:column=もくじは「縦に読む」順序を保つ(左列1→2→3・右列4→5→6。Z字の行順だと単元順を誤読する) */
+.ulist li{display:flex; align-items:center; gap:8px; padding:8px; border-bottom:2px dashed var(--gray); cursor:pointer; border-radius:10px;}
+.ulist li:hover{background:var(--blue-bg);}
+.st{width:24px; height:24px; border-radius:99px; display:flex; align-items:center; justify-content:center; font-size:var(--fs-2); font-weight:800; flex:none;}
+.st.done{background:var(--acc); color:var(--acc-fg); box-shadow:0 2px 0 var(--acc-dk);}
+.st.cur{background:#fff; border:3px solid var(--acc); color:var(--acc-ink);}  /* C8実測: acc-dkはamberで白上3.25✗→acc-ink(全テーマ5.0+) */
+.st.todo{background:var(--gray); color:var(--sub-dk);}
+.ulist .uname{font-size:var(--fs-3); font-weight:700;}
+/* C3: 右端は状態別（済=もう一回/現在地=つづきから=前進色/未=ひらく）。
+   C6: 文字だけ→ピル型に（C3残玉「ボタン境界なし=押せるものに見えない」）。行全体がターゲットでピルは視覚。
+   文字は12.5pxの小文字=4.5:1必須→cur白抜きは3.27✗なのでacc-bg+acc-ink(5.0+)を採用 */
+.ulist .go{margin-left:auto; color:var(--info-ink); font-size:var(--fs-2); font-weight:800; flex:none;
+  border:2px solid var(--blue); background:#fff; border-radius:99px; padding:4px 12px;}
+.ulist .go.gdone{color:var(--sub-dk); border-color:var(--gray-dk);}
+.ulist .go.gcur{color:var(--acc-ink); border-color:var(--acc); background:var(--acc-bg);}
+
+/* ═══ §6 道（A基調のまま・色だけ新テーマ） ═══ */
+.pathhead{padding:16px 24px; margin-bottom:16px; display:flex; align-items:center; gap:16px;
+  position:sticky; top:0; z-index:5;}  /* C6: 現在地への自動スクロールで章名/すすみぐあいが消えないよう吸着(ノードはカード下をくぐる) */
+.pathhead::after{content:""; position:absolute; left:8px; right:8px; top:100%; height:32px; pointer-events:none;
+  background:linear-gradient(#fff, rgba(255,255,255,0));}  /* C6(Sol#2): 吸着境界で上ノードの説明文が切れ端で浮く→白フェードで「まだ上がある」表現に */
+.pathhead .big{font-size:var(--fs-6); line-height:1.35; font-weight:800; letter-spacing:-.02em;}
+.pathhead .schip{font-size:var(--fs-1); font-weight:800; border-radius:8px; padding:4px 8px; background:var(--blue-bg); color:var(--info-ink);}
+.duopath{display:flex; flex-direction:column; align-items:center; gap:48px; width:560px; margin:8px auto 48px;}  /* C6: gap44→48=8px格子に正しく載せ、吹き出し(top:-40px)とのクリアランス8pxを確保 */
+.pnode2{display:flex; flex-direction:column; align-items:center; width:210px; cursor:pointer; transform:translateX(var(--off,0px));}
+.circwrap{position:relative;}
+.startbub{position:absolute; top:-40px; left:50%; transform:translateX(-50%); background:#fff; border:2px solid var(--acc);
+  color:var(--acc-ink); border-radius:12px; padding:4px 12px; font-weight:800; font-size:var(--fs-2); white-space:nowrap; z-index:2;}  /* C8実測: acc-dk=amber白上3.25✗→acc-ink */
+.startbub::after{content:""; position:absolute; left:50%; bottom:-7px; margin-left:-5px; border:5px solid transparent; border-top-color:var(--acc); border-bottom:none;}
+.pnode2 .circ{width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:var(--fs-7); font-weight:800;}
+.pnode2.done .circ{background:var(--acc); color:var(--acc-fg); box-shadow:0 6px 0 var(--acc-dk);}
+.pnode2.cur .circ{background:var(--acc); color:var(--acc-fg); box-shadow:0 6px 0 var(--acc-dk), 0 0 0 5px #fff, 0 0 0 8px var(--acc-lt);}
+.pnode2.cur{animation:floaty 1.8s ease-in-out infinite;}
+@keyframes floaty{0%,100%{transform:translateX(var(--off,0px)) translateY(0);} 50%{transform:translateX(var(--off,0px)) translateY(-7px);}}
+.pnode2.todo .circ{background:var(--gray); color:var(--sub-dk); box-shadow:0 6px 0 var(--gray-dk);}  /* C8実測: AFAFAF=灰上1.74✗→sub-dk5.31(§2b灰地インク)。ロック感は灰地+影が担う */
+.pnode2 .pname{margin-top:8px; font-weight:800; font-size:var(--fs-3); text-align:center; line-height:1.4; letter-spacing:-.01em;}
+.pnode2.cur .pname{color:var(--acc-ink);}   /* C6: 現在地はノード名もテーマ色=1.5秒で「次にやること」へ目が行く補強 */
+.pnode2.todo .pname{color:var(--sub);}
+.pnode2 .pdesc{font-size:var(--fs-1); color:var(--sub); text-align:center; line-height:1.5; margin-top:4px;}
+.pnode2.chestnode .chest{transform:scale(1.45); margin:16px 0 16px;}  /* C6: scale1.45の視覚はみ出し±9.5px>旧上マージン8→16に(切れ解消・格子値) */
+
+/* ═══ §7 カードビューア（上層=カード・下層=固定アクションゾーン） ═══ */
+.cvhead{display:flex; align-items:center; gap:8px; margin-bottom:8px; flex:none;}
+.cvhead .back{border:none; background:none; font-size:var(--fs-3); color:var(--sub); cursor:pointer; padding:8px; min-height:44px; font-weight:800;}
+.cvhead .t{font-weight:800; font-size:var(--fs-4);}
+.dots{display:flex; gap:8px; margin-left:auto; align-items:center;}
+.dots i{width:12px; height:12px; border-radius:99px; background:var(--gray);}  /* C6(§2d-13): 10→12(8+4複合)=Chromebook実機で読める最小径へ */
+.dots i.on{background:var(--acc);}
+.dots i.cur{background:#fff; border:3px solid var(--acc); width:16px; height:16px;}  /* C6: 14→16(格子値)・縦はalign-items:centerで整列 */
+.cvbody{flex:1; min-height:0; display:flex; overflow-y:auto;}
+.kcard{flex:1; min-height:0; display:flex; flex-direction:column; background:#fff; border:2px solid var(--gray);
+  border-radius:20px; box-shadow:var(--sh-card); padding:24px 32px 16px; position:relative;}
+.kbadge{position:absolute; top:-13px; left:24px; font-size:var(--fs-1); font-weight:800; border-radius:99px; padding:4px 16px; border:2px solid #fff;}
+.kbadge.ready{background:var(--gray); color:var(--sub-dk);}
+.kbadge.predict{background:var(--gold-bg); color:var(--gold-ink);}
+.kbadge.observe{background:var(--blue-bg); color:var(--info-ink);}
+.kbadge.explain{background:var(--purple-bg); color:var(--purple-ink);}
+.kbadge.teach{background:var(--acc-bg); color:var(--acc-ink);}
+.kbadge.quiz{background:var(--blue-bg); color:var(--info-ink);}
+/* .kin=カード内部（長いカードだけここがスクロール） */
+.kin{flex:1; min-height:0; overflow-y:auto; width:100%;}
+.kin.one{max-width:720px; margin:0 auto;}
+/* ★C3貧血解消: 死んだ中央置き→「上2:下3」の光学中心へ本文を持ち上げる（余白を意図した比率に変換）。
+   スペーサはflex-basis:0なので、本文がカードより長い時は0に潰れて上端から欠けない（center+overflowの欠損バグも同時に回避） */
+.kin.vcenter{display:flex; flex-direction:column;}
+.kin.vcenter::before{content:""; flex:2 0 0;}
+.kin.vcenter::after{content:""; flex:3 0 0;}
+.kin.tcenter{text-align:center; align-items:center;}
+.kin.two{display:flex; flex-direction:column;}
+.kin.two::before{content:""; flex:2 0 0;}
+.kin.two::after{content:""; flex:3 0 0;}
+.tworow{display:grid; grid-template-columns:minmax(280px,430px) 1fr; gap:32px; align-items:center; width:100%; max-width:1080px; margin:0 auto;}
+.tworow .figbox{margin:0; min-height:240px; display:flex; align-items:center; justify-content:center;}
+.kin.two .revbar{width:100%; max-width:1080px; margin-left:auto; margin-right:auto;}
+.kt{font-size:var(--fs-5); line-height:1.35; font-weight:800; margin:4px 0 8px; letter-spacing:-.02em;}
+.kbody{font-size:var(--fs-4); margin:0 0 8px;}
+.kbody b, .kbody strong{background:linear-gradient(transparent 62%, #FFE38A 62%);}
+.qbig{font-size:var(--fs-6); font-weight:800; line-height:1.7; letter-spacing:-.01em;}
+.figbox{border:2px dashed var(--gray); background:#fff; color:var(--sub); border-radius:16px; padding:24px 8px; text-align:center; font-size:var(--fs-2); margin:8px 0 16px; font-weight:700;}
+details.column{margin:8px 0 4px; border:2px solid var(--gray); border-radius:16px; background:#fff;}
+details.column summary{cursor:pointer; padding:8px 16px; min-height:44px; font-size:var(--fs-3); font-weight:800; color:var(--info-ink); list-style:none;}
+details.column summary::before{content:"📖 ";}
+details.column summary::after{content:" ▾"; color:var(--sub);}        /* C9(Sol中2#13): 「押すと開く」の手掛かり(旧「〜を見る」文言は撤去) */
+details.column[open] summary::after{content:" ▴";}
+details.column .cbody{padding:4px 16px 8px; font-size:var(--fs-4); color:var(--ink);}
+.qmeta{font-size:var(--fs-2); color:var(--sub); margin-bottom:8px; font-weight:800;}
+.donetitle{font-size:var(--fs-6); line-height:1.3; font-weight:800; margin:8px 0 4px; letter-spacing:-.02em;}
+.donesub{color:var(--sub); font-size:var(--fs-4);}
+
+/* ═══ §8 アクションゾーン（高さ一定・座標固定）＋フィードバックシート ═══ */
+.azone{display:none; position:fixed; left:var(--navw); right:0; bottom:0; height:var(--azh); background:#fff;
+  border-top:2px solid var(--gray); z-index:140;}
+body.azview .azone{display:block;}
+/* 主ボタン=毎回まったく同じ矩形(right28/bottom29/210×62)。シート側の「つづける」も同じ座標に出る */
+.azprimary{position:absolute; right:28px; bottom:29px; width:210px; height:62px; border:none; border-radius:16px;
+  font-weight:800; font-size:var(--fs-5); color:#fff; cursor:pointer; letter-spacing:-.01em;}
+.azprimary.acc{background:var(--acc); color:var(--acc-fg); box-shadow:0 4px 0 var(--acc-dk);}
+.azprimary.blue{background:var(--info-ink); box-shadow:0 4px 0 #0E4DA0;}  /* 誤答シートの主ボタン: 白文字が#1CB0F6上2.44→#1368CE上5.39(辞書の誤答解説青と同色) */
+.azprimary:active{transform:translateY(4px); box-shadow:none !important;}
+.azprimary[hidden]{display:none;}
+.azprev{position:absolute; left:26px; top:50%; transform:translateY(-50%); border:2px solid var(--gray); background:#fff;
+  color:var(--sub); border-radius:14px; padding:8px 16px; min-height:44px; font-weight:800; cursor:pointer; box-shadow:0 3px 0 var(--gray); font-size:var(--fs-3);}
+.azprev:active{transform:translateY(calc(-50% + 3px)); box-shadow:none;}
+/* 選択肢=ゾーン内に横並び（高さはゾーン固定のまま変えない） */
+.azch{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:16px; padding:8px 152px;}  /* 左右152=8x19: まえへ/主ボタンの専用レール確保(幾何) */
+.azch button{border:2px solid var(--gray); background:#fff; border-radius:14px; box-shadow:0 4px 0 var(--gray);
+  font-weight:800; color:var(--ink); cursor:pointer; font-size:var(--fs-4); padding:0 16px; height:88px; min-width:130px; max-width:240px;}
+.azch button:hover{border-color:var(--gray-dk);}
+.azch button:not(:disabled):active{transform:translateY(4px); box-shadow:none;}
+.azch button:disabled{cursor:default;}
+.azch.tf button{width:190px; max-width:none; font-size:32px;} /* 例外:○×記号=非テキスト・スケール外 */
+.azch.grid2{display:grid; grid-template-columns:repeat(2, minmax(240px, 340px)); gap:8px 16px; align-content:center; justify-content:center;}
+.azch.grid2 button{height:44px; font-size:var(--fs-4); max-width:none; width:100%; box-shadow:0 3px 0 var(--gray); padding:0 16px;}
+/* C4(§2d-6): 長文3択は2+1の不均衡グリッドでなく1行3列（predict等）。1行に収まるので下端ギリギリ問題も同時に解消 */
+.azch.grid3{display:grid; grid-template-columns:repeat(3, minmax(200px, 280px)); gap:16px; align-content:center; justify-content:center;}
+.azch.grid3 button{height:auto; min-height:44px; line-height:1.4; font-size:var(--fs-4); max-width:none; width:100%; box-shadow:0 3px 0 var(--gray); padding:8px 16px;}
+.azch.grid2 button, .azch.grid3 button{text-align:left;}   /* Sol#14採用: 長文の比較読みは読み始めを揃える=左揃え(短文ピルは中央のまま) */
+.azch button.right{border-color:var(--acc); box-shadow:0 4px 0 var(--acc-dk); background:var(--acc-bg); color:var(--acc-ink);}  /* C8実測: acc-dk=teal4.40/amber2.95→acc-ink5.0+(disabled除外に頼らない) */
+.azch button.pick{border-color:var(--blue); box-shadow:0 4px 0 var(--blue-dk); background:var(--blue-bg); color:var(--info-ink);}
+.azch button.dim{opacity:.35;}
+/* シート=ゾーンの上にスライドイン。「つづける」(.azprimaryを共用)は「つぎへ」と同一座標 */
+/* C4(§2d-7)帯の再設計: min-height 120→160(8×20)・sheetin 92→128(8×16)=正誤どちらの内容(見出し+こたえ枠+解説2行)でも
+   min-height内に収まる→正誤で高さが暴れない。解説snoteは学習上最重要のフィードバック→fs-3→fs-4(16px本文役)+濃インク */
+.sheet{position:fixed; left:var(--navw); right:0; bottom:0; min-height:160px; z-index:200; transform:translateY(110%);
+  visibility:hidden;  /* C8(§2d-16): 画面外シートをタブ順序/支援技術ツリーから外す。aria-hidden切替でなくvisibilityで=フォーカス保持要素にaria-hiddenを付ける違反を構造的に防ぐ */
+  transition:transform .28s cubic-bezier(.2,.9,.25,1), visibility 0s .28s;  /* 退場スライド完了後にhidden化(遅延0s .28s) */
+  padding:16px 266px 16px 32px; border-top:2px solid transparent;
+  box-shadow:0 -8px 24px rgba(60,60,60,.14);}  /* 右266=28+210+28(主ボタン憲法座標由来・例外)。上向き影=浮遊段の変種(下からのスライド面) */
+.sheet.show{transform:translateY(0); visibility:visible; transition:transform .28s cubic-bezier(.2,.9,.25,1);}
+.sheet.ok{background:var(--acc-bg); border-color:var(--acc);}
+.sheet.ng{background:var(--blue-bg); border-color:var(--blue);}
+/* C4(Q1): 自動送りの残り時間バー=シート上辺の細い4px。正解シート×「じどうですすむ」時のみ表示・scaleXで縮む。
+   色はacc-inkに=非テキスト3:1を全テーマで確保(acc-dkはamberで2.95✗→acc-inkなら5.5/5.7/5.0=実測) */
+.sheet .sbar{position:absolute; left:0; top:0; width:100%; height:4px; background:var(--acc-ink);
+  transform-origin:left; transform:scaleX(1);}
+.sheet .sbar.run{transform:scaleX(0); transition:transform .8s linear;}  /* 実時間はJSが内容連動msでtransitionDurationを上書き */
+.sheet .sbar[hidden]{display:none;}
+/* Sol#2,3採用: バーだけでは「何の残量か」が伝わらない→右上に一言ラベル(自動送り中のみ表示) */
+.sheet .sbarlbl{position:absolute; top:12px; right:28px; font-size:var(--fs-2); font-weight:800; color:var(--acc-ink);}
+.sheet .sbarlbl[hidden]{display:none;}
+.sheetin{min-height:128px; display:flex; align-items:center; gap:16px; max-width:820px;}
+.sheet .mimg{width:64px; height:64px; object-fit:contain; flex:none;}
+.sheet .stxt{flex:1; max-width:640px;}  /* 640=16px×40字=§2a日本語行長帯の上限（解説を1〜2行で読み切らせる） */
+.sheet .shead{font-size:var(--fs-5); line-height:1.35; font-weight:800; letter-spacing:-.01em;}
+.sheet.ok .shead{color:var(--acc-ink);}  /* C8実測: acc-dkはamberのacc-bg上2.95✗(19px大文字3:1)→acc-ink(5.5前後・全テーマ) */
+.sheet.ng .shead{color:var(--info-ink);}
+.sheet .ansbox{margin-top:4px; border:2px solid var(--info-ink); background:#fff; color:var(--info-ink); border-radius:12px; padding:4px 16px; font-weight:800; display:inline-block;}
+.sheet .snote{font-size:var(--fs-4); color:var(--sub-dk); margin-top:8px; font-weight:700; line-height:1.55;}
+
+/* ═══ §9 バースト（進捗バーはカード上端に固定・回答は下部ゾーン） ═══ */
+.btop{display:flex; align-items:center; gap:16px; margin-bottom:16px; flex:none;}
+.bquit{border:none; background:none; color:var(--sub); font-size:var(--fs-6); font-weight:800; cursor:pointer; padding:4px 8px; min-width:44px; min-height:44px;}
+.bbar{flex:1; height:16px; background:var(--gray); border-radius:8px; overflow:hidden;}
+.bbar i{display:block; height:100%; width:0%; background:var(--bar); border-radius:8px; transition:width .3s ease-out; position:relative;}  /* C6(§2d-12): acc素(灰上2.58✗)→--bar=全進捗バー同色 */
+.bbar i::after{content:""; position:absolute; left:8px; right:8px; top:4px; height:4px; border-radius:99px; background:rgba(255,255,255,.45);}
+.combochip{display:none; align-items:center; gap:4px; font-weight:800; color:var(--gold-ink); font-size:var(--fs-4); flex:none;}
+.combochip.show{display:flex;}
+.combochip.pop{animation:cpop .3s cubic-bezier(0.34,1.56,0.64,1);}   /* C7(Sol#6): 毎正解級の頻度→400ms規律側へ(450→300ms・振幅1.4→1.2) */
+@keyframes cpop{0%{transform:scale(1.2);} 100%{transform:scale(1);}}
+.bkicker{font-size:var(--fs-2); font-weight:800; color:var(--gold-ink); flex:none;}  /* C3: 旧.bmeta段は廃止し.btopへ統合 */
+.bleft{font-size:var(--fs-2); color:var(--sub); font-weight:800; font-variant-numeric:tabular-nums; flex:none;}
+.bcard{flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; text-align:center;
+  background:#fff; border:2px solid var(--gray); border-radius:20px; box-shadow:var(--sh-card); padding:24px 32px;}
+.bcard::before{content:""; flex:2 0 0;}  /* C3: 問題文も上2:下3の光学中心（.kin.vcenterと同律） */
+.bcard::after{content:""; flex:3 0 0;}
+.bqtext{font-size:var(--fs-6); font-weight:800; letter-spacing:-.01em; line-height:1.7; max-width:880px;}
+.retag{display:inline-block; font-size:var(--fs-1); font-weight:800; color:var(--gold-ink); background:var(--gold-bg);
+  border-radius:99px; padding:4px 12px; margin-bottom:8px;}
+
+/* ═══ §10 完了画面（スタット3枚＋先生スタンプ階段） ═══ */
+.resultwrap{max-width:860px; margin:0 auto; text-align:center; width:100%;}
+/* ★C3中心軸整流: 縦は上2:下3の光学中心・マスコット(84px)と等幅の透明スペーサを右に置き、吹き出しを中心軸に載せる（実測10〜35pxの軸ずれ解消） */
+#view-result .cvbody{flex-direction:column;}
+#view-result .cvbody::before{content:""; flex:2 0 0;}
+#view-result .cvbody::after{content:""; flex:3 0 0;}
+.rmascot{display:flex; align-items:center; justify-content:center; gap:16px;}
+.rmascot img{width:84px; flex:none;}
+.rmascot::after{content:""; width:84px; flex:none;}
+.rbubble{background:#fff; border:2px solid var(--gray); box-shadow:var(--sh-card); border-radius:16px; padding:8px 16px; font-weight:800; font-size:var(--fs-4); position:relative;}
+.rtitle{font-size:var(--fs-7); line-height:1.25; font-weight:800; letter-spacing:-.02em; color:var(--gold-ink); margin:8px 0 16px;}
+.stats{display:flex; gap:16px; justify-content:center;}
+.statcard{width:176px; border-radius:16px; border:2px solid; overflow:hidden; background:#fff; opacity:0; transform:scale(.5) translateY(24px);}
+.statcard.in{animation:statin .35s cubic-bezier(0.34,1.56,0.64,1) forwards;}   /* C7(Sol#11): 主情報の確定を1.3s以内へ(スタガー140+countUp800と合算1080ms) */
+@keyframes statin{to{opacity:1; transform:none;}}
+.statcard .slabel{font-size:var(--fs-2); font-weight:800; color:#fff; padding:4px;}
+.statcard .snum{font-size:var(--fs-7); font-weight:800; padding:16px 8px; font-variant-numeric:tabular-nums; letter-spacing:-.01em;}
+/* スタット3枚: ヘッダー帯は白文字4.5:1が成立する濃色へ(青1CB0F6→1368CE=5.4・acc→acc-dk=4.9+)。金帯は白文字1.55だったので濃金文字に変更 */
+.statcard.c-blue{border-color:var(--blue);}  .c-blue .slabel{background:var(--info-ink);}  .c-blue .snum{color:var(--blue-dk);}
+.statcard.c-gold{border-color:var(--gold);}  .c-gold .slabel{background:var(--gold); color:var(--gold-on);}  .c-gold .snum{color:var(--gold-ink);}
+.statcard.c-acc{border-color:var(--acc);}    .c-acc .slabel{background:var(--acc-dk);}    .c-acc .snum{color:var(--acc-ink);}
+body[data-theme="amber"] .c-acc .slabel{background:var(--acc-ink);}  /* アンバーはacc-dkでも白3.25→acc-ink上6.0 */
+.stamparea{min-height:104px; display:flex; align-items:center; justify-content:center; margin:16px 0 4px;}
+.plabel{font-weight:800; font-size:var(--fs-5); margin-top:4px;}
+
+/* ═══ §11 花丸ストロークSVG＆先生はんこ（B「はなまる」から移植・朱専用） ═══ */
+.hanaov{position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+  flex-direction:column; gap:4px; z-index:310; pointer-events:none;}
+.hanaov.show{display:flex;}
+.hanaov svg{width:240px; height:240px; filter:drop-shadow(0 2px 6px rgba(211,47,39,.25));}  /* C10: 影色を現行朱D32F27に同期(旧E8382Fの残骸) */
+/* C7(§2d-17=Sol Q1案B): 描線完走後に右上へ縮小退避=中央の数値/カード遮蔽を1.5秒で解く。バッジとして残留しビュー遷移(hideHana)で退場。
+   transformはSVGでなく親div側(SVG要素のtransformはvw/vh入りcalc不可=実測)。translateはvw/vh計算=どの窓幅でも「topbar直下・右端」近傍へ96px相当で着地 */
+.hanaov{transition:transform .35s ease;}
+.hanaov.dock{transform:translate(calc(50vw - 76px), calc(-50vh + 129px)) scale(.4);}
+.hanaov.dock .hlabel, .hanaov.dock .hlabel.show{opacity:0;}   /* .show(同格後勝ち)にも勝つ併記 */
+.hanaov path{stroke:var(--shu); stroke-width:7; fill:none; stroke-linecap:round; stroke-linejoin:round;}
+.hanaov .hlabel{font-size:var(--fs-6); font-weight:800; color:var(--shu); background:rgba(255,255,255,.92);
+  border-radius:99px; padding:4px 24px; box-shadow:var(--sh-float); border:2px solid var(--gray); opacity:0; transition:opacity .4s;}
+.hanaov .hlabel.show{opacity:1;}
+.stamp{display:inline-flex; align-items:center; justify-content:center; flex:none;
+  border:3px solid var(--shu); color:var(--shu); border-radius:50%; width:96px; height:96px;
+  font-weight:800; font-size:var(--fs-2); text-align:center; line-height:1.35; letter-spacing:.04em;
+  transform:rotate(-7deg); background:rgba(255,255,255,.75); padding:8px;}
+.stamp.rank3{border-style:double; border-width:7px; font-size:11.5px;} /* 例外:判子96px円=幾何拘束 */
+.stamp.rank4{border-color:var(--gold); color:var(--gold-ink); border-style:double; border-width:7px; font-size:15px;} /* 例外:判子96px円=幾何拘束 */
+.stamp.pressed{animation:stampin .45s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes stampin{0%{transform:scale(1.6) rotate(3deg); opacity:0;} 100%{transform:scale(1) rotate(-7deg); opacity:1;}}
+.ministamp{display:inline-flex; align-items:center; justify-content:center; flex:none; width:44px; height:44px;
+  border-radius:50%; border:2.5px solid var(--shu); color:var(--shu); font-size:10px; /* 例外:判子44px円=幾何拘束 */ font-weight:800;
+  transform:rotate(-8deg); line-height:1.15; text-align:center; background:rgba(255,255,255,.8);}
+.ministamp.pressed{animation:stampin .45s cubic-bezier(0.34,1.56,0.64,1) both;}
+
+/* ═══ §12 演出（紙吹雪/マスコット/ポップ/モーダル） ═══ */
+#fx{position:fixed; inset:0; pointer-events:none; z-index:300;}
+/* +ptポップ: 旧右上(top:70px)はバーストのコンボチップと実測73x26pxかぶり→gainPtが発火するのは全てazviewなので、主ボタン直上(ゾーン上端+12px)へ移設。上方向へふわり */
+.ptpop{position:fixed; right:28px; bottom:calc(var(--azh) + 12px); background:var(--gold-bg); border:2px solid var(--gold); color:var(--gold-ink);
+  font-weight:800; border-radius:99px; padding:4px 16px; opacity:0; transition:all .25s; pointer-events:none; z-index:220; box-shadow:var(--sh-float);}  /* right28=主ボタン憲法座標に整列(例外)。C7(Sol#9): 毎回答の演出=フェード0.5→0.25s */
+.ptpop.show{opacity:1; transform:translateY(-6px);}
+.jump{position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column; z-index:320; pointer-events:none;}
+.jump.show{display:flex; animation:jpop 1.6s ease forwards;}
+@keyframes jpop{0%{opacity:0; transform:scale(.4);} 12%{opacity:1; transform:scale(1.08);} 22%{transform:scale(1);} 80%{opacity:1;} 100%{opacity:0;}}
+.jcenter{position:relative;}
+.jump img{width:150px; display:block;}
+.jtext{margin-top:8px; font-size:var(--fs-6); font-weight:800; color:var(--gold-ink); background:#fff; border:2px solid var(--gold); border-radius:99px; padding:4px 16px;}
+.bolt{position:absolute; width:44px; height:80px; background:var(--gold);
+  clip-path:polygon(58% 0, 20% 55%, 45% 55%, 32% 100%, 80% 42%, 52% 42%);}
+.bolt.b1{left:-66px; top:-6px; transform:rotate(-14deg); animation:flick .9s ease-out;}
+.bolt.b2{right:-66px; top:2px; transform:rotate(12deg) scaleX(-1); animation:flick .9s ease-out .08s;}
+@keyframes flick{0%{opacity:0;} 20%{opacity:1;} 45%{opacity:.35;} 70%{opacity:1;} 100%{opacity:1;}}
+.modal{position:fixed; inset:0; background:rgba(60,60,60,.35); display:none; align-items:center; justify-content:center; z-index:340;}
+.modal.show{display:flex;}
+.modal .mbox{background:#fff; border-radius:20px; border:2px solid var(--gray); box-shadow:var(--sh-float); padding:24px 32px; max-width:440px;}
+.modal h4{margin:0 0 8px; font-weight:800;}
+.modal p{margin:0 0 16px; color:var(--sub); font-size:var(--fs-4); font-weight:600;}
+
+/* ═══ §13 検収モード ═══ */
+.revbar{display:none; margin-top:16px; border-top:2px dashed var(--purple); padding-top:8px;}
+body.review .revbar{display:block;}
+.revbar .rowb{display:flex; gap:8px;}
+.revbar button{border:2px solid var(--gray); background:#fff; border-radius:12px; padding:8px 16px; font-size:var(--fs-3); font-weight:800; cursor:pointer; color:var(--sub); box-shadow:0 3px 0 var(--gray);}
+.revbar button:active{transform:translateY(3px); box-shadow:none;}
+.revbar .rowb button{min-height:44px;}
+.revbar button.ok.on{background:var(--acc-bg); border-color:var(--acc); color:var(--acc-ink); box-shadow:0 3px 0 var(--acc-dk);}
+.revbar button.ng.on{background:var(--purple-bg); border-color:var(--purple); color:var(--purple-ink); box-shadow:0 3px 0 var(--purple);}
+.revbar button.later.on{background:var(--gray); color:var(--ink); border-color:var(--gray-dk); box-shadow:0 3px 0 var(--gray-dk);}
+.revdetail{display:none; margin-top:8px;}
+.revdetail.show{display:block;}
+.revdetail .tags{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}  /* 8=隣接ターゲット間隔の下限 */
+.revdetail .tags button{border-radius:99px; padding:4px 12px; font-size:var(--fs-2);}
+.revdetail .tags button.on{background:var(--purple-bg); border-color:var(--purple); color:var(--purple-ink); box-shadow:0 3px 0 var(--purple);}
+.revdetail textarea{width:100%; border:2px solid var(--gray); border-radius:12px; padding:8px 12px; font-size:var(--fs-4); font-family:inherit; resize:vertical; min-height:52px; background:#fff;}
+.revpill{display:none; position:fixed; left:calc(var(--navw) + 24px); bottom:16px;  /* +24=mainの左パディングと同じ=カード左端に整列 */ background:var(--ink); color:#fff; border-radius:99px;
+  padding:8px 16px; font-size:var(--fs-3); font-weight:800; z-index:150; align-items:center; gap:8px; box-shadow:var(--sh-float);}
+body.review .revpill{display:flex;}
+body.azview .revpill{bottom:calc(var(--azh) + 14px);}
+.revpill button{border:none; border-radius:99px; background:#fff; color:var(--ink); font-weight:800; font-size:var(--fs-2); padding:8px 16px; cursor:pointer;}
+
+/* ═══ §13b 200%ズーム救済（C8実測・WCAG1.4.4）: 683×384相当で選択肢レールが「まえへ」(viewport210〜298px)と
+   最大88×44px重なり+grid3の3択目が画面外だった→狭幅時だけレールを詰めて列minを縮める。1366通常表示には一切効かない。
+   320px相当への完全リフロー(1.4.10)は本実装のレスポンシブ課題=台帳§2f ═══ */
+@media (max-width:900px){
+  .azch{padding:8px 8px 8px 128px; flex-wrap:wrap; gap:8px;}           /* 左=まえへレールのみ確保。右レールは不要(主ボタンと選択肢は排他表示)。短文ピル4つは2×2へwrap */
+  .azch.grid2{grid-template-columns:repeat(2, minmax(150px, 340px));}
+  .azch.grid2 button{height:auto; min-height:44px; line-height:1.3; padding:4px 8px;}
+  .azch.grid3{grid-template-columns:repeat(3, minmax(110px, 280px));}
+  .azch.grid3 button{padding:8px;}
+  .azch.tf button{width:140px;}
+  .azch button{min-width:96px; max-width:200px; padding:0 8px; height:auto; min-height:44px;}
+}
+
+/* ═══ §14 reduced-motion（全アニメ静的化） ═══ */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{animation:none !important; transition:none !important;}
+  .statcard{opacity:1; transform:none;}
+}
+
+/* ═══ §15 開発用撮影モード（?shot=時のみJSがbodyへ付与＝§O。通常アクセスでは一切付かない） ═══ */
+body.shotfreeze *, body.shotfreeze *::before, body.shotfreeze *::after{animation:none !important; transition:none !important;}
+body.shotfreeze .statcard{opacity:1; transform:none;}
+body.shotfreeze .sbar{transform:scaleX(.6) !important;}   /* 撮影時: 自動送りバーを6割で凍結（進行中の見た目） */
+body.shotfreeze .greet{opacity:1;}                        /* 撮影時: あいさつをフェード完了状態で固定 */
+
+/* ═══ §16 設定モーダル/はじまりのあいさつ（C4・未決Q1/Q2の実装） ═══ */
+/* 設定=トップバー⚙から。周辺設定だがモーダル内は余裕がある→選択肢は44pxターゲット。値はlocalStorage保存 */
+.modal .mbox.setbox{width:520px; max-width:520px;}   /* Sol#11採用: 440では説明文が詰まる→520に拡張 */
+.setrow{margin:0 0 16px;}
+.setname{font-weight:800; font-size:var(--fs-4); margin-bottom:8px;}
+.seg{display:inline-flex; border:2px solid var(--gray); border-radius:14px; overflow:hidden; background:#fff;}
+.seg button{border:none; background:#fff; min-height:44px; padding:8px 16px; font-weight:800; font-size:var(--fs-3);
+  color:var(--sub); cursor:pointer;}
+.seg button + button{border-left:2px solid var(--gray);}
+.seg button.act{background:var(--acc-bg); color:var(--acc-ink);}   /* acc-ink on acc-bg=5.0+(§2b) */
+.seg button.act::before{content:"✓ ";}               /* Sol#13採用: 選択状態を色以外でも示す(WCAG1.4.1) */
+.setdesc{font-size:var(--fs-4); color:var(--sub); margin-top:8px; line-height:1.6; font-weight:600;}  /* Sol#11: 説明=理解必須の本文役→fs-4 */
+/* あいさつ(Q2)=軽量インタースティシャル。通過最優先: 1.2秒で自動通過・どこをタップしても即通過・アニメは200ms級。
+   z=330(§2c3台帳: jump320とmodal340の間) */
+.greet{position:fixed; inset:0; z-index:330; display:none; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.72); opacity:0; transition:opacity .2s ease;}
+.greet.show{display:flex;}
+.greet.in{opacity:1;}
+.greet .gcard{display:flex; align-items:center; gap:16px; background:#fff; border:2px solid var(--gray);
+  border-radius:20px; box-shadow:var(--sh-float); padding:24px 32px; max-width:560px;
+  transform:translateY(8px); transition:transform .2s ease;}
+.greet.in .gcard{transform:none;}
+.greet img{width:64px; height:64px; object-fit:contain; flex:none;}
+.greet .gtxt{font-size:var(--fs-5); font-weight:800; line-height:1.5;}
+.greet .gskip{font-size:var(--fs-2); color:var(--sub); font-weight:700; margin-top:4px;}   /* Sol#8: スキップの手掛かり */
+
+/* ═══ §17 みなおしリスト（C5安全実装＝§2d-19の会期内サブセット。SRS接続は朝リスト） ═══ */
+/* まちがえた問題を会期内だけ記録し、完了画面/コンプリートカードから一覧で見直せる。色=誤答解説の情報青(辞書不変) */
+.modal .mbox.misbox{width:640px; max-width:calc(100vw - 48px); text-align:left;}
+.mislead{font-size:var(--fs-3); color:var(--sub); font-weight:700; margin:4px 0 16px;}
+.mislist{max-height:min(480px, calc(100vh - 280px)); overflow-y:auto; display:flex; flex-direction:column; gap:8px;}
+.misitem{border:2px solid var(--gray); border-radius:16px; padding:12px 16px; background:#fff;}  /* 縦12=8+4複合(コンパクト行) */
+.misitem .missrc{font-size:var(--fs-1); font-weight:800; color:var(--sub-dk); background:var(--gray); border-radius:99px; padding:2px 8px; margin-right:8px;}  /* C8実測: sub=灰上4.05✗→sub-dk5.31(§2bのC5取りこぼし) */
+.misitem .misq{font-size:var(--fs-4); font-weight:800; line-height:1.5; margin:4px 0;}
+.misitem .misa{font-size:var(--fs-3); font-weight:800; color:var(--info-ink); margin:4px 0 0;}
+.misitem .misd{font-size:var(--fs-3); color:var(--sub-dk); line-height:1.55; margin:4px 0 0; font-weight:600;}
+.misbtn{display:inline-flex; align-items:center; gap:4px; border:2px solid var(--blue); background:var(--blue-bg); color:var(--info-ink);
+  border-radius:16px; padding:8px 16px; min-height:44px; font-weight:800; font-size:var(--fs-3); cursor:pointer; box-shadow:0 4px 0 var(--blue);}
+.misbtn:active{transform:translateY(4px); box-shadow:none;}
+</style>
+</head>
+<body data-theme="teal">
+<canvas id="fx" aria-hidden="true"></canvas><!-- C8: 紙吹雪canvas=装飾 -->
+<div class="vh" aria-live="polite" id="srlive"></div><!-- C8(4.1.3): 正誤フィードバック/あいさつのSR通知。ポイント加算は毎回答で冗長のため対象外(設計判断=台帳§2f) -->
+<div class="app">
+  <!-- ═════════ トップバー ═════════ -->
+  <div class="topbar">
+    <div class="brand">⚡ りかの練習ノート <span class="beta">仮の名前・統合案A+B</span></div>
+    <div class="top-right">
+      <div class="themebar" title="ベースカラー切替（正解・前進・主ボタン系だけ変わる）">
+        <button class="thchip act" data-th="teal" onclick="setTheme('teal')"><i style="background:#0D9F96"></i>ティール</button><!-- C9: 見本ドットを実テーマ値(C2濃色化後)に同期 -->
+        <button class="thchip" data-th="blue" onclick="setTheme('blue')"><i style="background:#3E7BFA"></i>ブルー</button>
+        <button class="thchip" data-th="amber" onclick="setTheme('amber')"><i style="background:#F59F00"></i>アンバー</button>
+      </div>
+      <button class="sndbtn" id="sndbtn" onclick="toggleSound()" title="効果音のON/OFF" aria-label="こうかおん" aria-pressed="false">🔊</button><!-- C8: 絵文字だけのボタンに名前(4.1.2)。状態はaria-pressed -->
+      <button class="sndbtn" id="setbtn" onclick="openSettings()" title="せってい（すすみ方・あいさつ）" aria-label="せってい">⚙</button>
+      <div class="ptchip" title="れんしゅうでたまるポイント（取り組み+1・正解でさらに+1）">⭐ <span id="pt">128</span> pt</div>
+      <button class="revtoggle" id="revtoggle" onclick="toggleReview()">✏ 検収モード</button>
+    </div>
+  </div>
+
+  <!-- ═════════ 左ナビ ═════════ -->
+  <div class="nav">
+    <button id="nav-home" class="act" onclick="go('home')">🏠 ホーム</button>
+    <button id="nav-moku" onclick="go('moku')">📖 もくじ</button>
+    <button id="nav-path" onclick="go('path')">⛰ たんげんの道</button>
+    <button id="nav-rev" onclick="showSoon('きょうの復習','まちがえた問題が、わすれたころにもう一度ここに出ます。ゲーム側のSRS（復習の箱）とつながる予定。')">🔁 きょうの復習 <span class="badge">3</span></button>
+    <button id="nav-seiseki" onclick="showSoon('せいせき','どこまで進んだか・どの章が強いかが見えるページになる予定。')">🏅 せいせき <span class="badge gray">準備中</span></button>
+    <div class="navnote">統合案ABモック。中身は1年 単元4「火山の姿とマグマ」だけ。回答ボタンは画面下の同じ場所に固定。</div>
+  </div>
+
+  <!-- ═════════ 本文 ═════════ -->
+  <div class="main">
+
+    <!-- ── ホーム ── -->
+    <section class="view show" id="view-home">
+      <div class="hero2">
+        <div class="hcard">
+          <div class="mrow">
+            <div class="maswrap"><img data-mascot src="" alt="" onerror="this.style.display='none'"><span class="tempbadge">仮キャラ（投票中）</span></div>
+            <div class="bubble" id="homeBub">あと4ユニットで、この章コンプリートだよ。</div><!-- C9(Sol中2#2/審査員#1): 空虚な激励→事実ベースの声かけ(Q2確定方針をホームにも適用)。renderHomeが実データで上書き -->
+          </div>
+          <div class="kicker">つづきから</div>
+          <h3>⛰ 大地の変化</h3>
+          <div class="unitline">1年 単元4 ・「地震のゆれと震源」のとちゅう</div>
+          <div class="pblue" role="progressbar" aria-label="この章のすすみぐあい" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100"><i style="width:38%"></i></div><!-- C8(Sol#10): 近くに数字文言が無い主進捗のみprogressbar化 -->
+          <button class="b3 acc" onclick="go('path')">▶ つづきをやる</button>
+        </div>
+        <div class="hcol">
+          <div class="hcard">
+            <div class="kicker">といた問題</div>
+            <div class="pttoday" id="homePtToday">きょう <b>0</b> 問</div><!-- C9(Sol中2#4): 0問の空状態はrenderHomeが「きょうは これから」に差し替え(サボり感の除去) -->
+            <div class="pttotal">⭐ これまでに <b id="homeTotal">432</b> 問</div>
+          </div>
+          <div class="hcard">
+            <div class="kicker">きょうの復習 <span class="soontag">準備中</span></div>
+            <div class="soonline">🔁 3問 たまってるよ</div>
+            <button class="b3 white slim" onclick="showSoon('きょうの復習','ゲーム側のSRS（復習の箱）とつながる予定。')">どんなもの？</button><!-- C9(Sol審査員#5): 準備中なのに「みてみる」=期待と結果のズレ→説明を見るボタンだと分かる文言に -->
+          </div>
+        </div>
+      </div>
+      <div class="hgrid2">
+        <div class="hcard">
+          <div class="kicker">きょうのミッション</div>
+          <div id="missionhost"></div>
+        </div>
+        <div class="hcard">
+          <div class="kicker">もくじからさがす（授業でならったところへ）</div>
+          <div style="margin-top:8px">
+            <div class="gradebar"><span class="g">1年</span><div class="gp pblue" aria-hidden="true"><i style="width:22%"></i></div><button class="b3 white slim" onclick="go('moku')">ひらく</button></div><!-- C8: 学年ミニバー=装飾(実データ+progressbar化は本実装) -->
+            <div class="gradebar"><span class="g">2年</span><div class="gp pblue" aria-hidden="true"><i style="width:0%"></i></div><button class="b3 white slim" onclick="go('moku');mokuTab(1)">ひらく</button></div>
+            <div class="gradebar"><span class="g">3年</span><div class="gp pblue" aria-hidden="true"><i style="width:0%"></i></div><button class="b3 white slim" onclick="go('moku');mokuTab(2)">ひらく</button></div>
+          </div>
+          <div class="homefoot">⭐ポイントは、れんしゅうするとたまるよ。使い道は……おたのしみに。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── もくじ（教科書の並び） ── -->
+    <section class="view" id="view-moku">
+      <h2 class="vtitle">📖 もくじ — 教科書の順にならんでるよ</h2>
+      <div class="tabs">
+        <button class="act" onclick="mokuTab(0)">1年</button>
+        <button onclick="mokuTab(1)">2年</button>
+        <button onclick="mokuTab(2)">3年</button>
+      </div>
+      <div class="tanmoku" id="mokubody"><!-- JSで描画 --></div>
+    </section>
+
+    <!-- ── たんげんの道（単元4） ── -->
+    <section class="view" id="view-path">
+      <div class="hcard pathhead">
+        <div>
+          <div class="big">⛰ 大地の変化 <span class="schip" style="margin-left:8px">地学・1年 単元4</span></div>
+          <div style="color:var(--sub); font-size:var(--fs-2); margin-top:4px">火山 → 地震 → 地層。足もとの大地の歴史を 読みとけるようになっていく章。</div><!-- C9: 3px=格子外れ→4px・「ぜんぶ」過大表現も是正 -->
+        </div>
+        <div style="margin-left:auto; text-align:right; flex:none">
+          <div style="font-size:var(--fs-2); color:var(--sub); font-weight:800">すすみぐあい</div>
+          <div style="font-weight:800; font-size:var(--fs-5)"><span id="pathdone">0</span><span style="color:var(--sub); font-size:var(--fs-2)">/<span id="pathtotal">6</span></span></div>
+          <div class="pblue mini" style="width:120px; margin:4px 0 0 auto" aria-hidden="true"><i id="pathbar"></i></div><!-- C6: 数字+バーの二重表現(renderPathが実データで描画=ハードコード2/6のドリフト解消)。C8: 隣の0/6数字が正=バーは装飾 -->
+        </div>
+      </div>
+      <div class="duopath" id="pathbody"><!-- JSで描画 --></div>
+    </section>
+
+    <!-- ── カードビューア（上層。回答/前進は下部の固定ゾーン） ── -->
+    <section class="view" id="view-unit">
+      <div class="cvhead">
+        <button class="back" onclick="go('path')">◀ 道へもどる</button>
+        <span class="t">🌋 火山の姿とマグマ</span>
+        <div class="dots" id="dots"></div>
+      </div>
+      <div class="cvbody"><div class="kcard" id="kcard"><!-- JSで描画 --></div></div>
+    </section>
+
+    <!-- ── ★練習バースト（10問連続・進捗バーは上端固定） ── -->
+    <section class="view" id="view-burst">
+      <!-- C3: 旧2段(バー段+メタ段)が左端も高さも不揃いに散らばっていた→1段のヘッダー行に統合（✕・題・バー・のこり・コンボが同一基準線） -->
+      <div class="btop">
+        <button class="bquit" onclick="quitBurst()" title="バーストをやめて、カードにもどる" aria-label="バーストをやめて、カードにもどる">✕</button><!-- C8: ✕記号だけのボタンに名前(4.1.2) -->
+        <span class="bkicker">⚡ 練習バースト — 「火山の姿とマグマ」</span>
+        <div class="bbar" id="bbar" role="progressbar" aria-label="バーストのすすみぐあい" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="bfill"></i></div><!-- C8(Sol#10): valuenowはrenderBurstが更新 -->
+        <span class="bleft" id="bleft"></span>
+        <div class="combochip" id="combochip">⚡<span id="comboN">2</span> れんぞく</div>
+      </div>
+      <div class="cvbody"><div class="bcard" id="bqhost"><!-- JSで描画 --></div></div>
+    </section>
+
+    <!-- ── ★完了画面（スタット3枚＋先生スタンプ階段） ── -->
+    <section class="view" id="view-result">
+      <div class="cvbody">
+        <div class="resultwrap">
+          <div class="rmascot">
+            <div class="maswrap"><img data-mascot src="" alt="" onerror="this.style.display='none'"><span class="tempbadge">仮キャラ（投票中）</span></div>
+            <div class="rbubble" id="rbubbleTxt">レッスンクリア！今日も一歩前進！</div>
+          </div>
+          <h2 class="rtitle">バーストかんそう！</h2>
+          <div class="stats">
+            <div class="statcard c-blue" id="rs1"><div class="slabel">といた数</div><div class="snum" id="rn1">0</div></div>
+            <div class="statcard c-gold" id="rs2"><div class="slabel">タイム</div><div class="snum" id="rn2">0:00</div></div>
+            <div class="statcard c-acc" id="rs3"><div class="slabel">正解率（1回目）</div><div class="snum" id="rn3">0%</div></div>
+          </div>
+          <div class="stamparea"><div class="stamp" id="finalStamp"></div></div>
+          <div class="plabel" id="plabel"></div>
+          <div id="rswrong" style="margin-top:16px"><!-- C5: まちがい0なら空のまま(§Q) --></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ★アクションゾーン（画面下端固定・高さ一定・主ボタンは常に同一矩形） -->
+<div class="azone" id="azone">
+  <button class="azprev" id="azprev" onclick="step(-1)">◀ まえへ</button>
+  <div class="azch" id="azch"></div>
+  <button class="azprimary acc" id="aznext" onclick="azGo()">つぎへ ▶</button>
+</div>
+<!-- ★フィードバックシート（ゾーンの上にスライドイン・「つづける」は「つぎへ」と同座標）
+     C4(Q1): 自動送り待ちの間はシートのどこをタップしても即すすむ(sheetTap)。sbar=残り時間の細いバー -->
+<div class="sheet" id="sheet" onclick="sheetTap()">
+  <i class="sbar" id="sbar" hidden aria-hidden="true"></i><!-- C8: 残時間バー=装飾(ラベル文言が正) -->
+  <span class="sbarlbl" id="sbarlbl" hidden>じどうで すすむよ（タップで すぐ）</span>
+  <div class="sheetin" id="sheetin"></div>
+  <button class="azprimary acc" id="sheetbtn" onclick="sheetGo()">つづける ▶</button>
+</div>
+
+<!-- 花丸オーバーレイ（B移植・朱ペン1.2秒ストローク） -->
+<!-- C8: 全体をaria-hidden=装飾の祝い演出(dock残留バッジ含む=C7申し送り)。意味は押印/文言側が担う -->
+<div class="hanaov" id="hanaov" aria-hidden="true">
+  <svg viewBox="0 0 200 200" aria-hidden="true"><path id="hanapath" d="M 103,95
+    C 111,98 110,111 98,112 C 83,113 77,99 86,87 C 97,73 119,77 127,94
+    C 136,113 121,132 99,133 C 72,134 57,111 67,87 C 58,98 48,105 39,111
+    C 8,97 15,64 49,64 C 37,33 66,15 89,39 C 103,8 136,15 136,49
+    C 167,37 185,66 161,89 C 192,103 185,136 151,136 C 163,167 135,185 111,161
+    C 97,192 64,185 64,151 C 33,163 15,135 39,111"/></svg>
+  <div class="hlabel" id="hanalabel">はなまる！</div>
+</div>
+
+<div class="ptpop" id="ptpop" aria-hidden="true">+2 pt</div><!-- C8: 装飾(ptはトップバー数値が正) -->
+<div class="jump" id="jump" aria-hidden="true">
+  <div class="jcenter">
+    <div class="bolt b1"></div><div class="bolt b2"></div>
+    <img data-mascot src="" alt="" onerror="this.style.display='none'">
+  </div>
+  <div class="jtext">5れんぞく！</div>
+</div>
+<div class="revpill"><span id="revstat">検収 0/0</span><button onclick="copyReview()">📋 結果をコピー</button></div>
+<div class="modal" id="modal" onclick="closeModal('modal')"><!-- C8: 閉じは全動線closeModal経由=開いた元へフォーカス返還(2.4.3) -->
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mtitle" onclick="event.stopPropagation()">
+    <h4 id="mtitle"></h4><p id="mbody"></p>
+    <button class="b3 white slim" onclick="closeModal('modal')">とじる</button>
+  </div>
+</div>
+
+<!-- ★設定モーダル（C4・未決Q1/Q2のトグル。生徒にも将来そのまま見せられる文言） -->
+<div class="modal" id="setmodal" onclick="closeModal('setmodal')">
+  <div class="mbox setbox" role="dialog" aria-modal="true" aria-labelledby="settitle" onclick="event.stopPropagation()">
+    <h4 id="settitle">⚙ せってい</h4>
+    <div class="setrow">
+      <div class="setname">せいかいしたあとの すすみ方</div><!-- Sol#10採用: 「正解だけが自動」が見出しから分かるように -->
+      <div class="seg" id="segAdv">
+        <button data-v="auto" onclick="setAdv('auto')">じどうですすむ</button>
+        <button data-v="btn" onclick="setAdv('btn')">ボタンですすむ</button>
+      </div>
+      <div class="setdesc">じどう＝せいかいは じどうで つぎへ（タップすると すぐ）。まちがえたときは、どちらでも ボタンでじっくり。</div>
+    </div>
+    <div class="setrow">
+      <div class="setname">はじまりのあいさつ</div>
+      <div class="seg" id="segGreet">
+        <button data-v="on" onclick="setGreet(true)">表示する</button>
+        <button data-v="off" onclick="setGreet(false)">表示しない</button>
+      </div>
+      <div class="setdesc">れんしゅうを始めるとき、ひとことだけ出ます（タップですぐ消せる）。</div>
+    </div>
+    <button class="b3 white slim" onclick="closeModal('setmodal')">とじる</button>
+  </div>
+</div>
+
+<!-- ★みなおしリスト（C5・§2d-19安全サブセット: 会期内のまちがいを一覧で見直す。SRS接続は本実装） -->
+<div class="modal" id="mismodal" onclick="closeModal('mismodal')">
+  <div class="mbox misbox" role="dialog" aria-modal="true" aria-labelledby="mistitle" onclick="event.stopPropagation()">
+    <h4 id="mistitle">📖 きょうの まちがい</h4>
+    <div class="mislead">まちがえても ポイントは へらないよ。ここで見直しておくと、つぎに出たときに とれる。</div><!-- C9(Sol両名): 「何が」へらないのか対象を明記 -->
+    <div class="mislist" id="mislist"></div>
+    <div style="margin-top:16px; text-align:right"><button class="b3 white slim" onclick="closeModal('mismodal')">とじる</button></div>
+  </div>
+</div>
+
+<!-- ★はじまりのあいさつ（C4・Q2: 事実ベースの声かけ・1.2秒orタップで通過） -->
+<div class="greet" id="greet" onclick="greetPass(true)">
+  <div class="gcard">
+    <img data-mascot src="" alt="" onerror="this.style.display='none'">
+    <div>
+      <div class="gtxt" id="greettxt"></div>
+      <div class="gskip">タップで すぐはじめる</div><!-- Sol#8採用: スキップできることの手掛かり -->
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════ §A データ（learn_mock.html系列から流用: MOKU/UNITS4/CARDS＝u_earth_01 v4.2） ══════════ */
+const MOKU = [
+  { grade:"1年", tans:[
+    {s:"bio",  n:"単元1 いろいろな生物と共通点", soon:true},
+    {s:"chem", n:"単元2 身のまわりの物質", soon:true},
+    {s:"phys", n:"単元3 身のまわりの現象（光・音・力）", soon:true},
+    {s:"earth",n:"単元4 大地の変化", units:true},
+  ]},
+  { grade:"2年", tans:[
+    {s:"chem", n:"単元1 化学変化と原子・分子", soon:true},
+    {s:"bio",  n:"単元2 生物のからだのつくりとはたらき", soon:true},
+    {s:"earth",n:"単元3 天気とその変化", soon:true},
+    {s:"phys", n:"単元4 電流とその利用", soon:true},
+  ]},
+  { grade:"3年", tans:[
+    {s:"chem", n:"単元1 化学変化とイオン", soon:true},
+    {s:"bio",  n:"単元2 生命の連続性", soon:true},
+    {s:"phys", n:"単元3 運動とエネルギー", soon:true},
+    {s:"earth",n:"単元4 地球と宇宙", soon:true},
+    {s:"bio",  n:"単元5 自然と人間", soon:true},
+  ]},
+];
+const UNITS4 = [
+  {id:"u_earth_01",  nm:"火山の姿とマグマ",           ds:"形も色も噴火も、ぜんぶ「ねばりけ」1つで決まる", st:"done", open:true},
+  {id:"u_earth_02",  nm:"火成岩・火山とくらし",       ds:"6つの火成岩の名前を、2×3の表で整理する",     st:"done"},  /* C9(Sol両名): 旧文言が「配置指示のメモ」に読めた */
+  {id:"u_earth_03",  nm:"地震のゆれと震源",           ds:"カタカタ→グラッ。2つの波の時間差を読む",     st:"cur"},
+  {id:"u_earth_03b", nm:"地震が起こるところ・備え",   ds:"日本の下でおし合う4枚のプレート",             st:"todo"},
+  {id:"u_earth_04",  nm:"地層のなり立ち・堆積岩",     ds:"しましまは大地の日記。柱状図を読み切る",     st:"todo"},
+  {id:"u_earth_05",  nm:"化石と大地の変動",           ds:"エベレストの山頂に、海の生き物の化石？",     st:"todo"},
+];
+const CARDS = [
+ {k:"ready", t:"思い出しクイズ", q:"火山が噴火した時に、空から降って積もることがあるものは？",
+  c:["火山灰","食塩","こおり","わた"], a:0},
+ {k:"ready", t:"思い出しクイズ", q:"土地は長い年月でどうなることがある？",
+  c:["ぜったい変わらない","すぐ消える","空にうかぶ","高くなることがある"], a:3},
+ {k:"predict", t:"きみはどう思う？", fig:"図: 2つの火山の形のくらべ（ラベルなし）",
+  body:["同じ火山でも、なだらかにゆるく広がったのと、ドームみたいに盛り上がったのがある。","この形のちがい、<b>なにで決まる</b>と思う？"],
+  c:["まわりの土地の高さ","マグマの種類のちがい","噴火した回数のちがい"], free:true},
+ {k:"observe", t:"見てみると……", fig:"図: ねばりけ弱い/強いマグマの火山の対比",
+  body:["さらさらのマグマは、遠くまで流れて平たく広がる。","ねばねばのマグマは、流れにくくて、その場で盛り上がる。","同じマグマでも、流れ方がまるでちがう。","形は、外側ではなく、<b>中身</b>が作っていたんだ。"]},
+ {k:"explain", t:"たね明かし",
+  body:["この中身の性質を、マグマの<b>「ねばりけ」</b>という。","決まるのは形だけじゃない。ねばりけが強いと、噴火は激しくなり、溶岩は白っぽい。ねばりけが弱いと、噴火はおだやかで、溶岩は黒っぽい。","火山の形・噴火の激しさ・溶岩の色——ぜんぶ「ねばりけ」1つでつながってる。今回はそれを1本の線で見ていくよ。"]},
+ {k:"teach", t:"火山の下にはマグマ、地上に出ると溶岩", fig:"図: 火山の断面（地下のマグマと、流れ出た溶岩）",
+  body:["火山の地下深くには、岩石が高温でどろどろにとけたものがある。これを<b>マグマ</b>という。","マグマが地表に流れ出ると、呼び名が<b>溶岩（ようがん）</b>に変わる。","中身は同じでも、地下にあるときはマグマ、外に出たら溶岩。場所で名前が変わるんだ。"],
+  col:{l:"マグマってどれくらい熱いの？", b:"マグマの温度は、だいたい1000℃前後もある。アルミかんなら一瞬でとけてしまうくらいの熱さだ。そんなに熱いから、火山の地下では岩石までとけて、マグマになっている。地表に出た溶岩が冷えて固まると、また岩になる——熱でとけて、冷えて固まる、をくり返しているんだ。"}},
+ {k:"teach", t:"ねばりけが火山の形を決める", fig:"図: ねばりけ弱い/強いマグマの火山の対比（再掲）",
+  body:["ここが今回のいちばん大事なところ。","マグマの<b>ねばりけが弱い（さらさら）</b>と、マグマはよく流れて遠くまで広がる。だから、たてに低く、なだらかに広がった形になる。","マグマの<b>ねばりけが強い（ねばねば）</b>と、マグマは流れにくくて、その場に盛り上がる。だから、ドームみたいに盛り上がった形になる。","形を見れば、中のマグマがさらさらだったか、ねばねばだったかが読めるんだ。"]},
+ {k:"quiz", set:"かくにん ①", meta:"ねばりけと火山のかたち", tf:true, qs:[   /* C9(Sol審査員#22): 「1/3問目」と「・3問」の重複を解消 */
+   {q:"ねばりけの強いマグマほど、爆発的で激しい噴火になりやすい。", a:true,  d:"そのとおり。ねばりけが強いとガスがぬけにくく、たまってから一気に出る。"},
+   {q:"ねばりけの弱いマグマの火山は、横に大きく広がったなだらかな形になりやすい。", a:true, d:"さらさらのマグマは遠くまで流れるから、なだらかに広がる。"},
+   {q:"マグマのねばりけが強いと、おだやかに溶岩が流れる、なだらかな形の火山になりやすい。", a:false, d:"ねばりけが強いと流れにくい→盛り上がった形。なだらかになるのは、ねばりけが弱いとき。"}]},
+ {k:"teach", t:"火山がふき出すもの——火山噴出物", fig:"図: 火山からふき出されるもの（溶岩・火山灰・火山ガス）",
+  body:["火山が噴火すると、マグマがもとになったものが、いろいろな形でふき出される。まとめて<b>火山噴出物（かざんふんしゅつぶつ）</b>という。","・<b>溶岩</b>——地表に流れ出たマグマ。<br>・<b>火山灰</b>——細かいつぶになって空高くふき上げられ、風で遠くまで運ばれて広く降り積もる。<br>・<b>火山ガス</b>——マグマにとけていた気体。いちばん多いのは水蒸気。","このほかに、ふき飛ばされたマグマのかたまり（<b>火山弾</b>）や、小さなあながたくさんあいた<b>軽石</b>などもある。","どれも、もとは地下のマグマ。マグマが姿を変えて外に出てきたものなんだ。"]},
+ {k:"quiz", set:"かくにん ②", meta:"マグマ・溶岩と火山噴出物", tf:true, qs:[
+   {q:"地下のマグマが地表に流れ出たものを、溶岩という。", a:true, d:"地下にあるときはマグマ、外に出たら溶岩。場所で名前が変わる。"},
+   {q:"火山灰は、火山の噴火でふき出される火山噴出物の一つである。", a:true, d:"噴火でふき出されるものをまとめて火山噴出物という。溶岩・火山灰・火山ガスはどれも、もとは地下のマグマ。"},
+   {q:"火山からふき出される火山ガスには、水蒸気はふくまれていない。", a:false, d:"火山ガスでいちばん多いのは、じつは水蒸気。"}]},
+ {k:"doneCard"}
+];
+/* ★練習バースト10問（A引き継ぎ）。HARD＝「難問」扱い（ほめ文言の分岐用） */
+const BURST=[
+ {t:"tf",q:"マグマが地表に流れ出たものを、溶岩という。",a:true},
+ {t:"mc",q:"ねばりけが弱いマグマの溶岩は、何っぽい色になりやすい？",c:["黒","白","赤","青"],a:0},
+ {t:"tf",q:"ねばりけの強いマグマの火山は、なだらかな形になりやすい。",a:false},
+ {t:"mc",q:"火山ガスでいちばん多い成分は？",c:["水蒸気","二酸化炭素","酸素","ちっ素"],a:0},
+ {t:"tf",q:"火山灰は風で遠くまで運ばれ、広いはんいに積もることがある。",a:true},
+ {t:"mc",q:"盛り上がった形の火山を作るマグマのねばりけは？",c:["強い","弱い","ねばりけはない","毎回変わる"],a:0},
+ {t:"tf",q:"火山弾や軽石も、火山噴出物のなかまである。",a:true},
+ {t:"mc",q:"白っぽい溶岩になるのは、どんなマグマ？",c:["ねばりけが強い","ねばりけが弱い","つめたい","古い"],a:0},
+ {t:"tf",q:"溶岩ドームは、ねばりけの弱いマグマでできやすい。",a:false},
+ {t:"mc",q:"火山の地下にある、岩石がとけた高温の物質は？",c:["マグマ","溶岩","火山灰","軽石"],a:0}];
+const HARD = new Set([2,8]);   // 逆をつく○✕＝ひっかけ2問
+
+/* ══════════ §B 状態 ══════════ */
+const MASCOT_SRC = "mimg/m_chibi-spark-pup.png";   // ★仮キャラ（投票中）。差し替えはこの1変数だけ
+let cur = 0;              // カード位置
+let qsub = 0;             // クイズセット内の問目
+let pts = 128;
+let B = null;             // バースト実行中の状態
+const S = { today:0, base:432, m2hit:false, reviewed:false, burstDone:false, doneBonus:false, doneHana:false,
+            greetShown:0, greetSkip:0, greetN:0,   // C4(Q2): あいさつの表示/スキップ記録（本実装ではログ送信する値）
+            mDone:{m1:false,m2:false,m3:false}, mShown:{m1:false,m2:false,m3:false} };
+const review = {};        // 検収: id -> {mark, tags[], memo}
+const wrongLog = [];      // C5(§2d-19安全サブセット): 会期内のまちがい記録 {q,ans,d,src}。SRS/永続化は本実装
+const POSKEY = "learn_ab_pos_v1";   // C5: 途中離脱→復帰。ユニット内の現在カードをlocalStorage保存(完走で消す)
+const SHOT = new URLSearchParams(location.search).get("shot") || "";   // ★開発用撮影フック(§O)。通常アクセスでは空文字
+const RM = !!SHOT || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+let azFn = null;          // アクションゾーン主ボタンの動作
+let sheetFn = null;       // シート「つづける」の動作
+/* --- C4(未決Q1/Q2): 設定。既定=じどうですすむ(ハイブリッド=正解のみ自動送り)・あいさつあり。localStorage保存 --- */
+const SETKEY = "learn_ab_set_v1";
+/* Q1タイミング(C4 Sol検分#1を敵対査読→内容連動に): 解説なし正解=800ms(テンポ優先・Quizlet型)。
+   解説つき正解=1600+55ms/字(上限4200)=既知内容のスキム読速+タップ即送り前提。一律4500は棄却(自動の意味が消える) */
+const AUTO_MS = 800;      // 解説なし正解シートの自動送り待ち。誤答は常にボタン
+const GREET_MS = 1600;    // Q2: あいさつの自動通過(Sol#6=1.2秒は読速不足→2.0秒案との敵対折衷。タップで即通過)
+const SET = (()=>{ try{ const o = JSON.parse(localStorage.getItem(SETKEY) || "{}");
+  return { adv: o.adv === "btn" ? "btn" : "auto", greet: o.greet !== false }; }catch(e){ return {adv:"auto", greet:true}; } })();
+function saveSet(){ try{ localStorage.setItem(SETKEY, JSON.stringify(SET)); }catch(e){} }
+let sheetTimer = null;    // Q1: 自動送りタイマー（showSheetで張り・sheetGo/hideSheetで必ず解除=二重発火防止）
+let sheetShownAt = 0;     // Q1: シート表示時刻（表示直後320msの誤タップ無効判定=C7でSol#4の250msを入場280ms+40msへ整合）
+let greetTimer = null, greetHideT = null;   // Q2: あいさつの自動通過/フェード後片づけ
+
+/* ══════════ §C ナビ/テーマ ══════════ */
+function go(v){
+  hideSheet();
+  clearFx();   // C7(§J0規則①): ビュー遷移=遅延演出・乱入・花丸を破棄(幽霊演出/音の残留ゼロ)
+  const az = (v==="unit" || v==="burst" || v==="result");
+  document.body.classList.toggle("azview", az);
+  document.querySelectorAll(".view").forEach(e=>e.classList.remove("show"));
+  document.getElementById("view-"+v).classList.add("show");
+  document.querySelectorAll(".nav button").forEach(e=>{ e.classList.remove("act"); e.removeAttribute("aria-current"); });
+  const navKey = az ? "path" : v;
+  const nb = document.getElementById("nav-"+navKey);
+  if(nb){ nb.classList.add("act"); nb.setAttribute("aria-current","page"); }   // C8: 現在地を色以外でも(4.1.2)
+  if(v==="unit") renderCard();
+  if(v==="home") renderHome();
+  if(v==="path") centerPathCur();
+}
+/* C6: 道を開いたら現在地を「画面高42%」へ寄せる(Sol合議: 厳密中央より上寄り=先の道が多く見え、宝箱が終点に見える誤読を防ぐ) */
+function centerPathCur(){
+  const main = document.querySelector(".main");
+  const c = document.querySelector("#pathbody .pnode2.cur");
+  if(!main || !c) return;
+  const r = c.getBoundingClientRect(), m = main.getBoundingClientRect();
+  const top = Math.max(0, main.scrollTop + (r.top - m.top) + r.height/2 - main.clientHeight*0.42);
+  main.scrollTo({top, behavior: RM ? "auto" : "smooth"});
+}
+function setTheme(t){
+  document.body.dataset.theme = t;
+  document.querySelectorAll(".thchip").forEach(b=>{ b.classList.toggle("act", b.dataset.th === t); b.setAttribute("aria-pressed", b.dataset.th === t); });
+}
+function showSoon(t,b){
+  document.getElementById("mtitle").textContent = "🔧 " + t + "（準備中）";
+  document.getElementById("mbody").textContent = b;
+  openModal("modal");   // C8: フォーカス統治つきの開閉へ集約
+}
+
+/* ══════════ §D ホーム/ミッション（宝箱＝疑似連動） ══════════ */
+function renderHome(){
+  /* C9(Sol中2#4): 0問は「サボり扱いされてる感」→中立の空状態文言へ。C9(Sol中2#2): 吹き出し=事実ベース(残りユニット数) */
+  document.getElementById("homePtToday").innerHTML = S.today === 0 ? "きょうは これから" : `きょう <b>${S.today}</b> 問`;
+  const doneU = UNITS4.filter(u=>u.st==="done").length;
+  document.getElementById("homeBub").textContent = `あと${UNITS4.length - doneU}ユニットで、この章コンプリートだよ。`;
+  document.getElementById("homeTotal").textContent = S.base + S.today;
+  renderMissions();
+}
+function missionDefs(){
+  return [
+    {k:"m1", metal:"bronze", name:"10問とく",               goal:10, val:Math.min(S.today,10)},
+    {k:"m2", metal:"silver", name:"3れんぞく正解する",       goal:1,  val:S.m2hit?1:0},
+    {k:"m3", metal:"gold",   name:"前の単元を1回ふりかえる", goal:1,  val:S.reviewed?1:0},
+  ];
+}
+function checkMissions(){
+  missionDefs().forEach(d=>{ if(d.val>=d.goal) S.mDone[d.k]=true; });
+}
+function renderMissions(){
+  const host = document.getElementById("missionhost");
+  let fresh = false;
+  host.innerHTML = missionDefs().map(d=>{
+    const done = S.mDone[d.k];
+    const isFresh = done && !S.mShown[d.k];
+    if(isFresh){ fresh = true; S.mShown[d.k] = true; }
+    return `<div class="mission">
+      <div class="chest ${d.metal}${done?" open":""}${(isFresh&&!RM)?" fresh":""}" aria-hidden="true"><div class="lid"></div><div class="box"></div><div class="shine">✨</div></div>
+      <div class="mtext"><div class="mname">${d.name}</div><div class="pblue mini" aria-hidden="true"><i style="width:${Math.round(d.val/d.goal*100)}%"></i></div></div>
+      <div class="mcount${done?" donec":""}">${done?"たっせい！":d.val+"/"+d.goal}</div>
+    </div>`;
+  }).join("");
+  if(fresh) sndChest();
+}
+
+/* ══════════ §E もくじ/道 ══════════ */
+function mokuTab(i){
+  document.querySelectorAll(".tabs button").forEach((b,j)=>{ b.classList.toggle("act", i===j); b.setAttribute("aria-pressed", i===j); });   // C8(4.1.2): 選択状態を色以外でも
+  const host = document.getElementById("mokubody");
+  host.innerHTML = "";
+  const done = UNITS4.filter(u=>u.st==="done").length;   // C6: 実データで描画(ハードコード「2ずみ」のドリフト解消)
+  MOKU[i].tans.forEach(t=>{
+    const d = document.createElement("div");
+    d.className = "hcard tan" + (t.soon ? " soon" : "");
+    let inner = `<div class="tanhead"><span class="schip">${{earth:"地学",chem:"化学",phys:"物理",bio:"生物"}[t.s]}</span><h4>${t.n}</h4>`;
+    inner += t.soon ? `<span class="tsub">これから作るよ</span></div>`
+                    : `<span class="tsub">${UNITS4.length}ユニット中 ${done}つ おわったよ</span><span class="pblue mini tanbar" aria-hidden="true"><i style="width:${Math.round(done/UNITS4.length*100)}%"></i></span></div>`;
+    if(t.units){
+      /* C3: 右端は状態別（済=もう一回/現在地=つづきから/未=ひらく）＝進捗表示とアフォーダンスを兼ねる */
+      inner += `<ul class="ulist">` + UNITS4.map(u=>{
+        const go = u.st==='done' ? `<span class="go gdone">もう一回 ▶</span>`
+                 : u.st==='cur'  ? `<span class="go gcur">つづきから ▶</span>`
+                 :                 `<span class="go">ひらく ▶</span>`;
+        return `<li role="button" tabindex="0" onclick="openUnit('${u.id}')"><span class="st ${u.st==='done'?'done':u.st==='cur'?'cur':'todo'}" aria-hidden="true">${u.st==='done'?'✓':u.st==='cur'?'▶':''}</span><span class="uname">${u.nm}</span>${go}</li>`;   /* C8(2.1.1): li=クリック専用だった→role+tabindex+Enter/Space(§R委譲) */
+      }).join("") + `</ul>`;
+    }
+    d.innerHTML = inner;
+    if(t.soon){ d.onclick = ()=>showSoon(t.n, "教科書グラウンディングで作りなおしながら、順番にここへ入っていきます。");
+      d.tabIndex = 0; d.setAttribute("role","button"); }   // C8(2.1.1): 準備中カードもキーボードで開ける
+
+    host.appendChild(d);
+  });
+  /* C6空状態: 全部準備中の学年タブは、灰カードだけで終わらせず「いまできる場所」への一言と導線を置く */
+  if(!MOKU[i].tans.some(t=>t.units)){
+    const n = document.createElement("div");
+    n.className = "mokunote";
+    n.innerHTML = `<span>この学年は じゅんび中。いまは 1年の「大地の変化」で れんしゅうできるよ。</span><button class="b3 white slim" onclick="mokuTab(0)">1年をみる</button>`;
+    host.appendChild(n);
+  }
+}
+function renderPath(){
+  const nodes = [];
+  UNITS4.forEach((u,idx)=>{
+    nodes.push({type:"unit", u, idx});
+    if(u.id==="u_earth_03") nodes.push({type:"chest"});   // 途中の宝箱ノード
+  });
+  /* C6(§2d-9): 旧[0,96,96,0,-96,-96,0]=サインの山サンプリングで同オフセット2連続=縦一直線の柱に見えた
+     →半位相サイン(±96・sin((i+.5)π/3))で毎ノード必ず横へ振れる蛇行に(Sol合議・賛成) */
+  const offs = [48,96,48,-48,-96,-48];
+  /* すすみぐあい=実データで描画(旧2/6ハードコードのドリフト解消)。数字+バーの二重表現 */
+  const done = UNITS4.filter(u=>u.st==="done").length;
+  document.getElementById("pathdone").textContent = done;
+  document.getElementById("pathtotal").textContent = UNITS4.length;
+  document.getElementById("pathbar").style.width = Math.round(done/UNITS4.length*100) + "%";
+  document.getElementById("pathbody").innerHTML = nodes.map((n,i)=>{
+    const off = offs[i%offs.length];
+    if(n.type==="chest"){
+      return `<div class="pnode2 chestnode" role="button" tabindex="0" style="--off:${off}px" onclick="showSoon('宝箱','道のとちゅうのごほうびポイント。本実装では、ここまで来ると⭐ボーナスなどが開く予定。')">
+        <div class="chest gold" aria-hidden="true"><div class="lid"></div><div class="box"></div><div class="shine">✨</div></div>
+        <div class="pname">ごほうび</div></div>`;
+    }
+    const u = n.u;
+    /* C8(2.1.1): 道ノード=div onclickだった→role+tabindex(Enter/Spaceは§R委譲)。円内の✓★数字は装飾=pname/pdescが名前 */
+    return `<div class="pnode2 ${u.st}" role="button" tabindex="0" style="--off:${off}px" onclick="openUnit('${u.id}')">
+      <div class="circwrap" aria-hidden="true">${u.st==="cur"?'<div class="startbub">ここから！</div>':""}
+        <div class="circ">${u.st==="done"?"✓":u.st==="cur"?"★":n.idx+1}</div></div>
+      <div class="pname">${u.nm}</div><div class="pdesc">${u.ds}</div></div>`;
+  }).join("");
+}
+function openUnit(id){
+  if(id !== "u_earth_01"){ showSoon(UNITS4.find(u=>u.id===id).nm, "モックで中身が入っているのは「火山の姿とマグマ」だけ。ほかのユニットも同じ画面の形で入ります。"); return; }
+  const u = UNITS4.find(x=>x.id===id);
+  if(u.st==="done" && !S.reviewed){ S.reviewed = true; checkMissions(); }   // ミッション3＝ふりかえり(疑似連動)
+  const rp = readPos();   // C5: 途中離脱の保存位置があれば、そのカードから再開(完走済み/先頭は対象外)
+  cur = rp ? rp.cur : 0; qsub = rp ? rp.qsub : 0; go("unit");
+  showGreet(rp);   // C4(Q2)/C5: ユニット開始のあいさつ（再開時は「とちゅうから」の事実文言に差し替え）
+}
+
+/* ══════════ §F カードビューア（本文=上層・回答/前進=下部ゾーン） ══════════ */
+function dotHtml(){
+  return CARDS.map((c,i)=>`<i class="${i<cur?'on':i===cur?'cur':''}"></i>`).join("");
+}
+function kindBadge(k){
+  return {ready:["ready","おもいだし"],predict:["predict","よそう"],observe:["observe","かんさつ"],
+          explain:["explain","たね明かし"],teach:["teach","まなぶ"],quiz:["quiz","かくにん"]}[k] || ["teach",""];
+}
+function cardBody(c){
+  let t = `<div class="kt">${c.t||""}</div>`;
+  (c.body||[]).forEach(p=> t += `<p class="kbody">${p}</p>`);
+  if(c.q) t += `<p class="kbody qbig">${c.q}</p>`;
+  if(c.col) t += `<details class="column"><summary>${c.col.l}</summary><div class="cbody">${c.col.b}</div></details>`;
+  return t;
+}
+function renderCard(){
+  const host = document.getElementById("kcard");
+  const dots = document.getElementById("dots");
+  dots.innerHTML = dotHtml();
+  dots.setAttribute("role","img"); dots.setAttribute("aria-label", `カード ${Math.min(cur+1, CARDS.length)}／${CARDS.length}`);   // C8(1.1.1): ドット列に読み上げ名
+  const c = CARDS[cur];
+  savePos();   // C5: 復帰用の現在地保存(SHOT中は§Q側で何もしない・doneCardは直後のclearPosが勝つ)
+
+  if(c.k === "doneCard"){
+    clearPos();   // C5: 完走=保存位置を消す(次に開いたら最初から)
+    if(!S.doneBonus){ S.doneBonus = true; setTimeout(()=>gainPt(20), 400); }
+    host.innerHTML = `<div class="kin one vcenter tcenter"><div>
+      <div class="maswrap"><img src="${MASCOT_SRC}" alt="" style="width:92px" onerror="this.style.display='none'"><span class="tempbadge">仮キャラ（投票中）</span></div>
+      <div class="donetitle">「火山の姿とマグマ」コンプリート！</div>
+      <div class="donesub">ねばりけ1つで、形・噴火・色が つながって読めるようになったね。</div><!-- C9(Sol審査員#33): 「ぜんぶ」の過大表現→事実の範囲に -->
+      <div class="stamp rank4 pressed" style="margin:16px auto 4px">はなまる</div>
+      <div style="margin:8px 0 16px"><span class="ptchip big">⭐ +20 pt</span></div>
+      <div style="display:flex; gap:8px; justify-content:center">
+        <button class="b3 white slim" onclick="cur=0;qsub=0;renderCard()">もう一度みる</button>
+        <button class="b3 white slim" onclick="startBurst()">⚡ バーストにもう一回</button>
+        ${wrongLog.length ? `<button class="misbtn" onclick="openMistakes()">📖 きょうの まちがい（${wrongLog.length}）</button>` : ""}
+      </div>
+      ${revBarHtml("done")}
+    </div></div>`;
+    hookRev("done"); updateRevPill();
+    azSet({prev:true, primary:{label:"つぎのユニットへ ▶", cls:"acc", fn:()=>go("path")}});
+    if(!S.doneHana){ S.doneHana = true; pend(()=>{ showHanamaru("はなまる！ユニットかんそう！"); sndStamp(); }, 500); }   // C7: pend=早抜け時に破棄(§J0)
+    return;
+  }
+
+  const [cls,label] = kindBadge(c.k);
+  let kinCls = "one vcenter", inner = "";
+
+  if(c.k === "quiz"){
+    const q = c.qs[qsub];
+    inner = `<div class="qmeta">${c.set} ・ ${qsub+1}/${c.qs.length}問目 — ${c.meta}</div><div class="qbig">${q.q}</div>`;
+    azSet({prev:true, choices:{cls:"tf", html:tfHtml("tfAns")}});
+  }
+  else if(c.k === "ready" || c.k === "predict"){
+    azSet({prev:true, choices:azChoices(c.c, "pick")});
+    if(c.fig){ kinCls = "two"; inner = `<div class="tworow"><div class="figbox">🖼 ${c.fig}（作図まち）</div><div>${cardBody(c)}</div></div>`; }
+    else inner = cardBody(c);
+  }
+  else{
+    azSet({prev:true, primary:{label:"つぎへ ▶", cls:"acc", fn:()=>step(1)}});
+    if(c.fig){ kinCls = "two"; inner = `<div class="tworow"><div class="figbox">🖼 ${c.fig}（作図まち）</div><div>${cardBody(c)}</div></div>`; }
+    else inner = cardBody(c);
+  }
+  host.innerHTML = `<span class="kbadge ${cls}">${label}</span><div class="kin ${kinCls}">${inner}${revBarHtml("c"+cur)}</div>`;
+  hookRev("c"+cur); updateRevPill();
+}
+/* --- カード内クイズの回答（回答は下部ゾーン・フィードバックはシート） --- */
+function pick(i){
+  const c = CARDS[cur];
+  const btns = document.querySelectorAll("#azch button");
+  btns.forEach(b=>{ b.disabled = true; b.classList.add("dim"); });
+  const me = btns[i]; me.classList.remove("dim");
+  if(c.free){
+    me.classList.add("pick");
+    bumpAnswer(false);   // 取り組み+1（予想に正誤はない）
+    showSheet(true, okHtml("なるほど、その予想でいこう！","つぎのカードで、たしかめよう。"), "つぎへ ▶", ()=>step(1));
+    return;
+  }
+  const ok = (i === c.a);
+  bumpAnswer(ok);
+  if(ok){
+    me.classList.add("right"); sndOK(1);
+    showSheet(true, okHtml("そう、それ！",""), "つぎへ ▶", ()=>step(1));
+  }else{
+    me.classList.add("pick");
+    btns[c.a].classList.remove("dim"); btns[c.a].classList.add("right");
+    sndStamp();
+    logWrong(c.q, c.c[c.a], "", "おもいだし");   // C5: みなおしリストへ
+    showSheet(false, ngHtml("だいじょうぶ、ポイントは へらないよ", c.c[c.a], "つぎで思い出せればOK！"), "なるほど！", ()=>step(1));
+  }
+}
+function tfAns(val){
+  const c = CARDS[cur], q = c.qs[qsub];
+  const btns = document.querySelectorAll("#azch button");
+  btns.forEach(b=>{ b.disabled = true; b.classList.add("dim"); });
+  const iPick = val ? 0 : 1, iRight = q.a ? 0 : 1;
+  btns[iRight].classList.remove("dim");
+  const ok = (val === q.a);
+  const last = (qsub === c.qs.length-1);
+  const cont = ()=>{ if(last){ qsub = 0; step(1); } else { qsub++; renderCard(); } };
+  bumpAnswer(ok);
+  if(ok){
+    btns[iRight].classList.add("right"); sndOK(1);
+    showSheet(true, okHtml("⭕ せいかい！", q.d), last ? "つぎへ ▶" : "つづける ▶", cont);
+  }else{
+    btns[iPick].classList.remove("dim"); btns[iPick].classList.add("pick");
+    btns[iRight].classList.add("right");
+    sndStamp();
+    logWrong(q.q, q.a ? "○" : "✕", q.d, c.set);   // C5: みなおしリストへ(解説つき)
+    showSheet(false, ngHtml("こたえは「"+(q.a?"○":"✕")+"」", null, q.d + " まちがえても、ポイントは へらないよ。"), "なるほど！", cont);  /* C9(Sol両名): 対象明記 */
+  }
+}
+function step(d){
+  const nxt = cur + d;
+  // ★カード完走→doneCardの前に練習バーストを挟む
+  if(d>0 && CARDS[nxt] && CARDS[nxt].k==="doneCard" && !S.burstDone){ qsub=0; startBurst(); return; }
+  cur = Math.max(0, Math.min(CARDS.length-1, nxt)); qsub = 0; renderCard();
+}
+/* ポイント2階建て: 取り組み+1・正解でさらに+1（誤答でも必ず+1＝誤答無罰） */
+function bumpAnswer(ok){
+  S.today++;
+  gainPt(ok ? 2 : 1);
+  checkMissions();
+}
+let ptpopT = null;
+function gainPt(n){
+  pts += n; document.getElementById("pt").textContent = pts;
+  const p = document.getElementById("ptpop"); p.textContent = "+" + n + " pt";
+  p.classList.add("show");
+  clearTimeout(ptpopT); ptpopT = setTimeout(()=>p.classList.remove("show"), 600);   // C7(Sol#9): 毎回答演出900→600ms=称賛シート/コンボと競合させない
+}
+
+/* ══════════ §G アクションゾーン/シート共通（座標固定の芯） ══════════ */
+function azSet(o){
+  o = o || {};
+  document.getElementById("azprev").style.visibility = (o.prev && cur>0) ? "visible" : "hidden";
+  const ch = document.getElementById("azch");
+  if(o.choices){ ch.className = "azch" + (o.choices.cls ? " "+o.choices.cls : ""); ch.innerHTML = o.choices.html; }
+  else { ch.className = "azch"; ch.innerHTML = ""; }
+  const nx = document.getElementById("aznext");
+  if(o.primary){
+    nx.hidden = false; nx.textContent = o.primary.label;
+    nx.className = "azprimary " + (o.primary.cls || "acc");
+    azFn = o.primary.fn;
+  } else { nx.hidden = true; azFn = null; }
+}
+function azGo(){ if(azFn) azFn(); }
+function tfHtml(fn){
+  /* C8(4.1.2): ○✕記号はSRで読みが不定→名前を明示。Enter/Spaceはbutton標準・左右キーは§Rで移動 */
+  return `<button onclick="${fn}(true)" aria-label="まる（正しい）">○</button><button onclick="${fn}(false)" aria-label="ばつ（正しくない）">✕</button>`;
+}
+function azChoices(arr, fn){
+  const long = arr.some(t => t.replace(/<[^>]*>/g,"").length >= 8);
+  const cls = long ? (arr.length === 3 ? "grid3" : "grid2") : "";   // C4(§2d-6): 長文3択は2+1でなく1行3列
+  return {cls, html: arr.map((t,i)=>`<button onclick="${fn}(${i})">${t}</button>`).join("")};
+}
+function okHtml(head, note){
+  return `<img class="mimg" src="${MASCOT_SRC}" alt="" onerror="this.style.display='none'">
+    <div class="stxt"><div class="shead">${head}</div>${note?`<div class="snote">${note}</div>`:""}</div>`;
+}
+function ngHtml(head, ans, note){
+  return `<span class="ministamp pressed">みました<br>◎</span>
+    <div class="stxt"><div class="shead">${head}</div>${ans?`<div class="ansbox">こたえ: ${ans}</div>`:""}${note?`<div class="snote">${note}</div>`:""}</div>`;
+}
+function showSheet(ok, innerHtml, btnLabel, fn, autoMs){
+  clearSheetTimer();
+  document.getElementById("sheetin").innerHTML = innerHtml;
+  const b = document.getElementById("sheetbtn");
+  b.textContent = btnLabel;
+  b.className = "azprimary " + (ok ? "acc" : "blue");
+  sheetFn = fn;
+  sheetShownAt = Date.now();
+  document.getElementById("sheet").className = "sheet show " + (ok ? "ok" : "ng");
+  announce(innerHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim());   // C8(4.1.3): 正誤フィードバックをSRへ(見出し+こたえ+解説のテキストのみ)
+  setTimeout(()=>{ if(sheetFn) b.focus(); }, 90);
+  /* C4(Q1)ハイブリッド: 正解シート×「じどうですすむ」のときだけ自動送り。誤答は必ずボタン。
+     待ち時間は内容連動(§B定数コメント): 解説なし=AUTO_MS・解説つき=1600+55ms/字(上限4200)・呼び出し側でautoMs上書き可。
+     SHOT時はタイマーを張らない(撮影の状態固定・§15がバーを6割で凍結)。RM時はバーの縮みだけ省略(自動送り自体は同じ) */
+  const auto = ok && SET.adv === "auto";
+  const bar = document.getElementById("sbar"), lbl = document.getElementById("sbarlbl");
+  bar.hidden = lbl.hidden = !auto;
+  if(auto && !SHOT){
+    const hasNote = innerHtml.indexOf("snote") >= 0;
+    const chars = innerHtml.replace(/<[^>]*>/g, "").length;
+    const ms = autoMs || (hasNote ? Math.min(1600 + chars * 55, 4200) : AUTO_MS);
+    if(!RM){ bar.style.transitionDuration = ms + "ms"; void bar.offsetWidth; bar.classList.add("run"); }
+    sheetTimer = setTimeout(()=>{ sheetTimer = null; sheetGo(); }, ms);
+  }
+}
+function sheetGo(){ clearSheetTimer(); hideJump(); const f = sheetFn; sheetFn = null; hideSheet(); if(f) f(); focusAz(); }   // C7(§J0規則②): 明示スキップ=乱入キャンセル。C8: 進んだ先へフォーカス継続(2.4.3)
+function hideSheet(){ clearSheetTimer(); sheetFn = null; document.getElementById("sheet").className = "sheet"; }
+function sheetTap(){                               // C4(Q1): 自動送り待ちの間だけ、シートのどこをタップしても即すすむ
+  if(!sheetTimer) return;
+  if(Date.now() - sheetShownAt < 320) return;      // Sol#4採用250ms→C7(Sol#5): シート入場280ms完了+40msへ整合(スライド中のタップ=残連打とみなす)
+  sheetGo();
+}
+function clearSheetTimer(){                        // C4(Q1): 解除は1か所に集約=タイマーの二重発火/取り残し防止
+  if(sheetTimer){ clearTimeout(sheetTimer); sheetTimer = null; }
+  const bar = document.getElementById("sbar");
+  bar.hidden = true; bar.classList.remove("run");
+  document.getElementById("sbarlbl").hidden = true;
+}
+
+/* ══════════ §H 練習バースト（A引き継ぎ・回答は下部ゾーン） ══════════ */
+const PRAISES = ["そう、それ！","いい調子、ちゃんと読めてる","手が止まってない、いいね","ここまでしっかり積めてる"];
+const WRONGS  = ["おしい、ここは『まだ』。次でとろう","なるほど！でOK。つぎで拾おう"];
+function startBurst(){
+  hideSheet();
+  B = { queue: BURST.map((q,i)=>({...q, i, w:1, retry:false, hard:HARD.has(i)})),
+        pos:0, prog:0, combo:0, answered:0, correct:0, first:0, wrongs:0,
+        t0:Date.now(), lock:false, praiseRot:0, wrongRot:0, firstOK:false };
+  go("burst"); renderBurst();
+}
+function renderBurst(){
+  const q = B.queue[B.pos];
+  document.getElementById("bfill").style.width = (B.prog*100) + "%";
+  document.getElementById("bbar").setAttribute("aria-valuenow", Math.round(B.prog*100));   // C8(Sol#10)
+  document.getElementById("bleft").textContent = "のこり " + (B.queue.length - B.pos) + " もん";
+  updateComboChip(false);
+  document.getElementById("bqhost").innerHTML =
+    (q.retry ? `<span class="retag">もう一回チャレンジ</span>` : "") + `<div class="bqtext">${q.q}</div>`;
+  azSet({prev:false, choices: q.t==="tf" ? {cls:"tf", html:tfHtml("answerB")} : azChoices(q.c, "answerB")});
+  B.lock = false;
+}
+function updateComboChip(pop){
+  const chip = document.getElementById("combochip");
+  if(B && B.combo >= 2){
+    chip.classList.add("show");
+    document.getElementById("comboN").textContent = B.combo;
+    if(pop && !RM){ chip.classList.remove("pop"); void chip.offsetWidth; chip.classList.add("pop"); }
+  } else chip.classList.remove("show");
+}
+function answerB(val){
+  if(!B || B.lock) return;
+  B.lock = true;
+  const q = B.queue[B.pos];
+  const ok = (val === q.a);
+  document.querySelectorAll("#azch button").forEach((b,i)=>{
+    const isRight  = q.t==="tf" ? ((i===0) === q.a) : (i === q.a);
+    const isPicked = q.t==="tf" ? ((i===0) === val) : (i === val);
+    if(isRight) b.classList.add("right");
+    else if(isPicked) b.classList.add("pick");
+    else b.classList.add("dim");
+    b.disabled = true;
+  });
+  B.answered++;
+  const wasRetry = q.retry, hard = q.hard;
+  let milestone = 0, msg;
+  if(ok){
+    B.correct++; if(!wasRetry) B.first++;
+    B.combo++;
+    if(B.combo >= 3) S.m2hit = true;                       // ミッション2（疑似連動）
+    if([3,5,7].includes(B.combo)) milestone = B.combo;     // 節目だけ格上げ
+    B.prog += q.w / BURST.length; q.w = 0;                 // 正解＝残り全部すすむ
+    msg = praiseFor(milestone, wasRetry, hard);
+    B.firstOK = true;
+    sndOK(B.combo);                                        // コンボでピッチが上がる
+    updateComboChip(true);
+    if(milestone) confettiCenter(24);                      // 節目の小紙吹雪。C7(Sol#7): 3/5/7の反復を考慮し40→24粒
+    if(milestone === 5) mascotJump();                      // 5れんぞく＝マスコット乱入
+  }else{
+    const gain = q.w / 2;                                  // 誤答でも微前進（正解の半分）
+    q.w -= gain; B.prog += gain / BURST.length;
+    q.retry = true; B.queue.push(q);                       // セッション末尾にしれっと再挿入
+    B.wrongs++; B.combo = 0;
+    msg = WRONGS[B.wrongRot++ % WRONGS.length];
+    updateComboChip(false);
+    sndStamp();                                            // 誤答＝「みました◎」押印の低音1発
+  }
+  document.getElementById("bfill").style.width = (B.prog*100) + "%";
+  bumpAnswer(ok);
+  /* C4: 5コンボはマスコット乱入(jump=1700ms)が画面を覆う→自動送りを1900msへ延長(800msだと次問が演出の下に出る=Sol見落とし分) */
+  if(ok) showSheet(true, okHtml(msg, ""), "つづける ▶", nextBurst, milestone === 5 ? 1900 : undefined);
+  else{
+    const ans = q.t==="tf" ? (q.a ? "○" : "✕") : q.c[q.a];
+    logWrong(q.q, ans, "", "バースト");   // C5: みなおしリストへ(同一問の再誤答はlogWrong側で重複排除)
+    showSheet(false, ngHtml(msg, ans, "この問題は、あとでもう一回出すね"), "なるほど！", nextBurst);
+  }
+}
+function praiseFor(milestone, wasRetry, hard){
+  if(milestone === 3) return "3れんぞく！つみ重ねが効いてる";
+  if(milestone === 5) return "5れんぞく！今日のキミ、強い";
+  if(milestone === 7) return "7れんぞく！集中がつづいてる";
+  if(wasRetry) return "復習が効いてる";
+  if(hard) return "よく見抜いた！";
+  if(!B.firstOK) return "せいかい！";
+  return PRAISES[B.praiseRot++ % PRAISES.length];
+}
+function nextBurst(){
+  if(!B) return;
+  B.pos++;
+  if(B.pos >= B.queue.length) finishBurst();
+  else renderBurst();
+}
+function quitBurst(){ hideSheet(); B = null; go("unit"); }
+function finishBurst(){
+  B.sec = Math.max(1, Math.round((Date.now() - B.t0) / 1000));
+  S.burstDone = true;
+  go("result"); renderResult();
+}
+function toDoneCard(){ cur = CARDS.length - 1; qsub = 0; go("unit"); }
+
+/* ══════════ §I 完了画面（スタット3枚＋先生スタンプ階段=B移植） ══════════ */
+function renderResult(){
+  azSet({prev:false, primary:{label:"つづける ▶", cls:"acc", fn:toDoneCard}});
+  const acc = Math.round(B.first / BURST.length * 100);   // 1回目で正解できた率（階段の基準）
+  const perfect = (acc === 100);
+  document.getElementById("rbubbleTxt").textContent =
+    perfect ? "ぜんぶ正解！さいごまで集中してたね！" : "レッスンクリア！今日も一歩前進！";
+  const cards = [
+    {el:"rs1", num:"rn1", to:B.answered, fmt:n=>Math.round(n)+"問"},
+    {el:"rs2", num:"rn2", to:B.sec,      fmt:n=>fmtTime(Math.round(n))},
+    {el:"rs3", num:"rn3", to:acc,        fmt:n=>Math.round(n)+"%"},
+  ];
+  cards.forEach(c=>{
+    const el = document.getElementById(c.el);
+    el.classList.remove("in"); void el.offsetWidth;   // 再訪時もアニメし直す
+    document.getElementById(c.num).textContent = c.fmt(0);
+  });
+  cards.forEach((c,i)=>{
+    pend(()=>{
+      document.getElementById(c.el).classList.add("in");    // C7(Sol#11): スタガー250→140ms
+      countUp(document.getElementById(c.num), c.to, c.fmt); // easeOutExpo 800ms=最終確定1080ms(主情報を1.3s以内に)
+    }, RM ? 0 : i*140);
+  });
+  /* ★先生スタンプ階段: ≤5割みました◎ / 6-7割よくできました / 8-9割たいへんよくできました(二重枠) / 全問=金枠はなまる */
+  const rank = perfect ? 4 : acc >= 80 ? 3 : acc >= 60 ? 2 : 1;
+  const fs = document.getElementById("finalStamp");
+  fs.className = "stamp" + (rank===4 ? " rank4" : rank===3 ? " rank3" : "");
+  fs.innerHTML = {1:"みました<br>◎", 2:"よく<br>できました", 3:"たいへん<br>よく<br>できました", 4:"はなまる"}[rank];
+  fs.style.opacity = "0";
+  document.getElementById("plabel").textContent =
+    {4:"はなまる！ぜんぶ1回で正解！", 3:"たいへんよくできました！", 2:"よくできました", 1:"さいごまでやりきったね。みました◎"}[rank];
+  /* C5: まちがいがあれば、みなおし導線(§Q)。0なら何も出さない=パーフェクト画面は清潔なまま */
+  document.getElementById("rswrong").innerHTML = wrongLog.length
+    ? `<button class="misbtn" onclick="openMistakes()">📖 まちがえた ${wrongLog.length}問を みなおす</button>` : "";
+  /* C7直列化(Sol#11,12): 情報→評価→祝いの順。スタット確定1080ms→押印1100ms→(perfect)花丸1500ms。
+     宝箱音はperfectから削除=音→意味辞書で宝箱(ミッション)専用に戻す(Sol#12の敵対折衷=ファンファーレ+押印は維持) */
+  pend(()=>{ fs.style.opacity = "1"; fs.classList.add("pressed"); sndStamp(); }, RM ? 0 : 1100);
+  sndFanfare();
+  if(!RM) pend(confettiCannon, 250);                        // 完走＝左右下端の大砲式
+  if(perfect){
+    pend(()=>{ showHanamaru("はなまる！ぜんぶ正解！"); confettiCenter(40); }, RM ? 100 : 1500);
+  }
+}
+function fmtTime(s){ return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); }
+function countUp(el, to, fmt){
+  if(RM){ el.textContent = fmt(to); return; }
+  const t0 = performance.now(), D = 800;   // C7(Sol#11): 1200→800ms
+  let settled = false;
+  function tick(now){
+    const p = Math.min(1, (now - t0) / D);
+    const e = (p >= 1) ? 1 : 1 - Math.pow(2, -10 * p);      // easeOutExpo
+    el.textContent = fmt(to * e);
+    if(p < 1) requestAnimationFrame(tick); else settled = true;
+  }
+  requestAnimationFrame(tick);
+  setTimeout(()=>{ if(!settled) el.textContent = fmt(to); }, D + 250);  // rAF停止時も最終値を保証
+}
+
+/* ══════════ §J0 演出の衝突統治（C7・台帳§2e） ══════════
+   規則①: ビュー遷移(go)=進行ビュー限定の遅延演出(pend)と乱入/花丸を必ず破棄
+          （完了画面を早抜けすると押印音・花丸・紙吹雪が次のビューへ漏れる幽霊タイマーの根絶）
+   規則②: ユーザーの明示スキップ(sheetGo)=乱入jumpを即キャンセル（入力への応答＞祝いの完走）
+   規則③: 花丸の最短再演間隔4秒（perfect完了→完走カードの3秒2連発を抑制。SHOTは対象外） */
+let pendT = [];
+function pend(fn, ms){ pendT.push(setTimeout(fn, ms)); }
+function clearPend(){ pendT.forEach(clearTimeout); pendT = []; }
+function hideJump(){ clearTimeout(jumpT); jumpT = null; document.getElementById("jump").classList.remove("show"); }
+function hideHana(){ if(SHOT) return; clearTimeout(hanaT1); clearTimeout(hanaT2); hanaT1 = hanaT2 = null;
+  document.getElementById("hanaov").className = "hanaov"; }
+function clearFx(){ clearPend(); hideJump(); hideHana(); }
+
+/* ══════════ §J 花丸ストローク/はんこ（B「はなまる」移植・朱ペン1.2秒） ══════════ */
+let hanaT1 = null, hanaT2 = null, hanaLastAt = 0;
+function showHanamaru(label){
+  if(!SHOT && Date.now() - hanaLastAt < 4000) return;   // §J0規則③
+  hanaLastAt = Date.now();
+  const ov = document.getElementById("hanaov");
+  const path = document.getElementById("hanapath");
+  const lb = document.getElementById("hanalabel");
+  lb.textContent = label || "はなまる！";
+  lb.classList.remove("show");
+  ov.classList.add("show");
+  const L = path.getTotalLength();
+  if(RM){
+    path.style.transition = "none"; path.style.strokeDasharray = "none"; path.style.strokeDashoffset = "0";
+    lb.classList.add("show");
+  }else{
+    path.style.transition = "none";
+    path.style.strokeDasharray = L;
+    path.style.strokeDashoffset = L;
+    void path.getBoundingClientRect();
+    path.style.transition = "stroke-dashoffset 1.2s ease";
+    path.style.strokeDashoffset = "0";
+    clearTimeout(hanaT1); hanaT1 = setTimeout(()=>lb.classList.add("show"), 1150);
+  }
+  ov.classList.remove("dock");
+  clearTimeout(hanaT2);
+  /* C7(§2d-17): 退場2600ms→描線1.2s+余韻0.3sで右上へ縮小退避(dock)。中央遮蔽は1.5秒で解け、
+     花丸はバッジとして画面に残る=「消える祝い」より「残る証」。退場はビュー遷移(hideHana)が担う */
+  if(!SHOT) hanaT2 = setTimeout(()=>ov.classList.add("dock"), 1500);
+}
+
+/* ══════════ §K 紙吹雪（canvas自作・色はテーマ追従） ══════════ */
+let fxCvs, fxCtx, fxParts = [], fxRun = false;
+function fxInit(){
+  fxCvs = document.getElementById("fx"); fxCtx = fxCvs.getContext("2d");
+  fxSize(); addEventListener("resize", fxSize);
+}
+function fxSize(){ fxCvs.width = innerWidth; fxCvs.height = innerHeight; }
+function fxPalette(){
+  const cs = getComputedStyle(document.body);
+  const v = n => (cs.getPropertyValue(n) || "").trim();
+  return [v("--acc") || "#0D9F96", v("--acc-lt") || "#5ED9D1", "#1CB0F6", "#FFC800", "#CE82FF"];  /* C9: フォールバックをC2濃色化後の実テーマ値へ */
+}
+function fxSpawn(n, x, y, angDeg, spreadDeg, v0, v1, life){
+  const pal = fxPalette();
+  for(let i=0; i<n; i++){
+    const a = (angDeg + (Math.random()-.5) * spreadDeg) * Math.PI / 180;
+    const v = v0 + Math.random() * (v1 - v0);
+    fxParts.push({x, y, vx:Math.cos(a)*v, vy:-Math.sin(a)*v,
+      rot:Math.random()*Math.PI, vr:(Math.random()-.5)*.3,
+      w:6+Math.random()*5, h:8+Math.random()*6,
+      c:pal[(Math.random()*pal.length)|0], t:0, life:life});
+  }
+  if(!fxRun){ fxRun = true; requestAnimationFrame(fxLoop); }
+}
+function fxLoop(){
+  fxCtx.clearRect(0, 0, fxCvs.width, fxCvs.height);
+  fxParts = fxParts.filter(p => p.t < p.life && p.y < fxCvs.height + 40);
+  fxParts.forEach(p=>{
+    p.t++; p.vy += 0.12; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+    const alpha = p.t > p.life - 30 ? (p.life - p.t) / 30 : 1;
+    fxCtx.save(); fxCtx.globalAlpha = alpha;
+    fxCtx.translate(p.x, p.y); fxCtx.rotate(p.rot);
+    fxCtx.fillStyle = p.c; fxCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    fxCtx.restore();
+  });
+  if(fxParts.length) requestAnimationFrame(fxLoop);
+  else { fxRun = false; fxCtx.clearRect(0, 0, fxCvs.width, fxCvs.height); }
+}
+function confettiCenter(n){       // 節目: 中央上バースト（C7 Sol#7: 既定24粒・寿命120→100frame≈1.7s）
+  if(RM) return;
+  fxSpawn(n||24, innerWidth/2, innerHeight*0.3, 90, 360, 2, 7, 100);
+}
+function confettiCannon(){        // 完走: 左右下端からの大砲式 angle60/120・spread55（C7 Sol#12: 60→40粒/側・寿命150→130frame）
+  if(RM) return;
+  fxSpawn(40, 0,          innerHeight, 60,  55, 10, 15, 130);
+  fxSpawn(40, innerWidth, innerHeight, 120, 55, 10, 15, 130);
+}
+let jumpT = null;
+function mascotJump(){            // 5れんぞく: マスコット中央乱入＋稲妻（点滅は1秒3回以下）
+  if(RM) return;
+  const j = document.getElementById("jump");
+  j.classList.remove("show"); void j.offsetWidth; j.classList.add("show");
+  clearTimeout(jumpT); jumpT = setTimeout(()=>j.classList.remove("show"), 1700);
+}
+
+/* ══════════ §L 音（WebAudio自前チャイム・外部音源なし） ══════════
+   C7(Sol Q2採用): 既定=OFF。教室30台・ヘッドホン無しの共有空間では音が学習必須情報でない以上OFFが安全側。
+   家庭・別室登校の単独利用者がONにした選択はlocalStorageで永続尊重(リロードでONに戻さない/OFFにも戻さない) */
+const SNDKEY = "learn_ab_snd_v1";
+let audioOn = (()=>{ try{ return localStorage.getItem(SNDKEY) === "on"; }catch(e){ return false; } })();
+let actx = null;
+function ensureAudio(){
+  if(!actx){ try{ actx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} }
+  if(actx && actx.state === "suspended") actx.resume();
+}
+document.addEventListener("pointerdown", ensureAudio, true);
+function toggleSound(){
+  audioOn = !audioOn; ensureAudio();
+  try{ localStorage.setItem(SNDKEY, audioOn ? "on" : "off"); }catch(e){}
+  const sb = document.getElementById("sndbtn");
+  sb.textContent = audioOn ? "🔊" : "🔇"; sb.setAttribute("aria-pressed", audioOn);   // C8(4.1.2)
+  if(audioOn) sndOK(1);   // C7: ONにした瞬間に1音=音量の見本(教室でONにする前に音の大きさが分かる)
+}
+function tone(f, delay, dur, g, type){
+  const t = actx.currentTime + delay;
+  const o = actx.createOscillator(), gn = actx.createGain();
+  o.type = type || "sine"; o.frequency.value = f;
+  gn.gain.setValueAtTime(0.0001, t);
+  gn.gain.exponentialRampToValueAtTime(g, t + 0.015);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(gn); gn.connect(actx.destination);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function sndOK(combo){            // 短い上昇2音・コンボで半音ずつ上がる（上限+8）
+  if(!audioOn || !actx) return;
+  const s = Math.min(Math.max((combo||1) - 1, 0), 8);
+  const f = 659.25 * Math.pow(2, s/12);
+  tone(f, 0, .12, .12); tone(f*1.335, .09, .16, .12);   // C7(Sol#16部分採用): gain.14→.12=他の音(.11)と揃える。半音上昇+8は維持(報酬の階段)
+}
+function sndStamp(){ if(audioOn && actx) tone(150, 0, .16, .13); }   // ★押印の低音1発（正誤両文脈の「はんこ」音=中立）。C7: gain.16→.13(低域補正込みの正規化)
+function sndChest(){ if(audioOn && actx){ tone(659.25,0,.1,.11); tone(880,.09,.1,.11); tone(1174.66,.18,.22,.11); } }
+function sndFanfare(){ if(audioOn && actx){ tone(523.25,0,.12,.11); tone(659.25,.1,.12,.11); tone(783.99,.2,.12,.11); tone(1046.5,.3,.3,.12); } }
+
+/* ══════════ §M 検収モード（A互換・回収JSONキー同一） ══════════ */
+function toggleReview(){
+  const on = document.body.classList.toggle("review");
+  const t = document.getElementById("revtoggle");
+  t.classList.toggle("on", on); t.setAttribute("aria-pressed", on);
+  updateRevPill();
+}
+function revBarHtml(id){
+  const r = review[id] || {};
+  return `<div class="revbar" data-rid="${id}">
+    <div class="rowb">
+      <button class="ok ${r.mark==='ok'?'on':''}">◎ OK</button>
+      <button class="ng ${r.mark==='ng'?'on':''}">✏ 気になる</button>
+      <button class="later ${r.mark==='later'?'on':''}">⏭ あとで</button>
+    </div>
+    <div class="revdetail ${r.mark==='ng'?'show':''}">
+      <div class="tags">${["用語","事実","文がかたい","図","その他"].map(t=>`<button class="${(r.tags||[]).includes(t)?'on':''}" data-tag="${t}">${t}</button>`).join("")}</div>
+      <textarea placeholder="ひとことメモ（任意）" aria-label="ひとことメモ">${r.memo||""}</textarea>
+    </div>
+  </div>`;
+}
+function hookRev(id){
+  const bar = document.querySelector(`.revbar[data-rid="${id}"]`);
+  if(!bar) return;
+  const r = review[id] = review[id] || {tags:[], memo:""};
+  const [okB, ngB, laterB] = bar.querySelectorAll(".rowb button");
+  const detail = bar.querySelector(".revdetail");
+  okB.onclick   = ()=>{ r.mark="ok";    okB.classList.add("on"); ngB.classList.remove("on"); laterB.classList.remove("on"); detail.classList.remove("show"); updateRevPill(); };
+  ngB.onclick   = ()=>{ r.mark="ng";    ngB.classList.add("on"); okB.classList.remove("on"); laterB.classList.remove("on"); detail.classList.add("show"); updateRevPill(); };
+  laterB.onclick= ()=>{ r.mark="later"; laterB.classList.add("on"); okB.classList.remove("on"); ngB.classList.remove("on"); detail.classList.remove("show"); updateRevPill(); };
+  detail.querySelectorAll(".tags button").forEach(tb=>{
+    tb.onclick = ()=>{ tb.classList.toggle("on");
+      const t = tb.dataset.tag;
+      r.tags = r.tags.includes(t) ? r.tags.filter(x=>x!==t) : [...r.tags, t]; };
+  });
+  bar.querySelector("textarea").oninput = e => r.memo = e.target.value;
+}
+function updateRevPill(){
+  const total = CARDS.length;
+  const done = Object.values(review).filter(r=>r.mark).length;
+  const ok = Object.values(review).filter(r=>r.mark==='ok').length;
+  const ng = Object.values(review).filter(r=>r.mark==='ng').length;
+  document.getElementById("revstat").textContent = `検収 ${done}/${total} ・ ◎${ok} ✏${ng}`;
+}
+function copyReview(){
+  const out = JSON.stringify({unit:"u_earth_01", mock:"ab-feather-hanamaru", results:review}, null, 1);
+  navigator.clipboard && navigator.clipboard.writeText(out);
+  document.getElementById("mtitle").textContent = "📋 コピーしました（モック）";
+  document.getElementById("mbody").textContent = "本実装では、この結果JSONをそのまま反映作業に回します（タップ検収シートと同じ回収形式）。";
+  openModal("modal");
+}
+
+/* ══════════ §P 設定/はじまりのあいさつ（C4・未決Q1/Q2） ══════════ */
+function openSettings(){ syncSettingsUI(); openModal("setmodal"); }
+function setAdv(v){ SET.adv = (v === "btn") ? "btn" : "auto"; saveSet(); syncSettingsUI(); }
+function setGreet(v){ SET.greet = !!v; saveSet(); syncSettingsUI(); }
+function syncSettingsUI(){
+  document.querySelectorAll("#segAdv button").forEach(b=>{ const on = b.dataset.v === SET.adv; b.classList.toggle("act", on); b.setAttribute("aria-pressed", on); });
+  document.querySelectorAll("#segGreet button").forEach(b=>{ const on = (b.dataset.v === "on") === SET.greet; b.classList.toggle("act", on); b.setAttribute("aria-pressed", on); });
+}
+/* あいさつ文言=事実ベースの声かけプール（空元気禁止・「前回8問」「432問」はモックの疑似データと同格の仮事実） */
+function greetMsg(){
+  const pool = S.today > 0
+    ? ["きょうはもう " + S.today + "問。つづきをやろう",
+       "おかえり。さっきのつづきからだね",
+       "これまでに " + (S.base + S.today) + "問。きょうの分をつもう"]
+    : ["おかえり。きのうのつづきからだね",
+       "今日はここから。前回は 8問 といたよ",
+       "これまでに " + S.base + "問。きょうの分をつもう"];
+  return pool[S.greetN++ % pool.length];
+}
+let greetLive = false;   // 表示中フラグ（.showはフェード中も残るため、連打の二重記録はこのフラグで防ぐ）
+function showGreet(resume){
+  if(!SET.greet) return;
+  clearTimeout(greetTimer); clearTimeout(greetHideT); greetTimer = greetHideT = null;   // 連続openUnitでも取り残さない
+  const g = document.getElementById("greet");
+  /* C5: 再開時は事実そのもの(何枚目からか)を伝える=声かけプールより優先 */
+  document.getElementById("greettxt").textContent =
+    resume ? "とちゅうから さいかいするね（" + (resume.cur + 1) + "まいめのカードから）" : greetMsg();
+  announce(document.getElementById("greettxt").textContent);   // C8: あいさつ(1.6秒で消える)をSRにも
+  S.greetShown++; greetLive = true;
+  g.classList.add("show");
+  requestAnimationFrame(()=>g.classList.add("in"));
+  if(!SHOT) greetTimer = setTimeout(()=>greetPass(false), GREET_MS);   // SHOT時は固定表示（撮影用）
+}
+function greetPass(byTap){
+  if(!greetLive) return;                                               // 連打の二重呼び/二重記録防止
+  greetLive = false;
+  if(greetTimer){ clearTimeout(greetTimer); greetTimer = null; }
+  if(byTap) S.greetSkip++;                                             // スキップ扱いの記録（本実装でログ送信する値）
+  const g = document.getElementById("greet");
+  g.classList.remove("in");
+  /* タップ時のフェードアウトは120ms=自動通過(200ms)より短く(Sol#9採用: 「消したい」操作への応答は速く) */
+  greetHideT = setTimeout(()=>{ g.classList.remove("show"); greetHideT = null; }, RM ? 0 : (byTap ? 120 : 200));
+}
+
+/* ══════════ §Q みなおし/復帰（C5・§2d-19の会期内サブセット。SRS/永続まちがいログは本実装＝朝リスト） ══════════ */
+function logWrong(q, ans, d, src){
+  if(wrongLog.some(w => w.q === q)) return;   // バースト末尾再挿入の再誤答などは1件に(同一問文で重複排除)
+  wrongLog.push({q, ans, d: d || "", src: src || ""});
+}
+function openMistakes(){
+  document.getElementById("mislist").innerHTML = wrongLog.map(w => `<div class="misitem">
+    <div><span class="missrc">${w.src}</span></div>
+    <div class="misq">${w.q}</div>
+    <div class="misa">こたえ: ${w.ans}</div>
+    ${w.d ? `<div class="misd">${w.d}</div>` : ""}
+  </div>`).join("");
+  openModal("mismodal");
+}
+/* --- 復帰(途中離脱→続きから)。SHOT中は読み書きとも一切しない=撮影の状態固定と、実セッションの保存位置保護 --- */
+function savePos(){ if(SHOT) return; try{ localStorage.setItem(POSKEY, JSON.stringify({cur, qsub, t: Date.now()})); }catch(e){} }
+function clearPos(){ if(SHOT) return; try{ localStorage.removeItem(POSKEY); }catch(e){} }
+function readPos(){
+  if(SHOT) return null;
+  try{
+    const p = JSON.parse(localStorage.getItem(POSKEY) || "null");
+    if(!p || !(p.cur > 0) || p.cur >= CARDS.length - 1) return null;      // 先頭/完走済みは対象外
+    if(!(Date.now() - p.t < 20*3600*1000)) return null;                   // 20時間で失効=翌日は最初から
+    const c = CARDS[p.cur|0];
+    const qs = (c && c.k === "quiz" && (p.qsub|0) < c.qs.length) ? Math.max(0, p.qsub|0) : 0;
+    return {cur: p.cur|0, qsub: qs};
+  }catch(e){ return null; }
+}
+
+/* ══════════ §R a11y統治（C8・台帳§2f）: キーボード完結・フォーカス統治・SR最低線 ══════════
+   方針: ①全操作をキーボードで完結(2.1.1)=role=button委譲+モーダルトラップ+Esc ②focusは「開いた元へ返す/進んだ先へ送る」(2.4.3)
+        ③SRへの通知はsrlive(polite)の1本線=正誤フィードバック+あいさつのみ。ポイント/コンボ/紙吹雪は装飾=通知しない(冗長対策・設計判断) */
+let lastFocusEl = null;   // モーダルを開いた元(閉じたら返す)
+function openModal(id){
+  lastFocusEl = document.activeElement;
+  const m = document.getElementById(id);
+  m.classList.add("show");
+  const f = m.querySelector(".mbox button, .mbox textarea");
+  if(f) f.focus();   // 初期フォーカスはダイアログ内へ(トラップの前提)
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove("show");
+  if(lastFocusEl && document.contains(lastFocusEl)) lastFocusEl.focus();
+  lastFocusEl = null;
+}
+function topModal(){ return ["setmodal","mismodal","modal"].map(i=>document.getElementById(i)).find(m=>m.classList.contains("show")) || null; }
+function focusAz(){   // シートで答えて進んだ後: 次の回答対象(選択肢→主ボタン)へフォーカスを送る=Tab位置が隠れたシートに取り残されない
+  if(!document.body.classList.contains("azview")) return;
+  const t = document.querySelector("#azch button:not(:disabled)") ||
+            (!document.getElementById("aznext").hidden ? document.getElementById("aznext") : null);
+  if(t) t.focus();
+}
+function announce(t){   // 4.1.3: live regionは一旦空にしてから書く=同文連続(せいかい！×2)でも毎回読ませる
+  const el = document.getElementById("srlive");
+  if(!el || !t) return;
+  el.textContent = ""; setTimeout(()=>{ el.textContent = t; }, 30);
+}
+document.addEventListener("keydown", e=>{
+  /* Esc: あいさつ→モーダルの順で閉じる(シートは閉じない=回答フローの一部) */
+  if(e.key === "Escape"){
+    if(greetLive){ greetPass(true); return; }
+    const m = topModal();
+    if(m){ e.preventDefault(); closeModal(m.id); }
+    return;
+  }
+  /* あいさつはEnter/Spaceでもスキップ(タップ相当) */
+  if(greetLive && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); greetPass(true); return; }
+  /* div/liに付けたrole=buttonへEnter/Space(2.1.1)。本物のbuttonはブラウザ標準に任せる */
+  if((e.key === "Enter" || e.key === " ") && e.target.getAttribute && e.target.getAttribute("role") === "button"){
+    e.preventDefault(); e.target.click(); return;
+  }
+  /* モーダルのフォーカストラップ(Tab循環・背面へ抜けない) */
+  if(e.key === "Tab"){
+    const m = topModal();
+    if(!m) return;
+    const els = [...m.querySelectorAll("button, textarea")].filter(x=>!x.disabled && x.offsetParent);
+    if(!els.length) return;
+    const first = els[0], last = els[els.length - 1], a = document.activeElement;
+    if(!m.contains(a)){ e.preventDefault(); first.focus(); }
+    else if(e.shiftKey && a === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && a === last){ e.preventDefault(); first.focus(); }
+    return;
+  }
+  /* 選択肢(○×/多択)の矢印キー移動: azchレール内でループ */
+  if(e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown"){
+    const host = document.getElementById("azch");
+    if(!host || !host.contains(document.activeElement)) return;
+    const btns = [...host.querySelectorAll("button:not(:disabled)")];
+    const i = btns.indexOf(document.activeElement);
+    if(i < 0 || btns.length < 2) return;
+    e.preventDefault();
+    const d = (e.key === "ArrowLeft" || e.key === "ArrowUp") ? -1 : 1;
+    btns[(i + d + btns.length) % btns.length].focus();
+  }
+});
+
+/* ══════════ §O 開発用スクショフック（?shot=<state>で状態ジャンプ・§15連動。パラメータ無しなら何もしない） ══════════ */
+function shotBurstRun(perfect){
+  startBurst();
+  B.t0 -= 83000;   // C9(Sol営業#8): デモスクショの「タイム0:01」是正=現実的な約1:24で撮る(SHOT専用関数=実挙動へ影響なし)
+  let guard = 0;
+  while(B && B.pos < B.queue.length && guard++ < 40){
+    const q = B.queue[B.pos];
+    let val = q.a;                                        // 正答（tf=boolean / mc=index 共通）
+    if(!perfect && q.i === 2 && !q.retry) val = !q.a;     // 非パーフェクト時はq2(○✕)だけ1回誤答→90%
+    answerB(val); sheetGo();
+  }
+}
+function shotJump(st){
+  const unitAt = i => { cur = i; qsub = 0; go("unit"); };
+  ({
+    home:            ()=>go("home"),
+    moku:            ()=>go("moku"),
+    path:            ()=>go("path"),
+    card_read:       ()=>unitAt(5),                       // teach・図あり2カラム
+    card_read_nofig: ()=>unitAt(4),                       // explain・図なし1カラム
+    card_predict:    ()=>unitAt(2),
+    card_quiz:       ()=>unitAt(7),
+    sheet_correct:   ()=>{ unitAt(7); tfAns(true); },                    // 既定=じどう→自動送りバーが6割で凍結(§15)
+    sheet_btn:       ()=>{ SET.adv = "btn"; unitAt(7); tfAns(true); },   // C4: ボタン方式の正解シート(バー無し)
+    sheet_wrong:     ()=>{ unitAt(7); tfAns(false); },
+    greet:           ()=>{ openUnit("u_earth_01"); },                    // C4: あいさつ(SHOT中はタイマー無し=固定表示)
+    settings:        ()=>{ go("home"); openSettings(); },                // C4: 設定モーダル
+    burst_mid:       ()=>{ startBurst(); answerB(true); sheetGo(); answerB(0); sheetGo(); },  // 2連続正解→コンボ表示中
+    burst_done:      ()=>shotBurstRun(false),
+    burst_perfect:   ()=>shotBurstRun(true),
+    donecard:        ()=>{ S.doneHana = true; S.doneBonus = true; S.burstDone = true; unitAt(CARDS.length-1); },
+    review_on:       ()=>{ if(!document.body.classList.contains("review")) toggleReview(); unitAt(5); },
+    theme_blue:      ()=>{ setTheme("blue"); go("home"); },
+    theme_amber:     ()=>{ setTheme("amber"); go("home"); },
+  }[st] || (()=>{}))();
+}
+
+/* ══════════ §N 初期化 ══════════ */
+function initMascots(){ document.querySelectorAll("img[data-mascot]").forEach(m=>{ m.src = MASCOT_SRC; }); }
+mokuTab(0); renderPath(); renderHome(); fxInit(); initMascots(); setTheme("teal");
+document.getElementById("sndbtn").textContent = audioOn ? "🔊" : "🔇";   // C7: 永続化した音設定をボタン表示へ同期(既定OFF=🔇)
+document.getElementById("sndbtn").setAttribute("aria-pressed", audioOn); // C8: aria状態も同期
+if(SHOT){ document.body.classList.add("shotfreeze");
+  const _th = new URLSearchParams(location.search).get("th");            // C9: &th=blue|amber でテーマ×状態の組合せ撮影(通常アクセスはSHOT空で不達)
+  if(_th === "blue" || _th === "amber") setTheme(_th);
+  shotJump(SHOT); }
+</script>
+</body>
+</html>

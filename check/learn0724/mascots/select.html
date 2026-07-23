@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>マスコット候補 10案 — えらぶ</title>
+<style>
+body{margin:0; background:#f6f4ef; color:#3b3a36; font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif; padding:20px;}
+h1{font-size:18px; margin:0 0 4px;} .sub{color:#8a857a; font-size:13px; margin-bottom:16px;}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;}
+.card{background:#fff; border:2px solid #e5e0d5; border-radius:14px; padding:12px; text-align:center; cursor:pointer; position:relative;}
+.card img{width:100%; aspect-ratio:1; object-fit:contain; background:
+  repeating-conic-gradient(#f0ede6 0 25%, #fff 0 50%) 0 0/24px 24px; border-radius:10px;}
+.card .nm{font-weight:800; margin-top:8px;} .card .ds{font-size:12px; color:#8a857a; line-height:1.5;}
+.card.pick{border-color:#0FA9A0; box-shadow:0 0 0 3px #0FA9A033;}
+.card .mark{position:absolute; top:8px; left:8px; font-size:26px; display:none;}
+.card.pick .mark{display:block;}
+.bar{position:fixed; bottom:14px; left:50%; transform:translateX(-50%); background:#3b3a36; color:#fff; border-radius:99px; padding:10px 20px; font-weight:700; display:flex; gap:14px; align-items:center;}
+.bar button{border:none; border-radius:99px; padding:6px 14px; font-weight:800; cursor:pointer; background:#fff;}
+</style>
+</head>
+<body>
+<h1>🎨 マスコット候補 10案</h1>
+<div class="sub">気に入ったものをタップ（複数OK）→ 下の「結果をコピー」。番号をチャットで教えてくれるだけでもOKです。</div>
+<div class="grid" id="grid"></div>
+<div class="bar"><span id="stat">えらんだ: 0</span><button onclick="copyRes()">📋 結果をコピー</button></div>
+<script>
+const IDEAS = [
+ ["mascot_01_flask.png","① フラスコの精","ガラスの体にティール色の液体"],
+ ["mascot_02_atom.png","② 原子モデルの子","電子の輪がくるくる"],
+ ["mascot_03_drop.png","③ しずくの子","頭に葉っぱ・素朴"],
+ ["mascot_04_crystal.png","④ 結晶の子","六角柱クリスタル"],
+ ["mascot_05_bulb.png","⑤ 豆電球の子","ひらめきのフィラメント"],
+ ["mascot_06_magnet.png","⑥ U字磁石の子","赤青のからだ・火花パチッ"],
+ ["mascot_07_prism.png","⑦ プリズムの子","光を入れて虹を出す"],
+ ["mascot_08_planet.png","⑧ 惑星の子","輪っかを帽子みたいに"],
+ ["mascot_09_penguin.png","⑨ ペンギン博士","白衣と丸めがね"],
+ ["mascot_10_cat.png","⑩ 実験ネコ","ゴーグルを頭にのせた白ネコ"],
+];
+const picks = new Set();
+const grid = document.getElementById("grid");
+IDEAS.forEach(([f,n,d],i)=>{
+  const c = document.createElement("div"); c.className="card";
+  c.innerHTML = `<span class="mark">◎</span><img src="${f}" onerror="this.style.opacity=.15"><div class="nm">${n}</div><div class="ds">${d}</div>`;
+  c.onclick = ()=>{ c.classList.toggle("pick"); c.classList.contains("pick")?picks.add(i+1):picks.delete(i+1);
+    document.getElementById("stat").textContent = "えらんだ: " + picks.size; };
+  grid.appendChild(c);
+});
+function copyRes(){ const s = "マスコット採用: " + [...picks].sort((a,b)=>a-b).join("番, ") + "番";
+  navigator.clipboard && navigator.clipboard.writeText(s); alert(s + "\nコピーしました"); }
+</script>
+</body>
+</html>
