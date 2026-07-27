@@ -1,0 +1,2117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!--
+  engine : quizbattle
+  content: multi-pack
+  variant: ob1
+  data   : [{ id, label, description, title, groups[], items[{id,label,group,img,attrs}], questions[{id,text,key}], opponentLines{} }]
+  frozen : 正面の対戦相手／中央の質問札置き場／手前の横一列カードラックを削除・簡略化しない
+
+  §0 DATA（差し替え領域）
+  §1 盤面の見た目
+  §2 画面構造
+  §3 汎用ゲームエンジン
+  §4 検品用フック
+-->
+<title>対面カードバトル</title>
+<script>
+// ==== DATA: ここだけ差し替えれば別の単元になる ====
+// schema: Array<{id,label,description,title,groups:string[],items:[{id,label,group,img,attrs:{[questionKey]:boolean}}],questions:[{id,text,key}],opponentLines:{...}}>
+const DATA = [
+  {
+    id: "vertebrate",
+    label: "せきつい動物",
+    description: "体表・呼吸・子のうまれ方を手がかりに、動物のなかまを見分ける。",
+    title: "せきつい動物 カードバトル",
+    groups: ["魚類", "両生類", "ハチュウ類", "鳥類", "哺乳類"],
+    items: [
+      { id:"koi",       label:"コイ",             group:"魚類",       img:null, attrs:{fur:false,feathers:false,scales:true, gillsForever:true, growsToLungs:false,laysEggs:true, shellEgg:false,wetSkin:false,livesInWater:true} },
+      { id:"anchovy",   label:"カタクチイワシ",   group:"魚類",       img:null, attrs:{fur:false,feathers:false,scales:true, gillsForever:true, growsToLungs:false,laysEggs:true, shellEgg:false,wetSkin:false,livesInWater:true} },
+      { id:"seahorse",  label:"タツノオトシゴ",   group:"魚類",       img:null, attrs:{fur:false,feathers:false,scales:true, gillsForever:true, growsToLungs:false,laysEggs:true, shellEgg:false,wetSkin:false,livesInWater:true} },
+      { id:"frog",      label:"カエル",           group:"両生類",     img:null, attrs:{fur:false,feathers:false,scales:false,gillsForever:false,growsToLungs:true, laysEggs:true, shellEgg:false,wetSkin:true, livesInWater:true} },
+      { id:"newt",      label:"イモリ",           group:"両生類",     img:null, attrs:{fur:false,feathers:false,scales:false,gillsForever:false,growsToLungs:true, laysEggs:true, shellEgg:false,wetSkin:true, livesInWater:true} },
+      { id:"snake",     label:"ヘビ",             group:"ハチュウ類", img:null, attrs:{fur:false,feathers:false,scales:true, gillsForever:false,growsToLungs:false,laysEggs:true, shellEgg:true, wetSkin:false,livesInWater:false} },
+      { id:"turtle",    label:"カメ",             group:"ハチュウ類", img:null, attrs:{fur:false,feathers:false,scales:true, gillsForever:false,growsToLungs:false,laysEggs:true, shellEgg:true, wetSkin:false,livesInWater:true} },
+      { id:"gecko",     label:"ヤモリ",           group:"ハチュウ類", img:null, attrs:{fur:false,feathers:false,scales:true, gillsForever:false,growsToLungs:false,laysEggs:true, shellEgg:true, wetSkin:false,livesInWater:false} },
+      { id:"sea_turtle",label:"ウミガメ",         group:"ハチュウ類", img:null, attrs:{fur:false,feathers:false,scales:true, gillsForever:false,growsToLungs:false,laysEggs:true, shellEgg:true, wetSkin:false,livesInWater:true} },
+      { id:"pigeon",    label:"ハト",             group:"鳥類",       img:null, attrs:{fur:false,feathers:true, scales:false,gillsForever:false,growsToLungs:false,laysEggs:true, shellEgg:true, wetSkin:false,livesInWater:false} },
+      { id:"quail",     label:"ウズラ",           group:"鳥類",       img:null, attrs:{fur:false,feathers:true, scales:false,gillsForever:false,growsToLungs:false,laysEggs:true, shellEgg:true, wetSkin:false,livesInWater:false} },
+      { id:"monkey",    label:"サル",             group:"哺乳類",     img:null, attrs:{fur:true, feathers:false,scales:false,gillsForever:false,growsToLungs:false,laysEggs:false,shellEgg:false,wetSkin:false,livesInWater:false} },
+      { id:"whale",     label:"クジラ",           group:"哺乳類",     img:null, attrs:{fur:true, feathers:false,scales:false,gillsForever:false,growsToLungs:false,laysEggs:false,shellEgg:false,wetSkin:false,livesInWater:true} }
+    ],
+    questions: [
+      { id:"q_fur",       text:"体は毛でおおわれている？",               key:"fur" },
+      { id:"q_feathers",  text:"羽毛がある？",                           key:"feathers" },
+      { id:"q_scales",    text:"体の表面にうろこがある？",               key:"scales" },
+      { id:"q_gills",     text:"一生、えらで呼吸する？",                 key:"gillsForever" },
+      { id:"q_grow_lung", text:"幼生はえら、成長すると肺でも呼吸する？", key:"growsToLungs" },
+      { id:"q_eggs",      text:"卵をうむ？",                             key:"laysEggs" },
+      { id:"q_shell",     text:"陸上に、殻のある卵をうむ？",             key:"shellEgg" },
+      { id:"q_wet_skin",  text:"体の表面はしめった皮膚？",               key:"wetSkin" },
+      { id:"q_water",     text:"水中で生活する時期がある？",             key:"livesInWater" }
+    ],
+    opponentLines: {
+      ready: ["向かいの席で待っているよ。", "どの質問からいく？"],
+      thinking: ["少し考えるね……", "その聞き方なら……"],
+      yes: ["うん。答えは「はい」。", "「はい」だよ。"],
+      no: ["答えは「いいえ」。", "今回は「いいえ」だよ。"],
+      asks: ["今度はこちらから聞くね。", "この質問を出すよ。"],
+      wrongGuess: ["その札ではないよ。もう一回いける。", "まだ決まっていないよ。次もどうぞ。"],
+      gentleWin: ["見つけた。いい勝負だったよ。", "この札だと思う。対戦ありがとう。"]
+    }
+  },
+  {
+    id: "elements_materials",
+    label: "元素・物質",
+    description: "元素記号と化学式、単体・化合物・混合物のちがいから候補をしぼる。",
+    title: "元素・物質 カードバトル",
+    groups: ["単体", "化合物", "混合物"],
+    items: [
+      { id:"hydrogen",   label:"H₂ 水素",             group:"単体",   img:null, attrs:{pure:true,oneElement:true,compound:false,gas:true,liquid:false,metal:false,hasOxygen:false,hasHydrogen:true, hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:false,hasChlorine:false} },
+      { id:"oxygen",     label:"O₂ 酸素",             group:"単体",   img:null, attrs:{pure:true,oneElement:true,compound:false,gas:true,liquid:false,metal:false,hasOxygen:true, hasHydrogen:false,hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:false,hasChlorine:false} },
+      { id:"nitrogen",   label:"N₂ 窒素",             group:"単体",   img:null, attrs:{pure:true,oneElement:true,compound:false,gas:true,liquid:false,metal:false,hasOxygen:false,hasHydrogen:false,hasNitrogen:true, hasCarbon:false,hasIron:false,hasCopper:false,hasChlorine:false} },
+      { id:"carbon",     label:"C 炭素",              group:"単体",   img:null, attrs:{pure:true,oneElement:true,compound:false,gas:false,liquid:false,metal:false,hasOxygen:false,hasHydrogen:false,hasNitrogen:false,hasCarbon:true, hasIron:false,hasCopper:false,hasChlorine:false} },
+      { id:"iron",       label:"Fe 鉄",               group:"単体",   img:null, attrs:{pure:true,oneElement:true,compound:false,gas:false,liquid:false,metal:true, hasOxygen:false,hasHydrogen:false,hasNitrogen:false,hasCarbon:false,hasIron:true, hasCopper:false,hasChlorine:false} },
+      { id:"copper",     label:"Cu 銅",               group:"単体",   img:null, attrs:{pure:true,oneElement:true,compound:false,gas:false,liquid:false,metal:true, hasOxygen:false,hasHydrogen:false,hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:true, hasChlorine:false} },
+      { id:"water",      label:"H₂O 水",              group:"化合物", img:null, attrs:{pure:true,oneElement:false,compound:true, gas:false,liquid:true, metal:false,hasOxygen:true, hasHydrogen:true, hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:false,hasChlorine:false} },
+      { id:"carbon_diox",label:"CO₂ 二酸化炭素",      group:"化合物", img:null, attrs:{pure:true,oneElement:false,compound:true, gas:true, liquid:false,metal:false,hasOxygen:true, hasHydrogen:false,hasNitrogen:false,hasCarbon:true, hasIron:false,hasCopper:false,hasChlorine:false} },
+      { id:"copper_oxide",label:"CuO 酸化銅",         group:"化合物", img:null, attrs:{pure:true,oneElement:false,compound:true, gas:false,liquid:false,metal:false,hasOxygen:true, hasHydrogen:false,hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:true, hasChlorine:false} },
+      { id:"sodium_chloride",label:"NaCl 塩化ナトリウム",group:"化合物",img:null, attrs:{pure:true,oneElement:false,compound:true, gas:false,liquid:false,metal:false,hasOxygen:false,hasHydrogen:false,hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:false,hasChlorine:true} },
+      { id:"iron_sulfide",label:"FeS 硫化鉄",         group:"化合物", img:null, attrs:{pure:true,oneElement:false,compound:true, gas:false,liquid:false,metal:false,hasOxygen:false,hasHydrogen:false,hasNitrogen:false,hasCarbon:false,hasIron:true, hasCopper:false,hasChlorine:false} },
+      { id:"air",        label:"空気",                group:"混合物", img:null, attrs:{pure:false,oneElement:false,compound:false,gas:true, liquid:false,metal:false,hasOxygen:true, hasHydrogen:false,hasNitrogen:true, hasCarbon:true, hasIron:false,hasCopper:false,hasChlorine:false} },
+      { id:"salt_water", label:"食塩水",              group:"混合物", img:null, attrs:{pure:false,oneElement:false,compound:false,gas:false,liquid:true, metal:false,hasOxygen:true, hasHydrogen:true, hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:false,hasChlorine:true} },
+      { id:"brass",      label:"黄銅",                group:"混合物", img:null, attrs:{pure:false,oneElement:false,compound:false,gas:false,liquid:false,metal:true, hasOxygen:false,hasHydrogen:false,hasNitrogen:false,hasCarbon:false,hasIron:false,hasCopper:true, hasChlorine:false} }
+    ],
+    questions: [
+      { id:"q_pure",       text:"1種類の物質だけでできている？",         key:"pure" },
+      { id:"q_one_element",text:"1種類の元素だけからできている？",       key:"oneElement" },
+      { id:"q_compound",   text:"2種類以上の元素からできた純物質？",     key:"compound" },
+      { id:"q_gas",        text:"常温で気体？",                           key:"gas" },
+      { id:"q_liquid",     text:"常温で液体？",                           key:"liquid" },
+      { id:"q_metal",      text:"金属の性質を示す？",                     key:"metal" },
+      { id:"q_has_o",      text:"酸素の元素を含む？",                     key:"hasOxygen" },
+      { id:"q_has_h",      text:"水素の元素を含む？",                     key:"hasHydrogen" },
+      { id:"q_has_n",      text:"窒素の元素を含む？",                     key:"hasNitrogen" },
+      { id:"q_has_c",      text:"炭素の元素を含む？",                     key:"hasCarbon" },
+      { id:"q_has_fe",     text:"鉄の元素を含む？",                       key:"hasIron" },
+      { id:"q_has_cu",     text:"銅の元素を含む？",                       key:"hasCopper" },
+      { id:"q_has_cl",     text:"塩素の元素を含む？",                     key:"hasChlorine" }
+    ],
+    opponentLines: {
+      ready: ["向かいの席で待っているよ。", "どの質問からいく？"],
+      thinking: ["少し考えるね……", "その聞き方なら……"],
+      yes: ["うん。答えは「はい」。", "「はい」だよ。"],
+      no: ["答えは「いいえ」。", "今回は「いいえ」だよ。"],
+      asks: ["今度はこちらから聞くね。", "この質問を出すよ。"],
+      wrongGuess: ["その札ではないよ。もう一回いける。", "まだ決まっていないよ。次もどうぞ。"],
+      gentleWin: ["見つけた。いい勝負だったよ。", "この札だと思う。対戦ありがとう。"]
+    }
+  },
+  {
+    id: "rocks_minerals",
+    label: "岩石・鉱物",
+    description: "でき方・つくり・色を手がかりに、火成岩・堆積岩・造岩鉱物を見分ける。",
+    title: "岩石・鉱物 カードバトル",
+    groups: ["火山岩", "深成岩", "堆積岩", "造岩鉱物"],
+    items: [
+      { id:"rhyolite",   label:"流紋岩",     group:"火山岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:true,volcanic:true,plutonic:false,porphyritic:true,equigranular:false,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:true,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"andesite",   label:"安山岩",     group:"火山岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:true,volcanic:true,plutonic:false,porphyritic:true,equigranular:false,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"basalt",     label:"玄武岩",     group:"火山岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:true,volcanic:true,plutonic:false,porphyritic:true,equigranular:false,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:true,lightMineral:false,darkMineral:false} },
+      { id:"granite",    label:"花こう岩",   group:"深成岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:true,volcanic:false,plutonic:true,porphyritic:false,equigranular:true,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:true,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"diorite",    label:"せん緑岩",   group:"深成岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:true,volcanic:false,plutonic:true,porphyritic:false,equigranular:true,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"gabbro",     label:"斑れい岩",   group:"深成岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:true,volcanic:false,plutonic:true,porphyritic:false,equigranular:true,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:true,lightMineral:false,darkMineral:false} },
+      { id:"conglomerate",label:"れき岩",    group:"堆積岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:true,visibleSediment:true, organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"sandstone",  label:"砂岩",       group:"堆積岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:true,visibleSediment:true, organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"mudstone",   label:"泥岩",       group:"堆積岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:true,visibleSediment:true, organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"tuff",       label:"凝灰岩",     group:"堆積岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:true,visibleSediment:true, organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"limestone",  label:"石灰岩",     group:"堆積岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:true,visibleSediment:false,organismOrigin:true, lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"chert",      label:"チャート",   group:"堆積岩",   img:null, attrs:{rock:true,mineral:false,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:true,visibleSediment:false,organismOrigin:true, lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:false} },
+      { id:"quartz",     label:"セキエイ",   group:"造岩鉱物", img:null, attrs:{rock:false,mineral:true,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:true, darkMineral:false} },
+      { id:"feldspar",   label:"チョウ石",   group:"造岩鉱物", img:null, attrs:{rock:false,mineral:true,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:true, darkMineral:false} },
+      { id:"biotite",    label:"クロウンモ", group:"造岩鉱物", img:null, attrs:{rock:false,mineral:true,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:true} },
+      { id:"hornblende", label:"カクセン石", group:"造岩鉱物", img:null, attrs:{rock:false,mineral:true,fromMagma:false,volcanic:false,plutonic:false,porphyritic:false,equigranular:false,sedimentary:false,visibleSediment:false,organismOrigin:false,lightIgneous:false,darkIgneous:false,lightMineral:false,darkMineral:true} }
+    ],
+    questions: [
+      { id:"q_rock",             text:"いくつかの鉱物などが集まった岩石？",             key:"rock" },
+      { id:"q_mineral",          text:"岩石をつくる鉱物？",                             key:"mineral" },
+      { id:"q_magma",            text:"マグマが冷えてできた？",                         key:"fromMagma" },
+      { id:"q_volcanic",         text:"地表や地表近くで急に冷えてできた火山岩？",       key:"volcanic" },
+      { id:"q_plutonic",         text:"地下深くでゆっくり冷えてできた深成岩？",         key:"plutonic" },
+      { id:"q_porpy",            text:"斑状組織が見られる？",                             key:"porphyritic" },
+      { id:"q_equi",             text:"等粒状組織が見られる？",                           key:"equigranular" },
+      { id:"q_sedimentary",      text:"堆積物が押し固められてできた堆積岩？",           key:"sedimentary" },
+      { id:"q_visible_sediment", text:"れき・砂・泥・火山灰などの粒からできている？",   key:"visibleSediment" },
+      { id:"q_organism",         text:"生物のからだの一部などがもとになってできる？",   key:"organismOrigin" },
+      { id:"q_light_igneous",    text:"白っぽい火成岩？",                                 key:"lightIgneous" },
+      { id:"q_dark_igneous",     text:"黒っぽい火成岩？",                                 key:"darkIgneous" },
+      { id:"q_light_mineral",    text:"無色鉱物に分けられる？",                           key:"lightMineral" },
+      { id:"q_dark_mineral",     text:"有色鉱物に分けられる？",                           key:"darkMineral" }
+    ],
+    opponentLines: {
+      ready: ["向かいの席で待っているよ。", "どの質問からいく？"],
+      thinking: ["少し考えるね……", "その聞き方なら……"],
+      yes: ["うん。答えは「はい」。", "「はい」だよ。"],
+      no: ["答えは「いいえ」。", "今回は「いいえ」だよ。"],
+      asks: ["今度はこちらから聞くね。", "この質問を出すよ。"],
+      wrongGuess: ["その札ではないよ。もう一回いける。", "まだ決まっていないよ。次もどうぞ。"],
+      gentleWin: ["見つけた。いい勝負だったよ。", "この札だと思う。対戦ありがとう。"]
+    }
+  },
+  {
+    id: "plants",
+    label: "植物のなかま",
+    description: "種子・胚珠・子葉・花弁・根や茎や葉を手がかりに、植物を見分ける。",
+    title: "植物のなかま カードバトル",
+    groups: ["合弁花類", "離弁花類", "単子葉類", "裸子植物", "シダ植物", "コケ植物"],
+    items: [
+      { id:"dandelion", label:"タンポポ",       group:"合弁花類", img:null, attrs:{seeds:true,ovary:true,oneCotyledon:false,twoCotyledons:true, joinedPetals:true, separatePetals:false,nakedOvule:false,spores:false,rootStemLeaf:true} },
+      { id:"azalea",    label:"ツツジ",         group:"合弁花類", img:null, attrs:{seeds:true,ovary:true,oneCotyledon:false,twoCotyledons:true, joinedPetals:true, separatePetals:false,nakedOvule:false,spores:false,rootStemLeaf:true} },
+      { id:"rapeseed",  label:"アブラナ",       group:"離弁花類", img:null, attrs:{seeds:true,ovary:true,oneCotyledon:false,twoCotyledons:true, joinedPetals:false,separatePetals:true, nakedOvule:false,spores:false,rootStemLeaf:true} },
+      { id:"cherry",    label:"サクラ",         group:"離弁花類", img:null, attrs:{seeds:true,ovary:true,oneCotyledon:false,twoCotyledons:true, joinedPetals:false,separatePetals:true, nakedOvule:false,spores:false,rootStemLeaf:true} },
+      { id:"lily",      label:"ユリ",           group:"単子葉類", img:null, attrs:{seeds:true,ovary:true,oneCotyledon:true, twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:false,spores:false,rootStemLeaf:true} },
+      { id:"corn",      label:"トウモロコシ",   group:"単子葉類", img:null, attrs:{seeds:true,ovary:true,oneCotyledon:true, twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:false,spores:false,rootStemLeaf:true} },
+      { id:"pine",      label:"マツ",           group:"裸子植物", img:null, attrs:{seeds:true,ovary:false,oneCotyledon:false,twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:true, spores:false,rootStemLeaf:true} },
+      { id:"ginkgo",    label:"イチョウ",       group:"裸子植物", img:null, attrs:{seeds:true,ovary:false,oneCotyledon:false,twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:true, spores:false,rootStemLeaf:true} },
+      { id:"bracken",   label:"イヌワラビ",     group:"シダ植物", img:null, attrs:{seeds:false,ovary:false,oneCotyledon:false,twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:false,spores:true, rootStemLeaf:true} },
+      { id:"horsetail", label:"スギナ",         group:"シダ植物", img:null, attrs:{seeds:false,ovary:false,oneCotyledon:false,twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:false,spores:true, rootStemLeaf:true} },
+      { id:"liverwort", label:"ゼニゴケ",       group:"コケ植物", img:null, attrs:{seeds:false,ovary:false,oneCotyledon:false,twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:false,spores:true, rootStemLeaf:false} },
+      { id:"haircap",   label:"スギゴケ",       group:"コケ植物", img:null, attrs:{seeds:false,ovary:false,oneCotyledon:false,twoCotyledons:false,joinedPetals:false,separatePetals:false,nakedOvule:false,spores:true, rootStemLeaf:false} }
+    ],
+    questions: [
+      { id:"q_seeds",       text:"種子をつくる？",                         key:"seeds" },
+      { id:"q_ovary",       text:"胚珠が子房の中にある？",                 key:"ovary" },
+      { id:"q_one_seedleaf",text:"発芽のときの子葉は1枚？",                key:"oneCotyledon" },
+      { id:"q_two_seedleaf",text:"発芽のときの子葉は2枚？",                key:"twoCotyledons" },
+      { id:"q_joined",      text:"花弁がたがいにつながっている？",         key:"joinedPetals" },
+      { id:"q_separate",    text:"花弁が1枚ずつ離れている？",              key:"separatePetals" },
+      { id:"q_naked",       text:"胚珠がむき出しになっている？",           key:"nakedOvule" },
+      { id:"q_spores",      text:"種子ではなく胞子でふえる？",             key:"spores" },
+      { id:"q_root_stem",   text:"根・茎・葉の区別がある？",               key:"rootStemLeaf" }
+    ],
+    opponentLines: {
+      ready: ["向かいの席で待っているよ。", "どの質問からいく？"],
+      thinking: ["少し考えるね……", "その聞き方なら……"],
+      yes: ["うん。答えは「はい」。", "「はい」だよ。"],
+      no: ["答えは「いいえ」。", "今回は「いいえ」だよ。"],
+      asks: ["今度はこちらから聞くね。", "この質問を出すよ。"],
+      wrongGuess: ["その札ではないよ。もう一回いける。", "まだ決まっていないよ。次もどうぞ。"],
+      gentleWin: ["見つけた。いい勝負だったよ。", "この札だと思う。対戦ありがとう。"]
+    }
+  }
+];
+// ==== ここから下はエンジン。中身を変えるときも触らない ====
+</script>
+<style>
+/* §1 盤面の見た目 */
+:root{
+  --ink:#182333;
+  --cream:#fff8df;
+  --gold:#f4c85a;
+  --gold-dark:#9b6b16;
+  --teal:#176c73;
+  --teal-dark:#0a3c43;
+  --felt:#214d4e;
+  --felt-light:#2b6865;
+  --rail:#5f321f;
+  --paper:#fffaf0;
+  --paper-edge:#d8c9a9;
+  --sky:#bce6e2;
+  --shadow:0 8px 18px rgba(20,15,10,.28);
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0}
+body{
+  overflow:hidden;
+  color:var(--ink);
+  font-family:"Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+  background:#241710;
+  touch-action:manipulation;
+}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:4px solid #fff;outline-offset:3px}
+.game{
+  position:relative;
+  width:100%;
+  height:100dvh;
+  min-height:560px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(255,244,190,.22),transparent 32%),
+    linear-gradient(180deg,#172e35 0 26%,#173e40 26% 100%);
+}
+.board{
+  position:absolute;
+  inset:0;
+  display:grid;
+  grid-template-rows:54px 174px minmax(174px,1fr) 246px;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+    radial-gradient(ellipse at 50% 54%,var(--felt-light),var(--felt) 58%,#123536 100%);
+  background-size:42px 42px,42px 42px,auto;
+  border:12px solid var(--rail);
+  border-top-width:8px;
+  box-shadow:inset 0 0 0 5px #9b6038,inset 0 0 45px rgba(0,0,0,.55);
+}
+.topbar{
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-width:0;
+  padding:5px 13px 7px;
+  color:#fff8df;
+  background:rgba(10,31,34,.83);
+  border-bottom:1px solid rgba(255,255,255,.17);
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{
+  display:grid;place-items:center;width:32px;height:32px;flex:0 0 auto;
+  border:2px solid var(--gold);border-radius:8px;transform:rotate(-4deg);
+  color:var(--gold);font-weight:900;background:#173f43;box-shadow:0 3px 0 #0b2528;
+}
+.brand-text{min-width:0}
+.brand-text strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.brand-text small{display:block;color:#bfe0d9;font-size:10px;letter-spacing:.08em}
+.turn-ribbon{
+  position:absolute;left:50%;top:7px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:8px;padding:5px 16px;
+  border:2px solid rgba(255,255,255,.72);border-radius:8px;
+  color:#17343a;background:var(--gold);font-weight:900;font-size:13px;
+  box-shadow:0 4px 0 #8b5d17,0 8px 14px rgba(0,0,0,.28);transition:.25s;
+}
+.turn-ribbon.cpu{
+  background:var(--sky);box-shadow:0 4px 0 #3e7f80,0 8px 14px rgba(0,0,0,.28);
+  animation:passTokenToOpponent .42s cubic-bezier(.2,.82,.25,1.18);
+}
+@keyframes passTokenToOpponent{
+  from{transform:translate(-50%,120px) rotate(-7deg) scale(1.14);box-shadow:0 10px 0 #3e7f80,0 22px 30px rgba(0,0,0,.42)}
+  58%{transform:translate(-50%,-5px) rotate(2deg) scale(1.04)}
+  to{transform:translate(-50%,0) rotate(0) scale(1)}
+}
+.turn-dot{width:9px;height:9px;border-radius:2px;transform:rotate(45deg);background:#fff;box-shadow:0 0 0 3px rgba(19,69,71,.26)}
+.top-actions{display:flex;gap:7px}
+.small-btn{
+  min-height:34px;padding:5px 10px;border:1px solid rgba(255,255,255,.38);
+  border-radius:9px;color:#fff;background:rgba(255,255,255,.1);font-weight:700;
+  cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.25);
+}
+.small-btn:active{transform:translateY(2px);box-shadow:none}
+
+.opponent-zone{
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  min-height:0;
+  padding-top:5px;
+  overflow:hidden;
+  transition:filter .25s,background .25s;
+}
+.opponent-zone.active{
+  background:radial-gradient(ellipse at 50% 72%,rgba(191,235,225,.26),transparent 62%);
+}
+.opponent-table{
+  position:absolute;left:5%;right:5%;bottom:-4px;height:45px;
+  border-radius:50% 50% 0 0/35% 35% 0 0;
+  background:linear-gradient(#885035,#4d291c);
+  border-top:5px solid #b9784d;
+  box-shadow:0 -5px 18px rgba(0,0,0,.35);
+}
+.cpu-rack{
+  position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+  display:flex;gap:3px;z-index:4;max-width:72vw;
+}
+.cpu-rack-count{
+  position:absolute;z-index:9;top:12px;right:calc(50% + 82px);
+  min-width:118px;padding:7px 10px 6px;
+  border:3px solid #5d3823;border-radius:7px;
+  color:#382719;background:linear-gradient(165deg,#fff0b7,#e2b860);
+  box-shadow:0 5px 0 #6d421f,0 9px 15px rgba(0,0,0,.28);
+  text-align:center;line-height:1.05;transform:rotate(-2deg);
+}
+.cpu-rack-count span{display:block;font-size:9px;font-weight:900;letter-spacing:.08em}
+.cpu-rack-count strong{display:block;margin-top:3px;font-size:18px}
+.cpu-rack-count.changed{animation:rackCountChange .58s cubic-bezier(.2,.82,.25,1.18)}
+@keyframes rackCountChange{
+  0%{transform:rotate(-2deg) scale(1)}
+  42%{transform:rotate(2deg) scale(1.14);box-shadow:0 7px 0 #6d421f,0 0 24px rgba(255,224,113,.9)}
+  100%{transform:rotate(-2deg) scale(1)}
+}
+.cpu-card-back{
+  width:27px;height:39px;margin-left:-7px;border:2px solid #d8b963;border-radius:4px;
+  background:repeating-linear-gradient(45deg,#143f48 0 5px,#1d5b61 5px 10px);
+  box-shadow:0 2px 3px rgba(0,0,0,.4);transform:rotate(var(--r,0deg));
+  transition:.35s;
+}
+.cpu-card-back.gone{transform:rotateX(84deg) translateY(13px);opacity:.18}
+.opponent{
+  position:relative;z-index:6;width:150px;height:156px;transform-origin:50% 90%;
+  filter:drop-shadow(0 8px 7px rgba(0,0,0,.28));
+}
+.opponent .body{
+  position:absolute;left:24px;bottom:-28px;width:102px;height:83px;
+  border-radius:42px 42px 12px 12px;background:linear-gradient(90deg,#db7d51,#ef9c67 50%,#c86945);
+  border:3px solid #613426;
+}
+.opponent .neck{position:absolute;left:61px;top:91px;width:30px;height:30px;background:#d89b73;border:3px solid #59352c}
+.head{
+  position:absolute;left:39px;top:10px;width:75px;height:96px;
+  border:3px solid #59352c;border-radius:44% 44% 47% 47%;
+  background:linear-gradient(100deg,#edbd93,#d99c76);
+  transition:.2s;
+}
+.hair{
+  position:absolute;left:-4px;right:-4px;top:-6px;height:36px;
+  border-radius:50% 55% 38% 35%;background:#3b2927;border:3px solid #241918;
+  transform:rotate(-3deg);
+}
+.hair:after{
+  content:"";position:absolute;right:7px;bottom:-16px;width:18px;height:26px;
+  border-radius:0 0 70% 30%;background:#3b2927;
+}
+.eye{position:absolute;top:45px;width:9px;height:8px;border-radius:50%;background:#26333a;transition:.18s}
+.eye.left{left:18px}.eye.right{right:18px}
+.brow{position:absolute;top:37px;width:17px;height:3px;border-radius:3px;background:#5b392c;transition:.2s}
+.brow.left{left:12px;transform:rotate(3deg)}.brow.right{right:12px;transform:rotate(-3deg)}
+.mouth{position:absolute;left:28px;top:72px;width:20px;height:9px;border-bottom:3px solid #80473e;border-radius:50%;transition:.2s}
+.ear{position:absolute;top:48px;width:9px;height:20px;border:3px solid #59352c;background:#e2aa83}
+.ear.left{left:-9px;border-radius:10px 0 0 10px}.ear.right{right:-9px;border-radius:0 10px 10px 0}
+.hand{
+  position:absolute;top:114px;width:37px;height:24px;border:3px solid #59352c;
+  border-radius:50%;background:#e2aa83;transition:.28s;
+}
+.hand.left{left:3px;transform:rotate(12deg)}.hand.right{right:2px;transform:rotate(-12deg)}
+.opponent.thinking{animation:thinkSway .7s ease-in-out infinite alternate}
+.opponent.thinking .eye{height:3px;border-radius:3px;top:48px}
+.opponent.thinking .brow.left{transform:rotate(-13deg)}.opponent.thinking .brow.right{transform:rotate(13deg)}
+.opponent.answer-yes{animation:nod .46s ease-in-out 2}
+.opponent.answer-yes .mouth{height:12px;border-bottom-width:4px}
+.opponent.answer-no{animation:headNo .36s ease-in-out 3}
+.opponent.answer-no .mouth{border-bottom:0;border-top:3px solid #80473e;top:78px}
+.opponent.asking .hand.right{transform:translate(-15px,-33px) rotate(-38deg)}
+.opponent.win .hand{transform:translateY(-34px) rotate(0)}
+@keyframes thinkSway{to{transform:rotate(2deg) translateY(2px)}}
+@keyframes nod{50%{transform:translateY(8px) rotate(1deg)}}
+@keyframes headNo{33%{transform:translateX(-6px) rotate(-3deg)}66%{transform:translateX(6px) rotate(3deg)}}
+.speech{
+  position:absolute;z-index:8;top:8px;left:calc(50% + 82px);
+  width:min(260px,31vw);min-height:66px;padding:10px 13px;
+  border:3px solid #47362d;border-radius:17px;background:#fffaf0;
+  box-shadow:var(--shadow);font-weight:800;font-size:14px;line-height:1.35;
+}
+.speech:before{
+  content:"";position:absolute;left:-17px;bottom:12px;width:26px;height:22px;
+  background:#fffaf0;border-left:3px solid #47362d;border-bottom:3px solid #47362d;
+  transform:rotate(31deg);
+}
+.speech-label{display:block;margin-bottom:3px;color:#8a5b24;font-size:10px;letter-spacing:.12em}
+.thought-dots{display:none}
+.speech.thinking .thought-dots{display:inline;letter-spacing:.15em;animation:dots 1s steps(4) infinite}
+@keyframes dots{50%{opacity:.25}}
+
+.arena{
+  position:relative;min-height:0;margin:0 3%;
+  border:2px solid rgba(251,228,170,.54);border-radius:22px;
+  background:
+    radial-gradient(circle at 50% 50%,rgba(255,245,198,.13),transparent 42%),
+    rgba(5,38,40,.44);
+  box-shadow:inset 0 0 24px rgba(0,0,0,.25),0 7px 0 rgba(22,12,8,.35);
+  overflow:hidden;
+}
+.arena:before{
+  content:"QUESTION FIELD";position:absolute;left:50%;top:8px;transform:translateX(-50%);
+  color:rgba(255,245,205,.35);font-weight:900;font-size:11px;letter-spacing:.35em;
+}
+.center-seal{
+  position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) rotate(-4deg);
+  display:grid;place-items:center;width:118px;height:118px;border-radius:50%;
+  border:4px double rgba(244,200,90,.48);color:rgba(255,239,182,.48);
+  font-weight:900;font-size:13px;text-align:center;line-height:1.3;
+}
+.played-card{
+  position:absolute;z-index:5;left:50%;top:52%;width:min(310px,48vw);min-height:108px;
+  transform:translate(-50%,-50%) rotate(-1deg);
+  display:none;place-items:center;padding:18px 22px;text-align:center;
+  border:4px solid #2a251e;border-radius:13px;
+  background:linear-gradient(145deg,#fffdf3,#eadcb8);
+  box-shadow:0 14px 0 rgba(0,0,0,.28),0 22px 25px rgba(0,0,0,.35);
+  font-size:clamp(17px,2vw,25px);font-weight:900;line-height:1.35;
+}
+.played-card.show{display:grid;animation:slam .42s cubic-bezier(.2,.85,.22,1.25)}
+.played-card.cpu-card{background:linear-gradient(145deg,#e8fbf7,#a9ded7);transform:translate(-50%,-50%) rotate(2deg)}
+.played-card .owner-tag{
+  position:absolute;left:12px;top:8px;color:#7b5b29;font-size:10px;letter-spacing:.15em;
+}
+@keyframes slam{
+  from{transform:translate(-50%,120%) rotate(-13deg) scale(.82);opacity:.2}
+  72%{transform:translate(-50%,-57%) rotate(2deg) scale(1.05)}
+  to{transform:translate(-50%,-50%) rotate(-1deg) scale(1)}
+}
+.answer-stamp{
+  position:absolute;z-index:7;right:calc(50% - 205px);top:50%;display:none;
+  transform:translateY(-50%) rotate(7deg);padding:8px 13px;border:4px double currentColor;
+  border-radius:10px;background:#fffdf3;font-size:24px;font-weight:1000;
+  box-shadow:0 7px 0 rgba(0,0,0,.2);
+}
+.answer-stamp.show{display:block;animation:stamp .35s ease-out}
+.answer-stamp.yes{color:#147f70}.answer-stamp.no{color:#6861a5}
+@keyframes stamp{from{transform:translateY(-50%) rotate(20deg) scale(1.8);opacity:0}to{transform:translateY(-50%) rotate(7deg) scale(1);opacity:1}}
+.reply-panel{
+  position:absolute;z-index:9;left:50%;bottom:12px;transform:translateX(-50%);
+  display:none;align-items:center;gap:10px;padding:8px 12px;
+  border:2px solid #d9bd73;border-radius:14px;background:rgba(14,39,42,.95);
+  color:#fff7dd;box-shadow:var(--shadow);
+}
+.reply-panel.show{display:flex;animation:rise .28s ease-out}
+.reply-panel span{font-weight:800;white-space:nowrap}
+.reply-token{
+  min-width:82px;min-height:44px;border:2px solid #fff;border-radius:999px;
+  color:#183b3d;background:#f5dc90;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #916d27;
+}
+.reply-token.no{background:#c9dcf1;box-shadow:0 4px 0 #657f9c}
+.reply-token:active{transform:translateY(3px);box-shadow:none}
+.status-scroll{
+  position:absolute;z-index:7;left:14px;top:14px;width:min(260px,26vw);
+  padding:9px 12px 9px 39px;border:2px solid #cfb16b;border-radius:7px;
+  background:#fff5d5;box-shadow:0 5px 0 rgba(47,27,16,.35);
+  font-size:12px;font-weight:800;line-height:1.35;transform:rotate(-1deg);
+}
+.status-scroll:before{
+  content:"手番";position:absolute;left:7px;top:50%;transform:translateY(-50%) rotate(-5deg);
+  padding:3px;color:#fff;background:#967029;border-radius:4px;font-size:10px;
+}
+.status-scroll.step-cue{animation:statusCue .72s ease-in-out 2;box-shadow:0 5px 0 rgba(47,27,16,.35),0 0 0 5px rgba(255,237,142,.28)}
+@keyframes statusCue{50%{transform:rotate(1deg) translateY(-2px);filter:brightness(1.08)}}
+.turn-end{
+  position:absolute;z-index:8;right:14px;bottom:14px;display:none;
+  min-width:130px;min-height:49px;padding:8px 15px;border:3px solid #3f2c18;border-radius:13px;
+  background:linear-gradient(#ffdf77,#d8a532);font-weight:1000;cursor:pointer;
+  box-shadow:0 6px 0 #704a17,0 10px 15px rgba(0,0,0,.28);
+}
+.turn-end.show{display:block;animation:pulseGold 1.25s ease-in-out infinite}
+.turn-end:active{transform:translateY(5px);box-shadow:0 1px 0 #704a17}
+@keyframes pulseGold{50%{filter:brightness(1.12);box-shadow:0 6px 0 #704a17,0 0 0 7px rgba(255,220,105,.22)}}
+
+.player-zone{
+  position:relative;min-height:0;padding:5px 3% 8px;
+  background:linear-gradient(180deg,rgba(6,37,38,.16),rgba(5,23,25,.55));
+  transition:background .25s;
+}
+.player-zone.active{background:linear-gradient(180deg,rgba(244,200,90,.08),rgba(5,23,25,.52))}
+.player-console{
+  height:105px;display:grid;grid-template-columns:124px minmax(0,1fr) 118px;gap:10px;align-items:end;
+}
+.secret-card{
+  position:relative;height:98px;padding:8px 7px;border:4px solid #d6b55d;border-radius:11px;
+  background:linear-gradient(145deg,#fff8db,#e7cd88);box-shadow:0 8px 0 #59391e,0 11px 17px rgba(0,0,0,.35);
+  text-align:center;transform:rotate(-2deg);
+}
+.secret-card.answer-cue{animation:secretCue .8s ease-in-out 2}
+@keyframes secretCue{
+  50%{filter:brightness(1.12);box-shadow:0 8px 0 #59391e,0 0 0 7px rgba(255,237,142,.72),0 0 28px rgba(255,224,104,.8)}
+}
+.secret-card:before{content:"あなたの秘密札";display:block;color:#75551d;font-size:10px;font-weight:900;letter-spacing:.05em}
+.secret-card .secret-label{display:block;margin-top:7px;font-size:20px;font-weight:1000}
+.secret-card .secret-group{display:inline-block;margin-top:5px;padding:2px 7px;border-radius:999px;color:#fff;background:#2d6766;font-size:10px;font-weight:800}
+.question-hand{
+  align-self:stretch;display:flex;align-items:flex-end;justify-content:center;gap:7px;
+  min-width:0;padding:3px 4px 0;overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:thin;scrollbar-color:#cfac57 transparent;
+}
+.question-card{
+  position:relative;flex:0 0 min(150px,18vw);height:86px;padding:19px 9px 8px;
+  border:3px solid #342b20;border-radius:9px;
+  background:
+    linear-gradient(135deg,transparent 9px,#fff9e8 0) top left,
+    linear-gradient(225deg,transparent 9px,#fff9e8 0) top right,
+    linear-gradient(315deg,transparent 9px,#ead9ad 0) bottom right,
+    linear-gradient(45deg,transparent 9px,#ead9ad 0) bottom left;
+  background-size:51% 51%;background-repeat:no-repeat;
+  box-shadow:0 7px 0 #4f321e,0 10px 15px rgba(0,0,0,.3);
+  font-size:13px;font-weight:900;line-height:1.25;text-align:center;
+  cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;
+  transform:rotate(var(--tilt,0deg));transition:.16s;
+}
+.question-card:before{
+  content:"質問札";position:absolute;left:7px;top:5px;color:#8d6c2b;font-size:9px;letter-spacing:.12em;
+}
+.question-card:hover{transform:translateY(-7px) rotate(var(--tilt,0deg));filter:brightness(1.05)}
+.question-card:active{transform:translateY(4px) scale(.98);box-shadow:0 2px 0 #4f321e}
+.question-card[disabled]{filter:saturate(.35) brightness(.75);cursor:default;transform:none}
+.question-card.tutorial{
+  animation:cardCall 1s ease-in-out infinite;
+  box-shadow:0 7px 0 #4f321e,0 0 0 6px #fff5a5,0 0 28px #fff1a4;
+}
+@keyframes cardCall{50%{transform:translateY(-9px) rotate(var(--tilt,0deg))}}
+.guess-button{
+  height:86px;border:3px solid #342b20;border-radius:12px;color:#fff7db;
+  background:linear-gradient(#8c4774,#542947);font-weight:1000;cursor:pointer;
+  box-shadow:0 7px 0 #301b29,0 10px 15px rgba(0,0,0,.3);
+}
+.guess-button.tutorial{
+  z-index:6;animation:guessCall 1s ease-in-out infinite;
+  box-shadow:0 6px 0 #251b13,0 0 0 5px #fff2a1,0 0 26px #fff0a1;
+}
+@keyframes guessCall{50%{transform:translateY(-6px) rotate(1deg);filter:brightness(1.14)}}
+.guess-button small{display:block;color:#ffeaf5;font-size:10px;margin-bottom:4px}
+.guess-button:active{transform:translateY(5px);box-shadow:0 2px 0 #301b29}
+.guess-button[disabled]{filter:saturate(.25);cursor:default}
+.rack-wrap{
+  position:absolute;left:3%;right:3%;bottom:8px;height:126px;padding:19px 8px 7px;
+  border:4px solid #301c12;border-radius:14px;
+  background:linear-gradient(#8e5937 0 10px,#5f3825 10px 17px,#3d251c 17px 100%);
+  box-shadow:inset 0 -6px 0 #251510,0 6px 15px rgba(0,0,0,.42);
+}
+.rack-title{
+  position:absolute;left:15px;top:-9px;padding:2px 10px;border:2px solid #462817;border-radius:999px;
+  color:#fff3ce;background:#71472c;font-size:10px;font-weight:900;letter-spacing:.08em;
+}
+.candidate-rack{
+  display:flex;align-items:flex-end;gap:5px;height:98px;overflow-x:auto;overflow-y:hidden;
+  padding:2px 3px 6px;scrollbar-width:thin;scrollbar-color:#d0a35d #3d251c;
+}
+.candidate-card{
+  position:relative;flex:1 0 64px;max-width:85px;min-width:64px;height:88px;padding:24px 4px 6px;
+  border:3px solid #3c3124;border-radius:8px;
+  background:linear-gradient(145deg,var(--card-color,#fff9e9),#e9d9b5);
+  box-shadow:0 6px 0 #251b13,0 8px 8px rgba(0,0,0,.25);
+  text-align:center;font-size:12px;font-weight:1000;cursor:default;
+  transform-origin:50% 100%;transition:transform .42s cubic-bezier(.2,.85,.25,1.15),filter .25s,opacity .25s;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+}
+.candidate-card .group-stripe{
+  position:absolute;left:4px;right:4px;top:4px;height:14px;border-radius:4px;
+  color:#fff;background:var(--group-color,#39716c);font-size:8px;line-height:14px;white-space:nowrap;overflow:hidden;
+}
+.candidate-card .image-slot{
+  display:none;width:28px;height:28px;margin:0 auto 2px;aspect-ratio:1/1;object-fit:contain;
+}
+.candidate-card.has-image{height:96px;padding-top:20px}
+.candidate-card.has-image .image-slot{display:block}
+.candidate-card.markable{
+  cursor:pointer;border-color:#d6bf79;
+}
+.candidate-card.tutorial-mark{
+  z-index:6;animation:markCall 1.1s ease-in-out infinite;
+  box-shadow:0 6px 0 #251b13,0 0 0 6px #fff2a1,0 0 28px #fff0a1;
+}
+@keyframes markCall{50%{filter:brightness(1.14);transform:translateY(-3px)}}
+.candidate-card.fallen{
+  transform:perspective(210px) rotateX(78deg) translateY(17px);
+  filter:saturate(.25) brightness(.65);opacity:.45;
+  box-shadow:0 2px 0 #251b13;
+}
+.candidate-card.fallen.markable:hover{opacity:.7}
+.rack-note{position:absolute;right:14px;top:-8px;color:#ffe9a3;font-size:10px;font-weight:800}
+
+.guide{
+  position:fixed;z-index:122;left:12px;top:12px;
+  display:none;width:max-content;max-width:calc(100vw - 24px);padding:12px 47px 12px 16px;
+  border:4px solid #fff0a2;border-radius:16px;color:#fff;background:#173d43;
+  box-shadow:0 8px 0 #09262a,0 0 0 6px rgba(255,241,159,.24),0 12px 35px rgba(0,0,0,.48);
+  font-weight:900;font-size:14px;line-height:1;white-space:nowrap;
+}
+.guide.show{display:block}
+.guide-step{display:none}
+#guideText{display:block}
+.guide-close{
+  position:absolute;right:9px;top:9px;width:31px;height:31px;border:1px solid rgba(255,255,255,.4);
+  border-radius:50%;color:#fff;background:rgba(255,255,255,.09);cursor:pointer;font-weight:900;
+}
+.guide-arrow{
+  position:fixed;z-index:121;inset:0;display:none;width:100%;height:100%;
+  overflow:visible;pointer-events:none;
+}
+.guide-arrow.show{display:block}
+.guide-arrow line{stroke:#fff0a2;stroke-width:5;stroke-linecap:round;filter:drop-shadow(0 3px 2px rgba(0,0,0,.38))}
+.guide-arrow polygon{fill:#fff0a2;filter:drop-shadow(0 3px 2px rgba(0,0,0,.38))}
+.guide-focus{
+  z-index:66!important;
+  box-shadow:0 0 0 6px #fff2a1,0 0 30px 9px rgba(255,232,105,.95)!important;
+}
+.deal-skip{
+  position:fixed;z-index:123;right:18px;bottom:18px;min-height:42px;padding:8px 14px;
+  border:2px solid #fff0a2;border-radius:999px;color:#fff;background:#173d43;
+  box-shadow:0 5px 0 #09262a;font-weight:900;cursor:pointer;
+}
+.deal-skip[hidden]{display:none!important}
+.deal-skip:active{transform:translateY(4px);box-shadow:0 1px 0 #09262a}
+@keyframes rise{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* 案1「配る」: 盤面を一度に見せず、実物の卓を整える順で出す。 */
+.board.deal-active{
+  opacity:0;transform:scale(.94) translateY(18px);
+  transition:opacity .42s ease,transform .55s cubic-bezier(.2,.82,.25,1.12);
+}
+.board.deal-active.deal-board{opacity:1;transform:none}
+.board.deal-active .top-actions,
+.board.deal-active .turn-ribbon,
+.board.deal-active .status-scroll,
+.board.deal-active .played-card,
+.board.deal-active .answer-stamp,
+.board.deal-active .reply-panel,
+.board.deal-active .turn-end,
+.board.deal-active .guess-button,
+.board.deal-active .opponent,
+.board.deal-active .speech,
+.board.deal-active .cpu-rack,
+.board.deal-active .cpu-rack-count,
+.board.deal-active .rack-wrap,
+.board.deal-active .secret-card,
+.board.deal-active .question-hand{
+  opacity:0;visibility:hidden;pointer-events:none;
+}
+.board.deal-active.deal-opponent .opponent,
+.board.deal-active.deal-opponent .speech,
+.board.deal-active.deal-candidates .cpu-rack,
+.board.deal-active.deal-candidates .cpu-rack-count,
+.board.deal-active.deal-candidates .rack-wrap,
+.board.deal-active.deal-secret .secret-card,
+.board.deal-active.deal-questions .question-hand{
+  opacity:1;visibility:visible;
+}
+.board.deal-active.deal-opponent .opponent{animation:dealOpponent .48s cubic-bezier(.2,.82,.25,1.18)}
+.board.deal-active.deal-opponent .speech{animation:dealFade .35s ease-out}
+.board.deal-active.deal-candidates .rack-wrap{animation:dealRack .48s cubic-bezier(.2,.82,.25,1.12)}
+.board.deal-active.deal-candidates .cpu-rack,
+.board.deal-active.deal-candidates .cpu-rack-count{animation:dealFade .4s ease-out}
+.board.deal-active.deal-candidates .candidate-card{animation:dealCard .48s cubic-bezier(.2,.82,.25,1.15) both;animation-delay:calc(var(--deal-i,0) * 34ms)}
+.board.deal-active.deal-secret .secret-card{animation:dealSecret .52s cubic-bezier(.2,.82,.25,1.18)}
+.board.deal-active.deal-questions .question-hand{animation:dealFade .2s ease-out}
+.board.deal-active.deal-questions .question-card{animation:dealQuestion .48s cubic-bezier(.2,.82,.25,1.15) both;animation-delay:calc(var(--deal-i,0) * 90ms)}
+.board.deal-active.deal-ready .question-card{pointer-events:auto;animation:none!important;opacity:1}
+@keyframes dealOpponent{from{opacity:0;transform:translateY(-52px) scale(.86)}to{opacity:1;transform:none}}
+@keyframes dealRack{from{opacity:0;transform:translateY(70px)}to{opacity:1;transform:none}}
+@keyframes dealSecret{from{opacity:0;transform:translate(-120px,45px) rotate(-16deg) scale(.82)}to{opacity:1;transform:rotate(-2deg)}}
+@keyframes dealQuestion{from{opacity:0;transform:translateY(90px) rotate(12deg) scale(.82)}to{opacity:1;transform:rotate(var(--tilt,0deg))}}
+@keyframes dealFade{from{opacity:0}to{opacity:1}}
+
+.topic-overlay,.course-overlay,.modal-overlay,.impact-overlay{
+  position:fixed;z-index:100;inset:0;display:grid;place-items:center;padding:22px;
+  background:radial-gradient(circle at 50% 38%,rgba(38,94,91,.86),rgba(8,24,28,.95));
+}
+.topic-overlay[hidden],.course-overlay[hidden]{display:none!important}
+.topic-box{width:min(900px,94vw);text-align:center;color:#fff8df}
+.topic-kicker{font-size:12px;font-weight:900;letter-spacing:.25em;color:#f2d36f}
+.topic-box h1{margin:7px 0 5px;font-size:clamp(27px,4vw,47px);text-shadow:0 5px 0 #112d31}
+.topic-box>p{margin:0 0 18px;color:#cce7df;font-weight:700}
+.topic-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.topic-card{
+  position:relative;min-height:230px;padding:24px 22px 48px;border:5px solid #3d2d20;border-radius:18px;
+  color:var(--ink);background:linear-gradient(145deg,#fff9e8,#e6d09b);
+  box-shadow:0 12px 0 #39261b,0 20px 35px rgba(0,0,0,.43);
+  text-align:left;cursor:pointer;transform:rotate(var(--topic-tilt,-1deg));transition:.18s;
+}
+.topic-card:nth-child(even){--topic-tilt:1deg;background:linear-gradient(145deg,#e7f7f4,#acd7d4)}
+.topic-card:hover{transform:translateY(-7px) rotate(var(--topic-tilt));filter:brightness(1.04)}
+.topic-card:active{transform:translateY(6px);box-shadow:0 5px 0 #39261b}
+.topic-card.picked{z-index:2;animation:pickTopicCard .19s cubic-bezier(.2,.78,.3,1) both}
+@keyframes pickTopicCard{
+  0%{transform:rotate(var(--topic-tilt,-1deg))}
+  42%{transform:translateY(7px) rotate(var(--topic-tilt,-1deg));box-shadow:0 4px 0 #39261b,0 8px 16px rgba(0,0,0,.34)}
+  100%{transform:translateY(-13px) rotate(0) scale(1.025);filter:brightness(1.07);box-shadow:0 17px 0 #39261b,0 27px 38px rgba(0,0,0,.5)}
+}
+.topic-card .topic-chip{
+  display:inline-block;padding:4px 10px;border-radius:999px;color:#fff;background:#276a70;
+  font-size:11px;font-weight:900;letter-spacing:.1em;
+}
+.topic-card h2{margin:14px 0 8px;font-size:30px}
+.topic-card p{margin:0;font-weight:800;line-height:1.6}
+.topic-card .topic-count{display:block;margin-top:14px;color:#5f523d;font-size:12px;font-weight:900}
+.topic-card .topic-go{position:absolute;right:17px;bottom:13px;color:#75511c;font-size:22px;font-weight:1000}
+.course-box{width:min(850px,94vw);text-align:center;color:#fff8df}
+.course-kicker{font-size:12px;font-weight:900;letter-spacing:.25em;color:#f2d36f}
+.course-box h1{margin:7px 0 5px;font-size:clamp(27px,4vw,47px);text-shadow:0 5px 0 #112d31}
+.course-box>p{margin:0 0 18px;color:#cce7df;font-weight:700}
+.course-back{
+  min-height:36px;margin:0 0 12px;padding:5px 13px;border:1px solid rgba(255,255,255,.42);
+  border-radius:9px;color:#fff;background:rgba(255,255,255,.1);font-weight:800;cursor:pointer;
+}
+.course-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.course-card{
+  position:relative;min-height:207px;padding:23px 20px 18px;border:5px solid #3d2d20;border-radius:18px;
+  background:linear-gradient(145deg,#fff9e8,#e6d09b);box-shadow:0 12px 0 #39261b,0 20px 35px rgba(0,0,0,.43);
+  color:var(--ink);text-align:left;cursor:pointer;transform:rotate(var(--course-tilt,-1deg));transition:.18s;
+}
+.course-card:last-child{--course-tilt:1deg;background:linear-gradient(145deg,#e7f7f4,#acd7d4)}
+.course-card:hover{transform:translateY(-7px) rotate(var(--course-tilt));filter:brightness(1.04)}
+.course-card:active{transform:translateY(6px);box-shadow:0 5px 0 #39261b}
+.course-card.picked{z-index:2;animation:pickCourseCard .19s cubic-bezier(.2,.78,.3,1) both}
+@keyframes pickCourseCard{
+  0%{transform:rotate(var(--course-tilt,-1deg))}
+  42%{transform:translateY(7px) rotate(var(--course-tilt,-1deg));box-shadow:0 4px 0 #39261b,0 8px 16px rgba(0,0,0,.34)}
+  100%{transform:translateY(-13px) rotate(0) scale(1.025);filter:brightness(1.07);box-shadow:0 17px 0 #39261b,0 27px 38px rgba(0,0,0,.5)}
+}
+.course-card .course-chip{
+  display:inline-block;padding:4px 10px;border-radius:999px;color:#fff;background:#9a6930;
+  font-size:11px;font-weight:900;letter-spacing:.1em;
+}
+.course-card:last-child .course-chip{background:#276a70}
+.course-card h2{margin:12px 0 6px;font-size:29px}
+.course-card p{margin:0;font-weight:900;line-height:1.45}
+.course-card .course-prop{
+  margin-top:14px;padding:10px;border:2px dashed rgba(61,45,32,.36);border-radius:10px;
+  font-size:13px;font-weight:700;
+}
+.course-card .course-go{position:absolute;right:16px;bottom:12px;font-size:23px;color:#75511c}
+
+.modal-overlay{display:none;z-index:110;background:rgba(7,20,23,.92)}
+.modal-overlay.show{display:grid;animation:fade .2s}
+.guess-sheet{
+  width:min(850px,95vw);max-height:90vh;padding:18px;border:5px solid #553721;border-radius:20px;
+  background:#f8e9bf;box-shadow:0 14px 0 #25170f,0 25px 50px rgba(0,0,0,.5);
+}
+.guess-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:12px}
+.guess-head h2{margin:0;font-size:22px}
+.guess-head p{margin:3px 0 0;font-size:12px;font-weight:700;color:#6f5a39}
+.close-sheet{min-width:92px;min-height:42px;border:2px solid #5a4631;border-radius:9px;background:#fffaf0;font-weight:900;cursor:pointer}
+.guess-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;max-height:65vh;overflow:auto;padding:5px}
+.guess-choice{
+  --guess-tilt:0deg;
+  min-height:92px;padding:10px 4px;border:3px solid #3c3124;border-radius:9px;
+  background:linear-gradient(145deg,#fffdf4,#e6d3a5);box-shadow:0 5px 0 #594127;
+  font-weight:1000;cursor:pointer;user-select:none;touch-action:none;
+  transform:rotate(var(--guess-tilt));transition:transform .1s,box-shadow .1s;
+}
+.guess-choice:nth-child(3n+1){--guess-tilt:-.35deg}
+.guess-choice:nth-child(3n){--guess-tilt:.35deg}
+.guess-choice small{display:block;margin-top:7px;color:#3f5b56;font-size:9px}
+.guess-choice:active{transform:translateY(4px) rotate(var(--guess-tilt)) scale(.98);box-shadow:0 1px 0 #594127}
+.guess-choice.picked{
+  position:relative;z-index:2;pointer-events:none;
+  animation:pickGuessCard var(--pick-duration,.24s) ease-out forwards;
+}
+@keyframes pickGuessCard{
+  0%{transform:rotate(var(--guess-tilt));box-shadow:0 5px 0 #594127}
+  32%{transform:translateY(4px) rotate(var(--guess-tilt)) scale(.98);box-shadow:0 1px 0 #594127}
+  72%,100%{transform:translateY(-8px) rotate(var(--guess-tilt)) scale(1.04);box-shadow:0 10px 0 #594127,0 0 0 4px #fff2a1,0 0 25px rgba(255,226,120,.82)}
+}
+
+.impact-overlay{display:none;z-index:130;background:rgba(8,24,28,.78);pointer-events:none}
+.impact-overlay.show{display:grid;animation:impactIn .28s ease-out}
+.impact-overlay.show .impact-card{animation:impactCardIn .34s cubic-bezier(.2,.82,.25,1.18)}
+.impact-card{
+  width:min(570px,90vw);min-height:210px;display:grid;place-items:center;padding:25px;
+  border:7px double #f1d272;border-radius:22px;color:#fff;
+  background:radial-gradient(circle at 50% 35%,#3a7e79,#173e44 72%);
+  box-shadow:0 18px 0 rgba(24,14,10,.68),0 0 55px rgba(245,215,111,.5);
+  text-align:center;
+}
+.impact-overlay.alt .impact-card{border-color:#b9dce9;background:radial-gradient(circle at 50% 35%,#526b9a,#263958 72%);box-shadow:0 18px 0 rgba(24,14,10,.68),0 0 55px rgba(169,213,230,.48)}
+.impact-symbol{font-size:45px;animation:flipToken .55s ease-out}
+.impact-title{font-size:clamp(24px,4vw,40px);font-weight:1000;text-shadow:0 4px 0 rgba(0,0,0,.3)}
+.impact-copy{font-weight:800}
+.result-reveal{
+  width:min(240px,76vw);min-height:70px;margin:12px auto 0;padding:8px 14px;
+  display:grid;place-items:center;gap:2px;border:3px solid #68452b;border-radius:9px;
+  color:var(--ink);background:#fff8df;box-shadow:0 7px 0 #5b3b26,0 0 0 3px rgba(255,232,147,.45);
+  transform:rotate(-1deg);animation:dealReveal .38s cubic-bezier(.2,.82,.25,1.18);
+}
+.result-reveal[hidden]{display:none!important}
+.result-reveal span{font-size:9px;font-weight:1000;letter-spacing:.16em;color:#6b4a2b}
+.result-reveal strong{font-size:20px;line-height:1.15}
+.result-reveal small{font-size:10px;font-weight:900;color:#3f5b56}
+@keyframes impactIn{from{opacity:0}to{opacity:1}}
+@keyframes impactCardIn{from{transform:scale(.65) rotate(-5deg)}to{transform:scale(1) rotate(0)}}
+@keyframes flipToken{from{transform:rotateY(180deg) scale(.5)}to{transform:rotateY(0) scale(1)}}
+@keyframes dealReveal{from{opacity:0;transform:translateY(18px) rotate(5deg) scale(.88)}to{opacity:1;transform:translateY(0) rotate(-1deg) scale(1)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.result-actions{display:none;gap:12px;margin-top:18px}
+.result-actions.show{display:flex}
+.result-btn{
+  min-height:45px;padding:8px 18px;border:3px solid #3d2d20;border-radius:10px;
+  color:var(--ink);background:#ffe08a;font-weight:1000;cursor:pointer;box-shadow:0 5px 0 #79541e;pointer-events:auto;
+}
+.result-btn.secondary{background:#d6ece9;box-shadow:0 5px 0 #3e7472}
+
+@media (max-width:760px){
+  body{overflow:auto;background:#17383b}
+  .game{height:auto;min-height:844px;overflow:visible}
+  .board{position:relative;min-height:844px;grid-template-rows:54px 205px 270px 315px;border-width:7px}
+  .brand-text{width:80px}
+  .brand-text small{display:none}.brand-text strong{white-space:normal;overflow:visible;text-overflow:clip;word-break:keep-all;font-size:11px;line-height:1.15}
+  .turn-ribbon{top:10px;padding:4px 9px;font-size:10px}
+  .top-actions{gap:3px}.top-actions .small-btn:first-child{display:block}.small-btn{padding:4px 6px;font-size:10px;white-space:nowrap}
+  .speech{left:auto;right:7px;top:6px;width:145px;min-height:73px;font-size:11px}
+  .opponent{transform:scale(.92);transform-origin:50% 100%}
+  .cpu-rack-count{top:8px;right:calc(50% + 82px);min-width:96px;padding:6px 7px 5px}
+  .cpu-rack-count span{font-size:8px}.cpu-rack-count strong{font-size:15px}
+  .cpu-rack{max-width:88vw}.cpu-card-back{width:23px}
+  .arena{margin:0 8px}.status-scroll{left:7px;top:8px;width:145px;font-size:10px;padding-left:34px}
+  .center-seal{width:90px;height:90px;font-size:10px}
+  .played-card{width:82vw;min-height:105px;font-size:17px}
+  .answer-stamp{right:10px;top:63%;font-size:18px}
+  .reply-panel{width:94%;justify-content:center;bottom:10px;gap:5px}.reply-panel span{font-size:10px}.reply-token{min-width:67px}
+  .turn-end{right:8px;bottom:8px;min-width:111px;min-height:42px;font-size:11px}
+  .player-zone{padding:5px 8px 7px}
+  .player-console{height:142px;grid-template-columns:94px minmax(0,1fr) 82px;gap:5px}
+  .secret-card{height:92px}.secret-card .secret-label{font-size:15px}.secret-card:before{font-size:8px}
+  .question-hand{justify-content:flex-start}.question-card{flex-basis:120px;height:93px;font-size:11px}
+  .guess-button{height:92px;font-size:12px}
+  .rack-wrap{left:7px;right:7px;bottom:8px;height:151px}.candidate-rack{height:122px}
+  .candidate-card{flex:0 0 72px;height:101px}
+  .guide{right:auto;bottom:auto;font-size:12px}
+  .topic-overlay,.course-overlay{position:absolute;min-height:844px;padding:15px}
+  .topic-box h1{font-size:27px}.topic-box>p{font-size:12px;margin-bottom:10px}
+  .topic-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .topic-card{min-height:225px;padding:14px 12px 38px}.topic-card h2{font-size:21px;margin:8px 0 5px}.topic-card p{font-size:11px;line-height:1.4}.topic-card .topic-count{margin-top:7px;font-size:9px}.topic-card .topic-go{right:11px;bottom:10px;font-size:16px}
+  .course-box h1{font-size:27px}.course-box>p{font-size:12px;margin-bottom:10px}
+  .course-cards{grid-template-columns:1fr;gap:13px}
+  .course-card{min-height:170px;padding:16px 16px 42px}.course-card h2{font-size:23px;margin:8px 0 4px}.course-card p{font-size:13px}.course-card .course-prop{margin:8px 0 18px;padding:7px;font-size:11px}
+  .guess-sheet{padding:12px}.guess-grid{grid-template-columns:repeat(3,1fr);gap:7px}.guess-choice{min-height:82px;font-size:11px}
+  .result-actions{gap:8px}.result-btn{padding:8px 12px;font-size:14px;white-space:nowrap}
+}
+@media (max-height:650px) and (min-width:761px){
+  .board{grid-template-rows:50px 140px minmax(145px,1fr) 222px}
+  .opponent{transform:scale(.82);transform-origin:50% 100%}.speech{min-height:56px;font-size:12px}
+  .player-console{height:91px}.secret-card{height:85px}.question-card,.guess-button{height:77px}
+  .rack-wrap{height:117px}.candidate-rack{height:90px}.candidate-card{height:80px}
+  .guide{bottom:214px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<!-- §2 画面構造 -->
+<main class="game" id="game">
+  <section class="board" id="board" aria-label="向かい合って遊ぶ対戦盤">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">VS</span>
+        <span class="brand-text"><strong id="gameTitle">カードバトル</strong><small>FACE TO FACE TABLE</small></span>
+      </div>
+      <div class="turn-ribbon" id="turnRibbon" aria-label="手番札"><span class="turn-dot"></span><span id="turnText">コースを選ぶ</span></div>
+      <div class="top-actions" id="topActions">
+        <button type="button" class="small-btn" id="courseButton">コース</button>
+        <button type="button" class="small-btn" id="soundButton" aria-pressed="false">音 OFF</button>
+      </div>
+    </header>
+
+    <section class="opponent-zone" id="opponentZone" aria-label="相手の陣地">
+      <div class="opponent-table"></div>
+      <div class="cpu-rack" id="cpuRack" aria-label="相手側の候補札"></div>
+      <div class="cpu-rack-count" id="cpuRackCount" aria-live="polite"><span>相手の候補</span><strong id="cpuRackCountNumber">—枚</strong></div>
+      <div class="opponent" id="opponent" aria-label="対戦相手">
+        <div class="body"></div><div class="neck"></div>
+        <div class="head">
+          <div class="hair"></div><div class="ear left"></div><div class="ear right"></div>
+          <div class="brow left"></div><div class="brow right"></div>
+          <div class="eye left"></div><div class="eye right"></div><div class="mouth"></div>
+        </div>
+        <div class="hand left"></div><div class="hand right"></div>
+      </div>
+      <div class="speech" id="speech" aria-live="polite"><span class="speech-label">対戦相手</span><span id="speechText">向かいの席で待っているよ。</span><span class="thought-dots"> ● ● ●</span></div>
+    </section>
+
+    <section class="arena" id="arena" aria-label="質問札を出す中央の場">
+      <div class="status-scroll" id="statusText">コースを選ぶと対戦開始</div>
+      <div class="center-seal">質問札を<br>ここへ</div>
+      <div class="played-card" id="playedCard"><span class="owner-tag" id="playedOwner">あなたの質問</span><span id="playedText"></span></div>
+      <div class="answer-stamp" id="answerStamp"></div>
+      <div class="reply-panel" id="replyPanel">
+        <span id="replyPrompt">あなたの秘密札では？</span>
+        <button type="button" class="reply-token" data-reply="yes">はい</button>
+        <button type="button" class="reply-token no" data-reply="no">いいえ</button>
+      </div>
+      <button type="button" class="turn-end" id="turnEndButton">手番札を送る →</button>
+    </section>
+
+    <section class="player-zone" id="playerZone" aria-label="あなたの陣地">
+      <div class="player-console">
+        <div class="secret-card" id="secretCard">
+          <span class="secret-label" id="secretLabel">秘密札</span>
+          <span class="secret-group" id="secretGroup">対戦前</span>
+        </div>
+        <div class="question-hand" id="questionHand" aria-label="質問札の手札"></div>
+        <button type="button" class="guess-button" id="guessButton" disabled><small>相手のお題を</small>この札だ！</button>
+      </div>
+      <div class="rack-wrap" id="rackWrap">
+        <span class="rack-title" id="rackTitle">あなたの候補ラック</span>
+        <span class="rack-note" id="rackNote">コースを選択</span>
+        <div class="candidate-rack" id="candidateRack" aria-label="相手のお題の候補札"></div>
+      </div>
+    </section>
+  </section>
+
+  <section class="topic-overlay" id="topicOverlay" aria-labelledby="topicTitle">
+    <div class="topic-box">
+      <div class="topic-kicker">対面カードバトル</div>
+      <h1 id="topicTitle">どの題材で対戦する？</h1>
+      <p>質問札で、相手の秘密札を当てる対戦です。</p>
+      <div class="topic-cards" id="topicCards"></div>
+    </div>
+  </section>
+
+  <section class="course-overlay" id="courseOverlay" aria-labelledby="courseTitle" hidden>
+    <div class="course-box">
+      <div class="course-kicker" id="courseKicker">対面カードバトル</div>
+      <h1 id="courseTitle">どちらの盤で対戦する？</h1>
+      <p>候補札にメモを残すかを選びます。</p>
+      <button type="button" class="course-back" id="topicBackButton">← 題材を選び直す</button>
+      <div class="course-cards">
+        <button type="button" class="course-card" data-course="beginner">
+          <span class="course-chip">メモ あり</span>
+          <h2>初級コース</h2>
+          <p>候補札を倒してメモできる</p>
+          <span class="course-go">対戦へ →</span>
+        </button>
+        <button type="button" class="course-card" data-course="advanced">
+          <span class="course-chip">メモ なし</span>
+          <h2>上級コース</h2>
+          <p>頭の中で候補をしぼる</p>
+          <span class="course-go">対戦へ →</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide" id="guide" aria-live="polite">
+    <span class="guide-step" id="guideStep">最初の一手</span>
+    <span id="guideText"></span>
+    <button type="button" class="guide-close" id="guideClose" aria-label="案内を閉じる">×</button>
+  </section>
+  <svg class="guide-arrow" id="guideArrow" aria-hidden="true">
+    <line id="guideArrowLine" x1="0" y1="0" x2="0" y2="0"></line>
+    <polygon id="guideArrowHead" points="0,0 0,0 0,0"></polygon>
+  </svg>
+  <button type="button" class="deal-skip" id="dealSkip" hidden>配りを飛ばす</button>
+
+  <section class="modal-overlay" id="guessOverlay" aria-modal="true" role="dialog" aria-labelledby="guessTitle">
+    <div class="guess-sheet">
+      <div class="guess-head">
+        <div><h2 id="guessTitle">相手の秘密札はどれ？</h2><p>机に並んだ札から1枚手に取る。外れても、そのままもう一回選べます。</p></div>
+        <button type="button" class="close-sheet" id="closeGuess">盤へ戻る</button>
+      </div>
+      <div class="guess-grid" id="guessGrid"></div>
+    </div>
+  </section>
+
+  <section class="impact-overlay" id="impactOverlay" aria-live="assertive">
+    <div class="impact-card">
+      <div>
+        <div class="impact-symbol" id="impactSymbol">◆</div>
+        <div class="impact-title" id="impactTitle">札をめくる</div>
+        <p class="impact-copy" id="impactCopy"></p>
+        <div class="result-reveal" id="resultReveal" hidden>
+          <span>公開された秘密札</span>
+          <strong id="resultRevealLabel"></strong>
+          <small id="resultRevealGroup"></small>
+        </div>
+        <div class="result-actions" id="resultActions">
+          <button type="button" class="result-btn" id="againButton">もう一局</button>
+          <button type="button" class="result-btn secondary" id="reselectButton">コースを選び直す</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* §3 汎用ゲームエンジン */
+(() => {
+  "use strict";
+
+  const $ = (selector) => document.querySelector(selector);
+  const els = {
+    board:$("#board"),
+    topicOverlay:$("#topicOverlay"), topicCards:$("#topicCards"), topicBackButton:$("#topicBackButton"),
+    courseOverlay:$("#courseOverlay"), courseKicker:$("#courseKicker"),
+    courseButton:$("#courseButton"), soundButton:$("#soundButton"), topActions:$("#topActions"),
+    gameTitle:$("#gameTitle"), turnRibbon:$("#turnRibbon"), turnText:$("#turnText"),
+    opponentZone:$("#opponentZone"), playerZone:$("#playerZone"), opponent:$("#opponent"),
+    speech:$("#speech"), speechText:$("#speechText"), cpuRack:$("#cpuRack"),
+    cpuRackCount:$("#cpuRackCount"), cpuRackCountNumber:$("#cpuRackCountNumber"),
+    statusText:$("#statusText"), playedCard:$("#playedCard"), playedOwner:$("#playedOwner"),
+    playedText:$("#playedText"), answerStamp:$("#answerStamp"), replyPanel:$("#replyPanel"), replyPrompt:$("#replyPrompt"),
+    turnEndButton:$("#turnEndButton"), secretCard:$("#secretCard"), secretLabel:$("#secretLabel"), secretGroup:$("#secretGroup"),
+    questionHand:$("#questionHand"), guessButton:$("#guessButton"), candidateRack:$("#candidateRack"), rackWrap:$("#rackWrap"),
+    rackNote:$("#rackNote"), guide:$("#guide"), guideStep:$("#guideStep"), guideText:$("#guideText"),
+    guideClose:$("#guideClose"), guideArrow:$("#guideArrow"), guideArrowLine:$("#guideArrowLine"),
+    guideArrowHead:$("#guideArrowHead"), dealSkip:$("#dealSkip"),
+    guessOverlay:$("#guessOverlay"), closeGuess:$("#closeGuess"),
+    guessGrid:$("#guessGrid"), impactOverlay:$("#impactOverlay"), impactSymbol:$("#impactSymbol"),
+    impactTitle:$("#impactTitle"), impactCopy:$("#impactCopy"), resultReveal:$("#resultReveal"),
+    resultRevealLabel:$("#resultRevealLabel"), resultRevealGroup:$("#resultRevealGroup"), resultActions:$("#resultActions"),
+    againButton:$("#againButton"), reselectButton:$("#reselectButton")
+  };
+
+  const groupColors = ["#397b87","#3f7653","#855d2a","#5f65a4","#9b5d6e","#587781"];
+  let activePack = DATA[0];
+  let choicePending = false;
+  let onboardingPlayed = false;
+  let guideTarget = null;
+  let guidePlacement = "above";
+  let guideFrame = 0;
+  let dealRun = 0;
+  const state = {
+    packId:null, course:null, phase:"topic", round:0, playerSecret:null, cpuSecret:null,
+    playerRemaining:new Set(), cpuRemaining:new Set(), playerMarks:new Set(),
+    markable:new Set(), hand:[], lastQuestion:null, lastAnswer:null,
+    cpuTurns:0, tutorialStep:0, guessGuideShown:false, sound:false, ended:false, timer:0,
+    dealActive:false
+  };
+
+  function randomFrom(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function shuffled(list) {
+    const copy = [...list];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function itemById(id) {
+    return activePack.items.find((item) => item.id === id);
+  }
+
+  function questionById(id) {
+    return activePack.questions.find((question) => question.id === id);
+  }
+
+  function attrAnswer(item, question) {
+    return Boolean(item && question && item.attrs && item.attrs[question.key]);
+  }
+
+  function setPhase(phase) {
+    state.phase = phase;
+    renderTurn();
+  }
+
+  function clearTimer() {
+    if (state.timer) {
+      window.clearTimeout(state.timer);
+      state.timer = 0;
+    }
+  }
+
+  function later(fn, delay) {
+    clearTimer();
+    state.timer = window.setTimeout(() => {
+      state.timer = 0;
+      fn();
+    }, delay);
+  }
+
+  function safeSoundLoad() {
+    try {
+      state.sound = window.localStorage.getItem("app_quizbattle_sound") === "on";
+    } catch (_) {
+      state.sound = false;
+    }
+    renderSound();
+  }
+
+  function toggleSound() {
+    state.sound = !state.sound;
+    try {
+      window.localStorage.setItem("app_quizbattle_sound", state.sound ? "on" : "off");
+    } catch (_) {
+      // 保存できない環境でも、その場の設定だけで続ける。
+    }
+    renderSound();
+    if (state.sound) playTone(420, 0.05);
+  }
+
+  function renderSound() {
+    els.soundButton.textContent = `音 ${state.sound ? "ON" : "OFF"}`;
+    els.soundButton.setAttribute("aria-pressed", String(state.sound));
+  }
+
+  function playTone(frequency, duration) {
+    if (!state.sound) return;
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const context = new AudioContextClass();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.035, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + duration);
+      oscillator.addEventListener("ended", () => context.close(), {once:true});
+    } catch (_) {
+      // 音が使えない環境では無音のままゲームを続ける。
+    }
+  }
+
+  function bindPress(element, handler) {
+    element.addEventListener("pointerdown", (event) => {
+      if (element.disabled) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      event.preventDefault();
+      handler(event);
+    });
+    element.addEventListener("keydown", (event) => {
+      if (element.disabled) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handler(event);
+      }
+    });
+  }
+
+  function animateCardChoice(element, action) {
+    if (choicePending) return false;
+    choicePending = true;
+    element.classList.add("picked");
+    window.setTimeout(() => {
+      element.classList.remove("picked");
+      try {
+        action();
+      } finally {
+        choicePending = false;
+      }
+    }, 190);
+    return true;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function updateGuidePosition() {
+    if (!guideTarget || !guideTarget.isConnected || !els.guide.classList.contains("show")) return;
+    const targetRect = guideTarget.getBoundingClientRect();
+    const guideRect = els.guide.getBoundingClientRect();
+    const margin = 12;
+    const gap = 28;
+    const targetX = targetRect.left + targetRect.width / 2;
+    const targetY = targetRect.top + targetRect.height / 2;
+    const spots = {
+      above:{left:targetX - guideRect.width / 2,top:targetRect.top - guideRect.height - gap},
+      below:{left:targetX - guideRect.width / 2,top:targetRect.bottom + gap},
+      left:{left:targetRect.left - guideRect.width - gap,top:targetY - guideRect.height / 2},
+      right:{left:targetRect.right + gap,top:targetY - guideRect.height / 2}
+    };
+    const order = [guidePlacement,"above","below","right","left"].filter((entry,index,array) => array.indexOf(entry) === index);
+    const fits = (spot) => spot.left >= margin && spot.top >= margin &&
+      spot.left + guideRect.width <= innerWidth - margin &&
+      spot.top + guideRect.height <= innerHeight - margin;
+    const chosen = spots[order.find((name) => spots[name] && fits(spots[name]))] || spots[guidePlacement] || spots.above;
+    const left = clamp(chosen.left, margin, Math.max(margin, innerWidth - guideRect.width - margin));
+    const top = clamp(chosen.top, margin, Math.max(margin, innerHeight - guideRect.height - margin));
+    els.guide.style.left = `${left}px`;
+    els.guide.style.top = `${top}px`;
+
+    const placedGuide = els.guide.getBoundingClientRect();
+    const centerX = placedGuide.left + placedGuide.width / 2;
+    const centerY = placedGuide.top + placedGuide.height / 2;
+    const deltaX = targetX - centerX;
+    const deltaY = targetY - centerY;
+    const halfWidth = Math.max(1, placedGuide.width / 2);
+    const halfHeight = Math.max(1, placedGuide.height / 2);
+    const edgeScale = 1 / Math.max(Math.abs(deltaX) / halfWidth, Math.abs(deltaY) / halfHeight, .001);
+    const startX = centerX + deltaX * edgeScale;
+    const startY = centerY + deltaY * edgeScale;
+    const length = Math.max(1, Math.hypot(targetX - startX, targetY - startY));
+    const unitX = (targetX - startX) / length;
+    const unitY = (targetY - startY) / length;
+    const baseX = targetX - unitX * 15;
+    const baseY = targetY - unitY * 15;
+    const sideX = -unitY * 7;
+    const sideY = unitX * 7;
+    els.guideArrowLine.setAttribute("x1", startX.toFixed(2));
+    els.guideArrowLine.setAttribute("y1", startY.toFixed(2));
+    els.guideArrowLine.setAttribute("x2", baseX.toFixed(2));
+    els.guideArrowLine.setAttribute("y2", baseY.toFixed(2));
+    els.guideArrowHead.setAttribute("points",
+      `${targetX.toFixed(2)},${targetY.toFixed(2)} ${(baseX + sideX).toFixed(2)},${(baseY + sideY).toFixed(2)} ${(baseX - sideX).toFixed(2)},${(baseY - sideY).toFixed(2)}`);
+    els.guideArrow.dataset.tipX = targetX.toFixed(2);
+    els.guideArrow.dataset.tipY = targetY.toFixed(2);
+    els.guideArrow.dataset.target = guideTarget.id || guideTarget.dataset.itemId || guideTarget.dataset.questionId || guideTarget.className;
+  }
+
+  function keepGuideAligned() {
+    window.cancelAnimationFrame(guideFrame);
+    const tick = () => {
+      if (!els.guide.classList.contains("show")) return;
+      updateGuidePosition();
+      guideFrame = window.requestAnimationFrame(tick);
+    };
+    guideFrame = window.requestAnimationFrame(tick);
+  }
+
+  function showAnchoredGuide(text, target, placement = "above") {
+    hideGuide();
+    if (!target) return;
+    els.guideStep.textContent = "";
+    els.guideText.textContent = text;
+    guideTarget = target;
+    guidePlacement = placement;
+    target.classList.add("guide-focus");
+    els.guide.classList.add("show");
+    els.guideArrow.classList.add("show");
+    updateGuidePosition();
+    keepGuideAligned();
+  }
+
+  const dealClasses = ["deal-active","deal-board","deal-opponent","deal-candidates","deal-secret","deal-questions","deal-ready"];
+  const dealSteps = [
+    {className:"deal-board",text:"対戦盤を置きます",target:() => els.board,placement:"below",wait:520},
+    {className:"deal-opponent",text:"向かいに相手が座ります",target:() => els.opponent,placement:"right",wait:620},
+    {className:"deal-candidates",text:"相手の秘密札の候補です",target:() => els.rackWrap,placement:"above",wait:820},
+    {className:"deal-secret",text:"あなたの秘密札が届きます",target:() => els.secretCard,placement:"above",wait:650},
+    {className:"deal-questions",text:"質問札を手札に配ります",target:() => els.questionHand,placement:"above",wait:880}
+  ];
+
+  function completeDealOnboarding() {
+    clearTimer();
+    dealRun += 1;
+    state.dealActive = false;
+    dealClasses.forEach((className) => els.board.classList.remove(className));
+    els.dealSkip.hidden = true;
+  }
+
+  function finishDealSetup() {
+    if (!state.dealActive) return;
+    clearTimer();
+    ["deal-board","deal-opponent","deal-candidates","deal-secret","deal-questions","deal-ready"].forEach((className) =>
+      els.board.classList.add(className));
+    state.tutorialStep = 1;
+    renderQuestions();
+    els.dealSkip.hidden = true;
+    window.requestAnimationFrame(showFirstGuide);
+  }
+
+  function runDealStep(runId, index) {
+    if (!state.dealActive || runId !== dealRun) return;
+    if (index >= dealSteps.length) {
+      finishDealSetup();
+      return;
+    }
+    const step = dealSteps[index];
+    els.board.classList.add(step.className);
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      if (!state.dealActive || runId !== dealRun) return;
+      showAnchoredGuide(step.text, step.target(), step.placement);
+      later(() => runDealStep(runId, index + 1), step.wait);
+    }));
+  }
+
+  function beginDealSequence() {
+    clearTimer();
+    dealRun += 1;
+    state.dealActive = true;
+    dealClasses.forEach((className) => els.board.classList.remove(className));
+    els.board.classList.add("deal-active");
+    els.dealSkip.hidden = false;
+    const runId = dealRun;
+    window.requestAnimationFrame(() => runDealStep(runId, 0));
+  }
+
+  function skipDealSequence() {
+    if (state.dealActive) finishDealSetup();
+  }
+
+  function dismissGuide() {
+    if (state.dealActive) {
+      state.tutorialStep = 99;
+      completeDealOnboarding();
+      renderQuestions();
+    }
+    hideGuide();
+  }
+
+  function startGame(course, options = {}) {
+    clearTimer();
+    if (!state.packId) return false;
+    const playDeal = !options.skipTutorial && !onboardingPlayed;
+    if (playDeal) onboardingPlayed = true;
+    state.course = course;
+    state.phase = "player_choose";
+    state.round = 1;
+    state.playerSecret = randomFrom(activePack.items);
+    do {
+      state.cpuSecret = randomFrom(activePack.items);
+    } while (activePack.items.length > 1 && state.cpuSecret.id === state.playerSecret.id);
+    state.playerRemaining = new Set(activePack.items.map((item) => item.id));
+    state.cpuRemaining = new Set(activePack.items.map((item) => item.id));
+    state.playerMarks = new Set();
+    state.markable = new Set();
+    state.hand = shuffled(activePack.questions).slice(0, Math.min(5, activePack.questions.length)).map((question) => question.id);
+    state.lastQuestion = null;
+    state.lastAnswer = null;
+    state.cpuTurns = 0;
+    state.tutorialStep = playDeal ? 0 : 99;
+    state.guessGuideShown = !playDeal;
+    state.ended = false;
+    els.courseOverlay.hidden = true;
+    els.courseOverlay.style.display = "none";
+    els.guessOverlay.classList.remove("show");
+    els.impactOverlay.className = "impact-overlay";
+    els.resultActions.classList.remove("show");
+    clearTableCard();
+    setOpponent("neutral", randomFrom(activePack.opponentLines.ready));
+    renderAll();
+    if (playDeal) beginDealSequence();
+    else completeDealOnboarding();
+    return true;
+  }
+
+  function renderAll() {
+    els.gameTitle.textContent = activePack.title;
+    if (state.playerSecret) {
+      els.secretLabel.textContent = state.playerSecret.label;
+      els.secretGroup.textContent = state.playerSecret.group;
+    }
+    renderQuestions();
+    renderCandidates();
+    renderCpuRack();
+    renderGuessGrid();
+    renderTurn();
+  }
+
+  function renderTurn() {
+    const playerActive = ["player_choose","player_mark","player_end","player_guess"].includes(state.phase);
+    const cpuActive = ["cpu_thinking","player_answer","cpu_resolve"].includes(state.phase);
+    els.playerZone.classList.toggle("active", playerActive);
+    els.opponentZone.classList.toggle("active", cpuActive);
+    els.turnRibbon.classList.toggle("cpu", cpuActive);
+    els.turnText.textContent = state.phase === "topic" ? "題材を選ぶ" : state.phase === "course" ? "コースを選ぶ" : cpuActive ? "相手の番" : state.ended ? "勝負あり" : "あなたの番";
+    els.guessButton.disabled = !playerActive || state.phase === "player_mark" || state.phase === "player_end" || state.ended;
+    const canEnd = state.phase === "player_mark" || state.phase === "player_end";
+    els.turnEndButton.classList.toggle("show", canEnd);
+    els.replyPanel.classList.toggle("show", state.phase === "player_answer");
+    const firstReply = state.round === 1 && state.phase === "player_answer";
+    els.statusText.classList.toggle("step-cue", firstReply);
+    els.secretCard.classList.toggle("answer-cue", firstReply);
+    els.replyPrompt.textContent = firstReply ? "左下の秘密札を見て答える" : "あなたの秘密札では？";
+    if (state.phase === "player_choose") {
+      els.statusText.textContent = `第${state.round}手　質問札を1枚、中央へ出す`;
+    } else if (state.phase === "opponent_thinking") {
+      els.statusText.textContent = "相手が質問札を読んでいる";
+    } else if (state.phase === "player_mark") {
+      els.statusText.textContent = "答えと合わない候補札を押して倒せる";
+    } else if (state.phase === "player_end") {
+      els.statusText.textContent = "答えを覚えたら、手番札を送る";
+    } else if (cpuActive) {
+      els.statusText.textContent = state.round === 1 && state.phase === "player_answer"
+        ? "左下の秘密札を見て答える。間違えても選び直せる"
+        : "相手の質問に、秘密札を見て答える";
+    } else if (state.ended) {
+      els.statusText.textContent = "対戦終了";
+    }
+    renderQuestions();
+  }
+
+  function renderQuestions() {
+    els.questionHand.innerHTML = "";
+    state.hand.forEach((id, index) => {
+      const question = questionById(id);
+      if (!question) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "question-card";
+      button.style.setProperty("--tilt", `${[-3,1,-1,2,-2][index % 5]}deg`);
+      button.style.setProperty("--deal-i", String(index));
+      button.textContent = question.text;
+      button.disabled = state.phase !== "player_choose" || state.ended;
+      button.dataset.questionId = question.id;
+      if (state.tutorialStep === 1 && index === 0) button.classList.add("tutorial");
+      bindPress(button, () => playPlayerQuestion(question.id));
+      els.questionHand.appendChild(button);
+    });
+  }
+
+  function colorForGroup(group) {
+    const index = Math.max(0, activePack.groups.indexOf(group));
+    return groupColors[index % groupColors.length];
+  }
+
+  function createImageSlot(item, card) {
+    if (typeof item.img !== "string" || !item.img.startsWith("data:")) return;
+    const image = document.createElement("img");
+    image.className = "image-slot";
+    image.src = item.img;
+    image.alt = item.label;
+    card.classList.add("has-image");
+    card.appendChild(image);
+  }
+
+  function renderCandidates() {
+    els.candidateRack.innerHTML = "";
+    activePack.items.forEach((item, index) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "candidate-card";
+      card.dataset.itemId = item.id;
+      card.style.setProperty("--deal-i", String(index));
+      card.style.setProperty("--group-color", colorForGroup(item.group));
+      card.style.setProperty("--card-color", "#fff9e9");
+      const stripe = document.createElement("span");
+      stripe.className = "group-stripe";
+      stripe.textContent = item.group;
+      card.appendChild(stripe);
+      createImageSlot(item, card);
+      const label = document.createElement("span");
+      label.textContent = item.label;
+      card.appendChild(label);
+      const fallen = state.playerMarks.has(item.id);
+      const markable = state.course === "beginner" && state.markable.has(item.id) && !state.ended;
+      card.classList.toggle("fallen", fallen);
+      card.classList.toggle("markable", markable);
+      if (state.tutorialStep === 2 && markable && [...state.markable][0] === item.id) {
+        card.classList.add("tutorial-mark");
+      }
+      card.disabled = !markable;
+      bindPress(card, () => toggleCandidate(item.id));
+      els.candidateRack.appendChild(card);
+    });
+    if (!state.course) {
+      els.rackNote.textContent = "コースを選択";
+    } else if (state.course === "beginner") {
+      els.rackNote.textContent = `${activePack.items.length - state.playerMarks.size}枚が立っている`;
+    } else {
+      els.rackNote.textContent = "メモなし：札は倒れない";
+    }
+  }
+
+  function renderCpuRack() {
+    els.cpuRack.innerHTML = "";
+    activePack.items.forEach((item, index) => {
+      const back = document.createElement("span");
+      back.className = "cpu-card-back";
+      back.style.setProperty("--r", `${(index % 5 - 2) * 1.4}deg`);
+      back.style.setProperty("--deal-i", String(index));
+      if (state.course && !state.cpuRemaining.has(item.id)) back.classList.add("gone");
+      els.cpuRack.appendChild(back);
+    });
+    const remaining = state.course ? state.cpuRemaining.size : activePack.items.length;
+    const previous = Number(els.cpuRackCount.dataset.count);
+    els.cpuRackCountNumber.textContent = `${remaining}枚`;
+    els.cpuRackCount.setAttribute("aria-label", `相手の候補は${remaining}枚`);
+    els.cpuRackCount.dataset.count = String(remaining);
+    if (state.course && Number.isFinite(previous) && previous !== remaining) {
+      els.cpuRackCount.classList.remove("changed");
+      void els.cpuRackCount.offsetWidth;
+      els.cpuRackCount.classList.add("changed");
+    }
+  }
+
+  function renderGuessGrid() {
+    els.guessGrid.innerHTML = "";
+    activePack.items.forEach((item) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "guess-choice";
+      button.dataset.guessId = item.id;
+      button.textContent = item.label;
+      const group = document.createElement("small");
+      group.textContent = item.group;
+      button.appendChild(group);
+      bindPress(button, () => {
+        if (els.guessGrid.querySelector(".picked")) return;
+        button.classList.add("picked");
+        let resolved = false;
+        const finish = () => {
+          if (resolved) return;
+          resolved = true;
+          resolvePlayerGuess(item.id);
+        };
+        button.addEventListener("animationend", finish, {once:true});
+        const durationText = getComputedStyle(button).animationDuration;
+        const durationMs = durationText.endsWith("ms") ? parseFloat(durationText) : parseFloat(durationText) * 1000;
+        setTimeout(finish, Math.max(240, durationMs + 80));
+      });
+      els.guessGrid.appendChild(button);
+    });
+  }
+
+  function showTableCard(question, owner) {
+    els.playedOwner.textContent = owner === "cpu" ? "相手の質問" : "あなたの質問";
+    els.playedText.textContent = question.text;
+    els.playedCard.className = `played-card show${owner === "cpu" ? " cpu-card" : ""}`;
+    els.answerStamp.className = "answer-stamp";
+    playTone(owner === "cpu" ? 310 : 390, 0.07);
+  }
+
+  function clearTableCard() {
+    els.playedCard.className = "played-card";
+    els.playedText.textContent = "";
+    els.answerStamp.className = "answer-stamp";
+    els.answerStamp.textContent = "";
+  }
+
+  function setOpponent(pose, line) {
+    els.opponent.className = `opponent${pose && pose !== "neutral" ? ` ${pose}` : ""}`;
+    els.speech.classList.toggle("thinking", pose === "thinking");
+    els.speechText.textContent = line || "";
+  }
+
+  function showAnswer(answer) {
+    els.answerStamp.textContent = answer ? "はい" : "いいえ";
+    els.answerStamp.className = `answer-stamp show ${answer ? "yes" : "no"}`;
+  }
+
+  function showFirstGuide() {
+    const target = els.questionHand.querySelector(".question-card");
+    showAnchoredGuide("光る質問札を1枚出します", target, "above");
+  }
+
+  function showMarkGuide() {
+    const firstId = [...state.markable][0];
+    const item = itemById(firstId);
+    state.tutorialStep = 2;
+    renderCandidates();
+    const target = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(firstId || "")}"]`);
+    if (target) target.scrollIntoView({behavior:"auto",block:"nearest",inline:"center"});
+    showAnchoredGuide(item ? "光る候補札を押して倒します" : "手番札を相手へ送ります",
+      target || els.turnEndButton, target ? "above" : "left");
+  }
+
+  function showEndGuide() {
+    state.tutorialStep = 3;
+    renderCandidates();
+    showAnchoredGuide("右の手番札を相手へ送ります", els.turnEndButton, "left");
+  }
+
+  function showAdvancedEndGuide() {
+    state.tutorialStep = 3;
+    showAnchoredGuide("答えを覚えて手番札を送ります", els.turnEndButton, "left");
+  }
+
+  function hideGuide() {
+    window.cancelAnimationFrame(guideFrame);
+    guideFrame = 0;
+    document.querySelectorAll(".guide-focus").forEach((element) => element.classList.remove("guide-focus"));
+    guideTarget = null;
+    els.guide.classList.remove("show");
+    els.guideArrow.classList.remove("show");
+    els.guessButton.classList.remove("tutorial");
+  }
+
+  function showGuessGuide() {
+    if (state.guessGuideShown || state.ended) return;
+    state.guessGuideShown = true;
+    els.guessButton.classList.add("tutorial");
+    showAnchoredGuide("紫の札から相手の秘密札を選べます", els.guessButton, "above");
+    els.guessButton.classList.add("tutorial");
+  }
+
+  function playPlayerQuestion(questionId, options = {}) {
+    if (state.phase !== "player_choose" || state.ended) return false;
+    const question = questionById(questionId);
+    if (!question || !state.cpuSecret) return false;
+    if (state.dealActive) completeDealOnboarding();
+    hideGuide();
+    state.tutorialStep = Math.max(state.tutorialStep, 2);
+    state.lastQuestion = question;
+    state.lastAnswer = null;
+    state.markable = new Set();
+    setPhase("opponent_thinking");
+    showTableCard(question, "player");
+    setOpponent("thinking", randomFrom(activePack.opponentLines.thinking));
+    const finish = () => {
+      const answer = attrAnswer(state.cpuSecret, question);
+      state.lastAnswer = answer;
+      showAnswer(answer);
+      setOpponent(answer ? "answer-yes" : "answer-no", randomFrom(answer ? activePack.opponentLines.yes : activePack.opponentLines.no));
+      const excluded = activePack.items.filter((item) => state.playerRemaining.has(item.id) && attrAnswer(item, question) !== answer).map((item) => item.id);
+      state.markable = new Set(excluded);
+      replaceUsedQuestion(question.id);
+      if (state.course === "beginner") {
+        setPhase("player_mark");
+        if (state.tutorialStep === 2) showMarkGuide();
+      } else {
+        setPhase("player_end");
+        if (state.tutorialStep === 2) showAdvancedEndGuide();
+      }
+    };
+    if (options.immediate) finish();
+    else later(finish, 780);
+    return true;
+  }
+
+  function replaceUsedQuestion(questionId) {
+    const pool = activePack.questions.filter((question) => question.id !== questionId && !state.hand.includes(question.id));
+    state.hand = state.hand.filter((id) => id !== questionId);
+    const next = randomFrom(pool);
+    if (next) state.hand.push(next.id);
+    if (state.hand.length === 0 && activePack.questions.length) state.hand.push(randomFrom(activePack.questions).id);
+  }
+
+  function toggleCandidate(itemId) {
+    if (state.course !== "beginner" || !state.markable.has(itemId) || state.ended) return;
+    if (state.playerMarks.has(itemId)) {
+      state.playerMarks.delete(itemId);
+      state.playerRemaining.add(itemId);
+    } else {
+      state.playerMarks.add(itemId);
+      state.playerRemaining.delete(itemId);
+      playTone(245, 0.055);
+    }
+    renderCandidates();
+    if (state.tutorialStep === 2) showEndGuide();
+  }
+
+  function endPlayerTurn() {
+    if (!["player_mark","player_end"].includes(state.phase) || state.ended) return;
+    hideGuide();
+    state.tutorialStep = 99;
+    state.markable = new Set();
+    renderCandidates();
+    clearTableCard();
+    beginCpuTurn();
+  }
+
+  function splitScore(question, ids) {
+    const items = ids.map(itemById).filter(Boolean);
+    if (!items.length) return Number.POSITIVE_INFINITY;
+    const yes = items.filter((item) => attrAnswer(item, question)).length;
+    return Math.abs(items.length / 2 - yes);
+  }
+
+  function chooseCpuQuestion() {
+    const ids = [...state.cpuRemaining];
+    const ranked = [...activePack.questions].sort((a, b) => splitScore(a, ids) - splitScore(b, ids));
+    const shortlist = ranked.slice(0, Math.min(3, ranked.length));
+    return randomFrom(shortlist) || activePack.questions[0];
+  }
+
+  function beginCpuTurn() {
+    if (state.ended) return;
+    setPhase("cpu_thinking");
+    setOpponent("thinking", randomFrom(activePack.opponentLines.thinking));
+    els.statusText.textContent = "相手が手札から質問を選んでいる";
+    later(() => {
+      const question = chooseCpuQuestion();
+      if (!question) returnPlayerTurn();
+      else {
+        state.lastQuestion = question;
+        showTableCard(question, "cpu");
+        setOpponent("asking", randomFrom(activePack.opponentLines.asks));
+        setPhase("player_answer");
+      }
+    }, 730);
+  }
+
+  function answerCpu(reply) {
+    if (state.phase !== "player_answer" || !state.lastQuestion || state.ended) return;
+    const selected = reply === "yes";
+    const actual = attrAnswer(state.playerSecret, state.lastQuestion);
+    if (selected !== actual) {
+      showImpact({
+        alternate:true, symbol:"↺", title:"秘密札をもう一度見る",
+        copy:"今の答えとはちがうようです。はい／いいえを、もう一回選べます。",
+        duration:1000, onDone:() => setPhase("player_answer")
+      });
+      return;
+    }
+    state.cpuTurns += 1;
+    state.cpuRemaining = new Set([...state.cpuRemaining].filter((id) => attrAnswer(itemById(id), state.lastQuestion) === actual));
+    renderCpuRack();
+    showAnswer(actual);
+    setOpponent(actual ? "answer-yes" : "answer-no", "答えを受け取ったよ。");
+    setPhase("cpu_resolve");
+    later(() => maybeCpuGuess(), 650);
+  }
+
+  function maybeCpuGuess() {
+    if (state.ended) return;
+    const ids = [...state.cpuRemaining];
+    const canStillSplit = activePack.questions.some((question) => {
+      const yes = ids.filter((id) => attrAnswer(itemById(id), question)).length;
+      return yes > 0 && yes < ids.length;
+    });
+    const shouldGuess = ids.length === 1 || !canStillSplit || (ids.length <= 2 && state.cpuTurns >= 3 && Math.random() < 0.45);
+    if (!shouldGuess) {
+      returnPlayerTurn();
+      return;
+    }
+    const guessId = randomFrom(ids);
+    const correct = guessId === state.playerSecret.id;
+    if (correct) {
+      const remaining = state.cpuRemaining.size;
+      state.ended = true;
+      setPhase("ended");
+      setOpponent("win", `候補${remaining}枚から「${state.playerSecret.label}」だ。${randomFrom(activePack.opponentLines.gentleWin)}`);
+      showImpact({
+        alternate:true, symbol:"◇", title:"相手が秘密札を見つけた",
+        copy:`相手は候補${remaining}枚から、あなたの秘密札「${state.playerSecret.label}」を言い当てた。盤を囲んだ一局はここまで。`,
+        reveal:state.playerSecret,
+        result:true
+      });
+    } else {
+      state.cpuRemaining.delete(guessId);
+      renderCpuRack();
+      const remaining = state.cpuRemaining.size;
+      setOpponent("answer-no", "ちがった。外した札は伏せるね。");
+      showImpact({
+        alternate:true, symbol:"↺", title:"相手の読みは外れた",
+        copy:`相手は外した札を伏せ、候補はあと${remaining}枚。あなたの手番へ戻ります。`,
+        duration:1100,
+        onDone:() => returnPlayerTurn(`外した札を伏せた。候補はあと${remaining}枚。次はどの質問？`)
+      });
+    }
+  }
+
+  function returnPlayerTurn(opponentLine = "") {
+    if (state.ended) return;
+    state.round += 1;
+    state.markable = new Set();
+    clearTableCard();
+    setOpponent("neutral", opponentLine || (state.cpuTurns > 0
+      ? `候補を${state.cpuRemaining.size}枚までしぼった。次はどの質問？`
+      : randomFrom(activePack.opponentLines.ready)));
+    setPhase("player_choose");
+    showGuessGuide();
+  }
+
+  function openGuess() {
+    if (state.phase !== "player_choose" || state.ended) return;
+    hideGuide();
+    els.guessOverlay.classList.add("show");
+    state.phase = "player_guess";
+    renderTurn();
+  }
+
+  function closeGuess() {
+    if (state.ended) return;
+    els.guessOverlay.classList.remove("show");
+    state.phase = "player_choose";
+    renderTurn();
+  }
+
+  function resolvePlayerGuess(itemId) {
+    if (state.phase !== "player_guess" || state.ended) return;
+    const guessed = itemById(itemId);
+    if (!guessed || !state.cpuSecret) return;
+    els.guessGrid.querySelectorAll(".picked").forEach((button) => button.classList.remove("picked"));
+    els.guessOverlay.classList.remove("show");
+    const correct = guessed.id === state.cpuSecret.id;
+    if (correct) {
+      state.ended = true;
+      setPhase("ended");
+      setOpponent("answer-yes", "読み切られたね。対戦ありがとう。");
+      showImpact({
+        alternate:false, symbol:"◆", title:"読み切った！",
+        copy:`相手の秘密札は「${guessed.label}」。質問で候補をしぼり切りました。`,
+        reveal:guessed,
+        result:true
+      });
+    } else {
+      setOpponent("answer-no", randomFrom(activePack.opponentLines.wrongGuess));
+      showImpact({
+        alternate:true, symbol:"↺", title:"まだ別の札が立っている",
+        copy:`「${guessed.label}」ではありませんでした。そのままもう一回選べます。`,
+        duration:1100,
+        onDone:() => {
+          state.phase = "player_choose";
+          setOpponent("neutral", randomFrom(activePack.opponentLines.ready));
+          renderTurn();
+        }
+      });
+    }
+  }
+
+  function showImpact({alternate=false,symbol,title,copy,duration=0,onDone=null,result=false,reveal=null}) {
+    clearTimer();
+    els.impactOverlay.className = `impact-overlay show${alternate ? " alt" : ""}`;
+    els.impactSymbol.textContent = symbol;
+    els.impactTitle.textContent = title;
+    els.impactCopy.textContent = copy;
+    els.resultReveal.hidden = true;
+    if (result && reveal) {
+      els.resultRevealLabel.textContent = reveal.label;
+      els.resultRevealGroup.textContent = reveal.group;
+      void els.resultReveal.offsetWidth;
+      els.resultReveal.hidden = false;
+    }
+    els.resultActions.classList.toggle("show", result);
+    if (result) {
+      els.impactOverlay.style.pointerEvents = "auto";
+    } else {
+      els.impactOverlay.style.pointerEvents = "none";
+      later(() => {
+        els.impactOverlay.className = "impact-overlay";
+        if (onDone) onDone();
+      }, duration);
+    }
+  }
+
+  function switchToBeginner() {
+    if (!state.course) {
+      showCourseOverlay();
+      return;
+    }
+    if (state.course === "beginner") {
+      els.rackNote.textContent = `${activePack.items.length - state.playerMarks.size}枚が立っている`;
+      return;
+    }
+    state.course = "beginner";
+    els.courseButton.textContent = "初級・メモあり";
+    renderCandidates();
+    showAnchoredGuide("初級では候補札を倒せます", els.rackWrap, "above");
+  }
+
+  function showCourseOverlay() {
+    if (!state.course) {
+      els.courseOverlay.hidden = false;
+      els.courseOverlay.style.display = "grid";
+      return;
+    }
+    if (state.course === "advanced") {
+      switchToBeginner();
+    } else {
+      showAnchoredGuide("初級では候補札を倒せます", els.rackWrap, "above");
+    }
+  }
+
+  function renderTopicCards() {
+    els.topicCards.innerHTML = "";
+    DATA.forEach((pack, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "topic-card";
+      button.dataset.packId = pack.id;
+      button.style.setProperty("--topic-tilt", `${index % 2 ? 1 : -1}deg`);
+      const chip = document.createElement("span");
+      chip.className = "topic-chip";
+      chip.textContent = `${pack.groups.length}つのなかま`;
+      const title = document.createElement("h2");
+      title.textContent = pack.label;
+      const count = document.createElement("span");
+      count.className = "topic-count";
+      count.textContent = `候補札 ${pack.items.length}枚 ／ 質問札 ${pack.questions.length}種類`;
+      const go = document.createElement("span");
+      go.className = "topic-go";
+      go.textContent = "この題材へ →";
+      button.append(chip, title, count, go);
+      bindPress(button, () => selectPack(pack.id, button));
+      els.topicCards.appendChild(button);
+    });
+  }
+
+  function selectPack(packId, sourceButton = null) {
+    const pack = DATA.find((entry) => entry.id === packId);
+    if (!pack) return false;
+    const applySelection = () => {
+      clearTimer();
+      activePack = pack;
+      state.packId = pack.id;
+      state.course = null;
+      state.phase = "course";
+      state.ended = false;
+      els.courseKicker.textContent = pack.label;
+      els.topicOverlay.hidden = true;
+      els.topicOverlay.style.display = "none";
+      els.courseOverlay.hidden = false;
+      els.courseOverlay.style.display = "grid";
+      previewBoard();
+    };
+    if (sourceButton) return animateCardChoice(sourceButton, applySelection);
+    applySelection();
+    return true;
+  }
+
+  function showTopicOverlay() {
+    clearTimer();
+    hideGuide();
+    state.packId = null;
+    state.course = null;
+    state.phase = "topic";
+    state.ended = false;
+    els.courseOverlay.hidden = true;
+    els.courseOverlay.style.display = "none";
+    els.topicOverlay.hidden = false;
+    els.topicOverlay.style.display = "grid";
+    previewBoard();
+  }
+
+  function newSameCourse() {
+    startGame(state.course || "beginner");
+  }
+
+  function reselectCourse() {
+    clearTimer();
+    state.ended = false;
+    state.course = null;
+    state.phase = "course";
+    els.impactOverlay.className = "impact-overlay";
+    els.impactOverlay.style.pointerEvents = "none";
+    els.resultActions.classList.remove("show");
+    els.courseOverlay.hidden = false;
+    els.courseOverlay.style.display = "grid";
+    previewBoard();
+  }
+
+  function previewBoard() {
+    els.gameTitle.textContent = activePack.title;
+    state.hand = activePack.questions.slice(0, Math.min(5, activePack.questions.length)).map((question) => question.id);
+    state.playerMarks = new Set();
+    state.markable = new Set();
+    state.cpuRemaining = new Set(activePack.items.map((item) => item.id));
+    state.ended = false;
+    els.secretLabel.textContent = "秘密札";
+    els.secretGroup.textContent = "対戦前";
+    setOpponent("neutral", randomFrom(activePack.opponentLines.ready));
+    renderQuestions();
+    renderCandidates();
+    renderCpuRack();
+    renderGuessGrid();
+    renderTurn();
+  }
+
+  function validatePack(pack) {
+    const idsUnique = new Set(pack.items.map((item) => item.id)).size === pack.items.length;
+    const questionIdsUnique = new Set(pack.questions.map((question) => question.id)).size === pack.questions.length;
+    const attributesComplete = pack.items.every((item) =>
+      pack.questions.every((question) => typeof item.attrs?.[question.key] === "boolean")
+    );
+    const splitQuestions = pack.questions.map((question) => {
+      const yes = pack.items.filter((item) => item.attrs[question.key]).length;
+      return {id:question.id,yes,no:pack.items.length - yes,ok:yes > 0 && yes < pack.items.length};
+    });
+    const secrets = pack.items.map((secret) => {
+      let remaining = [...pack.items];
+      const unused = [...pack.questions];
+      let turns = 0;
+      let survived = true;
+      while (remaining.length > 1 && turns < pack.items.length + pack.questions.length) {
+        const useful = unused
+          .map((question) => {
+            const yes = remaining.filter((item) => item.attrs[question.key]).length;
+            return {question,yes,score:Math.abs(remaining.length / 2 - yes)};
+          })
+          .filter((entry) => entry.yes > 0 && entry.yes < remaining.length)
+          .sort((a, b) => a.score - b.score)[0];
+        if (useful) {
+          unused.splice(unused.indexOf(useful.question), 1);
+          const answer = secret.attrs[useful.question.key];
+          remaining = remaining.filter((item) => item.attrs[useful.question.key] === answer);
+        } else {
+          const removable = remaining.find((item) => item.id !== secret.id);
+          if (removable) remaining = remaining.filter((item) => item.id !== removable.id);
+        }
+        survived = survived && remaining.some((item) => item.id === secret.id);
+        turns += 1;
+      }
+      return {id:secret.id,survived,resolved:remaining.length === 1 && remaining[0].id === secret.id,turns};
+    });
+    return {
+      ok: idsUnique && questionIdsUnique && attributesComplete &&
+        splitQuestions.every((entry) => entry.ok) &&
+        secrets.every((entry) => entry.survived && entry.resolved),
+      idsUnique,
+      questionIdsUnique,
+      attributesComplete,
+      splitQuestions,
+      secrets
+    };
+  }
+
+  function runSelfTest() {
+    const originalPack = activePack;
+    const originalPackId = state.packId;
+    const originalCourse = state.course;
+    const packs = [];
+    try {
+      DATA.forEach((pack) => {
+        activePack = pack;
+        state.packId = pack.id;
+        startGame("beginner", {skipTutorial:true});
+        const beforePhase = state.phase;
+        const questionId = state.hand[0];
+        const question = questionById(questionId);
+        const ran = playPlayerQuestion(questionId, {immediate:true});
+        const engine = {
+          questionPlayed: ran && beforePhase === "player_choose",
+          answerShown: typeof state.lastAnswer === "boolean",
+          nextPhase: ["player_mark","player_end"].includes(state.phase),
+          cardsRendered: els.candidateRack.children.length === pack.items.length
+        };
+        const data = validatePack(pack);
+        packs.push({
+          id:pack.id,
+          ok:data.ok && Object.values(engine).every(Boolean),
+          engine,
+          data
+        });
+      });
+      const ok = packs.every((pack) => pack.ok);
+      return {
+        ok,
+        packs,
+        ops:["pointerdown","key"],
+        ran:"question-card-all-packs",
+        state:`${packs.length}パックで質問札を出し、全お題の決着を検証`
+      };
+    } catch (error) {
+      return {ok:false,packs,checks:[`例外: ${error && error.message ? error.message : String(error)}`]};
+    } finally {
+      clearTimer();
+      activePack = originalPack;
+      state.packId = originalPackId;
+      state.course = originalCourse;
+      if (originalPackId && originalCourse) {
+        els.topicOverlay.hidden = true;
+        els.topicOverlay.style.display = "none";
+        els.courseOverlay.hidden = true;
+        els.courseOverlay.style.display = "none";
+        startGame(originalCourse, {skipTutorial:true});
+      } else if (originalPackId) {
+        state.phase = "course";
+        els.topicOverlay.hidden = true;
+        els.topicOverlay.style.display = "none";
+        els.courseOverlay.hidden = false;
+        els.courseOverlay.style.display = "grid";
+        previewBoard();
+      } else {
+        state.phase = "topic";
+        els.courseOverlay.hidden = true;
+        els.courseOverlay.style.display = "none";
+        els.topicOverlay.hidden = false;
+        els.topicOverlay.style.display = "grid";
+        previewBoard();
+      }
+    }
+  }
+
+  document.querySelectorAll("[data-course]").forEach((button) => {
+    bindPress(button, () => {
+      animateCardChoice(button, () => {
+        const course = button.dataset.course;
+        startGame(course);
+        els.courseButton.textContent = course === "beginner" ? "初級・メモあり" : "初級へ切替";
+      });
+    });
+  });
+  document.querySelectorAll("[data-reply]").forEach((button) => bindPress(button, () => answerCpu(button.dataset.reply)));
+  bindPress(els.turnEndButton, endPlayerTurn);
+  bindPress(els.guessButton, openGuess);
+  bindPress(els.closeGuess, closeGuess);
+  bindPress(els.guideClose, dismissGuide);
+  bindPress(els.dealSkip, skipDealSequence);
+  bindPress(els.courseButton, showCourseOverlay);
+  bindPress(els.topicBackButton, showTopicOverlay);
+  bindPress(els.soundButton, toggleSound);
+  bindPress(els.againButton, newSameCourse);
+  bindPress(els.reselectButton, reselectCourse);
+  window.addEventListener("resize", updateGuidePosition);
+  window.addEventListener("scroll", updateGuidePosition, true);
+
+  safeSoundLoad();
+  renderTopicCards();
+  previewBoard();
+
+  /* §4 検品用フック（削除禁止・アプリの動作には影響しない） */
+  window.__APPTEST__ = runSelfTest;
+})();
+</script>
+</body>
+</html>
