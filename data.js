@@ -3229,12 +3229,7 @@ const GameData = (function() {
       { id:'ninja',   name:'理科忍者',   emoji:'🥷' },
       { id:'hero',    name:'科学ヒーロー', emoji:'🦸' },
       { id:'fairy',   name:'精霊',       emoji:'🧚' },
-      { id:'penguin', name:'実験ペンギン', emoji:'🐧' },
-      // いらすとや枠（ユーザー差し込み・絵柄やわらか）
-      { id:'irasuto_boy',  name:'男の子', emoji:'👦' },
-      { id:'irasuto_girl', name:'女の子', emoji:'👧' },
-      { id:'irasuto_cat',  name:'ねこ',   emoji:'🐈' },
-      { id:'irasuto_dog',  name:'いぬ',   emoji:'🐕' }
+      { id:'penguin', name:'実験ペンギン', emoji:'🐧' }
     ];
 
     // ==========================================
