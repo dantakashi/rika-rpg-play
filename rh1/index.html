@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#fbfaf4" />
+        <meta name="description" content="3分間動き続ける、教室向けの小さな遊び" />
+        <title>ミニ生存ゲーム</title>
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <main id="gameContainer" aria-label="ミニ生存ゲーム">
+            <canvas id="gameCanvas" width="960" height="540" tabindex="0" aria-label="遊びの画面"></canvas>
+
+            <section id="hud" aria-label="今の様子" hidden>
+                <div class="hud-card hud-left">
+                    <div>時間 <strong id="timeValue">00:00</strong></div>
+                    <div>体力 <strong id="hpValue">100</strong></div>
+                    <div class="meter"><span id="hpBar"></span></div>
+                    <div>成長 <strong id="levelValue">1</strong></div>
+                    <div class="meter meter-blue"><span id="expBar"></span></div>
+                </div>
+                <div class="hud-card hud-right">
+                    <div>倒した数 <strong id="killsValue">0</strong></div>
+                    <div>敵の数 <strong id="enemyValue">0</strong></div>
+                    <div>粒 <strong id="gemValue">0</strong></div>
+                    <div class="weapon-mark" title="武器">✦ 光の玉</div>
+                </div>
+            </section>
+
+            <div id="perf" class="perf" hidden></div>
+
+            <section id="qOverlay" class="quiz-overlay" hidden aria-hidden="true" aria-label="出題">
+                <div class="quiz-card">
+                    <div id="qhead" class="quiz-head"></div>
+                    <p id="qctx" class="quiz-context"></p>
+                    <h2 id="qq" class="quiz-question"></h2>
+                    <div id="qimg" class="quiz-image" aria-hidden="true"></div>
+                    <div id="qans" class="quiz-answers" role="group" aria-label="答えの選択肢"></div>
+                    <div id="qfeed" class="quiz-feedback" hidden></div>
+                </div>
+            </section>
+
+            <section id="startScreen" class="screen" aria-labelledby="startTitle">
+                <div class="card">
+                    <p class="eyebrow">リハーサル1</p>
+                    <h1 id="startTitle">ミニ生存ゲーム</h1>
+                    <div class="note-fields" aria-label="ノートの欄">
+                        <span>日付 <b>＿＿＿＿＿＿</b></span>
+                        <span>題名 <b>ゲームのノート</b></span>
+                    </div>
+                    <p>3分間、動き続けよう。光の玉が近い敵を自動でねらいます。</p>
+                    <div class="rule-box">
+                        <div>赤い丸：追う子</div>
+                        <div>紫のひし形：ふらふら子</div>
+                        <div>キーボード：WASD / 矢印</div>
+                        <div>タッチ：左下の丸を動かす</div>
+                    </div>
+                    <div class="button-row">
+                        <button id="startButton" class="primary">はじめる</button>
+                        <button id="soundButton" class="secondary" type="button" aria-pressed="false">音：切</button>
+                    </div>
+                    <p class="small-note">音を入れると、その場で短い音が一つ鳴ります。音の設定だけ保存します。</p>
+                </div>
+            </section>
+
+            <section id="resultScreen" class="screen" hidden aria-labelledby="resultTitle">
+                <div class="card result-card">
+                    <p class="eyebrow">今回の結果</p>
+                    <h2 id="resultTitle">勝ち</h2>
+                    <p id="resultMessage"></p>
+                    <div class="result-grid">
+                        <span>生きた時間</span><strong id="resultTime">00:00</strong>
+                        <span>倒した数</span><strong id="resultKills">0</strong>
+                    </div>
+                    <div class="button-row">
+                        <button id="retryButton" class="primary">もう一度</button>
+                        <button id="menuButton" class="secondary">最初の画面へ</button>
+                    </div>
+                </div>
+            </section>
+
+            <div id="joystick" class="joystick" aria-label="移動用の丸" role="application">
+                <div id="joystickKnob" class="joystick-knob"></div>
+            </div>
+        </main>
+        <script src="./src/config.js"></script>
+        <script src="./src/data.js"></script>
+        <script src="./src/audio.js"></script>
+        <script src="./src/effects.js"></script>
+        <script src="./src/entities.js"></script>
+        <script src="./src/input.js"></script>
+        <script src="./src/camera.js"></script>
+        <script src="./src/pool.js"></script>
+        <script src="./src/spatial-hash.js"></script>
+        <script src="./src/storage.js"></script>
+        <script src="./src/systems.js"></script>
+        <script src="./src/ui.js"></script>
+        <script src="./src/weapons.js"></script>
+        <script src="./src/quiz-stub.js"></script>
+        <script src="./src/notebook.js"></script>
+        <script src="./src/main.js"></script>
+        <script>
+            window.Game.boot();
+        </script>
+    </body>
+</html>
