@@ -1,0 +1,4 @@
+# 検収用の一時公開物は追跡しない（2026-08-29）
+# ★配布リポは Public + GitHub Pages。内部メモ・検収残骸を置かない（CLAUDE.md 開発ルール）
+four-symbols-test/
+zukan/
