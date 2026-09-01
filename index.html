@@ -87,6 +87,7 @@
   .ic-soon {background:linear-gradient(160deg,#5b667c,#2f3a4f)}
   .ic-sengoku{background:linear-gradient(160deg,#fb923c,#9a3412)}
   .ic-numsense{background:linear-gradient(160deg,#c084fc,#7c3aed)}
+  .ic-quiz{background:linear-gradient(160deg,#f6d365,#b8860b)}
   .app.soon{cursor:default}
   .app.soon:active{transform:none}
   .badge-beta{position:absolute; right:-3px; top:-3px; background:#f87171; color:#fff; font-size:8px; font-weight:800;
@@ -272,6 +273,7 @@
     {key:'sengoku', label:'偉人トレーナー',  icon:'🗾', cls:'ic-sengoku', href:'sengoku/index.html',    cat:'social', beta:true},
     {key:'rika',  label:'理科RPG',        icon:'🧪', cls:'ic-rika',  href:RIKA,                      cat:'science'},
     {key:'rika2', label:'理科RPG2',       icon:'⚔️', cls:'ic-rika',  href:'rika2/demo.html',         cat:'science', beta:true},  // 体験版(あいことば付き・dev/prod共通の相対パス)
+    {key:'quizbattle', label:'あてっこ対戦', icon:'🃏', cls:'ic-quiz', href:'quizbattle/index.html',  cat:'other'},  // 全教科105題材の対面カードバトル（2026-09-02 掲載・実体は rika2/apps/quizbattle/dist）
     {key:'data',  label:'データ',          icon:'💾', cls:'ic-data',  action:'data',                  cat:'tool'},
   ];
 
@@ -282,7 +284,7 @@
     {cat:'english',  em:'🔤', name:'英語',   color:'#a78bfa'},
     {cat:'social',   em:'🌏', name:'社会',   color:'#fb923c'},
     {cat:'science',  em:'🔬', name:'理科',   color:'#26e58c'},
-    {cat:'other',    em:'✨', name:'その他', color:'#94a3b8'},
+    {cat:'other',    em:'✨', name:'いろんな教科', color:'#94a3b8'},   // 教科をまたぐアプリの枠（あてっこ対戦が最初の住人・2026-09-02）
     {cat:'tool',     em:'⚙️', name:'ツール', color:'#34e0f0'},
   ];
   var FRAMES_PER_PAGE = 4; // 1ページに収める枠の数（縦に収まる範囲）
@@ -365,6 +367,7 @@
     {key:'run',   name:'割れる数ラン',    icon:'🏃', cls:'ic-run'},
     {key:'merge', name:'そすうマージ',    icon:'🔢', cls:'ic-merge'},
     {key:'numsense', name:'数の第六感',   icon:'🔮', cls:'ic-numsense'},
+    {key:'quizbattle', name:'あてっこ対戦', icon:'🃏', cls:'ic-quiz'},
   ];
   var AVATARS=['🧑‍🎓','👦','👧','🦊','🐱','🐼','🐸','🐯','🤖','🦖','🐧','🦉'];
   function hubLoad(){ try{return JSON.parse(localStorage.getItem(HKEY))||{};}catch(e){return{};} }
@@ -531,6 +534,13 @@
   // ★運用ルール: ポータルやゲームを更新して生徒に配信したら、必ず UPDATES の
   //   先頭に1件追加すること（date=配信日 / title / body=やさしい言葉の箇条書き）。
   var UPDATES = [
+    { date:'2026-09-02', title:'新作「あてっこ対戦」が とうじょう🃏 ぜんぶの教科で あそべる', body:[
+      '🃏 <b>質問カードで、相手の「ひみつの札」を あてる 対戦ゲーム</b>です。理科・社会・英語・国語・数学・音楽や美術・くらしの <b>105の題材</b>から えらべます。',
+      '🐣 はじめての人は、<b>「つぎへ」を おしながら</b> あそびかたを 見られます。自分の ペースで だいじょうぶ。',
+      '🏅 勝つと <b>称号（しょうごう）</b>が もらえます。ぜんぶで 15こ。負けても なくなりません。',
+      '📱 Chromebook でも スマホでも あそべます。ポータルの <b>「いろんな教科」</b>の わくに あります。',
+      '🐛 へんな所が あったら 教えてください。',
+    ]},
     { date:'2026-08-05', title:'理科RPG：じぶんのアイコンが 12しゅるいに なりました', body:[
       '🧪 じぶんの アイコンから <b>4つ（男の子・女の子・ねこ・いぬ）を なくしました</b>。のこりは 12しゅるいです。',
       '✏️ その えを かいた人との <b>やくそく</b>で、このアプリでは つかえないことが わかったためです。',
