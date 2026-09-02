@@ -653,6 +653,21 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 .net-panel input{width:100%;min-height:48px;margin:0 0 8px;padding:6px 10px;border:2px solid #8a6a2f;border-radius:9px;font-size:26px;font-weight:1000;letter-spacing:.3em;text-align:center;text-transform:uppercase;color:var(--ink);background:#fff}
 .net-foot{margin:10px 0 0;font-size:11px;font-weight:800;color:#6f5a39;line-height:1.45}
 @media (max-width:760px){.net-panels{grid-template-columns:1fr}.net-code strong{font-size:30px}}
+/* 履歴（この一局の質問と答え） */
+.history-btn{position:absolute;z-index:7;left:14px;bottom:14px;min-height:38px;padding:5px 11px;font-size:12px;font-weight:900;
+  border:2px solid #cfb16b;border-radius:9px;color:var(--ink);background:rgba(255,245,213,.94);box-shadow:0 4px 0 rgba(47,27,16,.35);cursor:pointer}
+.history-btn:active{transform:translateY(2px);box-shadow:none}
+.history-sheet{width:min(720px,95vw)}
+.history-list{list-style:none;margin:0;padding:2px;display:grid;gap:6px;max-height:min(60vh,460px);overflow-y:auto}
+.history-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 12px;border:2px solid #c9b48c;border-radius:10px;background:#fffdf6;color:var(--ink);font-weight:800;font-size:13px;line-height:1.4;text-align:left}
+.history-item.cpu{background:#eef4f3;border-color:#9dbbb8}
+.history-item .who{font-size:11px;font-weight:1000;padding:2px 8px;border-radius:999px;background:#8a6a2f;color:#fff;white-space:nowrap}
+.history-item.cpu .who{background:#326d6b}
+.history-item .ans{font-size:15px;font-weight:1000;white-space:nowrap}
+.history-item .ans.yes{color:#1f6f78}.history-item .ans.no{color:#a6402f}.history-item .ans.plain{font-size:12px;color:#5c5340}
+.history-item .left{display:block;margin-top:2px;font-size:11px;font-weight:900;color:#a6402f}
+.history-empty{padding:14px;text-align:center;color:#6f5a39;font-weight:800}
+@media (max-width:760px){.history-btn{min-height:44px;bottom:8px;left:8px}}
 .deal-skip{
   position:fixed;z-index:123;right:18px;bottom:18px;min-height:42px;padding:8px 14px;
   border:2px solid #fff0a2;border-radius:999px;color:#fff;background:#173d43;
@@ -1121,6 +1136,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 
     <section class="arena" id="arena" aria-label="質問札を出す中央の場">
       <div class="status-scroll" id="statusText">コースを選ぶと対戦開始</div>
+      <button type="button" class="history-btn" id="historyButton" aria-haspopup="dialog">📜 履歴 <span id="historyCount">0</span></button>
       <div class="deck-zone" id="deckZone" aria-label="共通の山札と捨て札">
         <div class="card-pile deck-pile" id="deckPile"><span class="pile-card"></span><span class="pile-count" id="deckCount">0</span><span class="pile-label">共通山札</span></div>
         <div class="card-pile discard-pile" id="discardPile"><span class="pile-card"></span><span class="pile-count" id="discardCount">0</span><span class="pile-label">捨て札</span></div>
@@ -1244,6 +1260,16 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     </div>
   </section>
 
+  <section class="modal-overlay" id="historyOverlay" aria-modal="true" role="dialog" aria-labelledby="historyTitle">
+    <div class="guess-sheet history-sheet">
+      <div class="guess-head">
+        <div><h2 id="historyTitle">📜 この一局の履歴</h2><p id="historyLead">質問と答え、使ったマジック、当てた札。「倒せる」が出ている札は、いまの番に倒せます。</p></div>
+        <button type="button" class="small-btn sheet" id="closeHistory">とじる</button>
+      </div>
+      <ol class="history-list" id="historyList"></ol>
+    </div>
+  </section>
+
   <section class="modal-overlay" id="netOverlay" aria-modal="true" role="dialog" aria-labelledby="netTitle">
     <div class="guess-sheet net-sheet">
       <div class="guess-head">
@@ -1348,6 +1374,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     titlesOverlay:$("#titlesOverlay"), titlesList:$("#titlesList"), titlesSummary:$("#titlesSummary"),
     closeTitles:$("#closeTitles"), resetRecordButton:$("#resetRecordButton"),
     tutorialToggle:$("#tutorialToggle"), portalLinks:document.querySelectorAll(".portal-link"),
+    historyButton:$("#historyButton"), historyCount:$("#historyCount"), historyOverlay:$("#historyOverlay"), historyList:$("#historyList"), closeHistory:$("#closeHistory"),
     netOpenButton:$("#netOpenButton"), netOverlay:$("#netOverlay"), closeNet:$("#closeNet"), netTopicName:$("#netTopicName"),
     netCourses:$("#netCourses"), netHostButton:$("#netHostButton"), netJoinButton:$("#netJoinButton"), netCodeInput:$("#netCodeInput"),
     netCodeBox:$("#netCodeBox"), netCode:$("#netCode"), netHostStatus:$("#netHostStatus"), netJoinStatus:$("#netJoinStatus"), netFoot:$("#netFoot")
@@ -1907,6 +1934,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     discardFromHand("cpu", card.uid);
     renderCpuHand();
     state.cpuTurnMagicId = magic.id;
+    pushHistory({who:"cpu", kind:"magic", text:magic.label});
     showMagicTableCard(magic, "cpu");
     pulseDeck();
     if (magic.id === "double_question") {
@@ -1933,6 +1961,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     const guessed = itemById(itemId);
     if (!guessed || !state.playerSecret || state.ended) return;
     state.cpuGuessesThisTurn += 1;
+    pushHistory({who:"cpu", kind:"guess", text:guessed.label, answer:itemId === state.playerSecret.id});
     if (itemId === state.playerSecret.id) {
       state.ended = true;
       setPhase("ended");
@@ -2027,7 +2056,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     markable:new Set(), playerHand:[], cpuHand:[], deck:[], discard:[], cardSerial:0,
     lastQuestion:null, lastAnswer:null, questionsPlayedThisTurn:0, questionAllowance:1,
     cpuQuestionsPlayed:0, cpuQuestionAllowance:1, cpuDoubleActive:false,
-    cpuTurns:0, tutorialStep:0, guessGuideShown:false, answerGuideShown:false, wrongGuesses:0, wrongMarkTries:0, wrongFalls:0, secretFallen:false, pendingQuestion:null, guessesThisTurn:0, guessLimit:1,
+    cpuTurns:0, tutorialStep:0, guessGuideShown:false, answerGuideShown:false, wrongGuesses:0, wrongMarkTries:0, wrongFalls:0, secretFallen:false, pendingQuestion:null, history:[], knownAnswers:[], guessesThisTurn:0, guessLimit:1,
     cpuGuessesThisTurn:0, cpuGuessLimit:1, turnMagicId:null, cpuTurnMagicId:null,
     guessMode:"normal", twoChoiceIds:[], tradeCpuUid:null, tradePlayerUid:null,
     candidateLocks:new Set(), wrongAnswerPenaltyDraws:0,
@@ -2229,6 +2258,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   function setPhase(phase) {
     state.phase = phase;
     renderTurn();
+    syncCandidatePressability();   // 倒せるかどうかは局面で変わる（ハードは自分の番だけ）
   }
 
   function clearTimer() {
@@ -2612,6 +2642,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.wrongFalls = 0;
     state.secretFallen = false;
     state.pendingQuestion = null;
+    state.history = [];
+    state.knownAnswers = [];
+    els.historyCount.textContent = "0";
     state.guessesThisTurn = 0;
     state.guessLimit = 1;
     state.cpuGuessesThisTurn = 0;
@@ -2704,7 +2737,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     } else if (state.phase === "opponent_thinking") {
       els.statusText.textContent = "相手が質問札を読んでいる";
     } else if (state.phase === "player_mark") {
-      els.statusText.textContent = "答えと合わない候補札を押して倒せる";
+      els.statusText.textContent = "これまでの答えと合わない候補札を押して倒せる";
     } else if (state.phase === "player_end") {
       els.statusText.textContent = "答えを覚えたら、手番札を送る";
     } else if (cpuActive) {
@@ -2786,6 +2819,101 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     }
     card.appendChild(slot);
     return slot;
+  }
+
+  const myTurnPhase = () => ["player_choose","player_mark","player_end"].includes(state.phase);
+  // 倒せる札の判定。以前は直前の質問だけだったので、倒し忘れた札が次の手番から倒せなかった（2026-09-03 オーナー指摘）
+  function refreshMarkable() {
+    const known = state.knownAnswers
+      .map((entry) => ({question:questionById(entry.questionId), answer:entry.answer}))
+      .filter((entry) => entry.question);
+    state.markable = new Set(courseItems()
+      .filter((item) => known.some((entry) => attrAnswer(item, entry.question) !== entry.answer))
+      .map((item) => item.id));
+  }
+  // 倒し忘れ: これまでの答えと合わないのに、まだ立っている札
+  function forgottenCount() {
+    if (!difficulty().memo) return 0;
+    return [...state.markable].filter((id) => state.playerRemaining.has(id)).length;
+  }
+  function canPressCandidate(item) {
+    const setting = difficulty();
+    if (!setting.memo || state.ended || state.candidateLocks.has(item.id)) return false;
+    if (setting.freeMark) return myTurnPhase();
+    return true;   // ノーマルは押せば理由を言う（首を振る）
+  }
+  function syncCandidatePressability() {
+    const setting = difficulty();
+    els.candidateRack.querySelectorAll(".candidate-card").forEach((card) => {
+      const item = itemById(card.dataset.itemId);
+      if (!item) return;
+      const ok = canPressCandidate(item);
+      card.disabled = setting.details ? state.candidateLocks.has(item.id) : !ok;
+      card.setAttribute("aria-disabled", String(!ok));
+    });
+  }
+  // ---- 履歴 ----
+  function pushHistory(entry) {
+    state.history.push({round:state.round, ...entry});
+    els.historyCount.textContent = String(state.history.length);
+    if (els.historyOverlay.classList.contains("show")) renderHistory();
+  }
+  function renderHistory() {
+    els.historyList.innerHTML = "";
+    if (!state.history.length) {
+      const empty = document.createElement("li");
+      empty.className = "history-empty";
+      empty.textContent = "まだ何もありません。質問札を出すと、ここに答えが残ります。";
+      els.historyList.appendChild(empty);
+      return;
+    }
+    const showForgotten = difficulty().memo && !difficulty().freeMark;
+    state.history.forEach((entry) => {
+      const li = document.createElement("li");
+      li.className = `history-item${entry.who === "cpu" ? " cpu" : ""}`;
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = entry.who === "cpu" ? "相手" : "あなた";
+      const body = document.createElement("span");
+      const ans = document.createElement("span");
+      if (entry.kind === "q") {
+        body.textContent = entry.text;
+        ans.className = `ans ${entry.answer ? "yes" : "no"}`;
+        ans.textContent = entry.answer ? "はい" : "いいえ";
+        if (showForgotten && entry.who === "player") {
+          const question = activePack.questions.find((q) => q.text === entry.text);
+          const left = question ? courseItems().filter((item) => state.playerRemaining.has(item.id) && attrAnswer(item, question) !== entry.answer).length : 0;
+          if (left > 0 && !state.ended) {
+            const note = document.createElement("small");
+            note.className = "left";
+            note.textContent = `この答えで倒せる札が まだ ${left}枚 立っています`;
+            body.appendChild(note);
+          }
+        }
+      } else if (entry.kind === "magic") {
+        body.textContent = `マジック「${entry.text}」`;
+        ans.className = "ans plain";
+        ans.textContent = "使った";
+      } else if (entry.kind === "guess") {
+        body.textContent = `「${entry.text}」だ！`;
+        ans.className = `ans ${entry.answer ? "yes" : "no"}`;
+        ans.textContent = entry.answer ? "当たり" : "外れ";
+      } else if (entry.kind === "cancel") {
+        body.textContent = entry.text;
+        ans.className = "ans plain";
+        ans.textContent = "キャンセル";
+      }
+      li.append(who, body, ans);
+      els.historyList.appendChild(li);
+    });
+    els.historyList.scrollTop = els.historyList.scrollHeight;
+  }
+  function openHistory() {
+    renderHistory();
+    els.historyOverlay.classList.add("show");
+  }
+  function closeHistory() {
+    els.historyOverlay.classList.remove("show");
   }
 
   function candidateFeature(item) {
@@ -2873,7 +3001,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     window.setTimeout(() => document.addEventListener("pointerdown", release, true), 50);
   }
 
-  function bindCandidateInteraction(card, item, markable) {
+  function bindCandidateInteraction(card, item) {
     let holdTimer = 0;
     let heldForDetail = false;
     let moved = false;
@@ -2892,7 +3020,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     });
     card.addEventListener("pointerdown", (event) => {
       if (event.pointerType === "mouse") {
-        if (event.button === 0 && markable) toggleCandidate(item.id);
+        if (event.button === 0 && canPressCandidate(item)) toggleCandidate(item.id);
         return;
       }
       heldForDetail = false;
@@ -2920,7 +3048,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       if (activePointerId !== event.pointerId) return;
       activePointerId = null;
       stopTimer();
-      if (!moved && !heldForDetail && markable) toggleCandidate(item.id);
+      if (!moved && !heldForDetail && canPressCandidate(item)) toggleCandidate(item.id);
       if (heldForDetail) pinCandidateDetail();   // 以前は0.18秒で消えて読めなかった
       else window.setTimeout(() => hideCandidateDetail(), 0);
     });
@@ -2933,7 +3061,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     card.addEventListener("focus", () => showCandidateDetail(item, card));
     card.addEventListener("blur", () => hideCandidateDetail());   // event を force に渡さない（長押しで固定した札を消さない）
     card.addEventListener("keydown", (event) => {
-      if (markable && (event.key === "Enter" || event.key === " ")) {
+      if (canPressCandidate(item) && (event.key === "Enter" || event.key === " ")) {
         event.preventDefault();
         toggleCandidate(item.id);
       }
@@ -2969,7 +3097,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       const correct = setting.memo && state.markable.has(item.id) && !state.ended;   // 答えと合わない札＝倒してよい
       // ハード（freeMark）は光らせない＝どれを倒すかは自分で決める。まちがった札も倒せる（2026-09-02 オーナー指示）
       const markable = correct && !setting.freeMark;
-      const inMarkPhase = setting.memo && !state.ended && state.phase === "player_mark";
+      const inMarkPhase = setting.memo && !state.ended && myTurnPhase();
       card.classList.toggle("fallen", fallen);
       card.classList.toggle("markable", markable);
       if (state.tutorialStep === 2 && markable && [...state.markable][0] === item.id) {
@@ -2981,7 +3109,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       const pressable = !locked && (setting.freeMark ? inMarkPhase : (setting.details ? (setting.memo && !state.ended) : correct));
       card.disabled = setting.details ? locked : !pressable;
       card.setAttribute("aria-disabled", String(!pressable));
-      bindCandidateInteraction(card, item, pressable);
+      bindCandidateInteraction(card, item);
       els.candidateRack.appendChild(card);
     });
     updateRackProgress();
@@ -3007,7 +3135,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     const last = (visible[visible.length - 1] ?? 0) + 1;
     const hasBefore = els.candidateRack.scrollLeft > 4;
     const hasAfter = els.candidateRack.scrollLeft + els.candidateRack.clientWidth < els.candidateRack.scrollWidth - 4;
-    const standing = difficulty().memo ? `立${total - state.playerMarks.size}・` : "メモ無・";
+    const forgotten = difficulty().memo && !difficulty().freeMark ? forgottenCount() : 0;
+    const standing = difficulty().memo ? `立${total - state.playerMarks.size}・${forgotten ? `倒せる${forgotten}・` : ""}` : "メモ無・";
     els.rackNote.textContent = `${hasBefore ? "◀ " : ""}${standing}${first}–${last}/${total}${hasAfter ? " ▶" : ""}`;
     els.candidateRack.setAttribute(
       "aria-label",
@@ -3355,6 +3484,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     showMagicTableCard(magic, "player");
     state.turnMagicId = magic.id;
     if (NET.active) netSend({t:"m", magicId:magic.id, uid});
+    pushHistory({who:"player", kind:"magic", text:magic.label});
     if (magic.id === "double_question") {
       state.questionAllowance = 2;
       state.phase = "player_choose";
@@ -3420,7 +3550,6 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.questionsPlayedThisTurn += 1;
     state.lastQuestion = question;
     state.lastAnswer = null;
-    state.markable = new Set();
     setPhase("opponent_thinking");
     showTableCard(question, "player");
     setOpponent("thinking", randomFrom(activePack.opponentLines.thinking));
@@ -3454,8 +3583,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.lastAnswer = answer;
     showAnswer(answer);
     setOpponent(answer ? "answer-yes" : "answer-no", randomFrom(answer ? activePack.opponentLines.yes : activePack.opponentLines.no));
-    const excluded = courseItems().filter((item) => state.playerRemaining.has(item.id) && attrAnswer(item, question) !== answer).map((item) => item.id);
-    state.markable = new Set(excluded);
+    state.knownAnswers.push({questionId:question.id, answer});
+    pushHistory({who:"player", kind:"q", text:question.text, answer});
+    refreshMarkable();
     if (difficulty().memo) {
       setPhase("player_mark");
       // 初回案内だけが再描画していたため、2手目以降は内部のmarkableと札のdisabledがずれていた。
@@ -3474,9 +3604,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.questionsPlayedThisTurn = Math.max(0, state.questionsPlayedThisTurn - 1);
     state.lastQuestion = null;
     state.lastAnswer = null;
-    state.markable = new Set();
     const cancelMagic = magicById("cancel");
     showMagicTableCard(cancelMagic, "cpu");
+    pushHistory({who:"cpu", kind:"cancel", text:"相手があなたの質問を打ち消した"});
     setOpponent("answer-no", "キャンセル。この質問には答えず、別の札をどうぞ。");
     state.phase = "magic_resolve";
     renderTurn();
@@ -3490,8 +3620,13 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     const card = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`);
     const correct = state.markable.has(itemId);
     const fallen = state.playerMarks.has(itemId);
-    if (state.phase !== "player_mark") {
-      // 答えを聞く前は倒せない。まちがいの回数には数えない
+    if (!myTurnPhase()) {
+      // 相手の番は倒せない。回数には数えない
+      shakeAndTell(card, "いまは倒せません", "自分の番になったら、これまでの答えで倒せます。");
+      return;
+    }
+    if (!setting.freeMark && !state.knownAnswers.length && state.markable.size === 0) {
+      // まだ答えを1つも聞いていない
       shakeAndTell(card, "まだ倒せません", "先に質問札を出して、答えを聞いてから倒します。");
       return;
     }
@@ -3499,7 +3634,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       // ノーマル: 倒せない札を押した。以前は無反応だったので総当たりで倒せてしまった（2026-09-02 オーナー指摘）。
       // 止めたまま、首を振って考え直させる。回数は決着画面で指摘する
       state.wrongMarkTries += 1;
-      shakeAndTell(card, "もう一回考えて！", "その札は、いまの答えと合わないとは言えません。");
+      shakeAndTell(card, "もう一回考えて！", "その札は、これまでの答えと合わないとは言えません。");
       return;
     }
     state.candidateLocks.add(itemId);
@@ -3530,7 +3665,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       const current = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`);
       if (current) {
         const canMark = difficulty().memo && !state.ended &&
-          (difficulty().freeMark ? state.phase === "player_mark" : state.markable.has(itemId));
+          (difficulty().freeMark ? myTurnPhase() : state.markable.has(itemId));
         current.disabled = difficulty().details ? false : !canMark;
         current.setAttribute("aria-disabled", String(!canMark));
       }
@@ -3543,7 +3678,6 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     if (!["player_mark","player_end"].includes(state.phase) && !magicOnlyEnd || state.ended) return;
     hideGuide();
     state.tutorialStep = 99;
-    state.markable = new Set();
     renderCandidates();
     const canAskAgain = state.questionsPlayedThisTurn < state.questionAllowance &&
       state.playerHand.some((card) => card.type === "question");
@@ -3585,7 +3719,6 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.turnMagicId = null;
     state.questionsPlayedThisTurn = 0;
     state.questionAllowance = 1;
-    state.markable = new Set();
     state.candidateLocks.clear();
     if (!opening) clearTableCard();
     if (state.playerHand.length > 3) normalizeHand("player");
@@ -3708,6 +3841,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     discardFromHand("cpu", magicCard.uid);
     renderCpuHand();
     state.cpuTurnMagicId = magic.id;
+    pushHistory({who:"cpu", kind:"magic", text:magic.label});
     showMagicTableCard(magic, "cpu");
     pulseDeck();
     if (magic.id === "double_question") {
@@ -3780,6 +3914,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     discardFromHand("player", cancelCard.uid);
     renderQuestions();
     if (NET.active) netSend({t:"cancel", uid:cancelCard.uid});
+    pushHistory({who:"player", kind:"cancel", text:"相手の質問を打ち消した"});
     state.cpuQuestionsPlayed = Math.max(0, state.cpuQuestionsPlayed - 1);
     state.lastQuestion = null;
     const magic = magicById("cancel");
@@ -3822,6 +3957,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       return;
     }
     state.cpuTurns += 1;
+    pushHistory({who:"cpu", kind:"q", text:state.lastQuestion.text, answer:actual});
     state.cpuRemaining = new Set([...state.cpuRemaining].filter((id) => attrAnswer(itemById(id), state.lastQuestion) === actual));
     renderCpuRack();
     showAnswer(actual);
@@ -3863,6 +3999,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     const guessId = randomFrom(ids);
     state.cpuGuessesThisTurn += 1;
     const correct = guessId === state.playerSecret.id;
+    pushHistory({who:"cpu", kind:"guess", text:(itemById(guessId) || {}).label || "？", answer:correct});
     if (correct) {
       const remaining = state.cpuRemaining.size;
       state.ended = true;
@@ -3972,6 +4109,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.guessesThisTurn += 1;
     if (NET.active) netSend({t:"g", itemId});
     const correct = guessed.id === state.cpuSecret.id;
+    pushHistory({who:"player", kind:"guess", text:guessed.label, answer:correct});
     if (correct) {
       state.ended = true;
       setPhase("ended");
@@ -4736,6 +4874,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   bindPress(els.closeTitles, closeTitles);
   bindPress(els.resetRecordButton, resetRecord);
   els.portalLinks.forEach((button) => bindPress(button, goPortal));
+  bindPress(els.historyButton, openHistory);
+  bindPress(els.closeHistory, closeHistory);
   bindPress(els.netOpenButton, openNet);
   bindPress(els.closeNet, closeNet);
   els.netCourses.querySelectorAll("[data-net-course]").forEach((button) => bindPress(button, () => {
