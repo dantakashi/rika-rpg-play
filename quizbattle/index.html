@@ -636,6 +636,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 /* 通信対戦の部屋づくり（2026-09-02） */
 .net-sheet{width:min(760px,95vw)}
 .net-panels{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.net-panels:has(.net-panel[hidden]){grid-template-columns:1fr}
+.net-panel[hidden]{display:none}
+#netHostHint{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:#f7eedc;color:#6b4a2b}
 .net-panel{padding:12px 14px;border:2px solid #c9b48c;border-radius:12px;background:#fffdf6;color:var(--ink)}
 .net-panel h3{margin:0 0 6px;font-size:17px}
 .net-note{margin:0 0 8px;font-size:12px;font-weight:800;color:#5c5340;line-height:1.45}
@@ -1177,6 +1180,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       <p id="topicLead">質問札で、相手の秘密札を当てる対戦です。</p>
       <div class="record-bar" id="recordBar">
         <button type="button" class="record-chip" id="recordOpenButton">🏅 <span id="recordTitleName">称号はまだ無い</span><small id="recordStats">勝ち 0</small></button>
+        <button type="button" class="small-btn" id="netJoinTopButton">📡 通信対戦に入る</button>
         <button type="button" class="small-btn portal-link">🏠 ポータルへ</button>
       </div>
       <div class="topic-cards" id="topicCards"></div>
@@ -1263,7 +1267,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   <section class="modal-overlay" id="historyOverlay" aria-modal="true" role="dialog" aria-labelledby="historyTitle">
     <div class="guess-sheet history-sheet">
       <div class="guess-head">
-        <div><h2 id="historyTitle">📜 この一局の履歴</h2><p id="historyLead">質問と答え、使ったマジック、当てた札。「倒せる」が出ている札は、いまの番に倒せます。</p></div>
+        <div><h2 id="historyTitle">📜 この一局の履歴</h2><p id="historyLead">質問と答え、使ったマジック、当てた札。「倒せる」が出ている札は、相手の番でも いつでも倒せます。</p></div>
         <button type="button" class="small-btn sheet" id="closeHistory">とじる</button>
       </div>
       <ol class="history-list" id="historyList"></ol>
@@ -1276,6 +1280,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
         <div><h2 id="netTitle">📡 通信対戦</h2><p>同じ教室の相手と、1台ずつで対戦します。片方が部屋をつくり、もう片方が4文字のコードで入ります。</p></div>
         <button type="button" class="small-btn sheet" id="closeNet">とじる</button>
       </div>
+      <p class="net-note" id="netHostHint" hidden>部屋をつくる（ホスト）は、教科と題材を選んだあとのコース画面から。ここでは「部屋に入る」だけ。</p>
       <div class="net-panels">
         <section class="net-panel" id="netHostPanel">
           <h3>部屋をつくる（ホスト）</h3>
@@ -1375,7 +1380,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     closeTitles:$("#closeTitles"), resetRecordButton:$("#resetRecordButton"),
     tutorialToggle:$("#tutorialToggle"), portalLinks:document.querySelectorAll(".portal-link"),
     historyButton:$("#historyButton"), historyCount:$("#historyCount"), historyOverlay:$("#historyOverlay"), historyList:$("#historyList"), closeHistory:$("#closeHistory"),
-    netOpenButton:$("#netOpenButton"), netOverlay:$("#netOverlay"), closeNet:$("#closeNet"), netTopicName:$("#netTopicName"),
+    netOpenButton:$("#netOpenButton"), netJoinTopButton:$("#netJoinTopButton"), netHostPanel:$("#netHostPanel"), netHostHint:$("#netHostHint"), netOverlay:$("#netOverlay"), closeNet:$("#closeNet"), netTopicName:$("#netTopicName"),
     netCourses:$("#netCourses"), netHostButton:$("#netHostButton"), netJoinButton:$("#netJoinButton"), netCodeInput:$("#netCodeInput"),
     netCodeBox:$("#netCodeBox"), netCode:$("#netCode"), netHostStatus:$("#netHostStatus"), netJoinStatus:$("#netJoinStatus"), netFoot:$("#netFoot")
   };
@@ -1708,8 +1713,11 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     return false;
   }
   function openNet() {
-    if (!state.packId) return;
-    els.netTopicName.textContent = activePack.label;
+    // 題材を選ぶ前（最初の画面）からも「入る」だけはできる。部屋をつくるのはコース画面から（題材が要る）
+    const canHost = Boolean(state.packId);
+    els.netHostPanel.hidden = !canHost;
+    els.netHostHint.hidden = canHost;
+    els.netTopicName.textContent = canHost ? activePack.label : "";
     setNetStatus("host", "");
     setNetStatus("join", "");
     els.netCodeBox.hidden = true;
@@ -1791,6 +1799,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
   // ホスト: 題材・コース・山札の種・両者の秘密札を決めて配る。ゲストの ready で自分も始める
   function netStartAsHost() {
+    // ⚠ 2局目で NET.rules からコースが落ちてエクストリームになった（2026-09-03 オーナー報告）。無ければ前の setup から拾い、それも無ければノーマル
+    if (!NET.rules || !NET.rules.course) NET.rules = {...(NET.rules || {}), course:(NET.setup && NET.setup.course) || "beginner", magic:true};
     const items = makeCourseItems(NET.rules.course);
     const pick = () => items[Math.floor(Math.random() * items.length)];
     const mine = pick();
@@ -1798,7 +1808,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     let guard = 0;
     while (items.length > 1 && theirs.id === mine.id && guard < 50) { theirs = pick(); guard += 1; }
     const setup = {t:"setup", v:1, packId:activePack.id, course:NET.rules.course,
-      seed:Math.floor(Math.random() * 4294967296), hostSecret:mine.id, guestSecret:theirs.id, rules:{magic:true}};
+      seed:Math.floor(Math.random() * 4294967296), hostSecret:mine.id, guestSecret:theirs.id, rules:{course:NET.rules.course, magic:true}};
     NET.setup = setup;
     setNetStatus("host", "相手がつながりました。配っています…");
     netSend(setup);
@@ -1815,11 +1825,11 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     els.courseOverlay.style.display = "none";
     els.netOverlay.classList.remove("show");
     NET.active = true;
-    NET.rules = setup.rules || {magic:true};
+    NET.rules = {...(setup.rules || {}), course:setup.course || (setup.rules && setup.rules.course) || "beginner", magic:true};
     NET.secrets = {mine:NET.isHost ? setup.hostSecret : setup.guestSecret, theirs:NET.isHost ? setup.guestSecret : setup.hostSecret};
     rng = mulberry32(setup.seed >>> 0);
     state.pendingQuestion = null;
-    startGame(setup.course, {skipTutorial:true, net:true});
+    startGame(setup.course || NET.rules.course, {skipTutorial:true, net:true});
     els.courseButton.textContent = "通信対戦をやめる";
     disarmLeave();
   }
@@ -2822,6 +2832,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   const myTurnPhase = () => ["player_choose","player_mark","player_end"].includes(state.phase);
+  // 札を倒すのは任意のタイミング（相手の番でも）。通信対戦で相手の手を待つ間が暇、というオーナー指摘（2026-09-03）
+  const canMarkNow = () => Boolean(state.course) && !state.ended && !state.dealActive && !["topic","course","dealing"].includes(state.phase);
   // 倒せる札の判定。以前は直前の質問だけだったので、倒し忘れた札が次の手番から倒せなかった（2026-09-03 オーナー指摘）
   function refreshMarkable() {
     const known = state.knownAnswers
@@ -2839,7 +2851,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   function canPressCandidate(item) {
     const setting = difficulty();
     if (!setting.memo || state.ended || state.candidateLocks.has(item.id)) return false;
-    if (setting.freeMark) return myTurnPhase();
+    if (setting.freeMark) return canMarkNow();
     return true;   // ノーマルは押せば理由を言う（首を振る）
   }
   function syncCandidatePressability() {
@@ -3097,7 +3109,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       const correct = setting.memo && state.markable.has(item.id) && !state.ended;   // 答えと合わない札＝倒してよい
       // ハード（freeMark）は光らせない＝どれを倒すかは自分で決める。まちがった札も倒せる（2026-09-02 オーナー指示）
       const markable = correct && !setting.freeMark;
-      const inMarkPhase = setting.memo && !state.ended && myTurnPhase();
+      const inMarkPhase = setting.memo && canMarkNow();
       card.classList.toggle("fallen", fallen);
       card.classList.toggle("markable", markable);
       if (state.tutorialStep === 2 && markable && [...state.markable][0] === item.id) {
@@ -3287,7 +3299,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     const text = again ? "右の札で2枚目の質問へ進みます" : "右の手番札を相手へ送ります";
     showAnchoredGuide(text, els.turnEndButton, "left",
       {sub:again ? "ダブルクエスチョンで、もう1枚質問できます。"
-                 : "次は相手が質問します。あなたの秘密札を見て答えましょう。"});
+                 : "次は相手が質問します。相手の番の間も、候補札は倒せます。"});
   }
 
   function showAdvancedEndGuide() {
@@ -3620,9 +3632,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     const card = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`);
     const correct = state.markable.has(itemId);
     const fallen = state.playerMarks.has(itemId);
-    if (!myTurnPhase()) {
-      // 相手の番は倒せない。回数には数えない
-      shakeAndTell(card, "いまは倒せません", "自分の番になったら、これまでの答えで倒せます。");
+    if (!canMarkNow()) {
+      // 対戦が始まる前・決着のあと。回数には数えない
+      shakeAndTell(card, "まだ倒せません", "対戦が始まると、いつでも倒せます。");
       return;
     }
     if (!setting.freeMark && !state.knownAnswers.length && state.markable.size === 0) {
@@ -3665,7 +3677,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       const current = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`);
       if (current) {
         const canMark = difficulty().memo && !state.ended &&
-          (difficulty().freeMark ? myTurnPhase() : state.markable.has(itemId));
+          (difficulty().freeMark ? canMarkNow() : state.markable.has(itemId));
         current.disabled = difficulty().details ? false : !canMark;
         current.setAttribute("aria-disabled", String(!canMark));
       }
@@ -4877,6 +4889,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   bindPress(els.historyButton, openHistory);
   bindPress(els.closeHistory, closeHistory);
   bindPress(els.netOpenButton, openNet);
+  bindPress(els.netJoinTopButton, openNet);
   bindPress(els.closeNet, closeNet);
   els.netCourses.querySelectorAll("[data-net-course]").forEach((button) => bindPress(button, () => {
     NET.pick = button.dataset.netCourse;
