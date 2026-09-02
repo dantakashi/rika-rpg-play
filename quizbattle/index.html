@@ -406,20 +406,22 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 }
 .player-zone.active{background:linear-gradient(180deg,rgba(244,200,90,.08),rgba(5,23,25,.52))}
 .player-console{
-  height:105px;display:grid;grid-template-columns:124px minmax(0,1fr) 118px;gap:10px;align-items:end;
+  height:105px;display:grid;grid-template-columns:184px minmax(0,1fr) 118px;gap:10px;align-items:end;
 }
+/* 自分の秘密札。初見で視界に入っていなかった（2026-09-02 オーナー指摘）→ 幅124→184px・文字20→24px・縁を明るく・開始時に3回光らせる */
 .secret-card{
-  position:relative;height:98px;padding:8px 7px;border:4px solid #d6b55d;border-radius:11px;
-  background:linear-gradient(145deg,#fff8db,#e7cd88);box-shadow:0 8px 0 #59391e,0 11px 17px rgba(0,0,0,.35);
+  position:relative;height:98px;padding:8px 9px;border:5px solid #f2c94c;border-radius:12px;
+  background:linear-gradient(145deg,#fff8db,#e7cd88);box-shadow:0 8px 0 #59391e,0 0 0 3px rgba(255,224,104,.45),0 11px 17px rgba(0,0,0,.35);
   text-align:center;transform:rotate(-2deg);
 }
+.secret-card.intro-cue{animation:secretCue .8s ease-in-out 3}
 .secret-card.answer-cue{animation:secretCue .8s ease-in-out 2}
 @keyframes secretCue{
   50%{filter:brightness(1.12);box-shadow:0 8px 0 #59391e,0 0 0 7px rgba(255,237,142,.72),0 0 28px rgba(255,224,104,.8)}
 }
-.secret-card:before{content:"あなたの秘密札";display:block;color:#75551d;font-size:10px;font-weight:900;letter-spacing:.05em}
-.secret-card .secret-label{display:block;margin-top:7px;font-size:20px;font-weight:1000}
-.secret-card .secret-group{display:inline-block;margin-top:5px;padding:2px 7px;border-radius:999px;color:#fff;background:#2d6766;font-size:10px;font-weight:800}
+.secret-card:before{content:"あなたの秘密札";display:block;color:#75551d;font-size:12px;font-weight:900;letter-spacing:.05em}
+.secret-card .secret-label{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:5px;font-size:24px;line-height:1.1;font-weight:1000;overflow-wrap:anywhere}
+.secret-card .secret-group{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;color:#fff;background:#2d6766;font-size:11px;font-weight:800}
 .question-hand{
   align-self:stretch;display:flex;align-items:flex-end;justify-content:center;gap:7px;
   min-width:0;padding:3px 4px 0;overflow-x:auto;overflow-y:hidden;
@@ -550,6 +552,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   box-shadow:0 2px 0 #251b13;
 }
 .candidate-card.fallen.markable:hover{opacity:.7}
+/* 倒せない札を押したとき（ノーマル）／開いていないコースを押したとき。首を振る */
+.candidate-card.shake,.course-card.shake{animation:shakeCard .45s cubic-bezier(.36,.07,.19,.97) both!important}
+@keyframes shakeCard{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-6px)}40%,60%{transform:translateX(6px)}}
 .rack-note{position:absolute;right:14px;top:-8px;color:#ffe9a3;font-size:10px;font-weight:800}
 .candidate-detail{
   position:fixed;z-index:145;display:none;width:min(270px,calc(100vw - 24px));padding:12px 14px;
@@ -752,6 +757,12 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 .course-card[data-course="intermediate"] .course-chip{background:#756b2f}
 .course-card[data-course="advanced"] .course-chip{background:#276a70}
 .course-card h2{margin:12px 0 6px;font-size:29px}
+/* 解禁前のコース（ノーマル1勝でハード、ハード3勝でエクストリーム・2026-09-02） */
+.course-card.locked{filter:grayscale(.8) brightness(.82);cursor:not-allowed}
+.course-card.locked:hover{transform:rotate(var(--course-tilt));filter:grayscale(.8) brightness(.86)}
+.course-card.locked .course-go{visibility:hidden}
+.course-lock{display:block;margin-top:8px;padding:6px 10px;border-radius:8px;background:#3d2d20;color:#fff3c4;font-size:12px;font-weight:900;line-height:1.35}
+.course-lock[hidden]{display:none}
 .course-card p{margin:0;font-weight:900;line-height:1.45}
 .course-card .course-prop{
   margin-top:14px;padding:10px;border:2px dashed rgba(61,45,32,.36);border-radius:10px;
@@ -864,6 +875,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 .title-badge span{font-size:9px;font-weight:1000;letter-spacing:.16em;color:#8a6a2f}
 .title-badge strong{font-size:18px;line-height:1.15}
 .result-record{margin:10px 0 0;font-size:12px;font-weight:900;color:#ffe9a8}
+.result-record.notes{color:#ffd0c4}
+.title-badge.unlock{background:#e3f6f2;border-color:#4fa39b;box-shadow:0 5px 0 #2d6766}
+.title-badge.unlock span{color:#2d6766}
 .result-record[hidden]{display:none!important}
 .result-actions{display:none;gap:12px;margin-top:18px}
 .result-actions.show{display:flex}
@@ -901,8 +915,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   .reply-token.cancel{min-width:88px;font-size:12px}
   .turn-end{right:8px;bottom:8px;min-width:111px;min-height:44px;font-size:12px}
   .player-zone{padding:5px 8px 7px}
-  .player-console{height:142px;grid-template-columns:94px minmax(0,1fr) 82px;gap:5px}
-  .secret-card{height:92px}.secret-card .secret-label{font-size:15px}.secret-card:before{font-size:12px}
+  .player-console{height:142px;grid-template-columns:124px minmax(0,1fr) 82px;gap:5px}
+  .secret-card{height:92px}.secret-card .secret-label{font-size:18px}.secret-card:before{font-size:12px}
   .secret-card .secret-group,.question-card:before,.question-card .card-effect,.guess-button small{font-size:12px}
   .question-hand{justify-content:flex-start}.question-card{flex-basis:116px;height:93px;font-size:12px}
   .guess-button{height:92px;font-size:12px}
@@ -936,7 +950,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   .played-card.magic-played{min-height:76px}
   .player-console{height:72px}
   .secret-card,.question-card,.guess-button{height:64px}
-  .secret-card{padding:5px}.secret-card .secret-label{margin-top:2px;font-size:15px}
+  .secret-card{padding:5px}.secret-card .secret-label{margin-top:2px;font-size:17px}
   .secret-card .secret-group{margin-top:2px;padding:1px 6px}
   .question-card{padding:17px 7px 4px}
   .rack-wrap{height:94px;bottom:3px;padding:17px 8px 5px}
@@ -1021,11 +1035,11 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
      板の最終行が minmax(210px,1fr) のままで手前ゾーンが画面下へ99pxはみ出していた（実測）。 */
   .board{grid-template-rows:44px 20dvh 24dvh minmax(146px,1fr)}
   .player-zone{padding:4px 8px 5px}
-  .player-console{height:60px;grid-template-columns:86px minmax(0,1fr) 76px;gap:5px}
+  .player-console{height:60px;grid-template-columns:110px minmax(0,1fr) 76px;gap:5px}
   .secret-card{height:60px;overflow:hidden;padding:4px 7px}
   .secret-card:before{font-size:9px}
   /* 「CaCO₃ 炭酸カルシウム」級の長い名前も2行で収める。仲間の色帯は候補ラック側にも出るので隠す */
-  .secret-card .secret-label{margin-top:1px;font-size:11px;line-height:1.1;word-break:break-word;overflow-wrap:anywhere;
+  .secret-card .secret-label{margin-top:1px;font-size:13px;line-height:1.1;word-break:break-word;overflow-wrap:anywhere;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .secret-card .secret-group{display:none}
   .question-card,.guess-button{height:60px;font-size:11px}
@@ -1136,23 +1150,25 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       <div class="course-cards">
         <button type="button" class="course-card" data-course="beginner">
           <span class="course-chip">候補15枚</span>
-          <h2>初級コース</h2>
-          <p>分類・メモ・詳しい特徴を使える</p>
+          <h2>ノーマル</h2>
+          <p>分類・メモ・詳しい特徴を使える。倒せない札は教えてくれる</p>
           <div class="course-prop">CPUは手札順／答え直しは罰なし</div>
           <span class="course-go">対戦へ →</span>
         </button>
         <button type="button" class="course-card" data-course="intermediate">
           <span class="course-chip">候補22枚</span>
-          <h2>中級コース</h2>
-          <p>分類とメモを使ってしぼる</p>
+          <h2>ハード</h2>
+          <p>分類とメモを使ってしぼる。まちがった札も倒せてしまう</p>
           <div class="course-prop">CPUは最適な質問／答え直しは罰なし</div>
+          <span class="course-lock" hidden></span>
           <span class="course-go">対戦へ →</span>
         </button>
         <button type="button" class="course-card" data-course="advanced">
           <span class="course-chip">候補は全部</span>
-          <h2>上級コース</h2>
+          <h2>エクストリーム</h2>
           <p>名前と画像枠だけでしぼる</p>
           <div class="course-prop">メモなし／誤答で相手が追加1ドロー</div>
+          <span class="course-lock" hidden></span>
           <span class="course-go">対戦へ →</span>
         </button>
       </div>
@@ -1221,6 +1237,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
         </div>
         <div class="result-titles" id="resultTitles" hidden></div>
         <p class="result-record" id="resultRecordLine" hidden></p>
+        <p class="result-record notes" id="resultNotes" hidden></p>
         <div class="result-actions" id="resultActions">
           <button type="button" class="result-btn" id="againButton">もう一局</button>
           <button type="button" class="result-btn secondary" id="reselectButton">コースを選び直す</button>
@@ -1264,7 +1281,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     impactTitle:$("#impactTitle"), impactCopy:$("#impactCopy"), resultReveal:$("#resultReveal"),
     resultRevealLabel:$("#resultRevealLabel"), resultRevealGroup:$("#resultRevealGroup"), resultActions:$("#resultActions"),
     againButton:$("#againButton"), reselectButton:$("#reselectButton"),
-    resultTitles:$("#resultTitles"), resultRecordLine:$("#resultRecordLine"),
+    resultTitles:$("#resultTitles"), resultRecordLine:$("#resultRecordLine"), resultNotes:$("#resultNotes"),
     recordOpenButton:$("#recordOpenButton"), recordTitleName:$("#recordTitleName"), recordStats:$("#recordStats"),
     titlesOverlay:$("#titlesOverlay"), titlesList:$("#titlesList"), titlesSummary:$("#titlesSummary"),
     closeTitles:$("#closeTitles"), resetRecordButton:$("#resetRecordButton"),
@@ -1284,15 +1301,15 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   const MAGIC_COPIES_PER_KIND = 1;
   const DIFFICULTIES = {
     beginner:{
-      label:"初級",limit:15,memo:true,details:true,classification:true,
+      label:"ノーマル",limit:15,memo:true,details:true,classification:true,freeMark:false,
       cpuOptimal:false,wrongAnswerDraw:false
     },
     intermediate:{
-      label:"中級",limit:22,memo:true,details:false,classification:true,
+      label:"ハード",limit:22,memo:true,details:false,classification:true,freeMark:true,
       cpuOptimal:true,wrongAnswerDraw:false
     },
     advanced:{
-      label:"上級",limit:Number.POSITIVE_INFINITY,memo:false,details:false,classification:false,
+      label:"エクストリーム",limit:Number.POSITIVE_INFINITY,memo:false,details:false,classification:false,freeMark:false,
       cpuOptimal:true,wrongAnswerDraw:true
     }
   };
@@ -1303,13 +1320,13 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   const TUTORIAL_KEY = "app_quizbattle_tutorial";
   const TITLES = [
     {id:"first_win",        name:"はじめの一勝",   how:"1回勝つ",                    test:(r) => r.wins >= 1},
-    {id:"beginner_win",     name:"初級の探偵",     how:"初級で勝つ",                 test:(r) => (r.byCourse.beginner || 0) >= 1},
-    {id:"intermediate_win", name:"中級の探偵",     how:"中級で勝つ",                 test:(r) => (r.byCourse.intermediate || 0) >= 1},
-    {id:"advanced_win",     name:"上級の探偵",     how:"上級で勝つ",                 test:(r) => (r.byCourse.advanced || 0) >= 1},
+    {id:"beginner_win",     name:"ノーマルの探偵",     how:"ノーマルで勝つ",             test:(r) => (r.byCourse.beginner || 0) >= 1},
+    {id:"intermediate_win", name:"ハードの探偵",       how:"ハードで勝つ",               test:(r) => (r.byCourse.intermediate || 0) >= 1},
+    {id:"advanced_win",     name:"エクストリームの探偵", how:"エクストリームで勝つ",     test:(r) => (r.byCourse.advanced || 0) >= 1},
     {id:"wins_5",           name:"札読みの見習い", how:"5回勝つ",                    test:(r) => r.wins >= 5},
     {id:"wins_15",          name:"札読みの達人",   how:"15回勝つ",                   test:(r) => r.wins >= 15},
     {id:"wins_40",          name:"札読みの名人",   how:"40回勝つ",                   test:(r) => r.wins >= 40},
-    {id:"advanced_5",       name:"上級の名探偵",   how:"上級で5回勝つ",              test:(r) => (r.byCourse.advanced || 0) >= 5},
+    {id:"advanced_5",       name:"エクストリームの名探偵", how:"エクストリームで5回勝つ", test:(r) => (r.byCourse.advanced || 0) >= 5},
     {id:"streak_3",         name:"三連勝",         how:"3連勝する",                  test:(r) => r.bestStreak >= 3},
     {id:"streak_7",         name:"七連勝",         how:"7連勝する",                  test:(r) => r.bestStreak >= 7},
     {id:"fast_3",           name:"電光石火",       how:"自分の手番3回以内で当てる",  test:(r) => r.fastestTurns > 0 && r.fastestTurns <= 3},
@@ -1319,6 +1336,13 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     {id:"shelves_all",      name:"全教科せいは",   how:"すべての教科で勝つ",         test:(r) => shelfCount() >= 2 && Object.keys(r.shelves).length >= shelfCount()}
   ];
   const WIN_LADDER = [["first_win",1],["wins_5",5],["wins_15",15],["wins_40",40]];
+  // コースの解禁（2026-09-02 オーナー指示）: ノーマルだけ最初から。ノーマル1勝でハード、ハード3勝でエクストリーム。
+  // 最初からエクストリームを選んで不機嫌になるのを防ぐ。記録から導くので保存項目は増えない
+  const COURSE_UNLOCK = {
+    intermediate:{needCourse:"beginner", wins:1, label:"ハード", how:"ノーマルで1回勝つと解禁"},
+    advanced:{needCourse:"intermediate", wins:3, label:"エクストリーム", how:"ハードで3回勝つと解禁"}
+  };
+  let rejectTimer = 0;
   let recordSuspended = false;   // 検品フックが走る間は localStorage に書かない
   let resetArmed = false;
   let resetTimer = 0;
@@ -1380,27 +1404,42 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   function recordGameEnd(won) {
     if (recordSuspended) return [];
     const record = loadRecord();
+    const lockedBefore = Object.keys(COURSE_UNLOCK).filter((course) => !courseUnlocked(course, record));
     const earned = applyGameResult(record, {
       won, course:state.course, pack:activePack, turns:state.round, wrongGuesses:state.wrongGuesses
     });
     saveRecord(record);
-    renderResultRecord(record, earned, won);
+    const unlocked = lockedBefore.filter((course) => courseUnlocked(course, record));
+    renderResultRecord(record, earned, won, unlocked);
     renderRecordBar();
+    renderCourseLocks();
     return earned;
   }
-  function renderResultRecord(record, earned, won) {
+  function addBadge(kicker, name, extraClass = "") {
+    const badge = document.createElement("div");
+    badge.className = extraClass ? `title-badge ${extraClass}` : "title-badge";
+    const kick = document.createElement("span");
+    kick.textContent = kicker;
+    const strong = document.createElement("strong");
+    strong.textContent = name;
+    badge.append(kick, strong);
+    els.resultTitles.appendChild(badge);
+  }
+  function renderResultRecord(record, earned, won, unlocked = []) {
     els.resultTitles.innerHTML = "";
-    earned.forEach((title) => {
-      const badge = document.createElement("div");
-      badge.className = "title-badge";
-      const kicker = document.createElement("span");
-      kicker.textContent = "称号かくとく";
-      const name = document.createElement("strong");
-      name.textContent = title.name;
-      badge.append(kicker, name);
-      els.resultTitles.appendChild(badge);
-    });
-    els.resultTitles.hidden = earned.length === 0;
+    earned.forEach((title) => addBadge("称号かくとく", title.name));
+    unlocked.forEach((course) => addBadge("コース解禁", `🔓 ${COURSE_UNLOCK[course].label}`, "unlock"));
+    els.resultTitles.hidden = earned.length === 0 && unlocked.length === 0;
+    // 倒し方の指摘（2026-09-02 オーナー指示「リザルト画面で指摘は出てほしい」）
+    const notes = [];
+    if (!difficulty().freeMark && state.wrongMarkTries > 0) {
+      notes.push(`「もう一回考えて！」が ${state.wrongMarkTries}回。倒せるのは、答えと合わない札だけ。`);
+    }
+    if (difficulty().freeMark && state.wrongFalls > 0) {
+      notes.push(`まちがえて倒した札 ${state.wrongFalls}枚${state.secretFallen ? "（相手の秘密札も倒していた！）" : ""}。`);
+    }
+    els.resultNotes.textContent = notes.join(" ");
+    els.resultNotes.hidden = notes.length === 0;
     const parts = [`つうさん ${record.wins}勝`];
     if (won && record.streak >= 2) parts.push(`${record.streak}連勝中`);
     const hint = nextTitleHint(record);
@@ -1485,6 +1524,48 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       .then((response) => { window.location.href = response.ok ? "../launcher.html" : "../index.html"; })
       .catch(() => { window.location.href = "../index.html"; });
   }
+  function courseUnlocked(course, record = loadRecord()) {
+    const rule = COURSE_UNLOCK[course];
+    return !rule || (record.byCourse[rule.needCourse] || 0) >= rule.wins;
+  }
+  function renderCourseLocks() {
+    const record = loadRecord();
+    document.querySelectorAll("[data-course]").forEach((button) => {
+      const course = button.dataset.course;
+      const rule = COURSE_UNLOCK[course];
+      const open = courseUnlocked(course, record);
+      button.classList.toggle("locked", !open);
+      const lock = button.querySelector(".course-lock");
+      if (lock && rule) {
+        const have = Math.min(record.byCourse[rule.needCourse] || 0, rule.wins);
+        lock.textContent = `🔒 ${rule.how}（いま ${have} / ${rule.wins}）`;
+        lock.hidden = open;
+      }
+    });
+  }
+  // 押してはいけない物を押したときの反応: 首を振る＋短い案内。案内は自動で消える（後片づけは1本のタイマー）
+  function shakeAndTell(element, text, sub, ms = 1700) {
+    if (!element) return;
+    element.classList.remove("shake");
+    void element.offsetWidth;
+    element.classList.add("shake");
+    playTone(160, 0.06);
+    showAnchoredGuide(text, element, "above", {sub});
+    window.clearTimeout(rejectTimer);
+    rejectTimer = window.setTimeout(() => {
+      element.classList.remove("shake");
+      if (guideTarget === element) {
+        hideGuide();
+        // 初回案内の「倒す」段の途中なら、案内を戻す
+        if (state.tutorialStep === 2 && state.phase === "player_mark" && !state.ended) showMarkGuide();
+      }
+    }, ms);
+  }
+  function cueSecretCard() {
+    els.secretCard.classList.remove("intro-cue");
+    void els.secretCard.offsetWidth;
+    els.secretCard.classList.add("intro-cue");
+  }
 
   let activePack = DATA[0];
   let choicePending = false;
@@ -1499,7 +1580,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     markable:new Set(), playerHand:[], cpuHand:[], deck:[], discard:[], cardSerial:0,
     lastQuestion:null, lastAnswer:null, questionsPlayedThisTurn:0, questionAllowance:1,
     cpuQuestionsPlayed:0, cpuQuestionAllowance:1, cpuDoubleActive:false,
-    cpuTurns:0, tutorialStep:0, guessGuideShown:false, answerGuideShown:false, wrongGuesses:0, guessesThisTurn:0, guessLimit:1,
+    cpuTurns:0, tutorialStep:0, guessGuideShown:false, answerGuideShown:false, wrongGuesses:0, wrongMarkTries:0, wrongFalls:0, secretFallen:false, guessesThisTurn:0, guessLimit:1,
     cpuGuessesThisTurn:0, cpuGuessLimit:1, turnMagicId:null, cpuTurnMagicId:null,
     guessMode:"normal", twoChoiceIds:[], tradeCpuUid:null, tradePlayerUid:null,
     candidateLocks:new Set(), wrongAnswerPenaltyDraws:0,
@@ -1549,9 +1630,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function courseButtonLabel(course = state.course) {
-    if (course === "advanced") return "中級へ下げる";
-    if (course === "intermediate") return "初級へ下げる";
-    return "初級・メモあり";
+    if (course === "advanced") return "ハードへ下げる";
+    if (course === "intermediate") return "ノーマルへ下げる";
+    return "ノーマル・メモあり";
   }
 
   function shuffled(list) {
@@ -1986,6 +2067,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.tutorialStep = 1;
     beginPlayerTurn({opening:true,animateDraw:true});
     els.dealSkip.hidden = true;
+    cueSecretCard();
     window.requestAnimationFrame(showFirstGuide);
   }
 
@@ -2068,6 +2150,9 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.guessGuideShown = !playDeal;
     state.answerGuideShown = !playDeal;
     state.wrongGuesses = 0;
+    state.wrongMarkTries = 0;
+    state.wrongFalls = 0;
+    state.secretFallen = false;
     state.guessesThisTurn = 0;
     state.guessLimit = 1;
     state.cpuGuessesThisTurn = 0;
@@ -2095,6 +2180,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     else {
       completeDealOnboarding();
       beginPlayerTurn({opening:true,animateDraw:false});
+      cueSecretCard();
     }
     return true;
   }
@@ -2368,22 +2454,22 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       label.textContent = item.label;
       card.appendChild(label);
       const fallen = state.playerMarks.has(item.id);
-      const markable = setting.memo && state.markable.has(item.id) && !state.ended;
+      const correct = setting.memo && state.markable.has(item.id) && !state.ended;   // 答えと合わない札＝倒してよい
+      // ハード（freeMark）は光らせない＝どれを倒すかは自分で決める。まちがった札も倒せる（2026-09-02 オーナー指示）
+      const markable = correct && !setting.freeMark;
+      const inMarkPhase = setting.memo && !state.ended && state.phase === "player_mark";
       card.classList.toggle("fallen", fallen);
       card.classList.toggle("markable", markable);
       if (state.tutorialStep === 2 && markable && [...state.markable][0] === item.id) {
         card.classList.add("tutorial-mark");
       }
       const locked = state.candidateLocks.has(item.id);
-      if (setting.details) {
-        card.disabled = locked;
-        card.setAttribute("aria-disabled", String(!markable || locked));
-        bindCandidateInteraction(card, item, markable && !locked);
-      } else {
-        card.disabled = !markable || locked;
-        card.setAttribute("aria-disabled", String(!markable || locked));
-        bindCandidateInteraction(card, item, markable && !locked);
-      }
+      // 押せる札: ノーマルは立っている札ぜんぶ（倒せない札を押すとブルブル＋「もう一回考えて！」）／
+      //           ハードは倒す局面なら立っている札ぜんぶ／エクストリームは無し
+      const pressable = !locked && (setting.freeMark ? inMarkPhase : (setting.details ? (setting.memo && !state.ended) : correct));
+      card.disabled = setting.details ? locked : !pressable;
+      card.setAttribute("aria-disabled", String(!pressable));
+      bindCandidateInteraction(card, item, pressable);
       els.candidateRack.appendChild(card);
     });
     updateRackProgress();
@@ -2541,12 +2627,17 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     const firstId = [...state.markable][0];
     const item = itemById(firstId);
     state.tutorialStep = 2;
-    const target = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(firstId || "")}"]`);
-    if (target) target.scrollIntoView({behavior:"auto",block:"nearest",inline:"center"});
-    showAnchoredGuide(item ? "光る候補札を押して倒します" : "手番札を相手へ送ります",
+    const free = difficulty().freeMark;
+    const card = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(firstId || "")}"]`);
+    if (card && !free) card.scrollIntoView({behavior:"auto",block:"nearest",inline:"center"});
+    // ハードは光らせないので、1枚を指さずラック全体を指す
+    const target = item ? (free ? els.rackWrap : card) : null;
+    showAnchoredGuide(item ? (free ? "答えと合わない札を押して倒します" : "光る候補札を押して倒します") : "手番札を相手へ送ります",
       target || els.turnEndButton, target ? "above" : "left",
-      {sub:item ? "答えと合わない札は、相手の秘密札ではありません。倒して候補からはずします。"
-                : "倒せる札はありませんでした。相手の手番へ進みます。"});
+      {sub:item
+        ? (free ? "ハードは光りません。まちがった札も倒せてしまうので、よく考えて。"
+                : "答えと合わない札は、相手の秘密札ではありません。倒して候補からはずします。")
+        : "倒せる札はありませんでした。相手の手番へ進みます。"});
   }
 
   function showEndGuide() {
@@ -2564,7 +2655,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       ? "答えを覚えて2枚目の質問へ進みます"
       : "答えを覚えて手番札を送ります";
     showAnchoredGuide(text, els.turnEndButton, "left",
-      {sub:"上級はメモなし。答えを頭に入れて、候補を自分でしぼります。"});
+      {sub:"エクストリームはメモなし。答えを頭に入れて、候補を自分でしぼります。"});
   }
 
   function hideGuide() {
@@ -2870,16 +2961,34 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function toggleCandidate(itemId) {
-    if (!difficulty().memo || !state.markable.has(itemId) ||
-        state.candidateLocks.has(itemId) || state.ended) return;
-    state.candidateLocks.add(itemId);
+    const setting = difficulty();
+    if (!setting.memo || state.candidateLocks.has(itemId) || state.ended) return;
     const card = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`);
-    if (state.playerMarks.has(itemId)) {
+    const correct = state.markable.has(itemId);
+    const fallen = state.playerMarks.has(itemId);
+    if (state.phase !== "player_mark") {
+      // 答えを聞く前は倒せない。まちがいの回数には数えない
+      shakeAndTell(card, "まだ倒せません", "先に質問札を出して、答えを聞いてから倒します。");
+      return;
+    }
+    if (!setting.freeMark && !correct && !fallen) {
+      // ノーマル: 倒せない札を押した。以前は無反応だったので総当たりで倒せてしまった（2026-09-02 オーナー指摘）。
+      // 止めたまま、首を振って考え直させる。回数は決着画面で指摘する
+      state.wrongMarkTries += 1;
+      shakeAndTell(card, "もう一回考えて！", "その札は、いまの答えと合わないとは言えません。");
+      return;
+    }
+    state.candidateLocks.add(itemId);
+    if (fallen) {
       state.playerMarks.delete(itemId);
       state.playerRemaining.add(itemId);
+      if (state.cpuSecret && itemId === state.cpuSecret.id) state.secretFallen = false;
     } else {
       state.playerMarks.add(itemId);
       state.playerRemaining.delete(itemId);
+      // ハード: 答えと合う札を倒した＝まちがい。止めないが数えて、決着画面で指摘する
+      if (setting.freeMark && !correct) state.wrongFalls += 1;
+      if (state.cpuSecret && itemId === state.cpuSecret.id) state.secretFallen = true;
       playTone(245, 0.055);
     }
     const wasTutorialMark = state.tutorialStep === 2;
@@ -2895,7 +3004,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       state.candidateLocks.delete(itemId);
       const current = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`);
       if (current) {
-        const canMark = difficulty().memo && state.markable.has(itemId) && !state.ended;
+        const canMark = difficulty().memo && !state.ended &&
+          (difficulty().freeMark ? state.phase === "player_mark" : state.markable.has(itemId));
         current.disabled = difficulty().details ? false : !canMark;
         current.setAttribute("aria-disabled", String(!canMark));
       }
@@ -3166,7 +3276,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
         alternate:true, symbol:penalty ? "＋1" : "↺",
         title:penalty ? "相手が追加で1枚引く" : "秘密札をもう一度見る",
         copy:penalty
-          ? "上級ルールで相手が1枚引きました。秘密札を見て、はい／いいえをもう一回選べます。"
+          ? "エクストリームのルールで相手が1枚引きました。秘密札を見て、はい／いいえをもう一回選べます。"
           : "今の答えとはちがうようです。手札は増えません。はい／いいえを、もう一回選べます。",
         duration:1000, onDone:() => setPhase("player_answer")
       });
@@ -3371,6 +3481,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     if (!result) {
       els.resultTitles.hidden = true;
       els.resultRecordLine.hidden = true;
+      els.resultNotes.hidden = true;
     }
     if (result && reveal) {
       els.resultRevealLabel.textContent = reveal.label;
@@ -3414,8 +3525,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     renderCpuRack();
     renderGuessGrid();
     showAnchoredGuide(nextCourse === "beginner"
-      ? "初級へ変更。15枚・詳細・メモを使えます"
-      : "中級へ変更。22枚・分類・メモを使えます", els.rackWrap, "above");
+      ? "ノーマルへ変更。15枚・詳細・メモを使えます"
+      : "ハードへ変更。22枚・分類・メモを使えます", els.rackWrap, "above");
   }
 
   function showCourseOverlay() {
@@ -3554,6 +3665,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function previewBoard() {
+    renderCourseLocks();   // コース画面が出る経路は全部ここを通る
     els.gameTitle.textContent = activePack.title;
     state.playItems = [...activePack.items];
     buildCommonDeck();
@@ -3674,7 +3786,11 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
               ? els.candidateRack.querySelectorAll(".group-stripe").length === expectedCount
               : els.candidateRack.querySelectorAll(".group-stripe").length === 0,
             memo: difficulty(course).memo
-              ? els.candidateRack.querySelectorAll(".candidate-card.markable").length === state.markable.size
+              ? (difficulty(course).freeMark
+                  // ハードは光らせない。倒す局面では立っている札が全部押せる
+                  ? els.candidateRack.querySelectorAll(".candidate-card.markable").length === 0 &&
+                    els.candidateRack.querySelectorAll(".candidate-card:not([disabled])").length === expectedCount
+                  : els.candidateRack.querySelectorAll(".candidate-card.markable").length === state.markable.size)
               : els.candidateRack.querySelectorAll(".candidate-card.markable").length === 0,
             details: difficulty(course).details === (course === "beginner"),
             commonDeck: allCards.length === 30 && questionCards === 24 && magicCards === 6 &&
@@ -3940,7 +4056,12 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
           hintAfterFirst: nextTitleHint(rec) === "つぎの称号「札読みの見習い」まで あと4勝",
           currentIsLatest: currentTitle(rec) && currentTitle(rec).id === "clean",
           titlesAllHaveText: TITLES.every((t) => t.name && t.how && typeof t.test === "function"),
-          storageSuspended: recordSuspended === true
+          storageSuspended: recordSuspended === true,
+          unlockGate: !courseUnlocked("intermediate", emptyRecord()) &&
+            courseUnlocked("intermediate", {...emptyRecord(), byCourse:{beginner:1}}) &&
+            !courseUnlocked("advanced", {...emptyRecord(), byCourse:{intermediate:2}}) &&
+            courseUnlocked("advanced", {...emptyRecord(), byCourse:{intermediate:3}}) &&
+            courseUnlocked("beginner", emptyRecord())
         };
         return {ok:Object.values(checks).every(Boolean), ...checks};
       })();
@@ -3992,8 +4113,13 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 
   document.querySelectorAll("[data-course]").forEach((button) => {
     bindPress(button, () => {
+      const course = button.dataset.course;
+      if (!courseUnlocked(course)) {
+        const rule = COURSE_UNLOCK[course];
+        shakeAndTell(button, `${rule.label}は まだ開いていません`, `${rule.how}。まずは下のコースで勝とう。`, 2200);
+        return;
+      }
       animateCardChoice(button, () => {
-        const course = button.dataset.course;
         startGame(course);
         els.courseButton.textContent = courseButtonLabel(course);
       });
