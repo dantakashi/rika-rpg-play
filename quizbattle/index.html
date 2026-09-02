@@ -1294,9 +1294,11 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     {id:"total_swap",label:"総入れ替え",effect:"残りの手札を同じ枚数引き直す"},
     {id:"cancel",label:"キャンセル",effect:"相手の質問札を打ち消し、別の札を出してもらう"},
     {id:"double_answer",label:"ダブルアンサー",effect:"この手番、お題を2回まで当てられる"},
-    {id:"two_choice",label:"二択せまり",effect:"候補を2枚に絞り、どちらかを当てる"},
     {id:"peek_exchange",label:"のぞき見と交換",effect:"相手の手札を見て、自分の1枚と交換する"}
   ];
+  // 「二択せまり」は山札から外した（2026-09-02 オーナー裁定: 候補を2枚にして当てるのは強すぎる）。
+  // 進行のコードは残してある（検品フックが使う）。戻すなら上の配列に足すだけ。
+  const RETIRED_MAGIC = [{id:"two_choice",label:"二択せまり",effect:"候補を2枚に絞り、どちらかを当てる"}];
   const QUESTION_CARDS_PER_DECK = 24;
   const MAGIC_COPIES_PER_KIND = 1;
   const DIFFICULTIES = {
@@ -1344,6 +1346,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   };
   let rejectTimer = 0;
   let recordSuspended = false;   // 検品フックが走る間は localStorage に書かない
+  let impactTimer = 0;           // 決着以外の演出を消すタイマー。進行の later() と共有しない（共有していて消えなくなった・2026-09-02 生徒報告）
+  let impactSerial = 0;
   let resetArmed = false;
   let resetTimer = 0;
 
@@ -1762,6 +1766,8 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function magicById(id) {
+    const retired = RETIRED_MAGIC.find((magic) => magic.id === id);
+    if (retired) return retired;
     return MAGIC_CARDS.find((magic) => magic.id === id);
   }
 
@@ -2171,7 +2177,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     els.courseOverlay.style.display = "none";
     els.guessOverlay.classList.remove("show");
     els.tradeOverlay.classList.remove("show");
-    els.impactOverlay.className = "impact-overlay";
+    cancelImpact();
     els.resultActions.classList.remove("show");
     clearTableCard();
     setOpponent("neutral", randomFrom(activePack.opponentLines.ready));
@@ -2827,6 +2833,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function playHandCard(uid) {
+    if (impactBusy()) return false;
     const handCard = state.playerHand.find((card) => card.uid === uid);
     if (!canPlayHandCard(handCard)) return false;
     if (state.dealActive) completeDealOnboarding();
@@ -2962,7 +2969,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 
   function toggleCandidate(itemId) {
     const setting = difficulty();
-    if (!setting.memo || state.candidateLocks.has(itemId) || state.ended) return;
+    if (!setting.memo || state.candidateLocks.has(itemId) || state.ended || impactBusy()) return;
     const card = els.candidateRack.querySelector(`[data-item-id="${CSS.escape(itemId)}"]`);
     const correct = state.markable.has(itemId);
     const fallen = state.playerMarks.has(itemId);
@@ -3013,6 +3020,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function endPlayerTurn() {
+    if (impactBusy()) return;
     const magicOnlyEnd = state.phase === "player_choose" && state.turnMagicId === "double_answer";
     if (!["player_mark","player_end"].includes(state.phase) && !magicOnlyEnd || state.ended) return;
     hideGuide();
@@ -3238,7 +3246,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function cancelCpuQuestion() {
-    if (state.phase !== "player_answer" || state.ended) return false;
+    if (state.phase !== "player_answer" || state.ended || impactBusy()) return false;
     const cancelCard = state.playerHand.find((card) => card.magicId === "cancel");
     if (!cancelCard) return false;
     discardFromHand("player", cancelCard.uid);
@@ -3262,7 +3270,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function answerCpu(reply) {
-    if (state.phase !== "player_answer" || !state.lastQuestion || state.ended) return;
+    if (state.phase !== "player_answer" || !state.lastQuestion || state.ended || impactBusy()) return;
     hideGuide();
     const selected = reply === "yes";
     const actual = attrAnswer(state.playerSecret, state.lastQuestion);
@@ -3366,7 +3374,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 
   function openGuess() {
     if (state.phase !== "player_choose" ||
-        state.guessesThisTurn >= state.guessLimit || state.ended) return;
+        state.guessesThisTurn >= state.guessLimit || state.ended || impactBusy()) return;
     hideGuide();
     state.guessMode = "normal";
     renderGuessGrid();
@@ -3418,7 +3426,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
   }
 
   function resolvePlayerGuess(itemId) {
-    if (state.phase !== "player_guess" || state.ended) return;
+    if (state.phase !== "player_guess" || state.ended || impactBusy()) return;
     const guessed = itemById(itemId);
     if (!guessed || !state.cpuSecret) return;
     els.guessGrid.querySelectorAll(".picked").forEach((button) => button.classList.remove("picked"));
@@ -3490,15 +3498,33 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
       els.resultReveal.hidden = false;
     }
     els.resultActions.classList.toggle("show", result);
-    if (result) {
-      els.impactOverlay.style.pointerEvents = "auto";
-    } else {
-      els.impactOverlay.style.pointerEvents = "none";
-      later(() => {
+    // 演出中はこの幕がタップを受け止める。以前は none にして下のボタンが押せたため、
+    // 「はい／いいえ」を連打すると進行側が消すタイマーを潰していた（2026-09-02 生徒報告・エクストリームの追加ドロー）
+    els.impactOverlay.style.pointerEvents = "auto";
+    window.clearTimeout(impactTimer);
+    impactTimer = 0;
+    if (!result) {
+      const serial = ++impactSerial;
+      impactTimer = window.setTimeout(() => {
+        if (serial !== impactSerial) return;   // 盤を作り直したあとに古い演出の続きを走らせない
+        impactTimer = 0;
         els.impactOverlay.className = "impact-overlay";
+        els.impactOverlay.style.pointerEvents = "none";
         if (onDone) onDone();
       }, duration);
     }
+  }
+  // 演出（決着以外）が出ている間は入力を受けない。タップは幕が止めるが、キーボード等の経路も止める
+  function impactBusy() {
+    return els.impactOverlay.classList.contains("show") && !els.resultActions.classList.contains("show");
+  }
+  // 盤を作り直すとき: 出ている演出と、その続きの処理を取り消す
+  function cancelImpact() {
+    impactSerial += 1;
+    window.clearTimeout(impactTimer);
+    impactTimer = 0;
+    els.impactOverlay.className = "impact-overlay";
+    els.impactOverlay.style.pointerEvents = "none";
   }
 
   function lowerDifficulty() {
@@ -3635,6 +3661,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
 
   function showTopicOverlay() {
     clearTimer();
+    cancelImpact();
     hideGuide();
     state.packId = null;
     state.course = null;
@@ -3656,8 +3683,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
     state.ended = false;
     state.course = null;
     state.phase = "course";
-    els.impactOverlay.className = "impact-overlay";
-    els.impactOverlay.style.pointerEvents = "none";
+    cancelImpact();
     els.resultActions.classList.remove("show");
     els.courseOverlay.hidden = false;
     els.courseOverlay.style.display = "grid";
@@ -3793,7 +3819,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
                   : els.candidateRack.querySelectorAll(".candidate-card.markable").length === state.markable.size)
               : els.candidateRack.querySelectorAll(".candidate-card.markable").length === 0,
             details: difficulty(course).details === (course === "beginner"),
-            commonDeck: allCards.length === 30 && questionCards === 24 && magicCards === 6 &&
+            commonDeck: allCards.length === 29 && questionCards === 24 && magicCards === 5 &&
               MAGIC_CARDS.every((magicCard) =>
                 allCards.filter((card) => card.magicId === magicCard.id).length === 1),
             openingHands: state.cpuHand.length === 3 && state.playerHand.length === 3
@@ -4032,7 +4058,7 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
         state.playerMarks.size === 0 &&
         state.playerHand.length === 4 &&
         state.cpuHand.length === 3 &&
-        state.deck.length === 23 &&
+        state.deck.length === 22 &&   // 29枚（二択せまり退役後）− 手札6 − 手番の1枚
         !els.guessOverlay.classList.contains("show") &&
         !els.tradeOverlay.classList.contains("show");
 
@@ -4074,10 +4100,10 @@ button:focus-visible{outline:4px solid #fff;outline-offset:3px}
         magic,
         edge,
         record:recordCheck,
-        deck:{cards:30,questions:24,magic:6,questionRatio:.8},
+        deck:{cards:29,questions:24,magic:5,questionRatio:.83},
         ops:["pointerdown","key"],
         ran:"shared-deck-hand-and-six-magic",
-        state:`4パック×3難易度と、共通山札・3枚手札・6種マジックを検証`
+        state:`全パック×3難易度と、共通山札・3枚手札・5種マジック（二択せまりは退役）を検証`
       };
     } catch (error) {
       return {ok:false,packs,checks:[`例外: ${error && error.message ? error.message : String(error)}`]};
