@@ -393,6 +393,14 @@
         "https://www.city.yokosuka.kanagawa.jp/8810/kansa/syurui.html"
       ],
       "use": "行政・議会・監査の役割の確認。4事業20場面は架空の設定。"
+    },
+    "indicators": {
+      "title": "指示薬の観察メモ",
+      "sources": [
+        "https://labchem-wako.fujifilm.com/us/product/detail/W01W0102-0600.html",
+        "https://openstax.org/books/chemistry-2e/pages/14-7-acid-base-titrations"
+      ],
+      "use": "変色域と典型色を確認し、条件を限定した20の架空観察メモを作成。実験結果や手順の転載ではない。"
     }
   }
 }
