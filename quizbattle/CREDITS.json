@@ -1,0 +1,170 @@
+{
+  "scope": "art/map-symbol__*.svg (20 hand-authored geometric SVG diagrams)",
+  "author": "鈴 / Codex",
+  "source": "国土地理院 地図記号一覧（電子地形図25000）",
+  "sourceUrl": "https://www.gsi.go.jp/kohokocho/map-sign-tizukigou-2022-itiran.html",
+  "rights": "国土地理院の地図記号は自由に使用可能。教材画像の文字・枠・地図・写真は含めない。",
+  "rightsUrl": "https://www.gsi.go.jp/KIDS/KIDS05_00002.html",
+  "items": [
+    {
+      "name": "警察署",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022keisatusho.htm"
+    },
+    {
+      "name": "小・中学校",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022shouchuugakkou.htm"
+    },
+    {
+      "name": "神社",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022jinjya.htm"
+    },
+    {
+      "name": "市役所",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022siyakusho.htm"
+    },
+    {
+      "name": "交番",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-kouban.htm"
+    },
+    {
+      "name": "高等学校",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-koutougakkou.htm"
+    },
+    {
+      "name": "寺院",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-jiin.htm"
+    },
+    {
+      "name": "発電所等",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-hatudensyotou.htm"
+    },
+    {
+      "name": "町村役場",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022machiyakuba.htm"
+    },
+    {
+      "name": "消防署",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-shoubousho.htm"
+    },
+    {
+      "name": "図書館",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-toshokan.htm"
+    },
+    {
+      "name": "城跡",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-siroato.htm"
+    },
+    {
+      "name": "灯台",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-toudai.htm"
+    },
+    {
+      "name": "税務署",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022zeimusho.htm"
+    },
+    {
+      "name": "病院",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-byouin.htm"
+    },
+    {
+      "name": "博物館",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-hakubutukan.htm"
+    },
+    {
+      "name": "記念碑",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-00001.htm"
+    },
+    {
+      "name": "風車",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-fusya.htm"
+    },
+    {
+      "name": "郵便局",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022-yuubinkyoku.htm"
+    },
+    {
+      "name": "官公署",
+      "source": "https://www.gsi.go.jp/KIDS/map-sign-tizukigou-2022kannkousho.htm"
+    }
+  ],
+  "additionalAssets": {
+    "waterScenes": {
+      "scope": "art/water-scene__*.svg",
+      "author": "鈴 / Codex",
+      "creation": "コードで自作した水の状態の前後図。借用画像なし。",
+      "notation": "固=固体、液=液体、気=気体。矢印は前から後。"
+    },
+    "designTiles": {
+      "scope": "art/design-tile__*.svg",
+      "author": "鈴 / Codex",
+      "creation": "コードで自作した24図案。借用画像なし。"
+    },
+    "circulation": {
+      "scope": "art/circulation__*.svg",
+      "author": "鈴 / Codex",
+      "creation": "コードで自作した部屋の位置・経路の要約図。解剖図の模写や借用画像なし。"
+    },
+    "digestion": {
+      "scope": "art/digestion__*.svg",
+      "author": "鈴 / Codex",
+      "creation": "経路と場面を示す自作コード図。分子・解剖画像の借用なし。"
+    },
+    "kitchen": {
+      "scope": "art/kitchen__*.svg",
+      "author": "鈴 / Codex",
+      "creation": "選定した型をコードで自作。製品画像・借用画像なし。"
+    },
+    "workshop": {
+      "scope": "art/workshop__*.svg",
+      "author": "鈴 / Codex",
+      "creation": "工具の選定型をコードで自作。既存の6画像は保持、製品画像の模写や転載なし。"
+    },
+    "materialProcesses": {
+      "scope": "art/material-step__*.svg",
+      "author": "鈴 / Codex",
+      "creation": "20の指定制作工程を表す自作コード模式図。製品写真や既存作品の借用なし。"
+    },
+    "sportsKits": {
+      "files": "art/sports-kit__*.svg (17 files)",
+      "source": "Original SVG code: build/draw-sports-kits.js",
+      "license": "Project-authored; no external image material",
+      "scope": "Schematic equipment; not to scale. Existing volleyball, basketball and handball images retained."
+    },
+    "musicSymbols": {
+      "files": "art/music-symbol__*.svg (20 files)",
+      "source": "Original SVG geometry: build/draw-music-symbols.js",
+      "license": "Project-authored; no third-party font or image embedded",
+      "scope": "Conventional isolated notes and rests, not a musical work or a complete measure."
+    },
+    "cellRegions": {
+      "files": "art/cell-region__cytoplasm.svg; art/cell-region__vacuole.svg",
+      "source": "Original SVG code: build/draw-cell-regions.js",
+      "license": "Project-authored; no borrowed image material",
+      "scope": "Target region in blue; original raster files retained."
+    },
+    "stateNotes": {
+      "files": "art/state-note__*.svg (24 files)",
+      "source": "Original diagrams and invented numerical exercises: build/draw-state-notes.js, build/rebuild-state.js",
+      "license": "Project-authored; no third-party image embedded",
+      "scope": "State and density calculations, not empirical measurements of named substances."
+    },
+    "circuitNotes": {
+      "files": "art/circuit-note__*.svg (24 files)",
+      "source": "Original ideal circuit diagrams: build/draw-circuit-notes.js, build/rebuild-circuits.js",
+      "license": "Project-authored; no third-party images embedded",
+      "scope": "Ideal equal resistors and voltage source; not real battery or lamp measurements."
+    },
+    "heredityNotes": {
+      "files": "art/heredity-note__*.svg (18 files)",
+      "source": "Original equal-probability diagrams: build/draw-heredity-notes.js, build/rebuild-heredity.js",
+      "license": "Project-authored; no third-party image embedded",
+      "scope": "Single-locus complete dominance model, not observed families or guaranteed counts."
+    },
+    "guideSigns": {
+      "files": "art/guide-sign__*.svg (18 files)",
+      "source": "Original educational illustrations: build/draw-pictograms.js",
+      "license": "Project-authored; no standards image files or third-party vectors embedded",
+      "scope": "Illustrative meanings, not JIS-compliant signs or building signage templates."
+    }
+  }
+}
