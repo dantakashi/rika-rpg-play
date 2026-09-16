@@ -184,5 +184,215 @@
       "license": "Project-authored; no borrowed images or fonts embedded",
       "scope": "Simplified movement and equipment diagrams, not to scale or complete technique instruction."
     }
+  },
+  "contentReferences": {
+    "verbs": {
+      "title": "動詞の形をくらべる",
+      "sources": [
+        {
+          "word": "切る",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/切る.html"
+        },
+        {
+          "word": "見る",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/見る.html"
+        },
+        {
+          "word": "開ける",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/開ける.html"
+        },
+        {
+          "word": "来る",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/来る.html"
+        },
+        {
+          "word": "行く",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/行く.html"
+        },
+        {
+          "word": "貸す",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/貸す.html"
+        },
+        {
+          "word": "起きる",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/起きる.html"
+        },
+        {
+          "word": "出る",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/出る.html"
+        },
+        {
+          "word": "する",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/する.html"
+        },
+        {
+          "word": "脱ぐ",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/脱ぐ.html"
+        },
+        {
+          "word": "飛ぶ",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/飛ぶ.html"
+        },
+        {
+          "word": "着る",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/着る.html"
+        },
+        {
+          "word": "集める",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/集める.html"
+        },
+        {
+          "word": "買う",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/買う.html"
+        },
+        {
+          "word": "歩く",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/歩く.html"
+        },
+        {
+          "word": "立つ",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/立つ.html"
+        },
+        {
+          "word": "借りる",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/借りる.html"
+        },
+        {
+          "word": "進む",
+          "url": "https://www2.ninjal.ac.jp/verbhandbook/headwords/進む.html"
+        }
+      ],
+      "use": "活用形の事実確認。質問と表示構成は本教材用に作成。"
+    },
+    "idioms": {
+      "title": "四字熟語・故事成語の現代用例",
+      "sources": [
+        {
+          "word": "一生懸命",
+          "url": "https://www.kanjipedia.jp/kotoba/0000230600"
+        },
+        {
+          "word": "同心協力",
+          "url": "https://kotobank.jp/word/%E5%90%8C%E5%BF%83%E5%8D%94%E5%8A%9B-2066391"
+        },
+        {
+          "word": "千変万化",
+          "url": "https://www.kanjipedia.jp/kotoba/0004030600"
+        },
+        {
+          "word": "絶体絶命",
+          "url": "https://kotobank.jp/word/%E7%B5%B6%E4%BD%93%E7%B5%B6%E5%91%BD-548305"
+        },
+        {
+          "word": "七転八起",
+          "url": "https://kotobank.jp/word/%E4%B8%83%E8%BB%A2%E5%85%AB%E8%B5%B7-520866"
+        },
+        {
+          "word": "一致団結",
+          "url": "https://kotobank.jp/word/%E4%B8%80%E8%87%B4%E5%9B%A3%E7%B5%90-434376"
+        },
+        {
+          "word": "公明正大",
+          "url": "https://kotobank.jp/word/%E5%85%AC%E6%98%8E%E6%AD%A3%E5%A4%A7-497592"
+        },
+        {
+          "word": "日進月歩",
+          "url": "https://www.kanjipedia.jp/kotoba/0005438800"
+        },
+        {
+          "word": "八方美人",
+          "url": "https://www.kanjipedia.jp/kotoba/0005679800"
+        },
+        {
+          "word": "電光石火",
+          "url": "https://kotobank.jp/word/%E9%9B%BB%E5%85%89%E7%9F%B3%E7%81%AB-577913"
+        },
+        {
+          "word": "臨機応変",
+          "url": "https://kotobank.jp/word/%E8%87%A8%E6%A9%9F%E5%BF%9C%E5%A4%89-659935"
+        },
+        {
+          "word": "二人三脚",
+          "url": "https://kotobank.jp/word/%E4%BA%8C%E4%BA%BA%E4%B8%89%E8%84%9A-592513"
+        },
+        {
+          "word": "質実剛健",
+          "url": "https://kotobank.jp/word/%E8%B3%AA%E5%AE%9F%E5%89%9B%E5%81%A5-681571"
+        },
+        {
+          "word": "一進一退",
+          "url": "https://kotobank.jp/word/%E4%B8%80%E9%80%B2%E4%B8%80%E9%80%80-434253"
+        },
+        {
+          "word": "一石二鳥",
+          "url": "https://kotobank.jp/word/%E4%B8%80%E7%9F%B3%E4%BA%8C%E9%B3%A5-434310"
+        },
+        {
+          "word": "蛇足",
+          "url": "https://kotobank.jp/word/%E8%9B%87%E8%B6%B3-560630"
+        },
+        {
+          "word": "推敲",
+          "url": "https://kotobank.jp/word/%E6%8E%A8%E6%95%B2-539689"
+        },
+        {
+          "word": "井の中の蛙",
+          "url": "https://kotobank.jp/word/%E4%BA%95%E3%81%AE%E4%B8%AD%E3%81%AE%E8%9B%99-1505541"
+        },
+        {
+          "word": "登竜門",
+          "url": "https://www.kanjipedia.jp/kotoba/0005207200"
+        },
+        {
+          "word": "背水の陣",
+          "url": "https://www.kanjipedia.jp/kotoba/0005563100"
+        },
+        {
+          "word": "杞憂",
+          "url": "https://www.kanjipedia.jp/kotoba/0001199200"
+        },
+        {
+          "word": "蛍雪の功",
+          "url": "https://www.kanjipedia.jp/kotoba/0001787400"
+        },
+        {
+          "word": "漁夫の利",
+          "url": "https://www.kanjipedia.jp/kotoba/0001471800"
+        },
+        {
+          "word": "四面楚歌",
+          "url": "https://kotobank.jp/word/%E5%9B%9B%E9%9D%A2%E6%A5%9A%E6%AD%8C-524095"
+        },
+        {
+          "word": "矛盾",
+          "url": "https://kotobank.jp/word/%E7%9F%9B%E7%9B%BE-140478"
+        },
+        {
+          "word": "切磋琢磨",
+          "url": "https://www.kanjipedia.jp/kotoba/0003986600"
+        },
+        {
+          "word": "呉越同舟",
+          "url": "https://www.kanjipedia.jp/kotoba/0002092700"
+        },
+        {
+          "word": "破竹の勢い",
+          "url": "https://www.kanjipedia.jp/kotoba/0005534300"
+        },
+        {
+          "word": "塞翁が馬",
+          "url": "https://kotobank.jp/word/%E5%A1%9E%E7%BF%81%E3%81%8C%E9%A6%AC-507194"
+        }
+      ],
+      "use": "読みと代表義の確認。短い語義説明と架空用例は本教材用に作成。"
+    },
+    "localGovernment": {
+      "title": "まちの事業と役割",
+      "sources": [
+        "https://www.city.yokosuka.kanagawa.jp/7860/g_info/l100000953.html",
+        "https://www.city.yokosuka.kanagawa.jp/8810/kansa/syurui.html"
+      ],
+      "use": "行政・議会・監査の役割の確認。4事業20場面は架空の設定。"
+    }
   }
 }
