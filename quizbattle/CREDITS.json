@@ -165,6 +165,24 @@
       "source": "Original educational illustrations: build/draw-pictograms.js",
       "license": "Project-authored; no standards image files or third-party vectors embedded",
       "scope": "Illustrative meanings, not JIS-compliant signs or building signage templates."
+    },
+    "volcanoNotes": {
+      "files": "art/volcano-note__*.svg (18 files)",
+      "source": "Original schematic geometry: build/draw-volcano.js",
+      "license": "Project-authored; no borrowed image or photograph embedded",
+      "scope": "Schematic categories and selected specimens, not measured volcano profiles. Blue highlights target rock regions."
+    },
+    "transportNotes": {
+      "files": "art/transport-note__*.svg (18 files)",
+      "source": "Original schematic illustrations: build/draw-transport.js",
+      "license": "Project-authored; no borrowed images or fonts embedded",
+      "scope": "Selected vehicle configurations; schematic shapes, not engineering drawings."
+    },
+    "sportsEvents": {
+      "files": "art/sports-event__*.svg (20 files)",
+      "source": "Original schematic illustrations: build/draw-sports-events.js",
+      "license": "Project-authored; no borrowed images or fonts embedded",
+      "scope": "Simplified movement and equipment diagrams, not to scale or complete technique instruction."
     }
   }
 }
