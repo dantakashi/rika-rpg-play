@@ -1,0 +1,12 @@
+Candidate enemy models converted from three Quaternius packs.
+Creator: Quaternius (Alexandre Dala L)
+License of all three source packs: CC0 1.0 Universal (Public Domain Dedication)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Source pages:
+Ultimate Monsters: https://quaternius.com/packs/ultimatemonsters.html
+Ultimate Animated Animal Pack: https://quaternius.com/packs/ultimateanimatedanimals.html
+Easy Enemy Pack: https://quaternius.com/packs/easyenemy.html
+
+The local source archives each contain License.txt declaring CC0 1.0.
+These GLBs are converted, normalized candidate copies; the original packs are not modified.
