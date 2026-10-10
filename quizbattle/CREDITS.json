@@ -401,6 +401,19 @@
         "https://openstax.org/books/chemistry-2e/pages/14-7-acid-base-titrations"
       ],
       "use": "変色域と典型色を確認し、条件を限定した20の架空観察メモを作成。実験結果や手順の転載ではない。"
+    },
+    "vertebrate": {
+      "title": "せきつい動物の体と育ち",
+      "sources": [
+        "https://openstax.org/books/biology-2e/pages/29-6-mammals",
+        "https://openstax.org/books/biology-2e/pages/29-5-birds",
+        "https://openstax.org/books/biology-2e/pages/29-4-reptiles",
+        "https://openstax.org/books/biology-2e/pages/29-3-amphibians",
+        "https://openstax.org/books/biology-2e/pages/29-2-fishes",
+        "https://www.tokyo-zoo.net/topics/news/ino/5703_20868_2012-06-01.html",
+        "https://www.fisheries.noaa.gov/species/loggerhead-turtle"
+      ],
+      "use": "分類群の共通構造と例外の確認。各札の条件と短い説明は本教材用に作成。既存画像の種同定を根拠にしない。"
     }
   }
 }
