@@ -414,6 +414,15 @@
         "https://www.fisheries.noaa.gov/species/loggerhead-turtle"
       ],
       "use": "分類群の共通構造と例外の確認。各札の条件と短い説明は本教材用に作成。既存画像の種同定を根拠にしない。"
+    },
+    "elementsMaterials": {
+      "title": "物質の成分をくらべる",
+      "sources": [
+        "https://www.jma.go.jp/jma/kishou/know/faq/faq6.html",
+        "https://www.jisf.or.jp/business/tech/infrastructure/docs/infrastructure_pdf_02.pdf",
+        "https://periodic-table.rsc.org/element/6/"
+      ],
+      "use": "空気・合金と純物質の範囲を確認。26札の成分説明と限定モデルを本教材用に作成。画像は物質の純度や組成の証拠ではない。"
     }
   }
 }
