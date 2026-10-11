@@ -423,6 +423,24 @@
         "https://periodic-table.rsc.org/element/6/"
       ],
       "use": "空気・合金と純物質の範囲を確認。26札の成分説明と限定モデルを本教材用に作成。画像は物質の純度や組成の証拠ではない。"
+    },
+    "rocksMinerals": {
+      "title": "岩石・鉱物をくらべる",
+      "sources": [
+        "https://museum.bunmori.tokushima.jp/bb/chigaku/minerals/06.html",
+        "https://museum.bunmori.tokushima.jp/bb/chigaku/minerals/08.html",
+        "https://museum.bunmori.tokushima.jp/bb/chigaku/minerals/13.html",
+        "https://museum.bunmori.tokushima.jp/bb/chigaku/minerals/15.html",
+        "https://www.gsj.jp/hazards/volcano/kirishima/2008/080822ash-grain.html",
+        "https://www.gsj.jp/geology/geomap/process-field/tephra.html",
+        "https://www.handbookofmineralogy.org/pdfs/quartz.pdf",
+        "https://www.handbookofmineralogy.org/pdfs/orthoclase.pdf",
+        "https://www.handbookofmineralogy.org/pdfs/albite.pdf",
+        "https://www.handbookofmineralogy.org/pdfs/biotite.pdf",
+        "https://www.handbookofmineralogy.org/pdfs/forsterite.pdf",
+        "https://www.handbookofmineralogy.org/pdfs/fayalite.pdf"
+      ],
+      "use": "形成過程・鉱物の硬度や割れ方を確認。18札の比較例と説明は本教材用に作成。既存画像は粒径や組成を測定した標本写真として扱わない。資料の文章や写真は転載していない。"
     }
   }
 }
