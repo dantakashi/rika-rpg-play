@@ -441,6 +441,20 @@
         "https://www.handbookofmineralogy.org/pdfs/fayalite.pdf"
       ],
       "use": "形成過程・鉱物の硬度や割れ方を確認。18札の比較例と説明は本教材用に作成。既存画像は粒径や組成を測定した標本写真として扱わない。資料の文章や写真は転載していない。"
+    },
+    "plants": {
+      "title": "植物のなかま",
+      "note": "分類・器官の性質を参照し、質問と説明は本教材用に作成。引用画像や資料本文の転載なし。種や品種を既存イラストから同定したものではない。",
+      "urls": [
+        "https://staff.fukuoka-edu.ac.jp/fukuhara/keitai_low/0-3.html",
+        "https://staff.fukuoka-edu.ac.jp/fukuhara/keitai/6-1.html",
+        "https://staff.fukuoka-edu.ac.jp/fukuhara/keitai_low/4-3.html",
+        "https://www.jircas.go.jp/en/database/thaivege/085",
+        "https://hosho.ees.hokudai.ac.jp/tsuyu/top/plt/grass/fam-j.html",
+        "https://www.naro.go.jp/laboratory/tarc/weed/wheatweeds/025406.html",
+        "https://www.shigei.or.jp/herbgarden/album/mousouchiku/album_mousouchiku.html",
+        "https://www.naro.go.jp/collab/breed/0400/0412/001281.html"
+      ]
     }
   }
 }
