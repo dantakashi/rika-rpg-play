@@ -183,6 +183,20 @@
       "source": "Original schematic illustrations: build/draw-sports-events.js",
       "license": "Project-authored; no borrowed images or fonts embedded",
       "scope": "Simplified movement and equipment diagrams, not to scale or complete technique instruction."
+    },
+    "weatherNotes": {
+      "scope": "art/weather-note__*.svg (9 files)",
+      "author": "Project-authored SVG diagrams",
+      "creation": "Original geometric drawings of front symbols, sea/land breezes, pressure systems and summer monsoon. No borrowed images.",
+      "references": [
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/haichi1.html",
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/haichi3.html",
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/kaze.html",
+        "https://www.jma.go.jp/jma/kishou/know/kurashi/sokuhou_kaisetu.html",
+        "https://www.jma.go.jp/jma/kids/kids/faq/a3_32.html",
+        "https://www.data.jma.go.jp/cpd/j_climate/hokkaido/column_okho.html",
+        "https://www.data.jma.go.jp/haneda-airport/weather_topics/file/rjtt_wt20120530.pdf"
+      ]
     }
   },
   "contentReferences": {
@@ -454,6 +468,19 @@
         "https://www.naro.go.jp/laboratory/tarc/weed/wheatweeds/025406.html",
         "https://www.shigei.or.jp/herbgarden/album/mousouchiku/album_mousouchiku.html",
         "https://www.naro.go.jp/collab/breed/0400/0412/001281.html"
+      ]
+    },
+    "earth_air_fronts": {
+      "title": "気団・前線・気圧系と風",
+      "note": "気象庁の定義と天気図記号を参照し質問・説明・9模式図を作成。一次資料の文章や図を転載していない。模式図は実際の気圧配置や縮尺を再現するものではない。",
+      "urls": [
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/haichi1.html",
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/haichi3.html",
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/kaze.html",
+        "https://www.jma.go.jp/jma/kishou/know/kurashi/sokuhou_kaisetu.html",
+        "https://www.jma.go.jp/jma/kids/kids/faq/a3_32.html",
+        "https://www.data.jma.go.jp/cpd/j_climate/hokkaido/column_okho.html",
+        "https://www.data.jma.go.jp/haneda-airport/weather_topics/file/rjtt_wt20120530.pdf"
       ]
     }
   }

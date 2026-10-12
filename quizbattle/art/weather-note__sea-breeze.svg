@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520" viewBox="0 0 800 520" role="img" aria-labelledby="title desc">
+<title id="title">昼の海風の向き</title><desc id="desc">晴れて大きな気圧配置による風が弱い海岸。地表付近の風は海から陸へ。</desc>
+<defs><marker id="arrow" markerWidth="4" markerHeight="4" viewBox="0 0 10 10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10Z" fill="#e97535"/></marker></defs>
+<rect width="800" height="520" rx="30" fill="#eaf5ff"/>
+<g font-family="Meiryo,sans-serif" fill="#18364a" text-anchor="middle">
+<text x="400" y="57" font-size="30" font-weight="bold">昼の海風</text>
+<circle cx="625" cy="95" r="35" fill="#ffce55"/>
+<text x="400" y="181" font-size="25">地表付近の風</text>
+<path d="M230 245 H555" fill="none" stroke="#e97535" stroke-width="16" marker-end="url(#arrow)"/>
+<path d="M30 330 Q100 315 180 330 T380 330 V480 H30Z" fill="#469ed0"/>
+<path d="M380 330 Q470 303 770 300 V480 H380Z" fill="#ccbd7d"/>
+<text x="200" y="375" font-size="30" fill="#12344d" font-weight="bold">海</text>
+<text x="575" y="375" font-size="30" fill="#35361d" font-weight="bold">陸</text>
+<text x="200" y="424" font-size="22" fill="#12344d">陸より暖まりにくい</text>
+<text x="575" y="424" font-size="22" fill="#35361d">海より暖まりやすい</text>
+<text x="400" y="503" font-size="17">晴れて、広い範囲の気圧配置による風が弱いとき</text>
+</g></svg>
