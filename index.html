@@ -467,7 +467,7 @@
   // ---- 💾 両ゲーム共通のデータ保存・読込（機種変更の移行・要望#16理科共通） ----
   // 理科(chemical_rpg_save_v1)と英語(gg_v2_save_v1)は同一オリジンなのでlocalStorageを共有。
   // 両方を1文字列(RIKA1:+base64(JSON))にまとめて退避/復元する。
-  var GG_KEY='gg_v2_save_v1', RIKA_KEY='chemical_rpg_save_v1', DPREFIX='RIKA1:';
+  var GG_KEY='gg3_save_v1' /* 2026-10-13 GG v3 から */, RIKA_KEY='chemical_rpg_save_v1', DPREFIX='RIKA1:';
   function dmsg(t,ok){ var m=document.getElementById('dataMsg'); if(m){ m.textContent=t; m.style.color=ok?'#7ee2a8':'#ff9a8a'; } }
   function b64e(s){ return btoa(unescape(encodeURIComponent(s))); }
   function b64d(s){ return decodeURIComponent(escape(atob(s))); }
