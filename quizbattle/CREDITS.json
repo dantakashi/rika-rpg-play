@@ -482,6 +482,18 @@
         "https://www.data.jma.go.jp/cpd/j_climate/hokkaido/column_okho.html",
         "https://www.data.jma.go.jp/haneda-airport/weather_topics/file/rjtt_wt20120530.pdf"
       ]
+    },
+    "earth_clouds": {
+      "title": "雲と水の粒",
+      "note": "気象庁の分類と定義を参照し、19札の条件・質問・説明を作成。資料本文や画像の転載なし。粒径は比較例の条件で既存画像の測定値ではない。",
+      "urls": [
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/kousui.html",
+        "https://www.jma.go.jp/jma/kids/kids/faq/a1_31.html",
+        "https://www.jma.go.jp/jma/kids/kids/faq/a2_02.html",
+        "https://www.data.jma.go.jp/narita-airport/shosai/data/document/Information%20Magazine-17.pdf",
+        "https://www.jma.go.jp/jma/kishou/know/yougo_hp/kori.html",
+        "https://www.data.jma.go.jp/fukuoka/chosa/kaisetsu.html"
+      ]
     }
   }
 }
