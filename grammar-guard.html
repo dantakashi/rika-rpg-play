@@ -201,6 +201,10 @@ button:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
 .hcard kbd{position:absolute; right:5px; top:5px; font:800 10px/16px var(--font); width:16px; border-radius:4px; background:#0006; color:var(--sub)}
 .hcard.pop{animation:pop .3s ease-out} .hcard.nope{animation:nope .3s}
 @keyframes pop{from{transform:scale(.8)}} @keyframes nope{30%{transform:translateX(-4px)} 70%{transform:translateX(4px)}}
+.speak{margin-left:auto; width:34px; height:28px; border-radius:9px; background:#140f30; color:#9fe8ff; display:grid; place-items:center; font-size:17px; box-shadow:inset 0 0 0 2px #5a4fb0}
+.coach{animation:coach .7s ease-in-out 5!important; position:relative}
+#cannon.coach{position:absolute}
+@keyframes coach{50%{box-shadow:0 0 0 6px #ffd34d, 0 0 26px 8px #ffd34d99}}
 /* ごほうび */
 #scrReward{align-items:center; justify-content:center; gap:16px; padding:16px; text-align:center}
 #rwTitle{margin:0; font-size:clamp(22px,3vw,30px); color:var(--gold); text-shadow:0 3px 0 #6a2ab0}
@@ -6730,18 +6734,19 @@ const today = ()=> Math.floor(Date.now()/86400000);
 /* §2 ---------------------------------------------------------------- */
 const SAVE_KEY = "gg3_save_v1";
 function defaultSave(){
-  return { v:1, sel:{genre:"word", level:"e5"},
+  return { v:1, game:"gg3", sel:{genre:"word", level:"e5"},
     settings:{sound:false, shake:true},
     learned:{}, mistakes:{},
     stats:{answers:0, correct:0, runs:0, castles:0, bossKills:0, bestDepth:0, clears:0},
     seen:{units:{guard:1,archer:1,knight:1}, relics:{}},
+    tut:{},
     run:null };
 }
 let save = defaultSave();
 function loadSave(){
   try{
     const raw = localStorage.getItem(SAVE_KEY); if(!raw) return;
-    const d = JSON.parse(raw); if(!d || d.v!==1) return;
+    const d = JSON.parse(raw); if(!d || d.v!==1 || d.game!=="gg3") return; // 旧版のデータ（ポータルの読込み経由など）は読まない
     const b = defaultSave();
     save = Object.assign(b, d);
     save.sel = Object.assign(b.sel, d.sel||{});
@@ -6942,7 +6947,7 @@ function addAlly(key, st, dx){
   B.allies.push(a);
   fx("ring", a.x, 0, {c:"#7fd6ff"});
 }
-function fx(type, x, y, o){ if(!HAS_DOM) return; B.fx.push(Object.assign({type, x, y, t:0}, o||{})); }
+function fx(type, x, y, o){ if(!HAS_DOM) return; B.fx.push(Object.assign({type, x, y, t:0, life: type==="banner"?2.2:undefined}, o||{})); }
 function hurt(tgt, amt, src){
   if(tgt.hp<=0) return;
   if(tgt.shield>0){ tgt.shield--; tgt.hitT=0.12; fx("text", tgt.x, 70, {s:"ガード", c:"#cfe3ff"}); return; }
@@ -6963,6 +6968,11 @@ function step(dt){
   B.energy = Math.min(EN_MAX, B.energy + EN_PASSIVE*dt);
   // 湧き
   if(B.boss && !B.bossSpawned && B.t>1.5){ B.bossSpawned=true; spawnEnemy(B.bossKey); fx("banner",0,0,{s:ENEMIES[B.bossKey].name+" があらわれた！"}); audio.play("boss"); }
+  // はじめての子への声かけ（1回ずつ・一生に1回）
+  if(HAS_DOM){ const tu = save.tut || (save.tut={});
+    if(!tu.q && B.t>0.6){ tu.q=1; fx("banner",0,0,{s:"問題に正解すると ⚡ がたまる"}); }
+    else if(!tu.e && tu.q && B.t>3 && B.hand.some(k=>unitStats(k).cost<=B.energy)){ tu.e=1; fx("banner",0,0,{s:"⚡がたまった！ 下のカードで仲間をよぼう"}); ui.coach("hand"); }
+    else if(!tu.c && B.cannon>=100){ tu.c=1; fx("banner",0,0,{s:"キャノンがたまった！ 左下をおそう"}); ui.coach("cannon"); } }
   B.spawnT -= dt;
   if(B.spawnT<=0){
     B.spawnT = B.spawnGap * (0.8+Math.random()*0.4) * (B.t>100 ? 1.8 : 1); // 長引いたら敵の兵がつきる＝膠着をほどく
@@ -7388,6 +7398,8 @@ const ui = (function(){
     if(!q){ $("qText").textContent = "この範囲の問題がありません"; $("choices").innerHTML=""; return; }
     $("qTag").innerHTML = (q.due?`<span class="tg rv">${I("scroll")}復習 ×1.5</span>`:"") + (q.stretch?`<span class="tg st">ちょい上</span>`:"") + `<span class="tg">${({word:"単語",idiom:"熟語",grammar:"文法"})[q.genre]||""} ・ ${QuizEngine.LV_LABEL[q.level]||""}</span>`;
     $("qText").innerHTML = q.qtext;
+    if(q.speak){ const sp=document.createElement("button"); sp.className="speak"; sp.innerHTML=I("sound"); sp.setAttribute("aria-label","発音をきく"); sp.onclick=()=>speak(q.speak); $("qTag").appendChild(sp);
+      if(save.settings.sound && q.dir==="enjp") speak(q.speak); }
     const ch = $("choices"); ch.innerHTML = "";
     q.choices.forEach((c,i)=>{ const b=document.createElement("button"); b.className="choice"; b.innerHTML=`<kbd>${i+1}</kbd><span>${c}</span>`;
       b.onclick=()=>onAnswer(i, b); ch.appendChild(b); });
@@ -7410,6 +7422,8 @@ const ui = (function(){
     }
     syncHUD();
   }
+  function speak(w){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(String(w).replace(/<[^>]*>/g,"")); u.lang="en-US"; u.rate=0.9; speechSynthesis.speak(u); }catch(e){} }
+  function coach(what){ const el = what==="hand" ? $("hand") : $("cannon"); if(!el) return; el.classList.add("coach"); setTimeout(()=>el.classList.remove("coach"), 4000); }
   function afterBattle(won){ if(!won) openResult(); else openReward(); }
   /* --- ごほうび --- */
   function choiceHtml(c){
@@ -7522,7 +7536,7 @@ const ui = (function(){
       } else if(scr.id==="scrTrial" && n>=1&&n<=4){ const b=$("trChoices").children[n-1]; if(b) b.click(); }
     });
   }
-  Object.assign(self, {openTrialDbg:()=>openTrial(), trialQ:()=>T&&T.q, show, renderHome, renderMap, renderQuestion, syncHUD, afterBattle, openReward, openResult, bind, renderHand, openBattle});
+  Object.assign(self, {coach, openTrialDbg:()=>openTrial(), trialQ:()=>T&&T.q, show, renderHome, renderMap, renderQuestion, syncHUD, afterBattle, openReward, openResult, bind, renderHand, openBattle});
   return self;
 })();
 
