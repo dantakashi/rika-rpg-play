@@ -494,6 +494,20 @@
         "https://www.jma.go.jp/jma/kishou/know/yougo_hp/kori.html",
         "https://www.data.jma.go.jp/fukuoka/chosa/kaisetsu.html"
       ]
+    },
+    "earth_strata_landforms": {
+      "title": "地層と地形の例",
+      "note": "国土地理院・地質調査総合センター・USGSの説明を参照して15の比較例と質問を作成。文章・図の転載なし。地形の成因は札の条件で、既存イラストから同定したものではない。",
+      "urls": [
+        "https://www.gsi.go.jp/bousaichiri/lfc_index.html",
+        "https://www.gsi.go.jp/bousaichiri/Photo_reading_00016.html",
+        "https://web1.gsi.go.jp/kikaku/tenkei_umi.html",
+        "https://web1.gsi.go.jp/kikaku/tenkei_chikaku.html",
+        "https://web1.gsi.go.jp/kikaku/tenkei_kasen.html",
+        "https://www.gsj.jp/geology/fault-fold/formation/s-classification/index.html",
+        "https://www.gsj.jp/geology/fault-fold/fault-fold/faultandfoldJ.html",
+        "https://www.usgs.gov/publications/glacier-related-outburst-floods"
+      ]
     }
   }
 }
