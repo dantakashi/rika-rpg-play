@@ -205,6 +205,13 @@ button:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
 .coach{animation:coach .7s ease-in-out 5!important; position:relative}
 #cannon.coach{position:absolute}
 @keyframes coach{50%{box-shadow:0 0 0 6px #ffd34d, 0 0 26px 8px #ffd34d99}}
+.fly{position:fixed; z-index:80; pointer-events:none; color:#ffe14d; font-size:22px; filter:drop-shadow(0 0 6px #ffb02e)}
+.mhero{position:relative; height:170px; border-radius:20px; background-size:cover; background-position:center 70%; box-shadow:inset 0 0 0 2px #ffffff30, 0 10px 30px #0006; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; padding:10px 16px}
+.mhero::after{content:""; position:absolute; inset:0; background:linear-gradient(transparent 40%, #120e2acc); pointer-events:none}
+.mhart{position:absolute; left:0; right:0; top:10px; bottom:34px; display:flex; justify-content:space-between; align-items:flex-end; padding:0 18px; z-index:1}
+.mhart img{height:100%} .mhart img.flip{transform:scaleX(-1)}
+.mvs{font-size:34px; color:#fff; filter:drop-shadow(0 3px 0 #2a1060); align-self:center}
+.mhero .trail{position:relative; z-index:2; align-self:center}
 /* ごほうび */
 #scrReward{align-items:center; justify-content:center; gap:16px; padding:16px; text-align:center}
 #rwTitle{margin:0; font-size:clamp(22px,3vw,30px); color:var(--gold); text-shadow:0 3px 0 #6a2ab0}
@@ -300,7 +307,7 @@ button:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
 
   <section id="scrMap" class="scr"><div class="wrap">
     <div class="mtop"><button class="iconbtn" id="btnMapHome" data-ic="home" aria-label="ホーム"></button><h2 id="mapAct"></h2><div class="mcastle" id="mapCastle"></div></div>
-    <div class="trail" id="mapTrail"></div>
+    <div class="mhero" id="mapHero"><div class="mhart" id="mapHeroArt"></div><div class="trail" id="mapTrail"></div></div>
     <div class="lbl">次の道をえらぶ</div>
     <div class="doors" id="doors"></div>
     <div class="panel"><div class="lbl">部隊</div><div class="mdeck" id="mapDeck"></div><div class="lbl" style="margin-top:10px">秘宝</div><div class="rtags" id="mapRelics"></div></div>
@@ -6696,7 +6703,9 @@ const ART = (function(){
   const uri = {};
   function html(key){ if(!uri[key]) uri[key] = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(str(key)); return `<img src="${uri[key]}" alt="" draggable="false">`; }
   function icon(name, cls){ const d = (typeof ICONS!=="undefined" && ICONS[name]) || ""; return `<svg class="ic ${cls||""}" viewBox="0 0 512 512" aria-hidden="true"><path d="${d}"/></svg>`; }
-  return { load, img:k=>IMG[k], bg:a=>BG[a%3], html, icon, keys:()=>Object.keys(SRC) };
+  const BGU = [];
+  function bgURL(a){ a=a%3; if(!BGU[a] && BG[a]){ try{ BGU[a]=BG[a].toDataURL("image/jpeg",0.82); }catch(e){ BGU[a]=""; } } return BGU[a]||""; }
+  return { load, img:k=>IMG[k], bg:a=>BG[a%3], bgURL, html, icon, keys:()=>Object.keys(SRC) };
 })();
 
 </script>
@@ -7057,6 +7066,7 @@ function arrowRain(){
 }
 function endBattle(won){
   if(B.over) return; B.over = true; B.result = won?"win":"lose";
+  B.endT = B.t; fx("banner",0,0,{s: won ? (B.boss?"ボスをたおした！":"城を落とした！") : "自城が落ちた…"});
   if(won){
     run.castles++; save.stats.castles++;
     if(B.boss){ save.stats.bossKills++; }
@@ -7179,9 +7189,13 @@ const R = (function(){
     const h = Math.min(250*VS, H*0.8), w = h*img.width/img.height;
     const x = side==="a" ? CASTLE_A_X - w*0.55 : CASTLE_E_X - w*0.45;
     const hitT = side==="a" ? B.castleHitT : B.eCastleHitT;
+    const falling = B.over && ((side==="e" && B.result==="win") || (side==="a" && B.result==="lose"));
+    const fall = falling ? clamp((B.t - (B.endT||B.t))/1.2, 0, 1) : 0;
     const hpR = side==="a" ? run.castleHp/castleMaxEff() : B.eCastleHp/B.eCastleMax;
     cx.save();
-    if(hitT>0){ cx.translate((Math.random()-0.5)*6, 0); }
+    if(hitT>0 || (fall>0 && fall<1)){ cx.translate((Math.random()-0.5)*(fall>0?10:6), 0); }
+    if(fall>0){ cx.beginPath(); cx.rect(x-20, 0, w+40, gy+6); cx.clip(); cx.translate(0, fall*fall*h*0.85);
+      if(Math.random()<0.6) B.fx.push({type:"smoke", x:x+Math.random()*w, y:gy-10, t:0, life:1.2}); }
     cx.drawImage(img, x, gy - h + 8, w, h);
     if(hitT>0){ cx.globalCompositeOperation="lighter"; cx.globalAlpha=0.35; cx.drawImage(img, x, gy-h+8, w, h); cx.globalAlpha=1; cx.globalCompositeOperation="source-over"; }
     // ひび（HP割合で3段階）
@@ -7338,6 +7352,8 @@ const ui = (function(){
   /* --- 地図（とびら） --- */
   function renderMap(){
     const actNames = ["はじまりの草原","夕やけの峡谷","よるの魔城"];
+    $("mapHero").style.backgroundImage = `url(${ART.bgURL(run.act-1)})`;
+    $("mapHeroArt").innerHTML = ART.html("castleA") + `<span class="mvs">${I("sword")}</span>` + (run.node>=NODES_PER_ACT-1 ? ART.html(["e_boss1","e_boss2","e_boss3"][(run.act-1)%3]).replace("<img ","<img class=\"flip\" ") : ART.html("castleE"));
     $("mapAct").textContent = "地方 "+run.act+"　"+actNames[(run.act-1)%3] + (run.act>3?"（くりかえし "+(run.act-3)+"）":"");
     let tr=""; for(let i=0;i<NODES_PER_ACT;i++){ tr += `<i class="${i<run.node?"done":i===run.node?"now":""} ${i===NODES_PER_ACT-1?"boss":""}">${i===NODES_PER_ACT-1?I("crown"):""}</i>`; }
     $("mapTrail").innerHTML = tr;
@@ -7412,6 +7428,7 @@ const ui = (function(){
     if(!r.ok) btn.classList.add("picked");
     const fb = $("fb");
     if(r.ok){
+      flyBolt(btn, r.gain);
       fb.className = "show ok"; fb.innerHTML = `<b>せいかい！</b><span class="gain">${I("bolt")}+${r.gain}</span>${r.due?`<span class="gain rv">復習ボーナス</span>`:""}`;
       setTimeout(()=>{ if(B && !B.over) nextQuestion(); }, LOCK_OK*1000);
     } else {
@@ -7424,6 +7441,17 @@ const ui = (function(){
   }
   function speak(w){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(String(w).replace(/<[^>]*>/g,"")); u.lang="en-US"; u.rate=0.9; speechSynthesis.speak(u); }catch(e){} }
   function coach(what){ const el = what==="hand" ? $("hand") : $("cannon"); if(!el) return; el.classList.add("coach"); setTimeout(()=>el.classList.remove("coach"), 4000); }
+  // 正解の⚡が、こたえたボタンから⚡バーへ飛ぶ
+  function flyBolt(from, gain){
+    try{ const a=from.getBoundingClientRect(), t=$("enFill").parentElement.getBoundingClientRect();
+      const n = Math.min(6, 2+Math.floor(gain/10));
+      for(let i=0;i<n;i++){ const e=document.createElement("div"); e.className="fly"; e.innerHTML=I("bolt");
+        const sx=a.left+a.width/2+(Math.random()-0.5)*a.width*0.6, sy=a.top+a.height/2;
+        e.style.left=sx+"px"; e.style.top=sy+"px"; document.body.appendChild(e);
+        const dx=t.left+t.width*(B.energy/EN_MAX)-sx, dy=t.top+t.height/2-sy;
+        e.animate([{transform:"translate(-50%,-50%) scale(.6)",opacity:0},{transform:`translate(calc(-50% + ${dx*0.3}px),calc(-50% + ${dy*0.3-40}px)) scale(1.3)`,opacity:1,offset:.35},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.7)`,opacity:.9}],{duration:520+i*60,easing:"cubic-bezier(.5,0,.6,1)"}).onfinish=()=>e.remove(); }
+    }catch(e){}
+  }
   function afterBattle(won){ if(!won) openResult(); else openReward(); }
   /* --- ごほうび --- */
   function choiceHtml(c){
