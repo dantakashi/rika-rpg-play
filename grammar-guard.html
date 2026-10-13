@@ -88,7 +88,7 @@
   #castleA{left:6px} #castleE{right:6px}
   /* ④survive(要望#1で通常配置化)：自城は左のまま・敵城は無し(実質無敵)。隕石が主役ギミック。 */
   #field.survive #castleE{display:none}
-  .ground-line{position:absolute; left:0; right:0; top:58%; height:2px; background:rgba(0,0,0,.08)}
+  .ground-line{display:none; position:absolute; left:0; right:0; top:58%; height:2px; background:rgba(0,0,0,.08)}
   .unit{position:absolute; bottom:14px; width:54px; height:54px; will-change:transform; transition:none; transform-origin:50% 100%}
   .unit .hpb{position:absolute; top:-7px; left:6px; right:6px; height:4px; background:#0003; border-radius:2px; overflow:hidden}
   .unit .hpb i{display:block; height:100%; background:#fff}
@@ -2019,6 +2019,613 @@ if (typeof module !== 'undefined') module.exports = { ENGLISH_IDIOM_DB };
 /* =========================================================================
    §0  SVGアート（教科書風フラット・人間なし・動物/文化遺物）
    ========================================================================= */
+/* =========================================================================
+   GGART — 新しい絵（2026-10-13）。塗りの技法は C:/dev/_lib/svg-ideas/TECHNIQUES.md
+   （Fluent Emoji の重ね塗り・二値セル影・アニメ目・フィルタの光）。旧版の SVG.get から呼ばれる
+   ========================================================================= */
+const GGART = (function(){
+  const OL = "#231c3a";               // 外輪郭（深い藍。茶より「ゲームの絵」に寄る）
+  let N = 0;
+  const P = (hi, base, lo, rim) => ({hi, base, lo, rim: rim || lo});
+  // パレット（左上光源で統一。影は色相を寒色側へ回す）
+  const C = {
+    teal:P("#a8fff0","#3fd1c0","#1f8d9a","#126070"), blue:P("#b9e4ff","#4aa8ff","#2b62d6","#1c3f9c"),
+    navy:P("#9fb4ff","#4f63d8","#2d3592","#1d1f60"), cream:P("#fffaf0","#ffe9c4","#e0b88a","#b07f5a"),
+    orange:P("#ffd59a","#ff9a3c","#e0582a","#a8341c"), white:P("#ffffff","#eef4ff","#b9c6e8","#8a95c2"),
+    green:P("#d8ffb0","#7ed957","#3f9e46","#256b3a"), leaf:P("#c9ffd8","#58d68d","#2a9d6b","#17694d"),
+    gold:P("#fff6b8","#ffd34d","#e59a1c","#a8620c"), brown:P("#f2c99a","#c98a52","#8a5530","#5a3320"),
+    purple:P("#efd2ff","#b77cff","#7a45d6","#4a2496"), pink:P("#ffe0ee","#ff8fbf","#e0508f","#a02c66"),
+    red:P("#ffb8b8","#ff5a6a","#c8283f","#801730"), grey:P("#e6ecf4","#a9b6c8","#6b7891","#3f4860"),
+    stone:P("#e9e2d6","#b8ab98","#7d7064","#4f463f"), dark:P("#8e8aa8","#4b4566","#2a2440","#15112a"),
+    ice:P("#ffffff","#c8f2ff","#7cc8ef","#4a8fc8"), black:P("#6d6a8a","#3a3656","#221e38","#120e22"),
+    lime:P("#f4ffb0","#c8f25a","#86b82a","#557a14")
+  };
+  /* 部品: 下敷きの太い輪郭 → 地色グラデ → 縁を暗くするリング（Fluent式）→ セル影（clip）→ ハイライト */
+  function part(d, pal, o){
+    o = o||{}; const id = ++N;
+    const sx = o.sx==null?7:o.sx, sy = o.sy==null?8:o.sy, ow = o.ow==null?8:o.ow;
+    let s = `<defs>
+      <radialGradient id="g${id}" cx="${o.gx||0.34}" cy="${o.gy||0.28}" r="0.9"><stop offset="0" stop-color="${pal.hi}"/><stop offset="0.42" stop-color="${pal.base}"/><stop offset="1" stop-color="${pal.lo}"/></radialGradient>
+      <radialGradient id="r${id}" cx="0.5" cy="0.5" r="0.62"><stop offset="0.74" stop-color="${pal.rim}" stop-opacity="0"/><stop offset="1" stop-color="${pal.rim}" stop-opacity="0.75"/></radialGradient>
+      <clipPath id="c${id}"><path d="${d}"/></clipPath></defs>`;
+    if(ow) s += `<path d="${d}" fill="${OL}" stroke="${OL}" stroke-width="${ow}" stroke-linejoin="round"/>`;
+    s += `<path d="${d}" fill="url(#g${id})"/><path d="${d}" fill="url(#r${id})"/>`;
+    s += `<g clip-path="url(#c${id})">`;
+    if(!o.noShade) s += `<path fill-rule="evenodd" fill="${pal.lo}" opacity="${o.so||0.55}" d="M-200 -200H400V400H-200Z ${d}" transform="translate(${-sx} ${-sy})"/>`;
+    if(o.hl) s += `<ellipse cx="${o.hl[0]}" cy="${o.hl[1]}" rx="${o.hl[2]}" ry="${o.hl[3]}" fill="#fff" opacity=".55" transform="rotate(-25 ${o.hl[0]} ${o.hl[1]})"/>
+      <ellipse cx="${o.hl[0]-o.hl[2]*0.25}" cy="${o.hl[1]-o.hl[3]*0.2}" rx="${o.hl[2]*0.35}" ry="${o.hl[3]*0.3}" fill="#fff" opacity=".9" transform="rotate(-25 ${o.hl[0]} ${o.hl[1]})"/>`;
+    if(o.inner) s += o.inner;
+    s += `</g>`;
+    if(!ow) s += `<path d="${d}" fill="none" stroke="${OL}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    return s;
+  }
+  // アニメ目: 白目→下が明るい虹彩→瞳→まぶたの影→光2つ
+  function eye(x, y, r, iris, o){
+    o=o||{}; const id=++N; const ry=r*1.25;
+    const angry = o.angry ? `<path d="M${x-r*1.3} ${y-ry*1.25} L${x+r*1.2} ${y-ry*0.7}" stroke="${OL}" stroke-width="${r*0.55}" stroke-linecap="round"/>` : "";
+    return `<defs><linearGradient id="i${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#140f2a"/><stop offset="0.55" stop-color="${iris}"/><stop offset="1" stop-color="${o.iris2||"#e8fbff"}"/></linearGradient></defs>
+      <ellipse cx="${x}" cy="${y}" rx="${r}" ry="${ry}" fill="#fff" stroke="${OL}" stroke-width="2.6"/>
+      <ellipse cx="${x+r*0.12}" cy="${y+ry*0.12}" rx="${r*0.8}" ry="${ry*0.82}" fill="url(#i${id})"/>
+      <ellipse cx="${x+r*0.15}" cy="${y+ry*0.2}" rx="${r*0.36}" ry="${ry*0.42}" fill="#0c0820"/>
+      <path d="M${x-r} ${y-ry*0.15} Q${x} ${y-ry*1.25} ${x+r} ${y-ry*0.15} L${x+r} ${y-ry*0.5} Q${x} ${y-ry*1.6} ${x-r} ${y-ry*0.5}Z" fill="${OL}" opacity=".35"/>
+      <circle cx="${x-r*0.3}" cy="${y-ry*0.3}" r="${r*0.34}" fill="#fff"/><circle cx="${x+r*0.38}" cy="${y+ry*0.42}" r="${r*0.16}" fill="#fff"/>${angry}`;
+  }
+  const blush = (x,y,r)=>`<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*0.55}" fill="#ff6f9a" opacity=".45"/>`;
+  const line = (d,w,c)=>`<path d="${d}" fill="none" stroke="${c||OL}" stroke-width="${w||3}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const glowF = (id,c,sd)=>`<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${sd||4}" result="b"/><feFlood flood-color="${c}"/><feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  const svg = (inner, w, h)=>{ const vb = !w ? "-10 -20 150 150" : (w===200&&h===260 ? "-6 -22 212 284" : `0 0 ${w} ${h}`); return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${w||128}" height="${h||128}">${inner}</svg>`; };
+
+  /* ---------------- 仲間（右向き。足もと y≈124） ---------------- */
+  const A = {};
+  A.guard = ()=> svg( // ガードン: 甲羅の盾をかまえる亀の騎士
+    part("M30 120 Q26 104 34 98 L46 98 Q50 112 46 122Z", C.teal,{sx:3,sy:3}) + part("M70 120 Q68 104 76 98 L86 98 Q90 112 86 122Z", C.teal,{sx:3,sy:3}) +
+    part("M20 96 Q14 52 58 46 Q100 44 100 92 Q60 108 20 96Z", C.green,{hl:[46,60,16,8], inner:line("M60 48 L60 100 M32 64 L44 96 M88 62 L78 98 M24 78 L98 78",3,"#2a7a3a")}) +
+    part("M70 28 Q70 6 92 8 Q112 12 108 36 Q104 52 86 52 Q70 50 70 28Z", C.teal,{hl:[84,20,9,5]}) +
+    part("M78 12 Q92 -2 106 14 L104 22 Q92 14 78 20Z", C.gold,{sx:2,sy:3,ow:6}) +
+    eye(94,30,6.5,"#2d6bff") + blush(102,42,5) + line("M88 44 Q94 48 100 44",2.5) +
+    part("M92 58 Q120 58 122 84 Q120 112 96 120 Q84 100 86 78 Q86 62 92 58Z", C.blue,{hl:[104,72,8,10], inner:`<path d="M104 70 L112 82 L104 104 L96 82Z" fill="#ffe27a" stroke="${OL}" stroke-width="2"/>`}) );
+  A.archer = ()=> svg( // アローン: 弓をもつ青い鳥
+    line("M50 106 L46 122 M66 106 L70 122",5,"#e59a1c") +
+    part("M16 70 Q6 56 14 44 Q26 58 36 62Z", C.navy,{sx:3,sy:3}) +
+    part("M30 84 Q24 44 62 40 Q98 42 96 80 Q90 112 60 112 Q34 110 30 84Z", C.blue,{hl:[50,56,14,9]}) +
+    part("M40 80 Q52 66 72 76 Q70 100 50 102 Q38 96 40 80Z", C.white,{sx:3,sy:4}) +
+    part("M54 30 Q56 4 82 6 Q106 10 104 34 Q100 56 78 56 Q56 54 54 30Z", C.blue,{hl:[70,18,9,6]}) +
+    part("M62 8 Q66 -6 80 0 Q72 4 74 12Z", C.navy,{sx:2,sy:2,ow:5}) +
+    part("M100 28 L122 34 L100 42Z", C.gold,{sx:2,sy:3,ow:6}) + eye(86,28,7,"#ff9a3c",{iris2:"#fff2b0"}) + blush(94,42,4.5) +
+    line("M104 54 Q124 80 104 108",4,"#8a5530") + line("M104 54 L104 108",1.6,"#fff") + line("M70 82 L118 80",3,"#c98a52") +
+    `<path d="M118 76 L126 80 L118 84Z" fill="#dfe8ff" stroke="${OL}" stroke-width="2"/>` );
+  A.knight = ()=> svg( // ナイトン: 剣をかまえるきつね
+    part("M14 74 Q-2 56 10 34 Q20 56 34 62Z", C.orange,{sx:3,sy:3, inner:`<path d="M2 40 Q8 34 14 40 L12 50Z" fill="#fff"/>`}) +
+    line("M46 104 L42 122 M64 104 L68 122",6,OL) + line("M46 104 L42 121 M64 104 L68 121",3.5,"#ffd59a") +
+    part("M30 86 Q28 56 56 52 Q86 52 84 86 Q80 110 56 110 Q32 108 30 86Z", C.navy,{hl:[46,64,10,7], inner:`<path d="M48 54 L56 76 L64 54Z" fill="#ffd34d"/>`}) +
+    part("M50 22 L46 2 L66 16Z", C.orange,{sx:2,sy:2,ow:6}) + part("M84 20 L94 0 L98 22Z", C.orange,{sx:2,sy:2,ow:6}) +
+    part("M46 34 Q46 12 74 12 Q102 12 104 34 L112 42 Q104 56 76 58 Q50 58 46 34Z", C.orange,{hl:[62,22,9,5], inner:`<path d="M80 44 Q96 40 112 42 Q104 58 78 58Z" fill="#fff6e6"/>`}) +
+    eye(76,32,6,"#2bb8a0") + eye(94,31,5.2,"#2bb8a0") + `<circle cx="111" cy="42" r="3.2" fill="${OL}"/>` + blush(70,46,4) +
+    part("M86 70 L120 30 L126 36 L92 78Z", C.white,{sx:2,sy:2,ow:6,hl:[106,48,10,2]}) + part("M82 72 Q90 64 98 76 L92 82Z", C.gold,{sx:2,sy:2,ow:5}) );
+  A.mage = ()=> svg( // ホーホ: 魔法の杖のふくろう
+    line("M100 30 L104 122",5,"#8a5530") + `<circle cx="100" cy="24" r="11" fill="#d7b8ff" stroke="${OL}" stroke-width="3"/><circle cx="96" cy="20" r="4" fill="#fff"/>` +
+    part("M24 92 Q20 50 60 46 Q98 48 94 92 Q88 122 60 122 Q30 120 24 92Z", C.purple,{hl:[44,62,14,9], inner:line("M44 92 Q50 98 56 92 M64 102 Q70 108 76 102 M40 108 Q46 114 52 108",2.5,"#7a45d6")}) +
+    part("M28 46 Q22 22 60 18 Q98 22 92 46 Q86 70 60 70 Q34 70 28 46Z", C.purple,{hl:[46,30,11,6]}) +
+    part("M30 30 L22 8 L44 22Z", C.purple,{sx:2,sy:2,ow:6}) + part("M90 30 L98 8 L76 22Z", C.purple,{sx:2,sy:2,ow:6}) +
+    `<circle cx="47" cy="44" r="12" fill="#f5e9ff" stroke="${OL}" stroke-width="2.5"/><circle cx="73" cy="44" r="12" fill="#f5e9ff" stroke="${OL}" stroke-width="2.5"/>` +
+    eye(48,45,6.5,"#ffb02e",{iris2:"#fff6c0"}) + eye(72,45,6.5,"#ffb02e",{iris2:"#fff6c0"}) + part("M56 54 L64 54 L60 64Z", C.gold,{ow:4,sx:1,sy:1}) +
+    part("M14 6 L60 -4 L106 6 L60 16Z", C.navy,{sx:0,sy:3,ow:6}) + part("M44 6 Q56 -40 92 -8 Q72 -12 76 6Z", C.navy,{ow:6}) );
+  A.ice = ()=> svg( // ペンギィ: 雪玉と青いマフラーのペンギン
+    part("M40 116 Q30 124 46 124 Q56 122 52 114Z", C.gold,{ow:5,sx:2,sy:2}) + part("M72 116 Q66 124 82 124 Q90 122 84 114Z", C.gold,{ow:5,sx:2,sy:2}) +
+    part("M28 84 Q26 30 64 28 Q102 30 98 84 Q96 120 62 120 Q30 118 28 84Z", C.black,{hl:[46,46,12,9]}) +
+    part("M42 86 Q42 50 64 50 Q86 52 84 88 Q82 112 62 112 Q42 110 42 86Z", C.white,{sx:4,sy:5}) +
+    eye(56,48,6,"#36a8ff") + eye(76,48,6,"#36a8ff") + part("M62 58 L74 60 L64 68Z", C.gold,{ow:4,sx:1,sy:1}) + blush(50,62,4) + blush(84,62,4) +
+    part("M34 70 Q64 82 96 70 L96 80 Q64 92 34 80Z", C.blue,{ow:5,sx:2,sy:2}) + part("M84 78 L96 104 L86 106 L78 82Z", C.blue,{ow:5,sx:2,sy:2}) +
+    part("M98 86 Q100 70 114 72 Q126 76 124 90 Q120 104 106 102 Q96 100 98 86Z", C.ice,{hl:[108,80,6,4]}) );
+  A.healer = ()=> svg( // コジカ: 葉っぱの杖の子じか
+    line("M44 96 L40 122 M58 96 L56 122 M80 98 L80 122 M92 96 L96 122",5,OL) + line("M44 96 L40 121 M58 96 L56 121 M80 98 L80 121 M92 96 L96 121",3,"#e0b88a") +
+    part("M28 88 Q24 66 50 62 L88 62 Q104 66 102 90 Q96 104 64 104 Q30 104 28 88Z", C.brown,{hl:[52,72,12,6], inner:`<circle cx="50" cy="80" r="3" fill="#fff8e8"/><circle cx="66" cy="76" r="2.6" fill="#fff8e8"/><circle cx="80" cy="84" r="3" fill="#fff8e8"/>`}) +
+    part("M76 40 Q76 14 98 14 Q120 16 118 40 Q114 62 96 62 Q78 62 76 40Z", C.brown,{hl:[90,24,8,5], inner:`<ellipse cx="108" cy="50" rx="10" ry="8" fill="#fff1dc"/>`}) +
+    part("M74 26 Q58 20 62 10 Q74 12 80 22Z", C.brown,{ow:5,sx:2,sy:2}) + part("M88 14 Q84 0 92 -2 M96 14 Q104 2 110 6", C.brown,{ow:0}) + line("M88 14 Q84 2 90 -2 M104 14 Q110 2 116 4",4,"#8a5530") +
+    eye(98,36,6,"#3fbf6a",{iris2:"#e8ffd0"}) + `<circle cx="116" cy="48" r="2.6" fill="${OL}"/>` + blush(92,50,4) +
+    line("M24 50 L32 110",4,"#3f9e46") + part("M24 50 Q6 30 22 18 Q38 30 24 50Z", C.leaf,{ow:5,sx:2,sy:2}) + part("M26 46 Q42 22 56 32 Q44 50 26 46Z", C.leaf,{ow:5,sx:2,sy:2}) );
+  A.bomber = ()=> svg( // ドカエル: ばくだんを持ったかえる
+    part("M14 108 Q4 120 22 124 Q34 124 32 112Z", C.lime,{ow:5,sx:2,sy:2}) + part("M98 108 Q110 122 92 124 Q82 124 84 112Z", C.lime,{ow:5,sx:2,sy:2}) +
+    part("M14 86 Q14 44 60 42 Q108 44 108 86 Q106 120 60 120 Q16 120 14 86Z", C.green,{hl:[38,58,16,9], inner:`<ellipse cx="60" cy="100" rx="30" ry="16" fill="#f4ffcf" opacity=".85"/>`}) +
+    part("M22 42 Q22 18 42 18 Q60 20 58 42 Q56 60 40 60 Q22 58 22 42Z", C.green,{hl:[34,26,6,4]}) + part("M62 42 Q62 18 82 18 Q100 20 98 42 Q96 60 80 60 Q62 58 62 42Z", C.green,{hl:[74,26,6,4]}) +
+    eye(41,40,8,"#ffb02e",{iris2:"#fff6c0"}) + eye(80,40,8,"#ffb02e",{iris2:"#fff6c0"}) + line("M36 74 Q60 90 86 74",3.5) + blush(26,72,6) + blush(96,72,6) +
+    part("M84 86 Q84 66 104 66 Q124 68 122 88 Q120 108 102 108 Q84 106 84 86Z", C.black,{hl:[96,76,6,4]}) + line("M108 68 Q112 56 120 54",3.5,"#c98a52") +
+    `<circle cx="121" cy="53" r="5" fill="#ffd34d"/><circle cx="121" cy="53" r="2.4" fill="#fff"/>` );
+  A.sniper = ()=> svg( // ツキネコ: 月の弩をかまえる黒ねこ
+    part("M14 96 Q-4 80 6 56 Q16 74 28 80Z", C.black,{sx:3,sy:3}) +
+    part("M28 92 Q26 62 56 60 Q86 62 84 94 Q80 120 56 120 Q30 118 28 92Z", C.black,{hl:[44,72,10,7], inner:`<path d="M50 62 L56 80 L62 62Z" fill="#ffd34d"/>`}) +
+    part("M50 30 L44 4 L68 22Z", C.black,{sx:2,sy:2,ow:6, inner:`<path d="M50 24 L48 12 L60 22Z" fill="#ff8fbf"/>`}) + part("M86 22 L100 2 L102 30Z", C.black,{sx:2,sy:2,ow:6}) +
+    part("M44 42 Q44 18 74 18 Q104 18 106 42 Q104 66 74 66 Q46 66 44 42Z", C.black,{hl:[60,28,9,5]}) +
+    eye(70,42,7,"#ffd34d",{iris2:"#fffbe0"}) + eye(92,42,6,"#ffd34d",{iris2:"#fffbe0"}) + line("M78 56 Q82 59 86 56",2.5,"#fff") + blush(64,56,4) +
+    part("M76 82 L124 76 L124 86 L76 90Z", C.navy,{ow:5,sx:1,sy:2}) + part("M106 66 Q126 80 106 98 Q114 80 106 66Z", C.gold,{ow:5,sx:2,sy:2}) );
+  A.dragon = ()=> svg( `<defs>${glowF("dg","#ffb547",3)}</defs>` + // エンダー（SSR）: 金のつのの子ドラゴン
+    part("M8 92 Q-2 74 6 62 Q14 80 32 84Z", C.blue,{sx:3,sy:3}) +
+    part("M40 46 Q22 14 4 22 Q14 38 34 58Z", C.purple,{sx:3,sy:3,inner:line("M8 24 L30 52 M18 20 L34 46",2,"#4a2496")}) +
+    line("M44 106 L40 124 M70 106 L74 124",7,OL) + line("M44 106 L40 123 M70 106 L74 123",4,"#4f63d8") +
+    part("M24 90 Q20 54 58 50 Q96 52 92 90 Q86 118 58 118 Q28 116 24 90Z", C.blue,{hl:[42,64,13,8], inner:`<path d="M44 66 Q58 60 72 66 L70 112 Q58 116 46 112Z" fill="#ffe9b0"/>`+line("M46 78 L70 78 M46 90 L70 90 M47 102 L69 102",2,"#e0b070")}) +
+    part("M58 34 Q58 6 88 8 Q118 12 116 40 Q122 50 116 58 Q100 66 80 62 Q58 58 58 34Z", C.blue,{hl:[76,20,10,6]}) +
+    `<g filter="url(#dg)">${part("M68 14 L62 -6 L80 8Z", C.gold,{ow:5,sx:2,sy:2})}${part("M92 10 L100 -10 L106 14Z", C.gold,{ow:5,sx:2,sy:2})}</g>` +
+    eye(86,32,7,"#ff6a2c",{iris2:"#ffe08a"}) + `<circle cx="112" cy="46" r="2.6" fill="${OL}"/>` + line("M94 54 Q104 58 114 54",2.5) + blush(80,48,4.5) +
+    `<g filter="url(#dg)"><path d="M118 50 Q126 46 128 52 Q124 56 118 54Z" fill="#ffb547"/></g>` );
+  /* ---------------- 敵「まちがい魔物」（右向きで描き、描画時に左右反転） ---------------- */
+  const E = {};
+  const letter = (x,y,s,ch,c)=>`<g transform="translate(${2*x} 0) scale(-1 1)"><text x="${x}" y="${y}" font-family="Georgia,serif" font-weight="900" font-size="${s}" text-anchor="middle" fill="${c||"#fff"}" stroke="${OL}" stroke-width="2.2" paint-order="stroke">${ch}</text></g>`; // 敵は左右反転して描くので、文字だけ先に反転しておく
+  E.slime = ()=> svg( // タイポン: ?マークのスライム
+    part("M12 118 Q8 70 40 54 Q60 30 78 52 Q114 66 116 118 Q64 128 12 118Z", C.purple,{hl:[44,72,16,10], inner:`<ellipse cx="88" cy="108" rx="10" ry="4" fill="#fff" opacity=".25"/>`}) +
+    eye(54,84,7,"#ff3d6e",{angry:true, iris2:"#ffd0dc"}) + eye(80,84,7,"#ff3d6e",{angry:true, iris2:"#ffd0dc"}) + line("M58 104 Q68 98 78 104",3) +
+    letter(70,48,26,"?","#ffe27a") );
+  E.bat = ()=> svg( // スペルバット: つづりまちがいのこうもり
+    part("M56 64 Q30 36 2 50 Q14 58 12 72 Q28 66 34 80 Q44 70 56 76Z", C.dark,{sx:3,sy:3, inner:line("M10 56 L44 70 M20 70 L46 74",2,"#2a2440")}) +
+    part("M72 64 Q98 36 126 50 Q114 58 116 72 Q100 66 94 80 Q84 70 72 76Z", C.dark,{sx:3,sy:3}) +
+    part("M40 76 Q40 50 64 50 Q88 50 88 76 Q86 100 64 100 Q42 100 40 76Z", C.purple,{hl:[54,62,8,6]}) +
+    part("M46 54 L44 36 L58 50Z", C.purple,{ow:5,sx:1,sy:1}) + part("M82 54 L84 36 L70 50Z", C.purple,{ow:5,sx:1,sy:1}) +
+    eye(56,74,5.5,"#ffe14d",{angry:true}) + eye(74,74,5.5,"#ffe14d",{angry:true}) + `<path d="M58 88 L62 94 L66 88 L70 94 L74 88" fill="#fff" stroke="${OL}" stroke-width="2"/>` +
+    letter(64,122,18,"Wrod","#ffb8c8") );
+  E.golem = ()=> svg( // ブロックン: 文字ブロックのゴーレム
+    part("M20 92 L44 92 L44 124 L20 124Z", C.stone,{sx:3,sy:3}) + part("M80 92 L104 92 L104 124 L80 124Z", C.stone,{sx:3,sy:3}) +
+    part("M14 50 Q14 36 28 36 L100 36 Q114 36 114 50 L114 96 Q114 104 104 104 L24 104 Q14 104 14 96Z", C.stone,{hl:[40,48,16,6], inner:letter(36,92,22,"A","#ff9ab0")+letter(64,92,22,"B","#9ad8ff")+letter(92,92,22,"C","#ffe27a")}) +
+    part("M36 6 L92 6 Q100 6 100 14 L100 38 L28 38 L28 14 Q28 6 36 6Z", C.stone,{hl:[46,14,10,4]}) +
+    `<rect x="40" y="18" width="16" height="10" rx="3" fill="#ff3d6e" stroke="${OL}" stroke-width="2.5"/><rect x="70" y="18" width="16" height="10" rx="3" fill="#ff3d6e" stroke="${OL}" stroke-width="2.5"/><rect x="44" y="20" width="5" height="4" fill="#fff"/><rect x="74" y="20" width="5" height="4" fill="#fff"/>` );
+  E.beetle = ()=> svg( // カブトガード: 盾の甲虫（正解でシールドが割れる）
+    line("M36 104 L28 124 M56 108 L54 124 M80 104 L88 124",5,OL) +
+    part("M18 96 Q16 54 60 50 Q104 54 102 96 Q90 112 60 112 Q30 112 18 96Z", C.red,{hl:[40,64,14,8], inner:line("M60 52 L60 110",3,"#801730")}) +
+    part("M84 62 Q104 44 120 56 Q116 80 98 84Z", C.dark,{sx:2,sy:2}) + part("M100 50 Q108 20 122 24 Q116 40 110 54Z", C.dark,{ow:5,sx:1,sy:1}) +
+    eye(104,66,4.5,"#ffe14d",{angry:true}) +
+    part("M6 62 Q6 46 24 44 Q42 46 42 62 L42 86 Q34 100 24 102 Q12 100 6 86Z", C.grey,{hl:[18,56,6,8], inner:`<path d="M24 56 L32 72 L24 90 L16 72Z" fill="#9ad8ff" stroke="${OL}" stroke-width="2"/>`}) );
+  E.imp = ()=> svg( // ナゲデビ: 文字の石をなげる小悪魔
+    part("M30 70 Q12 50 20 30 Q30 50 44 54Z", C.red,{sx:2,sy:2}) +
+    line("M48 104 L44 124 M70 104 L74 124",5,OL) + line("M48 104 L44 123 M70 104 L74 123",2.6,"#ff5a6a") +
+    part("M34 88 Q32 62 58 60 Q84 62 82 88 Q80 112 58 112 Q36 110 34 88Z", C.red,{hl:[48,72,9,6]}) +
+    part("M36 40 Q36 14 62 14 Q90 14 90 40 Q88 64 62 64 Q38 64 36 40Z", C.red,{hl:[50,24,8,5]}) +
+    part("M44 18 L36 0 L54 14Z", C.dark,{ow:5,sx:1,sy:1}) + part("M80 18 L90 0 L72 14Z", C.dark,{ow:5,sx:1,sy:1}) +
+    eye(54,38,6,"#ffe14d",{angry:true}) + eye(74,38,6,"#ffe14d",{angry:true}) + `<path d="M52 52 Q63 60 74 52 L70 56 L66 52 L62 56 L58 52Z" fill="#fff" stroke="${OL}" stroke-width="2"/>` +
+    part("M86 60 Q86 46 100 46 Q114 48 112 62 Q110 76 98 76 Q86 74 86 60Z", C.stone,{hl:[96,54,5,3], inner:letter(99,68,16,"X","#ff9ab0")}) );
+  E.wisp = ()=> svg( `<defs>${glowF("wg","#7dffb0",4)}</defs>` + // ヒールウィスプ: 敵をなおす火の玉
+    `<g filter="url(#wg)">` + part("M64 6 Q76 30 92 40 Q112 56 104 84 Q96 112 64 114 Q32 112 24 84 Q16 56 36 40 Q52 30 64 6Z", C.lime,{hl:[50,56,12,10], ow:7}) + `</g>` +
+    part("M64 40 Q74 54 84 60 Q94 72 88 88 Q80 102 64 102 Q48 102 40 88 Q34 72 44 60 Q54 54 64 40Z", C.white,{ow:0,sx:3,sy:4}) +
+    eye(54,78,6,"#2a9d6b",{angry:true,iris2:"#d8ffe8"}) + eye(76,78,6,"#2a9d6b",{angry:true,iris2:"#d8ffe8"}) + line("M58 96 Q65 92 72 96",2.5) +
+    `<path d="M100 22 h10 M105 17 v10 M18 30 h8 M22 26 v8" stroke="#9dffb0" stroke-width="3.5" stroke-linecap="round"/>` );
+  E.splitter = ()=> svg( // ブンレツスライム: まん中にひび。たおすと2ひきに
+    part("M10 118 Q6 74 34 60 Q50 40 64 54 Q78 40 94 60 Q122 74 118 118 Q64 128 10 118Z", C.pink,{hl:[38,78,14,9]}) +
+    line("M64 54 L58 74 L68 88 L60 104 L64 120",4,"#a02c66") +
+    eye(44,90,6.5,"#7a3db8",{angry:true}) + eye(84,90,6.5,"#7a3db8",{angry:true}) + line("M36 108 Q44 104 50 108 M78 108 Q86 104 92 108",3) +
+    letter(40,52,18,"?","#ffe27a") + letter(88,52,18,"?","#ffe27a") );
+  E.boss1 = ()=> svg( `<defs>${glowF("b1","#ff4d8a",4)}</defs>` + // タイポ大王
+    part("M8 124 Q2 64 40 44 Q64 22 92 44 Q126 64 122 124 Q66 132 8 124Z", C.purple,{hl:[40,66,20,12], inner:`<ellipse cx="96" cy="112" rx="14" ry="5" fill="#fff" opacity=".25"/>`}) +
+    eye(48,80,10,"#ff3d6e",{angry:true,iris2:"#ffd0dc"}) + eye(84,80,10,"#ff3d6e",{angry:true,iris2:"#ffd0dc"}) +
+    `<path d="M44 102 Q66 92 90 102 Q84 112 66 112 Q50 112 44 102Z" fill="#3a0f2a" stroke="${OL}" stroke-width="3"/><path d="M52 102 L56 108 L60 101 M72 101 L76 108 L80 102" fill="#fff"/>` +
+    `<g filter="url(#b1)">${part("M34 40 L40 10 L54 28 L66 4 L78 28 L92 10 L98 40 Q66 48 34 40Z", C.gold,{ow:6,sx:2,sy:3, inner:`<circle cx="66" cy="30" r="5" fill="#ff3d6e"/>`})}</g>` +
+    letter(18,60,22,"?","#ffe27a") + letter(114,56,20,"!","#ffe27a") );
+  E.boss2 = ()=> svg( `<defs>${glowF("b2","#5ad1ff",4)}</defs>` + // 文法ゴーレム
+    part("M10 66 Q2 66 2 78 L4 110 Q6 120 16 118 L22 76Z", C.stone,{sx:3,sy:3}) + part("M118 66 Q126 66 126 78 L124 110 Q122 120 112 118 L106 76Z", C.stone,{sx:3,sy:3}) +
+    part("M30 104 L52 104 L50 126 L28 126Z", C.stone,{sx:2,sy:2}) + part("M76 104 L98 104 L100 126 L78 126Z", C.stone,{sx:2,sy:2}) +
+    part("M18 60 Q18 40 38 38 L90 38 Q110 40 110 60 L106 104 Q64 114 22 104Z", C.stone,{hl:[42,52,18,7]}) +
+    `<g filter="url(#b2)">${line("M34 60 L50 72 L44 90 M94 60 L80 74 L88 92 M60 50 L66 64 L60 80",3,"#5ad1ff")}${letter(64,100,18,"S+V","#bff0ff")}</g>` +
+    part("M40 6 L88 6 Q98 6 98 16 L98 40 L30 40 L30 16 Q30 6 40 6Z", C.stone,{hl:[50,14,10,4]}) +
+    `<g filter="url(#b2)"><rect x="42" y="18" width="16" height="8" rx="2" fill="#5ad1ff"/><rect x="70" y="18" width="16" height="8" rx="2" fill="#5ad1ff"/></g>` );
+  E.boss3 = ()=> svg( `<defs>${glowF("b3","#ff5a2a",5)}</defs>` + // エラードラゴン
+    part("M56 50 Q30 4 2 18 Q20 32 18 52 Q34 44 44 62Z", C.dark,{sx:3,sy:3, inner:line("M6 20 L40 56 M18 16 L44 50",2.4,"#15112a")}) +
+    part("M8 104 Q-4 86 4 72 Q16 92 36 96Z", C.black,{sx:3,sy:3}) +
+    part("M24 100 Q18 56 62 52 Q102 54 98 100 Q92 126 60 126 Q28 124 24 100Z", C.black,{hl:[44,70,14,9], inner:`<path d="M46 70 Q62 62 78 70 L76 120 Q62 124 48 120Z" fill="#7a3a5a"/>`}) +
+    part("M60 40 Q60 10 92 10 Q124 14 122 44 Q128 56 120 64 Q102 72 82 68 Q60 64 60 40Z", C.black,{hl:[78,22,10,6]}) +
+    `<g filter="url(#b3)">${part("M72 16 L64 -6 L84 10Z", C.red,{ow:5,sx:2,sy:2})}${part("M98 12 L108 -10 L112 16Z", C.red,{ow:5,sx:2,sy:2})}<path d="M122 54 Q128 50 128 58 Q124 64 118 60Z" fill="#ff8a3d"/></g>` +
+    eye(92,36,7.5,"#ff3d2e",{angry:true,iris2:"#ffd08a"}) + `<path d="M98 58 L102 64 L106 58 L110 64 L114 58" fill="#fff" stroke="${OL}" stroke-width="2"/>` );
+  /* ---------------- 城（自城＝青い屋根と結晶／敵城＝とげの砦） ---------------- */
+  function castleA(){
+    const stone = `<pattern id="brick" width="24" height="14" patternUnits="userSpaceOnUse"><path d="M0 14 H24 M12 0 V7 M0 7 H24 M0 0 V7 M24 7 V14" stroke="#5e6b8a" stroke-width="1.4" opacity=".55"/></pattern>`;
+    return svg(`<defs>${stone}${glowF("cg","#7fe9ff",5)}</defs>` +
+      part("M22 120 L62 120 L62 250 L22 250Z", C.white,{sx:6,sy:0, inner:`<rect width="300" height="300" fill="url(#brick)"/>`}) +
+      part("M138 120 L178 120 L178 250 L138 250Z", C.white,{sx:6,sy:0, inner:`<rect width="300" height="300" fill="url(#brick)"/>`}) +
+      part("M50 140 L150 140 L150 250 L50 250Z", C.white,{sx:8,sy:0, inner:`<rect width="300" height="300" fill="url(#brick)"/><path d="M82 250 L82 206 Q100 180 118 206 L118 250Z" fill="#3a3656"/>`}) +
+      part("M40 140 L50 128 L60 140 L70 128 L80 140 L90 128 L100 140 L110 128 L120 140 L130 128 L140 140 L150 128 L160 140 L160 150 L40 150Z", C.grey,{ow:6,sx:0,sy:3}) +
+      part("M66 70 L134 70 L134 150 L66 150Z", C.white,{sx:6,sy:0, inner:`<rect width="300" height="300" fill="url(#brick)"/><path d="M90 150 L90 112 Q100 98 110 112 L110 150Z" fill="#3a3656"/>`}) +
+      part("M12 122 L42 60 L72 122Z", C.blue,{ow:7,sx:6,sy:0,hl:[34,92,6,14]}) + part("M128 122 L158 60 L188 122Z", C.blue,{ow:7,sx:6,sy:0,hl:[150,92,6,14]}) +
+      part("M56 74 L100 4 L144 74Z", C.blue,{ow:7,sx:8,sy:0,hl:[88,46,8,18]}) +
+      line("M100 4 L100 -14",3) + `<path d="M100 -14 L126 -8 L100 -2Z" fill="#ffd34d" stroke="${OL}" stroke-width="2.5"/>` +
+      `<g filter="url(#cg)"><path d="M100 82 L112 100 L100 124 L88 100Z" fill="#9ff3ff" stroke="${OL}" stroke-width="3"/><path d="M100 86 L106 100 L100 106Z" fill="#fff"/></g>`
+      , 200, 260);
+  }
+  function castleE(){
+    return svg(`<defs>${glowF("eg","#ff3d6e",6)}<pattern id="ebrick" width="22" height="14" patternUnits="userSpaceOnUse"><path d="M0 14 H22 M11 0 V7 M0 7 H22" stroke="#15112a" stroke-width="1.6" opacity=".6"/></pattern></defs>` +
+      part("M20 110 L62 110 L60 250 L18 250Z", C.dark,{sx:-6,sy:0, inner:`<rect width="300" height="300" fill="url(#ebrick)"/>`}) +
+      part("M138 110 L180 110 L182 250 L140 250Z", C.dark,{sx:-6,sy:0, inner:`<rect width="300" height="300" fill="url(#ebrick)"/>`}) +
+      part("M46 130 L154 130 L158 250 L42 250Z", C.dark,{sx:-8,sy:0, inner:`<rect width="300" height="300" fill="url(#ebrick)"/><path d="M78 250 L78 200 L100 176 L122 200 L122 250Z" fill="#120e22"/><path d="M84 250 L84 206 M96 250 L96 196 M108 250 L108 196 M118 250 L118 206" stroke="#4b4566" stroke-width="3"/>`}) +
+      part("M14 112 L30 70 L40 96 L52 60 L68 112Z", C.purple,{ow:7,sx:-5,sy:0}) + part("M132 112 L148 60 L160 96 L170 70 L186 112Z", C.purple,{ow:7,sx:-5,sy:0}) +
+      part("M60 132 L74 64 L88 100 L100 20 L112 100 L126 64 L140 132Z", C.purple,{ow:7,sx:-6,sy:0}) +
+      `<g filter="url(#eg)"><ellipse cx="100" cy="112" rx="16" ry="11" fill="#ff3d6e" stroke="${OL}" stroke-width="3"/><ellipse cx="100" cy="112" rx="5" ry="9" fill="#2a0010"/><circle cx="94" cy="107" r="3" fill="#fff"/></g>` +
+      line("M100 20 L100 2",3) + `<path d="M100 2 L76 8 L100 14Z" fill="#ff3d6e" stroke="${OL}" stroke-width="2.5"/>`
+      , 200, 260);
+  }
+  const misc = {
+    cloud: ()=> svg(`<path d="M20 86 Q4 86 6 70 Q8 56 26 58 Q28 34 54 34 Q70 14 96 26 Q112 10 136 24 Q160 22 162 46 Q190 48 188 70 Q186 88 166 88Z" fill="#ffffff"/><path d="M14 80 Q40 74 60 80 Q90 70 120 80 Q150 72 180 78 Q184 88 166 88 L20 88 Q10 88 14 80Z" fill="#d6e6fb"/><path d="M40 56 Q46 44 60 44" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".9" fill="none"/>`,200,100),
+    crack: ()=> svg(line("M10 10 L40 44 L30 64 L64 100 M40 44 L70 38 M30 64 L8 80",5,"#120e22")+line("M12 12 L40 44 L30 64 L62 98",2,"#ffffff55"),100,110),
+    shieldIcon: ()=> svg(part("M64 10 L112 26 Q112 90 64 118 Q16 90 16 26Z", C.ice,{ow:10,hl:[46,40,10,18]}))
+  };
+  /* ---------------- 背景（地方ごと） ---------------- */
+  function background(act){
+    const pals = [
+      {sky:["#4fb3ff","#bfe9ff","#fff6d8"], sun:"#fff3b0", far:"#9ccbe8", mid:"#7cc48a", near:"#4aa860", road:"#e8cf9a", road2:"#c9a86a", deco:"flower"},
+      {sky:["#ff8a5c","#ffc27a","#ffe9b8"], sun:"#fff0c0", far:"#c98aa0", mid:"#d99a6a", near:"#b8704a", road:"#e6c08a", road2:"#b8885a", deco:"rock"},
+      {sky:["#0e0b2e","#3a2a7a","#7a4aa8"], sun:"#e6e2ff", far:"#3a3070", mid:"#2a2a5a", near:"#1f2a48", road:"#6a6490", road2:"#4a4470", deco:"crystal"}
+    ];
+    const p = pals[act%3], W=1600, H=500, gy=420;
+    let s = `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sky[0]}"/><stop offset="0.6" stop-color="${p.sky[1]}"/><stop offset="1" stop-color="${p.sky[2]}"/></linearGradient>
+      <radialGradient id="sun"><stop offset="0" stop-color="${p.sun}"/><stop offset="0.25" stop-color="${p.sun}" stop-opacity=".9"/><stop offset="1" stop-color="${p.sun}" stop-opacity="0"/></radialGradient>
+      <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${7+act}" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.15  0 0 0 0.10 0" result="g"/><feComposite in="g" in2="SourceGraphic" operator="in" result="gi"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="gi"/></feMerge></filter>
+      <pattern id="pdots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="1.6" fill="#fff" fill-opacity=".18"/></pattern>
+      <pattern id="pstripe" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M-2 2 l4 -4 M0 40 l40 -40 M38 42 l4 -4" stroke="#000" stroke-opacity=".06" stroke-width="10"/></pattern></defs>
+      <rect width="${W}" height="${H}" fill="url(#sky)"/>`;
+    if(act%3===2){ for(let i=0;i<70;i++){ const x=(i*233)%W, y=(i*97)%300, r=(i%5===0)?2.4:1.2; s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity="${0.4+(i%3)*0.2}"/>`; } }
+    s += `<circle cx="${act%3===1?1180:1250}" cy="${act%3===1?250:110}" r="170" fill="url(#sun)"/><circle cx="${act%3===1?1180:1250}" cy="${act%3===1?250:110}" r="${act%3===2?40:52}" fill="${p.sun}"/>`;
+    // 遠い山（空気遠近＝空色に寄せる）
+    s += `<path d="M0 330 L120 240 L230 300 L380 190 L520 290 L660 210 L800 300 L960 180 L1110 290 L1260 220 L1420 300 L1600 230 L1600 500 L0 500Z" fill="${p.far}" opacity=".85"/>`;
+    s += `<path d="M380 190 L428 225 L410 222 L398 236 L384 220 L366 232 L352 214Z M960 180 L1006 214 L986 210 L972 226 L960 210 L944 222 L924 206Z" fill="#fff" opacity="${act%3===2?0.25:0.75}"/>`;
+    s += `<path d="M0 360 Q160 290 340 340 T700 330 T1060 340 T1400 320 T1600 340 V500 H0Z" fill="${p.mid}"/>`;
+    s += `<path d="M0 360 Q160 290 340 340 T700 330 T1060 340 T1400 320 T1600 340" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="4"/>`;
+    // 木・岩・結晶のシルエット
+    for(let i=0;i<14;i++){ const x = 40 + i*118 + (i%3)*20, y = 360 + (i%2)*12;
+      if(p.deco==="flower") s += `<rect x="${x-4}" y="${y-8}" width="8" height="20" fill="#6a4a30"/><circle cx="${x}" cy="${y-28}" r="28" fill="#2f7d45"/><circle cx="${x-6}" cy="${y-34}" r="22" fill="${p.near}"/><circle cx="${x-12}" cy="${y-42}" r="9" fill="#bdf0a0" opacity=".55"/>`;
+      else if(p.deco==="rock") s += `<path d="M${x-30} ${y+10} L${x-18} ${y-30} L${x+6} ${y-44} L${x+28} ${y-18} L${x+32} ${y+10}Z" fill="${p.near}"/><path d="M${x-18} ${y-30} L${x+6} ${y-44} L${x+2} ${y-10}Z" fill="#fff" opacity=".15"/>`;
+      else s += `<path d="M${x} ${y-60} L${x+14} ${y-10} L${x} ${y+8} L${x-14} ${y-10}Z" fill="#7a5ad8" opacity=".75"/><path d="M${x} ${y-60} L${x+5} ${y-10} L${x} ${y+8}Z" fill="#c9b8ff" opacity=".6"/>`;
+    }
+    s += `<path d="M0 ${gy-30} Q400 ${gy-50} 800 ${gy-34} T1600 ${gy-36} V500 H0Z" fill="${p.near}"/>`;
+    // 道（地紋つき）
+    s += `<path d="M0 ${gy-12} Q800 ${gy-22} 1600 ${gy-12} L1600 500 L0 500Z" fill="${p.road}"/><path d="M0 ${gy-12} Q800 ${gy-22} 1600 ${gy-12} L1600 500 L0 500Z" fill="url(#pstripe)"/>`;
+    s += `<path d="M0 ${gy-12} Q800 ${gy-22} 1600 ${gy-12}" stroke="${p.road2}" stroke-width="6" fill="none"/>`;
+    for(let i=0;i<40;i++){ const x=(i*163)%W, y=gy+10+(i*37)%60; s+=`<ellipse cx="${x}" cy="${y}" rx="${6+(i%3)*3}" ry="3" fill="${p.road2}" opacity=".6"/>`; }
+    if(p.deco==="flower") for(let i=0;i<30;i++){ const x=(i*211)%W, y=gy-24+(i%4)*3; s+=`<circle cx="${x}" cy="${y}" r="4" fill="${["#ff8fbf","#fff","#ffd34d"][i%3]}"/>`; }
+    s += `<rect width="${W}" height="${H}" fill="url(#pdots)" opacity=".5"/>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><g filter="url(#grain)">${s}</g></svg>`;
+  }
+
+  /* ===== 公開版GGの仲間（右向き・128の箱・足もと y≈124）。種と役わりは旧版のまま、塗りだけ新しく ===== */
+  const leg2 = (x1,x2,y,len,col)=> line(`M${x1} ${y} L${x1-2} ${y+len} M${x2} ${y} L${x2+2} ${y+len}`,7,OL) + line(`M${x1} ${y} L${x1-2} ${y+len-1} M${x2} ${y} L${x2+2} ${y+len-1}`,4,col);
+  A.moaiAlly = ()=> svg( // モアイ兵: 石の顔の大きな盾役
+    part("M30 118 Q24 70 34 40 Q36 14 64 12 Q92 14 94 40 Q104 70 98 118 Q64 128 30 118Z", C.stone,{hl:[48,32,12,8], inner:line("M40 30 Q64 24 88 30",3,"#7d7064")}) +
+    `<rect x="44" y="50" width="14" height="9" rx="2" fill="${OL}"/><rect x="70" y="50" width="14" height="9" rx="2" fill="${OL}"/><circle cx="48" cy="53" r="2" fill="#9ff3ff"/><circle cx="74" cy="53" r="2" fill="#9ff3ff"/>` +
+    part("M58 60 L66 60 L70 82 L56 82Z", C.stone,{ow:4,sx:2,sy:2}) + line("M48 96 Q64 102 80 96",4) +
+    part("M34 20 Q64 4 94 20 L92 28 Q64 16 36 28Z", C.red,{ow:5,sx:1,sy:2}) );
+  A.healSprite = ()=> svg( `<defs>${glowF("hs","#9dffb0",4)}</defs>` + // いやしの精: 葉の羽の小さな精
+    `<g filter="url(#hs)">` + part("M38 60 Q8 40 14 18 Q36 30 46 52Z", C.leaf,{ow:5,sx:2,sy:2}) + part("M90 60 Q120 40 114 18 Q92 30 82 52Z", C.leaf,{ow:5,sx:2,sy:2}) + `</g>` +
+    part("M40 80 Q38 52 64 50 Q90 52 88 80 Q86 112 64 114 Q42 112 40 80Z", C.green,{hl:[52,62,9,7]}) +
+    eye(56,76,6,"#2a9d6b",{iris2:"#e8ffd0"}) + eye(74,76,6,"#2a9d6b",{iris2:"#e8ffd0"}) + blush(50,90,4) + blush(80,90,4) + line("M60 94 Q65 98 70 94",2.5) +
+    part("M58 50 Q56 34 64 22 Q72 34 70 50Z", C.leaf,{ow:5,sx:1,sy:2}) + `<path d="M100 92 h10 M105 87 v10 M18 92 h8 M22 88 v8" stroke="#9dffb0" stroke-width="3.5" stroke-linecap="round"/>` );
+  A.shieldBear = ()=> svg( // 盾グマ: 大きな盾をかまえるクマ
+    leg2(46,72,104,18,"#8a5530") +
+    part("M24 90 Q20 56 54 52 Q88 54 86 90 Q82 116 54 116 Q28 114 24 90Z", C.brown,{hl:[40,66,12,8], inner:`<ellipse cx="54" cy="92" rx="18" ry="14" fill="#f2c99a"/>`}) +
+    part("M38 18 Q30 6 40 4 Q50 6 48 16Z", C.brown,{ow:5,sx:2,sy:2}) + part("M80 18 Q88 6 78 4 Q68 6 70 16Z", C.brown,{ow:5,sx:2,sy:2}) +
+    part("M34 36 Q34 12 60 12 Q86 12 86 36 Q86 58 60 58 Q34 58 34 36Z", C.brown,{hl:[48,22,8,5], inner:`<ellipse cx="66" cy="44" rx="11" ry="8" fill="#f2c99a"/>`}) +
+    eye(52,34,5.5,"#5a3320",{iris2:"#ffd59a"}) + eye(72,34,5.5,"#5a3320",{iris2:"#ffd59a"}) + `<ellipse cx="66" cy="42" rx="4" ry="3" fill="${OL}"/>` + blush(46,46,4) +
+    part("M84 48 L122 54 Q124 92 102 118 Q80 100 80 74Z", C.blue,{hl:[100,62,6,10], inner:`<path d="M102 66 L112 82 L102 102 L92 82Z" fill="#ffe27a" stroke="${OL}" stroke-width="2"/>`}) );
+  A.orcaKnight = ()=> svg( // シャチ（SSR）: 三つ又の槍のシャチ騎士
+    part("M10 76 Q2 60 14 52 Q18 66 30 72Z", C.black,{sx:2,sy:2}) +
+    part("M18 84 Q16 46 64 42 Q110 44 116 76 Q112 104 70 108 Q24 110 18 84Z", C.black,{hl:[48,54,16,7], inner:`<path d="M36 90 Q70 106 110 84 Q100 104 70 106 Q40 106 36 90Z" fill="#fff"/><ellipse cx="92" cy="58" rx="10" ry="6" fill="#fff"/>`}) +
+    part("M60 44 Q66 18 78 12 Q78 30 74 46Z", C.black,{ow:5,sx:2,sy:2}) +
+    eye(92,64,5,"#36a8ff") + line("M100 80 Q108 82 114 78",2.5,"#fff") +
+    leg2(54,78,104,16,"#2a2440") + line("M104 24 L104 120",4,"#ffd34d") + `<path d="M96 24 L96 10 M104 24 L104 4 M112 24 L112 10" stroke="${OL}" stroke-width="7" stroke-linecap="round"/><path d="M96 24 L96 10 M104 24 L104 4 M112 24 L112 10" stroke="#ffe27a" stroke-width="3.5" stroke-linecap="round"/>` );
+  A.cheerTanuki = ()=> svg( // 応援タヌキ: 旗でなかまを強くする
+    line("M98 20 L98 116",4,"#8a5530") + part("M100 20 L126 28 L100 40Z", C.red,{ow:5,sx:1,sy:2, inner:`<circle cx="108" cy="30" r="4" fill="#fff"/>`}) +
+    part("M18 98 Q2 92 6 78 Q18 84 30 88Z", C.brown,{sx:2,sy:2, inner:line("M6 82 L28 90",3,"#5a3320")}) + leg2(46,70,104,18,"#5a3320") +
+    part("M28 88 Q26 58 58 56 Q90 58 88 88 Q84 116 58 116 Q32 114 28 88Z", C.brown,{hl:[44,68,10,7], inner:`<ellipse cx="58" cy="94" rx="16" ry="14" fill="#f2c99a"/>`}) +
+    part("M32 38 Q32 12 60 12 Q88 12 88 38 Q88 62 60 62 Q32 62 32 38Z", C.brown,{hl:[46,22,8,5], inner:`<path d="M38 34 Q50 28 56 40 Q48 48 38 42Z M82 34 Q70 28 64 40 Q72 48 82 42Z" fill="#3a2418"/>`}) +
+    part("M36 18 L32 4 L46 12Z", C.brown,{ow:4,sx:1,sy:1}) + part("M84 18 L88 4 L74 12Z", C.brown,{ow:4,sx:1,sy:1}) +
+    eye(48,38,5,"#ffb02e",{iris2:"#fff2b0"}) + eye(72,38,5,"#ffb02e",{iris2:"#fff2b0"}) + `<ellipse cx="60" cy="50" rx="4" ry="3" fill="${OL}"/>` + line("M52 54 Q60 60 68 54",2.5) );
+  A.ninjaFrog = ()=> svg( // 忍びガエル: はちまきと手裏剣
+    part("M18 110 Q8 122 26 124 Q36 122 34 112Z", C.green,{ow:5,sx:2,sy:2}) + part("M94 110 Q106 122 90 124 Q80 122 82 112Z", C.green,{ow:5,sx:2,sy:2}) +
+    part("M18 88 Q18 50 60 48 Q102 50 102 88 Q100 118 60 118 Q20 118 18 88Z", C.navy,{hl:[38,62,14,8], inner:`<path d="M30 70 L90 70 L86 80 L34 80Z" fill="#3fd1c0"/>`}) +
+    part("M26 46 Q26 22 44 22 Q60 24 58 46 Q56 62 42 62 Q26 60 26 46Z", C.green,{hl:[38,30,5,3]}) + part("M62 46 Q62 22 80 22 Q96 24 94 46 Q92 62 78 62 Q62 60 62 46Z", C.green,{hl:[74,30,5,3]}) +
+    part("M20 40 L100 40 L100 50 L20 50Z", C.red,{ow:5,sx:0,sy:2}) + part("M100 42 L120 34 L116 46 L124 52 L100 50Z", C.red,{ow:5,sx:1,sy:1}) +
+    eye(42,46,6.5,"#ffd34d",{angry:true}) + eye(78,46,6.5,"#ffd34d",{angry:true}) +
+    `<g transform="rotate(20 106 92)">` + part("M106 74 L112 88 L126 92 L112 96 L106 110 L100 96 L86 92 L100 88Z", C.grey,{ow:5,sx:1,sy:1}) + `</g>` );
+  A.steelBull = ()=> svg( // 鋼の猛牛: 鉄のよろいの牛
+    leg2(36,58,98,24,"#6b7891") + leg2(76,94,98,24,"#6b7891") +
+    part("M14 80 Q12 52 50 50 L92 50 Q114 56 112 84 Q108 104 70 104 Q18 106 14 80Z", C.brown,{hl:[38,62,14,7]}) +
+    part("M34 52 L92 52 L96 74 L30 74Z", C.grey,{ow:6,sx:0,sy:3, inner:`<circle cx="44" cy="62" r="3" fill="#e6ecf4"/><circle cx="64" cy="62" r="3" fill="#e6ecf4"/><circle cx="84" cy="62" r="3" fill="#e6ecf4"/>`}) +
+    part("M88 48 Q90 22 110 22 Q128 26 124 50 Q122 66 104 68 Q88 66 88 48Z", C.brown,{hl:[100,30,6,4], inner:`<ellipse cx="112" cy="58" rx="10" ry="7" fill="#f2c99a"/>`}) +
+    part("M94 28 Q80 10 92 2 Q94 16 102 24Z", C.white,{ow:5,sx:1,sy:2}) + part("M116 26 Q126 8 116 0 Q112 14 108 24Z", C.white,{ow:5,sx:1,sy:2}) +
+    eye(106,40,5,"#ff5a2a",{angry:true,iris2:"#ffd08a"}) + `<circle cx="112" cy="60" r="1.8" fill="${OL}"/><circle cx="118" cy="58" r="1.8" fill="${OL}"/>` );
+  A.crystalGolem = ()=> svg( `<defs>${glowF("cgx","#9ff3ff",4)}</defs>` + // 水晶ゴーレム（SSR）
+    part("M28 100 L50 100 L48 124 L26 124Z", C.ice,{sx:3,sy:2}) + part("M78 100 L100 100 L102 124 L80 124Z", C.ice,{sx:3,sy:2}) +
+    part("M8 62 Q2 62 4 74 L10 102 L24 98 L22 66Z", C.ice,{sx:2,sy:2}) + part("M120 62 Q126 62 124 74 L118 102 L104 98 L106 66Z", C.ice,{sx:2,sy:2}) +
+    part("M20 56 L44 34 L84 34 L108 56 L100 104 L28 104Z", C.ice,{hl:[44,50,14,8], inner:line("M44 34 L54 70 L28 104 M84 34 L74 70 L100 104 M54 70 L74 70",2.5,"#7cc8ef")}) +
+    part("M40 34 L50 8 L64 20 L78 6 L88 34Z", C.ice,{ow:6, hl:[58,20,6,4]}) +
+    `<g filter="url(#cgx)"><path d="M64 74 L74 86 L64 100 L54 86Z" fill="#9ff3ff" stroke="${OL}" stroke-width="2.5"/></g>` +
+    `<rect x="48" y="44" width="10" height="7" rx="2" fill="#2b62d6"/><rect x="70" y="44" width="10" height="7" rx="2" fill="#2b62d6"/><rect x="50" y="45" width="3" height="3" fill="#fff"/><rect x="72" y="45" width="3" height="3" fill="#fff"/>` );
+  A.thunderDragon = ()=> svg( `<defs>${glowF("td","#ffe14d",4)}</defs>` + // 雷竜キング（SSR）: 金のかみなり竜
+    part("M44 50 Q20 8 0 18 Q14 34 34 62Z", C.gold,{sx:3,sy:3,inner:line("M4 20 L34 58 M16 14 L38 50",2,"#a8620c")}) +
+    part("M6 96 Q-4 76 6 64 Q16 86 34 90Z", C.navy,{sx:3,sy:3}) + leg2(46,72,108,16,"#2d3592") +
+    part("M24 92 Q20 54 60 50 Q100 52 96 92 Q90 120 60 120 Q28 118 24 92Z", C.navy,{hl:[42,64,13,8], inner:`<path d="M46 66 Q60 60 74 66 L72 114 Q60 118 48 114Z" fill="#ffe9b0"/>`+line("M48 80 L72 80 M48 92 L72 92 M49 104 L71 104",2,"#e0b070")}) +
+    part("M58 34 Q58 6 90 8 Q120 12 118 40 Q124 52 118 60 Q100 68 80 64 Q58 60 58 34Z", C.navy,{hl:[76,20,10,6]}) +
+    `<g filter="url(#td)">${part("M68 14 L60 -8 L80 6Z", C.gold,{ow:5,sx:2,sy:2})}${part("M94 10 L104 -12 L108 14Z", C.gold,{ow:5,sx:2,sy:2})}<path d="M118 40 L128 30 L122 44 L128 46 L116 58 L120 48 L114 48Z" fill="#ffe14d" stroke="${OL}" stroke-width="2"/></g>` +
+    eye(88,32,7,"#ffd34d",{angry:true,iris2:"#fffbe0"}) + `<circle cx="114" cy="48" r="2.6" fill="${OL}"/>` + line("M96 56 Q106 60 116 56",2.5) );
+  A.togeHedge = ()=> svg( // トゲハリン: トゲのハリネズミ
+    leg2(46,74,108,14,"#8a5530") +
+    `<path d="M16 96 L8 84 L20 82 L12 66 L26 68 L22 50 L36 56 L38 38 L50 48 L58 32 L66 46 L78 36 L80 52 L94 48 L90 64 L104 66 L96 80Z" fill="${OL}" stroke="${OL}" stroke-width="6" stroke-linejoin="round"/>` +
+    part("M16 96 L8 84 L20 82 L12 66 L26 68 L22 50 L36 56 L38 38 L50 48 L58 32 L66 46 L78 36 L80 52 L94 48 L90 64 L104 66 L96 80Z", C.brown,{ow:0,hl:[40,58,10,6]}) +
+    part("M20 92 Q22 66 60 64 Q100 66 110 90 Q104 112 64 114 Q24 112 20 92Z", C.cream,{hl:[50,76,10,5]}) +
+    eye(84,84,6,"#5a3320",{iris2:"#ffd59a"}) + `<circle cx="108" cy="92" r="3.4" fill="${OL}"/>` + blush(80,98,4.5) + line("M92 102 Q98 105 104 101",2.2) );
+  A.iceFairy = ()=> svg( `<defs>${glowF("if","#bff0ff",4)}</defs>` + // こおりの精: 雪の結晶の杖
+    `<g filter="url(#if)">` + part("M42 60 Q10 30 18 10 Q40 26 50 52Z", C.ice,{ow:5,sx:2,sy:2}) + part("M86 60 Q118 30 110 10 Q88 26 78 52Z", C.ice,{ow:5,sx:2,sy:2}) + `</g>` +
+    part("M46 120 Q40 92 50 76 L78 76 Q88 92 82 120Z", C.blue,{hl:[56,90,6,8]}) +
+    part("M40 54 Q40 26 64 26 Q88 26 88 54 Q88 80 64 80 Q40 80 40 54Z", C.white,{hl:[52,38,8,6]}) +
+    part("M38 46 Q40 18 64 16 Q90 18 90 46 Q80 32 64 34 Q48 32 38 46Z", C.ice,{ow:5,sx:1,sy:2}) +
+    eye(55,56,6,"#36a8ff") + eye(74,56,6,"#36a8ff") + blush(50,68,4) + blush(80,68,4) + line("M60 70 Q65 73 70 70",2.2) +
+    line("M100 40 L100 120",4,"#7cc8ef") + `<g filter="url(#if)"><path d="M100 26 L100 50 M88 38 L112 38 M92 30 L108 46 M108 30 L92 46" stroke="#fff" stroke-width="4" stroke-linecap="round"/></g>` );
+  A.hammerMole = ()=> svg( // ハンマーモグラ: ヘルメットと大きなハンマー
+    line("M90 14 L100 110",6,OL) + line("M90 14 L100 110",3,"#c98a52") + part("M70 2 L112 -6 L116 20 L76 28Z", C.grey,{ow:6,sx:2,sy:3,hl:[86,8,10,3]}) +
+    leg2(42,66,104,18,"#5a3320") +
+    part("M20 92 Q16 58 52 54 Q88 56 86 92 Q82 118 52 118 Q24 116 20 92Z", C.dark,{hl:[38,68,12,8]}) +
+    part("M26 46 Q26 20 56 20 Q86 20 88 46 Q90 66 58 68 Q26 66 26 46Z", C.dark,{hl:[42,30,8,5], inner:`<ellipse cx="74" cy="56" rx="12" ry="8" fill="#ff9ab8"/>`}) +
+    part("M24 36 Q26 10 56 8 Q88 10 90 36 L24 36Z", C.gold,{ow:6,sx:1,sy:2, inner:`<circle cx="56" cy="22" r="6" fill="#fff6b0"/>`}) +
+    `<path d="M50 46 Q54 42 58 46 M66 46 Q70 42 74 46" stroke="${OL}" stroke-width="3" fill="none" stroke-linecap="round"/>` + `<ellipse cx="80" cy="54" rx="4" ry="3" fill="${OL}"/>` );
+  A.phoenix = ()=> svg( `<defs>${glowF("ph","#ff9a3c",5)}</defs>` + // ほのおの鳳凰（SSR・回復）
+    `<g filter="url(#ph)">` + part("M50 66 Q14 30 2 44 Q14 50 10 64 Q24 60 30 76 Q38 70 48 78Z", C.orange,{sx:3,sy:3}) + part("M30 96 Q6 112 4 124 Q20 116 30 120 Q34 110 46 106Z", C.red,{sx:2,sy:2}) + `</g>` +
+    part("M34 84 Q30 54 64 50 Q98 52 96 84 Q92 112 64 112 Q38 110 34 84Z", C.red,{hl:[50,64,12,8], inner:`<path d="M50 76 Q64 68 80 76 Q76 102 64 104 Q52 102 50 76Z" fill="#ffd59a"/>`}) +
+    part("M60 34 Q62 10 86 10 Q110 14 108 36 Q104 56 84 56 Q62 54 60 34Z", C.orange,{hl:[76,20,9,5]}) +
+    `<g filter="url(#ph)">${part("M74 12 Q72 -8 86 -10 Q80 0 88 8 Q92 -6 102 -2 Q94 6 94 14Z", C.gold,{ow:5,sx:1,sy:2})}</g>` +
+    part("M104 30 L124 36 L104 44Z", C.gold,{ow:5,sx:1,sy:2}) + eye(88,30,6.5,"#c8283f",{iris2:"#ffe08a"}) + blush(82,44,4) );
+  A.chickSquad = ()=> svg( // ヒヨコへい: 小さなかぶとのヒヨコ3羽
+    [ [28,0.82], [92,0.82], [60,1] ].map(([x,s])=>`<g transform="translate(${x} ${124}) scale(${s}) translate(-40 -60)">` +
+      line("M32 52 L30 60 M48 52 L50 60",4,"#e59a1c") +
+      part("M12 34 Q10 6 40 6 Q70 6 68 34 Q66 56 40 56 Q14 56 12 34Z", C.gold,{hl:[28,16,7,5]}) +
+      part("M66 28 L80 32 L66 38Z", C.orange,{ow:4,sx:1,sy:1}) + eye(52,26,4.5,"#5a3320",{iris2:"#ffd59a"}) + blush(56,38,3.5) +
+      part("M16 16 Q20 -6 42 -4 Q62 -2 64 16 Z", C.grey,{ow:5,sx:1,sy:2}) + `</g>`).join("") );
+  A.slingSquirrel = ()=> svg( // パチンコリス: 大きなしっぽとパチンコ
+    part("M30 100 Q-4 94 6 52 Q14 22 40 30 Q24 50 34 66 Q44 82 40 100Z", C.orange,{hl:[16,52,6,12], inner:line("M10 60 Q20 50 26 36",3,"#ffd59a")}) +
+    leg2(54,74,104,18,"#8a5530") +
+    part("M40 92 Q38 64 64 62 Q90 64 88 92 Q86 116 64 116 Q42 114 40 92Z", C.orange,{hl:[52,74,8,6], inner:`<ellipse cx="66" cy="96" rx="12" ry="12" fill="#fff1dc"/>`}) +
+    part("M50 44 Q50 20 74 20 Q98 20 100 44 Q100 64 76 66 Q50 66 50 44Z", C.orange,{hl:[62,28,7,5], inner:`<ellipse cx="88" cy="54" rx="10" ry="7" fill="#fff1dc"/>`}) +
+    part("M56 24 L54 8 L66 18Z", C.orange,{ow:4,sx:1,sy:1}) + eye(78,40,6,"#5a3320",{iris2:"#ffd59a"}) + `<circle cx="98" cy="50" r="2.6" fill="${OL}"/>` + blush(72,54,4) +
+    line("M102 62 L110 88 M118 62 L110 88 L108 104",4,"#8a5530") + line("M102 62 Q110 70 118 62",2,"#fff") + `<circle cx="110" cy="66" r="4" fill="#b8ab98" stroke="${OL}" stroke-width="2"/>` );
+  A.herbRabbit = ()=> svg( // やくそうウサギ: 薬草のかごのウサギ
+    `<g transform="rotate(-8 54 30)">${part("M46 34 Q38 2 50 -4 Q60 4 58 36Z", C.white,{ow:5,sx:2,sy:2, inner:`<path d="M50 6 Q48 20 52 32" stroke="#ff9ab8" stroke-width="5" fill="none"/>`})}</g>` +
+    `<g transform="rotate(10 74 30)">${part("M66 34 Q66 2 78 -2 Q86 8 78 36Z", C.white,{ow:5,sx:2,sy:2, inner:`<path d="M76 6 Q74 20 74 32" stroke="#ff9ab8" stroke-width="5" fill="none"/>`})}</g>` +
+    leg2(48,70,104,18,"#b9c6e8") +
+    part("M32 92 Q30 64 60 62 Q90 64 88 92 Q86 116 60 116 Q34 114 32 92Z", C.white,{hl:[46,74,9,6]}) +
+    part("M38 52 Q38 28 64 28 Q90 28 90 52 Q90 74 64 74 Q38 74 38 52Z", C.white,{hl:[50,36,8,5]}) +
+    eye(56,50,5.5,"#e0508f",{iris2:"#ffe0ee"}) + eye(74,50,5.5,"#e0508f",{iris2:"#ffe0ee"}) + `<path d="M64 60 L61 64 L67 64Z" fill="#ff8fbf"/>` + blush(50,62,4) + blush(80,62,4) +
+    part("M84 84 L118 84 L112 110 L90 110Z", C.brown,{ow:5,sx:1,sy:2, inner:line("M86 92 L116 92 M88 100 L114 100",2,"#5a3320")}) +
+    part("M90 84 Q92 66 100 70 Q104 78 102 84Z", C.leaf,{ow:4,sx:1,sy:1}) + part("M102 84 Q108 62 116 68 Q116 78 110 84Z", C.leaf,{ow:4,sx:1,sy:1}) );
+  A.sparkMouse = ()=> svg( `<defs>${glowF("sm","#ffe14d",3)}</defs>` + // いかずちネズミ: 電気をためる
+    `<g filter="url(#sm)"><path d="M14 92 L30 86 L22 78 L40 74 L30 66 L46 64" fill="none" stroke="#ffe14d" stroke-width="5" stroke-linejoin="round"/></g>` +
+    leg2(52,72,104,18,"#e0b88a") +
+    part("M38 94 Q36 66 62 64 Q88 66 86 94 Q84 116 62 116 Q40 114 38 94Z", C.gold,{hl:[50,76,9,6]}) +
+    part("M30 26 Q22 4 40 4 Q54 8 50 28Z", C.gold,{ow:5,sx:2,sy:2,inner:`<ellipse cx="40" cy="16" rx="5" ry="7" fill="#ff9ab8"/>`}) + part("M82 26 Q90 4 104 6 Q110 22 92 30Z", C.gold,{ow:5,sx:2,sy:2,inner:`<ellipse cx="98" cy="16" rx="5" ry="7" fill="#ff9ab8"/>`}) +
+    part("M38 46 Q38 22 66 22 Q94 22 96 46 Q98 68 66 70 Q38 68 38 46Z", C.gold,{hl:[52,30,8,5]}) +
+    eye(58,44,6,"#5a3320",{iris2:"#ffd59a"}) + eye(80,44,6,"#5a3320",{iris2:"#ffd59a"}) + `<ellipse cx="96" cy="54" rx="3" ry="2.4" fill="${OL}"/>` +
+    `<circle cx="52" cy="58" r="5" fill="#ff5a6a" opacity=".85"/><circle cx="90" cy="60" r="4" fill="#ff5a6a" opacity=".85"/>` +
+    `<g filter="url(#sm)"><path d="M100 76 L112 70 L106 84 L120 80 L104 100" fill="none" stroke="#fff6b0" stroke-width="3.5" stroke-linejoin="round"/></g>` );
+  A.shadowCat = ()=> svg( // かげろうネコ: 紫のくのいちネコ（高速）
+    part("M16 100 Q-2 88 4 62 Q14 80 28 84Z", C.purple,{sx:3,sy:3}) + leg2(44,66,104,18,"#4a2496") +
+    part("M26 94 Q24 64 54 62 Q84 64 82 94 Q78 118 54 118 Q30 116 26 94Z", C.dark,{hl:[42,74,9,6], inner:`<path d="M30 80 L80 80 L78 88 L32 88Z" fill="#b77cff"/>`}) +
+    part("M46 30 L40 4 L62 22Z", C.purple,{sx:2,sy:2,ow:6}) + part("M84 22 L98 2 L100 30Z", C.purple,{sx:2,sy:2,ow:6}) +
+    part("M42 44 Q42 20 72 20 Q102 20 104 44 Q102 68 72 68 Q44 68 42 44Z", C.purple,{hl:[58,30,9,5], inner:`<path d="M42 50 L104 50 L104 68 L42 68Z" fill="#2a2440"/>`}) +
+    eye(66,42,6,"#ff8fbf",{angry:true,iris2:"#ffe0ee"}) + eye(88,42,5,"#ff8fbf",{angry:true,iris2:"#ffe0ee"}) +
+    part("M84 82 L124 64 L126 70 L88 88Z", C.white,{ow:5,sx:1,sy:1,hl:[106,72,8,2]}) + part("M80 92 L118 100 L116 106 L78 98Z", C.white,{ow:5,sx:1,sy:1}) );
+  A.magmaTurtle = ()=> svg( `<defs>${glowF("mt","#ff7a3d",4)}</defs>` + // マグマガメ: 溶岩の甲羅
+    part("M30 120 Q26 104 34 98 L46 98 Q50 112 46 122Z", C.brown,{sx:3,sy:3}) + part("M74 120 Q72 104 80 98 L90 98 Q94 112 90 122Z", C.brown,{sx:3,sy:3}) +
+    part("M14 98 Q8 50 58 44 Q106 42 106 94 Q60 112 14 98Z", C.dark,{hl:[42,58,16,8]}) +
+    `<g filter="url(#mt)">` + line("M58 46 L56 66 L40 74 M56 66 L76 72 L88 64 M40 74 L34 92 M76 72 L72 96",4,"#ff7a3d") + `</g>` +
+    `<g filter="url(#mt)"><path d="M44 44 Q48 30 54 40 Q60 22 66 40 Q72 30 76 44Z" fill="#ffb457" stroke="${OL}" stroke-width="3" stroke-linejoin="round"/></g>` +
+    part("M90 60 Q92 38 110 40 Q128 44 124 64 Q120 80 104 80 Q90 78 90 60Z", C.orange,{hl:[104,48,6,4]}) +
+    eye(110,58,5.5,"#c8283f",{iris2:"#ffd08a"}) + line("M104 72 Q112 75 118 70",2.4) );
+  A.timeMage = ()=> svg( `<defs>${glowF("tm","#c49bff",5)}</defs>` + // 時の魔導士（SSR）: 砂時計の杖のヤギ
+    line("M104 30 L104 122",5,"#8a5530") + `<g filter="url(#tm)">` + part("M94 6 L114 6 L106 22 L114 38 L94 38 L102 22Z", C.gold,{ow:5,sx:1,sy:2, inner:`<path d="M98 10 L110 10 L104 20Z M97 36 L111 36 L104 28Z" fill="#fff6b0"/>`}) + `</g>` +
+    part("M28 122 Q22 84 34 66 L80 66 Q92 84 86 122Z", C.navy,{hl:[44,80,8,10], inner:`<path d="M34 96 L86 96 M40 110 L82 110" stroke="#ffd34d" stroke-width="3"/>`+`<circle cx="58" cy="84" r="5" fill="#ffd34d"/>`}) +
+    part("M36 46 Q36 22 60 22 Q84 22 86 46 Q86 70 60 70 Q36 70 36 46Z", C.white,{hl:[48,30,8,5], inner:`<path d="M48 64 Q60 86 72 64Z" fill="#e8e8f8"/>`}) +
+    part("M38 28 Q20 22 22 6 Q34 16 44 22Z", C.grey,{ow:5,sx:2,sy:2}) + part("M82 28 Q100 22 98 6 Q86 16 76 22Z", C.grey,{ow:5,sx:2,sy:2}) +
+    part("M24 30 L60 -8 L96 30 Q60 40 24 30Z", C.purple,{ow:6,sx:1,sy:3, inner:`<circle cx="60" cy="14" r="4" fill="#ffd34d"/><circle cx="44" cy="24" r="2.5" fill="#fff"/><circle cx="76" cy="22" r="2.5" fill="#fff"/>`}) +
+    eye(52,46,5.5,"#7a45d6",{iris2:"#f0dcff"}) + eye(70,46,5.5,"#7a45d6",{iris2:"#f0dcff"}) );
+  A.goldLion = ()=> svg( `<defs>${glowF("gl","#ffd34d",4)}</defs>` + // 黄金ライオン（SSR・味方を強くする）
+    part("M10 92 Q0 74 8 62 Q16 80 30 84Z", C.gold,{sx:3,sy:3, inner:`<circle cx="8" cy="64" r="6" fill="#a8620c"/>`}) + leg2(40,62,102,22,"#e59a1c") + leg2(80,96,102,22,"#e59a1c") +
+    part("M20 84 Q18 56 56 54 L96 54 Q114 60 112 86 Q108 106 66 106 Q22 108 20 84Z", C.gold,{hl:[42,64,14,7]}) +
+    `<g filter="url(#gl)">` + part("M70 40 Q60 6 92 2 Q126 4 124 38 Q132 60 112 72 Q92 82 74 68 Q60 58 70 40Z", C.orange,{hl:[84,14,10,6]}) + `</g>` +
+    part("M80 40 Q80 18 100 18 Q120 20 120 42 Q120 62 100 62 Q80 62 80 40Z", C.gold,{hl:[92,26,6,4], inner:`<ellipse cx="106" cy="52" rx="10" ry="7" fill="#fff2c8"/>`}) +
+    part("M84 14 L92 -4 L98 10 L106 -8 L112 10 L120 -2 L118 16Z", C.gold,{ow:5,sx:1,sy:2, inner:`<circle cx="102" cy="8" r="3" fill="#ff3d6e"/>`}) +
+    eye(98,38,5.5,"#e0582a",{iris2:"#ffe08a"}) + `<ellipse cx="112" cy="48" rx="3.4" ry="2.6" fill="${OL}"/>` + line("M102 56 Q108 59 114 55",2.2) );
+
+  /* ===== 公開版GGの敵（右向きで描く＝ゲームが左右反転する）。動物と文化遺物のまま、塗りだけ新しく ===== */
+  const angryMouth = (x,y,w)=>`<path d="M${x} ${y} Q${x+w/2} ${y-6} ${x+w} ${y} Q${x+w/2} ${y+5} ${x} ${y}Z" fill="#3a0f2a" stroke="${OL}" stroke-width="2.5"/><path d="M${x+w*0.25} ${y-1} l3 5 l3 -5 M${x+w*0.6} ${y-1} l3 5 l3 -5" fill="#fff"/>`;
+  E.hare = ()=> svg( // はやウサ: 足の速いウサギ
+    `<g transform="rotate(-20 46 34)">${part("M40 40 Q30 4 44 0 Q56 6 52 40Z", C.orange,{ow:5,sx:2,sy:2, inner:`<path d="M44 8 Q42 22 46 36" stroke="#e0582a" stroke-width="5" fill="none"/>`})}</g>` +
+    `<g transform="rotate(-6 70 34)">${part("M64 40 Q60 4 74 2 Q84 10 76 40Z", C.orange,{ow:5,sx:2,sy:2, inner:`<path d="M70 10 Q70 24 70 36" stroke="#e0582a" stroke-width="5" fill="none"/>`})}</g>` +
+    line("M40 104 L22 118 M58 106 L46 122 M80 104 L92 120 M92 100 L110 112",6,OL) + line("M40 104 L22 117 M58 106 L46 121 M80 104 L92 119 M92 100 L110 111",3.5,"#ffd59a") +
+    part("M26 92 Q22 64 58 60 Q96 62 96 92 Q92 112 60 112 Q28 112 26 92Z", C.orange,{hl:[42,72,12,7]}) +
+    part("M40 60 Q40 34 66 34 Q94 34 94 60 Q94 84 66 84 Q40 84 40 60Z", C.orange,{hl:[52,44,8,5]}) +
+    eye(62,58,6,"#c8283f",{angry:true,iris2:"#ffd0dc"}) + eye(82,58,6,"#c8283f",{angry:true,iris2:"#ffd0dc"}) + `<path d="M92 68 L88 72 L94 72Z" fill="#c8283f"/>` + angryMouth(74,76,14) );
+  E.totem = ()=> svg( // トーテム: 木のトーテムポール
+    part("M34 18 L94 18 L94 122 L34 122Z", C.brown,{hl:[48,30,8,10], inner:line("M34 70 L94 70",4,"#5a3320")}) +
+    part("M14 30 L34 40 L34 24Z", C.gold,{ow:5,sx:1,sy:1}) + part("M114 30 L94 40 L94 24Z", C.gold,{ow:5,sx:1,sy:1}) +
+    part("M28 8 L100 8 L96 22 L32 22Z", C.red,{ow:5,sx:0,sy:2}) +
+    eye(52,40,6,"#ffd34d",{angry:true}) + eye(76,40,6,"#ffd34d",{angry:true}) + angryMouth(50,60,28) +
+    `<circle cx="52" cy="88" r="7" fill="#fff2c8" stroke="${OL}" stroke-width="3"/><circle cx="76" cy="88" r="7" fill="#fff2c8" stroke="${OL}" stroke-width="3"/><circle cx="53" cy="89" r="3" fill="${OL}"/><circle cx="77" cy="89" r="3" fill="${OL}"/>` + line("M52 106 L76 106",4) );
+  E.torii = ()=> svg( // トリイ: 顔のある鳥居
+    part("M10 24 Q64 12 118 24 L116 36 Q64 26 12 36Z", C.red,{ow:6,sx:0,sy:3,hl:[40,24,14,3]}) + part("M6 18 Q64 4 122 18 L122 24 Q64 12 6 24Z", C.dark,{ow:5,sx:0,sy:2}) +
+    part("M22 44 L106 44 L106 54 L22 54Z", C.red,{ow:5,sx:0,sy:2}) +
+    part("M30 36 L44 36 L46 122 L28 122Z", C.red,{ow:6,sx:3,sy:0}) + part("M84 36 L98 36 L100 122 L82 122Z", C.red,{ow:6,sx:3,sy:0}) +
+    part("M28 112 L48 112 L48 124 L28 124Z", C.dark,{ow:4,sx:0,sy:1}) + part("M82 112 L102 112 L102 124 L82 124Z", C.dark,{ow:4,sx:0,sy:1}) +
+    eye(56,76,5.5,"#ffd34d",{angry:true}) + eye(74,76,5.5,"#ffd34d",{angry:true}) + angryMouth(56,94,18) );
+  E.bombSlime = ()=> svg( // ボムスライム: 導火線つき
+    part("M14 118 Q10 74 40 60 Q64 46 88 60 Q118 74 114 118 Q64 128 14 118Z", C.red,{hl:[42,78,14,9]}) +
+    line("M64 52 Q66 36 78 30",4,"#c98a52") + `<circle cx="80" cy="28" r="6" fill="#ffd34d"/><circle cx="80" cy="28" r="2.6" fill="#fff"/><path d="M86 20 l6 -6 M88 28 h8 M84 34 l5 5" stroke="#ffd34d" stroke-width="3" stroke-linecap="round"/>` +
+    eye(50,90,6.5,"#ffe14d",{angry:true}) + eye(78,90,6.5,"#ffe14d",{angry:true}) + angryMouth(54,108,20) +
+    letter(64,74,14,"!","#fff6b0") );
+  E.splitMush = ()=> svg( // 分裂キノコ: たおすとスライムが出る
+    part("M42 76 L86 76 L84 118 Q64 126 44 118Z", C.cream,{hl:[52,90,6,10]}) +
+    part("M8 72 Q8 22 64 18 Q120 22 120 72 Q64 84 8 72Z", C.red,{hl:[40,36,16,8], inner:`<circle cx="40" cy="48" r="8" fill="#fff"/><circle cx="74" cy="34" r="7" fill="#fff"/><circle cx="96" cy="56" r="8" fill="#fff"/>`}) +
+    eye(56,94,5.5,"#7a3db8",{angry:true}) + eye(74,94,5.5,"#7a3db8",{angry:true}) + line("M58 110 Q65 106 72 110",2.6) );
+  E.ghost = ()=> svg( `<defs>${glowF("gh","#c9b8ff",4)}</defs>` + // おばけ: すばやい
+    `<g filter="url(#gh)">` + part("M24 66 Q22 18 64 16 Q106 18 104 66 L104 112 L92 102 L82 116 L70 104 L58 118 L46 104 L34 114 L24 104Z", C.white,{hl:[44,36,14,10]}) + `</g>` +
+    part("M8 70 Q14 56 26 62 L24 78Z", C.white,{ow:5,sx:1,sy:1}) +
+    eye(54,58,7,"#7a45d6",{angry:true,iris2:"#f0dcff"}) + eye(80,58,7,"#7a45d6",{angry:true,iris2:"#f0dcff"}) +
+    `<path d="M56 80 Q67 72 78 80 Q72 92 67 92 Q62 92 56 80Z" fill="#3a1a50" stroke="${OL}" stroke-width="2.5"/>` + blush(46,72,5) );
+  E.mummy = ()=> svg( // ミイラ兵: かたくておそい
+    leg2(48,72,104,18,"#e0d0b0") +
+    part("M28 96 Q24 62 60 58 Q96 60 94 96 Q90 118 60 118 Q30 116 28 96Z", C.cream,{hl:[42,70,10,7], inner:line("M28 72 L94 82 M28 90 L94 78 M30 106 L92 98",3,"#b07f5a")}) +
+    part("M34 40 Q34 12 62 12 Q92 12 92 40 Q92 62 62 62 Q34 62 34 40Z", C.cream,{hl:[46,22,8,5], inner:line("M34 24 L92 30 M34 40 L92 34 M36 54 L90 50",3,"#b07f5a")}) +
+    `<rect x="44" y="34" width="38" height="12" rx="4" fill="#2a1a12"/>` + `<circle cx="54" cy="40" r="4" fill="#ff3d6e"/><circle cx="72" cy="40" r="4" fill="#ff3d6e"/>` +
+    part("M88 70 L120 74 L118 82 L88 80Z", C.cream,{ow:5,sx:1,sy:1}) + part("M92 50 Q104 40 110 52 L100 60Z", C.cream,{ow:4,sx:1,sy:1}) );
+  E.darkMage = ()=> svg( `<defs>${glowF("dm","#b77cff",5)}</defs>` + // くらやみ術師: 遠くから魔法
+    line("M100 34 L104 122",4,"#2a2440") + `<g filter="url(#dm)"><circle cx="100" cy="28" r="10" fill="#b77cff" stroke="${OL}" stroke-width="3"/><circle cx="96" cy="24" r="3.5" fill="#fff"/></g>` +
+    part("M24 122 Q20 82 36 62 L84 62 Q98 82 92 122Z", C.dark,{hl:[42,80,8,10], inner:`<path d="M58 66 L52 122 M66 66 L70 122" stroke="#4b4566" stroke-width="3"/>`}) +
+    part("M30 62 Q24 14 60 4 Q96 14 90 62 Q60 72 30 62Z", C.purple,{hl:[46,26,10,10], inner:`<path d="M38 36 Q60 26 82 36 L82 64 Q60 72 38 64Z" fill="#15112a"/>`}) +
+    `<g filter="url(#dm)"><ellipse cx="52" cy="48" rx="5" ry="3.5" fill="#ffe14d"/><ellipse cx="70" cy="48" rx="5" ry="3.5" fill="#ffe14d"/></g>` );
+  E.stoneGiant = ()=> svg( // 岩の巨人: 大きくてかたい
+    part("M8 70 Q0 70 2 84 L8 112 L26 108 L24 74Z", C.stone,{sx:3,sy:2}) + part("M120 70 Q128 70 126 84 L120 112 L102 108 L104 74Z", C.stone,{sx:3,sy:2}) +
+    part("M30 104 L54 104 L52 126 L28 126Z", C.stone,{sx:2,sy:2}) + part("M74 104 L98 104 L100 126 L76 126Z", C.stone,{sx:2,sy:2}) +
+    part("M20 62 Q16 34 44 30 L84 30 Q112 34 108 62 L104 106 Q64 116 24 106Z", C.stone,{hl:[42,46,16,8], inner:`<path d="M26 74 Q40 70 46 80 M86 88 Q96 82 104 88 M56 96 L62 104" stroke="#7d7064" stroke-width="3" fill="none"/>`+`<ellipse cx="40" cy="96" rx="8" ry="5" fill="#7ed957" opacity=".8"/>`}) +
+    `<rect x="44" y="46" width="14" height="9" rx="3" fill="#ff7a3d" stroke="${OL}" stroke-width="2.5"/><rect x="70" y="46" width="14" height="9" rx="3" fill="#ff7a3d" stroke="${OL}" stroke-width="2.5"/>` + line("M50 70 L78 70",4) );
+  E.cannon = ()=> svg( // 砲台: 遠くから撃つ
+    part("M20 104 L104 104 L110 124 L14 124Z", C.brown,{ow:6,sx:0,sy:3}) +
+    `<circle cx="38" cy="114" r="12" fill="#5a3320" stroke="${OL}" stroke-width="4"/><circle cx="86" cy="114" r="12" fill="#5a3320" stroke="${OL}" stroke-width="4"/><circle cx="38" cy="114" r="4" fill="#c98a52"/><circle cx="86" cy="114" r="4" fill="#c98a52"/>` +
+    `<g transform="rotate(-14 60 80)">` + part("M24 64 L104 64 Q118 64 118 80 Q118 96 104 96 L24 96 Q14 96 14 80 Q14 64 24 64Z", C.dark,{hl:[44,70,18,5], inner:`<rect x="96" y="62" width="10" height="36" fill="#2a2440"/>`}) + `<ellipse cx="118" cy="80" rx="6" ry="14" fill="#120e22" stroke="${OL}" stroke-width="3"/></g>` +
+    eye(48,74,5.5,"#ff3d6e",{angry:true}) + eye(66,72,5.5,"#ff3d6e",{angry:true}) );
+  E.healer = ()=> svg( `<defs>${glowF("eh","#7dffb0",4)}</defs>` + // 癒し手: 敵をなおす
+    line("M98 36 L100 122",4,"#5a3320") + `<g filter="url(#eh)"><path d="M92 22 h16 M100 14 v16" stroke="#7dffb0" stroke-width="6" stroke-linecap="round"/></g>` +
+    part("M26 122 Q22 84 38 66 L82 66 Q94 84 90 122Z", C.green,{hl:[42,82,8,10], inner:`<path d="M52 88 h16 M60 80 v16" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`}) +
+    part("M34 44 Q34 18 60 18 Q86 18 86 44 Q86 68 60 68 Q34 68 34 44Z", C.green,{hl:[46,28,8,5]}) +
+    part("M30 34 Q34 6 60 4 Q88 6 90 34 Q74 22 60 24 Q44 22 30 34Z", C.leaf,{ow:5,sx:1,sy:2}) +
+    eye(50,44,5.5,"#c8283f",{angry:true}) + eye(70,44,5.5,"#c8283f",{angry:true}) + line("M54 58 Q60 55 66 58",2.5) );
+  E.buffer = ()=> svg( `<defs>${glowF("bf","#ff5a2a",5)}</defs>` + // 鼓舞の巨像: まわりの敵を強くする
+    part("M18 122 L26 92 L102 92 L110 122Z", C.stone,{ow:6,sx:0,sy:3}) +
+    part("M30 92 Q24 52 64 46 Q104 52 98 92Z", C.gold,{hl:[44,60,12,7], inner:line("M40 70 L88 70",3,"#a8620c")}) +
+    part("M38 40 Q38 8 64 8 Q90 8 90 40 Q90 60 64 60 Q38 60 38 40Z", C.gold,{hl:[50,18,8,5]}) +
+    `<rect x="48" y="30" width="12" height="7" rx="2" fill="${OL}"/><rect x="68" y="30" width="12" height="7" rx="2" fill="${OL}"/>` + line("M52 48 L76 48",4) +
+    `<g filter="url(#bf)"><path d="M10 50 L20 40 L20 60Z M118 50 L108 40 L108 60Z" fill="#ff7a3d" stroke="${OL}" stroke-width="2"/><circle cx="64" cy="76" r="7" fill="#ff5a2a"/></g>` +
+    letter(64,114,14,"UP","#ffe27a") );
+  E.shieldy = ()=> svg( // シールド兵: 正解で盾が割れる
+    leg2(44,66,104,18,"#801730") +
+    part("M24 94 Q22 64 52 62 Q82 64 80 94 Q76 118 52 118 Q28 116 24 94Z", C.red,{hl:[38,74,9,6]}) +
+    part("M30 46 Q30 20 56 20 Q82 20 82 46 Q82 68 56 68 Q30 68 30 46Z", C.red,{hl:[42,28,7,5]}) +
+    part("M26 38 Q28 10 56 8 Q86 10 86 38 L74 34 L56 36 L38 34Z", C.grey,{ow:5,sx:1,sy:2, inner:`<path d="M56 8 L56 30" stroke="#ff5a6a" stroke-width="5"/>`}) +
+    eye(48,48,5.5,"#ffe14d",{angry:true}) + eye(66,48,5.5,"#ffe14d",{angry:true}) + line("M50 60 Q57 57 64 60",2.5) +
+    part("M78 46 L118 52 Q120 90 98 116 Q76 100 76 72Z", C.grey,{hl:[94,60,6,10], inner:`<path d="M98 62 L106 78 L98 98 L90 78Z" fill="#ff5a6a" stroke="${OL}" stroke-width="2"/>`}) );
+  E.summoner = ()=> svg( `<defs>${glowF("su","#ff4d8a",5)}</defs>` + // よびだし術師: スライムをよぶ
+    `<g filter="url(#su)"><ellipse cx="64" cy="118" rx="52" ry="8" fill="none" stroke="#ff4d8a" stroke-width="4"/><path d="M28 118 L64 108 L100 118 L64 128Z" fill="none" stroke="#ff9ab8" stroke-width="2"/></g>` +
+    part("M28 116 Q22 80 38 62 L90 62 Q104 80 98 116Z", C.purple,{hl:[44,78,8,10], inner:`<path d="M40 90 L88 90" stroke="#ffd34d" stroke-width="3"/>`}) +
+    part("M36 44 Q36 16 64 16 Q92 16 92 44 Q92 68 64 68 Q36 68 36 44Z", C.dark,{hl:[48,26,8,5]}) +
+    part("M30 30 L64 -6 L98 30 Q64 40 30 30Z", C.purple,{ow:6,sx:1,sy:3, inner:letter(64,24,14,"?","#ffe27a")}) +
+    eye(54,46,5.5,"#ff3d6e",{angry:true}) + eye(74,46,5.5,"#ff3d6e",{angry:true}) +
+    part("M90 76 Q104 66 116 74 Q112 88 98 88Z", C.purple,{ow:5,sx:1,sy:1}) + `<g filter="url(#su)"><circle cx="118" cy="68" r="7" fill="#ff4d8a"/></g>` );
+  E.bossMoai = ()=> svg( `<defs>${glowF("bm","#ff4d8a",5)}</defs>` + // ボス: 巨大モアイ
+    part("M18 124 Q10 70 22 36 Q26 4 64 2 Q102 4 106 36 Q118 70 110 124 Q64 132 18 124Z", C.stone,{hl:[40,30,16,10], inner:line("M30 28 Q64 18 98 28 M30 84 Q40 80 46 88 M86 96 Q94 90 100 96",3,"#7d7064")}) +
+    `<g filter="url(#bm)"><rect x="34" y="46" width="22" height="12" rx="3" fill="#ff3d6e"/><rect x="72" y="46" width="22" height="12" rx="3" fill="#ff3d6e"/></g>` +
+    part("M56 58 L72 58 L78 88 L50 88Z", C.stone,{ow:5,sx:2,sy:2}) + line("M38 104 L90 104",6) +
+    part("M20 10 Q64 -12 108 10 L106 22 Q64 2 22 22Z", C.red,{ow:6,sx:1,sy:3, inner:`<circle cx="64" cy="6" r="5" fill="#ffd34d"/>`}) );
+  E.bossTotem = ()=> svg( `<defs>${glowF("bt","#ffd34d",4)}</defs>` + // ボス: 巨大トーテム
+    part("M32 4 L96 4 L96 124 L32 124Z", C.brown,{hl:[46,16,8,10], inner:line("M32 44 L96 44 M32 86 L96 86",4,"#5a3320")}) +
+    part("M8 20 L32 32 L32 12Z", C.gold,{ow:5,sx:1,sy:1}) + part("M120 20 L96 32 L96 12Z", C.gold,{ow:5,sx:1,sy:1}) + part("M4 60 L32 70 L32 50Z", C.red,{ow:5,sx:1,sy:1}) + part("M124 60 L96 70 L96 50Z", C.red,{ow:5,sx:1,sy:1}) +
+    part("M24 -8 L104 -8 L100 6 L28 6Z", C.gold,{ow:5,sx:0,sy:2}) +
+    eye(50,22,6,"#ffd34d",{angry:true}) + eye(78,22,6,"#ffd34d",{angry:true}) + angryMouth(50,36,28) +
+    `<g filter="url(#bt)"><circle cx="50" cy="62" r="7" fill="#ff3d6e"/><circle cx="78" cy="62" r="7" fill="#ff3d6e"/></g>` + line("M48 76 L80 76",4) +
+    eye(50,102,6,"#ffd34d",{angry:true}) + eye(78,102,6,"#ffd34d",{angry:true}) + angryMouth(52,116,24) );
+  E.bossThunder = ()=> svg( `<defs>${glowF("bth","#ffe14d",5)}</defs>` + // ボス: 雷の魔王
+    part("M48 54 Q20 10 0 22 Q16 38 36 66Z", C.dark,{sx:3,sy:3, inner:line("M4 24 L36 62 M18 16 L40 54",2.4,"#15112a")}) +
+    part("M80 54 Q108 10 128 22 Q112 38 92 66Z", C.dark,{sx:3,sy:3}) +
+    part("M22 124 Q16 66 64 60 Q112 66 106 124 Q64 132 22 124Z", C.purple,{hl:[42,78,14,9], inner:`<path d="M50 70 L64 90 L78 70" stroke="#ffe14d" stroke-width="4" fill="none"/>`}) +
+    part("M32 44 Q32 10 64 10 Q96 10 96 44 Q96 72 64 72 Q32 72 32 44Z", C.purple,{hl:[46,22,10,6]}) +
+    `<g filter="url(#bth)">${part("M38 18 L30 -6 L50 8Z", C.gold,{ow:5,sx:2,sy:2})}${part("M90 18 L98 -6 L78 8Z", C.gold,{ow:5,sx:2,sy:2})}<path d="M64 -4 L56 14 L66 14 L58 30" stroke="#ffe14d" stroke-width="4" fill="none"/></g>` +
+    eye(52,42,7,"#ffe14d",{angry:true,iris2:"#fffbe0"}) + eye(76,42,7,"#ffe14d",{angry:true,iris2:"#fffbe0"}) + angryMouth(50,60,28) );
+  const crest = ()=> svg( `<defs>${glowF("cr","#7fe9ff",5)}</defs>` + // タイトルの紋章
+    part("M64 6 L114 22 Q116 86 64 124 Q12 86 14 22Z", C.blue,{ow:9,hl:[44,36,12,18]}) +
+    part("M64 22 L100 34 Q100 80 64 108 Q28 80 28 34Z", C.navy,{ow:4,sx:2,sy:3}) +
+    `<g filter="url(#cr)"><text x="64" y="84" font-family="Georgia,serif" font-weight="900" font-size="52" text-anchor="middle" fill="#ffe27a" stroke="${OL}" stroke-width="3" paint-order="stroke">G</text></g>` +
+    part("M30 112 L98 112 L104 124 L24 124Z", C.gold,{ow:5,sx:0,sy:2}) );
+  const hint = ()=> svg( part("M64 18 Q100 18 104 58 Q104 98 64 102 Q24 98 24 58 Q28 18 64 18Z", C.gold,{hl:[48,38,10,8]}) + `<text x="64" y="80" font-family="Georgia,serif" font-weight="900" font-size="44" text-anchor="middle" fill="#fff" stroke="${OL}" stroke-width="3" paint-order="stroke">?</text>` );
+
+  /* ===== 城スキン（旧版の20種の色をそのまま使い、塗りだけ新しく。箱は旧版と同じ viewBox 0 0 100 100） ===== */
+  function hexMix(h, t, f){ const a=parseInt(h.slice(1),16), b=parseInt(t.slice(1),16);
+    const r=Math.round(((a>>16)&255)*(1-f)+((b>>16)&255)*f), g=Math.round(((a>>8)&255)*(1-f)+((b>>8)&255)*f), bl=Math.round((a&255)*(1-f)+(b&255)*f);
+    return "#"+((1<<24)|(r<<16)|(g<<8)|bl).toString(16).slice(1); }
+  const palOf = h => P(hexMix(h,"#ffffff",0.5), h, hexMix(h,"#1a1040",0.35), hexMix(h,"#1a1040",0.55));
+  function skinInner(s){
+    const body = palOf(s.body), batt = palOf(s.batt), flag = palOf(s.flag), door = s.door;
+    const ssr = s.rar==="SSR", sr = s.rar==="SR";
+    const brick = `<pattern id="sbk" width="12" height="8" patternUnits="userSpaceOnUse"><path d="M0 8 H12 M6 0 V4 M0 4 H12 M0 0 V4 M12 4 V8" stroke="${hexMix(s.body,"#1a1040",0.45)}" stroke-width="0.9" opacity=".5"/></pattern>`;
+    let g = `<defs>${brick}${ssr?glowF("sgl",s.flag,3):""}</defs>`;
+    g += part("M14 44 L52 44 L52 114 L14 114Z", body,{sx:4,sy:0,ow:5, hl:[22,58,4,10], inner:`<rect width="100" height="130" fill="url(#sbk)"/>`});
+    g += part("M12 44 L12 32 L19 32 L19 38 L25 38 L25 32 L31 32 L31 38 L37 38 L37 32 L43 32 L43 38 L49 38 L49 32 L56 32 L56 44Z", batt,{ow:5,sx:0,sy:2});
+    g += `<path d="M24 114 L24 80 Q33 68 42 80 L42 114Z" fill="${door}" stroke="${OL}" stroke-width="3"/><path d="M33 72 L33 114" stroke="${hexMix(door,"#000000",0.3)}" stroke-width="1.6"/>`;
+    g += `<rect x="28" y="52" width="10" height="13" rx="5" fill="${ssr?"#fff3b0":"#2a2440"}" stroke="${OL}" stroke-width="2.5"/>`;
+    g += line("M50 32 L50 6",2.6);
+    g += part("M50 6 L70 11 L50 17Z", flag,{ow:4,sx:1,sy:2});
+    if(sr||ssr) g += `<path d="M14 92 L52 92" stroke="${hexMix(s.flag,"#ffffff",0.2)}" stroke-width="3"/>`;
+    if(ssr) g += `<g filter="url(#sgl)"><path d="M33 22 L37 28 L33 34 L29 28Z" fill="#fff3b0" stroke="${OL}" stroke-width="1.6"/></g>`;
+    return g;
+  }
+  let skinSeq = 0;
+  function skin(s){
+    const n = "k"+(++skinSeq).toString(36);
+    return skinInner(s).replace(/id="([^"]+)"/g, function(m,a){ return 'id="'+a+'_'+n+'"'; })
+                       .replace(/url\(#([^)]+)\)/g, function(m,a){ return 'url(#'+a+'_'+n+')'; });
+  }
+
+  /* ===== 戦場の背景（章ごとの色 top/ground から描く。旧版の雲・シルエットの演出はそのまま上に乗る） ===== */
+  const fieldCache = {};
+  function fieldSvg(top, ground){
+    const W=1600, H=500, gy=430, dark = parseInt(top.slice(1,3),16) < 90;
+    const sky0 = hexMix(top, dark?"#0a0820":"#3a6fd8", dark?0.3:0.38), sky2 = hexMix(top, "#ffffff", 0.45);
+    const far = hexMix(top, "#5a6aa8", 0.32), far2 = hexMix(top, "#ffffff", 0.25);
+    const mid = hexMix(ground, "#2f6a40", 0.22), near = hexMix(ground, "#1a1040", 0.24), road = hexMix(ground, "#ffffff", 0.18), road2 = hexMix(ground, "#1a1040", 0.15);
+    let s = '<defs><linearGradient id="fs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+sky0+'"/><stop offset="0.62" stop-color="'+top+'"/><stop offset="1" stop-color="'+sky2+'"/></linearGradient>'
+      + '<radialGradient id="fsun"><stop offset="0" stop-color="#fffbe0"/><stop offset="0.3" stop-color="#fff3b0" stop-opacity=".7"/><stop offset="1" stop-color="#fff3b0" stop-opacity="0"/></radialGradient>'
+      + '<filter id="fgr" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.15  0 0 0 0.09 0" result="g"/><feComposite in="g" in2="SourceGraphic" operator="in" result="gi"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="gi"/></feMerge></filter>'
+      + '<pattern id="fst" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M-2 2 l4 -4 M0 40 l40 -40 M38 42 l4 -4" stroke="#000" stroke-opacity=".05" stroke-width="10"/></pattern></defs>'
+      + '<g filter="url(#fgr)"><rect width="'+W+'" height="'+H+'" fill="url(#fs)"/>'
+      + '<circle cx="1280" cy="96" r="180" fill="url(#fsun)"/>'
+      + '<path d="M0 310 L130 220 L250 280 L400 170 L540 270 L690 200 L830 280 L990 165 L1140 270 L1290 205 L1450 280 L1600 215 L1600 500 L0 500Z" fill="'+far+'"/>'
+      + '<path d="M400 170 L446 204 L428 202 L414 216 L400 202 L384 214 L366 198Z M990 165 L1036 199 L1016 196 L1002 211 L990 196 L974 208 L954 192Z" fill="'+far2+'" opacity=".8"/>'
+      + '<path d="M0 352 Q170 290 350 336 T710 326 T1070 336 T1410 318 T1600 334 V500 H0Z" fill="'+mid+'"/>'
+      + '<path d="M0 352 Q170 290 350 336 T710 326 T1070 336 T1410 318 T1600 334" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="4"/>';
+    for(let i=0;i<13;i++){ const x = 50+i*125+(i%3)*18, y = 368+(i%2)*10;
+      s += '<circle cx="'+x+'" cy="'+(y-24)+'" r="26" fill="'+hexMix(mid,"#1a1040",0.25)+'"/><circle cx="'+(x-6)+'" cy="'+(y-30)+'" r="20" fill="'+hexMix(mid,"#ffffff",0.08)+'"/><circle cx="'+(x-12)+'" cy="'+(y-38)+'" r="8" fill="#fff" opacity=".25"/>'; }
+    s += '<path d="M0 '+(gy-36)+' Q400 '+(gy-56)+' 800 '+(gy-40)+' T1600 '+(gy-42)+' V500 H0Z" fill="'+near+'"/>'
+      + '<path d="M0 '+(gy-14)+' Q800 '+(gy-24)+' 1600 '+(gy-14)+' L1600 500 L0 500Z" fill="'+road+'"/><path d="M0 '+(gy-14)+' Q800 '+(gy-24)+' 1600 '+(gy-14)+' L1600 500 L0 500Z" fill="url(#fst)"/>'
+      + '<path d="M0 '+(gy-14)+' Q800 '+(gy-24)+' 1600 '+(gy-14)+'" stroke="'+road2+'" stroke-width="6" fill="none"/>';
+    for(let i=0;i<36;i++){ const x=(i*163)%W, y=gy+6+(i*37)%56; s += '<ellipse cx="'+x+'" cy="'+y+'" rx="'+(6+(i%3)*3)+'" ry="3" fill="'+road2+'" opacity=".55"/>'; }
+    s += '</g>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="xMidYMax slice">'+s+'</svg>';
+  }
+  function fieldCss(bg){
+    const k = bg.top+bg.ground;
+    if(!fieldCache[k]) fieldCache[k] = 'url("data:image/svg+xml;charset=utf-8,'+encodeURIComponent(fieldSvg(bg.top, bg.ground))+'") center bottom/cover no-repeat, '+bg.top;
+    return fieldCache[k];
+  }
+
+  const MAP = {
+    guardTurtle:A.guard, arrowBird:A.archer, dashFox:A.knight, bombFrog:A.bomber, owlSage:A.mage,
+    dragonTurtle:A.dragon, moonArcher:A.sniper,
+    moaiAlly:A.moaiAlly, healSprite:A.healSprite, shieldBear:A.shieldBear, orcaKnight:A.orcaKnight, cheerTanuki:A.cheerTanuki,
+    ninjaFrog:A.ninjaFrog, steelBull:A.steelBull, crystalGolem:A.crystalGolem, thunderDragon:A.thunderDragon, togeHedge:A.togeHedge,
+    iceFairy:A.iceFairy, hammerMole:A.hammerMole, phoenix:A.phoenix, chickSquad:A.chickSquad, slingSquirrel:A.slingSquirrel,
+    herbRabbit:A.herbRabbit, sparkMouse:A.sparkMouse, shadowCat:A.shadowCat, magmaTurtle:A.magmaTurtle, timeMage:A.timeMage, goldLion:A.goldLion,
+    slime:E.slime, bat:E.bat, golem:E.golem, hare:E.hare, totem:E.totem, torii:E.torii, bombSlime:E.bombSlime, splitMush:E.splitMush,
+    ghost:E.ghost, mummy:E.mummy, darkMage:E.darkMage, stoneGiant:E.stoneGiant, cannon:E.cannon, healer:E.healer, buffer:E.buffer,
+    shieldy:E.shieldy, summoner:E.summoner, bossMoai:E.bossMoai, bossTotem:E.bossTotem, bossThunder:E.bossThunder,
+    castleA:castleA, castleE:castleE, crest:crest, hint:hint
+  };
+  const cache = {}; let seq = 0;
+  // 旧版の箱（viewBox 0 0 100 100）に入れる。外側に p-body（旧版の「息づかい」アニメの部品名）
+  function boxed(k){
+    if(cache[k]) return cache[k];
+    const s = MAP[k]();
+    const castle = (k==="castleA"||k==="castleE");
+    const inner = s.replace(/^<svg [^>]*>/, function(m){
+      const vb = m.match(/viewBox="([^"]+)"/)[1];
+      return '<svg viewBox="'+vb+'" x="0" y="0" width="100" height="100" overflow="visible" preserveAspectRatio="'+(castle?'xMidYMax meet':'xMidYMid meet')+'">';
+    });
+    return cache[k] = '<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"><g class="'+(castle?'':'p-body')+'">'+inner+'</g></svg>';
+  }
+  // 同じ絵が画面に何枚も出ても、グラデ・clip の id がぶつからないように毎回つけかえる
+  // lite=1: 戦場で動く絵。ぼかしの光（フィルタ）を外す＝安いChromebookで20体動いても重くしない
+  function get(k, lite){
+    const n = (++seq).toString(36);
+    return (lite ? boxed(k).replace(/ filter="url\(#[^)]+\)"/g, '') : boxed(k)).replace(/id="([^"]+)"/g, function(m,a){ return 'id="'+a+'_'+n+'"'; })
+                   .replace(/url\(#([^)]+)\)/g, function(m,a){ return 'url(#'+a+'_'+n+')'; });
+  }
+  return { has:function(k){ return !!MAP[k]; }, get:get, skin:skin, fieldCss:fieldCss, cloudImg:function(){ return '<img src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(misc.cloud())+'" alt="" style="width:3.4em;display:block">'; }, background:background, keys:function(){ return Object.keys(MAP); } };
+
+})();
 const SVG = (()=>{
   const wrap = (inner)=>`<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">${inner}</svg>`;
   const S = '#2b2620'; // 共通の輪郭色（教科書の線）
@@ -2923,7 +3530,7 @@ const SVG = (()=>{
       <path d="M45 66 q5 4 10 0" stroke="${S}" stroke-width="2" fill="none"/>
       <path d="M40 32 L46 24 L52 30 L58 24 L62 32" fill="#ffe24a" stroke="${S}" stroke-width="2.5"/>`
   });
-  return { get:(k)=>wrap(lib[k]||lib.slime) };
+  return { get:(k,lite)=> GGART.has(k) ? GGART.get(k,lite) : wrap(lib[k]||lib.slime) };
 })();
 
 /* === 新キャラ：エフェクトSVG・攻撃メタ・組み立て（_charlab由来 2026-06-07） === */
@@ -2983,7 +3590,7 @@ function allyInner(spriteKey){
   const v=ALLY_VIS[spriteKey]||{tier:'tier-low'};
   return '<div class="hpb"><i style="width:100%"></i></div>'
     + '<div class="fxlayer">'+allyEffectsHTML()+'</div>'
-    + '<div class="cv '+(v.tier||'')+'">'+SVG.get(spriteKey)+'</div>';
+    + '<div class="cv '+(v.tier||'')+'">'+SVG.get(spriteKey,1)+'</div>';
 }
 
 
@@ -9202,7 +9809,7 @@ function skinBuffFor(s){
   if(s.key==='default') return {};
   return s.t==='hp'?{hpPct:1}:{atkPct:1}; // N
 }
-function skinSVGStr(s){ var S='#3a2f25';
+function skinSVGStr(s){ if(typeof GGART!=='undefined') return GGART.skin(s); var S='#3a2f25';
   return '<rect x="14" y="40" width="36" height="74" fill="'+s.body+'" stroke="'+S+'" stroke-width="3"/>'
     +'<path d="M14 40 L14 30 L22 30 L22 38 L28 38 L28 30 L36 30 L36 38 L42 38 L42 30 L50 30 L50 40Z" fill="'+s.batt+'" stroke="'+S+'" stroke-width="3"/>'
     +'<rect x="26" y="64" width="14" height="50" fill="'+s.door+'"/>'
@@ -10379,13 +10986,13 @@ const Game = (()=>{
   function buildSky(ch){
     const sky=$('sky'); sky.innerHTML='';
     const bg=CHAPTER_BG[(ch||1)-1]||CHAPTER_BG[0];
-    for(let i=0;i<4;i++){ const c=document.createElement('div'); c.className='cloud'; c.textContent='☁'; c.style.top=(6+i*16)+'%'; c.style.left=(-10+i*8)+'%'; c.style.animationDuration=(22+i*7)+'s'; c.style.animationDelay=(-i*5)+'s'; sky.appendChild(c); }
+    for(let i=0;i<4;i++){ const c=document.createElement('div'); c.className='cloud'; if(typeof GGART!=='undefined'){ c.innerHTML=GGART.cloudImg(); c.style.opacity='.9'; } else c.textContent='☁'; c.style.top=(6+i*16)+'%'; c.style.left=(-10+i*8)+'%'; c.style.animationDuration=(22+i*7)+'s'; c.style.animationDelay=(-i*5)+'s'; sky.appendChild(c); }
     const arts=bg.arts||['🗿','🏛️','⛩️','🗼']; arts.forEach((a,i)=>{ const s=document.createElement('div'); s.className='silhouette'; s.textContent=a; s.style.left=(12+i*24)+'%'; s.style.fontSize='44px'; sky.appendChild(s); });
   }
   // 章テーマに応じて戦場の背景と敵城の色味を変える（要望#14）
   function applyChapterBg(ch){
     const bg=CHAPTER_BG[(ch||1)-1]||CHAPTER_BG[0];
-    var f=$('field'); if(f){ f.classList.remove('warm','hot'); f.style.background='linear-gradient('+bg.top+' 0 58%, '+bg.ground+' 58% 100%)'; }
+    var f=$('field'); if(f){ f.classList.remove('warm','hot'); f.style.background=(typeof GGART!=='undefined')?GGART.fieldCss(bg):('linear-gradient('+bg.top+' 0 58%, '+bg.ground+' 58% 100%)'); }
     var ce=$('castleEsvg'); if(ce){ ce.style.filter = bg.hue ? ('hue-rotate('+bg.hue+'deg)') : 'none'; }
   }
   function confetti(){ const r=$('result'); for(let i=0;i<26;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.background=['#e0683b','#2f7dd1','#3a9d57','#e0a93b'][i%4]; c.style.animationDuration=(1.6+Math.random()*1.4)+'s'; c.style.animationDelay=(Math.random()*0.5)+'s'; r.appendChild(c); setTimeout(()=>c.remove(),3300); } }
@@ -10860,7 +11467,7 @@ const Game = (()=>{
     renderQueue(); syncHUD();
   }
 
-  function unitBody(sprite){ return '<div class="hpb"><i style="width:100%"></i></div><div class="body">'+SVG.get(sprite)+'</div>'; }
+  function unitBody(sprite){ return '<div class="hpb"><i style="width:100%"></i></div><div class="body">'+SVG.get(sprite,1)+'</div>'; }
   function lunge(el){
     if(!el) return;
     if(el.classList.contains('newcv')){ // 新キャラ：攻撃クラス常駐＋.attackingで発火
