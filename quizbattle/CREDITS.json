@@ -508,6 +508,15 @@
         "https://www.gsj.jp/geology/fault-fold/fault-fold/faultandfoldJ.html",
         "https://www.usgs.gov/publications/glacier-related-outburst-floods"
       ]
+    },
+    "earth_fossils_history": {
+      "title": "化石と復元図の比較",
+      "note": "既存の教材イラスト21枚を継続使用。地質機関・博物館などの説明を参照して比較条件と説明を作成。資料本文・図の転載なし。復元画と化石の部分・活動の跡を区別し、絵から標本年代や種を同定しない。",
+      "urls": [
+        "https://geokansas.ku.edu/fusulinids",
+        "https://ocean.si.edu/ocean-life/marine-mammals/whales",
+        "https://www.nature.com/articles/s41586-025-09271-w"
+      ]
     }
   }
 }
