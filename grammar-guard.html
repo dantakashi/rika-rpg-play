@@ -10326,7 +10326,8 @@ const CHAPTER_THEMES = [
   "やさしの草原","風の砂浜","遺跡の小道","夕暮れの丘","モアイ島",
   "霧の樹海","灼熱の砂漠","氷結の谷","雷鳴の高地","黄金の神殿",
   "嵐の海原","奈落の洞窟","天空回廊","幻影の城","終焉の祭壇",
-  "星くずの砂丘","紅蓮の火山","深海の宮殿","暗黒の魔城","虹のかなた"
+  "星くずの砂丘","紅蓮の火山","深海の宮殿","暗黒の魔城","虹のかなた",
+  "ことばの迷宮","時計塔の都","鏡の湖","竜の背骨","はじまりの図書館"
 ];
 // 章ごとの背景（空の上色／地面色／シルエット絵文字／敵城の色味hue）。背景が1種類でつまらない対策（要望#14）
 const CHAPTER_BG = [
@@ -10349,13 +10350,19 @@ const CHAPTER_BG = [
   {top:'#e8744a',ground:'#5a3030',arts:['🌋','🔥','🪨','🌋'],hue:15},
   {top:'#1a3a5a',ground:'#2a5a7a',arts:['🐚','🫧','🏛️','🐠'],hue:200},
   {top:'#3a2a3a',ground:'#241a2e',arts:['🏰','🦇','⚡','💀'],hue:300},
-  {top:'#bfe0f5',ground:'#e8d6f0',arts:['🌈','☀️','🌈','🕊️'],hue:0}
+  {top:'#bfe0f5',ground:'#e8d6f0',arts:['🌈','☀️','🌈','🕊️'],hue:0},
+  {top:'#e9dcc4',ground:'#a89070',arts:['📜','🔤','📜','🗝️'],hue:35},
+  {top:'#c9b8a0',ground:'#7a6a58',arts:['🕰️','⚙️','🏛️','⚙️'],hue:40},
+  {top:'#cfe8f0',ground:'#9ec8d8',arts:['🪞','🌙','🪞','✨'],hue:190},
+  {top:'#d88a6a',ground:'#6a3a2a',arts:['🐉','⛰️','🦴','🔥'],hue:10},
+  {top:'#3a3050',ground:'#8a6a48',arts:['📚','🕯️','📚','✨'],hue:270}
 ];
 // 章ごとの通常敵スプライト（雰囲気づけ。実体ステータスはENEMY_TYPES）
-const CH_NORMAL_SPRITE = ["slime","hare","totem","torii","slime","ghost","mummy","bat","darkMage","golem","bombSlime","splitMush","stoneGiant","ghost","mummy","shieldy","golem","summoner","darkMage","stoneGiant"];
+const CH_NORMAL_SPRITE = ["slime","hare","totem","torii","slime","ghost","mummy","bat","darkMage","golem","bombSlime","splitMush","stoneGiant","ghost","mummy","shieldy","golem","summoner","darkMage","stoneGiant","shieldy","golem","ghost","stoneGiant","summoner"];
 // ボスのギミック割り当て（ボスエリア → ギミックid）。⓪plain/①charge/②trigger/③godhold/④survive(両側)/⑤rush
 const BOSS_GIMMICK = {5:"charge",10:"trigger",15:"plain",20:"charge",25:"survive",30:"trigger",35:"plain",40:"rush",45:"charge",50:"godhold",55:"survive",60:"trigger",65:"rush",70:"charge",75:"godhold",
-  80:"rush",85:"charge",90:"trigger",95:"charge",100:"godhold"}; // 16〜20章(2026-06-11増築)。survive/plain/19章rushは終盤数値だと防御崩壊or膠着（ハーネス確認）のため、勝てると実証できた構成のみ使用
+  80:"rush",85:"charge",90:"trigger",95:"charge",100:"godhold",
+  105:"trigger",110:"rush",115:"trigger",120:"rush",125:"godhold"}; // 21〜25章(2026-10-16) // 16〜20章(2026-06-11増築)。survive/plain/19章rushは終盤数値だと防御崩壊or膠着（ハーネス確認）のため、勝てると実証できた構成のみ使用
 const GIM_MODE = {plain:"destroy",charge:"destroy",trigger:"trigger",godhold:"finisher",survive:"survive",rush:"destroy"};
 const GIM_LABEL = {plain:"強敵",charge:"ためチャージ即死",trigger:"城トリガー大群",godhold:"神の一撃・耐久",survive:"両側なだれ込み耐久",rush:"ボスラッシュ"};
 // まだ挙動を実装していないギミックはこの集合に入るまで通常ボス(destroy)として遊べる
@@ -10376,6 +10383,7 @@ const CURVE_WALLS = {5:true, 10:true, 14:true, 17:true, 20:true}; // 17/20=新�
 const CURVE_HP_BASE = 1.15, CURVE_HP_WALL = 1.7;   // 章ごとの基本伸び（HP）／壁章での追加ジャンプ
 const CURVE_ATK_BASE = 1.11, CURVE_ATK_WALL = 1.45; // 章ごとの基本伸び（ATK）／壁章での追加ジャンプ（敵ステは絶対=固定。cycle1のnerf 1.25 は方針違反のため1.45へ差し戻し。壁は味方強化で解く）
 function chapterMul(ch){
+  if(ch>20){ const b=chapterMul(20), e=ch-20; return {hp:b.hp*Math.pow(1.2,e)*(ch>=25?1.1:1), atk:b.atk*Math.pow(1.07,e)}; } // 21〜25章(2026-10-16)
   let hp=1, atk=1;
   for(let c=2;c<=ch;c++){
     if(c<=15){ // 1〜15章: 確定済みカーブ（絶対値・触らない）
@@ -10392,7 +10400,7 @@ function chapterMul(ch){
 }
 function makeStages(){
   const arr=[];
-  for(let a=1;a<=100;a++){
+  for(let a=1;a<=125;a++){ // 10-16: 125まで（21〜25章）
     const boss=(a%5===0);
     const ch=Math.ceil(a/5);          // 1..15（=world/章）
     const within=((a-1)%5)+1;         // 1..5
@@ -10678,7 +10686,7 @@ const Game = (()=>{
     deck[i]=inKey; save(); renderHome();
   }
   const CASTLE_MAX_LV = 16; // 自城HP強化の上限（青天井での要塞化＝終盤も負けない問題の対策）。Lv16=最大5000HP
-  function castleMaxLvCap(){ return cleared[75] ? 30 : CASTLE_MAX_LV; } // 🔓限界突破: エリア75撃破で城Lv30(8500HP)まで。16〜20章は敵ATKが13章比1.8倍のため城も同比率で（ハーネス校正・2026-06-11）
+  function castleMaxLvCap(){ return cleared[100] ? 34 : cleared[75] ? 30 : CASTLE_MAX_LV; } // 🔓限界突破: エリア75撃破で城Lv30(8500HP)まで。16〜20章は敵ATKが13章比1.8倍のため城も同比率で（ハーネス校正・2026-06-11）
   function castleMaxHp(){ return Math.round((1000 + Math.min(castleLv, castleMaxLvCap())*250 + (skinBuff().castleHp||0)) * (1+treasureBuffPct('castle'))); } // 🏺秘宝バフ込み
   function castleMaxed(){ return castleLv >= castleMaxLvCap(); }
   function castleUpCost(){ return 250*(castleLv+1); }
@@ -10761,7 +10769,7 @@ const Game = (()=>{
   [[5,500],[20,1000],[50,2000],[100,3000],[200,5000]].forEach(function(p){ MIS_ACH.push({id:'C'+p[0], k:'clr', n:p[0], gem:p[1], t:'ステージを合計'+p[0]+'回クリア'}); });
   [[10,500],[20,1000],[30,2000],[40,3000],[50,5000]].forEach(function(p){ MIS_ACH.push({id:'Z'+p[0], k:'zukan', n:p[0], gem:p[1], t:'図鑑 '+p[0]+'体'}); });
   [[10,300],[50,800],[100,1500],[300,3000]].forEach(function(p){ MIS_ACH.push({id:'P'+p[0], k:'pull', n:p[0], gem:p[1], t:'ガチャを合計'+p[0]+'回引く'}); });
-  [[10,800],[25,1500],[50,3000],[75,5000],[100,8000]].forEach(function(p){ MIS_ACH.push({id:'S'+p[0], k:'area', n:p[0], gem:p[1], t:'エリア'+p[0]+'をクリア'}); });
+  [[10,800],[25,1500],[50,3000],[75,5000],[100,8000],[125,10000]].forEach(function(p){ MIS_ACH.push({id:'S'+p[0], k:'area', n:p[0], gem:p[1], t:'エリア'+p[0]+'をクリア'}); });
   function misDay(){ var d=todayStr(); if(mis.day!==d){ mis.day=d; mis.d={}; mis.gotD={}; } }
   function misBump(k, n){ misDay(); var before=misReady(); mis.d[k]=(mis.d[k]||0)+(n||1); mis.tot[k]=(mis.tot[k]||0)+(n||1); var after=misReady(); if(after>before) misToast(); }
   function misAns(right){ try{ misBump('ans'); if(right) misBump('cor'); }catch(e){} }
@@ -11020,7 +11028,7 @@ const Game = (()=>{
   /* ---- キャラ強化 ---- */
   const UNIT_MAX_LV = 30; // 味方キャラ強化Lvの基本上限（青天井での過剰スノーボール防止）
   // 🔓限界突破(2026-06-11): 旧最終章ボス(エリア75)撃破でLv上限30→40。16〜20章の敵カーブを越えるための味方強化（鉄則どおり敵は触らない）
-  function unitMaxLvCap(){ return cleared[75] ? 45 : UNIT_MAX_LV; }
+  function unitMaxLvCap(){ return cleared[100] ? 50 : cleared[75] ? 45 : UNIT_MAX_LV; }
   function unitLevel(key){ return unitLv[key]||0; }
   function unitMaxed(key){ return unitLevel(key) >= unitMaxLvCap(); }
   function unitUpCost(key){ return 100*(unitLevel(key)+1); }
@@ -11975,7 +11983,7 @@ const Game = (()=>{
       else { __rng=__sel.levels.map(function(x){return (QuizEngine.LV_LABEL[x]||'').replace('英検','');}).join(','); }
       __sb.innerHTML='📝 <b>'+__g+'</b>｜'+__rng+'　<span style="color:var(--ally)">（'+QuizEngine.poolCount()+'問）⚙ 出題範囲設定 ▸</span>'; }
     var __ct=$('chapTabs');
-    var __unlChap=Math.ceil(Math.min(75,unlocked)/5); // 解禁済みの最終章
+    var __unlChap=Math.ceil(Math.min(STAGES.length,unlocked)/5); // 解禁済みの最終章
     if(__ct){ __ct.innerHTML=''; __ct.className=''; __ct.style.cssText='display:flex;align-items:center;gap:8px;margin:10px 0 4px';
       // 章はカルーセル（◀ N章 テーマ ▶）＝15章の羅列をやめてスッキリ（要望#3）。⭐特殊は別ボタン。
       if(playTab==='special'){
@@ -13529,7 +13537,7 @@ const Game = (()=>{
     applyPower(p){
       p=p||{};
       var roster = (p.deckKeys && p.deckKeys.length) ? p.deckKeys.slice(0,5) : STARTERS.slice(); // SSR編成も検証可
-      deck=roster.slice(); roster.forEach(function(k){ if(!owned[k])owned[k]=1; unitLv[k]=p.unitLv||0; });
+      deck=roster.slice(); roster.forEach(function(k){ if(!owned[k])owned[k]=1; if(p.plus) owned[k]=1+p.plus; unitLv[k]=p.unitLv||0; }); if(p.clearTo){ for(var __c=1;__c<=p.clearTo;__c++) cleared[__c]=true; }
       castleLv=p.castleLv||0; regenLv=p.regenLv||0; enMaxLv=p.enMaxLv||0;
       freezeDurLv=p.freezeDurLv||0; freezeCostLv=p.freezeCostLv||0; comboGuardLv=Math.min(COMBO_GUARD_MAX_LV, p.comboGuardLv||0);
       cleared[PARTS_UNLOCK_AREA]=true; cleared[LEARN_UNLOCK_AREA]=true;
