@@ -459,6 +459,40 @@
   .ggtoast small{display:block;font-size:11px;font-weight:700}
   @keyframes ggtoast{0%{transform:translate(-50%,-20px);opacity:0}12%{transform:translate(-50%,0);opacity:1}80%{opacity:1}100%{opacity:0}}
   .gxcsk{font-size:12px;font-weight:800;color:#7a45d6;margin-top:2px}
+  /* 10-16: ピックアップ・天井・無料ガチャ・図鑑 */
+  .ggpick{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;border:3px solid #e0683b;background:linear-gradient(110deg,#fff3c4 0%,#ffd9ec 55%,#e6d6ff 100%);position:relative;overflow:hidden;cursor:pointer}
+  .ggpick:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.75) 45%,transparent 60%);transform:translateX(-100%);animation:ggpickshine 2.6s ease-in-out infinite}
+  @keyframes ggpickshine{60%,100%{transform:translateX(100%)}}
+  .ggpick-art{width:72px;height:72px;flex:0 0 auto;display:block;animation:ggpickbob 1.6s ease-in-out infinite}
+  @keyframes ggpickbob{50%{transform:translateY(-4px)}}
+  .ggpick-txt{flex:1;min-width:0;text-align:left;line-height:1.3}
+  .ggpick-txt small{display:inline-block;background:#e0683b;color:#fff;font-weight:800;border-radius:6px;padding:1px 6px;font-size:11px}
+  .ggpick-txt b{display:block;font-size:17px;color:#7a2a10}
+  .ggpick-txt span{font-size:12px;color:#6a4a3a}
+  .ggpity{font-size:13px;text-align:center}
+  .ggpity b{color:#e0683b;font-size:16px}
+  .ggzbar{height:8px;border-radius:5px;background:#e9e2d6;overflow:hidden;margin-top:3px}
+  .ggzbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd34d,#ff8fbf,#b77cff)}
+  .btn.ggfree{background:linear-gradient(180deg,#9dffb0,#3fd1c0);color:#073a33;padding:10px 6px;font-size:15px}
+  .btn.ggfree small{display:block;font-size:11px;font-weight:700;opacity:.85}
+  .ggztop{text-align:center;margin-bottom:6px}
+  .ggztop b{font-size:22px;color:#a463f2}
+  .ggzgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}
+  .ggzcell{position:relative;border:2px solid var(--line);border-radius:10px;background:#fff;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;cursor:pointer;font:inherit;color:inherit}
+  .ggzcell.ggz-SR{border-color:#b05cff}.ggzcell.ggz-SSR{border-color:#ffb02e;background:linear-gradient(#fff,#fff4d6)}
+  .ggzcell.ggz-LR{border-color:#d63ab0;background:linear-gradient(135deg,#ffe3f4,#e6f0ff,#fff6c8)}
+  .ggzcell.off{background:#f1ece0}
+  .ggzart{width:100%;aspect-ratio:1;display:block}
+  .ggzsil svg{filter:brightness(0) opacity(.28)}
+  .ggzname{font-size:10px;font-weight:700;line-height:1.15;min-height:2.3em;display:flex;align-items:center;text-align:center}
+  .ggzcell.off .ggzname{color:#9a9080}
+  .ggzcell .gxplus{position:absolute;top:2px;left:3px;font-size:10px}
+  .ggzsk{position:absolute;top:2px;right:3px;font-size:9px;font-weight:800;background:#e0683b;color:#fff;border-radius:5px;padding:0 3px}
+  /* 10-16: 22体以上のときはユニットのフィルタを外す（被弾は薄く・スローは青い足もとの輪で） */
+  #field.gglod .unit.hit,#field.gglod .unit.slowed,#field.gglod .unit.frz,#field.gglod .unit.ggcast{filter:none}
+  #field.gglod .unit.hit{opacity:.55}
+  #field.gglod .unit.slowed{box-shadow:0 10px 0 -6px #5aa0d6aa}
+  #field.gglod .ggsvg{filter:none}
   /* ガチャ演出 */
   .gcapsule{width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--rc,#bbb));border:3px solid var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.25);animation:gshake .26s ease-in-out infinite}
   .gcapsule.hi{animation:gshake .14s ease-in-out infinite}
@@ -818,6 +852,9 @@
         <button class="menubtn" id="partsMenuBtn" data-go="parts" style="display:none">🛠️ コンボパーツ<span class="sub">モンスターに装着・コンボで強化</span></button>
         <button class="menubtn" data-go="skins">🏯 城スキン<span class="sub">城の見た目を変える＋バフ（💎ガチャ）</span></button>
       </div>
+      <div class="homeview" data-view="zukan">
+        <div class="card"><div style="font-weight:800; margin-bottom:8px">📖 キャラ図鑑 <span class="muted">タップでくわしく</span></div><div id="zukanBody"></div></div>
+      </div>
       <div class="homeview" data-view="mission">
         <div class="card"><div id="missionBody"></div></div>
       </div>
@@ -835,7 +872,7 @@
           <div style="font-weight:800; margin-bottom:8px">🎰 ガチャ <span class="muted" id="gachaCost"></span></div>
           <div id="gachaStage" style="min-height:172px; display:flex; align-items:center; justify-content:center; margin-bottom:10px"></div>
           <div id="gachaBody"></div>
-          <button class="btn ghost" data-go="gachalist" style="width:100%; margin-top:10px">📜 排出キャラ一覧・確率</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn ghost" data-go="zukan">📖 キャラ図鑑</button><button class="btn ghost" data-go="gachalist">📜 排出一覧・確率</button></div>
         </div>
       </div>
       <div class="homeview" data-view="gachalist">
@@ -2674,14 +2711,19 @@ const GGART = (function(){
   /* ===== 2026-10-15 追加の仲間 その2（SR2・SSR4・LR3）。右向き・128の箱・足もと y≈124 ===== */
   const rainbowDef = (id)=>`<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5a6a"/><stop offset=".25" stop-color="#ffd34d"/><stop offset=".5" stop-color="#7ed957"/><stop offset=".75" stop-color="#4aa8ff"/><stop offset="1" stop-color="#b77cff"/></linearGradient>`;
   const star5 = (x,y,s,c)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 -10 L2.9 -3.1 L10 -3.1 L4.3 1.2 L6.5 8.1 L0 3.9 L-6.5 8.1 L-4.3 1.2 L-10 -3.1 L-2.9 -3.1Z" fill="${c||"#fff6b8"}" stroke="${OL}" stroke-width="${1.6/s}"/>`;
-  A.fireChameleon = ()=> svg( // 炎のカメレオン（SR）: 火の玉を吐く範囲攻撃
-    line("M40 100 L34 122 M74 100 L80 122",6,OL) + line("M40 100 L34 121 M74 100 L80 121",3.5,"#e0582a") +
-    part("M10 84 Q-4 70 6 58 Q14 70 26 74 Q16 92 10 84Z", C.orange,{sx:2,sy:2, inner:`<circle cx="8" cy="66" r="5" fill="#a8341c"/>`}) +
-    part("M18 86 Q16 60 52 56 Q92 56 96 82 Q94 106 56 106 Q20 106 18 86Z", C.orange,{hl:[38,66,12,7], inner:line("M30 76 Q52 70 80 78 M28 90 Q54 84 86 92",3,"#a8341c")}) +
-    part("M74 46 Q72 22 100 22 Q124 26 122 50 Q120 70 98 70 Q76 68 74 46Z", C.orange,{hl:[90,30,8,5]}) +
-    part("M84 26 Q96 8 112 20 Q100 18 92 30Z", C.red,{ow:5,sx:1,sy:2}) +
-    `<circle cx="100" cy="42" r="11" fill="#ffe27a" stroke="${OL}" stroke-width="3"/>` + eye(101,42,6,"#c8283f",{iris2:"#ffe08a"}) + line("M106 60 Q114 62 120 58",2.5) +
-    part("M118 50 Q130 40 132 56 Q126 64 118 60Z", C.gold,{ow:4,sx:1,sy:1, inner:`<circle cx="126" cy="52" r="3" fill="#fff"/>`}) );
+  A.fireChameleon = ()=> svg( `<defs>${glowF("fc","#ff9a3c",4)}</defs>` + // 炎のカメレオン（SR）: 長い舌の先の火の玉（10-16 描き直し: 巻いた尻尾・横に出た目・長い舌）
+    line("M34 92 Q10 96 6 78 Q4 60 20 58 Q34 58 34 70 Q34 80 24 80 Q16 78 18 70",11,OL) + line("M34 92 Q10 96 6 78 Q4 60 20 58 Q34 58 34 70 Q34 80 24 80 Q16 78 18 70",6,"#ff9a3c") +
+    line("M42 96 Q36 108 30 118 M76 96 Q84 108 92 118",7,OL) + line("M42 96 Q36 108 30 117 M76 96 Q84 108 92 117",4,"#e0582a") +
+    line("M24 120 L30 117 L36 121 M86 121 L92 117 L98 120",3.5) +
+    part("M26 90 Q28 64 58 60 Q86 58 96 76 Q98 96 72 98 L40 98 Q26 98 26 90Z", C.orange,{hl:[46,68,12,5], inner:`<path d="M30 92 Q60 102 94 88 L96 98 L30 100Z" fill="#ffd59a"/>`+line("M46 62 L42 96 M62 60 L60 98 M78 64 L80 96",5,"#e0582a")}) +
+    part("M34 66 L38 54 L44 64 L50 52 L56 62 L62 50 L68 61 L74 52 L78 64Z", C.red,{ow:4,sx:1,sy:1}) +
+    part("M84 72 Q84 48 104 44 Q122 46 126 64 Q124 80 104 82 Q88 82 84 72Z", C.orange,{hl:[96,50,7,4]}) +
+    part("M86 56 Q88 34 108 38 Q100 42 98 52Z", C.red,{ow:4,sx:1,sy:1}) +
+    `<circle cx="104" cy="62" r="11" fill="#ffd34d" stroke="${OL}" stroke-width="3"/><circle cx="104" cy="62" r="7" fill="none" stroke="#e59a1c" stroke-width="2"/>` +
+    `<circle cx="108" cy="61" r="3.6" fill="#140f2a"/><circle cx="106.5" cy="59.5" r="1.3" fill="#fff"/>` +
+    line("M112 76 Q118 78 124 72",2.5) +
+    line("M122 72 Q130 78 134 70 Q136 64 130 62",4.5,OL) + line("M122 72 Q130 78 134 70 Q136 64 130 62",2.5,"#ff8fbf") +
+    `<g filter="url(#fc)">` + part("M120 52 Q122 38 130 44 Q132 32 138 46 Q140 58 130 61 Q120 62 120 52Z", C.gold,{ow:4,sx:1,sy:1, noShade:true, inner:`<path d="M126 54 Q128 46 132 52 Q134 58 128 58Z" fill="#fff6b8"/>`}) + `</g>` );
   A.armorRhino = ()=> svg( // 鎧サイ（SR）: 重い鎧で押し返す
     line("M34 102 L30 124 M54 104 L54 124 M80 104 L80 124 M98 102 L102 124",8,OL) + line("M34 102 L30 123 M54 104 L54 123 M80 104 L80 123 M98 102 L102 123",5,"#6b7891") +
     part("M12 86 Q10 52 56 48 Q100 48 106 82 Q104 108 60 108 Q14 108 12 86Z", C.grey,{hl:[36,62,14,8]}) +
@@ -2699,23 +2741,30 @@ const GGART = (function(){
     eye(106,46,6,"#2b62d6",{iris2:"#9ff3ff",angry:true}) + `<circle cx="132" cy="58" r="3" fill="${OL}"/>` +
     `<path d="M118 70 L120 78 L124 70 M126 70 L127 76 L130 70" fill="#fff" stroke="${OL}" stroke-width="1.5"/>` +
     `<path d="M16 20 l0 14 M9 27 l14 0 M11 22 l10 10 M21 22 l-10 10" stroke="#9ff3ff" stroke-width="3" stroke-linecap="round"/>` );
-  A.salamander = ()=> svg( `<defs>${glowF("sl","#ff9a3c",5)}</defs>` + // 灼熱サラマンダー（SSR）: 火山の大噴火
-    `<g filter="url(#sl)">` + part("M4 90 Q-6 70 6 54 Q10 70 22 76 Q14 96 4 90Z", C.orange,{sx:2,sy:2, inner:`<path d="M2 60 Q10 52 10 66Z" fill="#ffd34d"/>`}) + `</g>` +
-    line("M40 102 L32 124 M76 102 L82 124",8,OL) + line("M40 102 L32 123 M76 102 L82 123",5,"#c8283f") +
-    part("M16 88 Q14 58 56 54 Q98 56 100 88 Q96 112 58 112 Q20 112 16 88Z", C.red,{hl:[36,66,14,8], inner:`<path d="M30 96 Q58 108 90 96 Q84 110 58 110 Q36 110 30 96Z" fill="#ffd34d"/>`+line("M40 62 L36 52 M58 58 L58 46 M76 62 L80 52",4,"#ffd34d")}) +
-    part("M70 44 Q66 16 98 14 Q128 16 126 44 Q124 68 98 70 Q72 68 70 44Z", C.red,{hl:[86,24,9,6]}) +
-    `<g filter="url(#sl)">` + part("M80 18 Q84 -6 96 6 Q100 -10 110 8 Q118 -2 118 20Z", C.gold,{ow:5,sx:1,sy:2}) + `</g>` +
-    eye(98,40,6.5,"#ffd34d",{iris2:"#fff6b8",angry:true}) + eye(116,40,5.5,"#ffd34d",{iris2:"#fff6b8",angry:true}) + `<path d="M102 56 Q112 62 122 54 L118 58 L114 54 L110 58 L106 54Z" fill="#fff" stroke="${OL}" stroke-width="2"/>` );
-  A.pegasus = ()=> svg( `<defs>${glowF("pg","#fff6b8",5)}</defs>` + // 天馬ペガサス（SSR）: 空からの光の槍
-    `<g filter="url(#pg)">` + part("M44 56 Q20 10 -4 18 Q8 30 6 44 Q-4 50 0 60 Q22 66 46 72Z", C.white,{sx:2,sy:2, so:.3, inner:line("M2 22 L36 60 M2 44 L36 66",2,"#b9c6e8")}) + `</g>` +
-    line("M40 100 L34 124 M54 102 L52 124 M84 102 L86 124 M98 100 L104 124",6,OL) + line("M40 100 L34 123 M54 102 L52 123 M84 102 L86 123 M98 100 L104 123",3.5,"#eef4ff") +
-    part("M12 92 Q4 76 12 66 Q18 80 30 84Z", C.gold,{sx:2,sy:2}) +
-    part("M22 86 Q20 60 56 58 L94 58 Q112 64 108 88 Q104 104 64 104 Q24 104 22 86Z", C.white,{hl:[42,66,14,7]}) +
-    part("M84 64 Q82 40 96 28 L106 32 Q100 50 104 66Z", C.white,{ow:5,sx:2,sy:2}) +
-    part("M92 30 Q92 10 110 10 Q128 12 128 30 Q132 42 120 48 Q104 52 96 44 Q90 38 92 30Z", C.white,{hl:[104,16,6,4]}) +
-    part("M84 30 Q86 14 96 10 Q92 22 98 30 Q90 24 84 30Z", C.gold,{ow:4,sx:1,sy:1}) +
-    eye(112,26,5,"#4aa8ff",{iris2:"#e8fbff"}) + `<circle cx="126" cy="38" r="2.4" fill="${OL}"/>` + blush(108,38,3.5) +
-    star5(118,2,0.7,"#ffd34d") );
+  A.salamander = ()=> svg( `<defs>${glowF("sl","#ff9a3c",5)}</defs>` + // 灼熱サラマンダー（SSR）: 火山の大噴火（10-16 描き直し: 低く長い体・背中の炎・広げた脚）
+    `<g filter="url(#sl)">` + part("M0 64 Q-8 48 2 38 Q2 52 10 56 Q6 44 14 36 Q14 52 20 60 Q14 72 4 72Z", C.gold,{ow:4,sx:1,sy:1,noShade:true}) + `</g>` +
+    part("M34 96 Q12 100 4 84 Q0 72 6 64 Q12 80 34 84Z", C.red,{sx:2,sy:2}) +
+    line("M38 98 Q30 108 22 114 M58 100 Q60 110 54 120 M88 98 Q98 106 104 114 M102 94 Q114 102 120 108",8,OL) + line("M38 98 Q30 108 22 113 M58 100 Q60 110 54 119 M88 98 Q98 106 104 113 M102 94 Q114 102 120 107",5,"#c8283f") +
+    line("M16 114 L22 113 L26 118 M48 121 L54 119 L60 122 M100 116 L104 113 L110 116 M116 110 L120 107 L126 110",3) +
+    part("M24 92 Q28 72 60 70 Q96 68 108 84 Q104 102 64 102 Q30 104 24 92Z", C.red,{hl:[46,76,14,4], inner:`<path d="M28 94 Q64 106 106 90 L104 104 L28 104Z" fill="#ffd34d"/><circle cx="48" cy="82" r="3.5" fill="#801730"/><circle cx="70" cy="78" r="3" fill="#801730"/><circle cx="88" cy="84" r="3.5" fill="#801730"/>`}) +
+    `<g filter="url(#sl)">` + part("M36 74 Q36 54 46 68 Q48 44 58 66 Q64 38 72 64 Q80 46 86 68 Q94 56 96 76 Q66 66 36 74Z", C.orange,{ow:4,sx:1,sy:2, inner:`<path d="M48 70 Q52 58 56 68 M64 66 Q68 52 72 66 M80 70 Q84 60 88 72" stroke="#fff6b8" stroke-width="3" fill="none"/>`}) + `</g>` +
+    part("M96 84 Q96 64 116 62 Q136 64 138 80 Q134 94 114 94 Q100 94 96 84Z", C.red,{hl:[110,68,8,4]}) +
+    `<path d="M110 86 Q122 90 136 82 L132 86 L128 83 L124 87 L120 84 L116 88Z" fill="#fff" stroke="${OL}" stroke-width="2"/>` +
+    eye(116,72,5.5,"#ffd34d",{iris2:"#fff6b8",angry:true}) + `<circle cx="134" cy="74" r="1.8" fill="${OL}"/>` +
+    `<g filter="url(#sl)"><circle cx="137" cy="62" r="4" fill="#ffd34d" stroke="${OL}" stroke-width="2"/><circle cx="131" cy="56" r="2.5" fill="#ff9a3c" stroke="${OL}" stroke-width="1.5"/></g>` );
+  A.pegasus = ()=> svg( `<defs>${glowF("pg","#fff6b8",5)}</defs>` + // 天馬ペガサス（SSR）: 空からの光の槍（10-16 描き直し: 大きな翼・馬の首と顔）
+    part("M58 66 Q48 26 22 8 Q30 24 26 34 Q16 34 18 46 Q28 50 30 54 Q24 60 32 68Z", C.white,{ow:5,sx:2,sy:2,so:.35}) +
+    line("M24 120 L30 98 M40 120 L44 98 M84 120 L82 98 M100 120 L96 96",7,OL) + line("M24 119 L30 98 M40 119 L44 98 M84 119 L82 98 M100 119 L96 96",4,"#eef4ff") +
+    `<path d="M20 118 h9 v5 h-9Z M36 118 h9 v5 h-9Z M80 118 h9 v5 h-9Z M96 118 h9 v5 h-9Z" fill="#ffd34d" stroke="${OL}" stroke-width="2.5"/>` +
+    part("M24 76 Q8 70 2 88 Q8 86 10 96 Q16 84 26 84Z", C.gold,{ow:5,sx:2,sy:2}) +
+    part("M22 84 Q22 64 50 64 L84 64 Q106 66 106 84 Q104 100 78 100 L46 100 Q22 100 22 84Z", C.white,{hl:[42,70,14,5]}) +
+    part("M84 74 Q84 48 96 34 L112 40 Q102 56 104 78Z", C.white,{ow:6,sx:2,sy:2}) +
+    part("M96 36 Q100 20 114 20 Q126 22 130 38 L134 50 Q134 58 126 58 Q118 58 114 50 Q104 48 96 36Z", C.white,{hl:[110,26,6,4], inner:`<path d="M120 46 Q132 46 134 54 Q130 58 124 58 Q118 56 118 50Z" fill="#ffe0ee"/>`}) +
+    part("M104 24 L106 8 L114 22Z", C.white,{ow:4,sx:1,sy:1, inner:`<path d="M106 20 L107 12 L111 20Z" fill="#ffe0ee"/>`}) +
+    part("M100 22 Q88 30 86 46 Q82 60 86 74 Q94 62 94 48 Q96 34 106 28Z", C.gold,{ow:4,sx:1,sy:2}) +
+    eye(114,34,4.5,"#4aa8ff",{iris2:"#e8fbff"}) + `<circle cx="129" cy="52" r="1.8" fill="${OL}"/>` +
+    `<g filter="url(#pg)">` + part("M62 66 Q60 22 30 -4 Q40 14 36 26 Q24 24 24 38 Q36 42 38 48 Q28 52 34 62 Q46 66 52 72Z", C.white,{ow:5,sx:2,sy:2,so:.25, inner:line("M34 4 L56 60 M28 32 L54 64 M34 52 L54 68",2,"#b9c6e8")}) + `</g>` +
+    star5(126,4,0.7,"#ffd34d") );
   A.treeGuardian = ()=> svg( `<defs>${glowF("tg","#9dffb0",4)}</defs>` + // 大樹の守り神（SSR）: 森の力で味方を回復
     part("M24 124 Q22 96 36 92 L92 92 Q106 96 104 124Z", C.brown,{hl:[46,104,14,5], inner:line("M44 98 L40 124 M64 96 L64 124 M84 98 L88 124",3,"#5a3320")}) +
     `<g filter="url(#tg)">` + part("M8 60 Q0 24 34 14 Q52 -6 78 6 Q108 0 118 30 Q132 56 110 72 Q96 92 64 88 Q28 94 14 78 Q4 72 8 60Z", C.leaf,{hl:[40,30,18,10], so:.4}) + `</g>` +
@@ -10119,13 +10168,13 @@ const ROSTER = {
   goldLion:{name:"黄金ライオン", sprite:"goldLion", rar:"SSR", rarColor:"#e0683b", cost:158, hp:420, atk:48, speed:30, range:120, atkCd:0.85, buff:0.35, scale:1.3, weight:5, scd:7.5} // 将器バッファー＝周囲の味方を+35%/120pxで強化しつつ420hp/48atkで殴る前線の王。2026-06-15再調整(はずれ救済・sim検証済): range50→120(オーラ拡大),buff0.2→0.35,cost165→158,atkCd1.1→0.85,scd8.0→7.5
 };
 Object.assign(ROSTER, { // ===== 新キャラ13体（2026-10-15・ガチャ2。計41体）=====
-  snailKnight:{name:"カタツムリ兵", sprite:"snailKnight", rar:"N", rarColor:"#7a7a7a", cost:18, hp:170, atk:8, speed:18, range:38, atkCd:1.0, def:5, weight:38, scd:1.4},
+  snailKnight:{name:"カタツムリ兵", sprite:"snailKnight", rar:"N", rarColor:"#7a7a7a", cost:18, hp:150, atk:8, speed:18, range:38, atkCd:1.0, def:5, weight:38, scd:1.4},
   beeLancer:{name:"ハチのやり兵", sprite:"beeLancer", rar:"N", rarColor:"#7a7a7a", cost:16, hp:55, atk:13, speed:58, range:44, atkCd:0.6, weight:34, scd:1.1},
   duckMage:{name:"アヒルの見習い", sprite:"duckMage", rar:"N", rarColor:"#7a7a7a", cost:28, hp:50, atk:12, speed:30, range:105, atkCd:1.1, weight:28, scd:1.9},
   crabGuard:{name:"カニの門番", sprite:"crabGuard", rar:"R", rarColor:"#2f7dd1", cost:55, hp:240, atk:18, speed:26, range:44, atkCd:1.0, def:6, knockback:10, weight:18, scd:3.2},
   boomerKoala:{name:"ブーメランコアラ", sprite:"boomerKoala", rar:"R", rarColor:"#2f7dd1", cost:50, hp:85, atk:19, speed:34, range:115, atkCd:1.0, pierce:true, weight:18, scd:2.6},
   cloudSheep:{name:"くもヒツジ", sprite:"cloudSheep", rar:"R", rarColor:"#2f7dd1", cost:46, hp:110, atk:10, speed:28, range:90, atkCd:1.1, slow:true, weight:18, scd:2.6},
-  kendoPanda:{name:"剣豪パンダ", sprite:"kendoPanda", rar:"SR", rarColor:"#8e44ad", cost:98, hp:330, atk:38, speed:28, range:48, atkCd:1.0, splash:true, weight:10, scd:5.0},
+  kendoPanda:{name:"剣豪パンダ", sprite:"kendoPanda", rar:"SR", rarColor:"#8e44ad", cost:98, hp:290, atk:32, speed:28, range:48, atkCd:1.0, splash:true, weight:10, scd:5.0},
   lanternJelly:{name:"ちょうちんクラゲ", sprite:"lanternJelly", rar:"SR", rarColor:"#8e44ad", cost:82, hp:140, atk:10, speed:26, range:110, atkCd:1.4, buff:0.25, weight:10, scd:4.2},
   rocketPenguin:{name:"ロケットペンギン", sprite:"rocketPenguin", rar:"SR", rarColor:"#8e44ad", cost:92, hp:150, atk:34, speed:66, range:90, atkCd:0.8, pierce:true, weight:10, scd:4.8},
   starWhale:{name:"星くじら", sprite:"starWhale", rar:"SSR", rarColor:"#e0683b", cost:155, hp:600, atk:30, speed:18, range:130, atkCd:1.2, splash:true, knockback:14, scale:1.5, weight:6, scd:8.0},
@@ -10134,7 +10183,7 @@ Object.assign(ROSTER, { // ===== 新キャラ13体（2026-10-15・ガチャ2。�
   swanQueen:{name:"ことのは女王", sprite:"swanQueen", rar:"LR", rarColor:"#d63ab0", cost:180, hp:480, atk:40, speed:26, range:160, atkCd:1.3, buff:0.4, slow:true, splash:true, scale:1.4, weight:3, scd:9.0},
   // ===== その2（2026-10-15・SR2・SSR4・LR3。計50体）=====
   fireChameleon:{name:"炎のカメレオン", sprite:"fireChameleon", rar:"SR", rarColor:"#8e44ad", cost:94, hp:150, atk:30, speed:28, range:120, atkCd:1.1, splash:true, weight:10, scd:4.8},
-  armorRhino:{name:"鎧サイ", sprite:"armorRhino", rar:"SR", rarColor:"#8e44ad", cost:100, hp:420, atk:26, speed:22, range:46, atkCd:1.2, def:10, knockback:20, weight:10, scd:5.2},
+  armorRhino:{name:"鎧サイ", sprite:"armorRhino", rar:"SR", rarColor:"#8e44ad", cost:100, hp:320, atk:26, speed:22, range:46, atkCd:1.2, def:10, knockback:14, weight:10, scd:5.2},
   frostWolf:{name:"氷牙フェンリル", sprite:"frostWolf", rar:"SSR", rarColor:"#e0683b", cost:150, hp:340, atk:44, speed:44, range:60, atkCd:0.9, splash:true, slow:true, scale:1.3, weight:6, scd:7.5},
   salamander:{name:"灼熱サラマンダー", sprite:"salamander", rar:"SSR", rarColor:"#e0683b", cost:155, hp:300, atk:50, speed:26, range:130, atkCd:1.2, splash:true, scale:1.35, weight:6, scd:7.8},
   pegasus:{name:"天馬ペガサス", sprite:"pegasus", rar:"SSR", rarColor:"#e0683b", cost:148, hp:280, atk:46, speed:52, range:120, atkCd:1.0, pierce:true, scale:1.35, weight:6, scd:7.2},
@@ -10428,7 +10477,7 @@ const Game = (()=>{
   let owned = {};          // 入手済み {key:count}
   let deck = [];           // 編成(最大5)
   let castleLv = 0;        // 城強化Lv(HP)
-  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0;         // キャラ強化 {key:lv}
+  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0; let ggPity = 0; let ggFree = '';         // キャラ強化 {key:lv}
   let regenLv = 0;         // エネルギー増加速度Lv
   let enMaxLv = 0;         // エネルギー上限Lv
   let freezeDurLv = 0;     // ❄フリーズ砲 停止時間Lv（壁1の砲台対策）
@@ -10473,7 +10522,7 @@ const Game = (()=>{
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
-      gachaPulls=s.gachaPulls||0; if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
+      gachaPulls=s.gachaPulls||0; ggPity=s.ggPity||0; ggFree=s.ggFree||''; if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
       for(var __ok2 in owned){ if(owned[__ok2]>PLUS_CAP+1) owned[__ok2]=PLUS_CAP+1; }
       freezeDurLv=s.freezeDurLv||0; freezeCostLv=s.freezeCostLv||0; comboGuardLv=s.comboGuardLv||0;
       cgRefunded=!!s.cgRefunded; if(comboGuardLv>0 && !cgRefunded){ gold += COMBO_GUARD_COSTS.slice(0,Math.min(comboGuardLv,COMBO_GUARD_COSTS.length)).reduce(function(a,b){return a+b;},0); comboGuardLv=0; cgRefunded=true; } // 🛡コンボ保護 廃止に伴う購入ゴールドの返金(1回)
@@ -10503,7 +10552,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis, ggPity, ggFree})); }catch(e){}
   }
   // 💎の1日上限(2026-06-18・荒稼ぎ対策): 「問題に答えて得る学習💎」(れんしゅう/今日の復習/戦闘の1問ごと)だけを
   // 1日 LEARN_GEM_DAILY_CAP までに静かに制限する。ステージ/塔の節目/デイリー等の“報酬💎”は対象外＝従来どおり満額。
@@ -10641,8 +10690,13 @@ const Game = (()=>{
   const PLUS_CAP = 30;
   const DUPE_GOLD = {N:40, R:80, SR:160, SSR:400, LR:1000};
   const RAR_ORDER = ['LR','SSR','SR','R','N'];
-  function rollUnitRar(minSR){
+  /* 天井（10-16）: SSR・LR が出ないまま GG_PITY 回目は SSR 以上が確定。SSR/LR が出たら0に戻る。セーブは ggPity
+     ピックアップ（10-16）: 日替わりで SSR 1体。SSR が出たときの半分はその子（SSR 全体の 1% は動かさない） */
+  const GG_PITY = 100;
+  function pickupKey(){ var ss=unitsByRarity('SSR'); if(!ss.length) return null; var t=new Date(guardedNow()); var n=Math.floor(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())/864e5); return ss[n%ss.length]; }
+  function rollUnitRar(minSR, minSSR){
     var w = Object.assign({}, UNIT_RARITY_W);
+    if(minSSR){ w.N = 0; w.R = 0; w.SR = 0; }
     if(minSR){ w.SR += w.N + w.R; w.N = 0; w.R = 0; }
     var tot = 0, r; for(r in w) tot += w[r];
     var x = Math.random()*tot;
@@ -10650,22 +10704,29 @@ const Game = (()=>{
     return 'N';
   }
   function pullOne(minSR){
-    var rar = rollUnitRar(minSR);
+    var pityHit = (ggPity||0) >= GG_PITY-1;
+    var rar = rollUnitRar(minSR, pityHit);
+    if(rar==='SSR' || rar==='LR') ggPity = 0; else ggPity = (ggPity||0) + 1;
     var pool = unitsByRarity(rar); if(!pool.length) pool = ROSTER_KEYS;
     var key = pool[Math.floor(Math.random()*pool.length)];
+    var pk = pickupKey(); if(rar==='SSR' && pk && Math.random()<0.5) key = pk;
     var isNew = !owned[key];
     var before = unitStars(key), refunded = 0;
     if(!isNew && before >= PLUS_CAP){ refunded = DUPE_GOLD[rar]||40; gold += refunded; }
     else owned[key] = (owned[key]||0) + 1;
     if(isNew && deck.length<5) deck.push(key);
-    return {key:key, rar:ROSTER[key].rar, isNew:isNew, plus:unitStars(key), refunded:refunded};
+    return {key:key, rar:ROSTER[key].rar, isNew:isNew, plus:unitStars(key), refunded:refunded, pity:pityHit};
   }
-  function doGacha(n){
+  function freeReady(){ return ggFree !== todayStr(); }
+  function doGacha(n, free){
     n = (n===10) ? 10 : 1;
     if(gachaAnimating) return;
-    var cost = GACHA_COST*n;
-    if(gems < cost){ lastGacha={msg:'グラマージェムが足りません（'+cost+'💎必要）'}; renderGacha(); return; }
-    gems -= cost; updateGemUI();
+    if(free){ if(!freeReady()) return; ggFree = todayStr(); n = 1; }
+    else {
+      var cost = GACHA_COST*n;
+      if(gems < cost){ lastGacha={msg:'グラマージェムが足りません（'+cost+'💎必要）'}; renderGacha(); return; }
+      gems -= cost; updateGemUI();
+    }
     var res = [];
     for(var i=0;i<n;i++) res.push(pullOne(n===10 && i===n-1 && !res.some(function(o){ return rarRank2(o.rar)>=2; })));
     gachaPulls = (gachaPulls||0) + n; misBump('pull', n);
@@ -10750,6 +10811,66 @@ const Game = (()=>{
     }
     sec('📅 きょうのミッション（毎日リセット）', MIS_DAILY, true);
     sec('🏆 達成ミッション', MIS_ACH, false);
+  }
+  /* ===== 必殺技の説明・キャラ図鑑（2026-10-16 夜間自走）===== */
+  function skText(sk){
+    if(!sk) return '';
+    var p = sk.pow||1, x = '（攻撃の×'+p+'）', s;
+    switch(sk.t){
+      case 'meteor': s='先頭の敵のまわりに隕石を3つ落とす'+x; break;
+      case 'chain': s='近い敵6体に雷が連鎖する'+x; break;
+      case 'beam': s='前方の一直線の敵を全部つらぬく'+x; break;
+      case 'wave': s='前方の敵を押し返す'+x; break;
+      case 'tide': s='戦場の敵をまとめて押し流す'+x; break;
+      case 'freeze': s='敵全体にダメージ＋4秒遅くする'+x; break;
+      case 'nova': s='敵全体にダメージ＋5秒遅くする'+x; break;
+      case 'healall': s='味方全員のHPを'+Math.round(p*100)+'%回復'+(sk.rally?'＋'+sk.rally+'秒 攻撃+50%':''); break;
+      case 'rally': s='味方全員の攻撃+50%（'+(sk.dur||6)+'秒）'; break;
+      case 'omega': s='敵全体に大ダメージ'+x; break;
+      case 'foxfire': s='狐火9発で敵を焼く（合計 ×'+p+'）'; break;
+      default: s='';
+    }
+    return s+'・'+sk.cd+'秒ごと';
+  }
+  function skHtml(r){
+    if(!r.sk) return '';
+    return '<div style="background:linear-gradient(90deg,#fff4d6,#ffe3f4);border:2px solid #e8b04a;border-radius:10px;padding:7px;margin:-4px 0 10px;font-size:13px;text-align:left"><span class="muted">必殺技：</span><b>「'+r.sk.name+'」</b><div style="font-size:12px;margin-top:2px">'+skText(r.sk)+'</div></div>';
+  }
+  function zukanPop(key){
+    var r=ROSTER[key]; if(!r) return;
+    if(owned[key]){ openUnitPop(key,'charup'); return; }
+    var card=$('unitPopCard'); if(!card) return;
+    var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span class="ggzsil" style="width:64px;height:64px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
+      '<div style="flex:1;text-align:left"><div style="font-weight:800;font-size:18px">'+r.name+' '+rarBadge(r.rar)+'</div><div class="muted" style="font-size:12px">まだ仲間になっていない</div></div></div>'+
+      '<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:7px;margin-bottom:10px;font-size:13px;text-align:left"><span class="muted">とくせい：</span><b>'+traitText(r)+'</b></div>'+skHtml(r);
+    card.innerHTML=h;
+    var bg=document.createElement('button'); bg.className='btn'; bg.style.width='100%'; bg.textContent='🎰 ガチャへ'; bg.onclick=function(){ closeUnitPop(); var b=document.querySelector('#home button[data-go="gacha"]'); if(b) b.click(); };
+    var bc=document.createElement('button'); bc.className='btn ghost'; bc.style.cssText='width:100%;margin-top:8px'; bc.textContent='とじる'; bc.onclick=closeUnitPop;
+    card.appendChild(bg); card.appendChild(bc);
+    $('unitPop').classList.add('on');
+  }
+  function renderZukan(){
+    // ホームの「ガチャ」ボタンに無料ガチャの知らせ
+    try{ [].forEach.call(document.querySelectorAll('#home button.menubtn[data-go="gacha"] .sub'), function(s){ s.textContent = freeReady() ? '🎁 きょうの無料ガチャが引ける！' : '💎で仲間を集めよう（10連はSR以上確定）'; }); }catch(e){}
+    var body=$('zukanBody'); if(!body) return; body.innerHTML='';
+    var have=ROSTER_KEYS.filter(function(k){ return owned[k]; }).length;
+    var top=document.createElement('div'); top.className='ggztop';
+    top.innerHTML='<b>'+have+'</b> / '+ROSTER_KEYS.length+' 体<div class="ggzbar"><i style="width:'+(have/ROSTER_KEYS.length*100)+'%"></i></div>'+
+      '<div class="muted" style="font-size:12px">'+RAR_ORDER.map(function(rar){ var us=unitsByRarity(rar); return rarBadge(rar)+' '+us.filter(function(k){ return owned[k]; }).length+'/'+us.length; }).join('　')+'</div>';
+    body.appendChild(top);
+    RAR_ORDER.forEach(function(rar){
+      var us=unitsByRarity(rar); if(!us.length) return;
+      var h=document.createElement('div'); h.className='ggmhead'; h.innerHTML=rarBadge(rar)+' '+({LR:'レジェンド',SSR:'スーパースペシャル',SR:'スペシャル',R:'レア',N:'ノーマル'})[rar]; body.appendChild(h);
+      var g=document.createElement('div'); g.className='ggzgrid';
+      us.forEach(function(key){
+        var r=ROSTER[key], got=!!owned[key], st=unitStars(key);
+        var c=document.createElement('button'); c.className='ggzcell ggz-'+rar+(got?'':' off');
+        c.innerHTML='<span class="ggzart'+(got?'':' ggzsil')+'">'+SVG.get(r.sprite)+'</span><span class="ggzname">'+r.name+'</span>'+(got&&st?'<span class="gxplus">+'+st+'</span>':'')+(r.sk?'<span class="ggzsk">技</span>':'');
+        c.onclick=function(){ zukanPop(key); };
+        g.appendChild(c);
+      });
+      body.appendChild(g);
+    });
   }
   function toggleDeck(key){
     if(!owned[key]) return;
@@ -10926,7 +11047,7 @@ const Game = (()=>{
     h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
     h+=stat('コスト','⚡'+r.cost)+stat('クールダウン',summonCd(key)+'秒')+stat('攻撃力','⚔'+cur.atk);
     h+=stat('HP','♥'+cur.hp)+stat('射程',r.range)+stat('速さ',r.speed)+'</div>';
-    h+='<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:7px;margin-bottom:10px;font-size:13px"><span class="muted">とくせい：</span><b>'+traitText(r)+'</b></div>';
+    h+='<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:7px;margin-bottom:10px;font-size:13px"><span class="muted">とくせい：</span><b>'+traitText(r)+'</b></div>'+skHtml(r);
     card.innerHTML=h;
     const acts=document.createElement('div'); acts.style.cssText='display:flex;flex-direction:column;gap:8px';
     if(mode==='deck'){
@@ -11123,6 +11244,15 @@ const Game = (()=>{
     let tot=0; for(const r in UNIT_RARITY_W) tot+=UNIT_RARITY_W[r];
     p.innerHTML='<div class="muted" style="text-align:center">所持：<b style="color:#a463f2">💎 '+gems+'</b>　図鑑 <b>'+have+'</b>/'+ROSTER_KEYS.length+'</div>'+
       '<div class="gxrates">'+RAR_ORDER.map(function(r){ return rarBadge(r)+' '+(UNIT_RARITY_W[r]/tot*100>=1?(UNIT_RARITY_W[r]/tot*100).toFixed(0):(UNIT_RARITY_W[r]/tot*100).toFixed(1))+'%'; }).join('　')+'</div>';
+    const pk=pickupKey();
+    if(pk){ const pr=ROSTER[pk]; const pb=document.createElement('div'); pb.className='ggpick';
+      pb.innerHTML='<span class="ggpick-art">'+SVG.get(pr.sprite)+'</span><div class="ggpick-txt"><small>きょうのピックアップ</small><b>'+pr.name+'</b><span>SSRが出たら半分はこの子！'+(pr.sk?'<br>必殺技「'+pr.sk.name+'」':'')+'</span></div>';
+      pb.onclick=function(){ zukanPop(pk); }; p.appendChild(pb); }
+    const pt=document.createElement('div'); pt.className='ggpity';
+    const left=Math.max(1, GG_PITY-(ggPity||0));
+    pt.innerHTML='<div>SSR以上 確定まで あと <b>'+left+'</b> 回</div><div class="ggzbar"><i style="width:'+((ggPity||0)/GG_PITY*100)+'%"></i></div>';
+    p.appendChild(pt);
+    if(freeReady()){ const bf=document.createElement('button'); bf.className='btn ggfree'; bf.innerHTML='🎁 きょうの無料ガチャ<small>1日1回・💎いらない</small>'; bf.disabled=gachaAnimating; bf.onclick=function(){ doGacha(1,true); }; p.appendChild(bf); }
     const bs=document.createElement('div'); bs.className='gxbtns';
     const b1=document.createElement('button'); b1.className='btn'; b1.innerHTML='1回引く<small>'+GACHA_COST+'💎</small>';
     b1.disabled=gachaAnimating||gems<GACHA_COST; b1.onclick=function(){ doGacha(1); };
@@ -11776,12 +11906,12 @@ const Game = (()=>{
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
     renderHomeMenu();
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission(); renderZukan();
     { var __ms=$('mistakesSub'); if(__ms){ var __dc=dueCount(null), __mc=mistakeCount(); __ms.textContent = __mc? ('復習リスト '+__mc+'問'+(__dc?('・今日 '+__dc+'問'):'・今日ぶんは完了')) : 'お気に入りはいつでも見られます'; } }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', mission:'📋 ミッション', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', collection:'📚 おぼえた英語', skins:'🏯 城スキン', pvp:'🆚 たいせん'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', mission:'menu', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', collection:'menu', skins:'grow', pvp:'menu'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', mission:'📋 ミッション', zukan:'📖 キャラ図鑑', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', collection:'📚 おぼえた英語', skins:'🏯 城スキン', pvp:'🆚 たいせん'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', mission:'menu', zukan:'gacha', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', collection:'menu', skins:'grow', pvp:'menu'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ var __v=b.getAttribute('data-go'); if(__v==='practice'){ pracStarted=false; pracReview=false; pracQ=null; } homeView=__v; renderHome(); }; });
@@ -11934,7 +12064,8 @@ const Game = (()=>{
   const IRON_MISS_PCT = 0.08;  // 誤答1回で自城最大HPの8%が崩れる
   const IRON_DECK_MAX = 3;     // 出撃できるのは編成の先頭3体
   const FIELD_W = 940; // 論理幅(px相当)。castle間。
-  function fieldW(){ return $('field').clientWidth; }
+  var __fwC=0; try{ window.addEventListener('resize', function(){ __fwC=0; }); }catch(e){}
+  function fieldW(){ if(!__fwC) __fwC=$('field').clientWidth; return __fwC; }
   function enterBattle(stage){
     curStage=stage;
     B = freshBattle(stage);
@@ -12031,15 +12162,17 @@ const Game = (()=>{
     const slots=['q0','q1','q2'];
     slots.forEach((id,i)=>{
       const u=B.queue[i]; const el=$(id); if(!el) return;
-      if(!u||!ROSTER[u.key]){ el.className='qslot '+(i===0?'now':'qnext'); el.innerHTML='<span class="muted" style="font-size:11px">…</span>'; return; }
+      if(!u||!ROSTER[u.key]){ el.className='qslot '+(i===0?'now':'qnext'); if(el.__sig!=='-'){ el.__sig='-'; el.innerHTML='<span class="muted" style="font-size:11px">…</span>'; } return; }
       const r=ROSTER[u.key];
       const cd=cdLeft(u.key), pending=cd>0;
       const ready = (i===0 && !pending && B.energy>=u.cost);
       el.className='qslot'+(i===0?' now':' qnext')+(ready?' ready':'')+(pending?' cooling':'');
-      el.innerHTML = `<span class="rar" style="background:${r.rarColor}">${r.rar}</span>`+
+      const __sig=u.key+'|'+u.cost+'|'+(u.bargain&&!pending?1:0)+'|'+(pending?1:0);
+      if(el.__sig!==__sig){ el.__sig=__sig; el.innerHTML = `<span class="rar" style="background:${r.rarColor}">${r.rar}</span>`+
         (u.bargain&&!pending?`<span class="bargain">お得</span>`:'')+
         SVG.get(r.sprite)+`<span class="cost">⚡${u.cost}</span>`+
-        (pending?`<span class="cd">⏳${cd.toFixed(1)}</span>`:'');
+        (pending?`<span class="cd"></span>`:''); }
+      if(pending){ const __c=el.querySelector('.cd'); if(__c) __c.textContent='⏳'+cd.toFixed(1); }
     });
     const front=B.queue[0];
     if(B.allies.length>=ALLY_CAP){ $('summonBtn').disabled=true; $('summonBtn').textContent='🚧 満員（'+ALLY_CAP+'体）'; return; }
@@ -12542,12 +12675,16 @@ const Game = (()=>{
   function ggFX(cls, css, ms, html){ try{ var f=$('field'); if(!f) return null; var d=document.createElement('div'); d.className=cls; if(css) d.style.cssText=css; if(html) d.innerHTML=html; f.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, ms||800); return d; }catch(e){ return null; } }
   function ggHpBar(u){ try{ var i=u.el&&u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }catch(e){} }
   function ggHit(e, amt){ damage(e, amt); try{ floatText(e.x, 18+Math.random()*16, '-'+Math.round(amt), '#ff3d6e'); }catch(_){} }
+  // 10-16: 22体以上（lod）のときは戦場のユニットのCSSフィルタ（被弾・スロー・技の光）を外す。
+  // 測った: LRの範囲攻撃で敵全員に .hit/.slowed のフィルタが付き続けると 24体で 85→42fps（技を止めても同じ）。
+  var ggLodOn = false;
+  function ggLodTick(){ var on = lod(); if(on!==ggLodOn){ ggLodOn = on; try{ $('field').classList.toggle('gglod', on); }catch(e){} } }
   function ggOnSummon(a){
     var r=ROSTER[a.key]; if(!r) return;
     a.sk = r.sk || null; a.skT = r.sk ? (r.sk.first||3) : 0;
     var rk = rarRank2(r.rar); if(rk<2) return;
     var col = rk>=4 ? 'rain' : rk>=3 ? '#ffc23a' : '#b05cff';
-    ggFX('ggpillar'+(rk>=4?' rain':''), 'left:'+a.x+'px;--c:'+col, 900);
+    if(!lod()) ggFX('ggpillar'+(rk>=4?' rain':''), 'left:'+a.x+'px;--c:'+col, 900);
     if(rk>=3){ try{ fxSparks(a.x, fieldFloorY()-20, lod()?8:18, rk>=4?'#ff9af0':'#ffd34d'); }catch(e){} }
     if(rk>=4){ // LR は戦場を横切る登場カットイン（ゲームは止めない）
       ggFX('ggcutin', '', 1500, '<div class="ggcutin-band"><span class="ggcutin-art">'+SVG.get(r.sprite)+'</span><span class="ggcutin-txt"><b>LR</b>'+r.name+'<small>降臨！</small></span></div>');
@@ -12555,7 +12692,7 @@ const Game = (()=>{
     } else if(rk>=3){ try{ floatText(a.x, 6, '★ '+r.name+' 参上！', '#e59a1c'); }catch(e){} }
   }
   function ggSkillTick(a, dt){
-    if(!a.sk || a.hp<=0) return;
+    if(!a.sk || a.hp<=0 || window.__ggNoSk) return; // __ggNoSk: 重さの切り分け用（テストだけ）
     a.skT -= dt; if(a.skT>0) return;
     var needEnemy = !(a.sk.t==='healall' || a.sk.t==='rally');
     if(needEnemy && !B.enemies.some(function(e){ return e.hp>0; })){ a.skT = 0.5; return; }
@@ -12616,6 +12753,7 @@ const Game = (()=>{
     }
   }
   function stepUnits(dt){
+    ggLodTick();
     const W=fieldW();
     const survive = B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive; // ④通常配置の耐久(敵城は無敵・timeLimitで勝ち)
     // 味方：右へ。敵 or 敵城と戦う
@@ -13508,7 +13646,7 @@ const Game = (()=>{
     // 負荷ベンチ：等速で48体(SSR味方24＋同じ重いアートの敵24)を画面に出し、FPSを実測。Chromebook耐性チェック用
     bench(opts){
       opts=opts||{}; var dur=opts.ms||6000; var nA=opts.allies!=null?opts.allies:24; var nE=opts.enemies!=null?opts.enemies:24;
-      var ssr=['thunderDragon','dragonTurtle','crystalGolem','orcaKnight']; // 一番重い新アート(SSR)
+      var ssr=opts.keys||['thunderDragon','dragonTurtle','crystalGolem','orcaKnight']; // 一番重い新アート(SSR)。10-16: keys で差し替え（必殺技の重さを測る）
       this.setup(10); ssr.forEach(function(k){ owned[k]=1; unitLv[k]=2; }); deck=ssr.slice();
       autoSummon=false; window.__timeScale=1; window.__ggTestQ=true; // 等速
       this.enter(38); // ch8通常ステージ(ボス/特殊ギミック無し)
