@@ -493,6 +493,15 @@
   #field.gglod .unit.hit{opacity:.55}
   #field.gglod .unit.slowed{box-shadow:0 10px 0 -6px #5aa0d6aa}
   #field.gglod .ggsvg{filter:none}
+  /* 10-16: 上の帯がスマホ幅で「◀ も/どる」と折り返していた → 1行に収める（題名だけ省略記号で縮む） */
+  .topbar{gap:5px;padding:6px 8px;flex-wrap:nowrap}
+  .topbar .pill{white-space:nowrap;padding:3px 8px;flex:0 0 auto}
+  .topbar #homeTitle{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .topbar .grow{flex:1 1 0;min-width:0}
+  .gxcard{position:relative}
+  .gxbadge2{position:absolute;top:6px;right:6px;font-size:11px;font-weight:900;letter-spacing:1px;padding:2px 7px;border-radius:7px;color:#fff;box-shadow:0 2px 0 #0004;transform:rotate(6deg)}
+  .gxbadge2.pick{background:linear-gradient(90deg,#e0683b,#ff8fbf)}
+  .gxbadge2.pity{background:linear-gradient(90deg,#7a45d6,#4aa8ff)}
   /* ガチャ演出 */
   .gcapsule{width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--rc,#bbb));border:3px solid var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.25);animation:gshake .26s ease-in-out infinite}
   .gcapsule.hi{animation:gshake .14s ease-in-out infinite}
@@ -2902,6 +2911,55 @@ const GGART = (function(){
     part("M32 44 Q32 10 64 10 Q96 10 96 44 Q96 72 64 72 Q32 72 32 44Z", C.purple,{hl:[46,22,10,6]}) +
     `<g filter="url(#bth)">${part("M38 18 L30 -6 L50 8Z", C.gold,{ow:5,sx:2,sy:2})}${part("M90 18 L98 -6 L78 8Z", C.gold,{ow:5,sx:2,sy:2})}<path d="M64 -4 L56 14 L66 14 L58 30" stroke="#ffe14d" stroke-width="4" fill="none"/></g>` +
     eye(52,42,7,"#ffe14d",{angry:true,iris2:"#fffbe0"}) + eye(76,42,7,"#ffe14d",{angry:true,iris2:"#fffbe0"}) + angryMouth(50,60,28) );
+  /* ===== 21〜25章のボス（2026-10-16）===== */
+  E.bossBook = ()=> svg( `<defs>${glowF("bb","#9ff3ff",5)}</defs>` + // ボス: 迷宮の書王（開いた大きな本・表紙の一つ目・舞う文字）
+    part("M8 118 L20 30 Q64 18 108 30 L120 118 Q64 106 8 118Z", C.navy,{hl:[34,46,12,10], inner:line("M26 40 L18 110 M102 40 L110 110",3,"#1d1f60")}) +
+    part("M18 112 L28 36 Q48 30 62 40 L62 116 Q40 108 18 112Z", C.cream,{ow:5,sx:2,sy:3, inner:line("M30 52 L56 54 M29 62 L56 64 M28 72 L56 74 M27 82 L56 84 M26 92 L56 94",2.2,"#b07f5a")}) +
+    part("M110 112 L100 36 Q80 30 66 40 L66 116 Q88 108 110 112Z", C.cream,{ow:5,sx:2,sy:3, inner:line("M72 54 L98 52 M72 64 L99 62 M72 74 L100 72 M72 84 L101 82 M72 94 L102 92",2.2,"#b07f5a")}) +
+    `<g filter="url(#bb)">` + eye(64,64,13,"#2b62d6",{iris2:"#9ff3ff",angry:true}) + `</g>` +
+    part("M44 116 L52 128 L76 128 L84 116Z", C.gold,{ow:4,sx:1,sy:1}) +
+    `<g font-family="Georgia,serif" font-weight="900" fill="#ffe27a" stroke="${OL}" stroke-width="2" paint-order="stroke">` +
+    `<text x="4" y="22" font-size="20">A</text><text x="104" y="16" font-size="18">Z</text><text x="116" y="70" font-size="16">?</text><text x="-6" y="72" font-size="16">!</text></g>` +
+    part("M40 22 L48 2 L56 18 L64 0 L72 18 L80 2 L88 22Z", C.gold,{ow:4,sx:1,sy:1, inner:`<circle cx="64" cy="14" r="3.5" fill="#ff5a6a"/>`}) );
+  E.bossClock = ()=> svg( `<defs>${glowF("bc","#ffd34d",5)}</defs>` + // ボス: 歯車の時計卿（時計の顔・歯車の冠・振り子）
+    line("M40 96 L36 124 M88 96 L92 124",10,OL) + line("M40 96 L36 123 M88 96 L92 123",6,"#8a5530") +
+    part("M24 100 Q20 60 64 56 Q108 60 104 100 Q100 116 64 116 Q28 116 24 100Z", C.brown,{hl:[42,70,14,7], inner:`<rect x="56" y="80" width="16" height="30" rx="4" fill="#5a3320"/>`+line("M64 82 L64 100",2.5,"#e59a1c")+`<circle cx="64" cy="104" r="5" fill="#ffd34d" stroke="${OL}" stroke-width="2"/>`}) +
+    part("M8 44 Q8 6 64 4 Q120 6 120 44 Q120 80 64 82 Q8 80 8 44Z", C.gold,{hl:[36,18,16,8]}) +
+    `<circle cx="64" cy="44" r="30" fill="#fffaf0" stroke="${OL}" stroke-width="4"/>` +
+    `<g stroke="${OL}" stroke-width="3" stroke-linecap="round">` + [0,1,2,3,4,5,6,7,8,9,10,11].map(function(i){ var a=i*Math.PI/6, r1=25, r2=i%3?22:19; return `<line x1="${(64+Math.sin(a)*r1).toFixed(1)}" y1="${(44-Math.cos(a)*r1).toFixed(1)}" x2="${(64+Math.sin(a)*r2).toFixed(1)}" y2="${(44-Math.cos(a)*r2).toFixed(1)}"/>`; }).join("") + `</g>` +
+    eye(54,40,5.5,"#c8283f",{angry:true}) + eye(74,40,5.5,"#c8283f",{angry:true}) +
+    line("M64 44 L64 26 M64 44 L80 52",4,"#231c3a") + `<circle cx="64" cy="44" r="3.5" fill="#c8283f"/>` +
+    `<g filter="url(#bc)">` + part("M18 8 Q12 -6 26 -8 Q30 -18 40 -10 Q46 -18 52 -6 Q58 -4 54 6 Q44 12 30 12 Q20 14 18 8Z", C.gold,{ow:4,sx:1,sy:1, inner:`<circle cx="36" cy="2" r="5" fill="#a8620c"/>`}) +
+      part("M110 8 Q116 -6 102 -8 Q98 -18 88 -10 Q82 -18 76 -6 Q70 -4 74 6 Q84 12 98 12 Q108 14 110 8Z", C.gold,{ow:4,sx:1,sy:1, inner:`<circle cx="92" cy="2" r="5" fill="#a8620c"/>`}) + `</g>` );
+  E.bossMirror = ()=> svg( `<defs>${glowF("bmr","#c8f2ff",6)}<linearGradient id="bmrg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#bfe8ff"/><stop offset="1" stop-color="#6aa8d8"/></linearGradient></defs>` + // ボス: 鏡の湖の女王（楕円の鏡の中の顔・氷の冠）
+    `<path d="M-6 120 Q30 108 64 116 Q98 108 134 120 L134 130 L-6 130Z" fill="#7cc8ef" stroke="${OL}" stroke-width="3"/>` +
+    part("M22 66 Q22 4 64 2 Q106 4 106 66 Q106 120 64 122 Q22 120 22 66Z", C.ice,{ow:9,sx:3,sy:4, hl:[40,22,10,14]}) +
+    `<ellipse cx="64" cy="64" rx="32" ry="48" fill="url(#bmrg)" stroke="${OL}" stroke-width="3"/>` +
+    `<path d="M44 30 L54 22 M40 44 L60 28 M80 96 L90 86" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>` +
+    eye(52,62,6,"#7a45d6",{iris2:"#ffe0ee",angry:true}) + eye(76,62,6,"#7a45d6",{iris2:"#ffe0ee",angry:true}) +
+    `<path d="M54 82 Q64 88 74 82" stroke="${OL}" stroke-width="3" fill="none" stroke-linecap="round"/>` +
+    `<g filter="url(#bmr)">` + part("M34 6 L42 -14 L50 0 L58 -20 L64 -2 L70 -20 L78 0 L86 -14 L94 6 Q64 -2 34 6Z", C.ice,{ow:4,sx:1,sy:1}) + `</g>` +
+    part("M6 70 Q-4 40 14 28 Q12 52 22 64Z", C.ice,{ow:4,sx:1,sy:1}) + part("M122 70 Q132 40 114 28 Q116 52 106 64Z", C.ice,{ow:4,sx:1,sy:1}) );
+  E.bossBone = ()=> svg( `<defs>${glowF("bbn","#ff9a3c",6)}</defs>` + // ボス: 竜の背骨の骨竜（大きな頭骨・背骨の突起・燃える眼）
+    part("M-4 112 Q6 80 26 82 L30 96 Q14 96 8 118Z", C.cream,{ow:5,sx:2,sy:2}) +
+    [[30,92],[44,86],[58,84]].map(function(p){ return part(`M${p[0]} ${p[1]} L${p[0]+6} ${p[1]-18} L${p[0]+12} ${p[1]}Z`, C.cream,{ow:4,sx:1,sy:1}); }).join("") +
+    part("M24 104 Q26 84 50 84 L70 86 L70 104 Q46 112 24 104Z", C.cream,{ow:6,sx:2,sy:2, inner:line("M34 88 L34 106 M46 86 L46 108 M58 86 L58 106",3,"#b07f5a")}) +
+    part("M56 70 Q50 30 86 22 Q122 20 130 52 L134 74 Q122 80 108 76 L96 92 Q70 96 56 70Z", C.cream,{hl:[80,32,14,7], inner:line("M100 34 Q108 40 104 52",3,"#b07f5a")}) +
+    part("M74 26 L64 2 L84 18Z", C.stone,{ow:5,sx:1,sy:2}) + part("M92 20 L94 -4 L104 20Z", C.stone,{ow:5,sx:1,sy:2}) +
+    `<ellipse cx="90" cy="48" rx="11" ry="9" fill="${OL}"/>` +
+    `<g filter="url(#bbn)"><circle cx="92" cy="48" r="5" fill="#ffd34d"/><circle cx="93" cy="48" r="2.4" fill="#fff"/></g>` +
+    `<path d="M104 76 L110 84 L114 76 L120 84 L124 76" fill="#fff" stroke="${OL}" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `<ellipse cx="124" cy="60" rx="3" ry="2" fill="${OL}"/>` +
+    `<g filter="url(#bbn)"><path d="M132 74 Q140 68 138 60 Q146 66 144 76 Q140 84 132 80Z" fill="#ff9a3c" stroke="${OL}" stroke-width="2"/></g>` +
+    line("M40 108 L34 124 M62 104 L66 124",8,OL) + line("M40 108 L34 123 M62 104 L66 123",4.5,"#ffe9c4") );
+  E.bossLibrarian = ()=> svg( `<defs>${glowF("blb","#ffe27a",6)}${glowF("blb2","#b77cff",5)}</defs>` + // ボス: はじまりの図書館の原初の司書（頭巾・灯・浮かぶ本）
+    part("M20 124 Q24 70 40 46 Q52 26 64 24 Q76 26 88 46 Q104 70 108 124Z", C.purple,{hl:[46,56,10,14], inner:`<path d="M58 60 L64 124 L70 60Z" fill="#4a2496"/>`+line("M30 116 Q64 124 98 116",4,"#ffd34d")}) +
+    part("M38 52 Q36 14 64 10 Q92 14 90 52 Q80 60 64 60 Q48 60 38 52Z", C.purple,{ow:7,sx:2,sy:3, inner:`<path d="M46 50 Q46 24 64 22 Q82 24 82 50 Q74 56 64 56 Q54 56 46 50Z" fill="#15112a"/>`}) +
+    `<g filter="url(#blb2)"><circle cx="56" cy="40" r="4" fill="#efd2ff"/><circle cx="72" cy="40" r="4" fill="#efd2ff"/></g>` +
+    line("M98 70 L104 28",5,"#8a5530") +
+    `<g filter="url(#blb)">` + part("M96 30 Q96 18 104 16 Q112 18 112 30 L112 40 Q104 46 96 40Z", C.gold,{ow:4,sx:1,sy:1, inner:`<circle cx="104" cy="30" r="5" fill="#fffbe0"/>`}) + `</g>` +
+    [[8,40,-14,C.red],[12,86,10,C.teal],[110,92,-8,C.blue],[-2,6,8,C.gold]].map(function(b){ return `<g transform="translate(${b[0]} ${b[1]}) rotate(${b[2]})">`+part("M0 0 L22 0 L22 16 L0 16Z", b[3],{ow:4,sx:1,sy:1, inner:line("M4 0 L4 16",2,"#fff")})+`</g>`; }).join("") +
+    line("M32 82 Q16 76 14 92 M96 82 Q112 76 116 92",6,OL) );
   const crest = ()=> svg( `<defs>${glowF("cr","#7fe9ff",5)}</defs>` + // タイトルの紋章
     part("M64 6 L114 22 Q116 86 64 124 Q12 86 14 22Z", C.blue,{ow:9,hl:[44,36,12,18]}) +
     part("M64 22 L100 34 Q100 80 64 108 Q28 80 28 34Z", C.navy,{ow:4,sx:2,sy:3}) +
@@ -2981,6 +3039,7 @@ const GGART = (function(){
     slime:E.slime, bat:E.bat, golem:E.golem, hare:E.hare, totem:E.totem, torii:E.torii, bombSlime:E.bombSlime, splitMush:E.splitMush,
     ghost:E.ghost, mummy:E.mummy, darkMage:E.darkMage, stoneGiant:E.stoneGiant, cannon:E.cannon, healer:E.healer, buffer:E.buffer,
     shieldy:E.shieldy, summoner:E.summoner, bossMoai:E.bossMoai, bossTotem:E.bossTotem, bossThunder:E.bossThunder,
+    bossBook:E.bossBook, bossClock:E.bossClock, bossMirror:E.bossMirror, bossBone:E.bossBone, bossLibrarian:E.bossLibrarian,
     castleA:castleA, castleE:castleE, crest:crest, hint:hint
   };
   const cache = {}; let seq = 0;
@@ -10413,7 +10472,7 @@ function makeStages(){
       id:a, area:a, boss, world:ch, chapter:ch, within,
       gimmick: gim, mode: boss ? (GIM_MODE[gim]||"destroy") : "destroy",
       name: boss ? bossNameFor(ch,gim) : (CHAPTER_THEMES[ch-1]+" "+within),
-      sprite: boss ? BOSS_SPRITES[(ch-1)%3] : CH_NORMAL_SPRITE[ch-1],
+      sprite: boss ? (ch>20 ? ['bossBook','bossClock','bossMirror','bossBone','bossLibrarian'][ch-21] : BOSS_SPRITES[(ch-1)%3]) : CH_NORMAL_SPRITE[ch-1],
       enemyHpMul: hpMul,
       enemyAtkMul: atkMul,
       castleEHp: (gim==='rush') ? 1e9 : boss ? Math.round(3000*Math.pow(1.2, ch-1)) : Math.round(4500*Math.pow(1.12, ch-1) * (1+0.08*(within-1))), // ⑤rushは城を壊して勝つのではなく全ボス撃破で勝つので城は実質無敵
@@ -10723,7 +10782,7 @@ const Game = (()=>{
     if(!isNew && before >= PLUS_CAP){ refunded = DUPE_GOLD[rar]||40; gold += refunded; }
     else owned[key] = (owned[key]||0) + 1;
     if(isNew && deck.length<5) deck.push(key);
-    return {key:key, rar:ROSTER[key].rar, isNew:isNew, plus:unitStars(key), refunded:refunded, pity:pityHit};
+    return {key:key, rar:ROSTER[key].rar, isNew:isNew, plus:unitStars(key), refunded:refunded, pity:pityHit, pick:(rar==='SSR' && key===pk)};
   }
   function freeReady(){ return ggFree !== todayStr(); }
   function doGacha(n, free){
@@ -10936,7 +10995,7 @@ const Game = (()=>{
     var r=ROSTER[o.key];
     var tag = o.isNew ? '<span class="gxnew">NEW!</span>' : o.refunded ? '<span class="gxref">MAX → 💰'+o.refunded+'</span>' : '<span class="gxup">'+plusTxt(o.plus)+'</span>';
     return '<div class="gxcard gxr-'+o.rar+(big?' big':'')+'"><div class="gxart">'+SVG.get(r.sprite)+'</div>'+
-      '<div class="gxcrar">'+o.rar+'</div><div class="gxcname">'+r.name+'</div>'+(big&&r.sk?'<div class="gxcsk">必殺技「'+r.sk.name+'」</div>':'')+'<div class="gxctag">'+tag+'</div></div>';
+      '<div class="gxcrar">'+o.rar+'</div><div class="gxcname">'+r.name+'</div>'+(big&&r.sk?'<div class="gxcsk">必殺技「'+r.sk.name+'」</div>':'')+'<div class="gxctag">'+tag+'</div>'+(o.pity?'<div class="gxbadge2 pity">天井</div>':o.pick?'<div class="gxbadge2 pick">PICK UP</div>':'')+'</div>';
   }
   // 1体の大きい登場（単発と、10連の SSR/LR のカットイン）
   function gxReveal(stage, o, T, done){
