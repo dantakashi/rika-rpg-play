@@ -540,6 +540,48 @@
   .ggpillar.grp{width:90px;margin-left:-45px;filter:none;background:linear-gradient(90deg,transparent,#b03aff 30%,#fff 50%,#b03aff 70%,transparent)}
   .gggrcircle{position:absolute;width:240px;height:240px;margin-left:-120px;border-radius:50%;border:4px solid #e9a0ff;box-shadow:0 0 20px #b03aff,inset 0 0 20px #b03aff;background:repeating-conic-gradient(#e9a0ff55 0 10deg,transparent 10deg 30deg);z-index:31;pointer-events:none;animation:gggrc 1.5s ease-out forwards}
   @keyframes gggrc{0%{transform:scale(.2) rotate(0);opacity:0}25%{opacity:1}100%{transform:scale(1) rotate(200deg);opacity:0}}
+  /* ===== ガチャ画面のバナー（10-16 要素1）===== */
+  .ggban{--rc:#ffb31a;position:relative;height:300px;border-radius:18px;overflow:hidden;cursor:pointer;background:radial-gradient(ellipse at 55% 62%,#fff8d8 0%,#ffd36b 32%,#ff8a5c 64%,#b8366e 100%);box-shadow:0 0 0 3px #fff inset,0 0 0 3px var(--rc),0 6px 16px #7a2a1033}
+  .ggban.gxr-LR{background:radial-gradient(ellipse at 55% 62%,#fff 0%,#ffc6f0 30%,#b77cff 65%,#3a2a8a 100%)}
+  .ggban-rays{position:absolute;left:55%;top:58%;width:760px;height:760px;margin:-380px 0 0 -380px;background:repeating-conic-gradient(from 0deg,#fff7 0deg 7deg,transparent 7deg 20deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 55%);mask:radial-gradient(circle,#000 0,transparent 55%);animation:gxspin 18s linear infinite;pointer-events:none}
+  .ggban-floor{position:absolute;left:18%;right:-8%;bottom:34px;height:46px;border-radius:50%;background:radial-gradient(ellipse,#fff9 0,#fff0 70%);pointer-events:none}
+  .ggban-art{position:absolute;left:28%;top:22px;width:218px;height:218px;filter:drop-shadow(0 6px 0 #7a2a1044) drop-shadow(0 0 14px #fff);animation:ggpickbob 1.8s ease-in-out infinite}
+  .ggban-art svg{width:100%;height:100%}
+  .ggban-bub{position:absolute;left:10px;top:12px;z-index:3;padding:8px 12px 9px;border-radius:16px;background:linear-gradient(160deg,#ff4d6d,#d6175a);color:#fff;border:3px solid #fff;box-shadow:0 3px 0 #7a0f33,0 6px 12px #0003;transform:rotate(-6deg);text-align:center;line-height:1.1;animation:ggbub 2.4s ease-in-out infinite}
+  .ggban-bub:after{content:"";position:absolute;right:-14px;bottom:12px;border:9px solid transparent;border-left:15px solid #fff}
+  .ggban-bub small{display:block;font-size:12px;font-weight:800;opacity:.95}
+  .ggban-bub b{display:block;font-size:22px;font-weight:900;text-shadow:0 2px 0 #7a0f33;letter-spacing:.5px}
+  @keyframes ggbub{0%,100%{transform:rotate(-6deg) scale(1)}50%{transform:rotate(-4deg) scale(1.05)}}
+  .ggban-pity{position:absolute;left:10px;top:118px;z-index:3;width:116px;padding:6px 8px;border-radius:12px;background:#fffffff0;border:2px solid #e0683b;color:#5a2a10;transform:rotate(-3deg);text-align:center;line-height:1.15;box-shadow:0 3px 0 #e0683b66}
+  .ggban-pity span{display:block;font-size:11px;font-weight:800}
+  .ggban-pity b{display:block;font-size:13px;font-weight:900}
+  .ggban-pity em{font-style:normal;font-size:22px;color:#e0683b;margin:0 2px}
+  .ggban-pity .ggzbar{height:6px;margin-top:3px}
+  .ggban-plate{position:absolute;right:-10px;bottom:30px;z-index:3;max-width:82%;padding:6px 22px 7px 16px;background:linear-gradient(90deg,#2a1640ee,#5a1f5aee);color:#fff;transform:skewX(-12deg);border-left:5px solid var(--rc);box-shadow:0 4px 10px #0005;text-align:right}
+  .ggban-plate>*{display:block;transform:skewX(12deg)}
+  .ggban-tag{font-size:11px;font-weight:900;color:#ffd34d;letter-spacing:1px}
+  .ggban-name{font-size:clamp(18px,5.6vw,24px);font-weight:900;line-height:1.15;text-shadow:0 2px 0 #000a}
+  .ggban-name .gxrb{font-size:13px;vertical-align:3px}
+  .ggban-sk{font-size:12px;font-weight:700;color:#ffe3f4}
+  .ggban-note{position:absolute;right:10px;bottom:8px;z-index:3;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000a}
+  .ggbtns{grid-template-columns:1.35fr 1fr;margin-top:-4px}
+  .ggbtns .btn{position:relative;padding:10px 6px 8px;border-radius:16px;box-shadow:0 4px 0 #0003}
+  .ggbtns .ggbtn-l{display:block;font-size:22px;font-weight:900;line-height:1.05}
+  .ggbtns .btn.ten{background:linear-gradient(180deg,#ff7a59,#e8323c);color:#fff;border-color:#fff;text-shadow:0 2px 0 #8a1020;animation:ggten 1.6s ease-in-out infinite}
+  .ggbtns .btn.ten .ggbtn-l{font-size:26px}
+  @keyframes ggten{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+  .ggbtns .btn.one{background:linear-gradient(180deg,#7fe08a,#2fae6a);color:#fff;text-shadow:0 2px 0 #145a33}
+  .ggbtns .btn:disabled{animation:none;filter:grayscale(.6);opacity:.55}
+  .ggrib{position:absolute;top:-10px;right:-4px;font-style:normal;font-size:11px;font-weight:900;color:#fff;background:#ff3d6e;border:2px solid #fff;border-radius:999px;padding:1px 7px;transform:rotate(6deg);text-shadow:none}
+  .ggstat{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:13px}
+  .ggstat b{color:#a463f2}
+  .ggneed{width:100%;text-align:center;font-size:12px;color:#7a6a5a}
+  .ggneed b{color:#e0683b}
+  .gxrates{gap:4px 10px;font-size:11px;color:#7a6a5a}
+  .gxrates span{white-space:nowrap}
+  .gglast{text-align:center;border-top:2px dashed #e9e2d6;padding-top:8px}
+  .gglast .muted{font-size:12px;margin-bottom:4px}
+  @media (prefers-reduced-motion: reduce){ .ggban-rays,.ggban-bub,.ggbtns .btn.ten,.ggban-art{animation:none} }
   /* ガチャ演出 */
   .gcapsule{width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--rc,#bbb));border:3px solid var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.25);animation:gshake .26s ease-in-out infinite}
   .gcapsule.hi{animation:gshake .14s ease-in-out infinite}
@@ -11254,6 +11296,9 @@ const Game = (()=>{
       });
     });
   }
+  /* ガチャ画面（10-16 要素1）: お手本＝ソシャゲのガチャ画面の改修事例の型。
+     キャラを真ん中に大きく／大事な情報は大きい吹き出し（左）／名前とボタンは右寄せの帯／
+     10連は暖色・1回は別の色／四角を均等に並べず斜めと重なりで動かす。ボタンは390×760で画面内に入れる */
   function renderCharup(){
     const body=$('charupBody'); if(!body) return; body.innerHTML='';
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
@@ -11372,34 +11417,45 @@ const Game = (()=>{
 
   function renderGacha(){
     const cost=$('gachaCost'); if(cost) cost.textContent='（1回 '+GACHA_COST+'💎）';
-    const stage=$('gachaStage');
-    if(stage){
-      if(lastGacha && lastGacha.results) stage.innerHTML=gachaRevealHTML(lastGacha);
-      else stage.innerHTML='<div class="muted" style="text-align:center">問題を解くと💎がたまる。<br>'+GACHA_COST+'💎で1回、10連はSR以上1体確定！</div>';
-    }
+    const stage=$('gachaStage'); if(stage){ stage.innerHTML=''; stage.style.display='none'; }
     const body=$('gachaBody'); if(!body) return; body.innerHTML='';
     const have=ROSTER_KEYS.filter(function(k){ return owned[k]; }).length;
-    const p=document.createElement('div'); p.className='gxpanel';
     let tot=0; for(const r in UNIT_RARITY_W) tot+=UNIT_RARITY_W[r];
-    p.innerHTML='<div class="muted" style="text-align:center">所持：<b style="color:#a463f2">💎 '+gems+'</b>　図鑑 <b>'+have+'</b>/'+ROSTER_KEYS.length+'</div>'+
-      '<div class="gxrates">'+RAR_ORDER.map(function(r){ return rarBadge(r)+' '+(UNIT_RARITY_W[r]/tot*100>=1?(UNIT_RARITY_W[r]/tot*100).toFixed(0):UNIT_RARITY_W[r]/tot*100>=0.1?(UNIT_RARITY_W[r]/tot*100).toFixed(1):(UNIT_RARITY_W[r]/tot*100).toFixed(2))+'%'; }).join('　')+'</div>';
-    const pk=pickupKey();
-    if(pk){ const pr=ROSTER[pk]; const pb=document.createElement('div'); pb.className='ggpick';
-      pb.innerHTML='<span class="ggpick-art">'+SVG.get(pr.sprite)+'</span><div class="ggpick-txt"><small>きょうのピックアップ</small><b>'+pr.name+'</b><span>SSRが出たら半分はこの子！'+(pr.sk?'<br>必殺技「'+pr.sk.name+'」':'')+'</span></div>';
-      pb.onclick=function(){ zukanPop(pk); }; p.appendChild(pb); }
-    const pt=document.createElement('div'); pt.className='ggpity';
-    const left=Math.max(1, GG_PITY-(ggPity||0));
-    pt.innerHTML='<div>SSR以上 確定まで あと <b>'+left+'</b> 回</div><div class="ggzbar"><i style="width:'+((ggPity||0)/GG_PITY*100)+'%"></i></div>';
-    p.appendChild(pt);
-    if(freeReady()){ const bf=document.createElement('button'); bf.className='btn ggfree'; bf.innerHTML='🎁 きょうの無料ガチャ<small>1日1回・💎いらない</small>'; bf.disabled=gachaAnimating; bf.onclick=function(){ doGacha(1,true); }; p.appendChild(bf); }
-    const bs=document.createElement('div'); bs.className='gxbtns';
-    const b1=document.createElement('button'); b1.className='btn'; b1.innerHTML='1回引く<small>'+GACHA_COST+'💎</small>';
-    b1.disabled=gachaAnimating||gems<GACHA_COST; b1.onclick=function(){ doGacha(1); };
-    const b10=document.createElement('button'); b10.className='btn ten'; b10.innerHTML='10連<small>'+(GACHA_COST*10)+'💎・SR以上確定</small>';
+    const pct=function(r){ var v=UNIT_RARITY_W[r]/tot*100; return v>=1?v.toFixed(0):v>=0.1?v.toFixed(1):v.toFixed(2); };
+    const pk=pickupKey()||unitsByRarity('LR')[0]||ROSTER_KEYS[0], pr=ROSTER[pk];
+    const left=Math.max(1, GG_PITY-(ggPity||0)), free=freeReady();
+    const p=document.createElement('div'); p.className='gxpanel';
+    // バナー
+    const ban=document.createElement('div'); ban.className='ggban gxr-'+pr.rar;
+    ban.innerHTML='<div class="ggban-rays"></div><div class="ggban-floor"></div>'+
+      '<span class="ggban-art gxart">'+SVG.get(pr.sprite)+'</span>'+
+      '<div class="ggban-bub"><small>10連なら</small><b>SR以上<br>1体確定！</b></div>'+
+      '<div class="ggban-pity"><span>SSR以上確定まで</span><b>あと<em>'+left+'</em>回</b><div class="ggzbar"><i style="width:'+((ggPity||0)/GG_PITY*100)+'%"></i></div></div>'+
+      '<div class="ggban-plate"><span class="ggban-tag">きょうのピックアップ</span><span class="ggban-name">'+rarBadge(pr.rar)+' '+pr.name+'</span>'+
+      (pr.sk?'<span class="ggban-sk">必殺技「'+pr.sk.name+'」</span>':'')+'</div>'+
+      '<div class="ggban-note">SSRが出たら半分はこの子</div>';
+    ban.onclick=function(){ zukanPop(pk); };
+    p.appendChild(ban);
+    // ボタン（10連＝暖色を左・1回＝緑。無料の日は1回の所が無料になる）
+    const bs=document.createElement('div'); bs.className='gxbtns ggbtns';
+    const b10=document.createElement('button'); b10.className='btn ten'; b10.innerHTML='<span class="ggbtn-l">10連</span><small>💎'+(GACHA_COST*10)+'</small>';
     b10.disabled=gachaAnimating||gems<GACHA_COST*10; b10.onclick=function(){ doGacha(10); };
-    bs.appendChild(b1); bs.appendChild(b10); p.appendChild(bs);
-    if(!gachaAnimating && gems<GACHA_COST){ const m=document.createElement('div'); m.className='muted'; m.style.cssText='text-align:center'; m.textContent='あと '+(GACHA_COST-gems)+'💎（問題を解くとたまる）'; p.appendChild(m); }
-    else if(!gachaAnimating && gems<GACHA_COST*10){ const m=document.createElement('div'); m.className='muted'; m.style.cssText='text-align:center;font-size:12px'; m.textContent='10連まで あと '+(GACHA_COST*10-gems)+'💎'; p.appendChild(m); }
+    const b1=document.createElement('button');
+    if(free){ b1.className='btn one ggfree'; b1.innerHTML='<i class="ggrib">きょう無料</i><span class="ggbtn-l">1回</span><small>💎いらない</small>'; b1.disabled=gachaAnimating; b1.onclick=function(){ doGacha(1,true); }; }
+    else { b1.className='btn one'; b1.innerHTML='<span class="ggbtn-l">1回</span><small>💎'+GACHA_COST+'</small>'; b1.disabled=gachaAnimating||gems<GACHA_COST; b1.onclick=function(){ doGacha(1); }; }
+    bs.appendChild(b10); bs.appendChild(b1); p.appendChild(bs);
+    // 所持・足りない分
+    const st=document.createElement('div'); st.className='ggstat';
+    let need='';
+    if(!gachaAnimating && gems<GACHA_COST && !free) need='あと <b>'+(GACHA_COST-gems)+'</b>💎で1回（問題を解くとたまる）';
+    else if(!gachaAnimating && gems<GACHA_COST*10) need='10連まで あと <b>'+(GACHA_COST*10-gems)+'</b>💎';
+    st.innerHTML='<span>💎 <b>'+gems+'</b></span><span>図鑑 <b>'+have+'</b>/'+ROSTER_KEYS.length+'</span>'+(need?'<div class="ggneed">'+need+'</div>':'');
+    p.appendChild(st);
+    const rt=document.createElement('div'); rt.className='gxrates';
+    rt.innerHTML=RAR_ORDER.map(function(r){ return '<span>'+rarBadge(r)+' '+pct(r)+'%</span>'; }).join('');
+    p.appendChild(rt);
+    if(lastGacha && lastGacha.results){ const l=document.createElement('div'); l.className='gglast'; l.innerHTML='<div class="muted">さっき引いたキャラ</div>'+gachaRevealHTML(lastGacha); p.appendChild(l); }
+    else if(lastGacha && lastGacha.msg){ const l=document.createElement('div'); l.className='muted'; l.style.textAlign='center'; l.textContent=lastGacha.msg; p.appendChild(l); }
     body.appendChild(p);
   }
   function renderDeck(){
