@@ -123,6 +123,15 @@
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
 
+  /* ===== 敵の印と紹介（10-17 要素11）===== */
+  .unit .ggtag{position:absolute; top:-20px; left:50%; transform:translateX(-50%) scaleX(-1); font-size:13px; line-height:15px; padding:0 3px; border-radius:7px; background:#fff; border:2px solid #2b2620; z-index:5; white-space:nowrap}
+  .ggnewe{position:absolute; left:8px; right:8px; z-index:44; display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:12px; background:#1a1205e8; color:#fff; border:2px solid #ffd34d; pointer-events:none; animation:ggnewe 4s ease-out forwards}
+  .ggnewe .ic{font-size:26px; flex:0 0 auto}
+  .ggnewe b{display:block; font-size:14px; color:#ffd34d} .ggnewe b i{font-style:normal; font-size:10px; color:#1a1205; background:#ffd34d; border-radius:4px; padding:0 4px; margin-right:6px; vertical-align:2px}
+  .ggnewe span{display:block; font-size:12px; line-height:1.35}
+  @keyframes ggnewe{0%{transform:translateY(-12px); opacity:0}8%{transform:none; opacity:1}85%{opacity:1}100%{opacity:0}}
+  @media (prefers-reduced-motion: reduce){ .ggnewe{animation:none} }
+
   /* ===== ボスの帯と名乗り（10-17 要素10）===== */
   .ggbb{position:absolute; left:108px; right:50px; top:6px; z-index:35; pointer-events:none; text-align:left}
   .ggbb .nm{font-size:13px; font-weight:900; color:#fff; text-shadow:0 1px 0 #000,0 0 4px #000; margin-bottom:2px; display:flex; justify-content:space-between}
@@ -10819,7 +10828,7 @@ const Game = (()=>{
   let owned = {};          // 入手済み {key:count}
   let deck = [];           // 編成(最大5)
   let castleLv = 0;        // 城強化Lv(HP)
-  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0; let ggPity = 0; let ggFree = ''; let ggSet = {};         // キャラ強化 {key:lv}
+  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0; let ggPity = 0; let ggFree = ''; let ggSet = {}; let ggSeenE = {};         // キャラ強化 {key:lv}
   let regenLv = 0;         // エネルギー増加速度Lv
   let enMaxLv = 0;         // エネルギー上限Lv
   let freezeDurLv = 0;     // ❄フリーズ砲 停止時間Lv（壁1の砲台対策）
@@ -10864,7 +10873,7 @@ const Game = (()=>{
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
-      gachaPulls=s.gachaPulls||0; ggPity=s.ggPity||0; ggFree=s.ggFree||''; ggSet=(s.ggSet&&typeof s.ggSet==='object')?s.ggSet:{}; if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
+      gachaPulls=s.gachaPulls||0; ggPity=s.ggPity||0; ggFree=s.ggFree||''; ggSet=(s.ggSet&&typeof s.ggSet==='object')?s.ggSet:{}; ggSeenE=(s.ggSeenE&&typeof s.ggSeenE==='object')?s.ggSeenE:{}; if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
       for(var __ok2 in owned){ if(owned[__ok2]>PLUS_CAP+1) owned[__ok2]=PLUS_CAP+1; }
       freezeDurLv=s.freezeDurLv||0; freezeCostLv=s.freezeCostLv||0; comboGuardLv=s.comboGuardLv||0;
       cgRefunded=!!s.cgRefunded; if(comboGuardLv>0 && !cgRefunded){ gold += COMBO_GUARD_COSTS.slice(0,Math.min(comboGuardLv,COMBO_GUARD_COSTS.length)).reduce(function(a,b){return a+b;},0); comboGuardLv=0; cgRefunded=true; } // 🛡コンボ保護 廃止に伴う購入ゴールドの返金(1回)
@@ -10894,7 +10903,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis, ggPity, ggFree, ggSet})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis, ggPity, ggFree, ggSet, ggSeenE})); }catch(e){}
   }
   // 💎の1日上限(2026-06-18・荒稼ぎ対策): 「問題に答えて得る学習💎」(れんしゅう/今日の復習/戦闘の1問ごと)だけを
   // 1日 LEARN_GEM_DAILY_CAP までに静かに制限する。ステージ/塔の節目/デイリー等の“報酬💎”は対象外＝従来どおり満額。
@@ -12782,6 +12791,30 @@ const Game = (()=>{
     B.allies.push({ key, el, x, dir, hp:__hp, hpMax:__hp, atk:__atk, speed:r.speed, range:r.range, cd:0, atkCd:0.7*(1-(skinBuff().atkSpd||0)), splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0, part:__part });
     ggOnSummon(B.allies[B.allies.length-1]); // ガチャ2: SR以上の登場演出・SSR/LRの必殺技
   }
+  /* 敵の特徴（10-17 要素11）。[印, 札の名前, ひとこと] */
+  function ggTrait(type, t){
+    if(t.bomb) return ['💣','爆発する敵','倒すと爆発して、近くの仲間にダメージ。'];
+    if(t.split) return ['✂','分裂する敵','倒すと小さい敵2体に分かれる。'];
+    if(t.summon) return ['🔮','呼び出す敵','後ろで敵を呼び続ける。早めに倒そう。'];
+    if(t.heal) return ['💚','回復する敵','まわりの敵を回復する。先に倒そう。'];
+    if(t.buffAura) return ['📯','強化する敵','まわりの敵の攻撃を強くする。倒すとしばらく出てこない。'];
+    if(t.shield) return ['🛡','シールドの敵','🛡の数だけ攻撃を防ぐ。<b>問題に正解すると全部割れる！</b>'];
+    if(t.range>=150) return ['🎯','とても遠くから撃つ敵','仲間より遠くから撃ってくる。前に出て倒そう。'];
+    if(t.range>=100) return ['🏹','遠くから撃つ敵','少し遠くから撃ってくる。'];
+    if(t.def) return ['🧱','かたい敵','弱い攻撃は効きにくい。強い一撃で。'];
+    if((t.scale||1)>=1.4) return ['⛰','大きい敵','体力がとても多い。'];
+    return null;
+  }
+  function ggEnemyIntro(el, type, t){
+    var tr=ggTrait(type, t); if(!tr) return;
+    if(!t.shield && !t.heal && !t.buffAura) el.insertAdjacentHTML('beforeend','<div class="ggtag">'+tr[0]+'</div>');
+    if(ggSeenE[type] || !B || B.pvp) return; ggSeenE[type]=1; try{ save(); }catch(e){}
+    if(t.buffAura || t.heal) return; // この2種は元から出現の帯がある
+    var f=$('field'); if(!f) return; var bb=$('ggBossBar'), top=(bb&&bb.style.display==='block'&&bb.style.top==='40px')?74:44;
+    var d=document.createElement('div'); d.className='ggnewe'; d.style.top=top+'px';
+    d.innerHTML='<span class="ic">'+tr[0]+'</span><div><b><i>NEW</i>'+tr[1]+'</b><span>'+tr[2]+'</span></div>';
+    f.appendChild(d); setTimeout(function(){ d.remove(); }, 4100);
+  }
   function spawnEnemy(type, side){
     if(type==="BOSS"){ spawnBoss(); return; }
     const t=ENEMY_TYPES[type]; const s=B.stage;
@@ -12794,6 +12827,7 @@ const Game = (()=>{
     $('field').appendChild(el);
     const hp=Math.round(t.hp*s.enemyHpMul);
     if(t.buffAura) el.classList.add('buffaura'); else if(t.heal) el.classList.add('healaura');
+    try{ ggEnemyIntro(el, type, t); }catch(e){}
     if(t.shield){ el.insertAdjacentHTML('beforeend','<div class="shieldbadge">🛡'+t.shield+'</div>'); } // 🛡シールド兵: 残回数バッジ
     B.enemies.push({ type, el, x, dir, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null,
       heal: t.heal? Math.round(t.heal*s.enemyHpMul) : 0, buffer: !!t.buffAura, buffAura: t.buffAura||0, buffRange: t.buffRange||0,
