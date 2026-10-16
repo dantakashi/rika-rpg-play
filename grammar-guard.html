@@ -94,6 +94,11 @@
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
 
+  /* ===== ノックバック（10-16 夜）===== */
+  .unit.ggkb .body{animation:ggkbhop .45s ease-out}
+  @keyframes ggkbhop{0%{transform:translateY(0) rotate(0)}35%{transform:translateY(-14px) rotate(-8deg)}70%{transform:translateY(0) rotate(4deg)}85%{transform:translateY(-3px)}100%{transform:none}}
+  @media (prefers-reduced-motion: reduce){ .unit.ggkb .body{animation:none} }
+
   /* ===== 倒れ方（10-16 要素3）===== */
   .ggdie{position:absolute; inset:0; pointer-events:none; z-index:6}
   .ggdie .unit .body{animation:none}
@@ -13102,6 +13107,7 @@ const Game = (()=>{
     const survive = B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive; // ④通常配置の耐久(敵城は無敵・timeLimitで勝ち)
     // 味方：右へ。敵 or 敵城と戦う
     B.allies.forEach(a=>{
+      if(a.kbT>0){ ggKbStep(a, dt, 70, W-60); return; } // ノックバック中は下がるだけ
       a.cd-=dt; ggSkillTick(a,dt);
       if(a.heal){ if(a.cd<=0){ var __h=false; B.allies.forEach(function(o){ if(o!==a && Math.abs(o.x-a.x)<=a.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+a.heal); var __i=o.el.querySelector('.hpb i'); if(__i)__i.style.width=(o.hp/o.hpMax*100)+'%'; __h=true; } }); if(__h){ a.cd=0.9; flash(a.el); floatText(a.x,24,'+♥','var(--good)'); } } a.x+=a.speed*dt; place(a.el,a.x); return; }
       const target = nearestEnemy(a);
@@ -13126,6 +13132,7 @@ const Game = (()=>{
     B.enemies.forEach(e=>{
       if(B.frozenT>0){ if(e.el) e.el.classList.add('frz'); return; } // ❄フリーズ中：敵は動かず攻撃もしない
       if(e.el) e.el.classList.remove('frz');
+      if(e.kbT>0){ ggKbStep(e, dt, 70, W-60); return; } // ノックバック中は下がるだけ
       e.cd-=dt;
       if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
       // 壁3：敵ヒーラー＝攻撃せず前進しつつ周囲の敵を回復（後方支援）
@@ -13159,7 +13166,7 @@ const Game = (()=>{
   function damage(u,amt){ if(u.invincible){ flash(u.el); return; }
     // 🛡シールド兵: シールドが残っている間はダメージ無効（1被弾で1枚消費）。正解で全砕き＝answer()参照
     if(u.shield>0){ u.shield--; var __sbg=u.el.querySelector('.shieldbadge'); if(__sbg){ if(u.shield>0){ __sbg.textContent='🛡'+u.shield; } else { __sbg.remove(); } } flash(u.el); return; }
-    amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
+    amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; ggKbCheck(u); }
   /* 倒れ方（10-16 要素3）。kind='kb'=敵が後ろへ吹っ飛ぶ／'soul'=味方が昇る */
   function ggDie(el, kind){
     if(!el) return;
@@ -13173,6 +13180,20 @@ const Game = (()=>{
     var d=document.createElement('div'); d.className='ggcoin'+(n>=100?' big':''); d.textContent='+'+n+'💰';
     d.style.left=x+'px'; d.style.bottom='76px'; f.appendChild(d); setTimeout(function(){ d.remove(); }, 820);
   }
+  /* ノックバック（10-16 夜）。n＝HPを何等分するか（2＝半分で1回）。dist＝押し返す距離(px)・t＝秒 */
+  window.GG_KB = window.GG_KB || { on:1, nEnemy:2, nBoss:3, nAlly:2, dist:40, distBoss:22, distAlly:40, t:0.45, tAlly:0.45 };
+  function ggKbCheck(u){
+    var K=window.GG_KB; if(!K || !K.on || !B || u.hp<=0 || !u.hpMax) return;
+    if(u.__sd==null) u.__sd = B.enemies.indexOf(u)>=0 ? 1 : (B.allies.indexOf(u)>=0 ? -1 : 0);
+    if(!u.__sd) return;
+    var n = u.__sd<0 ? K.nAlly : (u.boss ? K.nBoss : K.nEnemy); if(!(n>1)) return;
+    var i=u.__kbI||0, hit=false;
+    while(i<n-1 && u.hp <= u.hpMax*(1-(i+1)/n)){ i++; hit=true; }
+    u.__kbI=i; if(!hit) return;
+    var tt=u.__sd<0?K.tAlly:K.t, dd=u.__sd<0?K.distAlly:(u.boss?K.distBoss:K.dist); u.kbT=tt; u.kbV=u.__sd*dd/tt;
+    if(u.el){ u.el.classList.remove('ggkb'); void u.el.offsetWidth; u.el.classList.add('ggkb'); var el=u.el; setTimeout(function(){ el.classList.remove('ggkb'); }, tt*1000+60); }
+  }
+  function ggKbStep(u, dt, lo, hi){ u.kbT-=dt; u.x=Math.max(lo, Math.min(hi, u.x+u.kbV*dt)); place(u.el, u.x); }
   function flash(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),90); }
   function place(el,x){ el.style.left=(x-27)+'px'; }
   function cleanup(){
