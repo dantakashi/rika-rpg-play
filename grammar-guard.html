@@ -125,7 +125,7 @@
 
   /* ===== 敵の印と紹介（10-17 要素11）===== */
   .unit .ggtag{position:absolute; top:-20px; left:50%; transform:translateX(-50%) scaleX(-1); font-size:13px; line-height:15px; padding:0 3px; border-radius:7px; background:#fff; border:2px solid #2b2620; z-index:5; white-space:nowrap}
-  .ggnewe{position:absolute; left:8px; right:8px; z-index:44; display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:12px; background:#1a1205e8; color:#fff; border:2px solid #ffd34d; pointer-events:none; animation:ggnewe 4s ease-out forwards}
+  .ggnewe{position:absolute; left:72px; right:72px; z-index:44; display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:12px; background:#1a1205e8; color:#fff; border:2px solid #ffd34d; pointer-events:none; animation:ggnewe 4s ease-out forwards}
   .ggnewe .ic{font-size:26px; flex:0 0 auto}
   .ggnewe b{display:block; font-size:14px; color:#ffd34d} .ggnewe b i{font-style:normal; font-size:10px; color:#1a1205; background:#ffd34d; border-radius:4px; padding:0 4px; margin-right:6px; vertical-align:2px}
   .ggnewe span{display:block; font-size:12px; line-height:1.35}
@@ -324,6 +324,24 @@
   /* 城のダメージ段階 */
   .castle.shakeC{animation:shake .2s}
   .castle .crack{position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .3s}
+
+  /* ===== 城の体力と傷み（10-17 要素12）===== */
+  .castle .crack{display:none}
+  .castle .gghp{position:absolute; left:4px; right:4px; bottom:-5px; height:7px; border-radius:4px; background:#0006; border:1.5px solid #2b2620; overflow:hidden; z-index:3}
+  .castle .gghp i{display:block; height:100%; background:#58b84a; transition:width .2s}
+  #castleE .gghp i{background:#e8665f}
+  .castle .gghp.lo i{background:#ffb31a} #castleA .gghp.cr i{background:#e8323c; animation:blink .6s steps(1) infinite}
+  .castle .csvg{transition:filter .4s}
+  .castle.dmg1 .csvg{filter:saturate(.8)}
+  .castle.dmg2 .csvg{filter:saturate(.6) brightness(.85)}
+  .castle.dmg3 .csvg{filter:saturate(.45) brightness(.7)}
+  .castle::before,.castle::after{content:""; position:absolute; pointer-events:none; opacity:0; font-size:20px; line-height:1; z-index:2}
+  .castle.dmg1::before,.castle.dmg2::before,.castle.dmg3::before{content:"💨"; left:20%; top:42%; opacity:.85; animation:ggsmoke 2.2s ease-out infinite}
+  .castle.dmg2::after,.castle.dmg3::after{content:"💨"; left:55%; top:55%; opacity:.85; animation:ggsmoke 2.6s ease-out -1s infinite}
+  .castle.dmg3::before{content:"🔥"; font-size:22px; animation:ggfire .5s steps(2) infinite}
+  @keyframes ggsmoke{0%{transform:translateY(6px) scale(.6); opacity:0}30%{opacity:.85}100%{transform:translateY(-22px) scale(1.2); opacity:0}}
+  @keyframes ggfire{0%{transform:scale(1)}50%{transform:scale(1.15) rotate(-6deg)}}
+  @media (prefers-reduced-motion: reduce){ .castle::before,.castle::after{animation:none} }
   .castle.dmg1 .crack{opacity:.4} .castle.dmg2 .crack{opacity:.7} .castle.dmg3 .crack{opacity:1}
   .castle .warn{position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:8px; height:8px; border-radius:50%;
     background:#ff3b3b; opacity:0}
@@ -12231,7 +12249,7 @@ const Game = (()=>{
   }
   function hitFx(target){ if(target&&target.el){ target.el.classList.add('shake'); setTimeout(()=>target.el.classList.remove('shake'),180); fxRing(target.x, fieldFloorY()); fxSparks(target.x, fieldFloorY(), 4); } Sound.play('hit'); }
   function castleHit(id){ const c=$(id); c.classList.add('shakeC'); setTimeout(()=>c.classList.remove('shakeC'),200); Sound.play('hit'); }
-  function setCastleDmg(id,ratio){ const c=$(id); c.classList.toggle('dmg1', ratio<=0.66&&ratio>0.4); c.classList.toggle('dmg2', ratio<=0.4&&ratio>0.18); c.classList.toggle('dmg3', ratio<=0.18); }
+  function setCastleDmg(id,ratio){ const c=$(id); try{ var __h=c.querySelector('.gghp'); if(!__h){ c.insertAdjacentHTML('beforeend','<div class="gghp"><i></i></div>'); __h=c.querySelector('.gghp'); } var __w=Math.max(0,Math.min(100,Math.round(ratio*100))); if(__h.__w!==__w){ __h.__w=__w; __h.firstChild.style.width=__w+'%'; __h.classList.toggle('lo', ratio<=0.4&&ratio>0.18); __h.classList.toggle('cr', ratio<=0.18); } }catch(e){} c.classList.toggle('dmg1', ratio<=0.66&&ratio>0.4); c.classList.toggle('dmg2', ratio<=0.4&&ratio>0.18); c.classList.toggle('dmg3', ratio<=0.18); }
   function buildSky(ch){
     const sky=$('sky'); sky.innerHTML='';
     const bg=CHAPTER_BG[(ch||1)-1]||CHAPTER_BG[0];
