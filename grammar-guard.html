@@ -524,6 +524,23 @@
   .ggpc .dk small{display:block; font-size:9px; font-weight:900}
   .ggpc .dk i{position:absolute; top:-7px; left:-4px; font-style:normal; font-size:8px; font-weight:900; color:#fff; background:var(--rc); border-radius:5px; padding:0 3px}
   .ggpc .ft{margin-top:6px; font-size:11px; opacity:.9}
+
+  /* ===== タイトル（10-17 要素17）===== */
+  #title{background:radial-gradient(ellipse at 50% 38%,#fff8d8 0%,#ffd36b 30%,#ff8a5c 58%,#7a2a6a 100%); overflow:hidden}
+  #title::before{content:""; position:absolute; left:50%; top:36%; width:900px; height:900px; margin:-450px 0 0 -450px; background:repeating-conic-gradient(from 0deg,#fff5 0deg 7deg,transparent 7deg 20deg); -webkit-mask:radial-gradient(circle,#000 0,transparent 60%); mask:radial-gradient(circle,#000 0,transparent 60%); animation:gxspin 24s linear infinite; pointer-events:none}
+  #title>*{position:relative}
+  .ggkey{position:relative; width:min(92vw,420px); height:190px; margin:0 auto -36px}
+  .ggkey span{position:absolute; bottom:0; display:block; filter:drop-shadow(0 6px 0 #0003)}
+  .ggkey span svg{width:100%; height:100%}
+  .ggkey .k0{left:50%; width:150px; height:150px; margin-left:-75px; bottom:28px; z-index:3}
+  .ggkey .k1{left:6%; width:112px; height:112px; z-index:2} .ggkey .k2{right:6%; width:112px; height:112px; z-index:2}
+  .ggkey .k3{left:24%; width:92px; height:92px; bottom:70px; z-index:1; opacity:.95} .ggkey .k4{right:24%; width:92px; height:92px; bottom:70px; z-index:1; opacity:.95}
+  #title .crest{transform:scale(.8)}
+  #title h1{color:#fff; text-shadow:0 3px 0 #7a2a10,0 0 14px #7a2a6a; font-size:clamp(30px,9vw,42px); letter-spacing:2px; margin:4px 0}
+  #title .ggtag2{color:#fff; font-weight:800; font-size:13.5px; text-shadow:0 1px 2px #0008; margin:0 16px}
+  #title .ggstart{font-size:22px; padding:14px 44px; border-radius:18px; background:linear-gradient(180deg,#ff7a59,#e8323c); border:3px solid #fff; color:#fff; box-shadow:0 5px 0 #8a1020,0 0 20px #fff8; animation:ggten 1.6s ease-in-out infinite}
+  .ggver{position:absolute!important; right:max(10px,env(safe-area-inset-right,0px)); bottom:calc(8px + env(safe-area-inset-bottom,0px)); font-size:10px; color:#fffc; font-weight:700}
+  @media (prefers-reduced-motion: reduce){ #title::before,#title .ggstart{animation:none} }
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -1079,12 +1096,13 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
 
   <!-- ===== タイトル ===== -->
   <section id="title" class="screen on pad">
+    <div class="ggkey" id="ggKey"></div>
     <div class="crest" id="titleCrest"></div>
-    <h1>グラマー・ガード <span style="color:var(--enemy)">v2</span></h1>
-    <p class="muted">試作版 — 問題を解いて味方を召喚し、城を守る英語防衛バトル</p>
-    <p class="muted" style="font-size:12px;color:#3aa6a0;font-weight:800">build 2026-06-07h（ホーム微調整：英単語見出し削除・矢印を端へ・キャラ大型化＆余白・スマホ最適化）</p>
+    <h1>グラマー・ガード</h1>
+    <p class="ggtag2">問題を解いて仲間を呼び、城を守る英語バトル</p>
     <div style="height:14px"></div>
-    <button class="btn" onclick="Game.toHome()">はじめる ▶</button>
+    <button class="btn ggstart" onclick="Game.toHome()">はじめる ▶</button>
+    <span class="ggver">v2 · 2026-10-17</span>
     <div style="height:16px"></div>
     <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
       <button class="pill" onclick="ggGoPortal()" title="ポータル（ホーム）へ" style="cursor:pointer">🏠 ポータル</button>
@@ -14440,5 +14458,9 @@ window.addEventListener('DOMContentLoaded', Game.start);
   window.addEventListener('pagehide',flush); window.addEventListener('beforeunload',flush);
 })();
 </script>
+<script>(function(){ try{ var el=document.getElementById('ggKey'); if(!el||typeof ROSTER==='undefined'||typeof SVG==='undefined') return;
+  var lr=Object.keys(ROSTER).filter(function(k){ return ROSTER[k].rar==='LR'; }), ss=Object.keys(ROSTER).filter(function(k){ return ROSTER[k].rar==='SSR' && ROSTER[k].theme; });
+  var ks=[lr[0],lr[1],lr[2],ss[0],ss[3]].filter(Boolean), h='';
+  ks.forEach(function(k,i){ h+='<span class="k'+i+' gxart">'+SVG.get(ROSTER[k].sprite)+'</span>'; }); el.innerHTML=h; }catch(e){} })();</script>
 </body>
 </html>
