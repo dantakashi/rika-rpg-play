@@ -372,6 +372,23 @@
   .ggup-st{display:grid; grid-template-columns:38px 30px 50px 54px; font-size:12px; font-weight:800; color:#5a5040; margin-top:1px}
   .ggup-st span{white-space:nowrap}
   .gxr-GR{--rc:#e0a800}
+
+  /* ===== 図鑑のアルバム（10-17 要素6）===== */
+  .ggalb{display:flex; flex-direction:column; gap:4px; padding:10px 12px; border-radius:14px; background:linear-gradient(110deg,#fff3c4,#ffe3f4 60%,#e6d6ff); border:2px solid #e8b04a; margin-bottom:12px}
+  .ggalb b{font-size:22px; color:#7a2a10}
+  .ggalb .r{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; font-weight:800}
+  .ggset{border:2px solid var(--line); border-radius:14px; padding:8px 8px 10px; margin-bottom:10px; background:#fff}
+  .ggset.done{border-color:#e8b04a; background:linear-gradient(180deg,#fffbe6,#fff 40%)}
+  .ggset-h{display:flex; align-items:center; gap:8px; margin-bottom:4px}
+  .ggset-h .nm{flex:1; min-width:0; font-weight:900; font-size:15px}
+  .ggset-h .ct{font-weight:900; font-size:14px; font-variant-numeric:tabular-nums; color:#7a6a5a}
+  .ggset-h .ct em{font-style:normal; color:var(--ink); font-size:17px}
+  .ggset .ggzbar{margin:0 0 8px}
+  .ggset-rw{flex:0 0 auto; font-size:12px; font-weight:900; border-radius:999px; padding:3px 9px; border:2px solid #e8b04a; color:#a8620c; background:#fffbe6; white-space:nowrap}
+  .ggset-rw.get{background:linear-gradient(180deg,#ffd34d,#ff9a3c); color:#3a1a00; border-color:#fff; box-shadow:0 3px 0 #c06a10; animation:ggten 1.6s ease-in-out infinite; font:inherit; font-size:13px; font-weight:900}
+  .ggset-rw.got{border-color:#3a9d57; color:#3a9d57; background:#eafaef}
+  .ggset .ggzgrid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  @media (prefers-reduced-motion: reduce){ .ggset-rw.get{animation:none} }
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -10716,7 +10733,7 @@ const Game = (()=>{
   let owned = {};          // 入手済み {key:count}
   let deck = [];           // 編成(最大5)
   let castleLv = 0;        // 城強化Lv(HP)
-  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0; let ggPity = 0; let ggFree = '';         // キャラ強化 {key:lv}
+  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0; let ggPity = 0; let ggFree = ''; let ggSet = {};         // キャラ強化 {key:lv}
   let regenLv = 0;         // エネルギー増加速度Lv
   let enMaxLv = 0;         // エネルギー上限Lv
   let freezeDurLv = 0;     // ❄フリーズ砲 停止時間Lv（壁1の砲台対策）
@@ -10761,7 +10778,7 @@ const Game = (()=>{
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
-      gachaPulls=s.gachaPulls||0; ggPity=s.ggPity||0; ggFree=s.ggFree||''; if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
+      gachaPulls=s.gachaPulls||0; ggPity=s.ggPity||0; ggFree=s.ggFree||''; ggSet=(s.ggSet&&typeof s.ggSet==='object')?s.ggSet:{}; if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
       for(var __ok2 in owned){ if(owned[__ok2]>PLUS_CAP+1) owned[__ok2]=PLUS_CAP+1; }
       freezeDurLv=s.freezeDurLv||0; freezeCostLv=s.freezeCostLv||0; comboGuardLv=s.comboGuardLv||0;
       cgRefunded=!!s.cgRefunded; if(comboGuardLv>0 && !cgRefunded){ gold += COMBO_GUARD_COSTS.slice(0,Math.min(comboGuardLv,COMBO_GUARD_COSTS.length)).reduce(function(a,b){return a+b;},0); comboGuardLv=0; cgRefunded=true; } // 🛡コンボ保護 廃止に伴う購入ゴールドの返金(1回)
@@ -10791,7 +10808,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis, ggPity, ggFree})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis, ggPity, ggFree, ggSet})); }catch(e){}
   }
   // 💎の1日上限(2026-06-18・荒稼ぎ対策): 「問題に答えて得る学習💎」(れんしゅう/今日の復習/戦闘の1問ごと)だけを
   // 1日 LEARN_GEM_DAILY_CAP までに静かに制限する。ステージ/塔の節目/デイリー等の“報酬💎”は対象外＝従来どおり満額。
@@ -11104,7 +11121,56 @@ const Game = (()=>{
     card.appendChild(bg); card.appendChild(bc);
     $('unitPop').classList.add('on');
   }
+  /* 図鑑のアルバム（10-17 要素6）。シリーズ＝ROSTER の theme（キャラコンペの絵柄）。表に出す名前は GG_SETS */
+  var GG_SETS = [
+    ['', 'はじまりの守り手', 150], ['ちびシンプル','まるっこ一座',300], ['ピクセルドット','ドットの迷宮',300], ['浮世絵','浮世の絵巻',300],
+    ['絵札','札の王国',300], ['グリッチ','電脳界',300], ['ローポリ','多面体の獣',300], ['メカ','鋼鉄機兵団',300],
+    ['少年漫画','武闘の里',300], ['ポップアート','ポップ街',300], ['ブリキ','ブリキ工房',300], ['ボクセル','積み木の王国',300],
+    ['LR厚塗り','伝説の英雄',1500], ['GR 機動兵器','機動要塞',0], ['GR 封印兵器','封印兵装',0]
+  ];
+  var GG_ALBUM_GEMS = 3000; // GR 以外を全部そろえたら
+  function ggSetKeys(code){ return ROSTER_KEYS.filter(function(k){ return (ROSTER[k].theme||'')===code; }).sort(function(a,b){ return rarRank2(ROSTER[b].rar)-rarRank2(ROSTER[a].rar); }); }
+  function ggSetDone(code){ var ks=ggSetKeys(code); return ks.length>0 && ks.every(function(k){ return owned[k]; }); }
+  function ggAlbumDone(){ return GG_SETS.every(function(s){ return !s[2] || ggSetDone(s[0]); }); }
+  function ggSetReady(){ var n=0; GG_SETS.forEach(function(s){ if(s[2] && ggSetDone(s[0]) && !ggSet[s[0]||'_']) n++; }); if(ggAlbumDone() && !ggSet.__album) n++; return n; }
+  function ggSetClaim(id, gemsN){ if(ggSet[id]) return; ggSet[id]=1; gems+=gemsN; updateGemUI(); save(); try{ Sound.play('correct'); }catch(e){} try{ ggGemPop(gemsN); }catch(e){} renderHome(); }
   function renderZukan(){
+    try{ [].forEach.call(document.querySelectorAll('#home button.menubtn[data-go="gacha"] .sub'), function(s){ s.textContent = freeReady() ? '🎁 きょうの無料ガチャが引ける！' : '💎で仲間を集めよう（10連はSR以上確定）'; }); }catch(e){}
+    try{ var zb=document.querySelector('#home button[data-go="zukan"]'); if(zb){ var rd=ggSetReady(); zb.textContent='📖 キャラ図鑑'+(rd?'（受け取れる '+rd+'）':''); } }catch(e){}
+    var body=$('zukanBody'); if(!body) return; body.innerHTML='';
+    var have=ROSTER_KEYS.filter(function(k){ return owned[k]; }).length, sets=GG_SETS.filter(function(s){ return s[2]; }), doneN=sets.filter(function(s){ return ggSetDone(s[0]); }).length;
+    var top=document.createElement('div'); top.className='ggalb';
+    top.innerHTML='<div class="r"><span>あつめたキャラ</span><span><b>'+have+'</b> / '+ROSTER_KEYS.length+'</span></div><div class="ggzbar"><i style="width:'+(have/ROSTER_KEYS.length*100)+'%"></i></div>'+
+      '<div class="r"><span>そろえたシリーズ '+doneN+' / '+sets.length+'</span><span id="ggAlbRw"></span></div>';
+    var arw=top.querySelector('#ggAlbRw');
+    if(ggSet.__album) arw.innerHTML='<span class="ggset-rw got">✓ 全部そろえた</span>';
+    else if(ggAlbumDone()){ var ab=document.createElement('button'); ab.className='ggset-rw get'; ab.textContent='受け取る 💎'+GG_ALBUM_GEMS; ab.onclick=function(){ ggSetClaim('__album', GG_ALBUM_GEMS); }; arw.appendChild(ab); }
+    else arw.innerHTML='<span class="ggset-rw">ぜんぶで 💎'+GG_ALBUM_GEMS+'</span>';
+    body.appendChild(top);
+    GG_SETS.forEach(function(s){
+      var code=s[0], ks=ggSetKeys(code); if(!ks.length) return;
+      var got=ks.filter(function(k){ return owned[k]; }).length, done=got===ks.length, id=code||'_';
+      var box=document.createElement('div'); box.className='ggset'+(done?' done':'');
+      var h=document.createElement('div'); h.className='ggset-h';
+      h.innerHTML='<span class="nm">'+s[1]+'</span><span class="ct"><em>'+got+'</em>/'+ks.length+'</span>';
+      if(s[2]){
+        if(ggSet[id]) h.insertAdjacentHTML('beforeend','<span class="ggset-rw got">✓ 受け取り済み</span>');
+        else if(done){ var b=document.createElement('button'); b.className='ggset-rw get'; b.textContent='受け取る 💎'+s[2]; b.onclick=function(){ ggSetClaim(id, s[2]); }; h.appendChild(b); }
+        else h.insertAdjacentHTML('beforeend','<span class="ggset-rw">そろえると 💎'+s[2]+'</span>');
+      } else h.insertAdjacentHTML('beforeend','<span class="ggset-rw" style="border-color:#e0a800;color:#8a6a00">GR</span>');
+      box.appendChild(h);
+      box.insertAdjacentHTML('beforeend','<div class="ggzbar"><i style="width:'+(got/ks.length*100)+'%"></i></div>');
+      var g=document.createElement('div'); g.className='ggzgrid';
+      ks.forEach(function(key){
+        var r=ROSTER[key], o=!!owned[key], st=unitStars(key);
+        var c=document.createElement('button'); c.className='ggzcell ggz-'+r.rar+(o?'':' off');
+        c.innerHTML='<span class="ggzart'+(o?'':' ggzsil')+'">'+SVG.get(r.sprite)+'</span><span class="ggzname">'+r.name+'</span>'+(o&&st?'<span class="gxplus">+'+st+'</span>':'')+(r.sk?'<span class="ggzsk">技</span>':'');
+        c.onclick=function(){ zukanPop(key); }; g.appendChild(c);
+      });
+      box.appendChild(g); body.appendChild(box);
+    });
+  }
+  function renderZukanOld(){
     // ホームの「ガチャ」ボタンに無料ガチャの知らせ
     try{ [].forEach.call(document.querySelectorAll('#home button.menubtn[data-go="gacha"] .sub'), function(s){ s.textContent = freeReady() ? '🎁 きょうの無料ガチャが引ける！' : '💎で仲間を集めよう（10連はSR以上確定）'; }); }catch(e){}
     var body=$('zukanBody'); if(!body) return; body.innerHTML='';
