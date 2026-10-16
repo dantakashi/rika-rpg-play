@@ -512,6 +512,18 @@
   #chapTabs .ggtower{min-width:auto!important; padding:8px 10px!important; font-size:14px; position:relative}
   #chapTabs .ggtower i{position:absolute; top:-4px; right:-4px; width:10px; height:10px; border-radius:50%; background:#ff3d6e; border:2px solid #fff}
   @media (prefers-reduced-motion: reduce){ .btn.ggglow{animation:none} }
+
+  /* ===== たいせんのカード（10-17 要素14）===== */
+  .ggpc{margin-top:8px; border-radius:14px; padding:8px 10px 10px; background:linear-gradient(135deg,#2a1640,#5a1f5a); color:#fff; border:3px solid #ffd34d}
+  .ggpc.opp{background:linear-gradient(135deg,#40161a,#5a2a1f); border-color:#ff8a5c}
+  .ggpc .hd{display:flex; justify-content:space-between; align-items:baseline; font-weight:900; margin-bottom:6px}
+  .ggpc .hd b{font-size:16px} .ggpc .hd small{font-size:11px; opacity:.85}
+  .ggpc .dk{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px}
+  .ggpc .dk div{--rc:#9aa7b8; position:relative; border-radius:9px; border:2px solid var(--rc); background:#fff; padding:2px 1px 1px; text-align:center; color:#231c3a}
+  .ggpc .dk span.a{display:block; aspect-ratio:1} .ggpc .dk span.a svg{width:100%; height:100%}
+  .ggpc .dk small{display:block; font-size:9px; font-weight:900}
+  .ggpc .dk i{position:absolute; top:-7px; left:-4px; font-style:normal; font-size:8px; font-weight:900; color:#fff; background:var(--rc); border-radius:5px; padding:0 3px}
+  .ggpc .ft{margin-top:6px; font-size:11px; opacity:.9}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -1262,7 +1274,7 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
         </div>
         <div class="card" style="margin-bottom:12px">
           <div style="font-weight:800; margin-bottom:6px">⚔️ 相手と対戦</div>
-          <textarea id="pvpOppCard" placeholder="相手からもらったカードをここに貼り付け" style="width:100%;height:60px;border:2px solid var(--line);border-radius:10px;padding:8px;font-size:12px;font-family:monospace;box-sizing:border-box"></textarea>
+          <textarea id="pvpOppCard" oninput="try{GG_PVP.peek()}catch(e){}" placeholder="相手からもらったカードをここに貼り付け" style="width:100%;height:60px;border:2px solid var(--line);border-radius:10px;padding:8px;font-size:12px;font-family:monospace;box-sizing:border-box"></textarea>
           <button class="btn" style="width:100%;margin-top:8px;background:#e0683b" onclick="GG_PVP.battle()">🆚 対戦する！</button>
           <div id="pvpResult" style="margin-top:10px"></div>
         </div>
@@ -14163,8 +14175,20 @@ const Game = (()=>{
     var draw = (L.castle>0 && R.castle>0 && Math.abs(aP-bP)<0.02);
     return { winA:winA, draw:draw, aCastle:Math.round(aP*100), bCastle:Math.round(bP*100), t:+t.toFixed(1), aBroke:R.castle<=0, bBroke:L.castle<=0 };
   }
+  /* たいせんのカードの絵（10-17 要素14） */
+  function ggPvpCardHTML(c, opp){
+    if(!c) return '';
+    var dk=(c.deck||[]).filter(function(k){ return ROSTER[k]; }).slice(0,5);
+    var h='<div class="ggpc'+(opp?' opp':'')+'"><div class="hd"><b>'+esc(c.name||'プレイヤー')+'</b><small>'+(opp?'あいて':'あなた')+'のカード'+(c.iron?'・⚔'+c.iron:'')+'</small></div><div class="dk">';
+    dk.forEach(function(k){ var r=ROSTER[k], st=Math.max(0,((c.stars&&c.stars[k])||1)-1), lv=(c.lv&&c.lv[k])||0;
+      h+='<div class="gxr-'+r.rar+'"><i>'+r.rar+'</i><span class="a">'+SVG.get(r.sprite)+'</span><small>Lv'+lv+(st?' +'+st:'')+'</small></div>'; });
+    h+='</div><div class="ft">城Lv'+(c.cas||0)+'・エネ回復Lv'+(c.reg||0)+'・上限Lv'+(c.enm||0)+'</div></div>';
+    return h;
+  }
+  function ggPvpPreview(id, c, opp){ var t=$(id); if(!t) return; var p=document.getElementById(id+'Pv'); if(!p){ p=document.createElement('div'); p.id=id+'Pv'; t.parentNode.insertBefore(p, t.nextSibling); } p.innerHTML = c ? ggPvpCardHTML(c, opp) : ''; }
   const GG_PVP={
-    makeCard:function(){ var nm=($('pvpName')&&$('pvpName').value)||'プレイヤー'; var t=$('pvpMyCard'); if(t)t.value=pvpEncode(pvpMakeCardObj(nm)); },
+    peek:function(){ var c=pvpDecode($('pvpOppCard')&&$('pvpOppCard').value); ggPvpPreview('pvpOppCard', c, true); },
+    makeCard:function(){ var nm=($('pvpName')&&$('pvpName').value)||'プレイヤー'; var t=$('pvpMyCard'); var __c=pvpMakeCardObj(nm); if(t)t.value=pvpEncode(__c); try{ ggPvpPreview('pvpMyCard', __c, false); }catch(e){} },
     copyCard:function(){ var t=$('pvpMyCard'); if(!t||!t.value) GG_PVP.makeCard(); t=$('pvpMyCard'); if(!t||!t.value)return; try{ t.select(); if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t.value); else document.execCommand('copy'); }catch(e){} },
     battle:function(){
       var res=$('pvpResult'); var opp=pvpDecode($('pvpOppCard')&&$('pvpOppCard').value);
@@ -14186,7 +14210,7 @@ const Game = (()=>{
       var draw = Math.abs(meRem-opRem) < 1.5;
       var win = !draw && (meRem > opRem);
       function castleLine(nm,rem,broke,me,ironN){ return '<div style="border:2px solid var(--line);border-radius:10px;padding:8px;margin-top:6px;background:#fff"><b>'+esc(nm)+'</b>'+(ironN?' <span style="color:#5a6670;font-weight:800" title="鉄の試練 制覇数">⚔'+ironN+'</span>':'')+(me?'（あなた）':'')+'：🏯 城 '+Math.round(rem)+'％ のこり'+(broke?' <span style="color:var(--enemy)">(一部の対戦で陥落)</span>':'')+'</div>'; }
-      var verdict=draw?'🤝 引き分け！':(win?'🎉 あなたの勝ち！':'💧 相手の勝ち…');
+      var verdict=draw?'🤝 引き分け！':(win?'🎉 あなたの勝ち！':'💧 相手の勝ち…'); try{ ggPvpPreview('pvpOppCard', opp, true); }catch(e){}
       if(res)res.innerHTML='<div style="font-weight:800;font-size:18px;text-align:center;margin-bottom:4px">'+verdict+'</div>'
         +castleLine(myName, meRem, opBrokeMe, true, myCard.iron)
         +castleLine(opp.name||'あいて', opRem, meBrokeOpp, false, opp.iron)
