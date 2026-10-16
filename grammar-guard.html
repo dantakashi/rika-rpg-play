@@ -442,6 +442,20 @@
   .ggm2 .pt{flex:0 0 auto; font-size:11px; font-weight:900; color:#7a45d6; background:#efe6ff; border-radius:999px; padding:1px 7px}
   .ggm2 button{flex:0 0 auto; min-width:78px; padding:7px 8px; font-size:13px; width:auto}
   @media (prefers-reduced-motion: reduce){ .ggap-ms button.get{animation:none} }
+
+  /* ===== 結果画面（10-17 要素9）===== */
+  .ggrt{display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; max-width:440px; margin:6px 0 4px}
+  .ggrt div{border-radius:16px; padding:10px 8px 8px; text-align:center; border:3px solid; border-bottom-width:6px}
+  .ggrt small{display:block; font-size:12px; font-weight:900}
+  .ggrt b{display:block; font-size:30px; font-weight:900; line-height:1.15; font-variant-numeric:tabular-nums}
+  .ggrt .gm{background:#f3ecff; border-color:#a463f2; color:#6a2fc0}
+  .ggrt .gd{background:#fff6dc; border-color:#e0a93b; color:#8a5a00}
+  .ggrgacha{width:100%; max-width:440px; margin:4px 0 6px; padding:10px; border-radius:14px; border:2px solid #fff; font:inherit; font-weight:900; font-size:16px; color:#fff; background:linear-gradient(90deg,#a463f2,#ff5ad0); box-shadow:0 4px 0 #6a2fc0}
+  .ggrgacha small{display:block; font-size:11px; opacity:.9}
+  #resMedals .medal{font-size:12px}
+  #result .row{position:sticky; bottom:0; z-index:5; padding:10px 0 calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(180deg,transparent,var(--bg) 30%); width:100%; max-width:440px; justify-content:center}
+  #result .row .btn{flex:1}
+  #result{justify-content:safe center} #result>*{flex-shrink:0} /* 長いときに上がはみ出して戻れなかった（前から） */
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -13734,10 +13748,27 @@ const Game = (()=>{
       tips.map(function(t){return '<div style="font-size:13px;line-height:1.6;margin-bottom:3px">'+t+'</div>';}).join('')+
       '</div>';
   }
+  /* 結果画面の札（10-17 要素9） */
+  function ggCount(el, to){ var t0=null, d=700; function f(ts){ if(t0==null) t0=ts; var k=Math.min(1,(ts-t0)/d); el.textContent='+'+Math.round(to*(1-Math.pow(1-k,3))); if(k<1) requestAnimationFrame(f); } el.textContent='+0'; requestAnimationFrame(f); }
+  function ggResult(gold0, gem0){
+    var m=$('resMedals'); if(!m) return;
+    [].forEach.call(m.querySelectorAll('.medal'), function(s){ if(/💰 \+|（この戦い）/.test(s.textContent)) s.remove(); });
+    var dg=Math.max(0, gems-gem0), dm=Math.max(0, gold-gold0);
+    var t=document.createElement('div'); t.className='ggrt';
+    t.innerHTML='<div class="gm"><small>💎 ジェム</small><b>+'+dg+'</b></div><div class="gd"><small>💰 ゴールド</small><b>+'+dm+'</b></div>';
+    m.parentNode.insertBefore(t, m);
+    var bs=t.querySelectorAll('b'); ggCount(bs[0], dg); ggCount(bs[1], dm);
+    var old=$('ggResGacha'); if(old) old.remove();
+    if(gems>=GACHA_COST){ var g=document.createElement('button'); g.id='ggResGacha'; g.className='ggrgacha';
+      g.innerHTML='🎰 ガチャを引ける<small>💎 '+gems+'（'+(gems>=GACHA_COST*10?'10連OK':'1回 '+GACHA_COST)+'）</small>';
+      g.onclick=function(){ toHome(); homeView='gacha'; renderHome(); };
+      m.parentNode.insertBefore(g, m.nextSibling); }
+  }
   function endBattle(win){
     if(B.stage.learn){ endLearnTower(win); return; } // 🎓学習の塔
     if(B.stage.endless){ endTower(); return; }
     B.ended=true; B.running=false; cancelAnimationFrame(B.raf);
+    var __g0=gold, __m0=(B.ggGem0!=null?B.ggGem0:gems); { var __o=document.querySelector('#result .ggrt'); if(__o) __o.remove(); }
     Sound.play(win?'win':'lose');
     const acc = B.answered? Math.round(B.correct/B.answered*100):0;
     $('firstBadge').classList.toggle('show', win && !B.wasCleared);
@@ -13781,6 +13812,7 @@ const Game = (()=>{
       if(win){ const ni=STAGES.findIndex(s=>s.id===B.stage.id)+1; if(ni<STAGES.length){ enterBattle(STAGES[ni]); return; } }
       enterBattle(B.stage);
     };
+    try{ ggResult(__g0, __m0); }catch(e){}
     show('result');
   }
 
