@@ -93,6 +93,22 @@
   .unit .hpb{position:absolute; top:-7px; left:6px; right:6px; height:4px; background:#0003; border-radius:2px; overflow:hidden}
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
+
+  /* ===== 倒れ方（10-16 要素3）===== */
+  .ggdie{position:absolute; inset:0; pointer-events:none; z-index:6}
+  .ggdie .unit .body{animation:none}
+  .ggdie .unit .hpb,.ggdie .unit .shieldbadge{display:none}
+  .ggdie.kb{animation:ggkb .5s cubic-bezier(.2,.7,.4,1) forwards}
+  .ggdie.kb .unit{animation:ggkbf .5s steps(1) forwards}
+  @keyframes ggkb{0%{transform:translate(0,0);opacity:1}35%{transform:translate(34px,-26px)}70%{transform:translate(56px,-4px);opacity:1}100%{transform:translate(64px,0);opacity:0}}
+  @keyframes ggkbf{0%{filter:brightness(2.4)}20%{filter:none}40%{filter:brightness(2.4)}60%{filter:none}80%{filter:brightness(2.4)}}
+  .ggdie.soul{animation:ggsoul .7s ease-out forwards}
+  .ggdie.soul .unit{filter:grayscale(1) brightness(1.6); opacity:.75}
+  @keyframes ggsoul{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-46px);opacity:0}}
+  .ggcoin{position:absolute; z-index:7; pointer-events:none; font-weight:900; font-size:13px; color:#c98a00; text-shadow:0 1px 0 #fff,0 0 4px #fff; white-space:nowrap; transform:translateX(-50%); animation:ggcoin .8s ease-out forwards}
+  .ggcoin.big{font-size:18px}
+  @keyframes ggcoin{0%{transform:translate(-50%,6px) scale(.6);opacity:0}25%{transform:translate(-50%,0) scale(1.15);opacity:1}100%{transform:translate(-50%,-22px);opacity:0}}
+  @media (prefers-reduced-motion: reduce){ .ggdie.kb,.ggdie.soul,.ggdie.kb .unit{animation:none; opacity:0} }
   .boss-unit{width:96px; height:96px; bottom:14px}
   .float{position:absolute; font-weight:800; font-size:14px; pointer-events:none;
     animation:floatUp .8s ease-out forwards; text-shadow:0 1px 2px #fff}
@@ -13058,17 +13074,30 @@ const Game = (()=>{
     // 🛡シールド兵: シールドが残っている間はダメージ無効（1被弾で1枚消費）。正解で全砕き＝answer()参照
     if(u.shield>0){ u.shield--; var __sbg=u.el.querySelector('.shieldbadge'); if(__sbg){ if(u.shield>0){ __sbg.textContent='🛡'+u.shield; } else { __sbg.remove(); } } flash(u.el); return; }
     amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; }
+  /* 倒れ方（10-16 要素3）。kind='kb'=敵が後ろへ吹っ飛ぶ／'soul'=味方が昇る */
+  function ggDie(el, kind){
+    if(!el) return;
+    var f=$('field'); if(!f || lod() || !el.parentNode){ el.remove(); return; }
+    el.classList.remove('hit','atk','attacking');
+    var w=document.createElement('div'); w.className='ggdie '+kind; f.appendChild(w); w.appendChild(el);
+    setTimeout(function(){ w.remove(); }, kind==='soul'?720:520);
+  }
+  function ggCoin(x, n){
+    var f=$('field'); if(!f || (lod() && n<100)) return;
+    var d=document.createElement('div'); d.className='ggcoin'+(n>=100?' big':''); d.textContent='+'+n+'💰';
+    d.style.left=x+'px'; d.style.bottom='76px'; f.appendChild(d); setTimeout(function(){ d.remove(); }, 820);
+  }
   function flash(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),90); }
   function place(el,x){ el.style.left=(x-27)+'px'; }
   function cleanup(){
-    B.allies=B.allies.filter(a=>{ if(a.hp<=0){ fxFrag(a.x, fieldFloorY(), '#9cc5d6'); a.el.remove(); return false;} return true; });
+    B.allies=B.allies.filter(a=>{ if(a.hp<=0){ fxFrag(a.x, fieldFloorY(), '#9cc5d6'); ggDie(a.el,'soul'); return false;} return true; });
     const born=[];
     B.enemies=B.enemies.filter(e=>{ if(e.hp<=0){
       if(e.bomb){ fxSparks(e.x, fieldFloorY(), 16, '#e0683b'); B.allies.forEach(function(a){ if(Math.abs(a.x-e.x)<=72){ a.hp-=e.bomb; const i=a.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,a.hp/a.hpMax*100)+'%'; } }); floatText(e.x,28,'💥-'+e.bomb,'var(--enemy)'); }
       if(e.split){ born.push({x:e.x-16,t:e.split}); born.push({x:e.x+16,t:e.split}); }
       if(e.buffer){ B.bufferDeadUntil = B.t + 12; fxBanner('🗿 巨像を撃破！しばらく出ない','#3a9d57'); } // 倒すと規定秒数 再出撃しない
       if(e.heal){ B.healerDeadUntil = B.t + 8; } // ヒーラー撃破→規定秒数で再出撃
-      fxFrag(e.x, fieldFloorY(), (e.boss||e.buffer)?'#e0a93b':'#e0683b'); if(e.boss||e.buffer){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } e.el.remove(); if(e.boss) B.bossAlive=false; gold+=(e.boss||e.buffer)?200:5; return false;
+      fxFrag(e.x, fieldFloorY(), (e.boss||e.buffer)?'#e0a93b':'#e0683b'); if(e.boss||e.buffer){ fxSparks(e.x, fieldFloorY(), 18, '#ffd24a'); } ggDie(e.el,'kb'); ggCoin(e.x,(e.boss||e.buffer)?200:5); if(e.boss) B.bossAlive=false; gold+=(e.boss||e.buffer)?200:5; return false;
     } return true; });
     born.forEach(function(n){ spawnSplitChild(n.t, n.x); });
   }
