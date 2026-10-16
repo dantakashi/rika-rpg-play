@@ -82,6 +82,35 @@
   .toggle{border:2px solid var(--line); background:#fff; border-radius:999px; padding:7px 13px; font-size:13px; font-weight:700; color:var(--ink)}
   .toggle.on{background:var(--good); color:#fff; border-color:var(--good)}
   .stage.lock{opacity:.5; filter:grayscale(.6)}
+
+  /* ===== ステージの道（10-17 要素8）===== */
+  .stage-grid.ggpath{display:flex; flex-direction:column; gap:12px; padding:4px 0 6px; position:relative}
+  .stage-grid.ggpath::before{content:""; position:absolute; left:50%; top:20px; bottom:20px; width:0; border-left:4px dashed #d8cdb4; transform:translateX(-50%); z-index:0}
+  .ggpath .stage{aspect-ratio:auto; width:66%; flex-direction:row; justify-content:flex-start; gap:10px; padding:6px 12px 6px 8px; min-height:58px; z-index:1; border-bottom-width:5px; text-align:left}
+  .ggpath .stage:nth-of-type(5n+1){align-self:flex-start} .ggpath .stage:nth-of-type(5n+2){align-self:center} .ggpath .stage:nth-of-type(5n+3){align-self:flex-end}
+  .ggpath .stage:nth-of-type(5n+4){align-self:center} .ggpath .stage:nth-of-type(5n){align-self:flex-start}
+  .ggpath .stage svg{width:42px; height:42px; flex:0 0 auto}
+  .ggpath .stage .no{position:absolute; top:-9px; left:10px; background:#fff; padding:0 6px; border-radius:6px; font-weight:800}
+  .ggpath .stage>span:not(.no):not(.flag):not(.lockmark):not(.ggme):not(.ggnx){font-size:14px; font-weight:800}
+  .ggpath .stage.boss{width:76%; min-height:70px} .ggpath .stage.boss svg{width:56px; height:56px}
+  .ggpath .stage.clr{border-color:#3a9d57; background:#f2fbf4}
+  .ggpath .stage.clr .flag{top:50%; right:8px; transform:translateY(-50%)}
+  .ggpath .stage.next{border-color:#e8323c; border-width:3px; border-bottom-width:6px; background:#fff3ef; box-shadow:0 0 0 4px #ffd0c8; animation:ggten 1.6s ease-in-out infinite}
+  .ggpath .stage.lock{opacity:1; background:#f4f0e6; color:#b8ad98; filter:none} .ggpath .stage.lock svg{filter:grayscale(1); opacity:.45}
+  .ggpath .stage .lockmark{inset:auto; right:12px; top:50%; transform:translateY(-50%); font-size:18px}
+  .ggnx{position:absolute; right:-6px; top:-12px; background:#e8323c; color:#fff; font-size:11px; font-weight:900; border-radius:999px; padding:1px 8px; border:2px solid #fff}
+  .ggme{position:absolute; right:10px; top:50%; width:36px; height:36px; transform:translateY(-50%)}
+  .ggme svg{width:100%!important; height:100%!important}
+  .ggjour{display:flex; flex-direction:column; gap:6px; margin:6px 0 2px; padding:8px 10px; border-radius:12px; background:#fff; border:2px solid var(--line)}
+  .ggjour .t{display:flex; justify-content:space-between; font-weight:900; font-size:13px}
+  .ggjour .t b{font-size:16px; font-variant-numeric:tabular-nums}
+  .ggjour .dots{display:grid; grid-template-columns:repeat(25,1fr); gap:3px}
+  .ggjour .dots button{height:16px; padding:0; border:0; border-radius:4px; background:#e3dccb; font:inherit}
+  .ggjour .dots button.op{background:#8fc0ff} .ggjour .dots button.dn{background:#e8b04a}
+  .ggjour .dots button.cur{outline:3px solid #e8323c; outline-offset:1px}
+  .ggjour .lg{display:flex; gap:10px; font-size:10px; color:#8a7f6c; font-weight:700}
+  .ggjour .lg i{display:inline-block; width:10px; height:10px; border-radius:3px; vertical-align:-1px; margin-right:3px}
+  @media (prefers-reduced-motion: reduce){ .ggpath .stage.next{animation:none} }
   .stage .lockmark{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:22px}
   .castle{position:absolute; bottom:6px; width:64px; height:120px}
   .csvg{position:absolute; inset:0}
@@ -12367,6 +12396,16 @@ const Game = (()=>{
     if(n){ var m=document.createElement('span'); m.className='ggd-badge'; m.textContent=n; mb.appendChild(m); }
     if(ms) ms.textContent=n?'受け取れる':'💎がもらえる';
   }
+  /* 全体の進みぐあい（10-17 要素8）。章ごとに1つの点: 灰=まだ・青=遊べる・金=ボスを倒した・赤い枠=今見ている章 */
+  function ggJourney(ct, unlChap){
+    var j=$('ggJour'); if(!j){ j=document.createElement('div'); j.id='ggJour'; j.className='ggjour'; ct.parentNode.insertBefore(j, ct); }
+    var nCh=Math.ceil(STAGES.length/5), done=0; for(var a=1;a<=STAGES.length;a++) if(cleared[a]) done++;
+    var h='<div class="t"><span>たびのきろく</span><span><b>'+done+'</b> / '+STAGES.length+' エリア</span></div><div class="ggzbar"><i style="width:'+(done/STAGES.length*100)+'%"></i></div><div class="dots">';
+    for(var c=1;c<=nCh;c++){ var cls=cleared[c*5]?'dn':(c<=unlChap?'op':''); h+='<button data-c="'+c+'" class="'+cls+(c===playTab?' cur':'')+'" title="'+c+'章 '+(CHAPTER_THEMES[c-1]||'')+'"'+(c>unlChap?' disabled':'')+'></button>'; }
+    h+='</div><div class="lg"><span><i style="background:#e8b04a"></i>ボスをたおした</span><span><i style="background:#8fc0ff"></i>遊べる</span><span><i style="background:#e3dccb"></i>まだ</span></div>';
+    j.innerHTML=h;
+    [].forEach.call(j.querySelectorAll('.dots button'), function(b){ b.onclick=function(){ var c=+b.dataset.c; if(c<=unlChap){ playTab=c; heroView=false; ironView=false; renderHome(); } }; });
+  }
   function renderHome(){
     if(__towerSavedGenre!=null){ QuizEngine.setGenre(__towerSavedGenre); __towerSavedGenre=null; save(); } // 週替わりの塔を中断して帰home した時のジャンル復元(保険)
     $('goldPill').textContent = '💰 '+gold;
@@ -12451,7 +12490,7 @@ const Game = (()=>{
         var __lab=document.createElement('div'); __lab.style.cssText='flex:1;text-align:center;font-weight:800;font-size:15px'; __lab.innerHTML=playTab+'章 <span style="color:var(--ally)">'+(CHAPTER_THEMES[playTab-1]||'')+'</span><div class="muted" style="font-size:11px;font-weight:700">'+playTab+' / '+__unlChap+' 章まで解放</div>';
         var __nx=document.createElement('button'); __nx.className='btn ghost'; __nx.textContent='▶'; __nx.style.cssText='flex:0 0 auto;min-width:46px;padding:8px 0'; __nx.disabled=(playTab>=__unlChap); __nx.onclick=function(){ if(playTab<__unlChap){playTab++;renderHome();} };
         var __sp=document.createElement('button'); __sp.className='btn ghost'; __sp.textContent='⭐'; __sp.title='特殊ステージ'; __sp.style.cssText='flex:0 0 auto;min-width:46px;padding:8px 0'; __sp.onclick=function(){ playTab='special'; renderHome(); };
-        __ct.appendChild(__pv); __ct.appendChild(__lab); __ct.appendChild(__nx); __ct.appendChild(__sp);
+        __ct.appendChild(__pv); __ct.appendChild(__lab); __ct.appendChild(__nx); __ct.appendChild(__sp); try{ ggJourney(__ct, __unlChap); }catch(e){}
       }
       // スワイプで章送り（要望#3）。一度だけ設定。
       var __sg=$('stageCard');
@@ -12487,6 +12526,7 @@ const Game = (()=>{
           grid.appendChild(__ii);
         }
       }
+      grid.classList.toggle('ggpath', !heroView&&!ironView);
       STAGES.filter(function(s){return s.world===playTab && (!ironView || s.boss);}).forEach(s=>{ // 鉄の試練はボスのみ
         const lock = (heroView||ironView) ? false : s.area>unlocked; // 英雄級/鉄の試練は章ボス撃破済みが前提＝章内全開放
         const d=document.createElement('button');
@@ -12496,6 +12536,7 @@ const Game = (()=>{
         d.innerHTML=`<span class="no">${__pfx}エリア${s.area}</span>${SVG.get(s.sprite)}<span>${s.boss?'★BOSS':s.name}</span>`
           +(__clr?`<span class="flag">${heroView?'👑':ironView?'⚔':'🚩'}</span>`:'')
           +(lock?`<span class="lockmark">🔒</span>`:'');
+        if(__clr) d.classList.add('clr'); if(!lock&&!__clr&&!heroView&&!ironView&&s.area===Math.min(STAGES.length,unlocked)){ d.classList.add('next'); var __me=deck[0]&&ROSTER[deck[0]]; d.insertAdjacentHTML('beforeend','<span class="ggnx">つぎはここ</span>'+(__me?'<span class="ggme">'+SVG.get(__me.sprite)+'</span>':'')); }
         if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(heroView?heroicStage(s):ironView?ironStage(s):s); }
         grid.appendChild(d);
       });
