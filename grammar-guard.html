@@ -343,6 +343,30 @@
   #ggDock .ggd-badge{position:absolute; top:-9px; right:-4px; min-width:20px; padding:1px 6px; border-radius:999px; background:#ff3d6e; color:#fff; font-size:11px; font-weight:900; border:2px solid #fff; box-shadow:0 1px 0 #0003}
   #ggDock .ggd-badge.gold{background:#e0a93b}
   #home.ggnodock #ggDock{display:none}
+
+  /* ===== 手持ちの並べ替え・グリッド（10-16 要素5）===== */
+  .ggbar{display:flex; flex-direction:column; gap:6px; margin:4px 0 10px}
+  .ggbar-row{display:flex; gap:5px; overflow-x:auto; scrollbar-width:none; padding:2px 0}
+  .ggbar-row::-webkit-scrollbar{display:none}
+  .ggbar-row button{flex:0 0 auto; font:inherit; font-size:12px; font-weight:800; padding:4px 10px; border-radius:999px; border:2px solid var(--line); background:#fff; color:var(--ink)}
+  .ggbar-row button.on{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .ggbar-row .lab{flex:0 0 auto; font-size:11px; font-weight:800; color:#8a7f6c; align-self:center; margin-right:2px}
+  .ggbar-row button small{font-size:10px; opacity:.7; margin-left:2px}
+  .ggbox{display:grid; grid-template-columns:repeat(auto-fill,minmax(68px,1fr)); gap:7px}
+  .ggcell{--rc:#9aa7b8; position:relative; font:inherit; padding:3px 2px 4px; border-radius:12px; border:3px solid var(--rc); background:linear-gradient(180deg,#fff 55%,color-mix(in srgb,var(--rc) 22%,#fff)); text-align:center; min-width:0}
+  .ggcell.gxr-R{--rc:#3b8cff} .ggcell.gxr-SR{--rc:#b05cff} .ggcell.gxr-SSR{--rc:#ffb31a} .ggcell.gxr-LR{--rc:#ff5ad0} .ggcell.gxr-GR{--rc:#e0a800}
+  .ggcell.gxr-LR{background:linear-gradient(180deg,#fff 55%,#ffe3f6)} .ggcell.gxr-GR{background:linear-gradient(180deg,#fffbe6 50%,#ffe7a0)}
+  .ggcell .a{display:block; width:100%; aspect-ratio:1}
+  .ggcell .a svg{width:100%; height:100%}
+  .ggcell .n{display:block; font-size:10px; font-weight:800; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .ggcell .r{position:absolute; top:-7px; left:-5px; font-size:9px; font-weight:900; color:#fff; background:var(--rc); border-radius:6px; padding:0 4px; line-height:14px}
+  .ggcell .p{position:absolute; top:22px; right:2px; font-size:10px; font-weight:900; color:#c98a00; text-shadow:0 0 3px #fff,0 0 3px #fff}
+  .ggcell.in{box-shadow:0 0 0 3px #3a9d57}
+  .ggcell.in::after{content:"編成中"; position:absolute; top:-8px; right:-5px; font-size:9px; font-weight:900; color:#fff; background:#3a9d57; border-radius:6px; padding:0 4px; line-height:14px}
+  .ggcount{font-size:12px; color:#8a7f6c; margin:-4px 0 6px}
+  .ggup-st{display:grid; grid-template-columns:38px 30px 50px 54px; font-size:12px; font-weight:800; color:#5a5040; margin-top:1px}
+  .ggup-st span{white-space:nowrap}
+  .gxr-GR{--rc:#e0a800}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -11352,14 +11376,15 @@ const Game = (()=>{
      10連は暖色・1回は別の色／四角を均等に並べず斜めと重なりで動かす。ボタンは390×760で画面内に入れる */
   function renderCharup(){
     const body=$('charupBody'); if(!body) return; body.innerHTML='';
-    const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:8px';
-    Object.keys(owned).forEach(function(key){
+    body.appendChild(ggBoxBar(renderCharup));
+    const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:6px';
+    ggBoxKeys().forEach(function(key){
       if(!ROSTER[key]) return;
       const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key), maxed=unitMaxed(key);
       const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;width:100%;text-align:left;cursor:pointer';
+      row.className='gxr-'+r.rar; row.style.borderLeft='6px solid var(--rc)'; row.style.padding='6px 8px';
       row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
-        '<div style="flex:1;min-width:0"><div style="font-weight:800">'+r.name+' <span style="color:var(--ally)">Lv'+lv+'</span> '+(unitStars(key)?'<span style="color:var(--gold)">'+plusTxt(unitStars(key))+'</span>':'')+'</div>'+
-        '<div class="muted" style="font-size:12px">⚔ '+st.atk+'　♥ '+st.hp+'　CD'+summonCd(key)+'秒</div></div>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+rarBadge(r.rar)+' '+r.name+'</div><div class="ggup-st"><span style="color:var(--ally)">Lv'+lv+'</span><span style="color:var(--gold)">'+plusTxt(unitStars(key))+'</span><span>⚔'+st.atk+'</span><span>♥'+st.hp+'</span></div></div>'+
         (maxed ? '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--gold)">★MAX</span>'
                : '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:'+(gold>=cost?'var(--ally)':'var(--muted)')+'">強化 '+cost+'G ▸</span>');
       row.addEventListener('click',function(){openUnitPop(key,'charup');});
@@ -11509,6 +11534,38 @@ const Game = (()=>{
     else if(lastGacha && lastGacha.msg){ const l=document.createElement('div'); l.className='muted'; l.style.textAlign='center'; l.textContent=lastGacha.msg; p.appendChild(l); }
     body.appendChild(p);
   }
+  /* 手持ちの並べ替え・絞り込み（10-16 要素5）。編成とキャラ強化で共有 */
+  var ggBox={sort:'rar', dir:-1, rar:'all'};
+  var GG_SORTS=[['rar','レア'],['plus','重ね'],['atk','攻撃'],['hp','HP'],['cost','コスト']];
+  function ggBoxVal(k, s){ var r=ROSTER[k];
+    if(s==='rar') return rarRank2(r.rar)*1000+unitStars(k);
+    if(s==='plus') return unitStars(k)*100+rarRank2(r.rar);
+    if(s==='atk') return unitStats(k).atk; if(s==='hp') return unitStats(k).hp; if(s==='cost') return r.cost||0; return 0; }
+  function ggBoxKeys(){
+    var ks=Object.keys(owned).filter(function(k){ return ROSTER[k] && (ggBox.rar==='all' || ROSTER[k].rar===ggBox.rar); });
+    var idx={}; Object.keys(owned).forEach(function(k,i){ idx[k]=i; });
+    ks.sort(function(a,b){ var d=(ggBoxVal(a,ggBox.sort)-ggBoxVal(b,ggBox.sort))*ggBox.dir; return d || idx[a]-idx[b]; });
+    return ks;
+  }
+  function ggBoxBar(redraw){
+    var w=document.createElement('div'); w.className='ggbar';
+    var r1=document.createElement('div'); r1.className='ggbar-row'; r1.innerHTML='<span class="lab">ならべる</span>';
+    GG_SORTS.forEach(function(s){ var b=document.createElement('button'); var on=ggBox.sort===s[0];
+      b.className=on?'on':''; b.textContent=s[1]+(on?(ggBox.dir<0?' ▼':' ▲'):'');
+      b.onclick=function(){ if(ggBox.sort===s[0]) ggBox.dir=-ggBox.dir; else { ggBox.sort=s[0]; ggBox.dir=-1; } redraw(); }; r1.appendChild(b); });
+    var r2=document.createElement('div'); r2.className='ggbar-row'; r2.innerHTML='<span class="lab">レア</span>';
+    var cnt={all:0}; Object.keys(owned).forEach(function(k){ if(ROSTER[k]){ cnt.all++; cnt[ROSTER[k].rar]=(cnt[ROSTER[k].rar]||0)+1; } });
+    ['all'].concat(RAR_ORDER).forEach(function(rr){ if(rr!=='all' && !cnt[rr]) return; var b=document.createElement('button');
+      b.className=ggBox.rar===rr?'on':''; b.innerHTML=(rr==='all'?'ぜんぶ':rr)+'<small>'+cnt[rr]+'</small>';
+      b.onclick=function(){ ggBox.rar=rr; redraw(); }; r2.appendChild(b); });
+    w.appendChild(r1); w.appendChild(r2); return w;
+  }
+  function ggCell(key){
+    var r=ROSTER[key], st=unitStars(key), b=document.createElement('button');
+    b.className='ggcell gxr-'+r.rar+(deck.indexOf(key)>=0?' in':'');
+    b.innerHTML='<span class="r">'+r.rar+'</span><span class="a">'+SVG.get(r.sprite)+'</span>'+(st?'<span class="p">+'+st+'</span>':'')+'<span class="n">'+r.name+'</span>';
+    b.addEventListener('click',function(){ openUnitPop(key,'deck'); }); return b;
+  }
   function renderDeck(){
     const body=$('deckBody'); if(!body) return; body.innerHTML='';
     const row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
@@ -11520,8 +11577,10 @@ const Game = (()=>{
     body.appendChild(row);
     const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='編成は5体で固定。手持ちをタップ→入れ替えで変更できます。戦闘の召喚はこの5体から出ます。';
     body.appendChild(note);
-    const list=document.createElement('div'); list.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
-    Object.keys(owned).forEach(function(key){ if(ROSTER[key]) list.appendChild(unitChip(key, deck.indexOf(key)>=0)); });
+    body.appendChild(ggBoxBar(renderDeck));
+    const __ks=ggBoxKeys(); const __c=document.createElement('div'); __c.className='ggcount'; __c.textContent=__ks.length+'体'; body.appendChild(__c);
+    const list=document.createElement('div'); list.className='ggbox';
+    __ks.forEach(function(key){ list.appendChild(ggCell(key)); });
     body.appendChild(list);
   }
   function renderCastle(){
