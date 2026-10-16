@@ -123,6 +123,25 @@
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
 
+  /* ===== ボスの帯と名乗り（10-17 要素10）===== */
+  .ggbb{position:absolute; left:108px; right:50px; top:6px; z-index:35; pointer-events:none; text-align:left}
+  .ggbb .nm{font-size:13px; font-weight:900; color:#fff; text-shadow:0 1px 0 #000,0 0 4px #000; margin-bottom:2px; display:flex; justify-content:space-between}
+  .ggbb .nm small{font-size:11px; opacity:.9}
+  .ggbb .tr{position:relative; height:10px; background:#0008; border:2px solid #000a; border-radius:3px; overflow:hidden}
+  .ggbb .tr i{position:absolute; left:0; top:0; bottom:0}
+  .ggbb .tr .lag{background:#ffd34d; transition:width .6s ease-in .35s}
+  .ggbb .tr .hp{background:linear-gradient(180deg,#ff6a5a,#c0392b)}
+  .ggbb.p2 .tr .hp{background:linear-gradient(180deg,#ff9af0,#a0208a)}
+  .ggbb .tr .mk{position:absolute; left:30%; top:-2px; bottom:-2px; width:2px; background:#fff; box-shadow:0 0 3px #000}
+  .ggwarn{position:absolute; left:0; right:0; top:40%; z-index:45; pointer-events:none; text-align:center; animation:ggwarn 2.2s ease-out forwards}
+  .ggwarn .st{height:12px; background:repeating-linear-gradient(-45deg,#ffd34d 0 12px,#1a1205 12px 24px); animation:ggwst .5s linear infinite}
+  .ggwarn .bd{background:#1a1205e6; padding:6px 0 8px}
+  .ggwarn b{display:block; font-size:28px; font-weight:900; letter-spacing:6px; color:#ff5a4a; text-shadow:0 0 10px #ff5a4a}
+  .ggwarn span{display:block; font-size:16px; font-weight:900; color:#fff}
+  @keyframes ggwarn{0%{transform:scaleY(0); opacity:0}10%{transform:scaleY(1); opacity:1}80%{opacity:1}100%{opacity:0}}
+  @keyframes ggwst{to{background-position:24px 0}}
+  @media (prefers-reduced-motion: reduce){ .ggwarn,.ggwarn .st{animation:none; opacity:0} }
+
   /* ===== ノックバック（10-16 夜）===== */
   .unit.ggkb .body{animation:ggkbhop .45s ease-out}
   @keyframes ggkbhop{0%{transform:translateY(0) rotate(0)}35%{transform:translateY(-14px) rotate(-8deg)}70%{transform:translateY(0) rotate(4deg)}85%{transform:translateY(-3px)}100%{transform:none}}
@@ -12804,6 +12823,22 @@ const Game = (()=>{
       try{ fxBanner('🛡️ このボスは倒せない！勇者の一撃まで耐えろ！','#5a7fc0'); fxTierFlash(); Sound.play('boss'); }catch(e){}
     }
     B.enemies.push(bossObj);
+    if(!rush || rush.idx===1) ggBossWarn();
+  }
+  /* ボスの帯（10-17 要素10）。毎フレーム gimmickTick から呼ぶ */
+  function ggBossName(){ var s=B&&B.stage; if(!s) return 'ボス'; return (CHAPTER_THEMES[(s.chapter||1)-1]||'')+'の主'; }
+  function ggBossWarn(){ try{ var f=$('field'); if(!f || (B&&B.stage&&(B.stage.gimmick==='godhold'||B.stage.mode==='trigger'))) return; var w=document.createElement('div'); w.className='ggwarn'; w.innerHTML='<div class="st"></div><div class="bd"><b>WARNING</b><span>'+ggBossName()+' があらわれた</span></div><div class="st"></div>'; f.appendChild(w); setTimeout(function(){ w.remove(); }, 2300); }catch(e){} }
+  function ggBossBarTick(){
+    var f=$('field'); if(!f) return; var bb=$('ggBossBar'), boss=bossOf();
+    if(!boss || boss.invincible || boss.hp<=0){ if(bb) bb.style.display='none'; return; }
+    if(!bb){ bb=document.createElement('div'); bb.id='ggBossBar'; bb.className='ggbb'; bb.innerHTML='<div class="nm"><span></span><small></small></div><div class="tr"><i class="lag"></i><i class="hp"></i><i class="mk"></i></div>'; f.appendChild(bb); }
+    if(bb.parentNode!==f) f.appendChild(bb);
+    var cb=$('chargeBar'); bb.style.top=(cb&&cb.style.display==='flex')?'40px':'6px';
+    bb.style.display='block'; bb.classList.toggle('p2', !!B.bossPhase);
+    var r=Math.max(0, boss.hp/boss.hpMax)*100, k=Math.round(r*2)/2;
+    if(bb.__k!==k){ bb.__k=k; bb.querySelector('.hp').style.width=k+'%'; bb.querySelector('.lag').style.width=k+'%'; }
+    var nm=ggBossName()+(B.bossPhase?'（覚醒）':''); var sp=bb.querySelector('.nm span'); if(sp.textContent!==nm) sp.textContent=nm;
+    var sm=bb.querySelector('.nm small'), tx=Math.ceil(r)+'%'; if(sm.textContent!==tx) sm.textContent=tx;
   }
   function bossOf(){ for(var i=0;i<B.enemies.length;i++){ if(B.enemies[i].boss) return B.enemies[i]; } return null; }
   function ensureChargeBar(){ var el=$('chargeBar'); if(!el){ el=document.createElement('div'); el.id='chargeBar'; el.className='chargebar'; el.innerHTML='<span class="lab"></span><div class="cbtrack"><i></i></div>'; $('field').appendChild(el); } return el; }
@@ -12815,6 +12850,7 @@ const Game = (()=>{
     if(B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive) surviveTick(dt);
     if(B.stage.gimmick==='rush' && IMPLEMENTED_GIMMICKS.rush) rushTick(dt);
     specialEnemyTick(dt);
+    try{ ggBossBarTick(); }catch(e){}
   }
   // 壁2/壁3：中ボス級の常駐敵。通常ステージに「1体だけ」常駐し、倒すと一定時間で再出撃（雑魚の画面上限に押し出されないよう専用管理）
   function specialEnemyTick(dt){
