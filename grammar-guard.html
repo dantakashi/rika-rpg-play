@@ -158,6 +158,28 @@
   @keyframes pulse{50%{box-shadow:0 0 0 6px #e0a93b66}}
   .choice.ok{background:var(--good); color:#fff; border-color:var(--good)}
   .choice.ng{background:var(--bad); color:#fff; border-color:var(--bad)}
+
+  /* ===== 答える部分（10-16 要素2・お手本 Duolingo）===== */
+  .choice{border:2px solid #e3dccb; border-bottom:5px solid #cfc4ab; border-radius:14px; transition:transform .06s, border-bottom-width .06s, margin-top .06s; -webkit-tap-highlight-color:transparent; position:relative}
+  .choice:active:not(.ok):not(.ng){transform:translateY(3px); border-bottom-width:2px}
+  .choice.ok{background:#58b84a; border-color:#58b84a; border-bottom-color:#3d8a33; animation:ggok .38s cubic-bezier(.2,1.6,.4,1)}
+  .choice.ng{background:#e8665f; border-color:#e8665f; border-bottom-color:#b8433d; animation:ggng .32s ease-in-out}
+  .choice.ok::after,.choice.ng::after{position:absolute; left:8px; top:50%; width:22px; height:22px; margin-top:-11px; border-radius:50%; background:#fff; font-size:14px; line-height:22px; font-weight:900; text-align:center; animation:ggmark .3s cubic-bezier(.2,1.8,.4,1) both}
+  .choice.ok::after{content:"✓"; color:#3d8a33}
+  .choice.ng::after{content:"✕"; color:#b8433d}
+  @keyframes ggok{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+  @keyframes ggng{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  @keyframes ggmark{0%{transform:scale(0)}100%{transform:scale(1)}}
+  .ggfb{display:block; padding:4px 12px; border-radius:12px; font-size:13px; font-weight:700; line-height:1.35; text-align:center; animation:ggfbin .22s ease-out both}
+  .ggfb-h{font-size:15px; font-weight:900; margin-right:6px}
+  .ggfb-h i{font-style:normal; display:inline-block; width:18px; height:18px; line-height:18px; border-radius:50%; color:#fff; font-size:12px; margin-right:4px; vertical-align:1px}
+  .ggfb.ok{background:#dcf5d2; color:#2f6b28} .ggfb.ok .ggfb-h{color:#3d8a33} .ggfb.ok .ggfb-h i{background:#58b84a}
+  .ggfb.rev{background:#fff1c9; color:#6b5210} .ggfb.rev .ggfb-h{color:#b07d10} .ggfb.rev .ggfb-h i{background:#e0a93b}
+  .ggfb.ng{background:#ffe1de; color:#7a2e2a} .ggfb.ng .ggfb-h{color:#b8433d} .ggfb.ng .ggfb-h i{background:#e8665f}
+  .ggfb.ng u{text-decoration:none; background:#fff; border-radius:6px; padding:0 5px; color:#2f6b28}
+  .ggfb em{font-style:normal; font-size:11px; color:#fff; background:#ff9600; border-radius:999px; padding:1px 7px; margin-left:4px; vertical-align:1px}
+  @keyframes ggfbin{0%{transform:translateY(6px); opacity:0}100%{transform:none; opacity:1}}
+  @media (prefers-reduced-motion: reduce){ .choice.ok,.choice.ng,.ggfb{animation:none} }
   #assess{align-items:center; gap:10px; padding-top:18px; overflow-y:auto}
   #assessChoices{display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:460px}
   #assessQ{font-size:22px; font-weight:800; text-align:center; min-height:30px; line-height:1.3; margin:4px 0}
@@ -12724,6 +12746,16 @@ const Game = (()=>{
     } else { rb.style.display='none'; }
     curQ.shownAt = performance.now(); // 📊Phase0: 出題時刻(反応時間計測用・挙動は変えない)
   }
+  /* 答えの帯（10-16 要素2）。k=ok|rev|ng */
+  function ggEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function ggFb(k, desc){
+    var h;
+    if(k==='ng'){ var a=curQ&&curQ.choices?curQ.choices[curQ.answerIndex]:''; h='<b class="ggfb-h"><i>✕</i>おしい！</b>正解は <u>'+ggEsc(a)+'</u> '; }
+    else if(k==='rev') h='<b class="ggfb-h"><i>✓</i>復習成功！</b>';
+    else { var s=(B&&B.okStreak)||1, w=s>=10?'とまらない！':s>=5?'すごい！':s>=3?'いいね！':'正解！';
+      h='<b class="ggfb-h"><i>✓</i>'+w+(s>=3?'<em>'+s+'問れんぞく</em>':'')+'</b>'; }
+    $('qfeedback').innerHTML='<div class="ggfb '+k+'">'+h+(desc||'')+'</div>';
+  }
   function replayAudio(){ if(curQ && curQ.speak) Speech.speak(curQ.speak); }
   function answer(i, btn){
     if(!curQ || curQ.locked) return; curQ.locked=true;
@@ -12739,7 +12771,7 @@ const Game = (()=>{
     if(B.recoBonus) gemPts *= 2; // 推奨難易度（推奨級チャレンジ中）は💎2倍
     addLearnGems(gemPts); updateGemUI(); save(); // 1問ごとに保存（途中でやめても💎は残る）。学習💎は1日上限あり(addLearnGems)＝塔/連打の1問farmが頭打ち
     if(right){
-      btn.classList.add('ok'); B.correct++; B.missStreak=0;
+      btn.classList.add('ok'); B.correct++; B.missStreak=0; B.okStreak=(B.okStreak||0)+1;
       creditMistake(curQ); markLearned(curQ); // 正解：SRSのboxを進める(復習時のみ)＋暗記コレクションに記録(増える一方)
       B.comboGuard=comboGuardLv; // 🛡️正解でコンボ保護が全回復（連続ミスのときだけ消費されていく）
       Sound.play('correct'); fxLetters(btn, curQ.choices[i]);
@@ -12759,15 +12791,15 @@ const Game = (()=>{
       if(curQ.review){
         B.reviewWins++; B.energy=Math.min(B.energyMax,B.energy+6); // 取り返せた手応え
         floatText($('field').clientWidth/2, 54, '🔁 復習成功!', 'var(--gold)');
-        $('qfeedback').innerHTML = `<span style="color:var(--gold)">🔁 復習成功！</span> ${curQ.desc||''}`;
+        ggFb('rev', curQ.desc||'');
       }else{
-        $('qfeedback').innerHTML = `<span style="color:var(--good)">正解！</span> ${curQ.desc||''}`;
+        ggFb('ok', curQ.desc||'');
       }
     }else{
       btn.classList.add('ng');
       buttons[curQ.answerIndex].classList.add('ok');
       Sound.play('wrong');
-      B.missStreak++;
+      B.missStreak++; B.okStreak=0;
       if(!B.stage.learn && !B.pvp){ B.fresh=Math.min(FRESH_MAX,(B.fresh||0)+FRESH_ADD_W); B.lastAnsT=B.t; B.energy=Math.min(B.energyMax,B.energy+EN_WRONG); } // 誤答でも鮮度UP＋最低エネ＝答えれば前進(罰でなく学習)
       // ⚔鉄の試練: 誤答1回ごとに自城がくずれる（最大HPの8%・コンボ保護でも防げない＝正答率そのものが試される）
       if(B.stage.iron){
@@ -12778,10 +12810,10 @@ const Game = (()=>{
       }
       if(B.stage.learn){
         // 🎓学習の塔：コンボは途切れない（減らさない）。代わりにエネルギーが増えない＝間違えると召喚が止まる
-        $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
+        ggFb('ng', curQ.desc||'');
       }else{
         // 誤答罰廃止(2026-06-15): コンボは減らさない＝答える恐怖を除去。間違いはSRSで再出題して覚え直す。
-        $('qfeedback').innerHTML = `<span style="color:var(--bad)">おしい！</span> ${curQ.desc||''}`;
+        ggFb('ng', curQ.desc||'');
       }
       QuizEngine.pushReview(curQ); // 間違えた問題は近いうち再出題（戦闘内）
       recordMistake(curQ); // 永続誤答SRS：need=2 でリスト登録（2回正解で消える）
