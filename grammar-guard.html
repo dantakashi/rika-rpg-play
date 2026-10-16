@@ -389,6 +389,30 @@
   .ggset-rw.got{border-color:#3a9d57; color:#3a9d57; background:#eafaef}
   .ggset .ggzgrid{grid-template-columns:repeat(5,minmax(0,1fr))}
   @media (prefers-reduced-motion: reduce){ .ggset-rw.get{animation:none} }
+
+  /* ===== ミッション（10-17 要素7）===== */
+  .ggap{position:relative; padding:12px 12px 8px; border-radius:14px; background:linear-gradient(110deg,#2a1640,#5a1f5a); color:#fff; margin-bottom:10px}
+  .ggap-t{display:flex; justify-content:space-between; align-items:baseline; font-weight:900}
+  .ggap-t b{font-size:26px; color:#ffd34d; font-variant-numeric:tabular-nums}
+  .ggap-t small{font-size:12px; opacity:.8}
+  .ggap-bar{position:relative; height:10px; border-radius:6px; background:#ffffff26; margin:14px 22px 34px}
+  .ggap-bar>i{position:absolute; left:0; top:0; bottom:0; border-radius:6px; background:linear-gradient(90deg,#ffd34d,#ff8fbf)}
+  .ggap-ms{position:absolute; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:2px}
+  .ggap-ms button,.ggap-ms span.c{width:34px; height:34px; border-radius:10px; border:2px solid #ffffff55; background:#3a2a5a; color:#fff; font:inherit; font-size:16px; line-height:30px; padding:0; text-align:center}
+  .ggap-ms button.get{background:linear-gradient(180deg,#ffd34d,#ff9a3c); border-color:#fff; box-shadow:0 0 12px #ffd34d; animation:ggten 1.4s ease-in-out infinite}
+  .ggap-ms span.c.got{background:#3a9d57; border-color:#bff0c8}
+  .ggap-ms small{position:absolute; top:38px; font-size:10px; font-weight:800; white-space:nowrap; opacity:.85}
+  .ggap-n{font-size:11px; opacity:.85; line-height:1.4}
+  .ggm2{display:flex; align-items:center; gap:8px; border:2px solid var(--line); border-radius:12px; padding:6px 8px; margin-bottom:6px; background:#fff}
+  .ggm2.ok{border-color:#e8b04a; background:#fffbe6}
+  .ggm2.got{opacity:.5}
+  .ggm2 .tx{flex:1; min-width:0}
+  .ggm2 .tx b{display:block; font-size:14px; line-height:1.3}
+  .ggm2 .ln{display:flex; align-items:center; gap:6px; font-size:11px; color:#7a6a5a; font-variant-numeric:tabular-nums}
+  .ggm2 .ln .ggmbar{flex:1; margin:0}
+  .ggm2 .pt{flex:0 0 auto; font-size:11px; font-weight:900; color:#7a45d6; background:#efe6ff; border-radius:999px; padding:1px 7px}
+  .ggm2 button{flex:0 0 auto; min-width:78px; padding:7px 8px; font-size:13px; width:auto}
+  @media (prefers-reduced-motion: reduce){ .ggap-ms button.get{animation:none} }
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -11021,7 +11045,7 @@ const Game = (()=>{
   [[10,500],[20,1000],[30,2000],[40,3000],[50,5000],[75,7000],[100,9000],[125,12000]].forEach(function(p){ MIS_ACH.push({id:'Z'+p[0], k:'zukan', n:p[0], gem:p[1], t:'図鑑 '+p[0]+'体'}); });
   [[10,300],[50,800],[100,1500],[300,3000]].forEach(function(p){ MIS_ACH.push({id:'P'+p[0], k:'pull', n:p[0], gem:p[1], t:'ガチャを合計'+p[0]+'回引く'}); });
   [[10,800],[25,1500],[50,3000],[75,5000],[100,8000],[125,10000]].forEach(function(p){ MIS_ACH.push({id:'S'+p[0], k:'area', n:p[0], gem:p[1], t:'エリア'+p[0]+'をクリア'}); });
-  function misDay(){ var d=todayStr(); if(mis.day!==d){ mis.day=d; mis.d={}; mis.gotD={}; } }
+  function misDay(){ var d=todayStr(); if(mis.day!==d){ mis.day=d; mis.d={}; mis.gotD={}; mis.gotP={}; } }
   function misBump(k, n){ misDay(); var before=misReady(); mis.d[k]=(mis.d[k]||0)+(n||1); mis.tot[k]=(mis.tot[k]||0)+(n||1); var after=misReady(); if(after>before) misToast(); }
   function misAns(right){ try{ misBump('ans'); if(right) misBump('cor'); }catch(e){} }
   function misVal(m, daily){
@@ -11032,7 +11056,8 @@ const Game = (()=>{
     if(m.k==='area') return cleared[m.n] ? m.n : 0;
     return mis.tot[m.k]||0;
   }
-  function misReady(){ misDay(); var c=0;
+  function misReady(){ return misReady0() + ggMsReady(); }
+  function misReady0(){ misDay(); var c=0;
     MIS_DAILY.forEach(function(m){ if(!mis.gotD[m.id] && misVal(m,true)>=m.n) c++; });
     MIS_ACH.forEach(function(m){ if(!mis.gotA[m.id] && misVal(m,false)>=m.n) c++; });
     return c; }
@@ -11044,7 +11069,7 @@ const Game = (()=>{
     if(daily) mis.gotD[m.id]=1; else mis.gotA[m.id]=1;
     gems += m.gem; return m.gem;
   }
-  function misClaimAll(){ misDay(); var g=0; MIS_DAILY.forEach(function(m){ g+=misClaim(m,true); }); MIS_ACH.forEach(function(m){ g+=misClaim(m,false); }); if(g){ save(); updateGemUI(); try{ GXA.up(); }catch(e){} try{ ggGemPop(g); }catch(e){} } renderHome(); }
+  function misClaimAll(){ misDay(); var g=0; MIS_DAILY.forEach(function(m){ g+=misClaim(m,true); }); MIS_ACH.forEach(function(m){ g+=misClaim(m,false); }); g+=ggMsClaimAll(); if(g){ save(); updateGemUI(); try{ GXA.up(); }catch(e){} try{ ggGemPop(g); }catch(e){} } renderHome(); }
   function grChooser(){
     var card=$('unitPopCard'); if(!card) return;
     var list=ROSTER_KEYS.filter(isGR);
@@ -11055,7 +11080,58 @@ const Game = (()=>{
     var bc=document.createElement('button'); bc.className='btn ghost'; bc.style.cssText='width:100%;margin-top:8px'; bc.textContent='あとでえらぶ'; bc.onclick=closeUnitPop; card.appendChild(bc);
     $('unitPop').classList.add('on');
   }
+  /* デイリーの点と区切り（10-17 要素7） */
+  var MIS_PT = {a20:100, a50:100, a100:200, c30:100, s1:100, s3:200, g1:100};
+  var MIS_MS = [[100,100],[200,100],[300,100],[400,100],[500,300]];
+  function ggPts(){ misDay(); var p=0; MIS_DAILY.forEach(function(m){ if(mis.gotD[m.id]) p+=MIS_PT[m.id]||100; }); return Math.min(500,p); }
+  function ggMsReady(){ misDay(); var p=ggPts(), g=mis.gotP||{}, c=0; MIS_MS.forEach(function(s){ if(p>=s[0] && !g[s[0]]) c++; }); return c; }
+  function ggMsClaim(n){ misDay(); if(!mis.gotP) mis.gotP={}; var s=MIS_MS.find(function(x){ return x[0]===n; }); if(!s || mis.gotP[n] || ggPts()<n) return 0; mis.gotP[n]=1; gems+=s[1]; return s[1]; }
+  function ggMsClaimAll(){ var g=0; MIS_MS.forEach(function(s){ g+=ggMsClaim(s[0]); }); return g; }
   function renderMission(){
+    misDay();
+    var mb=$('missionBtn'), rd=misReady();
+    if(mb) mb.innerHTML='📋 ミッション'+(rd?' <span class="ggbadge">'+rd+'</span>':'')+'<span class="sub">'+(rd?'💎を受け取れるミッションがあるよ！':'問題を解く・クリアする・ガチャを引くで💎')+'</span>';
+    var body=$('missionBody'); if(!body) return; body.innerHTML='';
+    function done(g){ if(g){ save(); updateGemUI(); try{ GXA.up(); ggGemPop(g); }catch(e){} } renderHome(); }
+    // 点の帯
+    var p=ggPts(), gp=mis.gotP||{};
+    var ap=document.createElement('div'); ap.className='ggap';
+    ap.innerHTML='<div class="ggap-t"><span>きょうの点</span><b>'+p+'<small> / 500</small></b></div><div class="ggap-bar"><i style="width:'+(p/5)+'%"></i></div>';
+    var bar=ap.querySelector('.ggap-bar');
+    MIS_MS.forEach(function(s){
+      var w=document.createElement('div'); w.className='ggap-ms'; w.style.left=(s[0]/5)+'%';
+      if(gp[s[0]]) w.innerHTML='<span class="c got">✓</span>';
+      else if(p>=s[0]){ var b=document.createElement('button'); b.className='get'; b.textContent='🎁'; b.title=s[0]+'点の報酬'; b.onclick=function(){ done(ggMsClaim(s[0])); }; w.appendChild(b); }
+      else w.innerHTML='<span class="c">🎁</span>';
+      w.insertAdjacentHTML('beforeend','<small>'+s[0]+'</small>'); bar.appendChild(w);
+    });
+    ap.insertAdjacentHTML('beforeend','<div class="ggap-n">課題を受け取ると点がたまる。100・200・300・400点で💎100、500点で💎300。</div>');
+    body.appendChild(ap);
+    var top=document.createElement('div'); top.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    top.innerHTML='<div style="flex:1;font-weight:800">所持 <b style="color:#a463f2">💎 '+gems+'</b></div>';
+    var all=document.createElement('button'); all.className='btn'; all.style.cssText='width:auto;padding:8px 12px'; all.textContent='まとめて受け取る'+(rd?'（'+rd+'）':''); all.disabled=!rd; all.onclick=misClaimAll; top.appendChild(all);
+    body.appendChild(top);
+    function sec(title, list, daily){
+      var h=document.createElement('div'); h.className='ggmhead'; h.textContent=title; body.appendChild(h);
+      var rows=list.slice();
+      if(!daily){ var seen={}; rows=rows.filter(function(m){ var got=mis.gotA[m.id], ok=misVal(m,false)>=m.n; if(got) return false; if(ok) return true; if(seen[m.k]) return false; seen[m.k]=1; return true; }); }
+      var st=function(m){ var got=daily?mis.gotD[m.id]:mis.gotA[m.id], ok=misVal(m,daily)>=m.n; return got?2:ok?0:1; };
+      rows.sort(function(a,b){ return st(a)-st(b); });
+      rows.forEach(function(m){
+        var v=misVal(m,daily), s=st(m), ok=s===0, got=s===2;
+        var r=document.createElement('div'); r.className='ggm2'+(got?' got':ok?' ok':'');
+        var cnt=m.k==='area'?(v>=m.n?'クリア済み':'まだ'):(Math.min(v,m.n)+' / '+m.n), pct=Math.min(100,(m.k==='area'?(v>=m.n?100:0):v/m.n*100));
+        r.innerHTML='<div class="tx"><b>'+m.t+'</b><div class="ln"><div class="ggmbar"><i style="width:'+pct+'%"></i></div><span>'+cnt+'</span>'+(daily?'<span class="pt">+'+(MIS_PT[m.id]||100)+'点</span>':'')+'</div></div>';
+        var b=document.createElement('button'); b.className='btn'+(ok?'':' ghost');
+        b.textContent = got ? '受取済み' : m.gr ? 'えらぶ' : ('💎'+m.gem); b.disabled = got || !ok;
+        b.onclick=function(){ done(misClaim(m,daily)); };
+        r.appendChild(b); body.appendChild(r);
+      });
+    }
+    sec('📅 きょうのミッション（毎日リセット）', MIS_DAILY, true);
+    sec('🏆 達成ミッション', MIS_ACH, false);
+  }
+  function renderMissionOld(){
     misDay();
     var mb=$('missionBtn'), rd=misReady();
     if(mb) mb.innerHTML='📋 ミッション'+(rd?' <span class="ggbadge">'+rd+'</span>':'')+'<span class="sub">'+(rd?'💎を受け取れるミッションがあるよ！':'問題を解く・クリアする・ガチャを引くで💎')+'</span>';
