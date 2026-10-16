@@ -331,6 +331,18 @@
   .qslot .cd{position:absolute; bottom:-7px; left:50%; transform:translateX(-50%); font-size:9px; font-weight:800; background:#9a8f7c; color:#fff; padding:0 4px; border-radius:6px; white-space:nowrap}
   .qslot.cooling{filter:grayscale(1); opacity:.5; border-style:dashed}
   .qslot.cooling .rar{opacity:.7}
+
+  /* ===== ホームの下の入口（10-16 要素4）===== */
+  #ggDock{order:1; flex:0 0 auto; display:grid; grid-template-columns:1fr 1.7fr 1fr; gap:8px; padding:8px 12px calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(180deg,#fffaf000,#fffaf0 30%); border-top:2px solid var(--line)}
+  #ggDock button{position:relative; font:inherit; border-radius:16px; border:2px solid #e3dccb; border-bottom:5px solid #cfc4ab; background:#fff; color:var(--ink); font-weight:900; font-size:14px; padding:6px 4px 5px; line-height:1.15; -webkit-tap-highlight-color:transparent}
+  #ggDock button:active{transform:translateY(3px); border-bottom-width:2px}
+  #ggDock button small{display:block; font-size:10px; font-weight:700; color:#8a7f6c}
+  #ggDock .ggd-ic{display:block; font-size:22px; line-height:1.1}
+  #ggDock .ggd-play{background:linear-gradient(180deg,#ff8a3c,#e8323c); border-color:#e8323c; border-bottom-color:#a01a28; color:#fff; font-size:22px; text-shadow:0 2px 0 #8a1020}
+  #ggDock .ggd-play small{color:#ffe9d6; font-size:12px}
+  #ggDock .ggd-badge{position:absolute; top:-9px; right:-4px; min-width:20px; padding:1px 6px; border-radius:999px; background:#ff3d6e; color:#fff; font-size:11px; font-weight:900; border:2px solid #fff; box-shadow:0 1px 0 #0003}
+  #ggDock .ggd-badge.gold{background:#e0a93b}
+  #home.ggnodock #ggDock{display:none}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -901,6 +913,7 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
 
   <!-- ===== ホーム ===== -->
   <section id="home" class="screen col">
+    <div id="ggDock"><button data-go="gacha" class="ggd-gacha"><span class="ggd-ic">🎰</span>ガチャ<small id="ggdGachaSub"></small></button><button data-go="play" class="ggd-play">▶ あそぶ<small id="ggdPlaySub"></small></button><button data-go="mission" class="ggd-mis"><span class="ggd-ic">📋</span>ミッション<small id="ggdMisSub"></small></button></div>
     <div class="topbar"><button class="pill" onclick="ggGoPortal()" title="ポータル（アプリ一覧）へ" style="cursor:pointer">🚪</button><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><button class="pill" id="homeSettingsBtn" data-go="settings" title="せってい" style="cursor:pointer">⚙️</button><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span></div>
     <div class="pad scroll grow">
       <div id="homeMenu">
@@ -12134,12 +12147,26 @@ const Game = (()=>{
   }
 
   /* ---- ホーム描画 ---- */
+  /* ホームの下の入口（10-16 要素4）。ホームの一覧のときだけ出す */
+  function ggDock(){
+    var h=$('home'), d=$('ggDock'); if(!h||!d) return;
+    h.classList.toggle('ggnodock', homeView!=='menu');
+    var nx=Math.min(STAGES.length, maxUnlocked()), ps=$('ggdPlaySub'); if(ps) ps.textContent='つぎは エリア'+nx;
+    var gb=d.querySelector('.ggd-gacha'), gs=$('ggdGachaSub'), old=gb.querySelector('.ggd-badge'); if(old) old.remove();
+    var free=freeReady(), b10=gems>=GACHA_COST*10;
+    if(free||b10){ var bg=document.createElement('span'); bg.className='ggd-badge'+(free?'':' gold'); bg.textContent=free?'無料':'10連OK'; gb.appendChild(bg); }
+    if(gs) gs.textContent='💎'+gems;
+    var mb=d.querySelector('.ggd-mis'), ms=$('ggdMisSub'), om=mb.querySelector('.ggd-badge'); if(om) om.remove();
+    var n=0; try{ n=misReady(); }catch(e){}
+    if(n){ var m=document.createElement('span'); m.className='ggd-badge'; m.textContent=n; mb.appendChild(m); }
+    if(ms) ms.textContent=n?'受け取れる':'💎がもらえる';
+  }
   function renderHome(){
     if(__towerSavedGenre!=null){ QuizEngine.setGenre(__towerSavedGenre); __towerSavedGenre=null; save(); } // 週替わりの塔を中断して帰home した時のジャンル復元(保険)
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
     renderHomeMenu();
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission(); renderZukan();
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission(); renderZukan(); try{ ggDock(); }catch(e){}
     { var __ms=$('mistakesSub'); if(__ms){ var __dc=dueCount(null), __mc=mistakeCount(); __ms.textContent = __mc? ('復習リスト '+__mc+'問'+(__dc?('・今日 '+__dc+'問'):'・今日ぶんは完了')) : 'お気に入りはいつでも見られます'; } }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
