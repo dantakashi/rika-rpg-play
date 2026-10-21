@@ -123,6 +123,32 @@
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
 
+  /* ===== 城のカスタム（10-21 夜）===== */
+  .ggcs{display:flex; flex-direction:column; gap:10px}
+  .ggcs-stage{position:relative; height:190px; border-radius:14px; overflow:hidden; border:3px solid #b98a4a; background:linear-gradient(#9fd3ff 0,#d4ecff 62%,#8fc46a 63%,#6fa04f 100%)}
+  .ggcs-stage .ggcs-cas{position:absolute; left:50%; bottom:6px; width:170px; height:170px; margin-left:-85px}
+  .ggcs-stage .ggcs-cas svg{width:100%; height:100%; display:block; overflow:visible}
+  .ggcs-try{position:absolute; left:8px; right:8px; bottom:8px; display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; padding:6px 8px; border-radius:10px; background:#0e1730ee; color:#fff; font-size:12.5px; font-weight:800}
+  .ggcs-try .ggcs-tl{flex:1 1 100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .ggcs-try .ggic{width:16px; height:16px}
+  .ggcs-try b{color:#ffd34d}
+  .ggcs-try .btn{flex:1; padding:7px 10px; font-size:13px; white-space:nowrap}
+  .ggcs-try .btn.ghost{flex:0 0 auto; color:#fff; background:transparent; border-color:#fff8}
+  .ggcs-slot{background:#fffaf0; border:2px solid #e3cfa6; border-radius:12px; padding:7px 8px}
+  .ggcs-slot>b{display:block; font-size:13px; color:#6b4a1a; margin-bottom:5px}
+  .ggcs-opts{display:flex; flex-wrap:wrap; gap:5px}
+  .ggcs-o{position:relative; display:flex; flex-direction:column; align-items:center; min-width:46px; padding:3px 4px 2px; border-radius:9px; border:2px solid #e8d7b8; background:#fff; font:inherit; font-size:11px; font-weight:900; color:#4a3412; cursor:pointer}
+  .ggcs-o i{display:block; width:22px; height:22px; border-radius:6px; border:2px solid #231c3a33; font-style:normal}
+  .ggcs-o .ggcs-pv{width:34px; height:34px; display:block}
+  .ggcs-o .ggcs-pv svg{width:100%; height:100%; display:block; overflow:visible}
+  .ggcs-o small{font-size:9.5px; color:#a0702a; font-weight:900; white-space:nowrap}
+  .ggcs-o.own small{color:#2e7d32}
+  .ggcs-o.on{border-color:#e0a93b; box-shadow:0 0 0 2px #e0a93b inset; background:#fff8e6}
+  .ggcs-o.try{border-color:#3b5fd9; box-shadow:0 0 0 2px #3b5fd9 inset}
+  .ggcs-note{font-size:12px; color:#6b5a3a; line-height:1.5}
+  .ggpc .ft .ggpc-cas{display:inline-block; width:22px; height:26px; vertical-align:-8px; margin-right:4px}
+  .ggpc .ft .ggpc-cas svg{width:100%; height:100%; display:block; overflow:visible}
+
   /* ===== キャラのスキン（10-21 夜）===== */
   .ggks-box{padding:8px 10px; border-radius:12px; background:linear-gradient(#fffaf2,#fff1dc); border:2px solid #f0c98a; text-align:left}
   .ggks-hd{display:flex; align-items:center; justify-content:space-between; font-size:14px}
@@ -1556,6 +1582,9 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
       </div>
       <div class="homeview" data-view="mission">
         <div class="card"><div id="missionBody"></div></div>
+      </div>
+      <div class="homeview" data-view="castlecustom">
+        <div class="card"><div id="ggCsBody"></div></div>
       </div>
       <div class="homeview" data-view="shop">
         <div class="card"><div id="ggShopBody"></div></div>
@@ -3682,6 +3711,62 @@ const GGART = (function(){
     return g;
   }
   let skinSeq = 0;
+  // 城のカスタム（10-21 夜）: c = {body,batt,flag（色）, top, door, deco, emb}
+  function skinInnerX(s, c){
+    c = c || {};
+    const S = Object.assign({}, s); if(c.body) S.body=c.body; if(c.batt) S.batt=c.batt; if(c.flag) S.flag=c.flag;
+    const body = palOf(S.body), batt = palOf(S.batt), flag = palOf(S.flag);
+    const ssr = S.rar==="SSR", sr = S.rar==="SR", top = c.top||"", dr = c.door||"", deco = c.deco||"", emb = c.emb||"";
+    let door = S.door; if(dr==="iron") door="#6a717a"; if(dr==="gold") door="#d9a52a";
+    const brick = '<pattern id="sbk" width="12" height="8" patternUnits="userSpaceOnUse"><path d="M0 8 H12 M6 0 V4 M0 4 H12 M0 0 V4 M12 4 V8" stroke="'+hexMix(S.body,"#1a1040",0.45)+'" stroke-width="0.9" opacity=".5"/></pattern>';
+    let g = '<defs>'+brick+(ssr?glowF("sgl",S.flag,3):"")+'</defs>';
+    // 飾り（壁の後ろ）: 垂れ幕は壁の前に描くので後で
+    g += part("M14 44 L52 44 L52 114 L14 114Z", body,{sx:4,sy:0,ow:5, hl:[22,58,4,10], inner:'<rect width="100" height="130" fill="url(#sbk)"/>'});
+    // 屋根の形。旗竿の根もと（px, py）も決める
+    let px=50, py=32;
+    if(top==="cone"){ g += part("M8 46 L33 6 L58 46Z", batt,{ow:5,sx:0,sy:2, hl:[26,26,4,8]}); px=33; py=10; }
+    else if(top==="dome"){ g += part("M11 46 Q11 12 33 10 Q55 12 55 46Z", batt,{ow:5,sx:0,sy:2, hl:[24,22,6,8]}); g += part("M30 12 L33 3 L36 12Z", batt,{ow:3,sx:0,sy:1}); px=33; py=5; }
+    else if(top==="pagoda"){ g += part("M4 46 Q20 42 33 24 Q46 42 62 46Z", batt,{ow:5,sx:0,sy:2}); g += part("M13 30 Q24 27 33 12 Q42 27 53 30Z", batt,{ow:4,sx:0,sy:2}); px=33; py=13; }
+    else if(top==="crystal"){ const cr = palOf(hexMix(S.batt,"#bff6ff",0.45)); g += part("M13 46 L19 20 L26 46Z", cr,{ow:4,sx:0,sy:1}); g += part("M40 46 L47 22 L53 46Z", cr,{ow:4,sx:0,sy:1}); g += part("M23 46 L33 6 L43 46Z", cr,{ow:5,sx:0,sy:2, hl:[30,24,3,10]}); px=33; py=9; }
+    else g += part("M12 44 L12 32 L19 32 L19 38 L25 38 L25 32 L31 32 L31 38 L37 38 L37 32 L43 32 L43 38 L49 38 L49 32 L56 32 L56 44Z", batt,{ow:5,sx:0,sy:2});
+    // 雪（屋根と足もと）
+    if(deco==="snow"){ g += '<path d="M11 46 Q20 40 28 45 Q36 40 44 45 Q50 41 56 46 L56 49 L11 49Z" fill="#fbfdff" stroke="'+OL+'" stroke-width="2.4"/><path d="M8 114 Q30 106 58 114Z" fill="#fbfdff" stroke="'+OL+'" stroke-width="2.4"/>'; }
+    // 門
+    if(dr==="arch") g += '<path d="M21 114 L21 82 Q33 62 45 82 L45 114Z" fill="'+door+'" stroke="'+OL+'" stroke-width="3"/><path d="M33 68 L33 114 M21 96 L45 96" stroke="'+hexMix(door,"#000000",0.3)+'" stroke-width="1.6"/>';
+    else { g += '<path d="M24 114 L24 80 Q33 68 42 80 L42 114Z" fill="'+door+'" stroke="'+OL+'" stroke-width="3"/><path d="M33 72 L33 114" stroke="'+hexMix(door,"#000000",0.3)+'" stroke-width="1.6"/>';
+      if(dr==="iron"||dr==="gold") g += '<path d="M24 88 L42 88 M24 100 L42 100" stroke="'+hexMix(door,"#000000",0.4)+'" stroke-width="2.2"/><circle cx="29" cy="94" r="1.6" fill="'+hexMix(door,"#ffffff",0.5)+'"/><circle cx="37" cy="94" r="1.6" fill="'+hexMix(door,"#ffffff",0.5)+'"/>'; }
+    g += '<rect x="28" y="52" width="10" height="13" rx="5" fill="'+(ssr?"#fff3b0":"#2a2440")+'" stroke="'+OL+'" stroke-width="2.5"/>';
+    // 垂れ幕（壁の前・左右）
+    if(deco==="banner"){ const bn = palOf(S.flag); g += part("M16 50 L22 50 L22 74 L19 70 L16 74Z", bn,{ow:3,sx:0,sy:1}); g += part("M44 50 L50 50 L50 74 L47 70 L44 74Z", bn,{ow:3,sx:0,sy:1}); }
+    // ツタ（壁の左下）
+    if(deco==="ivy"){ let iv=''; [[15,110],[17,102],[15,94],[19,88],[16,80],[22,112],[48,112],[50,104]].forEach(function(p){ iv += '<path d="M'+p[0]+' '+p[1]+' q4 -5 8 0 q-4 5 -8 0Z" fill="#5fbf5a" stroke="'+OL+'" stroke-width="1.6"/>'; }); g += '<path d="M15 114 Q14 98 18 84 M49 114 Q51 106 49 100" fill="none" stroke="#3f8f3a" stroke-width="2"/>'+iv; }
+    // たいまつ（門の左右）
+    if(deco==="torch"){ [18,48].forEach(function(x){ g += '<path d="M'+(x-1.5)+' 92 L'+(x+1.5)+' 92 L'+(x+1)+' 104 L'+(x-1)+' 104Z" fill="#8a5530" stroke="'+OL+'" stroke-width="1.6"/><path d="M'+x+' 80 Q'+(x+6)+' 87 '+x+' 92 Q'+(x-6)+' 87 '+x+' 80Z" fill="#ffb21f" stroke="'+OL+'" stroke-width="1.6"/><path d="M'+x+' 84 Q'+(x+2.6)+' 88 '+x+' 91 Q'+(x-2.6)+' 88 '+x+' 84Z" fill="#fff3b0"/>'; }); }
+    // 花（足もと）
+    if(deco==="flower"){ [[16,112,"#ff7aa8"],[22,113,"#ffd23f"],[45,113,"#ff7aa8"],[51,112,"#9a6ad9"],[48,109,"#ffd23f"]].forEach(function(f){ g += '<circle cx="'+f[0]+'" cy="'+f[1]+'" r="3" fill="'+f[2]+'" stroke="'+OL+'" stroke-width="1.4"/><circle cx="'+f[0]+'" cy="'+f[1]+'" r="1" fill="#fff8d6"/>'; }); }
+    // 宝石（壁の上の帯）
+    if(deco==="gem"){ [[20,50,"#4fd1ff"],[33,47,"#ff5a8a"],[46,50,"#7ee05a"]].forEach(function(q){ g += '<path d="M'+q[0]+' '+(q[1]-4)+' L'+(q[0]+4)+' '+q[1]+' L'+q[0]+' '+(q[1]+4)+' L'+(q[0]-4)+' '+q[1]+'Z" fill="'+q[2]+'" stroke="'+OL+'" stroke-width="1.6"/><path d="M'+(q[0]-1)+' '+(q[1]-2)+' l1.4 1.4" stroke="#fff" stroke-width="1.2"/>'; }); }
+    // 旗竿と旗（紋章つき）
+    g += line("M"+px+" "+py+" L"+px+" "+(py-26),2.6);
+    const fy = py-26;
+    g += part("M"+px+" "+fy+" L"+(px+20)+" "+(fy+5)+" L"+px+" "+(fy+11)+"Z", flag,{ow:4,sx:1,sy:2});
+    if(emb){ const ex=px+7.5, ey=fy+5.5, W2="#ffffff", st=' stroke="'+OL+'" stroke-width="1.1"';
+      if(emb==="star") g += '<path d="M'+ex+' '+(ey-3.4)+' L'+(ex+1)+' '+(ey-1)+' L'+(ex+3.3)+' '+(ey-1)+' L'+(ex+1.5)+' '+(ey+0.6)+' L'+(ex+2.1)+' '+(ey+3)+' L'+ex+' '+(ey+1.6)+' L'+(ex-2.1)+' '+(ey+3)+' L'+(ex-1.5)+' '+(ey+0.6)+' L'+(ex-3.3)+' '+(ey-1)+' L'+(ex-1)+' '+(ey-1)+'Z" fill="'+W2+'"'+st+'/>';
+      else if(emb==="heart") g += '<path d="M'+ex+' '+(ey+3)+' C'+(ex-4)+' '+ey+' '+(ex-3)+' '+(ey-3)+' '+ex+' '+(ey-1.2)+' C'+(ex+3)+' '+(ey-3)+' '+(ex+4)+' '+ey+' '+ex+' '+(ey+3)+'Z" fill="#ff8fb6"'+st+'/>';
+      else if(emb==="moon") g += '<path d="M'+(ex+1)+' '+(ey-3.2)+' A3.4 3.4 0 1 0 '+(ex+1)+' '+(ey+3.2)+' A2.6 2.6 0 1 1 '+(ex+1)+' '+(ey-3.2)+'Z" fill="#fff3b0"'+st+'/>';
+      else if(emb==="bolt") g += '<path d="M'+(ex+0.8)+' '+(ey-3.6)+' L'+(ex-2.2)+' '+(ey+0.6)+' L'+(ex+0.2)+' '+(ey+0.6)+' L'+(ex-0.8)+' '+(ey+3.6)+' L'+(ex+2.4)+' '+(ey-0.8)+' L'+(ex)+' '+(ey-0.8)+'Z" fill="#ffe14d"'+st+'/>';
+      else if(emb==="leaf") g += '<path d="M'+(ex-3)+' '+(ey+2.6)+' Q'+(ex-3)+' '+(ey-3)+' '+(ex+3)+' '+(ey-3)+' Q'+(ex+3)+' '+(ey+2.6)+' '+(ex-3)+' '+(ey+2.6)+'Z" fill="#7ee05a"'+st+'/>';
+      else if(emb==="book") g += '<path d="M'+(ex-3.4)+' '+(ey-2.4)+' L'+ex+' '+(ey-1.6)+' L'+(ex+3.4)+' '+(ey-2.4)+' L'+(ex+3.4)+' '+(ey+2.6)+' L'+ex+' '+(ey+3.2)+' L'+(ex-3.4)+' '+(ey+2.6)+'Z M'+ex+' '+(ey-1.6)+' L'+ex+' '+(ey+3.2)+'" fill="'+W2+'"'+st+'/>';
+      else if(emb==="note") g += '<path d="M'+(ex+1.6)+' '+(ey-3.4)+' L'+(ex+1.6)+' '+(ey+1.8)+' M'+(ex+1.6)+' '+(ey-3.4)+' L'+(ex+3.6)+' '+(ey-2.2)+'" stroke="'+OL+'" stroke-width="1.3" fill="none"/><ellipse cx="'+(ex-0.1)+'" cy="'+(ey+2)+'" rx="2" ry="1.5" fill="'+W2+'"'+st+'/>'; }
+    if(sr||ssr) g += '<path d="M14 92 L52 92" stroke="'+hexMix(S.flag,"#ffffff",0.2)+'" stroke-width="3"/>';
+    if(ssr && !top) g += '<g filter="url(#sgl)"><path d="M33 22 L37 28 L33 34 L29 28Z" fill="#fff3b0" stroke="'+OL+'" stroke-width="1.6"/></g>';
+    return g;
+  }
+  function skinX(s, c){
+    const n = "x"+(++skinSeq).toString(36);
+    return skinInnerX(s, c).split('id="').join('id="'+n).split('url(#').join('url(#'+n);
+  }
+
   function skin(s){
     const n = "k"+(++skinSeq).toString(36);
     return skinInner(s).replace(/id="([^"]+)"/g, function(m,a){ return 'id="'+a+'_'+n+'"'; })
@@ -3756,7 +3841,7 @@ const GGART = (function(){
     return (lite ? boxed(k).replace(/ filter="url\(#[^)]+\)"/g, '') : boxed(k)).replace(/id="([^"]+)"/g, function(m,a){ return 'id="'+a+'_'+n+'"'; })
                    .replace(/url\(#([^)]+)\)/g, function(m,a){ return 'url(#'+a+'_'+n+')'; });
   }
-  return { has:function(k){ return !!MAP[k] || (typeof CP_ART!=='undefined' && !!CP_ART[k]); }, get:get, skin:skin, fieldCss:fieldCss, cloudImg:function(){ return '<img src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(misc.cloud())+'" alt="" style="width:3.4em;display:block">'; }, background:background, keys:function(){ return Object.keys(MAP); } };
+  return { has:function(k){ return !!MAP[k] || (typeof CP_ART!=='undefined' && !!CP_ART[k]); }, get:get, skin:skin, skinX:skinX, fieldCss:fieldCss, cloudImg:function(){ return '<img src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(misc.cloud())+'" alt="" style="width:3.4em;display:block">'; }, background:background, keys:function(){ return Object.keys(MAP); } };
 
 })();
 const SVG = (()=>{
@@ -11412,7 +11497,7 @@ const Game = (()=>{
   function curSkin(){ for(var i=0;i<CASTLE_SKINS.length;i++){ if(CASTLE_SKINS[i].key===equippedSkin) return CASTLE_SKINS[i]; } return CASTLE_SKINS[0]; }
   function skinBuff(){ return skinBuffFor(curSkin()); }
   // ⚠ skinSVGStrは<svg>の中身だけを返す。divのinnerHTMLに入れる際はラッパー必須（無いと描画されない＝城が消えるバグの原因 2026-06-11修正）
-  function castleSkinSVG(){ return '<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">'+skinSVGStr(curSkin())+'</svg>'; }
+  function castleSkinSVG(){ if(typeof ggCsHas==='function' && ggCsHas() && GGART.skinX) return '<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">'+GGART.skinX(curSkin(), ggCsCustom())+'</svg>'; return '<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">'+skinSVGStr(curSkin())+'</svg>'; }
   function skinsByRarity(rar){ return CASTLE_SKINS.filter(function(s){return s.rar===rar;}); }
   function pullSkin(){
     if(gems<SKIN_GACHA_COST){ try{ fxBanner('💎が足りません','#c0392b'); }catch(e){} return; }
@@ -12498,6 +12583,7 @@ const Game = (()=>{
     var gb=document.createElement('button'); gb.className='btn'; gb.style.cssText='width:100%;max-width:320px;padding:12px;font-size:16px'; gb.textContent='🎰 城スキンを引く（'+SKIN_GACHA_COST+'💎）'; gb.disabled=gems<SKIN_GACHA_COST; gb.onclick=function(){ pullSkin(); }; g.appendChild(gb);
     if(lastSkin){ var ls=lastSkin.skin; var lr=document.createElement('div'); lr.style.cssText='margin-top:8px;font-weight:800'; lr.innerHTML=(lastSkin.dup?'<span class="muted">（ダブり）</span> ':'<span style="color:var(--good)">✨GET！</span> ')+rarTag(ls.rar)+' '+esc(ls.name); g.appendChild(lr); }
     body.appendChild(g);
+    { var __cb=document.createElement('button'); __cb.className='btn ghost'; __cb.style.cssText='width:100%;margin:0 0 10px'; __cb.textContent='🎨 城のカスタム（屋根・門・飾り・ペンキ）'; __cb.onclick=function(){ homeView='castlecustom'; ggCsTry=null; renderHome(); }; body.appendChild(__cb); }
     var grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px';
     CASTLE_SKINS.forEach(function(s){
       var own=!!ownedSkins[s.key], eq=(equippedSkin===s.key);
@@ -12883,12 +12969,12 @@ const Game = (()=>{
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
     renderHomeMenu();
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission(); renderZukan(); try{ ggDock(); }catch(e){} try{ ggEcoHome(); }catch(e){}
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission(); renderZukan(); try{ ggDock(); }catch(e){} try{ ggEcoHome(); }catch(e){} try{ if(homeView!=='castlecustom') ggCsTry=null; ggCsRender(); }catch(e){}
     { var __ms=$('mistakesSub'); if(__ms){ var __dc=dueCount(null), __mc=mistakeCount(); __ms.textContent = __mc? ('復習リスト '+__mc+'問'+(__dc?('・今日 '+__dc+'問'):'・今日ぶんは完了')) : 'お気に入りはいつでも見られます'; } }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', mission:'📋 ミッション', zukan:'📖 キャラ図鑑', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', collection:'📚 おぼえた英語', skins:'🏯 城スキン', pvp:'🆚 たいせん', shop:'🛒 ショップ'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', mission:'menu', zukan:'gacha', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', collection:'menu', skins:'grow', pvp:'menu', shop:'menu'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', mission:'📋 ミッション', zukan:'📖 キャラ図鑑', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', collection:'📚 おぼえた英語', skins:'🏯 城スキン', pvp:'🆚 たいせん', shop:'🛒 ショップ', castlecustom:'🎨 城のカスタム'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', mission:'menu', zukan:'gacha', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', collection:'menu', skins:'grow', pvp:'menu', shop:'menu', castlecustom:'shop'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ var __v=b.getAttribute('data-go'); if(__v==='practice'){ pracStarted=false; pracReview=false; pracQ=null; } homeView=__v; renderHome(); }; });
@@ -14744,12 +14830,14 @@ const Game = (()=>{
     h+='</div>';
     var sk=CASTLE_SKINS.filter(function(s){ return !ownedSkins[s.key]; }).sort(function(a,b){ return rarRank(a.rar)-rarRank(b.rar); });
     h+=ggKsShopHTML();
+    h+='<div class="ggsp-sec">城のカスタム</div><button class="ggsp-pass" id="ggCsGo" style="width:100%;cursor:pointer;font:inherit;text-align:left"><span style="width:84px;height:96px;display:block;flex:0 0 auto">'+ggCsSVG(null, ggCsOn(), '-6 -30 78 148')+'</span><span class="ggsp-pi"><b style="font-size:15px">🎨 城のカスタム</b><br>屋根の形・門・飾り・旗の紋章・ペンキで、自分だけの城に。見た目だけ（バフは今の城スキン）。<br><small>ペンキ '+GG_CS_PAINT_PR+'／形 370〜1220</small></span></button>';
     h+='<div class="ggsp-sec">城スキン</div>';
     if(!sk.length) h+='<div class="muted" style="text-align:center;font-size:13px">城スキンは全部そろっている！</div>';
     else { h+='<div class="ggsp-grid">'; sk.forEach(function(s){ var pr=GG_SKIN_PR[s.rar]||3060;
       h+='<button class="ggsp-it'+(ggEco.cr<pr?' short':'')+'" data-id="skin:'+s.key+'"><span class="ggsp-nm">'+rarTag(s.rar)+' '+esc(s.name)+'</span><span class="ggsp-pic sk"><svg viewBox="0 0 100 120" width="50" height="60">'+skinSVGStr(s)+'</svg><small>'+skinBuffLabel(s)+'</small></span><span class="ggsp-pr">'+GG_ECO_IC.cr+ggNum(pr)+'</span></button>'; }); h+='</div>'; }
     h+='<div class="ggsp-note">'+GG_ECO_IC.cr+' <b>クラウン</b>は、選んだ級で<b>正解率70%以上で勝つ（▲）</b>と落ちる。量は<b>正解の数×級の倍率</b>（5級×1・4級×1.5・<b>3級×2.5</b>・準2級から×3）。本物のお金はつかわない。'+(ggEco.tot.buy?'<br>これまでに使ったクラウン：'+ggNum(ggEco.tot.spent)+'（'+ggEco.tot.buy+'回）':'')+'</div>';
     body.innerHTML=h+'</div>';
+    { var __cg=$('ggCsGo'); if(__cg) __cg.onclick=function(){ homeView='castlecustom'; ggCsTry=null; renderHome(); }; }
     [].forEach.call(body.querySelectorAll('[data-ks]'), function(b){ b.onclick=function(){ ggKsPick(b.getAttribute('data-ks')); }; });
     [].forEach.call(body.querySelectorAll('[data-id]'), function(b){ b.onclick=function(){ if(b.classList.contains('out')) return; ggShopConfirm(b.getAttribute('data-id')); }; });
   }
@@ -14932,6 +15020,59 @@ const Game = (()=>{
     $('ggKsPickNo').onclick=closeUnitPop;
     [].forEach.call(card.querySelectorAll('.ggks-pick button'), function(b){ b.onclick=function(){ var k=b.getAttribute('data-k'); if(ggKsOwn(k,th)){ ggKsEquip(k,th); closeUnitPop(); try{ fxBanner('👕 '+ROSTER[k].name+' が '+t.nm+'の姿に！','#a463f2'); }catch(e){} try{ renderHome(); }catch(e){} return; } ggKsConfirm(k, th, function(){ ggKsPick(th); }); }; });
   }
+  /* ===== 城のカスタム（10-21 夜）===== */
+  var GG_CS_PAINT = [{k:'shiro',nm:'白',c:'#ecebe4'},{k:'hai',nm:'灰',c:'#a6acb3'},{k:'kuro',nm:'黒',c:'#4a4858'},{k:'aka',nm:'赤',c:'#e05a5a'},{k:'dai',nm:'橙',c:'#f09a3a'},{k:'ki',nm:'黄',c:'#ecd24a'},{k:'midori',nm:'緑',c:'#5fb85f'},{k:'mizu',nm:'水色',c:'#6ec6e6'},{k:'ao',nm:'青',c:'#4f7fd9'},{k:'murasaki',nm:'紫',c:'#9a6ad9'},{k:'momo',nm:'桃',c:'#ee8fb8'},{k:'kin',nm:'金',c:'#e8be3c'}];
+  var GG_CS_PAINT_PR = 240;
+  var GG_CS_COLOR = [{s:'body', nm:'壁の色'},{s:'batt', nm:'屋根の色'},{s:'flag', nm:'旗の色'}];
+  var GG_CS_PARTS = [
+    {s:'top', nm:'屋根の形', items:[{k:'',nm:'胸壁',pr:0},{k:'cone',nm:'とんがり',pr:610},{k:'dome',nm:'丸屋根',pr:610},{k:'pagoda',nm:'和の屋根',pr:980},{k:'crystal',nm:'水晶の塔',pr:1220}]},
+    {s:'door', nm:'門', items:[{k:'',nm:'ふつう',pr:0},{k:'iron',nm:'鉄の門',pr:370},{k:'gold',nm:'金の門',pr:610},{k:'arch',nm:'アーチ',pr:370}]},
+    {s:'deco', nm:'飾り', items:[{k:'',nm:'なし',pr:0},{k:'ivy',nm:'ツタ',pr:610},{k:'torch',nm:'たいまつ',pr:610},{k:'banner',nm:'垂れ幕',pr:610},{k:'snow',nm:'雪',pr:610},{k:'flower',nm:'花',pr:610},{k:'gem',nm:'宝石',pr:980}]},
+    {s:'emb', nm:'旗の紋章', items:[{k:'',nm:'なし',pr:0},{k:'star',nm:'星',pr:370},{k:'heart',nm:'ハート',pr:370},{k:'moon',nm:'月',pr:370},{k:'bolt',nm:'雷',pr:370},{k:'leaf',nm:'葉',pr:370},{k:'book',nm:'本',pr:370},{k:'note',nm:'音符',pr:370}]}
+  ];
+  var ggCsTry = null; // 試し中 {s:部品, k:値}
+  function ggCsPaint(k){ for(var i=0;i<GG_CS_PAINT.length;i++) if(GG_CS_PAINT[i].k===k) return GG_CS_PAINT[i]; return null; }
+  function ggCsPart(s){ for(var i=0;i<GG_CS_PARTS.length;i++) if(GG_CS_PARTS[i].s===s) return GG_CS_PARTS[i]; return null; }
+  function ggCsItem(s,k){ var p=ggCsPart(s); if(!p) return null; for(var i=0;i<p.items.length;i++) if(p.items[i].k===k) return p.items[i]; return null; }
+  function ggCsOwn(s,k){ if(!k) return true; var o=ggKs.castle.own||{}, a=o[s==='body'||s==='batt'||s==='flag'?'paint':s]; return Array.isArray(a) && a.indexOf(k)>=0; }
+  function ggCsOn(){ return ggKs.castle.on||{}; }
+  function ggCsHas(on){ on=on||ggCsOn(); for(var k in on) if(on[k]) return true; return false; }
+  // 着けている部品 → 絵に渡す形（色は色の値に）
+  function ggCsCustom(on){ on=on||ggCsOn(); var c={}; ['body','batt','flag'].forEach(function(s){ var p=ggCsPaint(on[s]); if(p) c[s]=p.c; }); ['top','door','deco','emb'].forEach(function(s){ if(on[s] && ggCsItem(s,on[s])) c[s]=on[s]; }); return c; }
+  function ggCsSVG(skin, on, vb, clip){ var s=skin||curSkin(); var inner=(GGART.skinX && ggCsHas(on)) ? GGART.skinX(s, ggCsCustom(on)) : skinSVGStr(s); return '<svg viewBox="'+(vb||'0 0 100 100')+'" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:'+(clip?'hidden':'visible')+'">'+inner+'</svg>'; }
+  // 旗のまわりだけを切り出す枠（屋根の形で旗竿の根もとが変わる＝絵の skinInnerX と同じ値）
+  function ggCsFlagVB(top){ var m={'':[50,32], cone:[33,10], dome:[33,5], pagoda:[33,13], crystal:[33,9]}[top||'']||[50,32], fy=m[1]-26; return (m[0]-3)+' '+(fy-5)+' 28 22'; }
+  function ggCsPrice(s,k){ if(!k) return 0; if(s==='body'||s==='batt'||s==='flag') return GG_CS_PAINT_PR; var it=ggCsItem(s,k); return it?it.pr:0; }
+  function ggCsBuy(s,k){ if(!k || ggCsOwn(s,k)) return false; var pr=ggCsPrice(s,k); if(!pr || ggEco.cr<pr) return false; if((s==='body'||s==='batt'||s==='flag') && !ggCsPaint(k)) return false; if(!(s==='body'||s==='batt'||s==='flag') && !ggCsItem(s,k)) return false;
+    ggEco.cr-=pr; ggEco.tot.buy++; ggEco.tot.spent+=pr; var key=(s==='body'||s==='batt'||s==='flag')?'paint':s; var o=ggKs.castle.own; (o[key]||(o[key]=[])).push(k); ggKs.castle.on[s]=k; save(); return true; }
+  function ggCsSet(s,k){ if(!ggCsOwn(s,k)) return false; ggKs.castle.on[s]=k||''; if(!k) delete ggKs.castle.on[s]; save(); return true; }
+  // 画面「🎨 城のカスタム」
+  function ggCsRender(){
+    var body=$('ggCsBody'); if(!body || homeView!=='castlecustom') return;
+    var on=ggCsOn(), view=Object.assign({}, on); if(ggCsTry) view[ggCsTry.s]=ggCsTry.k;
+    var h='<div class="ggcs"><div class="ggsp-bar"><span class="ggsp-own">所持</span>'+GG_ECO_IC.cr+'<b>'+ggNum(ggEco.cr)+'</b><small>クラウン</small></div>';
+    h+='<div class="ggcs-stage"><div class="ggcs-cas">'+ggCsSVG(null, view, '-14 -30 94 148')+'</div>';
+    if(ggCsTry){ var pr=ggCsPrice(ggCsTry.s, ggCsTry.k), nm=(ggCsTry.s==='body'||ggCsTry.s==='batt'||ggCsTry.s==='flag')?(ggCsPaint(ggCsTry.k).nm+'のペンキ'):ggCsItem(ggCsTry.s,ggCsTry.k).nm;
+      h+='<div class="ggcs-try"><span class="ggcs-tl">試し中：<b>'+nm+'</b>　'+GG_ECO_IC.cr+ggNum(pr)+'</span><button class="btn ghost" id="ggCsTryNo">もどす</button><button class="btn" id="ggCsTryOk"'+(ggEco.cr<pr?' disabled':'')+'>'+(ggEco.cr<pr?'たりないよ':'買って使う')+'</button></div>'; }
+    h+='</div><div class="ggcs-note">見た目だけ変わる（バフは装備中の城スキンのまま）。ペンキは1回買えば、壁・屋根・旗のどこにでも塗れる。</div>';
+    GG_CS_COLOR.forEach(function(sl){ h+='<div class="ggcs-slot"><b>'+sl.nm+'</b><div class="ggcs-opts">';
+      h+='<button class="ggcs-o'+(!view[sl.s]?' on':'')+'" data-s="'+sl.s+'" data-k=""><i style="background:linear-gradient(135deg,#fff 45%,#ccc 45%)"></i>そのまま<small>城スキン</small></button>';
+      GG_CS_PAINT.forEach(function(p){ var own=ggCsOwn(sl.s,p.k), cur=view[sl.s]===p.k; h+='<button class="ggcs-o'+(own?' own':'')+(cur?(ggCsTry&&ggCsTry.s===sl.s?' try':' on'):'')+'" data-s="'+sl.s+'" data-k="'+p.k+'"><i style="background:'+p.c+'"></i>'+p.nm+'<small>'+(own?'持っている':GG_CS_PAINT_PR)+'</small></button>'; });
+      h+='</div></div>'; });
+    GG_CS_PARTS.forEach(function(pt){ h+='<div class="ggcs-slot"><b>'+pt.nm+'</b><div class="ggcs-opts">';
+      pt.items.forEach(function(it){ var own=ggCsOwn(pt.s,it.k), cur=(view[pt.s]||'')===it.k, pv=Object.assign({}, view); pv[pt.s]=it.k;
+        h+='<button class="ggcs-o'+(own?' own':'')+(cur?(ggCsTry&&ggCsTry.s===pt.s?' try':' on'):'')+'" data-s="'+pt.s+'" data-k="'+it.k+'"><span class="ggcs-pv">'+ggCsSVG(null, pv, pt.s==='emb'?ggCsFlagVB(view.top):(pt.s==='door'||pt.s==='deco')?'4 40 60 80':'0 -24 70 74', true)+'</span>'+it.nm+'<small>'+(own?(it.pr?'持っている':'無料'):it.pr)+'</small></button>'; });
+      h+='</div></div>'; });
+    body.innerHTML=h+'</div>';
+    [].forEach.call(body.querySelectorAll('.ggcs-o'), function(b){ b.onclick=function(){ var s=b.getAttribute('data-s'), k=b.getAttribute('data-k');
+      if(ggCsOwn(s,k)){ ggCsTry=null; ggCsSet(s,k); try{ Sound.play('correct'); }catch(e){} ggCsRender(); return; }
+      ggCsTry={s:s, k:k}; ggCsRender(); }; });
+    var no=$('ggCsTryNo'), ok=$('ggCsTryOk');
+    if(no) no.onclick=function(){ ggCsTry=null; ggCsRender(); };
+    if(ok) ok.onclick=function(){ if(ggCsTry && ggCsBuy(ggCsTry.s, ggCsTry.k)){ try{ Sound.play('win'); }catch(e){} try{ fxBanner('🏯 城の見た目が変わった！','#3a9d57'); }catch(e){} ggCsTry=null; try{ renderHome(); }catch(e){} } };
+  }
+  // 対戦カードの城（カードの城スキン＋カスタム）
+  function ggCsCardSVG(c){ try{ var sk=null; CASTLE_SKINS.forEach(function(s){ if(s.key===c.skin) sk=s; }); return ggCsSVG(sk||CASTLE_SKINS[0], (c.cs&&typeof c.cs==='object')?c.cs:{}, '0 -30 70 148'); }catch(e){ return ''; } }
   function endBattle(win){
     if(B.stage.learn){ endLearnTower(win); return; } // 🎓学習の塔
     if(B.stage.endless){ endTower(); return; }
@@ -15180,6 +15321,7 @@ const Game = (()=>{
     var c={v:2,name:(name||'プレイヤー').toString().slice(0,12)||'プレイヤー',deck:deck.slice(0,5),lv:{},stars:{},parts:{},cas:castleLv,reg:regenLv,enm:enMaxLv,fzd:freezeDurLv,fzc:freezeCostLv,cg:comboGuardLv,skin:equippedSkin,learn:Object.assign({},learnBest),iron:Object.keys(ironCleared).length}; // iron=⚔鉄の試練バッジ数（読み取り専用の自慢用）
     c.deck.forEach(function(k){ c.lv[k]=unitLv[k]||0; c.stars[k]=owned[k]||1; if(equippedParts[k])c.parts[k]=equippedParts[k]; });
     try{ if(ggGB.pvp){ var __g=ggGBGrade(); if(__g>=0) c.gb={g:__g, t:ggGBTotal(), c:ggGBTop9()}; } }catch(e){}
+    try{ if(ggCsHas()) c.cs=Object.assign({}, ggCsOn()); }catch(e){}
     try{ c.deck.forEach(function(k){ var __t=ggKsOn(k); if(__t){ c.ks=c.ks||{}; c.ks[k]=__t; } }); }catch(e){}
     try{ c.deck.forEach(function(k){ var __a=ggAwLv(k); if(__a){ c.aw=c.aw||{}; c.aw[k]=__a; } if(ggEco.col[k]===1){ c.nj=c.nj||{}; c.nj[k]=1; } }); }catch(e){}
     return c;
@@ -15243,7 +15385,7 @@ const Game = (()=>{
     var h='<div class="ggpc'+(opp?' opp':'')+'"><div class="hd"><b>'+esc(c.name||'プレイヤー')+'</b><small>'+(opp?'あいて':'あなた')+'のカード'+(c.iron?'・⚔'+c.iron:'')+'</small></div>'+((c.gb&&c.gb.g>=0&&c.gb.g<=5)?'<div style="margin:-2px 0 6px"><span class="ggpcgb">'+ggPyrFrom(c.gb.c,18)+'級バッジ '+ggGBLabel(Math.floor(c.gb.g))+'</span></div>':'')+'<div class="dk">';
     dk.forEach(function(k){ var r=ROSTER[k], st=Math.max(0,((c.stars&&c.stars[k])||1)-1), lv=(c.lv&&c.lv[k])||0;
       var __aw=Math.min(3,Math.floor(+(c.aw&&c.aw[k])||0)), __nj=!!(c.nj&&c.nj[k]); h+='<div class="gxr-'+r.rar+'"><i>'+r.rar+'</i><span class="a'+((__aw||__nj)?' ggawc'+(__aw?' a'+__aw:'')+(__nj?' nj':''):'')+'">'+ggKsSVG(k, 0, (c.ks&&GG_KS_PAL[c.ks[k]])?c.ks[k]:'')+(__aw?'<b class="ggaw-cn">◆'+__aw+'</b>':'')+'</span><small>Lv'+lv+(st?' +'+st:'')+'</small></div>'; });
-    h+='</div><div class="ft">城Lv'+(c.cas||0)+'・エネ回復Lv'+(c.reg||0)+'・上限Lv'+(c.enm||0)+'</div></div>';
+    h+='</div><div class="ft"><span class="ggpc-cas">'+ggCsCardSVG(c)+'</span>城Lv'+(c.cas||0)+'・エネ回復Lv'+(c.reg||0)+'・上限Lv'+(c.enm||0)+'</div></div>';
     return h;
   }
   function ggPvpPreview(id, c, opp){ var t=$(id); if(!t) return; var p=document.getElementById(id+'Pv'); if(!p){ p=document.createElement('div'); p.id=id+'Pv'; t.parentNode.insertBefore(p, t.nextSibling); } p.innerHTML = c ? ggPvpCardHTML(c, opp) : ''; }
@@ -15409,7 +15551,7 @@ const Game = (()=>{
     godCastle(){ if(!B) return 'no battle'; B.castleA=B.castleAMax=1e9; return 'castle invincible (test)'; }, // 検証用：自城を実質無敵に（完走テスト）
     // 90%正答で1問解く（left=正解固定の前提。fresh問題があるときだけ）
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
-    ggB(){ return B; }, ggEcoGet(){ return ggEco; }, ggEcoSet(o){ ggEco=ggEcoNorm(o); }, ggShopBuy(id,q){ return ggShopBuy(id,q); }, ggAwUp(k){ return ggAwUp(k); }, ggUnitStats(k){ return unitStats(k); }, ggStatsAtLv(k,l){ return statsAtLv(k,l); }, ggOwn(k,n){ owned[k]=n||1; }, ggPvpCard(n){ return pvpMakeCardObj(n||'t'); }, ggKsGet(){ return ggKs; }, ggKsSet(o){ ggKs=ggKsNorm(o); }, ggKsBuy(k,t){ return ggKsBuy(k,t); }, ggKsSVG(k,l,t){ return ggKsSVG(k,l,t); }, ggKsHex(h,t){ return ggHexTx(h, GG_KS_PAL[t]); }, ggPvpSide(c){ var __s=pvpSnap(); var __r=pvpComputeSide(c); pvpRestore(__s); return __r; }, ggDay(){ return ggDayNum(); }, ggEcoDrop(r,c){ var __b=B; B={correct:c}; try{ return ggEcoEnd(r); } finally{ B=__b; } }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
+    ggB(){ return B; }, ggEcoGet(){ return ggEco; }, ggEcoSet(o){ ggEco=ggEcoNorm(o); }, ggShopBuy(id,q){ return ggShopBuy(id,q); }, ggAwUp(k){ return ggAwUp(k); }, ggUnitStats(k){ return unitStats(k); }, ggStatsAtLv(k,l){ return statsAtLv(k,l); }, ggOwn(k,n){ owned[k]=n||1; }, ggPvpCard(n){ return pvpMakeCardObj(n||'t'); }, ggKsGet(){ return ggKs; }, ggCsBuy(s,k){ return ggCsBuy(s,k); }, ggCsSet(s,k){ return ggCsSet(s,k); }, ggCsSVG(on){ return ggCsSVG(null, on); }, ggCastleSVG(){ return castleSkinSVG(); }, ggKsSet(o){ ggKs=ggKsNorm(o); }, ggKsBuy(k,t){ return ggKsBuy(k,t); }, ggKsSVG(k,l,t){ return ggKsSVG(k,l,t); }, ggKsHex(h,t){ return ggHexTx(h, GG_KS_PAL[t]); }, ggPvpSide(c){ var __s=pvpSnap(); var __r=pvpComputeSide(c); pvpRestore(__s); return __r; }, ggDay(){ return ggDayNum(); }, ggEcoDrop(r,c){ var __b=B; B={correct:c}; try{ return ggEcoEnd(r); } finally{ B=__b; } }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
       return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), rt:Math.round(B.lastReactMs||0), rg:+(((B.lastReadGain==null)?1:B.lastReadGain).toFixed(3)), masher:!!B.masher, missStreak:B.missStreak||0, qAge:(curQ?Math.round(performance.now()-(curQ.shownAt||performance.now())):null), qLocked:!!(curQ&&curQ.locked), qcc:(curQ&&curQ.choiceCount)||null, gems:gems, learnGemToday:learnGemToday, learnGemDay:learnGemDay, wasCleared:!!B.wasCleared, partUnit:pu }; }
