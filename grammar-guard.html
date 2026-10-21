@@ -149,6 +149,13 @@
   .ggpc .ft .ggpc-cas{display:inline-block; width:22px; height:26px; vertical-align:-8px; margin-right:4px}
   .ggpc .ft .ggpc-cas svg{width:100%; height:100%; display:block; overflow:visible}
 
+  /* ===== 豪華版スキンのコマ送り（10-22）。絵の場所と枚数はスキンごとに JS が足す（ggSprCss） ===== */
+  .ggspr{position:absolute; left:50%; bottom:var(--sb,0); width:var(--ss,120%); height:var(--ss,120%); transform:translateX(-50%); background-repeat:no-repeat; background-position:0 0; pointer-events:none; display:block}
+  .ggspr-sh{position:absolute; left:50%; bottom:-3%; width:66%; height:13%; transform:translateX(-50%); border-radius:50%; background:radial-gradient(closest-side,#0003,#0002 60%,#0000); pointer-events:none} /* 足もとの影（焼くときは描かせていない） */
+  .ggspr-host{position:relative; display:block; height:100%; aspect-ratio:1/1; margin:0 auto}
+  .ggspr-host .ggspr{width:auto; aspect-ratio:1/1}
+  @media (prefers-reduced-motion: reduce){ .ggspr{animation:none!important} }
+
   /* ===== キャラのスキン（豪華版・10-21 夜）===== */
   .ggks-box{padding:8px 10px; border-radius:12px; background:linear-gradient(#fffaf2,#fff1dc); border:2px solid #f0c98a; text-align:left}
   .ggks-hd{display:flex; align-items:center; justify-content:space-between; font-size:14px}
@@ -3833,84 +3840,34 @@ const GGART = (function(){
     return part(`M${p(0, 2)} Q${p(-4, -5)} ${p(-11, -4)} Q${p(-9, 0)} ${p(-13, 4)} Q${p(-8, 3)} ${p(-6, 7)} Q${p(-3, 3)} ${p(0, 6)} Q${p(3, 3)} ${p(6, 7)} Q${p(8, 3)} ${p(13, 4)} Q${p(9, 0)} ${p(11, -4)} Q${p(4, -5)} ${p(0, 2)}Z`, C.dark, { sx: 1, sy: 1, ow: 3.5 })
       + `<circle cx="${x - 1.6 * s}" cy="${y + 1.6 * s}" r="${0.9 * s}" fill="#ffb84a"/><circle cx="${x + 1.6 * s}" cy="${y + 1.6 * s}" r="${0.9 * s}" fill="#ffb84a"/>`
       + `<path d="M${p(-2.4, -0.6)} L${p(-1.6, -3.4)} L${p(-0.6, -0.4)}Z M${p(0.6, -0.4)} L${p(1.6, -3.4)} L${p(2.4, -0.6)}Z" fill="#4b4566" stroke="${OL}" stroke-width="1.2" stroke-linejoin="round"/>`; };
-  // 動きの状態（キャラコンペの絵と同じ読み替え）: 待機＝ショップ・スキン欄・カットイン・ホーム／歩き＝戦場で攻撃していないとき／攻撃＝.attacking・.atk
-  const DLX_IDLE = ':is(.gxart,.ggpick-art,.ggzart,.ggcutin-art,.cpidle,#homeCharSprite:not(.attacking))', DLX_WALK = '.unit:not(.attacking):not(.atk)', DLX_ATK = ':is(.attacking,.atk)';
   // ダッシュギツネ［ヴァンパイア・ナイト］: 黒と赤のマント・立ち襟・赤い目と小さな牙・こうもりの鍔の細剣・白いひだ襟と赤い宝石
-  //  10-22 本人「SVGは歩いてるのよ。その点においてSVGが勝る。つまり、SVGを進化させる方向が適切かと。」→ 絵はそのまま、部品に分けて動かす
-  //  歩き: 足が交互に・体が上下・しっぽとマントがなびく・頭が小さく揺れる・こうもりが速く羽ばたく（ダッシュギツネは足が速いので 0.44 秒）
-  //  攻撃: .attacking の 620ms に合わせて1回（引く → 踏み込んで突く → 溜め → 戻る）。突いた先に光の筋・火花・バラの花びら
-  //  支点（transform-origin）は絵の座標そのまま（transform-box:view-box。runtime の入れ子の viewBox でも同じ点で回るのを確かめた）
-  DLX.sk_dashFox_vamp = () => {
-    const S = (sel, css) => `.dvamp ${sel}{${css}}`, I = (sel, css) => `${DLX_IDLE} .dvamp ${sel}{${css}}`, W = (sel, css) => `${DLX_WALK} .dvamp ${sel}{${css}}`, A = (sel, css) => `${DLX_ATK} .dvamp ${sel}{${css}}`;
-    const css = `.dvamp *{transform-box:view-box}`
-      + S('.dv-all', 'transform-origin:56px 122px') + S('.dv-cape', 'transform-origin:55px 58px') + S('.dv-tail', 'transform-origin:30px 68px')
-      + S('.dv-lB', 'transform-origin:46px 104px') + S('.dv-lF', 'transform-origin:64px 104px') + S('.dv-hd,.dvamp .dv-col', 'transform-origin:75px 58px')
-      + S('.dv-earF', 'transform-origin:92px 20px') + S('.dv-eye', 'transform-origin:85px 32px') + S('.dv-arm', 'transform-origin:88px 74px') + S('.dv-pet', 'transform-origin:22px 20px')
-      + S('.dv-streak', 'transform-origin:112px 66px') + S('.dv-spk', 'transform-origin:150px 66px') + S('.dv-fx > *', 'opacity:0')
-      + S('.dv-p1', 'transform-origin:148px 61px') + S('.dv-p2', 'transform-origin:150px 68px') + S('.dv-p3', 'transform-origin:146px 57px') // 花びらは自分の場所で回す（決めないと絵の原点で回って遠くへ飛ぶ）
-      // 待機
-      + I('.dv-all', 'animation:dv-br 2.2s ease-in-out infinite') + I('.dv-tail', 'animation:dv-ts 2.4s ease-in-out -.4s infinite') + I('.dv-cape', 'animation:dv-cs 2.2s ease-in-out -.3s infinite')
-      + I('.dv-earF', 'animation:dv-ew 3s ease-in-out infinite') + I('.dv-arm', 'animation:dv-am 2.2s ease-in-out -.2s infinite') + I('.dv-pet', 'animation:dv-pt .5s ease-in-out infinite')
-      + I('.dv-eye', 'animation:dv-bl 3.6s infinite') + W('.dv-eye', 'animation:dv-bl 3.6s infinite')
-      // 歩き
-      + W('.dv-all', 'animation:dv-wk .44s ease-in-out infinite') + W('.dv-lF', 'animation:dv-lg .44s ease-in-out infinite') + W('.dv-lB', 'animation:dv-lg .44s ease-in-out -.22s infinite')
-      + W('.dv-tail', 'animation:dv-wt .44s ease-in-out -.1s infinite') + W('.dv-cape', 'animation:dv-cw .44s ease-in-out -.06s infinite') + W('.dv-arm', 'animation:dv-wa .44s ease-in-out infinite')
-      + W('.dv-hd', 'animation:dv-hb .44s ease-in-out infinite') + W('.dv-col', 'animation:dv-hb .44s ease-in-out infinite') + W('.dv-pet', 'animation:dv-pt .3s ease-in-out infinite')
-      // 攻撃（1回）
-      + A('.dv-arm', 'animation:dv-af .62s ease-out both') + A('.dv-all', 'animation:dv-aa .62s ease-out both') + A('.dv-cape', 'animation:dv-ac .62s ease-out both') + A('.dv-tail', 'animation:dv-at .62s ease-out both')
-      + A('.dv-streak', 'animation:dv-sk .62s linear both') + A('.dv-spk', 'animation:dv-sp .62s linear both')
-      + A('.dv-p1', 'animation:dv-p1 .62s ease-out both') + A('.dv-p2', 'animation:dv-p2 .62s ease-out both') + A('.dv-p3', 'animation:dv-p3 .62s ease-out both')
-      + `@keyframes dv-br{50%{transform:translateY(1.2px)}}@keyframes dv-ts{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}@keyframes dv-cs{0%,100%{transform:skewX(0)}50%{transform:skewX(-3deg)}}`
-      + `@keyframes dv-ew{0%,88%,100%{transform:rotate(0)}92%{transform:rotate(10deg)}96%{transform:rotate(-4deg)}}@keyframes dv-am{0%,100%{transform:rotate(0)}50%{transform:rotate(-3deg)}}`
-      + `@keyframes dv-pt{0%,100%{transform:translateY(0) scaleX(1)}50%{transform:translateY(-1.6px) scaleX(.55)}}@keyframes dv-bl{0%,90%,96%,100%{transform:scaleY(1)}93%{transform:scaleY(.1)}}`
-      + `@keyframes dv-wk{0%,50%,100%{transform:translateY(0)}25%,75%{transform:translateY(-2.6px)}}@keyframes dv-lg{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(16deg)}}`
-      + `@keyframes dv-wt{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(4deg)}}@keyframes dv-cw{0%,100%{transform:skewX(-4deg)}50%{transform:skewX(-10deg)}}`
-      + `@keyframes dv-wa{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}@keyframes dv-hb{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}`
-      + `@keyframes dv-af{0%{transform:rotate(0)}22%{transform:translate(-3px,1px) rotate(-18deg)}38%{transform:translate(5px,0) rotate(42deg)}70%{transform:translate(4px,0) rotate(40deg)}100%{transform:rotate(0)}}`
-      + `@keyframes dv-aa{0%,100%{transform:translate(0,0)}22%{transform:translate(-3px,1.5px)}38%{transform:translate(5px,0)}70%{transform:translate(4px,0)}}`
-      + `@keyframes dv-ac{0%,100%{transform:skewX(0)}22%{transform:skewX(4deg)}38%{transform:skewX(-16deg)}70%{transform:skewX(-10deg)}}@keyframes dv-at{0%,100%{transform:rotate(0)}38%{transform:rotate(-16deg)}70%{transform:rotate(-8deg)}}`
-      + `@keyframes dv-sk{0%,34%{opacity:0;transform:scaleX(.1)}40%{opacity:1;transform:scaleX(1)}62%{opacity:.8;transform:scaleX(1.1)}76%,100%{opacity:0;transform:scaleX(1.15)}}`
-      + `@keyframes dv-sp{0%,36%{opacity:0;transform:scale(.2) rotate(0)}42%{opacity:1;transform:scale(1.15) rotate(20deg)}72%,100%{opacity:0;transform:scale(1.5) rotate(40deg)}}`
-      + `@keyframes dv-p1{0%,38%{opacity:0;transform:translate(0,0)}46%{opacity:1}100%{opacity:0;transform:translate(14px,-14px) rotate(170deg)}}`
-      + `@keyframes dv-p2{0%,40%{opacity:0;transform:translate(0,0)}48%{opacity:1}100%{opacity:0;transform:translate(16px,6px) rotate(-140deg)}}`
-      + `@keyframes dv-p3{0%,42%{opacity:0;transform:translate(0,0)}50%{opacity:1}100%{opacity:0;transform:translate(8px,-20px) rotate(220deg)}}`
-      + `@media (prefers-reduced-motion: reduce){.dvamp *{animation:none!important}}`;
-    const spark = (x, y, r) => { const k = r * .18; return `M${x} ${y - r}Q${x + k} ${y - k} ${x + r} ${y}Q${x + k} ${y + k} ${x} ${y + r}Q${x - k} ${y + k} ${x - r} ${y}Q${x - k} ${y - k} ${x} ${y - r}Z`; };
-    const petal = (cls, x, y, r) => `<path class="${cls}" d="M${x} ${y} q${r * .8} ${-r * 1.2} ${r * 1.8} ${-r * .2} q${-r * .5} ${r * 1.1} ${-r * 1.8} ${r * .2}Z" fill="#e0304a" stroke="${OL}" stroke-width=".8"/>`;
-    return svg(`<style>${css}</style><g class="dvamp"><g class="dv-all">` +
-      // マント（後ろ。赤い裏地が左にのぞく）
-      `<g class="dv-cape">` + part("M28 58 Q8 84 4 118 Q24 110 40 120 Q54 108 68 120 Q82 110 94 117 Q92 84 82 58Z", C.black, { sx: 4, sy: 4, hl: [24, 84, 4, 12], inner: `<path d="M32 62 Q16 86 12 112 Q24 106 34 112 Q30 88 38 64Z" fill="#c8283f"/><path d="M14 108 Q20 98 30 104" stroke="#ff7a8a" stroke-width="2" fill="none" opacity=".7"/>` }) + `</g>` +
-      // しっぽ（オレンジのまま・先は白）
-      `<g class="dv-tail">` + part("M14 74 Q-2 56 10 34 Q20 56 34 62Z", C.orange, { sx: 3, sy: 3, inner: `<path d="M2 40 Q8 34 14 40 L12 50Z" fill="#fff"/>` }) + `</g>` +
-      // 足（黒いブーツ）: 後ろ・前を別々に（歩きで交互に振る）
-      `<g class="dv-lB">` + line("M46 104 L42 122", 6, OL) + line("M46 104 L42 121", 3.5, "#4b4566") + `</g>` +
-      `<g class="dv-lF">` + line("M64 104 L68 122", 6, OL) + line("M64 104 L68 121", 3.5, "#4b4566") + `</g>` +
-      // 立ち襟（頭の後ろで左右に開く・赤い裏）。頭と一緒に揺れる
-      `<g class="dv-col">` + part("M36 62 Q20 34 38 8 Q50 34 60 50 L84 50 Q94 30 112 18 Q108 46 92 62Z", C.black, { sx: 2, sy: 2, ow: 5, inner: `<path d="M40 56 Q28 36 40 16 Q48 36 56 50Z" fill="#c8283f"/><path d="M90 56 Q98 38 108 26 Q104 44 94 58Z" fill="#c8283f"/>` }) + `</g>` +
-      // 体（黒い上着・白いひだ襟・赤い宝石）
-      part("M30 86 Q28 56 56 52 Q86 52 84 86 Q80 110 56 110 Q32 108 30 86Z", C.dark, { hl: [46, 64, 10, 7], inner: `<path d="M44 55 Q50 62 56 56 Q62 62 68 55 L64 70 Q56 75 48 70Z" fill="#fff" stroke="${OL}" stroke-width="1.6"/><path d="M50 62 Q56 66 62 62" stroke="#c9d0e8" stroke-width="1.2" fill="none"/><path d="M56 72 L62 79 L56 87 L50 79Z" fill="#ff3a5a" stroke="${OL}" stroke-width="2"/><circle cx="54.4" cy="77" r="1.6" fill="#ffd0d8"/><path d="M40 96 Q56 102 72 96" stroke="#ffd34d" stroke-width="2.2" fill="none"/>` }) +
-      // 頭（耳・顔・目・鼻・口元と小さな牙）
-      `<g class="dv-hd">` +
-        part("M50 22 L46 2 L66 16Z", C.orange, { sx: 2, sy: 2, ow: 6, inner: `<path d="M51 18 L49 7 L59 15Z" fill="#3a3656"/>` }) +
-        `<g class="dv-earF">` + part("M84 20 L94 0 L98 22Z", C.orange, { sx: 2, sy: 2, ow: 6, inner: `<path d="M88 18 L93 7 L95 19Z" fill="#3a3656"/>` }) + `</g>` +
-        part("M46 34 Q46 12 74 12 Q102 12 104 34 L112 42 Q104 56 76 58 Q50 58 46 34Z", C.orange, { hl: [62, 22, 9, 5], inner: `<path d="M80 44 Q96 40 112 42 Q104 58 78 58Z" fill="#fff6e6"/>` }) +
-        `<g class="dv-eye">` + eye(76, 32, 6, "#e0304a", { iris2: "#ffd0d8" }) + eye(94, 31, 5.2, "#e0304a", { iris2: "#ffd0d8" }) + `</g>` +
-        `<circle cx="111" cy="42" r="3.2" fill="${OL}"/>` + blush(70, 46, 4) +
-        `<path d="M88 51 Q93 54.4 98 50.6" stroke="${OL}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M89.6 52.4 L91 57.4 L92.6 52.9Z M94.8 52.6 L96 57 L97.4 52.2Z" fill="#fff" stroke="${OL}" stroke-width="1.2" stroke-linejoin="round"/>` +
-      `</g>` +
-      // 細い銀の剣と、こうもりの羽の鍔（紫）: 鍔のあたりを支点に、引いて・突く
-      `<g class="dv-arm">` + part("M90 68 L123 28 L127 32 L94 73Z", C.white, { sx: 2, sy: 2, ow: 5, hl: [108, 48, 10, 2] }) +
-        part("M80 72 Q84 62 90 66 Q94 58 100 62 Q104 68 102 74 Q97 71 95 78 Q91 72 88 79 Q85 73 80 72Z", C.purple, { sx: 1, sy: 1, ow: 4 }) +
-        `<circle cx="91" cy="71" r="2.6" fill="#ff3a5a" stroke="${OL}" stroke-width="1.4"/></g>` +
-      // 月と、こうもりの相棒
-      `<path d="M124 6 A9 9 0 1 0 128 22 A7 7 0 1 1 124 6Z" fill="#fff3b0" stroke="${OL}" stroke-width="2" opacity=".95"/>` +
-      `<g class="dv-pet">` + dlxBat(22, 20, 1.2) + `</g>` +
-      `</g>` +
-      // 攻撃の光（突いた先）: 光の筋・火花・バラの花びら3枚
-      `<g class="dv-fx"><path class="dv-streak" d="M112 66 Q134 62.6 156 66 Q134 69.4 112 66Z" fill="#fff6f8" stroke="#ff7a8a" stroke-width="1.2" stroke-linejoin="round"/>` +
-      `<path class="dv-spk" d="${spark(150, 66, 8)}" fill="#fff" stroke="#ff5a7a" stroke-width="1.4" stroke-linejoin="round"/>` +
-      petal('dv-p1', 146, 62, 3.4) + petal('dv-p2', 148, 69, 3) + petal('dv-p3', 144, 58, 2.6) + `</g></g>`);
-  };
+  DLX.sk_dashFox_vamp = () => svg(
+    // マント（後ろ。赤い裏地が左にのぞく）
+    part("M28 58 Q8 84 4 118 Q24 110 40 120 Q54 108 68 120 Q82 110 94 117 Q92 84 82 58Z", C.black, { sx: 4, sy: 4, hl: [24, 84, 4, 12], inner: `<path d="M32 62 Q16 86 12 112 Q24 106 34 112 Q30 88 38 64Z" fill="#c8283f"/><path d="M14 108 Q20 98 30 104" stroke="#ff7a8a" stroke-width="2" fill="none" opacity=".7"/>` }) +
+    // しっぽ（オレンジのまま・先は白）
+    part("M14 74 Q-2 56 10 34 Q20 56 34 62Z", C.orange, { sx: 3, sy: 3, inner: `<path d="M2 40 Q8 34 14 40 L12 50Z" fill="#fff"/>` }) +
+    // 足（黒いブーツ）
+    line("M46 104 L42 122 M64 104 L68 122", 6, OL) + line("M46 104 L42 121 M64 104 L68 121", 3.5, "#4b4566") +
+    // 立ち襟（頭の後ろで左右に開く・赤い裏）
+    part("M36 62 Q20 34 38 8 Q50 34 60 50 L84 50 Q94 30 112 18 Q108 46 92 62Z", C.black, { sx: 2, sy: 2, ow: 5, inner: `<path d="M40 56 Q28 36 40 16 Q48 36 56 50Z" fill="#c8283f"/><path d="M90 56 Q98 38 108 26 Q104 44 94 58Z" fill="#c8283f"/>` }) +
+    // 体（黒い上着・白いひだ襟・赤い宝石）
+    part("M30 86 Q28 56 56 52 Q86 52 84 86 Q80 110 56 110 Q32 108 30 86Z", C.dark, { hl: [46, 64, 10, 7], inner: `<path d="M44 55 Q50 62 56 56 Q62 62 68 55 L64 70 Q56 75 48 70Z" fill="#fff" stroke="${OL}" stroke-width="1.6"/><path d="M50 62 Q56 66 62 62" stroke="#c9d0e8" stroke-width="1.2" fill="none"/><path d="M56 72 L62 79 L56 87 L50 79Z" fill="#ff3a5a" stroke="${OL}" stroke-width="2"/><circle cx="54.4" cy="77" r="1.6" fill="#ffd0d8"/><path d="M40 96 Q56 102 72 96" stroke="#ffd34d" stroke-width="2.2" fill="none"/>` }) +
+    // 耳（オレンジ・内側は黒）
+    part("M50 22 L46 2 L66 16Z", C.orange, { sx: 2, sy: 2, ow: 6, inner: `<path d="M51 18 L49 7 L59 15Z" fill="#3a3656"/>` }) + part("M84 20 L94 0 L98 22Z", C.orange, { sx: 2, sy: 2, ow: 6, inner: `<path d="M88 18 L93 7 L95 19Z" fill="#3a3656"/>` }) +
+    // 頭（オレンジ・白い口元）
+    part("M46 34 Q46 12 74 12 Q102 12 104 34 L112 42 Q104 56 76 58 Q50 58 46 34Z", C.orange, { hl: [62, 22, 9, 5], inner: `<path d="M80 44 Q96 40 112 42 Q104 58 78 58Z" fill="#fff6e6"/>` }) +
+    // 赤い目・鼻・小さな牙
+    eye(76, 32, 6, "#e0304a", { iris2: "#ffd0d8" }) + eye(94, 31, 5.2, "#e0304a", { iris2: "#ffd0d8" }) + `<circle cx="111" cy="42" r="3.2" fill="${OL}"/>` + blush(70, 46, 4) +
+        // 細い銀の剣と、こうもりの羽の鍔（紫）
+    part("M90 68 L123 28 L127 32 L94 73Z", C.white, { sx: 2, sy: 2, ow: 5, hl: [108, 48, 10, 2] }) +
+    part("M80 72 Q84 62 90 66 Q94 58 100 62 Q104 68 102 74 Q97 71 95 78 Q91 72 88 79 Q85 73 80 72Z", C.purple, { sx: 1, sy: 1, ow: 4 }) +
+    `<circle cx="91" cy="71" r="2.6" fill="#ff3a5a" stroke="${OL}" stroke-width="1.4"/>` +
+    // 口元と小さな牙（剣の刃の左＝隠れない所に）
+    `<path d="M88 51 Q93 54.4 98 50.6" stroke="${OL}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M89.6 52.4 L91 57.4 L92.6 52.9Z M94.8 52.6 L96 57 L97.4 52.2Z" fill="#fff" stroke="${OL}" stroke-width="1.2" stroke-linejoin="round"/>` +
+    // 月と、こうもりの相棒
+    `<path d="M124 6 A9 9 0 1 0 128 22 A7 7 0 1 1 124 6Z" fill="#fff3b0" stroke="${OL}" stroke-width="2" opacity=".95"/>` +
+    dlxBat(22, 20, 1.2)
+  );
 
   const MAP = {
     guardTurtle:A.guard, arrowBird:A.archer, dashFox:A.knight, bombFrog:A.bomber, owlSage:A.mage,
@@ -12916,6 +12873,7 @@ const Game = (()=>{
   }
   function start(){
     load();
+    try{ ggSprPreloadOn(); }catch(e){}
     $('titleCrest').innerHTML = SVG.get('crest');
     show('title');
   }
@@ -13242,6 +13200,7 @@ const Game = (()=>{
   var __fwC=0; try{ window.addEventListener('resize', function(){ __fwC=0; }); }catch(e){}
   function fieldW(){ if(!__fwC) __fwC=$('field').clientWidth; return __fwC; }
   function enterBattle(stage){
+    try{ ggSprPreloadOn(); }catch(e){}
     try{ if(window.GGVFX) GGVFX.clear(); }catch(e){}
     curStage=stage;
     B = freshBattle(stage);
@@ -13417,7 +13376,7 @@ const Game = (()=>{
     const __atk=Math.round(__st.atk*__lb);
     if(__part) el.classList.add('haspart');
     B.allies.push({ key, el, x, dir, hp:__hp, hpMax:__hp, atk:__atk, speed:r.speed, range:r.range, cd:0, atkCd:0.7*(1-(skinBuff().atkSpd||0)), splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0, part:__part });
-    { var __kt=ggKsTheme(key); if(__kt){ var __cv=el.querySelector('.cv'); if(__cv) __cv.innerHTML=ggKsSVG(key,1); ggVfx(__kt,'summon',{x:x, y:($('field').clientHeight||300)-14}); ggKsCutin(key); } ggKsWrap(__kt, 'summon', function(){ ggOnSummon(B.allies[B.allies.length-1]); }); } // ガチャ2: SR以上の登場演出・SSR/LRの必殺技（10-21 夜: スキンは専用の演出）
+    { var __kt=ggKsTheme(key); if(__kt){ var __cv=el.querySelector('.cv'); var __sh=ggSprUnit(key, el); if(__cv) __cv.innerHTML=__sh||ggKsSVG(key,1); if(__sh) B.allies[B.allies.length-1].ggSpr=1; ggVfx(__kt,'summon',{x:x, y:($('field').clientHeight||300)-14}); ggKsCutin(key); } ggKsWrap(__kt, 'summon', function(){ ggOnSummon(B.allies[B.allies.length-1]); }); } // ガチャ2: SR以上の登場演出・SSR/LRの必殺技（10-21 夜: スキンは専用の演出）
   }
   /* 敵の特徴（10-17 要素11）。[印, 札の名前, ひとこと] */
   function ggTrait(type, t){
@@ -14245,8 +14204,9 @@ const Game = (()=>{
         // survive/塔(エンドレス)は敵城が無敵＝攻撃せず右前線で待機。通常面のみ敵城を攻撃。
         if(!survive && !B.stage.endless && a.cd<=0){ B.castleE-=__atk; a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); { var __v2=ALLY_VIS[a.key]; if(__v2&&__v2.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, enemyCastleX, (__v2.projDelay||0)); } } }
       }else{
-        a.x += a.speed*dt;
+        a.x += a.speed*dt; a.ggMv=1;
       }
+      if(a.ggSpr){ var __still=!a.ggMv; if(__still!==a.ggStill){ a.ggStill=__still; a.el.classList.toggle('ggstill', __still); } a.ggMv=0; }
       place(a.el, a.x);
     });
     // 敵：左へ。味方 or 自城と戦う
@@ -15080,7 +15040,7 @@ const Game = (()=>{
     var h='<div class="ggks-hd"><b>👕 スキン</b><small>別絵と専用の演出・強さは同じ</small></div>';
     if(!list.length){ h+='<div class="ggks-note">このキャラのスキンはまだない。ショップに新しいスキンが入ったら、ここで着られる。</div>'; box.innerHTML=h; acts.appendChild(box); return; }
     h+='<div class="ggks-row"><button class="ggks-ch'+(on?'':' on')+'" data-id=""><span class="ggks-mini cpidle">'+ggKsSVG(key,0,'')+'</span>ふつう<small>'+(on?'もどす':'着ている')+'</small></button>';
-    list.forEach(function(d){ var own=ggKsOwn(key,d.id); h+='<button class="ggks-ch'+(own?' own':'')+(on===d.id?' on':'')+'" style="--c:'+d.c+'" data-id="'+d.id+'"><span class="ggks-mini cpidle">'+ggKsSVG(key,0,d.id)+'</span>'+d.nm.replace(/・/g,'・<wbr>')+'<small>'+(on===d.id?'着ている':own?'着る':GG_ECO_IC.cr+ggNum(d.pr))+'</small></button>'; });
+    list.forEach(function(d){ var own=ggKsOwn(key,d.id); h+='<button class="ggks-ch'+(own?' own':'')+(on===d.id?' on':'')+'" style="--c:'+d.c+'" data-id="'+d.id+'"><span class="ggks-mini cpidle">'+ggSprArt(key,d.id,ggKsSVG(key,0,d.id))+'</span>'+d.nm.replace(/・/g,'・<wbr>')+'<small>'+(on===d.id?'着ている':own?'着る':GG_ECO_IC.cr+ggNum(d.pr))+'</small></button>'; });
     h+='</div>'; box.innerHTML=h; acts.appendChild(box);
     [].forEach.call(box.querySelectorAll('.ggks-ch'), function(b){ b.onclick=function(){ var id=b.getAttribute('data-id');
       if(!id || ggKsOwn(key,id)){ ggKsEquip(key,id); openUnitPop(key,'charup'); try{ renderCharup(); }catch(e){} return; }
@@ -15091,7 +15051,7 @@ const Game = (()=>{
     var card=$('unitPopCard'), d=ggDlx(id), r=d&&ROSTER[d.key]; if(!card||!d||!r) return;
     var have=!!owned[d.key], left=ggEco.cr-d.pr, ok=have && left>=0;
     card.innerHTML='<div class="ggcf"><div class="ggcf-hd">かくにん</div><div class="ggcf-nm">'+esc(r.name)+'<br>'+ggKsTitle(d.key, d.id)+'</div>'
-      +'<div class="ggks-pv"><div><span class="cpidle">'+ggKsSVG(d.key,0,'')+'</span><b>ふつう</b></div><div style="font-weight:900;color:#e0a93b">▶</div><div><span class="dlx cpidle" style="--c:'+d.c+'">'+ggKsSVG(d.key,0,d.id)+'</span><b>スキン</b></div></div>'
+      +'<div class="ggks-pv"><div><span class="cpidle">'+ggKsSVG(d.key,0,'')+'</span><b>ふつう</b></div><div style="font-weight:900;color:#e0a93b">▶</div><div><span class="dlx cpidle" style="--c:'+d.c+'">'+ggSprArt(d.key,d.id,ggKsSVG(d.key,0,d.id))+'</span><b>スキン</b></div></div>'
       +'<div class="ggcf-ds">'+d.ds+'<br>強さは変わらない（見た目と演出だけ）。</div>'
       +'<div class="ggcf-need"><span>必要</span>'+GG_ECO_IC.cr+'<b>'+ggNum(d.pr)+'</b></div>'
       +(have?'<div class="ggcf-row"><span>所持</span><span>'+ggNum(ggEco.cr)+'<i class="ggcf-ar">▶</i>'+(left>=0?ggNum(left):'<b class="ggcf-ng">たりないよ</b>')+'</span></div>':'<div class="ggcf-row"><span>キャラ</span><span><b class="ggcf-ng">このキャラを持っていない</b></span></div>')
@@ -15105,9 +15065,51 @@ const Game = (()=>{
     var h='<div class="ggsp-sec">スキン（豪華版）</div><div class="ggdlx-grid">';
     GG_DLX.forEach(function(d){ var r=ROSTER[d.key]; if(!r) return; var own=ggKsOwn(d.key,d.id), on=ggKsOn(d.key)===d.id, have=!!owned[d.key];
       h+='<button class="ggdlx-card" data-ks="'+d.id+'" style="--c:'+d.c+';--rc:'+r.rarColor+'"><span class="ggdlx-rar">'+r.rar+'</span>'+(own?'':'<span class="ggdlx-tag">NEW</span>')
-        +'<span class="ggdlx-art cpidle">'+ggKsSVG(d.key,0,d.id)+'</span><span class="ggdlx-nm">'+esc(r.name)+'<b>［'+d.nm.replace(/・/g,'・<wbr>')+'］</b></span>'
+        +'<span class="ggdlx-art cpidle">'+ggSprArt(d.key,d.id,ggKsSVG(d.key,0,d.id))+'</span><span class="ggdlx-nm">'+esc(r.name)+'<b>［'+d.nm.replace(/・/g,'・<wbr>')+'］</b></span>'
         +(on?'<span class="ggdlx-pr own">着ている</span>':own?'<span class="ggdlx-pr own">持っている</span>':!have?'<span class="ggdlx-pr no">キャラを持っていない</span>':'<span class="ggdlx-pr">'+GG_ECO_IC.cr+ggNum(d.pr)+'</span>')+'</button>'; });
     return h+'</div>';
+  }
+  /* ===== 豪華版スキンのコマ送り（10-22）===== */
+  // スキンの id ごと: w＝歩きのコマ数・a＝攻撃のコマ数・wd＝歩き1周の秒・ss＝ユニットの箱に対する絵の大きさ・sb＝足もとの合わせ（下へずらす量）
+  var GG_SPR = {
+    pk:   {w:16, a:15, wd:1.2, ss:'111%', sb:'-3%'},
+    vamp: {w:16, a:16, wd:0.8, ss:'134%', sb:'-9%'}
+  };
+  var GG_SPR_BASE = (typeof window!=='undefined' && window.GG_SPR_BASE) || 'gg-sprites/';
+  var GG_SPR_ST = {}, GG_SPR_CB = {}; // id → 1 読み込み中 / 2 読めた / 3 読めなかった
+  function ggSprUrl(id, k){ return GG_SPR_BASE + id + (k==='a'?'_atk':'_walk') + '.webp'; }
+  function ggSprCss(){
+    try{ if(!document.head || document.getElementById('ggsprcss')) return; }catch(e){ return; } var t='';
+    Object.keys(GG_SPR).forEach(function(id){ var s=GG_SPR[id], w=s.w, a=s.a;
+      t+='.ggspr.s-'+id+'{--ss:'+s.ss+';--sb:'+s.sb+';background-image:url('+ggSprUrl(id,'w')+');background-size:'+(w*100)+'% 100%;animation:ggspr-'+id+'-w '+s.wd+'s steps('+w+') infinite}'
+        +'.unit.ggstill .ggspr.s-'+id+'{background-image:url('+ggSprUrl(id,'a')+');background-size:'+(a*100)+'% 100%;background-position:0 0;animation:none}'
+        +'.unit.attacking .ggspr.s-'+id+'{background-image:url('+ggSprUrl(id,'a')+');background-size:'+(a*100)+'% 100%;animation:ggspr-'+id+'-a var(--ad,700ms) steps('+a+') 1 both}'
+        +'@keyframes ggspr-'+id+'-w{from{background-position:0 0}to{background-position:'+(w/(w-1)*100).toFixed(4)+'% 0}}'
+        +'@keyframes ggspr-'+id+'-a{from{background-position:0 0}to{background-position:'+(a/(a-1)*100).toFixed(4)+'% 0}}'; });
+    var st=document.createElement('style'); st.id='ggsprcss'; st.textContent=t; document.head.appendChild(st);
+  }
+  // 歩きと攻撃の2枚を読む。読めたら同じ id の差しかえ待ちの所（data-sprid）を全部コマ送りにする
+  function ggSprLoad(id){
+    if(!GG_SPR[id] || GG_SPR_ST[id]) return; if(typeof Image==='undefined'){ GG_SPR_ST[id]=3; return; } // 画像の無い所（node の試験）では読まない＝今の絵
+    GG_SPR_ST[id]=1; var n=0, bad=false;
+    ['w','a'].forEach(function(k){ var im=new Image(); im.onload=function(){ if(++n===2 && !bad){ GG_SPR_ST[id]=2; ggSprSwap(id); } }; im.onerror=function(){ bad=true; GG_SPR_ST[id]=3; }; im.src=ggSprUrl(id,k); });
+  }
+  function ggSprReady(id){ return GG_SPR_ST[id]===2; }
+  function ggSprSwap(id){ try{ [].forEach.call(document.querySelectorAll('[data-sprid="'+id+'"]'), function(h){ h.innerHTML='<i class="ggspr s-'+id+'"></i>'; h.removeAttribute('data-sprid'); }); }catch(e){} }
+  // 着ているスキンのぶんを先に読む（起動のときと戦いの始め）
+  function ggSprPreloadOn(){ try{ ggSprCss(); Object.keys(ggKs.sk).forEach(function(k){ var on=ggKsOn(k); if(on && GG_SPR[on]) ggSprLoad(on); }); }catch(e){} }
+  // 戦場のユニット: 読めていればコマ送りの HTML（読めていなければ ''＝今の絵のまま）
+  function ggSprUnit(key, el){
+    var id=ggKsOn(key); if(!id || !GG_SPR[id]) return ''; ggSprCss();
+    if(!ggSprReady(id)){ ggSprLoad(id); return ''; }
+    var ad=(el && +el.dataset.atkdur) || 700;
+    return '<i class="ggspr-sh"></i><i class="ggspr s-'+id+'" style="--ad:'+ad+'ms"></i>';
+  }
+  // ショップ・かくにん・スキン欄: 読めていれば歩きのコマ送り、まだなら今の絵を出して、読めたら差しかえる
+  function ggSprArt(key, id, svg){
+    if(!id || !GG_SPR[id]) return svg; ggSprCss();
+    if(ggSprReady(id)) return '<span class="ggspr-host"><i class="ggspr s-'+id+'"></i></span>';
+    ggSprLoad(id); return '<span class="ggspr-host" data-sprid="'+id+'">'+svg+'</span>';
   }
   /* ===== 城のカスタム（10-21 夜）===== */
   var GG_CS_PAINT = [{k:'shiro',nm:'白',c:'#ecebe4'},{k:'hai',nm:'灰',c:'#a6acb3'},{k:'kuro',nm:'黒',c:'#4a4858'},{k:'aka',nm:'赤',c:'#e05a5a'},{k:'dai',nm:'橙',c:'#f09a3a'},{k:'ki',nm:'黄',c:'#ecd24a'},{k:'midori',nm:'緑',c:'#5fb85f'},{k:'mizu',nm:'水色',c:'#6ec6e6'},{k:'ao',nm:'青',c:'#4f7fd9'},{k:'murasaki',nm:'紫',c:'#9a6ad9'},{k:'momo',nm:'桃',c:'#ee8fb8'},{k:'kin',nm:'金',c:'#e8be3c'}];
@@ -15640,7 +15642,7 @@ const Game = (()=>{
     godCastle(){ if(!B) return 'no battle'; B.castleA=B.castleAMax=1e9; return 'castle invincible (test)'; }, // 検証用：自城を実質無敵に（完走テスト）
     // 90%正答で1問解く（left=正解固定の前提。fresh問題があるときだけ）
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
-    ggB(){ return B; }, ggEcoGet(){ return ggEco; }, ggEcoSet(o){ ggEco=ggEcoNorm(o); }, ggShopBuy(id,q){ return ggShopBuy(id,q); }, ggAwUp(k){ return ggAwUp(k); }, ggUnitStats(k){ return unitStats(k); }, ggStatsAtLv(k,l){ return statsAtLv(k,l); }, ggOwn(k,n){ owned[k]=n||1; }, ggPvpCard(n){ return pvpMakeCardObj(n||'t'); }, ggKsGet(){ return ggKs; }, ggCsBuy(s,k){ return ggCsBuy(s,k); }, ggCsSet(s,k){ return ggCsSet(s,k); }, ggCsSVG(on){ return ggCsSVG(null, on); }, ggCastleSVG(){ return castleSkinSVG(); }, ggKsSet(o){ ggKs=ggKsNorm(o); }, ggKsBuy(k,t){ return ggKsBuy(k,t); }, ggKsSVG(k,l,t){ return ggKsSVG(k,l,t); }, ggKsRefund(raw){ ggKsRefund(raw); return ggKsRefundMsg; }, ggDlxList(){ return GG_DLX; }, ggPvpSide(c){ var __s=pvpSnap(); var __r=pvpComputeSide(c); pvpRestore(__s); return __r; }, ggDay(){ return ggDayNum(); }, ggEcoDrop(r,c){ var __b=B; B={correct:c}; try{ return ggEcoEnd(r); } finally{ B=__b; } }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
+    ggB(){ return B; }, ggEcoGet(){ return ggEco; }, ggEcoSet(o){ ggEco=ggEcoNorm(o); }, ggShopBuy(id,q){ return ggShopBuy(id,q); }, ggAwUp(k){ return ggAwUp(k); }, ggUnitStats(k){ return unitStats(k); }, ggStatsAtLv(k,l){ return statsAtLv(k,l); }, ggOwn(k,n){ owned[k]=n||1; }, ggPvpCard(n){ return pvpMakeCardObj(n||'t'); }, ggKsGet(){ return ggKs; }, ggCsBuy(s,k){ return ggCsBuy(s,k); }, ggCsSet(s,k){ return ggCsSet(s,k); }, ggCsSVG(on){ return ggCsSVG(null, on); }, ggCastleSVG(){ return castleSkinSVG(); }, ggKsSet(o){ ggKs=ggKsNorm(o); }, ggKsBuy(k,t){ return ggKsBuy(k,t); }, ggKsSVG(k,l,t){ return ggKsSVG(k,l,t); }, ggKsRefund(raw){ ggKsRefund(raw); return ggKsRefundMsg; }, ggDlxList(){ return GG_DLX; }, ggSprSt(){ return GG_SPR_ST; }, ggSprList(){ return GG_SPR; }, ggPvpSide(c){ var __s=pvpSnap(); var __r=pvpComputeSide(c); pvpRestore(__s); return __r; }, ggDay(){ return ggDayNum(); }, ggEcoDrop(r,c){ var __b=B; B={correct:c}; try{ return ggEcoEnd(r); } finally{ B=__b; } }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
       return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), rt:Math.round(B.lastReactMs||0), rg:+(((B.lastReadGain==null)?1:B.lastReadGain).toFixed(3)), masher:!!B.masher, missStreak:B.missStreak||0, qAge:(curQ?Math.round(performance.now()-(curQ.shownAt||performance.now())):null), qLocked:!!(curQ&&curQ.locked), qcc:(curQ&&curQ.choiceCount)||null, gems:gems, learnGemToday:learnGemToday, learnGemDay:learnGemDay, wasCleared:!!B.wasCleared, partUnit:pu }; }
