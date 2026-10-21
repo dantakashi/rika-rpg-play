@@ -149,6 +149,13 @@
   .ggpc .ft .ggpc-cas{display:inline-block; width:22px; height:26px; vertical-align:-8px; margin-right:4px}
   .ggpc .ft .ggpc-cas svg{width:100%; height:100%; display:block; overflow:visible}
 
+  /* ===== 豪華版スキンのコマ送り（10-22）。絵の場所と枚数はスキンごとに JS が足す（ggSprCss） ===== */
+  .ggspr{position:absolute; left:50%; bottom:var(--sb,0); width:var(--ss,120%); height:var(--ss,120%); transform:translateX(-50%); background-repeat:no-repeat; background-position:0 0; pointer-events:none; display:block}
+  .ggspr-sh{position:absolute; left:50%; bottom:-3%; width:66%; height:13%; transform:translateX(-50%); border-radius:50%; background:radial-gradient(closest-side,#0003,#0002 60%,#0000); pointer-events:none} /* 足もとの影（焼くときは描かせていない） */
+  .ggspr-host{position:relative; display:block; height:100%; aspect-ratio:1/1; margin:0 auto}
+  .ggspr-host .ggspr{width:auto; aspect-ratio:1/1}
+  @media (prefers-reduced-motion: reduce){ .ggspr{animation:none!important} }
+
   /* ===== キャラのスキン（豪華版・10-21 夜）===== */
   .ggks-box{padding:8px 10px; border-radius:12px; background:linear-gradient(#fffaf2,#fff1dc); border:2px solid #f0c98a; text-align:left}
   .ggks-hd{display:flex; align-items:center; justify-content:space-between; font-size:14px}
@@ -12866,6 +12873,7 @@ const Game = (()=>{
   }
   function start(){
     load();
+    try{ ggSprPreloadOn(); }catch(e){}
     $('titleCrest').innerHTML = SVG.get('crest');
     show('title');
   }
@@ -13192,6 +13200,7 @@ const Game = (()=>{
   var __fwC=0; try{ window.addEventListener('resize', function(){ __fwC=0; }); }catch(e){}
   function fieldW(){ if(!__fwC) __fwC=$('field').clientWidth; return __fwC; }
   function enterBattle(stage){
+    try{ ggSprPreloadOn(); }catch(e){}
     try{ if(window.GGVFX) GGVFX.clear(); }catch(e){}
     curStage=stage;
     B = freshBattle(stage);
@@ -13367,7 +13376,7 @@ const Game = (()=>{
     const __atk=Math.round(__st.atk*__lb);
     if(__part) el.classList.add('haspart');
     B.allies.push({ key, el, x, dir, hp:__hp, hpMax:__hp, atk:__atk, speed:r.speed, range:r.range, cd:0, atkCd:0.7*(1-(skinBuff().atkSpd||0)), splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0, part:__part });
-    { var __kt=ggKsTheme(key); if(__kt){ var __cv=el.querySelector('.cv'); if(__cv) __cv.innerHTML=ggKsSVG(key,1); ggVfx(__kt,'summon',{x:x, y:($('field').clientHeight||300)-14}); ggKsCutin(key); } ggKsWrap(__kt, 'summon', function(){ ggOnSummon(B.allies[B.allies.length-1]); }); } // ガチャ2: SR以上の登場演出・SSR/LRの必殺技（10-21 夜: スキンは専用の演出）
+    { var __kt=ggKsTheme(key); if(__kt){ var __cv=el.querySelector('.cv'); var __sh=ggSprUnit(key, el); if(__cv) __cv.innerHTML=__sh||ggKsSVG(key,1); if(__sh) B.allies[B.allies.length-1].ggSpr=1; ggVfx(__kt,'summon',{x:x, y:($('field').clientHeight||300)-14}); ggKsCutin(key); } ggKsWrap(__kt, 'summon', function(){ ggOnSummon(B.allies[B.allies.length-1]); }); } // ガチャ2: SR以上の登場演出・SSR/LRの必殺技（10-21 夜: スキンは専用の演出）
   }
   /* 敵の特徴（10-17 要素11）。[印, 札の名前, ひとこと] */
   function ggTrait(type, t){
@@ -14195,8 +14204,9 @@ const Game = (()=>{
         // survive/塔(エンドレス)は敵城が無敵＝攻撃せず右前線で待機。通常面のみ敵城を攻撃。
         if(!survive && !B.stage.endless && a.cd<=0){ B.castleE-=__atk; a.cd=(a.atkCd||0.7); flash(a.el); lunge(a.el); castleHit('castleE'); floatText(W-60, 30, '-'+Math.round(__atk), 'var(--good)'); { var __v2=ALLY_VIS[a.key]; if(__v2&&__v2.proj){ (function(aa,tx,dl){ setTimeout(function(){ fireFieldProjectile(aa,tx); }, dl); })(a, enemyCastleX, (__v2.projDelay||0)); } } }
       }else{
-        a.x += a.speed*dt;
+        a.x += a.speed*dt; a.ggMv=1;
       }
+      if(a.ggSpr){ var __still=!a.ggMv; if(__still!==a.ggStill){ a.ggStill=__still; a.el.classList.toggle('ggstill', __still); } a.ggMv=0; }
       place(a.el, a.x);
     });
     // 敵：左へ。味方 or 自城と戦う
@@ -15030,7 +15040,7 @@ const Game = (()=>{
     var h='<div class="ggks-hd"><b>👕 スキン</b><small>別絵と専用の演出・強さは同じ</small></div>';
     if(!list.length){ h+='<div class="ggks-note">このキャラのスキンはまだない。ショップに新しいスキンが入ったら、ここで着られる。</div>'; box.innerHTML=h; acts.appendChild(box); return; }
     h+='<div class="ggks-row"><button class="ggks-ch'+(on?'':' on')+'" data-id=""><span class="ggks-mini cpidle">'+ggKsSVG(key,0,'')+'</span>ふつう<small>'+(on?'もどす':'着ている')+'</small></button>';
-    list.forEach(function(d){ var own=ggKsOwn(key,d.id); h+='<button class="ggks-ch'+(own?' own':'')+(on===d.id?' on':'')+'" style="--c:'+d.c+'" data-id="'+d.id+'"><span class="ggks-mini cpidle">'+ggKsSVG(key,0,d.id)+'</span>'+d.nm.replace(/・/g,'・<wbr>')+'<small>'+(on===d.id?'着ている':own?'着る':GG_ECO_IC.cr+ggNum(d.pr))+'</small></button>'; });
+    list.forEach(function(d){ var own=ggKsOwn(key,d.id); h+='<button class="ggks-ch'+(own?' own':'')+(on===d.id?' on':'')+'" style="--c:'+d.c+'" data-id="'+d.id+'"><span class="ggks-mini cpidle">'+ggSprArt(key,d.id,ggKsSVG(key,0,d.id))+'</span>'+d.nm.replace(/・/g,'・<wbr>')+'<small>'+(on===d.id?'着ている':own?'着る':GG_ECO_IC.cr+ggNum(d.pr))+'</small></button>'; });
     h+='</div>'; box.innerHTML=h; acts.appendChild(box);
     [].forEach.call(box.querySelectorAll('.ggks-ch'), function(b){ b.onclick=function(){ var id=b.getAttribute('data-id');
       if(!id || ggKsOwn(key,id)){ ggKsEquip(key,id); openUnitPop(key,'charup'); try{ renderCharup(); }catch(e){} return; }
@@ -15041,7 +15051,7 @@ const Game = (()=>{
     var card=$('unitPopCard'), d=ggDlx(id), r=d&&ROSTER[d.key]; if(!card||!d||!r) return;
     var have=!!owned[d.key], left=ggEco.cr-d.pr, ok=have && left>=0;
     card.innerHTML='<div class="ggcf"><div class="ggcf-hd">かくにん</div><div class="ggcf-nm">'+esc(r.name)+'<br>'+ggKsTitle(d.key, d.id)+'</div>'
-      +'<div class="ggks-pv"><div><span class="cpidle">'+ggKsSVG(d.key,0,'')+'</span><b>ふつう</b></div><div style="font-weight:900;color:#e0a93b">▶</div><div><span class="dlx cpidle" style="--c:'+d.c+'">'+ggKsSVG(d.key,0,d.id)+'</span><b>スキン</b></div></div>'
+      +'<div class="ggks-pv"><div><span class="cpidle">'+ggKsSVG(d.key,0,'')+'</span><b>ふつう</b></div><div style="font-weight:900;color:#e0a93b">▶</div><div><span class="dlx cpidle" style="--c:'+d.c+'">'+ggSprArt(d.key,d.id,ggKsSVG(d.key,0,d.id))+'</span><b>スキン</b></div></div>'
       +'<div class="ggcf-ds">'+d.ds+'<br>強さは変わらない（見た目と演出だけ）。</div>'
       +'<div class="ggcf-need"><span>必要</span>'+GG_ECO_IC.cr+'<b>'+ggNum(d.pr)+'</b></div>'
       +(have?'<div class="ggcf-row"><span>所持</span><span>'+ggNum(ggEco.cr)+'<i class="ggcf-ar">▶</i>'+(left>=0?ggNum(left):'<b class="ggcf-ng">たりないよ</b>')+'</span></div>':'<div class="ggcf-row"><span>キャラ</span><span><b class="ggcf-ng">このキャラを持っていない</b></span></div>')
@@ -15055,9 +15065,51 @@ const Game = (()=>{
     var h='<div class="ggsp-sec">スキン（豪華版）</div><div class="ggdlx-grid">';
     GG_DLX.forEach(function(d){ var r=ROSTER[d.key]; if(!r) return; var own=ggKsOwn(d.key,d.id), on=ggKsOn(d.key)===d.id, have=!!owned[d.key];
       h+='<button class="ggdlx-card" data-ks="'+d.id+'" style="--c:'+d.c+';--rc:'+r.rarColor+'"><span class="ggdlx-rar">'+r.rar+'</span>'+(own?'':'<span class="ggdlx-tag">NEW</span>')
-        +'<span class="ggdlx-art cpidle">'+ggKsSVG(d.key,0,d.id)+'</span><span class="ggdlx-nm">'+esc(r.name)+'<b>［'+d.nm.replace(/・/g,'・<wbr>')+'］</b></span>'
+        +'<span class="ggdlx-art cpidle">'+ggSprArt(d.key,d.id,ggKsSVG(d.key,0,d.id))+'</span><span class="ggdlx-nm">'+esc(r.name)+'<b>［'+d.nm.replace(/・/g,'・<wbr>')+'］</b></span>'
         +(on?'<span class="ggdlx-pr own">着ている</span>':own?'<span class="ggdlx-pr own">持っている</span>':!have?'<span class="ggdlx-pr no">キャラを持っていない</span>':'<span class="ggdlx-pr">'+GG_ECO_IC.cr+ggNum(d.pr)+'</span>')+'</button>'; });
     return h+'</div>';
+  }
+  /* ===== 豪華版スキンのコマ送り（10-22）===== */
+  // スキンの id ごと: w＝歩きのコマ数・a＝攻撃のコマ数・wd＝歩き1周の秒・ss＝ユニットの箱に対する絵の大きさ・sb＝足もとの合わせ（下へずらす量）
+  var GG_SPR = {
+    pk:   {w:16, a:15, wd:1.2, ss:'111%', sb:'-3%'},
+    vamp: {w:16, a:16, wd:0.8, ss:'134%', sb:'-9%'}
+  };
+  var GG_SPR_BASE = (typeof window!=='undefined' && window.GG_SPR_BASE) || 'gg-sprites/';
+  var GG_SPR_ST = {}, GG_SPR_CB = {}; // id → 1 読み込み中 / 2 読めた / 3 読めなかった
+  function ggSprUrl(id, k){ return GG_SPR_BASE + id + (k==='a'?'_atk':'_walk') + '.webp'; }
+  function ggSprCss(){
+    try{ if(!document.head || document.getElementById('ggsprcss')) return; }catch(e){ return; } var t='';
+    Object.keys(GG_SPR).forEach(function(id){ var s=GG_SPR[id], w=s.w, a=s.a;
+      t+='.ggspr.s-'+id+'{--ss:'+s.ss+';--sb:'+s.sb+';background-image:url('+ggSprUrl(id,'w')+');background-size:'+(w*100)+'% 100%;animation:ggspr-'+id+'-w '+s.wd+'s steps('+w+') infinite}'
+        +'.unit.ggstill .ggspr.s-'+id+'{background-image:url('+ggSprUrl(id,'a')+');background-size:'+(a*100)+'% 100%;background-position:0 0;animation:none}'
+        +'.unit.attacking .ggspr.s-'+id+'{background-image:url('+ggSprUrl(id,'a')+');background-size:'+(a*100)+'% 100%;animation:ggspr-'+id+'-a var(--ad,700ms) steps('+a+') 1 both}'
+        +'@keyframes ggspr-'+id+'-w{from{background-position:0 0}to{background-position:'+(w/(w-1)*100).toFixed(4)+'% 0}}'
+        +'@keyframes ggspr-'+id+'-a{from{background-position:0 0}to{background-position:'+(a/(a-1)*100).toFixed(4)+'% 0}}'; });
+    var st=document.createElement('style'); st.id='ggsprcss'; st.textContent=t; document.head.appendChild(st);
+  }
+  // 歩きと攻撃の2枚を読む。読めたら同じ id の差しかえ待ちの所（data-sprid）を全部コマ送りにする
+  function ggSprLoad(id){
+    if(!GG_SPR[id] || GG_SPR_ST[id]) return; if(typeof Image==='undefined'){ GG_SPR_ST[id]=3; return; } // 画像の無い所（node の試験）では読まない＝今の絵
+    GG_SPR_ST[id]=1; var n=0, bad=false;
+    ['w','a'].forEach(function(k){ var im=new Image(); im.onload=function(){ if(++n===2 && !bad){ GG_SPR_ST[id]=2; ggSprSwap(id); } }; im.onerror=function(){ bad=true; GG_SPR_ST[id]=3; }; im.src=ggSprUrl(id,k); });
+  }
+  function ggSprReady(id){ return GG_SPR_ST[id]===2; }
+  function ggSprSwap(id){ try{ [].forEach.call(document.querySelectorAll('[data-sprid="'+id+'"]'), function(h){ h.innerHTML='<i class="ggspr s-'+id+'"></i>'; h.removeAttribute('data-sprid'); }); }catch(e){} }
+  // 着ているスキンのぶんを先に読む（起動のときと戦いの始め）
+  function ggSprPreloadOn(){ try{ ggSprCss(); Object.keys(ggKs.sk).forEach(function(k){ var on=ggKsOn(k); if(on && GG_SPR[on]) ggSprLoad(on); }); }catch(e){} }
+  // 戦場のユニット: 読めていればコマ送りの HTML（読めていなければ ''＝今の絵のまま）
+  function ggSprUnit(key, el){
+    var id=ggKsOn(key); if(!id || !GG_SPR[id]) return ''; ggSprCss();
+    if(!ggSprReady(id)){ ggSprLoad(id); return ''; }
+    var ad=(el && +el.dataset.atkdur) || 700;
+    return '<i class="ggspr-sh"></i><i class="ggspr s-'+id+'" style="--ad:'+ad+'ms"></i>';
+  }
+  // ショップ・かくにん・スキン欄: 読めていれば歩きのコマ送り、まだなら今の絵を出して、読めたら差しかえる
+  function ggSprArt(key, id, svg){
+    if(!id || !GG_SPR[id]) return svg; ggSprCss();
+    if(ggSprReady(id)) return '<span class="ggspr-host"><i class="ggspr s-'+id+'"></i></span>';
+    ggSprLoad(id); return '<span class="ggspr-host" data-sprid="'+id+'">'+svg+'</span>';
   }
   /* ===== 城のカスタム（10-21 夜）===== */
   var GG_CS_PAINT = [{k:'shiro',nm:'白',c:'#ecebe4'},{k:'hai',nm:'灰',c:'#a6acb3'},{k:'kuro',nm:'黒',c:'#4a4858'},{k:'aka',nm:'赤',c:'#e05a5a'},{k:'dai',nm:'橙',c:'#f09a3a'},{k:'ki',nm:'黄',c:'#ecd24a'},{k:'midori',nm:'緑',c:'#5fb85f'},{k:'mizu',nm:'水色',c:'#6ec6e6'},{k:'ao',nm:'青',c:'#4f7fd9'},{k:'murasaki',nm:'紫',c:'#9a6ad9'},{k:'momo',nm:'桃',c:'#ee8fb8'},{k:'kin',nm:'金',c:'#e8be3c'}];
@@ -15590,7 +15642,7 @@ const Game = (()=>{
     godCastle(){ if(!B) return 'no battle'; B.castleA=B.castleAMax=1e9; return 'castle invincible (test)'; }, // 検証用：自城を実質無敵に（完走テスト）
     // 90%正答で1問解く（left=正解固定の前提。fresh問題があるときだけ）
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
-    ggB(){ return B; }, ggEcoGet(){ return ggEco; }, ggEcoSet(o){ ggEco=ggEcoNorm(o); }, ggShopBuy(id,q){ return ggShopBuy(id,q); }, ggAwUp(k){ return ggAwUp(k); }, ggUnitStats(k){ return unitStats(k); }, ggStatsAtLv(k,l){ return statsAtLv(k,l); }, ggOwn(k,n){ owned[k]=n||1; }, ggPvpCard(n){ return pvpMakeCardObj(n||'t'); }, ggKsGet(){ return ggKs; }, ggCsBuy(s,k){ return ggCsBuy(s,k); }, ggCsSet(s,k){ return ggCsSet(s,k); }, ggCsSVG(on){ return ggCsSVG(null, on); }, ggCastleSVG(){ return castleSkinSVG(); }, ggKsSet(o){ ggKs=ggKsNorm(o); }, ggKsBuy(k,t){ return ggKsBuy(k,t); }, ggKsSVG(k,l,t){ return ggKsSVG(k,l,t); }, ggKsRefund(raw){ ggKsRefund(raw); return ggKsRefundMsg; }, ggDlxList(){ return GG_DLX; }, ggPvpSide(c){ var __s=pvpSnap(); var __r=pvpComputeSide(c); pvpRestore(__s); return __r; }, ggDay(){ return ggDayNum(); }, ggEcoDrop(r,c){ var __b=B; B={correct:c}; try{ return ggEcoEnd(r); } finally{ B=__b; } }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
+    ggB(){ return B; }, ggEcoGet(){ return ggEco; }, ggEcoSet(o){ ggEco=ggEcoNorm(o); }, ggShopBuy(id,q){ return ggShopBuy(id,q); }, ggAwUp(k){ return ggAwUp(k); }, ggUnitStats(k){ return unitStats(k); }, ggStatsAtLv(k,l){ return statsAtLv(k,l); }, ggOwn(k,n){ owned[k]=n||1; }, ggPvpCard(n){ return pvpMakeCardObj(n||'t'); }, ggKsGet(){ return ggKs; }, ggCsBuy(s,k){ return ggCsBuy(s,k); }, ggCsSet(s,k){ return ggCsSet(s,k); }, ggCsSVG(on){ return ggCsSVG(null, on); }, ggCastleSVG(){ return castleSkinSVG(); }, ggKsSet(o){ ggKs=ggKsNorm(o); }, ggKsBuy(k,t){ return ggKsBuy(k,t); }, ggKsSVG(k,l,t){ return ggKsSVG(k,l,t); }, ggKsRefund(raw){ ggKsRefund(raw); return ggKsRefundMsg; }, ggDlxList(){ return GG_DLX; }, ggSprSt(){ return GG_SPR_ST; }, ggSprList(){ return GG_SPR; }, ggPvpSide(c){ var __s=pvpSnap(); var __r=pvpComputeSide(c); pvpRestore(__s); return __r; }, ggDay(){ return ggDayNum(); }, ggEcoDrop(r,c){ var __b=B; B={correct:c}; try{ return ggEcoEnd(r); } finally{ B=__b; } }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
       return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), rt:Math.round(B.lastReactMs||0), rg:+(((B.lastReadGain==null)?1:B.lastReadGain).toFixed(3)), masher:!!B.masher, missStreak:B.missStreak||0, qAge:(curQ?Math.round(performance.now()-(curQ.shownAt||performance.now())):null), qLocked:!!(curQ&&curQ.locked), qcc:(curQ&&curQ.choiceCount)||null, gems:gems, learnGemToday:learnGemToday, learnGemDay:learnGemDay, wasCleared:!!B.wasCleared, partUnit:pu }; }
