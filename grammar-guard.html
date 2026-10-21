@@ -123,6 +123,145 @@
   .unit .hpb i{display:block; height:100%; background:#fff}
   .unit.hit{filter:brightness(1.7)}
 
+  /* ===== ショップ・クラウン・覚醒（10-21 夜）===== */
+  .ggic{display:inline-block; width:1em; height:1em; vertical-align:-.15em; flex:0 0 auto}
+  .ggcrpill{display:inline-flex; align-items:center; gap:3px; cursor:pointer; font:inherit; color:inherit}
+  .ggcrpill .ggic{width:15px; height:15px}
+  @media (max-width:599px){ #ggCrPill{display:none} }
+  #unitPop .btn:disabled{filter:grayscale(.7); opacity:.5; box-shadow:none; cursor:default}
+  #ggShopSub .ggic{width:14px; height:14px}
+  #unitPop .card{max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px); overflow:auto}
+  /* 結果画面のドロップ（けしケシの「かくとくしたもの」: 飾りの見出し・丸の中の物と数） */
+  .ggeco{display:block; width:100%; max-width:440px; margin:6px 0; padding:6px 10px 10px; border-radius:14px; background:#fff; border:3px solid #d8cdb5; text-align:center}
+  .ggeco.none{padding:6px 10px; border-style:dashed}
+  .ggeco-hd{display:block; font-size:12px; font-weight:900; color:#6b5a3a; letter-spacing:2px; margin-bottom:6px}
+  .ggeco-hd::before,.ggeco-hd::after{content:'❦'; margin:0 8px; color:#b9a37a; letter-spacing:0}
+  .ggeco-rws{display:flex; justify-content:center; flex-wrap:wrap; gap:10px 14px}
+  .ggeco-rv{display:flex; flex-direction:column; align-items:center; min-width:52px}
+  .ggeco-rv i{width:46px; height:46px; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:22px; background:radial-gradient(circle at 35% 30%,#fff,#f3e6c4 70%); border:3px solid #c9a24a; box-shadow:0 2px 0 #9a7a2a; animation:ggecoin .45s cubic-bezier(.3,1.6,.5,1) both}
+  .ggeco-rv i .ggic{width:30px; height:30px}
+  .ggeco-rv b{font-size:15px; font-weight:900; color:#4a3412; margin-top:3px; line-height:1.1}
+  .ggeco-rv small{font-size:10.5px; color:#7a6a4a; font-weight:800}
+  .ggeco-m{margin-top:8px; font-size:12px; font-weight:800; color:#4a3412}
+  .ggeco-m b{color:#c0392b; font-size:14px}
+  .ggeco-gr{display:inline-block; padding:0 9px; border-radius:6px; color:#fff; background:var(--c); font-weight:900}
+  .ggeco-nx{display:block; margin-top:4px; font-size:11.5px; color:#6b6457; line-height:1.45}
+  .ggeco-nx .ggic{width:15px; height:15px}
+  @keyframes ggecoin{0%{transform:scale(.3); opacity:0}100%{transform:scale(1); opacity:1}}
+  /* ショップ（けしケシの「ゴールドこうかん」の型） */
+  .ggshop{display:flex; flex-direction:column; gap:10px}
+  .ggsp-bar{position:sticky; top:-22px; z-index:5; display:flex; align-items:center; gap:6px; padding:7px 10px; border-radius:12px; background:#3a2a1a; color:#fff; box-shadow:0 2px 0 #0003}
+  .ggsp-bar .ggic{width:20px; height:20px}
+  .ggsp-own{font-size:11px; font-weight:900; opacity:.85}
+  .ggsp-bar b{font-size:19px; font-weight:900; letter-spacing:.5px}
+  .ggsp-bar small{font-size:11px; font-weight:800; opacity:.85}
+  .ggsp-mat{margin-left:auto; display:flex; align-items:center; gap:3px; font-size:12px; font-weight:900; white-space:nowrap}
+  .ggsp-mat .ggic{width:16px; height:16px; margin-left:4px}
+  .ggsp-npc{display:flex; align-items:flex-end; gap:6px}
+  .ggsp-say{position:relative; flex:1; margin-top:12px; padding:10px 12px 9px; border-radius:10px; background:#0e1730; color:#fff; border:2px solid #e8ecf5; font-size:13px; font-weight:800; line-height:1.45; box-shadow:0 4px 10px #0003}
+  .ggsp-say b{color:#ffd34d}
+  .ggsp-tab{position:absolute; left:12px; top:-13px; padding:0 10px; height:18px; line-height:16px; border-radius:7px 7px 0 0; background:#0e1730; border:2px solid #e8ecf5; border-bottom:none; font-size:11px; font-weight:900}
+  .ggsp-art{width:66px; height:66px; flex:0 0 auto; display:block}
+  .ggsp-art svg{width:100%; height:100%; display:block}
+  .ggsp-sec{display:flex; align-items:center; gap:8px; margin-top:4px; font-weight:900; color:#6b4a1a; font-size:14px}
+  .ggsp-sec::after{content:''; flex:1; height:2px; background:linear-gradient(90deg,#d9c39a,#d9c39a00)}
+  .ggsp-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:10px}
+  .ggsp-it{position:relative; display:flex; flex-direction:column; align-items:stretch; padding:0; border-radius:12px; background:#f6ead0; border:3px solid #b98a4a; box-shadow:0 3px 0 #8a5f2a; cursor:pointer; font:inherit; color:#3a2a14; text-align:center}
+  .ggsp-it:active{transform:translateY(2px); box-shadow:0 1px 0 #8a5f2a}
+  .ggsp-lb{position:absolute; left:-3px; top:-3px; z-index:2; padding:2px 9px 2px 8px; background:#f08a24; color:#fff; font-size:11px; font-weight:900; border-radius:9px 0 9px 0; text-shadow:0 1px 0 #0003}
+  .ggsp-lb.day{background:#e2384d}
+  .ggsp-nm{display:block; margin:16px 8px 0; padding:3px 4px; font-size:13px; font-weight:900; background:#fffaf0; border-radius:6px; border:1px solid #e3cfa6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .ggsp-pic{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; height:84px}
+  .ggsp-pic .ggic{width:54px; height:54px; filter:drop-shadow(0 2px 0 #0002)}
+  .ggsp-pic b{position:absolute; right:12px; bottom:6px; font-size:16px; font-weight:900; color:#5b34b0; text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,1.5px 1.5px #fff,-1.5px -1.5px #fff}
+  .ggsp-pic.sk{height:96px}
+  .ggsp-pic.sk small{font-size:10px; font-weight:800; color:#c77b1a; line-height:1.2; padding:0 4px}
+  .ggsp-pr{display:flex; align-items:center; justify-content:center; gap:5px; margin:0 6px 6px; padding:4px 10px; border-radius:999px; background:#fff; border:2px solid #e3cfa6; font-size:16px; font-weight:900}
+  .ggsp-pr .ggic{width:19px; height:19px}
+  .ggsp-it.short .ggsp-pr{color:#b23a2a}
+  .ggsp-it.out{filter:grayscale(.85); opacity:.75; cursor:default}
+  .ggsp-it.out::after{content:'売り切れ'; position:absolute; left:50%; top:48%; transform:translate(-50%,-50%) rotate(-12deg); padding:3px 12px; border:3px solid #c0392b; color:#c0392b; background:#fffd; font-weight:900; font-size:16px; border-radius:8px; white-space:nowrap}
+  .ggsp-pass{display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px; border-radius:14px; background:#f6ead0; border:3px solid #b98a4a; box-shadow:0 3px 0 #8a5f2a}
+  .ggsp-card{position:relative; flex:0 0 auto; width:146px; height:92px; border-radius:10px; padding:8px 10px; overflow:hidden; color:#fff; background:linear-gradient(135deg,#8fdcff,#2f7dd1 58%,#1f4fa0); box-shadow:inset 0 0 0 2px #ffffff70, 0 3px 0 #1f4fa0; text-align:left}
+  .ggsp-card small{display:block; font-size:8.5px; font-weight:900; letter-spacing:1px; opacity:.9}
+  .ggsp-card b{display:block; margin-top:3px; font:900 17px/1.02 sans-serif; letter-spacing:.5px; text-shadow:0 2px 0 #1f4fa0}
+  .ggsp-card .ggsp-gem{position:absolute; right:8px; bottom:4px; font-size:30px}
+  .ggsp-card::after{content:''; position:absolute; top:-60%; left:-45%; width:36%; height:220%; background:linear-gradient(90deg,#fff0,#fff8,#fff0); transform:rotate(25deg); animation:ggspshine 3.6s ease-in-out infinite}
+  @keyframes ggspshine{0%,55%{left:-45%}100%{left:135%}}
+  .ggsp-pi{flex:1; min-width:150px; font-size:12.5px; line-height:1.5; color:#3a2a14; text-align:left}
+  .ggsp-pi b{color:#1f5f9a}
+  .ggsp-pi small{color:#7a6a4a}
+  .ggsp-buy{flex:1 1 100%; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px; border-radius:999px; border:2px solid #e3cfa6; background:#fff; font:inherit; font-size:17px; font-weight:900; color:#3a2a14; cursor:pointer}
+  .ggsp-buy .ggic{width:20px; height:20px}
+  .ggsp-buy.short{color:#b23a2a}
+  .ggsp-note{font-size:12px; line-height:1.55; color:#6b5a3a; background:#fffaf0; border:2px dashed #e3cfa6; border-radius:10px; padding:8px 10px}
+  .ggsp-note .ggic{width:15px; height:15px}
+  /* かくにん・かくとく（けしケシの「かくにん」「かくとく！」の型） */
+  .ggcf{text-align:center}
+  .ggcf-hd{display:block; margin:-6px -6px 8px; padding:6px; border-radius:10px; background:#e9d6ac; color:#5a3e14; font-weight:900; letter-spacing:4px}
+  .ggcf-hd::before,.ggcf-hd::after{content:'❦'; margin:0 10px; color:#a7834a; letter-spacing:0}
+  .ggcf-nm{font-size:18px; font-weight:900; color:#4a3412; margin:2px 0}
+  .ggcf-pic{display:grid; place-items:center; height:80px}
+  .ggcf-pic .ggic{width:62px; height:62px}
+  .ggcf-ds{font-size:12.5px; color:#6b5a3a; line-height:1.45; margin-bottom:8px}
+  .ggcf-need{display:inline-flex; align-items:center; gap:6px; padding:5px 18px; border-radius:999px; background:#4a3412; color:#fff; font-weight:900; font-size:16px; margin-bottom:6px}
+  .ggcf-need span{font-size:11px; opacity:.85}
+  .ggcf-need .ggic{width:19px; height:19px}
+  .ggcf-row{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 14px; margin:4px 0; border-radius:999px; background:#5a4020; color:#fff; font-size:13.5px; font-weight:800}
+  .ggcf-row span:first-child{font-size:11px; opacity:.85}
+  .ggcf-ar{font-style:normal; color:#ffd34d; margin:0 4px}
+  .ggcf-ng{color:#ff8a7a}
+  .ggcf-qty{display:flex; align-items:center; justify-content:center; gap:12px; margin:10px 0 2px}
+  .ggcf-qty button{width:46px; height:46px; border-radius:50%; border:none; font-size:24px; font-weight:900; color:#fff; background:radial-gradient(circle at 35% 30%,#8fbcff,#2f6fd1); box-shadow:0 3px 0 #1f4fa0; cursor:pointer; padding:0}
+  .ggcf-qty button:disabled{filter:grayscale(1); opacity:.45; cursor:default}
+  .ggcf-qty b{min-width:66px; padding:6px 0; border-radius:8px; background:#4a3412; color:#fff; font-size:21px}
+  .ggcf-qs{font-size:11px; color:#6b5a3a; font-weight:800}
+  .ggcf-ask{margin:8px 0; padding:7px; border-radius:6px; background:#161616; color:#fff; font-weight:900; font-size:13px}
+  .ggcf-bt{display:flex; gap:8px}
+  .ggcf-bt .btn{flex:1}
+  .ggcf.got{padding:4px 0}
+  .ggcf-tt{display:block; font:900 32px/1.1 sans-serif; color:#3fbf4a; text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff,0 5px 0 #0003; animation:ggpro .5s cubic-bezier(.3,1.6,.5,1) both; margin:4px 0 12px}
+  .ggcf-gets{display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:12px}
+  .ggcf-gets span{display:flex; flex-direction:column; align-items:center; gap:3px; font-weight:900; font-size:13px; color:#4a3412}
+  .ggcf-gets i{width:62px; height:62px; display:grid; place-items:center; border-radius:12px; background:#2a2f3a; border:3px solid #c9b27a; animation:ggecoin .45s cubic-bezier(.3,1.6,.5,1) both}
+  .ggcf-gets i .ggic{width:44px; height:44px}
+  /* 覚醒（キャラ強化のポップアップ） */
+  .ggaw-box{padding:8px 10px; border-radius:12px; background:linear-gradient(#faf5ff,#f1e8ff); border:2px solid #cdb6f5; text-align:left}
+  .ggaw-hd{display:flex; align-items:center; justify-content:space-between; font-size:14px}
+  .ggaw-mk i{font-style:normal; color:#d8cdea; font-size:15px; margin-left:3px}
+  .ggaw-mk i.on{color:#a463f2; text-shadow:0 0 5px #e3c8ff}
+  .ggaw-now{font-size:12px; color:#6b5a8a; margin-top:2px}
+  .ggaw-nx{font-size:13px; font-weight:800; margin:2px 0 5px}
+  .ggaw-nx b{color:#7a3fd1}
+  .ggaw-cost{display:flex; flex-wrap:wrap; gap:6px; font-size:12px; font-weight:900}
+  .ggaw-cost span{display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:999px; background:#fff; border:2px solid #e2d6f5}
+  .ggaw-cost .ggic{width:16px; height:16px}
+  .ggaw-cost .ng{color:#c0392b; border-color:#f3c4bd}
+  .ggaw-cost .ok{color:#2e7d32; border-color:#bfe3c1}
+  .ggaw-btn{display:block; width:100%; margin-top:6px}
+  .ggaw-cn{position:absolute; right:-6px; bottom:-3px; z-index:2; padding:0 3px; border-radius:6px; background:#a463f2; color:#fff; font:900 9.5px/1.45 sans-serif; font-style:normal; box-shadow:0 0 0 1.5px #fff}
+  .ggpc .dk .ggaw-cn{bottom:3px; right:-2px}
+  .ggaw-tag{display:inline-block; padding:0 6px; border-radius:6px; background:#a463f2; color:#fff; font-size:11px; font-weight:900; line-height:1.5}
+  /* 覚醒の光（絵の後ろ）: 1白・2金・3金の輪。虹のしずくは虹 */
+  .ggawc{position:relative}
+  .ggawc>svg{position:relative; z-index:1}
+  .ggawc::before{content:''; position:absolute; inset:-12%; border-radius:50%; z-index:0; pointer-events:none}
+  .ggawc.a1::before{background:radial-gradient(closest-side,#e6f8ff,#5ec8ffaa 55%,#5ec8ff00)}
+  .ggawc.a2::before{background:radial-gradient(closest-side,#fff6c8ee,#ffd34dbb 55%,#ffd34d00)}
+  .ggawc.a3::before{background:radial-gradient(closest-side,#fff2b0ee,#ffb82ecc 50%,#ff8a0000); box-shadow:inset 0 0 0 2px #ffd34daa}
+  .ggawc.nj::before{background:conic-gradient(#ff6b6b,#ffd34d,#5ad17a,#5ab4ff,#b05cff,#ff6b6b); -webkit-mask-image:radial-gradient(closest-side,#000 42%,#0000); mask-image:radial-gradient(closest-side,#000 42%,#0000); box-shadow:none; opacity:.85}
+  .ggaw-ic.flash::after{content:''; position:absolute; inset:-35%; border-radius:50%; z-index:2; background:radial-gradient(closest-side,#fff,#fff0); animation:ggawflash .9s ease-out forwards; pointer-events:none}
+  @keyframes ggawflash{0%{opacity:1; transform:scale(.4)}100%{opacity:0; transform:scale(1.7)}}
+  .unit .ggaura{position:absolute; left:-14%; right:-14%; top:-8%; bottom:-14%; border-radius:50%; z-index:-1; pointer-events:none}
+  .unit .ggaura.a1{background:radial-gradient(closest-side,#e6f8ffdd,#5ec8ff99 55%,#5ec8ff00)}
+  .unit .ggaura.a2{background:radial-gradient(closest-side,#fff6c8dd,#ffd34d99 55%,#ffd34d00); animation:ggauraP 1.6s ease-in-out infinite alternate}
+  .unit .ggaura.a3{background:radial-gradient(closest-side,#fff2b0ee,#ffb82eaa 50%,#ff8a0000); animation:ggauraP 1.1s ease-in-out infinite alternate}
+  .unit .ggaura.a3::after{content:''; position:absolute; left:8%; right:8%; bottom:4%; height:20%; border-radius:50%; border:2px solid #ffd34dcc; box-shadow:0 0 6px #ffd34d}
+  .unit .ggaura.nj{background:conic-gradient(#ff6b6b,#ffd34d,#5ad17a,#5ab4ff,#b05cff,#ff6b6b); -webkit-mask-image:radial-gradient(closest-side,#000 30%,#0000); mask-image:radial-gradient(closest-side,#000 30%,#0000); opacity:.8; animation:ggauraS 3s linear infinite}
+  .unit .ggaura.nj::after{display:none}
+  @keyframes ggauraP{from{opacity:.6; transform:scale(.92)}to{opacity:1; transform:scale(1.05)}}
+  @keyframes ggauraS{to{transform:rotate(360deg)}}
+
   .ggpcopt{display:flex; align-items:center; gap:6px; margin-top:8px; font-size:13px; font-weight:800}
   .ggpcopt input{width:18px; height:18px}
   .ggpcgb{display:inline-flex; align-items:center; gap:3px; margin-left:6px; padding:0 6px 0 3px; border-radius:999px; background:#ffffff26; font-size:11px; font-weight:900; vertical-align:2px}
@@ -1299,7 +1438,7 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
   <!-- ===== ホーム ===== -->
   <section id="home" class="screen col">
     <div id="ggDock"><button data-go="gacha" class="ggd-gacha"><span class="ggd-ic">🎰</span>ガチャ<small id="ggdGachaSub"></small></button><button data-go="play" class="ggd-play">▶ あそぶ<small id="ggdPlaySub"></small></button><button data-go="mission" class="ggd-mis"><span class="ggd-ic">📋</span>ミッション<small id="ggdMisSub"></small></button></div>
-    <div class="topbar"><button class="pill" onclick="ggGoPortal()" title="ポータル（アプリ一覧）へ" style="cursor:pointer">🚪</button><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><button class="pill" id="homeSettingsBtn" data-go="settings" title="せってい" style="cursor:pointer">⚙️</button><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span></div>
+    <div class="topbar"><button class="pill" onclick="ggGoPortal()" title="ポータル（アプリ一覧）へ" style="cursor:pointer">🚪</button><span class="pill" id="homeBack" style="display:none">◀ もどる</span><span class="pill" id="homeTitle">🏠 ホーム</span><span class="grow"></span><button class="pill" id="homeSettingsBtn" data-go="settings" title="せってい" style="cursor:pointer">⚙️</button><span class="pill" id="gemPill" title="グラマージェム（ガチャ用・問題を解くと貯まる）">💎 0</span><span class="pill" id="goldPill">💰 0</span><button class="pill ggcrpill" id="ggCrPill" data-go="shop" title="クラウン（ショップで使う・▲の戦いで落ちる）"></button></div>
     <div class="pad scroll grow">
       <div id="homeMenu">
         <div id="homeGrid">
@@ -1313,6 +1452,7 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
             <button class="menubtn" id="reviewBtn" style="display:none"></button>
             <button class="menubtn" id="dailyChalBtn" style="display:none"></button>
             <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">💎で仲間を集めよう（10連はSR以上確定）</span></button>
+            <button class="menubtn" data-go="shop">🛒 ショップ<span class="sub" id="ggShopSub">クラウンで育成素材・城スキン・💎パス</span></button>
             <button class="menubtn" id="missionBtn" data-go="mission">📋 ミッション</button>
             <button class="menubtn" data-go="play">▶ あそぶ<span class="sub">出題設定・ステージに挑戦</span></button>
             <button class="menubtn" id="ggTowerBtn" onclick="Game.ggOpenTower()">🗼 塔・とくべつステージ<span class="sub" id="ggTowerSub">修練の塔・今週の塔・学習の塔</span></button>
@@ -1381,7 +1521,7 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
       </div>
       <div class="homeview" data-view="grow">
         <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">💎グラマージェムで味方を入手</span></button>
-        <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする</span></button>
+        <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする・素材で覚醒</span></button>
         <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（最大5体）</span></button>
         <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
         <button class="menubtn" id="partsMenuBtn" data-go="parts" style="display:none">🛠️ コンボパーツ<span class="sub">モンスターに装着・コンボで強化</span></button>
@@ -1392,6 +1532,9 @@ function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slim
       </div>
       <div class="homeview" data-view="mission">
         <div class="card"><div id="missionBody"></div></div>
+      </div>
+      <div class="homeview" data-view="shop">
+        <div class="card"><div id="ggShopBody"></div></div>
       </div>
       <div class="homeview" data-view="skins">
         <div class="card"><div id="skinsBody"></div></div>
@@ -11080,7 +11223,7 @@ const Game = (()=>{
   let owned = {};          // 入手済み {key:count}
   let deck = [];           // 編成(最大5)
   let castleLv = 0;        // 城強化Lv(HP)
-  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0; let ggPity = 0; let ggFree = ''; let ggSet = {}; let ggSeenE = {}; let ggGB = ggGBNorm(null);         // キャラ強化 {key:lv}
+  let unitLv = {}; let plusMig1 = true; let gachaPulls = 0; let ggPity = 0; let ggFree = ''; let ggSet = {}; let ggSeenE = {}; let ggGB = ggGBNorm(null); let ggEco = ggEcoNorm(null);         // キャラ強化 {key:lv}
   let regenLv = 0;         // エネルギー増加速度Lv
   let enMaxLv = 0;         // エネルギー上限Lv
   let freezeDurLv = 0;     // ❄フリーズ砲 停止時間Lv（壁1の砲台対策）
@@ -11125,7 +11268,7 @@ const Game = (()=>{
       Speech.setOn(s.speechOn===true); // 単語音声は既定OFF（明示的にtrueのときだけON）
       owned=s.owned||{}; deck=Array.isArray(s.deck)?s.deck:[]; castleLv=s.castleLv||0;
       unitLv=s.unitLv||{}; regenLv=s.regenLv||0; enMaxLv=s.enMaxLv||0;
-      gachaPulls=s.gachaPulls||0; ggPity=s.ggPity||0; ggFree=s.ggFree||''; ggSet=(s.ggSet&&typeof s.ggSet==='object')?s.ggSet:{}; ggSeenE=(s.ggSeenE&&typeof s.ggSeenE==='object')?s.ggSeenE:{}; ggGB=ggGBNorm(s.ggGB); if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
+      gachaPulls=s.gachaPulls||0; ggPity=s.ggPity||0; ggFree=s.ggFree||''; ggSet=(s.ggSet&&typeof s.ggSet==='object')?s.ggSet:{}; ggSeenE=(s.ggSeenE&&typeof s.ggSeenE==='object')?s.ggSeenE:{}; ggGB=ggGBNorm(s.ggGB); ggEco=ggEcoNorm(s.ggEco); if(s.mis&&typeof s.mis==='object') mis=Object.assign({day:'',d:{},gotD:{},tot:{},gotA:{}}, s.mis); if(!s.plusMig1){ for(var __ok in owned){ var __n=owned[__ok]||0; if(__n>1) owned[__ok]=1+Math.min(PLUS_CAP,(__n-1)*3); } } plusMig1=true; // ガチャ2: 旧★→+N
       for(var __ok2 in owned){ if(owned[__ok2]>PLUS_CAP+1) owned[__ok2]=PLUS_CAP+1; }
       freezeDurLv=s.freezeDurLv||0; freezeCostLv=s.freezeCostLv||0; comboGuardLv=s.comboGuardLv||0;
       cgRefunded=!!s.cgRefunded; if(comboGuardLv>0 && !cgRefunded){ gold += COMBO_GUARD_COSTS.slice(0,Math.min(comboGuardLv,COMBO_GUARD_COSTS.length)).reduce(function(a,b){return a+b;},0); comboGuardLv=0; cgRefunded=true; } // 🛡コンボ保護 廃止に伴う購入ゴールドの返金(1回)
@@ -11155,7 +11298,7 @@ const Game = (()=>{
   function save(){
     if(window.__ggPvpActive) return; // ⑱対戦シミュ中は相手/自分の一時設定を保存しない(本物のセーブを汚さない)
     guardedNow();
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis, ggPity, ggFree, ggSet, ggSeenE, ggGB})); }catch(e){}
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({gold, gems, gemsGranted, homeChars, cleared, heroCleared, ironCleared, autoSummon, seenAutoTip, slowMode, soundOn:Sound.isOn(), speechOn:Speech.isOn(), sel:QuizEngine.getSel(), choiceMode, showNumbers, owned, deck, castleLv, placementReset1, placementResetUsed, assessRewardClaimed, unitLv, regenLv, enMaxLv, freezeDurLv, freezeCostLv, comboGuardLv, cgRefunded, ownedParts, equippedParts, towerBest, learnBest, lastDaily, dailyChalDone, treasures, towerMiles, towerWeekDone, towerWeekBest, towerWeekStamp, clockTs, goldDay, dailyStageGold, learnGemDay, learnGemToday, placement, mistakes, favorites, learned, rtStats, ownedSkins, equippedSkin, plusMig1, gachaPulls, mis, ggPity, ggFree, ggSet, ggSeenE, ggGB, ggEco})); }catch(e){}
   }
   // 💎の1日上限(2026-06-18・荒稼ぎ対策): 「問題に答えて得る学習💎」(れんしゅう/今日の復習/戦闘の1問ごと)だけを
   // 1日 LEARN_GEM_DAILY_CAP までに静かに制限する。ステージ/塔の節目/デイリー等の“報酬💎”は対象外＝従来どおり満額。
@@ -11761,9 +11904,9 @@ const Game = (()=>{
   function unitUpCost(key){ return 100*(unitLevel(key)+1); }
   const PLUS_ATK = 0.02, PLUS_HP = 0.016; // 重ね+1ごと（旧★は+6%/+5%で★4まで→+30まで小刻みに。旧★1＝+3 に移す）
   function unitStars(key){ return Math.min(PLUS_CAP, Math.max(0, (owned[key]||0)-1)); }
-  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key), sb=skinBuff(); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+(isGR(key)?GR_PLUS_ATK:PLUS_ATK)*st)*(1+(sb.atkPct||0)/100)*(1+treasureBuffPct('atk'))), hp:Math.round(r.hp*(1+0.10*lv)*(1+(isGR(key)?GR_PLUS_HP:PLUS_HP)*st)*(1+(sb.hpPct||0)/100)*(1+treasureBuffPct('hp')))}; } // 🏺秘宝バフ込み
+  function unitStats(key){ const r=ROSTER[key], lv=unitLevel(key), st=unitStars(key), sb=skinBuff(); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+(isGR(key)?GR_PLUS_ATK:PLUS_ATK)*st)*(1+(sb.atkPct||0)/100)*(1+treasureBuffPct('atk'))*ggAwMul(key)), hp:Math.round(r.hp*(1+0.10*lv)*(1+(isGR(key)?GR_PLUS_HP:PLUS_HP)*st)*(1+(sb.hpPct||0)/100)*(1+treasureBuffPct('hp'))*ggAwMul(key))}; } // 🏺秘宝バフ・✨覚醒込み
   function upgradeUnit(key){ if(!owned[key]||unitMaxed(key)) return; const c=unitUpCost(key); if(gold<c) return; gold-=c; unitLv[key]=unitLevel(key)+1; Sound.play('correct'); save(); renderHome(); }
-  function statsAtLv(key, lv){ const r=ROSTER[key], st=unitStars(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+(isGR(key)?GR_PLUS_ATK:PLUS_ATK)*st)), hp:Math.round(r.hp*(1+0.10*lv)*(1+(isGR(key)?GR_PLUS_HP:PLUS_HP)*st))}; }
+  function statsAtLv(key, lv){ const r=ROSTER[key], st=unitStars(key), sb=skinBuff(), aw=ggAwMul(key); return {atk:Math.round(r.atk*(1+0.12*lv)*(1+(isGR(key)?GR_PLUS_ATK:PLUS_ATK)*st)*(1+(sb.atkPct||0)/100)*(1+treasureBuffPct('atk'))*aw), hp:Math.round(r.hp*(1+0.10*lv)*(1+(isGR(key)?GR_PLUS_HP:PLUS_HP)*st)*(1+(sb.hpPct||0)/100)*(1+treasureBuffPct('hp'))*aw)}; }
   function traitText(r){ var t=[];
     if(r.range>=110) t.push('遠距離'); if(r.splash) t.push('範囲攻撃'); if(r.pierce) t.push('貫通');
     if(r.knockback) t.push('ノックバック'); if(r.heal) t.push('味方を回復'); if(r.slow) t.push('敵を遅くする');
@@ -11776,9 +11919,9 @@ const Game = (()=>{
     const card=$('unitPopCard'); if(!card) return;
     function stat(lbl,val){ return '<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:6px;text-align:center"><div class="muted" style="font-size:11px">'+lbl+'</div><div style="font-weight:800;font-size:15px">'+val+'</div></div>'; }
     let h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-    h+='<span style="width:54px;height:54px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>';
+    h+='<span class="ggaw-ic'+ggAwCls(key)+'" style="position:relative;width:54px;height:54px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>';
     h+='<div style="flex:1;min-width:0;text-align:left"><div style="font-weight:800;font-size:18px">'+r.name+' <span style="font-size:12px;color:#fff;background:'+r.rarColor+';padding:1px 6px;border-radius:6px">'+r.rar+'</span></div>';
-    h+='<div class="muted" style="font-size:12px">Lv'+lv+(star?'　<span style="color:var(--gold)">'+plusTxt(star)+'</span>':'')+'</div></div></div>';
+    h+='<div class="muted" style="font-size:12px">Lv'+lv+(star?'　<span style="color:var(--gold)">'+plusTxt(star)+'</span>':'')+(ggAwLv(key)?'　<span class="ggaw-tag">覚醒'+ggAwLv(key)+'</span>':'')+'</div></div></div>';
     h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
     h+=stat('コスト','⚡'+r.cost)+stat('クールダウン',summonCd(key)+'秒')+stat('攻撃力','⚔'+cur.atk);
     h+=stat('HP','♥'+cur.hp)+stat('射程',r.range)+stat('速さ',r.speed)+'</div>';
@@ -11814,6 +11957,7 @@ const Game = (()=>{
       const bu=document.createElement('button'); bu.className='btn'; bu.style.width='100%'; bu.textContent= maxed?'最大強化ずみ':'強化する（'+c+'G）'; bu.disabled= maxed || gold<c;
       if(!maxed) bu.onclick=function(){ upgradeUnit(key); openUnitPop(key,'charup'); };
       acts.appendChild(bu);
+      try{ ggAwSection(key, acts); }catch(e){}
       // ホーム画面の大表示キャラに追加/解除（最大10体）
       const onHome=homeChars.indexOf(key)>=0;
       const bh=document.createElement('button'); bh.className='btn ghost'; bh.style.width='100%';
@@ -11862,7 +12006,7 @@ const Game = (()=>{
       const r=ROSTER[key], lv=unitLevel(key), st=unitStats(key), cost=unitUpCost(key), maxed=unitMaxed(key);
       const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;width:100%;text-align:left;cursor:pointer';
       row.className='gxr-'+r.rar; row.style.borderLeft='6px solid var(--rc)'; row.style.padding='6px 8px';
-      row.innerHTML='<span style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+'</span>'+
+      row.innerHTML='<span class="'+ggAwCls(key)+'" style="width:42px;height:42px;display:block;flex:0 0 auto">'+SVG.get(r.sprite)+(ggAwLv(key)?'<i class="ggaw-cn">◆'+ggAwLv(key)+'</i>':'')+'</span>'+
         '<div style="flex:1;min-width:0"><div style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+rarBadge(r.rar)+' '+r.name+'</div><div class="ggup-st"><span style="color:var(--ally)">Lv'+lv+'</span><span style="color:var(--gold)">'+plusTxt(unitStars(key))+'</span><span>⚔'+st.atk+'</span><span>♥'+st.hp+'</span></div></div>'+
         (maxed ? '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--gold)">★MAX</span>'
                : '<span style="flex:0 0 auto;font-size:13px;font-weight:800;color:'+(gold>=cost?'var(--ally)':'var(--muted)')+'">強化 '+cost+'G ▸</span>');
@@ -12715,12 +12859,12 @@ const Game = (()=>{
     $('goldPill').textContent = '💰 '+gold;
     updateGemUI();
     renderHomeMenu();
-    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission(); renderZukan(); try{ ggDock(); }catch(e){}
+    renderGacha(); renderDeck(); renderCastle(); renderCharup(); renderGachaList(); renderTower(); renderParts(); renderMistakes(); renderCollection(); renderPractice(); renderSkins(); renderMission(); renderZukan(); try{ ggDock(); }catch(e){} try{ ggEcoHome(); }catch(e){}
     { var __ms=$('mistakesSub'); if(__ms){ var __dc=dueCount(null), __mc=mistakeCount(); __ms.textContent = __mc? ('復習リスト '+__mc+'問'+(__dc?('・今日 '+__dc+'問'):'・今日ぶんは完了')) : 'お気に入りはいつでも見られます'; } }
     { var __pb=$('partsMenuBtn'); if(__pb) __pb.style.display = partsUnlocked() ? '' : 'none'; } // 🔩解禁後のみ表示
     // トップメニュー⇄サブ画面の表示切替（grow配下にgacha/charup/deckedit/castle/parts）
-    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', mission:'📋 ミッション', zukan:'📖 キャラ図鑑', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', collection:'📚 おぼえた英語', skins:'🏯 城スキン', pvp:'🆚 たいせん'};
-    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', mission:'menu', zukan:'gacha', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', collection:'menu', skins:'grow', pvp:'menu'};
+    const __titles={menu:'🏠 ホーム', play:'▶ あそぶ', grow:'🎰 そだてる', settings:'⚙️ せってい', quiz:'📝 出題設定', gacha:'🎰 ガチャ', mission:'📋 ミッション', zukan:'📖 キャラ図鑑', gachalist:'📜 排出一覧', charup:'💪 キャラ強化', deckedit:'🧩 編成', castle:'🏯 城強化', parts:'🛠️ コンボパーツ', mistakes:'⭐ お気に入り / まちがえた問題', practice:'✏️ れんしゅう', collection:'📚 おぼえた英語', skins:'🏯 城スキン', pvp:'🆚 たいせん', shop:'🛒 ショップ'};
+    const __parent={play:'menu', grow:'menu', settings:'menu', quiz:'play', gacha:'grow', mission:'menu', zukan:'gacha', gachalist:'gacha', charup:'grow', deckedit:'grow', castle:'grow', parts:'grow', mistakes:'menu', practice:'menu', collection:'menu', skins:'grow', pvp:'menu', shop:'menu'};
     const __t=$('homeTitle'); if(__t) __t.textContent=__titles[homeView]||'🏠 ホーム';
     const __menu=$('homeMenu'); if(__menu){ __menu.style.display=(homeView==='menu')?'block':'none'; }
     document.querySelectorAll('#home button[data-go]').forEach(function(b){ b.onclick=function(){ var __v=b.getAttribute('data-go'); if(__v==='practice'){ pracStarted=false; pracReview=false; pracQ=null; } homeView=__v; renderHome(); }; });
@@ -13042,6 +13186,7 @@ const Game = (()=>{
     const el=document.createElement('div'); el.className='unit spawning newcv '+(v.atk||'')+(v.fly?' flying':'');
     el.dataset.atkdur=(v.dur||600);
     el.innerHTML = allyInner(r.sprite);
+    { var __aw=ggAwLv(key), __nj=ggEco.col[key]===1; if(__aw||__nj){ var __au=document.createElement('div'); __au.className='ggaura'+(__aw?' a'+__aw:'')+(__nj?' nj':''); el.insertBefore(__au, el.firstChild); } } // ✨覚醒の光（10-21）
     let x=84, dir=1;                                   // 通常配置：自城(左)から右へ。surviveも同じ(要望#1)
     if(r.scale){ el.style.transform='scale('+r.scale+')'; }
     $('field').appendChild(el);
@@ -14427,6 +14572,199 @@ const Game = (()=>{
       +(sg<0?'<br>※分野別の練習では▲は数えない。':(L.length>1?'<br>※2つ以上の級を選ぶと、低い方の級（'+ggGBLabel(sg)+'）で数える。':''));
   }
   function ggAboveReco(q){ try{ var O=QuizEngine.LV_ORDER, g=(q&&q.genre==='grammar')?'grammar':'word', rec=placement[g]||'e4'; return O.indexOf(q.level) > O.indexOf(rec); }catch(e){ return false; } }
+  /* ===== ショップ・クラウン・覚醒（10-21 夜）===== */
+  function ggEcoNorm(s){
+    var o=(s&&typeof s==='object')?s:{}, aw={}, col={}, t=(o.tot&&typeof o.tot==='object')?o.tot:{};
+    function n(v){ v=Math.floor(+v||0); return v>0?v:0; }
+    if(o.aw&&typeof o.aw==='object') Object.keys(o.aw).forEach(function(k){ var a=n(o.aw[k]); if(a) aw[k]=Math.min(3,a); });
+    if(o.col&&typeof o.col==='object') Object.keys(o.col).forEach(function(k){ if(o.col[k]===1||o.col[k]===-1) col[k]=o.col[k]; });
+    return {cr:n(o.cr), k:n(o.k), x:n(o.x), n:n(o.n), aw:aw, col:col, boost:Math.min(10,n(o.boost)), pass:n(o.pass), passDay:n(o.passDay), deal:n(o.deal), tot:{cr:n(t.cr), k:n(t.k), x:n(t.x), n:n(t.n), buy:n(t.buy), spent:n(t.spent)}};
+  }
+  // 級の倍率（5級→準1級）。準2級で頭打ち（本人「準2級でボーナスは頭打ち・2級準1級は遊び要素程度」）
+  function ggEcoMult(g){ return [1,1.5,2.5,3,3,3][g]||1; }
+  function ggDayNum(){ var d=new Date(guardedNow()); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())/86400000); }
+  function ggNum(v){ return Math.floor(v||0).toLocaleString('ja-JP'); }
+  var GG_ECO_IC = {
+    cr:'<svg class="ggic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#f6c844" stroke="#9a6a0c" stroke-width="2"/><circle cx="16" cy="16" r="10.6" fill="#ffd95c" stroke="#e0a326" stroke-width="1.2"/><path d="M9.6 20.2 L10.4 12.2 L13.6 15.6 L16 10.6 L18.4 15.6 L21.6 12.2 L22.4 20.2Z" fill="#c98712" stroke="#8a5a06" stroke-width=".9" stroke-linejoin="round"/><rect x="9.6" y="20.8" width="12.8" height="2.4" rx="1.1" fill="#c98712"/><path d="M8 11 A9.5 9.5 0 0 1 14 6.6" fill="none" stroke="#fff8" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    k:'<svg class="ggic" viewBox="0 0 32 32"><path d="M16 2.5 L23.5 12.5 L18.5 29.5 L10 18Z" fill="#d6bcff" stroke="#5b34b0" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 2.5 L18.5 29.5 L23.5 12.5Z" fill="#9b6cf0"/><path d="M14.6 8.5 L12.6 16" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity=".9"/></svg>',
+    x:'<svg class="ggic" viewBox="0 0 32 32"><path d="M9 29 L5.5 17 L9.5 10 L13 17Z" fill="#ffc36b" stroke="#a5520a" stroke-width="1.4" stroke-linejoin="round"/><path d="M23 29 L26.5 18 L22.5 11 L19 18Z" fill="#ffc36b" stroke="#a5520a" stroke-width="1.4" stroke-linejoin="round"/><path d="M16 30 L10.5 15 L16 2.5 L21.5 15Z" fill="#ffd98f" stroke="#a5520a" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 2.5 L16 30 L21.5 15Z" fill="#ff9f2e"/><path d="M14.3 8 L13 14" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M27 3 l1 2.2 2.2 1 -2.2 1 -1 2.2 -1 -2.2 -2.2 -1 2.2 -1z" fill="#fff4b8" stroke="#e0a326" stroke-width=".6"/></svg>',
+    n:'<svg class="ggic" viewBox="0 0 32 32"><path d="M16 3 C16 3 6.5 14 6.5 20 A9.5 9.5 0 0 0 25.5 20 C25.5 14 16 3 16 3Z" fill="#f4f6ff" stroke="#5a4a8a" stroke-width="1.6"/><path d="M9.6 22 A6.4 6.4 0 0 1 22.4 22" fill="none" stroke="#ff6b6b" stroke-width="2.2"/><path d="M11.6 22 A4.4 4.4 0 0 1 20.4 22" fill="none" stroke="#ffc83d" stroke-width="2.2"/><path d="M13.6 22 A2.4 2.4 0 0 1 18.4 22" fill="none" stroke="#4fc46e" stroke-width="2.2"/><path d="M15.3 22 A.7 .7 0 0 1 16.7 22" fill="none" stroke="#4fa6ff" stroke-width="1.6"/><path d="M12.6 11.5 L10.8 15.5" stroke="#b9c2ff" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    pass:'<svg class="ggic" viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18.5" rx="3" fill="#5ab4ff" stroke="#1f5f9a" stroke-width="1.6"/><rect x="2.8" y="11" width="26.4" height="3" fill="#1f5f9a" opacity=".35"/><path d="M7.5 17.5 l2.6 -2.6 h4 l2.6 2.6 -4.6 4.8z" fill="#fff" stroke="#1f5f9a" stroke-width="1"/><rect x="19.5" y="17" width="7.5" height="2" rx="1" fill="#fff" opacity=".85"/><rect x="19.5" y="20.5" width="5" height="2" rx="1" fill="#fff" opacity=".6"/></svg>'
+  };
+  // 戦いの終わりに落とす（級バッジの▲と同じ条件。r＝ggGradeEnd の結果）
+  function ggEcoEnd(r){
+    if(!r || r.field) return null;
+    if(!r.got) return {none:true, g:r.g, win:r.win};
+    var g=r.g, m=ggEcoMult(g), c=(B&&B.correct)||0, d={g:g, m:m, c:c, cr:Math.round(c*3*m), k:0, x:0, n:0, boost:0, pass:0};
+    var ek=c*0.05*m; d.k=Math.floor(ek)+(Math.random()<ek-Math.floor(ek)?1:0);
+    if(g>=2 && Math.random()<Math.min(0.6, c*0.0125*m/2.5)) d.x=1;                 // 結晶は3級から
+    if(g>=4 && Math.random()<Math.min(0.5, c*0.0075*(g>=5?2:1))) d.n=1;            // 虹のしずくは2級から（遊び要素）
+    if(ggEco.boost>0){ ggEco.boost--; d.boost=300; d.boostLeft=ggEco.boost; gems+=300; } // 昇級ボーナス（一時的なボーナス💎）
+    if(r.up && r.up.length){ ggEco.boost=10; d.boostStart=true; }
+    var t=ggDayNum(); if(ggEco.pass>=t && ggEco.passDay!==t){ ggEco.passDay=t; gems+=500; d.pass=500; d.passLeft=ggEco.pass-t; }
+    ggEco.cr+=d.cr; ggEco.k+=d.k; ggEco.x+=d.x; ggEco.n+=d.n;
+    ggEco.tot.cr+=d.cr; ggEco.tot.k+=d.k; ggEco.tot.x+=d.x; ggEco.tot.n+=d.n;
+    save(); return d;
+  }
+  function ggEcoNudge(g){
+    if(g<=1) return '<b>3級</b>で▲を取ると、クラウン<b>2.5倍</b>・<b>結晶</b>も落ちる。'+(g===0?'4級なら1.5倍。':'');
+    if(g===2) return '3級から<b>結晶</b>が落ちる。準2級で<b>3倍</b>（いちばん上の倍率）。';
+    if(g===3) return '準2級は<b>3倍</b>（いちばん上の倍率）。2級からは<b>虹のしずく</b>（キャラの見た目の飾り）も落ちる。';
+    return '2級・準1級は3倍＋<b>虹のしずく</b>（キャラに虹の光）。';
+  }
+  function ggEcoRv(ic, big, sm, i){ return '<span class="ggeco-rv"><i style="animation-delay:'+(i*0.12).toFixed(2)+'s">'+ic+'</i><b>'+big+'</b><small>'+sm+'</small></span>'; }
+  function ggEcoShow(d){
+    var old=$('ggEcoRes'); if(old) old.remove(); if(!d) return;
+    var at=$('ggGradeRes')||document.querySelector('#result .ggrt')||$('resMedals'); if(!at || !at.parentNode) return;
+    var el=document.createElement('div'), h=''; el.id='ggEcoRes'; el.className='ggeco'+(d.none?' none':'');
+    if(d.none){ h='<small class="ggeco-nx">'+GG_ECO_IC.cr+' ▲の戦いだけ、<b>クラウン</b>と<b>覚醒の素材</b>が落ちる。級が高いほど多い（<b>3級は2.5倍</b>）。</small>'; }
+    else {
+      var i=0; h='<span class="ggeco-hd">ドロップ</span><div class="ggeco-rws">';
+      h+=ggEcoRv(GG_ECO_IC.cr, '+'+ggNum(d.cr), 'クラウン', i++);
+      if(d.k) h+=ggEcoRv(GG_ECO_IC.k, '×'+d.k, '覚醒のかけら', i++);
+      if(d.x) h+=ggEcoRv(GG_ECO_IC.x, '×'+d.x, '覚醒の結晶', i++);
+      if(d.n) h+=ggEcoRv(GG_ECO_IC.n, '×'+d.n, '虹のしずく', i++);
+      if(d.boost) h+=ggEcoRv('💎', '+'+d.boost, '昇級ボーナス', i++);
+      if(d.pass) h+=ggEcoRv('💎', '+'+d.pass, '💎パス', i++);
+      h+='</div><div class="ggeco-m"><span class="ggeco-gr" style="--c:'+GG_GB_COL[d.g]+'">'+ggGBLabel(d.g)+'</span> 正解 '+d.c+' × <b>'+d.m+'倍</b></div>';
+      var sub=[];
+      if(d.boostStart) sub.push('<b>級バッジが上がった！</b> 次の▲10回は💎+300ずつ');
+      else if(d.boost) sub.push('昇級ボーナス のこり'+d.boostLeft+'回');
+      if(d.pass) sub.push(d.passLeft>0?'💎パス あと'+d.passLeft+'日':'💎パスはきょうで終わり');
+      h+='<small class="ggeco-nx">'+(sub.length?sub.join('・')+'<br>':'')+ggEcoNudge(d.g)+'</small>';
+    }
+    el.innerHTML=h; at.parentNode.insertBefore(el, at.nextSibling);
+  }
+  /* ---- 覚醒（素材で 1〜3。⚔♥ +10/20/30%・光る） ---- */
+  function ggAwPct(a){ return [0,10,20,30][a]||0; }
+  function ggAwCost(a){ return [null,{k:20,x:0},{k:40,x:3},{k:60,x:8}][a]||null; }
+  function ggAwLv(key){ var a=(ggEco.aw[key])|0; return a<0?0:a>3?3:a; }
+  function ggAwMul(key){ return 1+ggAwPct(ggAwLv(key))/100; }
+  function ggAwUp(key){ var nx=ggAwLv(key)+1, c=ggAwCost(nx); if(!c || !owned[key] || ggEco.k<c.k || ggEco.x<c.x) return false; ggEco.k-=c.k; ggEco.x-=c.x; ggEco.aw[key]=nx; save(); return true; }
+  function ggAwCls(key){ var a=ggAwLv(key), nj=ggEco.col[key]===1; return (a||nj)?(' ggawc'+(a?' a'+a:'')+(nj?' nj':'')):''; }
+  function ggAwMarks(a){ var s=''; for(var i=1;i<=3;i++) s+='<i class="'+(i<=a?'on':'')+'">◆</i>'; return '<span class="ggaw-mk">'+s+'</span>'; }
+  function ggNjSet(key){ if(ggEco.col[key]){ ggEco.col[key]=-ggEco.col[key]; save(); return true; } if(ggEco.n<1 || !owned[key]) return false; ggEco.n--; ggEco.col[key]=1; save(); return true; }
+  function ggAwSection(key, acts){
+    if(!owned[key]) return;
+    var a=ggAwLv(key), nx=a+1, c=ggAwCost(nx), box=document.createElement('div'); box.className='ggaw-box';
+    var h='<div class="ggaw-hd"><b>✨ 覚醒</b>'+ggAwMarks(a)+'</div>';
+    if(!c) h+='<div class="ggaw-now">覚醒3（いちばん上）：⚔♥ +30%・金の輪の光</div>';
+    else {
+      h+='<div class="ggaw-now">'+(a?'いま 覚醒'+a+'：⚔♥ +'+ggAwPct(a)+'%':'まだ覚醒していない')+'</div>';
+      h+='<div class="ggaw-nx">覚醒'+nx+'にすると ⚔♥ <b>+'+ggAwPct(nx)+'%</b>・'+['','青い','金の','金の輪の'][nx]+'光</div>';
+      h+='<div class="ggaw-cost"><span class="'+(ggEco.k>=c.k?'ok':'ng')+'">'+GG_ECO_IC.k+'かけら '+ggEco.k+' / '+c.k+'</span>'+(c.x?'<span class="'+(ggEco.x>=c.x?'ok':'ng')+'">'+GG_ECO_IC.x+'結晶 '+ggEco.x+' / '+c.x+'</span>':'')+'</div>';
+    }
+    box.innerHTML=h;
+    if(c){
+      var can=ggEco.k>=c.k && ggEco.x>=c.x, b=document.createElement('button');
+      b.className='btn ggaw-btn'; b.textContent='✨ 覚醒'+nx+'にする'; b.disabled=!can;
+      b.onclick=function(){ if(!ggAwUp(key)) return; try{ Sound.play('win'); }catch(e){} openUnitPop(key,'charup'); var ic=document.querySelector('#unitPopCard .ggaw-ic'); if(ic) ic.classList.add('flash'); try{ fxBanner('✨ '+ROSTER[key].name+' が 覚醒'+ggAwLv(key)+' に！','#a463f2'); }catch(e){} try{ renderCharup(); }catch(e){} };
+      box.appendChild(b);
+      if(!can){ var sb=document.createElement('button'); sb.className='btn ghost ggaw-btn'; sb.textContent='🛒 ショップで素材を見る'; sb.onclick=function(){ closeUnitPop(); homeView='shop'; renderHome(); }; box.appendChild(sb); }
+    }
+    if(ggEco.col[key] || ggEco.n>0){
+      var nb=document.createElement('button'); nb.className='btn ghost ggaw-btn';
+      nb.textContent = ggEco.col[key]===1 ? '🌈 虹の光：つけている（タップで消す）' : ggEco.col[key]===-1 ? '🌈 虹の光：消している（タップでつける）' : '🌈 虹の光をつける（しずく'+ggEco.n+'こ）';
+      nb.onclick=function(){ if(ggNjSet(key)){ openUnitPop(key,'charup'); try{ renderCharup(); }catch(e){} } };
+      box.appendChild(nb);
+    }
+    acts.appendChild(box);
+  }
+  /* ---- ショップ（タヌキ商店） ---- */
+  var GG_SHOP_ITEMS = [
+    {id:'deal', nm:'かけら×5', ic:'k', k:5, pr:100, lb:'1日1回', daily:1, ds:'1日1回だけのお買い得。覚醒のかけら5つ。'},
+    {id:'k10', nm:'かけら×10', ic:'k', k:10, pr:300, multi:1, ds:'覚醒のかけら。キャラ強化の「覚醒」で使う。▲の戦いでも落ちる。'},
+    {id:'k30', nm:'かけら×30', ic:'k', k:30, pr:780, lb:'お得', multi:1, ds:'覚醒のかけら30。10を3回買うより120安い。'},
+    {id:'x1', nm:'結晶×1', ic:'x', x:1, pr:400, multi:1, ds:'覚醒の結晶。覚醒2・覚醒3で使う。3級以上の▲の戦いでも落ちる。'},
+    {id:'x5', nm:'結晶×5', ic:'x', x:5, pr:1800, lb:'お得', multi:1, ds:'覚醒の結晶5。1つずつ買うより200安い。'}
+  ];
+  var GG_SKIN_PR = {N:120, R:370, SR:1220, SSR:3060};
+  var GG_PASS = {pr:610, days:7, gem:500, max:28};
+  function ggShopItem(id){ for(var i=0;i<GG_SHOP_ITEMS.length;i++) if(GG_SHOP_ITEMS[i].id===id) return GG_SHOP_ITEMS[i]; return null; }
+  function ggSkinOf(key){ for(var i=0;i<CASTLE_SKINS.length;i++) if(CASTLE_SKINS[i].key===key) return CASTLE_SKINS[i]; return null; }
+  function ggPassAfter(){ var t=ggDayNum(), cur=Math.max(ggEco.pass, t-1); return Math.min(cur+GG_PASS.days, t+GG_PASS.max-1); }
+  function ggShopBuy(id, q){
+    q=Math.max(1, Math.min(10, Math.floor(q||1)));
+    var t=ggDayNum(), cost=0, got={};
+    if(id==='pass'){
+      var np=ggPassAfter(); if(np<=ggEco.pass || ggEco.cr<GG_PASS.pr) return null;
+      cost=GG_PASS.pr; ggEco.cr-=cost; ggEco.pass=np; got.pass=np-t+1;
+    } else if(String(id).indexOf('skin:')===0){
+      var sk=ggSkinOf(String(id).slice(5)); if(!sk || ownedSkins[sk.key]) return null;
+      cost=GG_SKIN_PR[sk.rar]||3060; if(ggEco.cr<cost) return null;
+      ggEco.cr-=cost; ownedSkins[sk.key]=1; got.skin=sk.key;
+    } else {
+      var it=ggShopItem(id); if(!it) return null; if(!it.multi) q=1;
+      if(it.daily && ggEco.deal===t) return null;
+      cost=it.pr*q; if(ggEco.cr<cost) return null;
+      ggEco.cr-=cost; if(it.daily) ggEco.deal=t;
+      if(it.k){ ggEco.k+=it.k*q; got.k=it.k*q; } if(it.x){ ggEco.x+=it.x*q; got.x=it.x*q; }
+    }
+    ggEco.tot.buy++; ggEco.tot.spent+=cost; save(); return got;
+  }
+  function ggShopRender(){
+    var body=$('ggShopBody'); if(!body || homeView!=='shop') return;
+    var t=ggDayNum(), dealOut=ggEco.deal===t, pl=ggEco.pass>=t?ggEco.pass-t+1:0, st=ROSTER.cheerTanuki;
+    var say = ggEco.cr<100 ? 'クラウンは<b>▲の戦い</b>で落ちるよ。<b>3級</b>なら2.5倍！' : (!dealOut ? 'きょうの<b>特価</b>、まだ残ってるよ！' : 'きょうも いい品がそろってるよ！');
+    var h='<div class="ggshop">';
+    h+='<div class="ggsp-bar"><span class="ggsp-own">所持</span>'+GG_ECO_IC.cr+'<b>'+ggNum(ggEco.cr)+'</b><small>クラウン</small><span class="ggsp-mat">'+GG_ECO_IC.k+ggEco.k+GG_ECO_IC.x+ggEco.x+(ggEco.n?GG_ECO_IC.n+ggEco.n:'')+'</span></div>';
+    h+='<div class="ggsp-npc"><div class="ggsp-say"><span class="ggsp-tab">タヌキ商店</span>'+say+'</div><span class="ggsp-art">'+(st?SVG.get(st.sprite):'')+'</span></div>';
+    h+='<div class="ggsp-sec">💎パス</div><div class="ggsp-pass"><div class="ggsp-card"><small>GRAMMAR GUARD</small><b>DIAMOND<br>PASS</b><span class="ggsp-gem">💎</span></div><div class="ggsp-pi">'+GG_PASS.days+'日間、その日<b>はじめての▲</b>で <b>💎+'+GG_PASS.gem+'</b>。<br>'+(pl?'のこり <b>'+pl+'日</b>・きょうは'+(ggEco.passDay===t?'<b>受け取りずみ</b>':'<b>まだ</b>（▲で受け取る）'):'いまは持っていない')+'<br><small>買い足すと'+GG_PASS.days+'日のびる（最大'+GG_PASS.max+'日）</small></div>';
+    h+='<button class="ggsp-buy'+(ggEco.cr<GG_PASS.pr?' short':'')+'" data-id="pass">'+GG_ECO_IC.cr+ggNum(GG_PASS.pr)+'</button></div>';
+    h+='<div class="ggsp-sec">育成素材</div><div class="ggsp-grid">';
+    GG_SHOP_ITEMS.forEach(function(it){ var out=it.daily&&dealOut;
+      h+='<button class="ggsp-it'+(out?' out':'')+(ggEco.cr<it.pr?' short':'')+'" data-id="'+it.id+'">'+(it.lb?'<span class="ggsp-lb'+(it.daily?' day':'')+'">'+it.lb+'</span>':'')+'<span class="ggsp-nm">'+it.nm+'</span><span class="ggsp-pic">'+GG_ECO_IC[it.ic]+'<b>×'+(it.k||it.x)+'</b></span><span class="ggsp-pr">'+GG_ECO_IC.cr+ggNum(it.pr)+'</span></button>'; });
+    h+='</div>';
+    var sk=CASTLE_SKINS.filter(function(s){ return !ownedSkins[s.key]; }).sort(function(a,b){ return rarRank(a.rar)-rarRank(b.rar); });
+    h+='<div class="ggsp-sec">城スキン</div>';
+    if(!sk.length) h+='<div class="muted" style="text-align:center;font-size:13px">城スキンは全部そろっている！</div>';
+    else { h+='<div class="ggsp-grid">'; sk.forEach(function(s){ var pr=GG_SKIN_PR[s.rar]||3060;
+      h+='<button class="ggsp-it'+(ggEco.cr<pr?' short':'')+'" data-id="skin:'+s.key+'"><span class="ggsp-nm">'+rarTag(s.rar)+' '+esc(s.name)+'</span><span class="ggsp-pic sk"><svg viewBox="0 0 100 120" width="50" height="60">'+skinSVGStr(s)+'</svg><small>'+skinBuffLabel(s)+'</small></span><span class="ggsp-pr">'+GG_ECO_IC.cr+ggNum(pr)+'</span></button>'; }); h+='</div>'; }
+    h+='<div class="ggsp-note">'+GG_ECO_IC.cr+' <b>クラウン</b>は、選んだ級で<b>正解率70%以上で勝つ（▲）</b>と落ちる。量は<b>正解の数×級の倍率</b>（5級×1・4級×1.5・<b>3級×2.5</b>・準2級から×3）。本物のお金はつかわない。'+(ggEco.tot.buy?'<br>これまでに使ったクラウン：'+ggNum(ggEco.tot.spent)+'（'+ggEco.tot.buy+'回）':'')+'</div>';
+    body.innerHTML=h+'</div>';
+    [].forEach.call(body.querySelectorAll('[data-id]'), function(b){ b.onclick=function(){ if(b.classList.contains('out')) return; ggShopConfirm(b.getAttribute('data-id')); }; });
+  }
+  function ggShopConfirm(id){
+    var card=$('unitPopCard'); if(!card) return;
+    var t=ggDayNum(), q=1, nm, pic, ds, pr, multi=false, sk=null;
+    if(id==='pass'){ nm='💎パス（'+GG_PASS.days+'日）'; pic=GG_ECO_IC.pass; ds='その日はじめての▲で💎+'+GG_PASS.gem+'。'+GG_PASS.days+'日間。'; pr=GG_PASS.pr; }
+    else if(String(id).indexOf('skin:')===0){ sk=ggSkinOf(String(id).slice(5)); if(!sk) return; nm=esc(sk.name); pic='<svg viewBox="0 0 100 120" width="60" height="72">'+skinSVGStr(sk)+'</svg>'; ds=rarTag(sk.rar)+'　装備するとバフ：'+skinBuffLabel(sk); pr=GG_SKIN_PR[sk.rar]||3060; }
+    else { var it=ggShopItem(id); if(!it) return; nm=it.nm; pic=GG_ECO_IC[it.ic]; ds=it.ds; pr=it.pr; multi=!!it.multi; }
+    function draw(){
+      var cost=pr*q, after=ggEco.cr-cost, ok=after>=0;
+      var h='<div class="ggcf"><div class="ggcf-hd">かくにん</div><div class="ggcf-nm">'+nm+'</div><div class="ggcf-pic">'+pic+'</div><div class="ggcf-ds">'+ds+'</div>';
+      h+='<div class="ggcf-need"><span>必要</span>'+GG_ECO_IC.cr+'<b>'+ggNum(cost)+'</b></div>';
+      if(id==='pass'){ var np=ggPassAfter(), l0=ggEco.pass>=t?ggEco.pass-t+1:0; if(np<=ggEco.pass) ok=false; h+='<div class="ggcf-row"><span>のこり</span><span>'+l0+'日<i class="ggcf-ar">▶</i>'+(np<=ggEco.pass?'<b class="ggcf-ng">これ以上のばせない</b>':(np-t+1)+'日')+'</span></div>'; }
+      h+='<div class="ggcf-row"><span>所持</span><span>'+ggNum(ggEco.cr)+'<i class="ggcf-ar">▶</i>'+(after>=0?ggNum(after):'<b class="ggcf-ng">たりないよ</b>')+'</span></div>';
+      if(multi) h+='<div class="ggcf-qty"><button class="ggcf-m"'+(q<=1?' disabled':'')+'>－</button><b>'+q+'</b><button class="ggcf-p"'+(q>=10||ggEco.cr<pr*(q+1)?' disabled':'')+'>＋</button></div><div class="ggcf-qs">買う数</div>';
+      h+='<div class="ggcf-ask">'+(multi?'いくつ 買いますか？':'買いますか？')+'</div><div class="ggcf-bt"><button class="btn ghost ggcf-no">とじる</button><button class="btn ggcf-ok"'+(ok?'':' disabled')+'>けってい</button></div></div>';
+      card.innerHTML=h;
+      var m=card.querySelector('.ggcf-m'), p=card.querySelector('.ggcf-p');
+      if(m) m.onclick=function(){ if(q>1){ q--; draw(); } };
+      if(p) p.onclick=function(){ if(q<10){ q++; draw(); } };
+      card.querySelector('.ggcf-no').onclick=closeUnitPop;
+      card.querySelector('.ggcf-ok').onclick=function(){ var got=ggShopBuy(id,q); if(!got){ draw(); return; } try{ Sound.play('correct'); }catch(e){} try{ renderHome(); }catch(e){} ggShopGot(got); };
+    }
+    draw(); $('unitPop').classList.add('on');
+  }
+  function ggShopGot(got){
+    var card=$('unitPopCard'); if(!card) return;
+    var g='', sk=got.skin?ggSkinOf(got.skin):null;
+    if(got.k) g+='<span><i>'+GG_ECO_IC.k+'</i>かけら ×'+got.k+'</span>';
+    if(got.x) g+='<span><i>'+GG_ECO_IC.x+'</i>結晶 ×'+got.x+'</span>';
+    if(got.pass) g+='<span><i>'+GG_ECO_IC.pass+'</i>💎パス のこり'+got.pass+'日</span>';
+    if(sk) g+='<span><i><svg viewBox="0 0 100 120" width="40" height="48">'+skinSVGStr(sk)+'</svg></i>'+esc(sk.name)+'</span>';
+    card.innerHTML='<div class="ggcf got"><b class="ggcf-tt">かくとく！</b><div class="ggcf-gets">'+g+'</div><div class="ggcf-bt">'+(sk?'<button class="btn ghost ggcf-eq">装備する</button>':'')+'<button class="btn ggcf-ok">OK</button></div></div>';
+    var eq=card.querySelector('.ggcf-eq'); if(eq) eq.onclick=function(){ equipSkin(sk.key); closeUnitPop(); };
+    card.querySelector('.ggcf-ok').onclick=closeUnitPop;
+    $('unitPop').classList.add('on');
+  }
+  // ホーム（上の札・メニューの説明・ショップの中身）
+  function ggEcoHome(){
+    var p=$('ggCrPill'); if(p) p.innerHTML=GG_ECO_IC.cr+'<span>'+ggNum(ggEco.cr)+'</span>';
+    var s=$('ggShopSub'); if(s) s.innerHTML=GG_ECO_IC.cr+' '+ggNum(ggEco.cr)+'クラウン'+(ggEco.deal!==ggDayNum()?'・<b style="color:#e2384d">きょうの特価あり</b>':'')+'・育成素材・城スキン・💎パス';
+    ggShopRender();
+  }
   function endBattle(win){
     if(B.stage.learn){ endLearnTower(win); return; } // 🎓学習の塔
     if(B.stage.endless){ endTower(); return; }
@@ -14476,8 +14814,10 @@ const Game = (()=>{
       enterBattle(B.stage);
     };
     var __gb=null; try{ __gb=ggGradeEnd(win); }catch(e){}
+    var __eco=null; try{ __eco=ggEcoEnd(__gb); }catch(e){}
     try{ ggResult(__g0, __m0); }catch(e){}
     try{ ggGradeShow(__gb); }catch(e){}
+    try{ ggEcoShow(__eco); }catch(e){}
     show('result');
   }
 
@@ -14667,12 +15007,13 @@ const Game = (()=>{
   // ===== ⑱ 英語PvP（自動シミュ対戦・確定仕様 2026-06-09）=====
   // 相手の編成・城強化・その他強化を読み込み、コンボ20想定で同じ標準ステージを自走シミュ→敵城ダメージで勝敗。
   const PVP_PREFIX='GGPVP1:', PVP_STAGE_AREA=28, PVP_SIM_SECONDS=60, PVP_TIMESCALE=8;
-  function pvpSnap(){ return {deck:deck.slice(),owned:Object.assign({},owned),unitLv:Object.assign({},unitLv),castleLv:castleLv,regenLv:regenLv,enMaxLv:enMaxLv,freezeDurLv:freezeDurLv,freezeCostLv:freezeCostLv,comboGuardLv:comboGuardLv,equippedSkin:equippedSkin,ownedSkins:Object.assign({},ownedSkins),equippedParts:Object.assign({},equippedParts),ownedParts:Object.assign({},ownedParts),learnBest:Object.assign({},learnBest),autoSummon:autoSummon}; }
-  function pvpRestore(s){ deck=s.deck;owned=s.owned;unitLv=s.unitLv;castleLv=s.castleLv;regenLv=s.regenLv;enMaxLv=s.enMaxLv;freezeDurLv=s.freezeDurLv;freezeCostLv=s.freezeCostLv;comboGuardLv=s.comboGuardLv;equippedSkin=s.equippedSkin;ownedSkins=s.ownedSkins;equippedParts=s.equippedParts;ownedParts=s.ownedParts;learnBest=s.learnBest;autoSummon=s.autoSummon; }
+  function pvpSnap(){ return {ggAw:ggEco.aw, deck:deck.slice(),owned:Object.assign({},owned),unitLv:Object.assign({},unitLv),castleLv:castleLv,regenLv:regenLv,enMaxLv:enMaxLv,freezeDurLv:freezeDurLv,freezeCostLv:freezeCostLv,comboGuardLv:comboGuardLv,equippedSkin:equippedSkin,ownedSkins:Object.assign({},ownedSkins),equippedParts:Object.assign({},equippedParts),ownedParts:Object.assign({},ownedParts),learnBest:Object.assign({},learnBest),autoSummon:autoSummon}; }
+  function pvpRestore(s){ if(s.ggAw) ggEco.aw=s.ggAw; deck=s.deck;owned=s.owned;unitLv=s.unitLv;castleLv=s.castleLv;regenLv=s.regenLv;enMaxLv=s.enMaxLv;freezeDurLv=s.freezeDurLv;freezeCostLv=s.freezeCostLv;comboGuardLv=s.comboGuardLv;equippedSkin=s.equippedSkin;ownedSkins=s.ownedSkins;equippedParts=s.equippedParts;ownedParts=s.ownedParts;learnBest=s.learnBest;autoSummon=s.autoSummon; }
   function pvpMakeCardObj(name){
     var c={v:2,name:(name||'プレイヤー').toString().slice(0,12)||'プレイヤー',deck:deck.slice(0,5),lv:{},stars:{},parts:{},cas:castleLv,reg:regenLv,enm:enMaxLv,fzd:freezeDurLv,fzc:freezeCostLv,cg:comboGuardLv,skin:equippedSkin,learn:Object.assign({},learnBest),iron:Object.keys(ironCleared).length}; // iron=⚔鉄の試練バッジ数（読み取り専用の自慢用）
     c.deck.forEach(function(k){ c.lv[k]=unitLv[k]||0; c.stars[k]=owned[k]||1; if(equippedParts[k])c.parts[k]=equippedParts[k]; });
     try{ if(ggGB.pvp){ var __g=ggGBGrade(); if(__g>=0) c.gb={g:__g, t:ggGBTotal(), c:ggGBTop9()}; } }catch(e){}
+    try{ c.deck.forEach(function(k){ var __a=ggAwLv(k); if(__a){ c.aw=c.aw||{}; c.aw[k]=__a; } if(ggEco.col[k]===1){ c.nj=c.nj||{}; c.nj[k]=1; } }); }catch(e){}
     return c;
   }
   function pvpEncode(o){ return PVP_PREFIX+btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
@@ -14684,6 +15025,7 @@ const Game = (()=>{
     castleLv=c.cas||0; regenLv=c.reg||0; enMaxLv=c.enm||0; freezeDurLv=c.fzd||0; freezeCostLv=c.fzc||0; comboGuardLv=c.cg||0;
     equippedSkin=c.skin||'default'; var os={default:1}; if(equippedSkin)os[equippedSkin]=1; ownedSkins=os;
     learnBest=Object.assign({},c.learn||{}); autoSummon=true;
+    ggEco.aw={}; deck.forEach(function(k){ var __a=Math.floor(+(c.aw&&c.aw[k])||0); if(__a>0) ggEco.aw[k]=Math.min(3,__a); }); // ✨覚醒（10-21）
   }
   // 1編成ぶんの戦力を事前計算。カードをglobalsに適用してからステータスを読む。コンボ20・スキン/学習バフ込み。
   function pvpComputeSide(card){
@@ -14732,7 +15074,7 @@ const Game = (()=>{
     var dk=(c.deck||[]).filter(function(k){ return ROSTER[k]; }).slice(0,5);
     var h='<div class="ggpc'+(opp?' opp':'')+'"><div class="hd"><b>'+esc(c.name||'プレイヤー')+'</b><small>'+(opp?'あいて':'あなた')+'のカード'+(c.iron?'・⚔'+c.iron:'')+'</small></div>'+((c.gb&&c.gb.g>=0&&c.gb.g<=5)?'<div style="margin:-2px 0 6px"><span class="ggpcgb">'+ggPyrFrom(c.gb.c,18)+'級バッジ '+ggGBLabel(Math.floor(c.gb.g))+'</span></div>':'')+'<div class="dk">';
     dk.forEach(function(k){ var r=ROSTER[k], st=Math.max(0,((c.stars&&c.stars[k])||1)-1), lv=(c.lv&&c.lv[k])||0;
-      h+='<div class="gxr-'+r.rar+'"><i>'+r.rar+'</i><span class="a">'+SVG.get(r.sprite)+'</span><small>Lv'+lv+(st?' +'+st:'')+'</small></div>'; });
+      var __aw=Math.min(3,Math.floor(+(c.aw&&c.aw[k])||0)), __nj=!!(c.nj&&c.nj[k]); h+='<div class="gxr-'+r.rar+'"><i>'+r.rar+'</i><span class="a'+((__aw||__nj)?' ggawc'+(__aw?' a'+__aw:'')+(__nj?' nj':''):'')+'">'+SVG.get(r.sprite)+(__aw?'<b class="ggaw-cn">◆'+__aw+'</b>':'')+'</span><small>Lv'+lv+(st?' +'+st:'')+'</small></div>'; });
     h+='</div><div class="ft">城Lv'+(c.cas||0)+'・エネ回復Lv'+(c.reg||0)+'・上限Lv'+(c.enm||0)+'</div></div>';
     return h;
   }
@@ -14899,7 +15241,7 @@ const Game = (()=>{
     godCastle(){ if(!B) return 'no battle'; B.castleA=B.castleAMax=1e9; return 'castle invincible (test)'; }, // 検証用：自城を実質無敵に（完走テスト）
     // 90%正答で1問解く（left=正解固定の前提。fresh問題があるときだけ）
     answer(correct){ if(!curQ||curQ.locked) return false; const i=correct?0:1; const b=$('choices').children[i]; if(!b) return false; answer(i,b); return true; },
-    ggB(){ return B; }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
+    ggB(){ return B; }, ggEcoGet(){ return ggEco; }, ggEcoSet(o){ ggEco=ggEcoNorm(o); }, ggShopBuy(id,q){ return ggShopBuy(id,q); }, ggAwUp(k){ return ggAwUp(k); }, ggUnitStats(k){ return unitStats(k); }, ggStatsAtLv(k,l){ return statsAtLv(k,l); }, ggOwn(k,n){ owned[k]=n||1; }, ggPvpCard(n){ return pvpMakeCardObj(n||'t'); }, ggPvpSide(c){ var __s=pvpSnap(); var __r=pvpComputeSide(c); pvpRestore(__s); return __r; }, ggDay(){ return ggDayNum(); }, ggEcoDrop(r,c){ var __b=B; B={correct:c}; try{ return ggEcoEnd(r); } finally{ B=__b; } }, ggGBget(){ return ggGB; }, ggGBset(o){ ggGB=ggGBNorm(o); }, ggSpawn(type, x){ spawnEnemy(type); var e=B.enemies[B.enemies.length-1]; if(e && x!=null){ e.x=x; place(e.el, x); } return !!e; }, // 10-21 検証用
     state(){ if(!B) return null; let boss=null; for(let k=0;k<B.enemies.length;k++){ if(B.enemies[k].boss){boss=B.enemies[k];break;} }
       let pu=null; for(let z=0;z<B.allies.length;z++){ if(B.allies[z].part){ const a=B.allies[z]; pu={key:a.key, part:a.part.name, type:a.part.type, baseAtk:Math.round(a.atk), liveAtkMul:+comboPartAtkMul(a).toFixed(3), hpMax:a.hpMax}; break; } } // 🔩パーツ装着ユニットの実効値（検証用）
       return { t:+B.t.toFixed(1), ca:Math.round(B.castleA/Math.max(1,B.castleAMax)*100), ce:Math.round(B.castleE/Math.max(1,B.castleEMax)*100), allies:B.allies.length, enemies:B.enemies.length, bossHp:boss?Math.round(boss.hp/boss.hpMax*100):null, charge:(boss&&boss.charge)?Math.round(boss.charge.t):null, combo:B.combo, bestCombo:B.bestCombo, answered:B.answered, correct:B.correct, ended:!!B.ended, energy:Math.round(B.energy), fresh:Math.round(B.fresh||0), meteorOn:!!B.meteorOn, meteors:(B.meteorCount||0), egen:Math.round(B.energyGen||0), softcap:B.softcap, energyMax:B.energyMax, curLevel:(curQ&&curQ.level)||null, curStretch:!!(curQ&&curQ.stretch), rt:Math.round(B.lastReactMs||0), rg:+(((B.lastReadGain==null)?1:B.lastReadGain).toFixed(3)), masher:!!B.masher, missStreak:B.missStreak||0, qAge:(curQ?Math.round(performance.now()-(curQ.shownAt||performance.now())):null), qLocked:!!(curQ&&curQ.locked), qcc:(curQ&&curQ.choiceCount)||null, gems:gems, learnGemToday:learnGemToday, learnGemDay:learnGemDay, wasCleared:!!B.wasCleared, partUnit:pu }; }
