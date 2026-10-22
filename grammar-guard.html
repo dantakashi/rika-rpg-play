@@ -910,6 +910,13 @@
   #dailyPop .card{animation:ggPopIn .4s cubic-bezier(.2,1.35,.4,1)}
   #firstBadge{transform:none} #firstBadge.show{animation:ggPopIn .45s cubic-bezier(.2,1.5,.4,1)}
   .ggcf-tt, .ggbres .ggbr-tt{animation-name:ggProIn}
+
+  /* ===== 10体編成（10-23）===== */
+  .ggdk10{display:grid!important; grid-template-columns:repeat(5,max-content); gap:6px!important; margin-bottom:6px!important}
+  .ggdk10 > div{position:relative}
+  .ggdk10 > div.ggfront::after{content:''; position:absolute; left:-2px; right:-2px; bottom:-5px; height:3px; border-radius:2px; background:#5a6670; opacity:.55}
+  .ggdk10-h{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; font-weight:900; color:#5d5345; margin:0 0 5px}
+  .ggdk10-h b{font-size:13px} .ggdk10-h small{font-size:11px; font-weight:800; color:#8a7f6c}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -1644,7 +1651,7 @@ if(typeof CP_ART!=='undefined'){ var __sprb=(typeof window!=='undefined' && wind
       <div class="homeview" data-view="grow">
         <button class="menubtn" data-go="gacha">🎰 ガチャ<span class="sub">💎グラマージェムで味方を入手</span></button>
         <button class="menubtn" data-go="charup">💪 キャラ強化<span class="sub">味方をゴールドで強くする・素材で覚醒</span></button>
-        <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（5体＋GR枠）</span></button>
+        <button class="menubtn" data-go="deckedit">🧩 編成<span class="sub">出撃メンバーを選ぶ（10体＋GR枠）</span></button>
         <button class="menubtn" data-go="castle">🏯 城強化<span class="sub">HP・エネルギー速度・上限</span></button>
         <button class="menubtn" id="partsMenuBtn" data-go="parts" style="display:none">🛠️ コンボパーツ<span class="sub">モンスターに装着・コンボで強化</span></button>
         <button class="menubtn" data-go="skins">🏯 城スキン<span class="sub">城の見た目を変える＋バフ（💎ガチャ）</span></button>
@@ -1692,7 +1699,7 @@ if(typeof CP_ART!=='undefined'){ var __sprb=(typeof window!=='undefined' && wind
       </div>
       <div class="homeview" data-view="deckedit">
         <div class="card">
-          <div style="font-weight:800; margin-bottom:8px">🧩 編成（5体＋GR枠・召喚はここからランダム）</div>
+          <div style="font-weight:800; margin-bottom:8px">🧩 編成（10体＋GR枠・召喚はここからランダム）</div>
           <div id="deckBody"></div>
         </div>
       </div>
@@ -11629,15 +11636,17 @@ const Game = (()=>{
   let lastGacha = null;
   function unitsByRarity(rar){ return ROSTER_KEYS.filter(function(k){return ROSTER[k].rar===rar;}); }
   const STARTERS=['guardTurtle','dashFox','arrowBird','ninjaFrog','shieldBear'];
+  var DECK_MAX = 10, DECK_MIN = 5; // 10体編成（10-23）: ふつうの枠は10まで・少なくとも5
   function ensureStarter(){
     // 初期キャラ5体は必ず所持（編成5枠固定の前提・既存セーブにも不足分を付与）
     STARTERS.forEach(function(k){ if(!owned[k]) owned[k]=1; });
     deck = deck.filter(function(k){return owned[k] && ROSTER[k];});
     ggGrNorm(); // GR は GR 枠へ（10-22 夕方）
-    // 5枠固定：足りなければ手持ちから補充、多ければ5体に切り詰め
+    // 10体編成（10-23）: 5体より少なければ手持ちから補充（前の5枠固定の下限）・10体より多ければ切り詰め。5〜10体はそのまま（空きを勝手に埋めない）
+    deck = deck.filter(function(k,i,a){ return a.indexOf(k)===i; });
     var pool=Object.keys(owned).filter(function(k){return ROSTER[k] && !isGR(k);});
-    for(var i=0;i<pool.length && deck.length<5;i++){ if(deck.indexOf(pool[i])<0) deck.push(pool[i]); }
-    if(deck.length>5) deck = deck.slice(0,5);
+    for(var i=0;i<pool.length && deck.length<DECK_MIN;i++){ if(deck.indexOf(pool[i])<0) deck.push(pool[i]); }
+    if(deck.length>DECK_MAX) deck = deck.slice(0,DECK_MAX);
   }
   function swapDeck(outKey, inKey){
     if(isGR(inKey)){ toggleDeck(inKey); return; } // GR は GR 枠（10-22 夕方）
@@ -11685,7 +11694,7 @@ const Game = (()=>{
     var before = unitStars(key), refunded = 0;
     if(!isNew && before >= PLUS_CAP){ refunded = DUPE_GOLD[rar]||40; gold += refunded; }
     else owned[key] = (owned[key]||0) + 1;
-    if(isNew){ if(isGR(key)){ if(grDeck.length<GR_SLOTS && grDeck.indexOf(key)<0) grDeck.push(key); } else if(deck.length<5) deck.push(key); }
+    if(isNew){ if(isGR(key)){ if(grDeck.length<GR_SLOTS && grDeck.indexOf(key)<0) grDeck.push(key); } else if(deck.length<DECK_MAX) deck.push(key); }
     return {key:key, rar:ROSTER[key].rar, isNew:isNew, plus:unitStars(key), refunded:refunded, pity:pityHit, pick:(rar==='SSR' && key===pk)};
   }
   function freeReady(){ return ggFree !== todayStr(); }
@@ -11992,12 +12001,25 @@ const Game = (()=>{
     else { b.className='btn ghost'; b.disabled=true; b.textContent='GR枠がいっぱい（'+GR_SLOTS+'体）'; }
     acts.appendChild(b);
   }
+  /* 10体編成（10-23）: 編成の中のキャラの詳細のボタン。先頭にする（鉄の試練は先頭5体）・外す（5体より少なくはしない） */
+  function ggDeckFront(key){ var i=deck.indexOf(key); if(i<=0) return; deck.splice(i,1); deck.unshift(key); save(); renderHome(); }
+  function ggDeckPopIn(acts, key){
+    var i=deck.indexOf(key);
+    var st=document.createElement('div'); st.className='muted'; st.style.cssText='font-size:12px;text-align:center';
+    st.textContent='✓ 編成中（'+(i+1)+'番目'+(i<IRON_DECK_MAX?'・鉄の試練でも出る':'')+'）'; acts.appendChild(st);
+    var row=document.createElement('div'); row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px';
+    var f=document.createElement('button'); f.className='btn ghost'; f.textContent='先頭にする'; f.disabled=(i===0);
+    f.onclick=function(){ ggDeckFront(key); closeUnitPop(); }; row.appendChild(f);
+    var o=document.createElement('button'); o.className='btn ghost'; o.textContent=deck.length>DECK_MIN?'編成から外す':'5体より減らせない'; o.disabled=deck.length<=DECK_MIN;
+    o.onclick=function(){ toggleDeck(key); closeUnitPop(); }; row.appendChild(o);
+    acts.appendChild(row);
+  }
   function toggleDeck(key){
     if(isGR(key)){ if(!owned[key]) return; var __gi=grDeck.indexOf(key); if(__gi>=0) grDeck.splice(__gi,1); else if(grDeck.length<GR_SLOTS) grDeck.push(key); save(); renderHome(); return; } // GR は GR 枠（10-22 夕方）
     if(!owned[key]) return;
     const i=deck.indexOf(key);
-    if(i>=0){ if(deck.length<=1) return; deck.splice(i,1); }
-    else { if(deck.length>=5) return; if(isGR(key) && deck.some(isGR)) return; deck.push(key); } // GR は編成に1体
+    if(i>=0){ if(deck.length<=DECK_MIN) return; deck.splice(i,1); }
+    else { if(deck.length>=DECK_MAX) return; deck.push(key); } // 10体編成（10-23）
     save(); renderHome();
   }
   function upgradeCastle(){ if(castleMaxed()) return; const c=castleUpCost(); if(gold<c) return; gold-=c; castleLv++; Sound.play('correct'); save(); renderHome(); }
@@ -12191,9 +12213,8 @@ const Game = (()=>{
     } else if(mode==='deck'){
       const inDeck=deck.indexOf(key)>=0;
       if(inDeck){
-        const ba=document.createElement('button'); ba.className='btn ghost'; ba.style.width='100%'; ba.disabled=true;
-        ba.textContent='✓ 編成中（5体固定・入れ替えで変更）'; acts.appendChild(ba);
-      } else if(deck.length<5){
+        ggDeckPopIn(acts, key);
+      } else if(deck.length<DECK_MAX){
         const ba=document.createElement('button'); ba.className='btn'; ba.style.width='100%'; ba.textContent='編成にいれる';
         ba.onclick=function(){ toggleDeck(key); closeUnitPop(); }; acts.appendChild(ba);
       } else {
@@ -12451,15 +12472,16 @@ const Game = (()=>{
   }
   function renderDeck(){
     const body=$('deckBody'); if(!body) return; body.innerHTML='';
-    const row=document.createElement('div'); row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
-    for(let i=0;i<5;i++){
+    const __h=document.createElement('div'); __h.className='ggdk10-h'; __h.innerHTML='<b>編成 '+deck.length+'/'+DECK_MAX+'</b><small>'+(deck.length<DECK_MAX?'あと'+(DECK_MAX-deck.length)+'体入れられる・':'')+'下線＝鉄の試練で出る'+IRON_DECK_MAX+'体</small>'; body.appendChild(__h);
+    const row=document.createElement('div'); row.className='ggdk10'; row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
+    for(let i=0;i<DECK_MAX;i++){
       const slot=document.createElement('div'); slot.style.cssText='width:54px;height:54px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px '+(deck[i]?'solid var(--ally)':'dashed var(--line)');
-      if(deck[i]){ const dk=deck[i]; slot.style.cursor='pointer'; try{ slot.className='gxr-'+ROSTER[dk].rar; slot.style.border='3px solid var(--rc)'; slot.style.background='linear-gradient(180deg,#fff 55%,color-mix(in srgb,var(--rc) 22%,#fff))'; }catch(e){} slot.innerHTML='<span style="width:42px;height:42px;display:block">'+ggKsSVG(dk)+'</span>'; slot.addEventListener('click',function(){openUnitPop(dk,'deck');}); } else slot.textContent='＋';
+      if(deck[i]){ const dk=deck[i]; slot.style.cursor='pointer'; try{ slot.className='gxr-'+ROSTER[dk].rar; slot.style.border='3px solid var(--rc)'; slot.style.background='linear-gradient(180deg,#fff 55%,color-mix(in srgb,var(--rc) 22%,#fff))'; }catch(e){} slot.innerHTML='<span style="width:42px;height:42px;display:block">'+ggKsSVG(dk)+'</span>'; slot.addEventListener('click',function(){openUnitPop(dk,'deck');}); if(i<IRON_DECK_MAX) slot.classList.add('ggfront'); } else slot.textContent='＋';
       row.appendChild(slot);
     }
     body.appendChild(row);
     body.appendChild(ggGrRow());
-    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='編成は5体＋GR枠。手持ちをタップ→入れ替えで変更できます。戦闘の召喚はこの5体とGR枠から出ます。';
+    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='編成は10体＋GR枠。手持ちをタップ→入れる・入れ替えで変更できます。戦闘の召喚はこの'+deck.length+'体とGR枠から出ます。';
     body.appendChild(note);
     body.appendChild(ggBoxBar(renderDeck));
     const __ks=ggBoxKeys(); const __c=document.createElement('div'); __c.className='ggcount'; __c.textContent=__ks.length+'体'; body.appendChild(__c);
@@ -12769,7 +12791,7 @@ const Game = (()=>{
     const gb=document.createElement('button'); gb.className='btn'; gb.style.width='100%'; gb.textContent='🛠️ パーツを引く（'+PARTS_GACHA_COST+'💎）'; gb.disabled=gems<PARTS_GACHA_COST; gb.onclick=doPartGacha; g.appendChild(gb);
     body.appendChild(g);
     // --- 装着（編成5体）---
-    const eh=document.createElement('div'); eh.style.cssText='font-weight:800;margin:4px 0 6px'; eh.textContent='🧩 装着（編成の5体とGR枠）'; body.appendChild(eh);
+    const eh=document.createElement('div'); eh.style.cssText='font-weight:800;margin:4px 0 6px'; eh.textContent='🧩 装着（編成の10体とGR枠）'; body.appendChild(eh);
     deck.concat(grDeck).forEach(function(key){ const r=ROSTER[key]; if(!r) return;
       const cur=partOf(key);
       const row=document.createElement('div'); row.style.cssText='border:2px solid var(--line);border-radius:12px;padding:8px;background:#fff;margin-bottom:8px';
@@ -13283,7 +13305,7 @@ const Game = (()=>{
     return h;
   }
   const IRON_MISS_PCT = 0.08;  // 誤答1回で自城最大HPの8%が崩れる
-  const IRON_DECK_MAX = 3;     // 出撃できるのは編成の先頭3体
+  const IRON_DECK_MAX = 5;     // 出撃できるのは編成の先頭5体（10体編成で 3→5・10-23）
   const FIELD_W = 940; // 論理幅(px相当)。castle間。
   var __fwC=0; try{ window.addEventListener('resize', function(){ __fwC=0; }); }catch(e){}
   function fieldW(){ if(!__fwC) __fwC=$('field').clientWidth; return __fwC; }
@@ -13296,7 +13318,7 @@ const Game = (()=>{
     if(stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive){ B.castleE=B.castleEMax=1e9; }
     B.hero = !!stage.hero; B.heroNext = 14; // 👑英雄級: 新ギミック敵の乱入タイマー
     B.wasCleared = stage.hero ? !!heroCleared[stage.area] : stage.iron ? !!ironCleared[stage.area] : !!cleared[stage.area];
-    if(stage.iron){ try{ fxBanner('⚔ 鉄の試練！誤答は城がくずれる・出撃は3体','#5a6670'); }catch(e){} }
+    if(stage.iron){ try{ fxBanner('⚔ 鉄の試練！誤答は城がくずれる・出撃は先頭'+IRON_DECK_MAX+'体','#5a6670'); }catch(e){} }
     $('castleAsvg').innerHTML = castleSkinSVG(); // 🏯装備中の城スキンで自城を描画
     $('castleEsvg').innerHTML = SVG.get('castleE');
     $('crackA').innerHTML = CRACK_SVG; $('crackE').innerHTML = CRACK_SVG;
@@ -15783,7 +15805,7 @@ const Game = (()=>{
   function pvpSnap(){ return {ggAw:ggEco.aw, deck:deck.slice(), grDeck:grDeck.slice(),owned:Object.assign({},owned),unitLv:Object.assign({},unitLv),castleLv:castleLv,regenLv:regenLv,enMaxLv:enMaxLv,freezeDurLv:freezeDurLv,freezeCostLv:freezeCostLv,comboGuardLv:comboGuardLv,equippedSkin:equippedSkin,ownedSkins:Object.assign({},ownedSkins),equippedParts:Object.assign({},equippedParts),ownedParts:Object.assign({},ownedParts),learnBest:Object.assign({},learnBest),autoSummon:autoSummon}; }
   function pvpRestore(s){ if(s.ggAw) ggEco.aw=s.ggAw; deck=s.deck; grDeck=s.grDeck||[];owned=s.owned;unitLv=s.unitLv;castleLv=s.castleLv;regenLv=s.regenLv;enMaxLv=s.enMaxLv;freezeDurLv=s.freezeDurLv;freezeCostLv=s.freezeCostLv;comboGuardLv=s.comboGuardLv;equippedSkin=s.equippedSkin;ownedSkins=s.ownedSkins;equippedParts=s.equippedParts;ownedParts=s.ownedParts;learnBest=s.learnBest;autoSummon=s.autoSummon; }
   function pvpMakeCardObj(name){
-    var c={v:2,name:(name||'プレイヤー').toString().slice(0,12)||'プレイヤー',deck:deck.slice(0,5).concat(grDeck.slice(0,GR_SLOTS)),lv:{},stars:{},parts:{},cas:castleLv,reg:regenLv,enm:enMaxLv,fzd:freezeDurLv,fzc:freezeCostLv,cg:comboGuardLv,skin:equippedSkin,learn:Object.assign({},learnBest),iron:Object.keys(ironCleared).length}; // iron=⚔鉄の試練バッジ数（読み取り専用の自慢用）
+    var c={v:3,name:(name||'プレイヤー').toString().slice(0,12)||'プレイヤー',deck:deck.slice(0,DECK_MAX).concat(grDeck.slice(0,GR_SLOTS)),lv:{},stars:{},parts:{},cas:castleLv,reg:regenLv,enm:enMaxLv,fzd:freezeDurLv,fzc:freezeCostLv,cg:comboGuardLv,skin:equippedSkin,learn:Object.assign({},learnBest),iron:Object.keys(ironCleared).length}; // iron=⚔鉄の試練バッジ数（読み取り専用の自慢用）
     c.deck.forEach(function(k){ c.lv[k]=unitLv[k]||0; c.stars[k]=owned[k]||1; if(equippedParts[k])c.parts[k]=equippedParts[k]; });
     try{ if(ggGB.pvp){ var __g=ggGBGrade(); if(__g>=0) c.gb={g:__g, t:ggGBTotal(), c:ggGBTop9()}; } }catch(e){}
     try{ if(ggCsHas()) c.cs=Object.assign({}, ggCsOn()); }catch(e){}
@@ -15794,7 +15816,7 @@ const Game = (()=>{
   function pvpEncode(o){ return PVP_PREFIX+btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
   function pvpDecode(str){ str=(str||'').trim(); if(str.indexOf(PVP_PREFIX)!==0)return null; try{ var o=JSON.parse(decodeURIComponent(escape(atob(str.slice(PVP_PREFIX.length))))); return (o&&Array.isArray(o.deck))?o:null; }catch(e){ return null; } }
   function pvpApply(c){
-    var __all=(c.deck||[]).filter(function(k){return ROSTER[k];}); deck=__all.filter(function(k){return !isGR(k);}).slice(0,5); grDeck=__all.filter(isGR).slice(0,GR_SLOTS); if(!deck.length) deck=STARTERS.slice(0,5);
+    var __all=(c.deck||[]).filter(function(k){return ROSTER[k];}); deck=__all.filter(function(k){return !isGR(k);}).slice(0,DECK_MAX); grDeck=__all.filter(isGR).slice(0,GR_SLOTS); if(!deck.length) deck=STARTERS.slice(0,5);
     owned={}; unitLv={}; equippedParts={}; ownedParts={};
     deck.concat(grDeck).forEach(function(k){ owned[k]=(function(n){ return ((c.v||1)<2 && n>1) ? 1+Math.min(PLUS_CAP,(n-1)*3) : Math.min(PLUS_CAP+1,n); })((c.stars&&c.stars[k])||1); unitLv[k]=(c.lv&&c.lv[k])||0; if(c.parts&&c.parts[k]){ equippedParts[k]=c.parts[k]; ownedParts[c.parts[k]]=1; } });
     castleLv=c.cas||0; regenLv=c.reg||0; enMaxLv=c.enm||0; freezeDurLv=c.fzd||0; freezeCostLv=c.fzc||0; comboGuardLv=c.cg||0;
@@ -15848,7 +15870,7 @@ const Game = (()=>{
   /* たいせんのカードの絵（10-17 要素14） */
   function ggPvpCardHTML(c, opp){
     if(!c) return '';
-    var dk=(c.deck||[]).filter(function(k){ return ROSTER[k]; }).slice(0,5+GR_SLOTS);
+    var dk=(c.deck||[]).filter(function(k){ return ROSTER[k]; }).slice(0,DECK_MAX+GR_SLOTS);
     var h='<div class="ggpc'+(opp?' opp':'')+'"><div class="hd"><b>'+esc(c.name||'プレイヤー')+'</b><small>'+(opp?'あいて':'あなた')+'のカード'+(c.iron?'・⚔'+c.iron:'')+'</small></div>'+((c.gb&&c.gb.g>=0&&c.gb.g<=5)?'<div style="margin:-2px 0 6px"><span class="ggpcgb">'+ggPyrFrom(c.gb.c,18)+'級バッジ '+ggGBLabel(Math.floor(c.gb.g))+'</span></div>':'')+'<div class="dk">';
     dk.forEach(function(k){ var r=ROSTER[k], st=Math.max(0,((c.stars&&c.stars[k])||1)-1), lv=(c.lv&&c.lv[k])||0;
       var __aw=Math.min(3,Math.floor(+(c.aw&&c.aw[k])||0)), __nj=!!(c.nj&&c.nj[k]); h+='<div class="gxr-'+r.rar+'"><i>'+r.rar+'</i><span class="a'+((__aw||__nj)?' ggawc'+(__aw?' a'+__aw:'')+(__nj?' nj':''):'')+'">'+ggKsSVG(k, 0, (c.ks&&ggDlx(c.ks[k])&&ggDlx(c.ks[k]).key===k)?c.ks[k]:'')+(__aw?'<b class="ggaw-cn">◆'+__aw+'</b>':'')+'</span><small>Lv'+lv+(st?' +'+st:'')+'</small></div>'; });
@@ -15924,10 +15946,17 @@ const Game = (()=>{
     grSet(d,g,own){ (own||[]).forEach(function(k){ owned[k]=owned[k]||1; }); deck=d.slice(); grDeck=(g||[]).slice(); ensureStarter(); return this.grState(); },
     grToggle(k){ owned[k]=owned[k]||1; toggleDeck(k); return this.grState(); },
     grPvp(){ var c=pvpMakeCardObj('t'); var s=pvpSnap(); var side=pvpComputeSide(c); var r={card:c.deck.slice(), deck:deck.slice(), grDeck:grDeck.slice(), units:side.units.map(function(u){ return u.key+(u.gr?'*':''); })}; pvpRestore(s); r.after={deck:deck.slice(), grDeck:grDeck.slice()}; return r; },
+    deckState(){ return {deck:deck.slice(), grDeck:grDeck.slice(), max:DECK_MAX, min:DECK_MIN, iron:IRON_DECK_MAX}; },
+    deckSet(d, own){ (own||[]).forEach(function(k){ owned[k]=owned[k]||1; }); deck=d.slice(); ensureStarter(); return this.deckState(); },
+    deckToggle(k){ owned[k]=owned[k]||1; toggleDeck(k); return this.deckState(); },
+    deckFront(k){ ggDeckFront(k); return this.deckState(); },
+    deckKeysNow(){ return deckKeys(); },
+    deckIronKeys(a){ var s=STAGES[a-1]; if(!s) return null; enterBattle(ironStage(s)); var k=deckKeys(); stopBattle(); return k; },
+    pvpSide(c){ var s=pvpSnap(); var side=pvpComputeSide(c); var r={units:side.units.map(function(u){ return u.key+(u.gr?'*':''); })}; pvpRestore(s); return r; },
     applyPower(p){
       p=p||{};
-      var roster = (p.deckKeys && p.deckKeys.length) ? p.deckKeys.slice(0,5) : STARTERS.slice(); // SSR編成も検証可
-      deck=roster.filter(function(k){ return !isGR(k); }); grDeck=roster.filter(isGR).concat(p.grKeys||[]).filter(function(k,i,a){ return ROSTER[k] && isGR(k) && a.indexOf(k)===i; }).slice(0,GR_SLOTS); roster.concat(grDeck).forEach(function(k){ if(!owned[k])owned[k]=1; if(p.plus) owned[k]=1+p.plus; unitLv[k]=p.unitLv||0; }); if(p.clearTo){ for(var __c=1;__c<=p.clearTo;__c++) cleared[__c]=true; }
+      var roster = (p.deckKeys && p.deckKeys.length) ? p.deckKeys.slice(0,DECK_MAX+GR_SLOTS) : STARTERS.slice(); // SSR編成も検証可（10体編成・10-23）
+      deck=roster.filter(function(k){ return !isGR(k); }); grDeck=roster.filter(isGR).concat(p.grKeys||[]).filter(function(k,i,a){ return ROSTER[k] && isGR(k) && a.indexOf(k)===i; }).slice(0,GR_SLOTS); roster.concat(grDeck).forEach(function(k){ if(!owned[k])owned[k]=1; if(p.plus) owned[k]=1+p.plus; if(p.plusBy) owned[k]=1+(p.plusBy[k]||0); unitLv[k]=p.unitLv||0; }); if(p.clearTo){ for(var __c=1;__c<=p.clearTo;__c++) cleared[__c]=true; }
       castleLv=p.castleLv||0; regenLv=p.regenLv||0; enMaxLv=p.enMaxLv||0;
       freezeDurLv=p.freezeDurLv||0; freezeCostLv=p.freezeCostLv||0; comboGuardLv=Math.min(COMBO_GUARD_MAX_LV, p.comboGuardLv||0);
       cleared[PARTS_UNLOCK_AREA]=true; cleared[LEARN_UNLOCK_AREA]=true;
