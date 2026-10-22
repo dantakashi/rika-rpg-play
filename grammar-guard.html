@@ -886,11 +886,30 @@
     .topbar.sub #homeBack .bk{display:none}
     .topbar.sub #homeTitle{flex:0 1 auto}
     .ggup-st{grid-template-columns:34px 26px 46px 52px}
+    /* 戦いの上の帯: スマホでは 自城・エネルギー・COMBO が1段目、敵城だけ2段目の端から端だった → 戦場と同じ並び（左に自城・まん中に COMBO・右に敵城）＋2段目にエネルギー */
+    #hud{display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); grid-template-areas:"a c e" "n n n"; column-gap:10px; row-gap:4px}
+    #hud > .meter{min-width:0}
+    #hud > .meter:nth-child(1){grid-area:a}
+    #hud > .meter:nth-child(2){grid-area:n}
+    #hud > #combo-big{grid-area:c; min-width:52px; text-align:center; line-height:1.05; font-size:11px}
+    #hud > #meterE{grid-area:e}
+  }
+  @media (max-width:374px){ /* 幅 360 の小さいスマホで、編成の5枠の5つ目が2段目に落ちていた */
+    #deckBody > div:first-child > div{width:48px!important; height:48px!important}
+    #deckBody > div:first-child > div > span{width:38px!important; height:38px!important}
   }
   .ggupb{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:60px; padding:4px 7px; border-radius:10px; background:#ece6d8; color:#8a7f6c; font-weight:900; line-height:1.15; box-shadow:0 2px 0 #0002}
   .ggupb b{font-size:13px} .ggupb small{font-size:11px; font-weight:800}
   .ggupb.ok{background:var(--ally); color:#fff; box-shadow:0 3px 0 #0003}
   .ggupb.max{background:#fff4cc; color:#b8860b}
+  /* ウィンドウを傾けて出さない（10-22 夕方 本人「ちょっと傾けるのは何なの？UI出す時、ウィンドウか。あれ要らない」）。
+     前はキャラの詳細とログインボーナスの窓が、出たあとも −4度に傾いたまま止まっていた（バッジ用のアニメを使い回していた）。題字（−3度）・初クリアのバッジ（−4度）もまっすぐに */
+  @keyframes ggPopIn{from{transform:scale(.35); opacity:0} to{transform:none; opacity:1}}
+  @keyframes ggProIn{0%{transform:scale(.4); opacity:0} 100%{transform:none; opacity:1}}
+  #unitPop .card{animation:ggPopIn .32s cubic-bezier(.2,1.35,.4,1)}
+  #dailyPop .card{animation:ggPopIn .4s cubic-bezier(.2,1.35,.4,1)}
+  #firstBadge{transform:none} #firstBadge.show{animation:ggPopIn .45s cubic-bezier(.2,1.5,.4,1)}
+  .ggcf-tt, .ggbres .ggbr-tt{animation-name:ggProIn}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -11881,7 +11900,7 @@ const Game = (()=>{
   function ggSetClaim(id, gemsN){ if(ggSet[id]) return; ggSet[id]=1; gems+=gemsN; updateGemUI(); save(); try{ Sound.play('correct'); }catch(e){} try{ ggGemPop(gemsN); }catch(e){} renderHome(); }
   function renderZukan(){
     try{ [].forEach.call(document.querySelectorAll('#home button.menubtn[data-go="gacha"] .sub'), function(s){ s.textContent = freeReady() ? '🎁 きょうの無料ガチャが引ける！' : '💎で仲間を集めよう（10連はSR以上確定）'; }); }catch(e){}
-    try{ var zb=document.querySelector('#home button[data-go="zukan"]'); if(zb){ var rd=ggSetReady(); zb.textContent='📖 キャラ図鑑'+(rd?'（受け取れる '+rd+'）':''); } }catch(e){}
+    try{ var zb=document.querySelector('#home button[data-go="zukan"]'); if(zb){ var rd=ggSetReady(); zb.innerHTML='📖 キャラ図鑑'+(rd?' <span class="ggbadge">'+rd+'</span>':''); } }catch(e){}
     var body=$('zukanBody'); if(!body) return; body.innerHTML='';
     var have=ROSTER_KEYS.filter(function(k){ return owned[k]; }).length, sets=GG_SETS.filter(function(s){ return s[2]; }), doneN=sets.filter(function(s){ return ggSetDone(s[0]); }).length;
     var top=document.createElement('div'); top.className='ggalb';
