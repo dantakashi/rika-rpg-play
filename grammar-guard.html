@@ -13654,7 +13654,7 @@ const Game = (()=>{
     if(t.gg==='fuuin') return ['⛓️','封印術士','味方を動けなくする。<b>正解すると封印がとける。</b>'];
     if(t.gg==='tossin') return ['🐗','突進兵','最初の一撃が3倍。前に<b>安い壁役（N）</b>を出して受けよう。'];
     if(t.gg==='mure') return ['🐜','群れ','弱い敵がまとまって来る。<b>範囲攻撃</b>でまとめて倒そう。'];
-    if(t.gg==='sogeki') return ['🎯','狙撃手','いちばん高い味方を遠くからねらう。<b>足の速い安い味方</b>で近づいて倒そう。'];
+    if(t.gg==='sogeki') return ['🎯','狙撃手','いちばん高い味方を遠くからねらう。<b>射程の長い味方</b>や<b>貫通</b>の攻撃で倒そう。'];
     if(t.gg==='yoroi') return ['🛡️','鎧騎士','弱い攻撃をはじく。<b>一撃の重い攻撃</b>か<b>貫通</b>なら通る。'];
     if(t.gg==='rarefog') return ['🌫️','封じの霧','近くの<b>SSR・LR</b>の攻撃を半分にする。<b>N・R</b>で倒そう。'];
     if(t.bomb) return ['💣','爆発する敵','倒すと爆発して、近くの仲間にダメージ。'];
@@ -13895,6 +13895,9 @@ const Game = (()=>{
   /* ===== 役割で解く敵（10-23）===== */
   window.GG_NEW = window.GG_NEW || {foes:1, rules:1}; if(GG_NEW.foes2==null) GG_NEW.foes2=1;
   var GG_FOE2_INTRO = {tossin:13, mure:18, sogeki:23, yoroi:36, rarefog:48};
+  // 効きの強さ。攻撃力だけだと、こちらのレベルが上がると効かなくなる（10-23 の検収で突進兵の効きがほぼ0）→ 相手の最大HPの割合も入れる
+  var GG_FOE2 = {tossinPct:0, sogekiPct:0, armor:14}; // 10-23: 割合を入れた案（0.4・0.08・20）は全体がむずかしくなるだけで、役割あり/なしの差が測れなかったので 0 に戻した（sim/p5-check.js）
+  try{ var __fo=window.__GG_FOE2_OVERRIDE; if(__fo) Object.assign(GG_FOE2, __fo); }catch(e){}
   var ggCurA = null; // いま攻撃している味方（鎧騎士の「貫通なら通る」用）
   function ggFoe2Sched(stage, S, add){
     if(!GG_NEW.foes2) return;
@@ -13907,7 +13910,7 @@ const Game = (()=>{
   }
   // 1面ごとに決まる弱点シリーズ（3章から・ボスの面はなし）。技のあるシリーズから面の番号で選ぶ
   var GG_WEAK_SER = ['ちびシンプル','ピクセルドット','浮世絵','絵札','グリッチ','ローポリ','メカ','少年漫画','ポップアート','ブリキ','ボクセル'];
-  function ggWeakSer(stage){ if(!stage || stage.boss || stage.endless || stage.learn || stage.pvp || (stage.area||0)<11) return null; var a=stage.area; return GG_WEAK_SER[(a*7+3)%GG_WEAK_SER.length]; }
+  function ggWeakSer(stage){ if(window.__GG_NO_WEAK) return null; /* 試験で面ごとの偏りを外す用 */ if(!stage || stage.boss || stage.endless || stage.learn || stage.pvp || (stage.area||0)<11) return null; var a=stage.area; return GG_WEAK_SER[(a*7+3)%GG_WEAK_SER.length]; }
   function ggWeakMul(a){ return (B && B.weakSer && ggSerCode(a.key)===B.weakSer) ? 1.5 : 1; }
   function ggFogMul(a){
     if(!B) return 1; var r=ROSTER[a.key]; if(!r || (r.rar!=='SSR' && r.rar!=='LR')) return 1;
@@ -13920,7 +13923,7 @@ const Game = (()=>{
     if(t.gg==='tossin'){ e.ggCharge=1; el.classList.add('ggtossin'); }
     else if(t.gg==='mure'){ el.classList.add('ggmure'); }
     else if(t.gg==='sogeki'){ el.classList.add('ggsogeki'); e.ggAimCd=1.2; }
-    else if(t.gg==='yoroi'){ var s=B.stage||{}; e.ggArmor=Math.round(14*(s.enemyAtkMul||1)*(GG_FOE_K?GG_FOE_K.atk:1)); el.classList.add('ggyoroi'); el.insertAdjacentHTML('beforeend','<div class="ggarmor">🛡'+e.ggArmor+'</div>'); }
+    else if(t.gg==='yoroi'){ var s=B.stage||{}; e.ggArmor=Math.round(GG_FOE2.armor*(s.enemyAtkMul||1)*(GG_FOE_K?GG_FOE_K.atk:1)); el.classList.add('ggyoroi'); el.insertAdjacentHTML('beforeend','<div class="ggarmor">🛡'+e.ggArmor+'</div>'); }
     else if(t.gg==='rarefog'){ e.ggFog=t.fogRange||160; el.classList.add('ggrarefog'); }
   }
   // 群れ: 1体出たら、近くに5体を足す（初めての面は3体・満員の分は出さない）
@@ -13933,14 +13936,14 @@ const Game = (()=>{
   function ggFoe2Step(e, dt, W){
     if(e.gg==='tossin' && e.ggCharge){
       var tg=nearestAlly(e);
-      if(tg && Math.abs(tg.x-e.x)<=e.range){ if(e.cd<=0){ var a=e.atk*enemyDmgBuff(e)*3; damage(tg, a); e.ggCharge=0; e.speed=Math.round(e.speed*0.4); e.cd=0.8; if(e.el) e.el.classList.add('hitdone'); flash(e.el); lunge(e.el); hitFx(tg); floatText(tg.x, 22, '突進！', '#e2462b'); ggSt('tossin_hit'); if(ROSTER[tg.key] && (ROSTER[tg.key].rar==='SSR'||ROSTER[tg.key].rar==='LR')) ggHintCount('tossin', 2, '🐗', '突進兵の<b>最初の一撃は3倍</b>。前に<b>安い壁役（N）</b>がいると、そこで受けられる。'); } place(e.el,e.x); return true; }
+      if(tg && Math.abs(tg.x-e.x)<=e.range){ if(e.cd<=0){ var a=Math.max(e.atk*enemyDmgBuff(e)*3, (tg.hpMax||0)*GG_FOE2.tossinPct); damage(tg, a); e.ggCharge=0; e.speed=Math.round(e.speed*0.4); e.cd=0.8; if(e.el) e.el.classList.add('hitdone'); flash(e.el); lunge(e.el); hitFx(tg); floatText(tg.x, 22, '突進！', '#e2462b'); ggSt('tossin_hit'); if(ROSTER[tg.key] && (ROSTER[tg.key].rar==='SSR'||ROSTER[tg.key].rar==='LR')) ggHintCount('tossin', 2, '🐗', '突進兵の<b>最初の一撃は3倍</b>。前に<b>安い壁役（N）</b>がいると、そこで受けられる。'); } place(e.el,e.x); return true; }
       return false;
     }
     if(e.gg==='sogeki'){
       var best=null; B.allies.forEach(function(o){ if(o.hp>0 && o.x<=e.x+4 && e.x-o.x<=e.range){ var c=(ROSTER[o.key]||{}).cost||0; if(!best || c>((ROSTER[best.key]||{}).cost||0)) best=o; } });
-      if(best){ e.ggAimCd-=dt; if(e.ggAimCd<=0){ var a2=e.atk*enemyDmgBuff(e); damage(best, a2); e.ggAimCd=1.6; flash(e.el); lunge(e.el); hitFx(best); ggSt('sogeki_hit');
+      if(best){ e.ggAimCd-=dt; if(e.ggAimCd<=0){ var a2=e.atk*enemyDmgBuff(e)+(best.hpMax||0)*GG_FOE2.sogekiPct; damage(best, a2); e.ggAimCd=1.6; flash(e.el); lunge(e.el); hitFx(best); ggSt('sogeki_hit');
           try{ if(!lod()){ var f=$('field'), m=document.createElement('div'); m.className='ggaim'; m.style.left=best.x+'px'; m.style.top=Math.max(30,(f.clientHeight||300)-60)+'px'; f.appendChild(m); setTimeout(function(){ m.remove(); }, 520); } }catch(_){}
-          var r=ROSTER[best.key]; if(r && (r.rar==='SSR'||r.rar==='LR')) ggHintCount('sogeki', 3, '🎯', '狙撃手は<b>いちばん高い味方</b>をねらう。<b>足の速い安い味方</b>で近づいて倒そう。'); }
+          var r=ROSTER[best.key]; if(r && (r.rar==='SSR'||r.rar==='LR')) ggHintCount('sogeki', 3, '🎯', '狙撃手は<b>いちばん高い味方</b>をねらう。<b>射程の長い味方</b>や<b>貫通</b>の攻撃で倒そう。'); }
         place(e.el,e.x); return true; }
       e.x -= e.speed*(e.slowT>0?0.45:1)*dt; place(e.el,e.x); return true;
     }
@@ -16184,12 +16187,13 @@ const Game = (()=>{
     deckKeysNow(){ return deckKeys(); },
     deckIronKeys(a){ var s=STAGES[a-1]; if(!s) return null; enterBattle(ironStage(s)); var k=deckKeys(); stopBattle(); return k; },
     pvpSide(c){ var s=pvpSnap(); var side=pvpComputeSide(c); var r={units:side.units.map(function(u){ return u.key+(u.gr?'*':''); })}; pvpRestore(s); return r; },
-    balInfo(){ var o={}; for(var k in ROSTER){ var r=ROSTER[k]; o[k]={rar:r.rar, theme:r.theme||'', cost:r.cost, hp:r.hp, atk:r.atk, scd:r.scd, weight:r.weight, range:r.range, atkCd:r.atkCd, name:r.name}; } return {bal:GG_BAL, roster:o}; },
+    balInfo(){ var o={}; for(var k in ROSTER){ var r=ROSTER[k]; o[k]={rar:r.rar, theme:r.theme||'', cost:r.cost, hp:r.hp, atk:r.atk, scd:r.scd, weight:r.weight, range:r.range, atkCd:r.atkCd, name:r.name, speed:r.speed, splash:!!r.splash, pierce:!!r.pierce, slow:!!r.slow, knockback:r.knockback||0, heal:r.heal||0, buff:r.buff||0, def:r.def||0}; } return {bal:GG_BAL, roster:o}; },
     popNow(){ return {pop:ggPop(), bodies:B?B.allies.length:0}; },
     serOf(keys){ var c=ggSerCount(keys||deck), o={}; for(var t in c){ var lv=ggSerLvOf(c[t]); if(lv) o[t]=lv; } return {count:c, lv:o}; },
     serNow(){ return B ? B.ser : null; },
     serTable(){ return GG_SER; },
     weakSerOf(a){ return ggWeakSer(STAGES[a-1]); },
+    foe2Cfg(){ return GG_FOE2; },
     allyMul(k){ var a=B&&B.allies.find(function(x){ return x.key===k; }); return a ? {weak:ggWeakMul(a), fog:ggFogMul(a)} : null; },
     armorTest(pierce, amt){ var e=B&&B.enemies.find(function(x){ return x.gg==='yoroi'; }); if(!e) return null; var h=e.hp; var keep=ggCurA; ggCurA={pierce:!!pierce}; damage(e, amt); ggCurA=keep; var d=h-e.hp; e.hp=h; return {armor:e.ggArmor, dealt:d}; },
     foe2Sched(a){ var S=[]; function add(at,type,n,gap,weak){ for(var i=0;i<n;i++) S.push({at:at+i*(gap||0), type:type, weak:!!weak}); } ggFoe2Sched(STAGES[a-1], S, add); return S; },
