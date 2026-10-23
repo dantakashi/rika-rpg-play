@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#234b66"/></marker></defs>
+<rect width="480" height="360" rx="22" fill="#f7f3e8"/>
+<g font-family="'Yu Gothic',sans-serif" fill="#172d40"><text x="24" y="38" font-size="23" font-weight="bold">緊急地震速報：情報の例</text>
+<text x="24" y="68" font-size="16" font-weight="bold">学習用の架空例。現在の警報ではない。</text><rect x="43" y="89" width="394" height="103" rx="16" fill="#e0e9e9" stroke="#234b66" stroke-width="3"/><text x="69" y="120" font-size="16">知らせる対象</text><text x="69" y="161" font-size="29" font-weight="bold">強い揺れの予測</text><text x="29" y="225" font-size="18">強い揺れより先に届くとは限らない。</text><text x="29" y="253" font-size="18">地震が起きる前の予知ではない。</text><text x="24" y="334" font-size="14">情報の内容を比較する模式図。実際の発表ではない。</text></g></svg>

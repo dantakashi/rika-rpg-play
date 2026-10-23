@@ -197,6 +197,12 @@
         "https://www.data.jma.go.jp/cpd/j_climate/hokkaido/column_okho.html",
         "https://www.data.jma.go.jp/haneda-airport/weather_topics/file/rjtt_wt20120530.pdf"
       ]
+    },
+    "earthquakeNotes": {
+      "files": "art/earthquake-note__*.svg (21 files)",
+      "source": "Original diagrams: build/gameplay-audit/make-earthquakes-diagrams.py",
+      "license": "Project-authored; no third-party images embedded",
+      "scope": "Schematic comparisons and conditional examples, not real event predictions."
     }
   },
   "contentReferences": {
@@ -516,6 +522,23 @@
         "https://geokansas.ku.edu/fusulinids",
         "https://ocean.si.edu/ocean-life/marine-mammals/whales",
         "https://www.nature.com/articles/s41586-025-09271-w"
+      ]
+    },
+    "earth_earthquakes_safety": {
+      "title": "地震のしくみと防災の比較",
+      "note": "気象庁・地震調査研究推進本部・内閣府の説明を参照した模式図と条件つきの比較例。21図は自作、3画像は既存教材資産を継続使用。資料本文・図・PDFの転載なし。実際の地震予測や画像からの震度判定ではない。",
+      "urls": [
+        "https://www.jma.go.jp/jma/kishou/know/svd/text/chapter_2.html",
+        "https://www.jishin.go.jp/main/pamphlet/wakaru_shiryo/wakaru_shiryo.pdf",
+        "https://www.jma.go.jp/jma/kishou/know/faq/faq27.html",
+        "https://www.data.jma.go.jp/osaka/jishinkazan/nairiku.html",
+        "https://www.jma.go.jp/jma/kishou/know/jishin/tsunami/ryoteki.html",
+        "https://www.jma.go.jp/jma/kids/kids/faq/c1_16.html",
+        "https://www.jma.go.jp/jma/kishou/know/shindo/kaisetsu.html",
+        "https://www.jma.go.jp/jma/kishou/know/jishin/eew/shikumi/shikumi.html",
+        "https://www.jma.go.jp/jma/kishou/know/jishin/joho/tsunamiinfo.html",
+        "https://www.bousai.go.jp/kyoiku/hokenkyousai/check.html",
+        "https://www.bousai.go.jp/taisaku/hinanbasyo.html"
       ]
     }
   }
