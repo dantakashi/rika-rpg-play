@@ -917,6 +917,38 @@
   .ggdk10 > div.ggfront::after{content:''; position:absolute; left:-2px; right:-2px; bottom:-5px; height:3px; border-radius:2px; background:#5a6670; opacity:.55}
   .ggdk10-h{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; font-weight:900; color:#5d5345; margin:0 0 5px}
   .ggdk10-h b{font-size:13px} .ggdk10-h small{font-size:11px; font-weight:800; color:#8a7f6c}
+
+  /* ===== シリーズの技（10-23）===== */
+  .ggser{margin:2px 0 10px; padding:8px 10px; border-radius:14px; background:#fff; border:2px solid var(--line)}
+  .ggser .h{display:flex; align-items:baseline; gap:8px; font-weight:900; font-size:13px; color:#3d3426; margin-bottom:4px}
+  .ggser .h small{font-size:11px; font-weight:800; color:#8a7f6c}
+  .ggser .r{display:grid; grid-template-columns:auto 1fr; gap:2px 8px; align-items:center; padding:5px 0; border-top:1px dashed #e6dccb; font-size:12px}
+  .ggser .r:first-of-type{border-top:0}
+  .ggser .r .c{display:flex; gap:3px; align-items:center}
+  .ggser .r .c i{width:9px; height:9px; border-radius:50%; background:#e6dccb; display:block}
+  .ggser .r .c i.on{background:#c79a2b} .ggser .r .c i.t{outline:2px solid #fff; box-shadow:0 0 0 1px #c79a2b}
+  .ggser .r .n{font-weight:900; color:#3d3426} .ggser .r .n small{font-weight:800; color:#8a7f6c; margin-left:4px}
+  .ggser .r .s{grid-column:1 / -1; color:#6d6252; line-height:1.4}
+  .ggser .r .s b{color:#9a6b00} .ggser .r.off .n, .ggser .r.off .s b{color:#a59a88}
+  .ggser .lv{display:inline-block; font-size:10px; font-weight:900; color:#fff; background:#c79a2b; border-radius:6px; padding:0 5px; margin-left:4px}
+  .ggser .r.off .lv{background:#cfc5b4}
+  .ggser-tag{display:inline-block; margin-top:4px; font-size:11px; font-weight:800; color:#7a5a12; background:#fff3cf; border:1px solid #e9cf86; border-radius:8px; padding:1px 7px}
+
+  /* ===== 役割で解く敵（10-23）===== */
+  .unit.ggtossin:not(.hitdone) .body{filter:drop-shadow(-6px 0 0 #ff5a3a88) drop-shadow(-12px 0 0 #ff5a3a44)}
+  .unit.ggtossin:not(.hitdone)::before{content:''; position:absolute; right:-18px; top:30%; width:22px; height:14px; background:repeating-linear-gradient(180deg,#ff6a3a 0 2px,transparent 2px 5px); opacity:.8; pointer-events:none}
+  .unit.ggmure{transform-origin:50% 100%}
+  .unit.ggmure .body{filter:saturate(1.3)}
+  .unit.ggsogeki .body{filter:drop-shadow(0 0 4px #ff3b3b)}
+  .ggaim{position:absolute; width:26px; height:26px; margin:-13px 0 0 -13px; border:2px solid #ff3b3b; border-radius:50%; z-index:31; pointer-events:none; animation:ggaim .5s ease-out forwards}
+  .ggaim::before,.ggaim::after{content:''; position:absolute; background:#ff3b3b} .ggaim::before{left:11px; top:-6px; width:2px; height:34px} .ggaim::after{top:11px; left:-6px; height:2px; width:34px}
+  @keyframes ggaim{0%{transform:scale(1.6); opacity:0}30%{transform:scale(1); opacity:1}100%{transform:scale(.9); opacity:0}}
+  .unit.ggyoroi .body{filter:drop-shadow(0 0 0 #fff) drop-shadow(0 0 3px #b9c6d6) brightness(.95) contrast(1.1)}
+  .unit .ggarmor{position:absolute; left:50%; top:2px; transform:translateX(-50%) scaleX(-1); font:900 11px/1 sans-serif; color:#fff; background:#5d6b7c; border-radius:6px; padding:1px 4px; pointer-events:none; z-index:4}
+  .unit.ggrarefog::before{content:''; position:absolute; left:50%; bottom:-10px; width:300px; height:120px; margin-left:-150px; border-radius:50%; background:radial-gradient(closest-side,#7b4fd655,#7b4fd622 60%,#7b4fd600); pointer-events:none; z-index:-1}
+  .unit.ggfogged .body{filter:grayscale(.75) brightness(.85)}
+  .ggweak{position:absolute; left:8px; top:8px; z-index:39; font:900 11px/1.2 sans-serif; color:#fff; background:#b8860bdd; border:2px solid #fff3; border-radius:8px; padding:3px 7px; pointer-events:none}
+  .stage .ggws,.ggpath .stage>span.ggws{position:absolute; bottom:-9px; left:12px; background:linear-gradient(#b07e0e,#7a5205); color:#fff; padding:0 7px; border-radius:6px; border:1.5px solid #ffd77a; font-size:11px; font-weight:800; line-height:16px; white-space:nowrap; z-index:2}
   .menubtn{display:flex; flex-direction:column; align-items:flex-start; width:100%; margin-bottom:12px; padding:16px 18px; border:2px solid var(--line); border-radius:16px; background:#fff; font-size:20px; font-weight:800; color:var(--ink); box-shadow:0 2px 0 var(--line); text-align:left}
   .menubtn .sub{font-size:12px; font-weight:600; color:#9a8f7c; margin-top:3px}
   .menubtn:active{transform:translateY(1px); box-shadow:0 1px 0 var(--line)}
@@ -1489,7 +1521,7 @@ var CP_ART={"cp_px01":"<svg class=\"a1-05\" viewBox=\"0 0 128 128\" xmlns=\"http
 var CP_DATA={"roster":{"cp_px01":{"name":"ランタン坑夫ドルグ","sprite":"cp_px01","rar":"N","rarColor":"#7a7a7a","cost":20,"hp":130,"atk":12,"speed":30,"range":42,"atkCd":0.9,"weight":46,"scd":1.5,"theme":"ピクセルドット"},"cp_px02":{"name":"綴りの魔導書","sprite":"cp_px02","rar":"N","rarColor":"#7a7a7a","cost":26,"hp":53,"atk":10,"speed":32,"range":100,"atkCd":1,"weight":30,"scd":1.8,"theme":"ピクセルドット"},"cp_px03":{"name":"石垣ガニ","sprite":"cp_px03","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":279,"atk":14,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"ピクセルドット","def":8},"cp_px05":{"name":"影爪のクロ","sprite":"cp_px05","rar":"N","rarColor":"#7a7a7a","cost":20,"hp":126,"atk":12,"speed":30,"range":42,"atkCd":0.9,"weight":46,"scd":1.5,"theme":"ピクセルドット"},"cp_px06":{"name":"針槍のブンベル","sprite":"cp_px06","rar":"R","rarColor":"#2f7dd1","cost":55,"hp":91,"atk":22,"speed":34,"range":74,"atkCd":1.2,"weight":16,"scd":3,"theme":"ピクセルドット","splash":true},"cp_px07":{"name":"雪弾のペングス","sprite":"cp_px07","rar":"R","rarColor":"#2f7dd1","cost":42,"hp":69,"atk":20,"speed":46,"range":120,"atkCd":0.75,"weight":26,"scd":2,"theme":"ピクセルドット","pierce":true},"cp_px09":{"name":"胞子灯のモリエ","sprite":"cp_px09","rar":"SR","rarColor":"#8e44ad","cost":85,"hp":142,"atk":5,"speed":28,"range":64,"atkCd":1.4,"weight":9,"scd":4.5,"theme":"ピクセルドット","heal":12},"cp_uk01":{"name":"隈取の荒武者 鬼丸","sprite":"cp_uk01","rar":"N","rarColor":"#7a7a7a","cost":16,"hp":55,"atk":13,"speed":58,"range":44,"atkCd":0.6,"weight":34,"scd":1.1,"theme":"浮世絵"},"cp_uk02":{"name":"浪使いの女船頭 おとせ","sprite":"cp_uk02","rar":"N","rarColor":"#7a7a7a","cost":28,"hp":51,"atk":12,"speed":30,"range":105,"atkCd":1.1,"weight":28,"scd":1.9,"theme":"浮世絵"},"cp_uk03":{"name":"纏の火消し 辰五郎","sprite":"cp_uk03","rar":"R","rarColor":"#2f7dd1","cost":55,"hp":241,"atk":18,"speed":26,"range":44,"atkCd":1,"weight":18,"scd":3.2,"theme":"浮世絵","def":6,"knockback":10},"cp_uk05":{"name":"薙刀の女武者 あやめ","sprite":"cp_uk05","rar":"N","rarColor":"#7a7a7a","cost":16,"hp":54,"atk":13,"speed":58,"range":44,"atkCd":0.6,"weight":34,"scd":1.1,"theme":"浮世絵"},"cp_uk06":{"name":"烏天狗の剣客 疾風","sprite":"cp_uk06","rar":"R","rarColor":"#2f7dd1","cost":46,"hp":114,"atk":10,"speed":28,"range":90,"atkCd":1.1,"weight":18,"scd":2.6,"theme":"浮世絵","slow":true},"cp_uk09":{"name":"白拍子 千代","sprite":"cp_uk09","rar":"SR","rarColor":"#8e44ad","cost":82,"hp":136,"atk":10,"speed":26,"range":110,"atkCd":1.4,"weight":10,"scd":4.2,"theme":"浮世絵","buff":0.25},"cp_uk10":{"name":"花火師 菊造","sprite":"cp_uk10","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":155,"atk":29,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"浮世絵","splash":true},"cp_cd01":{"name":"白刃の女王","sprite":"cp_cd01","rar":"N","rarColor":"#7a7a7a","cost":18,"hp":149,"atk":8,"speed":18,"range":38,"atkCd":1,"weight":38,"scd":1.4,"theme":"絵札","def":5},"cp_cd03":{"name":"鏡像の門衛","sprite":"cp_cd03","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":284,"atk":14,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"絵札","def":8},"cp_cd05":{"name":"棍棒のジャック","sprite":"cp_cd05","rar":"N","rarColor":"#7a7a7a","cost":18,"hp":146,"atk":8,"speed":18,"range":38,"atkCd":1,"weight":38,"scd":1.4,"theme":"絵札","def":5},"cp_cd07":{"name":"月札の弓手","sprite":"cp_cd07","rar":"R","rarColor":"#2f7dd1","cost":42,"hp":70,"atk":20,"speed":46,"range":120,"atkCd":0.75,"weight":26,"scd":2,"theme":"絵札","pierce":true},"cp_cd09":{"name":"聖杯の癒し手","sprite":"cp_cd09","rar":"SR","rarColor":"#8e44ad","cost":78,"hp":151,"atk":8,"speed":30,"range":120,"atkCd":1.5,"weight":10,"scd":4,"theme":"絵札","buff":0.3},"cp_cd10":{"name":"菱弾の砲手","sprite":"cp_cd10","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":146,"atk":31,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"絵札","splash":true},"cp_lp01":{"name":"灰牙のヴォルク","sprite":"cp_lp01","rar":"N","rarColor":"#7a7a7a","cost":18,"hp":148,"atk":8,"speed":18,"range":38,"atkCd":1,"weight":38,"scd":1.4,"theme":"ローポリ","def":5},"cp_lp03":{"name":"苔岩のガメル","sprite":"cp_lp03","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":271,"atk":14,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"ローポリ","def":8},"cp_lp05":{"name":"紅脚の槍兵フラメア","sprite":"cp_lp05","rar":"N","rarColor":"#7a7a7a","cost":18,"hp":147,"atk":8,"speed":18,"range":38,"atkCd":1,"weight":38,"scd":1.4,"theme":"ローポリ","def":5},"cp_lp06":{"name":"翠刃のマンティス","sprite":"cp_lp06","rar":"R","rarColor":"#2f7dd1","cost":55,"hp":239,"atk":18,"speed":26,"range":44,"atkCd":1,"weight":18,"scd":3.2,"theme":"ローポリ","def":6,"knockback":10},"cp_lp08":{"name":"白磁のサイ・ドレッド","sprite":"cp_lp08","rar":"SR","rarColor":"#8e44ad","cost":92,"hp":323,"atk":26,"speed":22,"range":48,"atkCd":1.3,"weight":14,"scd":5,"theme":"ローポリ","knockback":16},"cp_lp10":{"name":"噴岩のヤドカリ・カルデラ","sprite":"cp_lp10","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":153,"atk":30,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"ローポリ","splash":true},"cp_vx02":{"name":"立方の魔女キュベラ","sprite":"cp_vx02","rar":"N","rarColor":"#7a7a7a","cost":26,"hp":53,"atk":10,"speed":32,"range":100,"atkCd":1,"weight":30,"scd":1.8,"theme":"ボクセル"},"cp_vx03":{"name":"蜜運びのブンタ","sprite":"cp_vx03","rar":"SR","rarColor":"#8e44ad","cost":85,"hp":139,"atk":5,"speed":28,"range":64,"atkCd":1.4,"weight":9,"scd":4.5,"theme":"ボクセル","heal":12},"cp_vx04":{"name":"噛み箱ガブロ","sprite":"cp_vx04","rar":"N","rarColor":"#7a7a7a","cost":20,"hp":125,"atk":12,"speed":30,"range":42,"atkCd":0.9,"weight":46,"scd":1.5,"theme":"ボクセル"},"cp_vx05":{"name":"氷斧のペンギン兵ガルド","sprite":"cp_vx05","rar":"R","rarColor":"#2f7dd1","cost":55,"hp":91,"atk":22,"speed":34,"range":74,"atkCd":1.2,"weight":16,"scd":3,"theme":"ボクセル","splash":true},"cp_vx06":{"name":"針撃ちのサボテン・トゲナ","sprite":"cp_vx06","rar":"R","rarColor":"#2f7dd1","cost":42,"hp":73,"atk":20,"speed":46,"range":120,"atkCd":0.75,"weight":26,"scd":2,"theme":"ボクセル","pierce":true},"cp_vx07":{"name":"石窯の番人カマド","sprite":"cp_vx07","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":279,"atk":14,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"ボクセル","def":8},"cp_vx09":{"name":"爆ぜ茸のポムロ","sprite":"cp_vx09","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":149,"atk":31,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"ボクセル","splash":true},"cp_lr10":{"name":"岩砦の鍛冶長 ドムガル","sprite":"cp_lr10","rar":"SSR","rarColor":"#e0683b","cost":160,"hp":817,"atk":20,"speed":14,"range":56,"atkCd":1,"weight":5,"scd":8.5,"theme":"LR厚塗り","def":12,"knockback":12,"scale":1.3,"sk":{"t":"healall","name":"癒しの輪","cd":12,"pow":0.35}},"cp_pp01":{"name":"消火栓ボクサー","sprite":"cp_pp01","rar":"N","rarColor":"#7a7a7a","cost":18,"hp":147,"atk":8,"speed":18,"range":38,"atkCd":1,"weight":38,"scd":1.4,"theme":"ポップアート","def":5},"cp_pp02":{"name":"爆音ラジカセ","sprite":"cp_pp02","rar":"N","rarColor":"#7a7a7a","cost":26,"hp":56,"atk":10,"speed":32,"range":100,"atkCd":1,"weight":30,"scd":1.8,"theme":"ポップアート"},"cp_pp04":{"name":"ガムボム","sprite":"cp_pp04","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":147,"atk":31,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"ポップアート","splash":true},"cp_pp05":{"name":"ホチキス鰐","sprite":"cp_pp05","rar":"N","rarColor":"#7a7a7a","cost":18,"hp":154,"atk":8,"speed":18,"range":38,"atkCd":1,"weight":38,"scd":1.4,"theme":"ポップアート","def":5},"cp_pp06":{"name":"目覚まし突撃兵","sprite":"cp_pp06","rar":"R","rarColor":"#2f7dd1","cost":55,"hp":248,"atk":19,"speed":26,"range":44,"atkCd":1,"weight":18,"scd":3.2,"theme":"ポップアート","def":6,"knockback":10},"cp_pp07":{"name":"ソーダ缶砲","sprite":"cp_pp07","rar":"R","rarColor":"#2f7dd1","cost":42,"hp":71,"atk":20,"speed":46,"range":120,"atkCd":0.75,"weight":26,"scd":2,"theme":"ポップアート","pierce":true},"cp_pp08":{"name":"トースター重騎","sprite":"cp_pp08","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":281,"atk":13,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"ポップアート","def":8},"cp_gl04":{"name":"404の亡霊","sprite":"cp_gl04","rar":"N","rarColor":"#7a7a7a","cost":26,"hp":54,"atk":10,"speed":32,"range":100,"atkCd":1,"weight":30,"scd":1.8,"theme":"グリッチ"},"cp_gl05":{"name":"光鎌の蟷螂","sprite":"cp_gl05","rar":"N","rarColor":"#7a7a7a","cost":20,"hp":127,"atk":12,"speed":30,"range":42,"atkCd":0.9,"weight":46,"scd":1.5,"theme":"グリッチ"},"cp_gl06":{"name":"カーソルの槍兵","sprite":"cp_gl06","rar":"R","rarColor":"#2f7dd1","cost":55,"hp":91,"atk":22,"speed":34,"range":74,"atkCd":1.2,"weight":16,"scd":3,"theme":"グリッチ","splash":true},"cp_gl07":{"name":"電波の梟","sprite":"cp_gl07","rar":"R","rarColor":"#2f7dd1","cost":42,"hp":69,"atk":21,"speed":46,"range":120,"atkCd":0.75,"weight":26,"scd":2,"theme":"グリッチ","pierce":true},"cp_gl08":{"name":"防火壁の亀","sprite":"cp_gl08","rar":"SR","rarColor":"#8e44ad","cost":96,"hp":327,"atk":36,"speed":24,"range":46,"atkCd":1.3,"weight":10,"scd":5,"theme":"グリッチ","knockback":18},"cp_gl09":{"name":"信号の鯨","sprite":"cp_gl09","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":151,"atk":30,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"グリッチ","splash":true},"cp_tn02":{"name":"コルク砲のブリキ機兵","sprite":"cp_tn02","rar":"N","rarColor":"#7a7a7a","cost":26,"hp":53,"atk":10,"speed":32,"range":100,"atkCd":1,"weight":30,"scd":1.8,"theme":"ブリキ"},"cp_tn03":{"name":"ブリキ蛙の進軍ラッパ","sprite":"cp_tn03","rar":"SR","rarColor":"#8e44ad","cost":82,"hp":140,"atk":10,"speed":26,"range":110,"atkCd":1.4,"weight":10,"scd":4.2,"theme":"ブリキ","buff":0.25},"cp_tn05":{"name":"マジックハンドの拳闘カンガルー","sprite":"cp_tn05","rar":"N","rarColor":"#7a7a7a","cost":22,"hp":151,"atk":14,"speed":30,"range":40,"atkCd":0.8,"weight":40,"scd":1.5,"theme":"ブリキ","def":4},"cp_tn06":{"name":"三輪駆動のブリキ旗魚","sprite":"cp_tn06","rar":"R","rarColor":"#2f7dd1","cost":48,"hp":82,"atk":27,"speed":60,"range":42,"atkCd":0.6,"weight":18,"scd":2.5,"theme":"ブリキ"},"cp_tn07":{"name":"鉄球便のブリキペリカン","sprite":"cp_tn07","rar":"R","rarColor":"#2f7dd1","cost":58,"hp":72,"atk":16,"speed":36,"range":130,"atkCd":0.6,"weight":16,"scd":2.8,"theme":"ブリキ"},"cp_tn08":{"name":"錨を構える銅兜の潜水夫","sprite":"cp_tn08","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":269,"atk":14,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"ブリキ","def":8},"cp_tn10":{"name":"紙吹雪爆撃のブリキ飛行船","sprite":"cp_tn10","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":152,"atk":30,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"ブリキ","splash":true},"cp_mc02":{"name":"索敵機 ミルアイ","sprite":"cp_mc02","rar":"N","rarColor":"#7a7a7a","cost":28,"hp":51,"atk":12,"speed":30,"range":105,"atkCd":1.1,"weight":28,"scd":1.9,"theme":"メカ"},"cp_mc03":{"name":"吊り鉤の整備脚 クレイン","sprite":"cp_mc03","rar":"SR","rarColor":"#8e44ad","cost":85,"hp":137,"atk":5,"speed":28,"range":64,"atkCd":1.4,"weight":9,"scd":4.5,"theme":"メカ","heal":12},"cp_mc04":{"name":"錆喰いの掘削蟲","sprite":"cp_mc04","rar":"N","rarColor":"#7a7a7a","cost":10,"hp":44,"atk":9,"speed":50,"range":36,"atkCd":0.7,"weight":36,"scd":0.9,"theme":"メカ"},"cp_mc05":{"name":"一輪斬機 カーフ","sprite":"cp_mc05","rar":"N","rarColor":"#7a7a7a","cost":10,"hp":43,"atk":9,"speed":50,"range":36,"atkCd":0.7,"weight":36,"scd":0.9,"theme":"メカ"},"cp_mc07":{"name":"電磁砲の狙撃猟犬 シリウス","sprite":"cp_mc07","rar":"R","rarColor":"#2f7dd1","cost":50,"hp":85,"atk":20,"speed":34,"range":115,"atkCd":1,"weight":18,"scd":2.6,"theme":"メカ","pierce":true},"cp_mc08":{"name":"履帯の防壁機 バスティオン","sprite":"cp_mc08","rar":"SR","rarColor":"#8e44ad","cost":90,"hp":308,"atk":29,"speed":26,"range":46,"atkCd":1.1,"weight":12,"scd":5,"theme":"メカ","knockback":22},"cp_mc09":{"name":"六連迫撃の多脚機 アシダカ","sprite":"cp_mc09","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":150,"atk":29,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"メカ","splash":true},"cp_mg01":{"name":"鉄拳の用心棒 ゴウ","sprite":"cp_mg01","rar":"N","rarColor":"#7a7a7a","cost":12,"hp":59,"atk":11,"speed":64,"range":38,"atkCd":0.7,"weight":34,"scd":1,"theme":"少年漫画"},"cp_mg02":{"name":"指弾の老師","sprite":"cp_mg02","rar":"N","rarColor":"#7a7a7a","cost":28,"hp":48,"atk":12,"speed":30,"range":105,"atkCd":1.1,"weight":28,"scd":1.9,"theme":"少年漫画"},"cp_mg03":{"name":"不動の親方 岩鉄","sprite":"cp_mg03","rar":"R","rarColor":"#2f7dd1","cost":55,"hp":235,"atk":18,"speed":26,"range":44,"atkCd":1,"weight":18,"scd":3.2,"theme":"少年漫画","def":6,"knockback":10},"cp_mg04":{"name":"たてがみ鬼","sprite":"cp_mg04","rar":"N","rarColor":"#7a7a7a","cost":12,"hp":61,"atk":11,"speed":64,"range":38,"atkCd":0.7,"weight":34,"scd":1,"theme":"少年漫画"},"cp_mg05":{"name":"一閃の剣客 カスミ","sprite":"cp_mg05","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":272,"atk":13,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"少年漫画","def":8},"cp_mg09":{"name":"大筒の花火師 テツ","sprite":"cp_mg09","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":151,"atk":29,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"少年漫画","splash":true},"cp_mg10":{"name":"覇王 ライゴウ","sprite":"cp_mg10","rar":"SSR","rarColor":"#e0683b","cost":150,"hp":774,"atk":21,"speed":16,"range":60,"atkCd":0.7,"weight":6,"scd":8,"theme":"少年漫画","def":14,"splash":true,"scale":1.3,"sk":{"t":"healall","name":"癒しの輪","cd":13,"pow":0.25}},"cp_cb01":{"name":"のびくび砲台","sprite":"cp_cb01","rar":"N","rarColor":"#7a7a7a","cost":26,"hp":55,"atk":10,"speed":32,"range":100,"atkCd":1,"weight":30,"scd":1.8,"theme":"ちびシンプル"},"cp_cb03":{"name":"たおれ壁のトーフ番","sprite":"cp_cb03","rar":"R","rarColor":"#2f7dd1","cost":60,"hp":269,"atk":14,"speed":24,"range":46,"atkCd":1,"weight":20,"scd":3.5,"theme":"ちびシンプル","def":8},"cp_cb04":{"name":"五段がさね","sprite":"cp_cb04","rar":"R","rarColor":"#2f7dd1","cost":58,"hp":70,"atk":16,"speed":36,"range":130,"atkCd":0.6,"weight":16,"scd":2.8,"theme":"ちびシンプル"},"cp_cb05":{"name":"びよーんパンチ","sprite":"cp_cb05","rar":"N","rarColor":"#7a7a7a","cost":22,"hp":148,"atk":14,"speed":30,"range":40,"atkCd":0.8,"weight":40,"scd":1.5,"theme":"ちびシンプル","def":4},"cp_cb06":{"name":"ころがりおにぎり","sprite":"cp_cb06","rar":"R","rarColor":"#2f7dd1","cost":48,"hp":86,"atk":26,"speed":60,"range":42,"atkCd":0.6,"weight":18,"scd":2.5,"theme":"ちびシンプル"},"cp_cb08":{"name":"ラッパのひげ親方","sprite":"cp_cb08","rar":"SR","rarColor":"#8e44ad","cost":82,"hp":137,"atk":10,"speed":26,"range":110,"atkCd":1.4,"weight":10,"scd":4.2,"theme":"ちびシンプル","buff":0.25},"cp_cb09":{"name":"あまぐもさん","sprite":"cp_cb09","rar":"SR","rarColor":"#8e44ad","cost":94,"hp":145,"atk":31,"speed":28,"range":120,"atkCd":1.1,"weight":10,"scd":4.8,"theme":"ちびシンプル","splash":true},"cp_gra01":{"name":"天蓋要塞アストラガルド","sprite":"cp_gra01","rar":"GR","rarColor":"#1a1205","cost":240,"hp":1500,"atk":105,"speed":30,"range":170,"atkCd":1.3,"splash":true,"pierce":true,"knockback":20,"scale":1.45,"weight":2,"scd":16,"theme":"GR 機動兵器","sk":{"t":"gr","style":"mech","name":"殲滅一斉射","cd":13,"pow":6,"first":3}},"cp_gra02":{"name":"鋼脚重砲ヴァルドラン","sprite":"cp_gra02","rar":"GR","rarColor":"#1a1205","cost":240,"hp":1500,"atk":105,"speed":30,"range":170,"atkCd":1.3,"splash":true,"pierce":true,"knockback":20,"scale":1.45,"weight":2,"scd":16,"theme":"GR 機動兵器","sk":{"t":"gr","style":"mech","name":"終極主砲","cd":13,"pow":6,"first":3}},"cp_grb01":{"name":"断罪魔剣 グラム=ヴェイン","sprite":"cp_grb01","rar":"GR","rarColor":"#1a1205","cost":240,"hp":1500,"atk":105,"speed":30,"range":170,"atkCd":1.3,"splash":true,"pierce":true,"knockback":20,"scale":1.45,"weight":2,"scd":16,"theme":"GR 封印兵器","sk":{"t":"gr","style":"dark","name":"黒焔断界","cd":13,"pow":6,"first":3}},"cp_grb02":{"name":"堕天兵装 セラフ=ネクロア","sprite":"cp_grb02","rar":"GR","rarColor":"#1a1205","cost":240,"hp":1500,"atk":105,"speed":30,"range":170,"atkCd":1.3,"splash":true,"pierce":true,"knockback":20,"scale":1.45,"weight":2,"scd":16,"theme":"GR 封印兵器","sk":{"t":"gr","style":"dark","name":"天墜ノ審判","cd":13,"pow":6,"first":3}}},"rename":{"thunderDragon":{"name":"バグ竜ノイズヴルム","sprite":"cp_px04","theme":"ピクセルドット","skName":"連鎖のいかずち"},"shadowCat":{"name":"鍋守のボルコ","sprite":"cp_px08","theme":"ピクセルドット"},"fireChameleon":{"name":"導火線のモンバ","sprite":"cp_px10","theme":"ピクセルドット"},"iceFairy":{"name":"鷹匠 源五","sprite":"cp_uk07","theme":"浮世絵"},"rocketPenguin":{"name":"張り手の大関 岩嶽","sprite":"cp_uk08","theme":"浮世絵"},"goldLion":{"name":"雷神 轟","sprite":"cp_uk11","theme":"浮世絵","skName":"鼓舞の号令"},"duckMage":{"name":"星詠みの札師","sprite":"cp_cd02","theme":"絵札"},"phoenix":{"name":"道化札の王","sprite":"cp_cd04","theme":"絵札","skName":"癒しの輪"},"bombFrog":{"name":"剛力札の獅子","sprite":"cp_cd06","theme":"絵札"},"armorRhino":{"name":"塔札の城番","sprite":"cp_cd08","theme":"絵札"},"slingSquirrel":{"name":"晶核リュミエ","sprite":"cp_lp02","theme":"ローポリ"},"treeGuardian":{"name":"氷角の主フロスガル","sprite":"cp_lp04","theme":"ローポリ","skName":"癒しの輪"},"boomerKoala":{"name":"紫電のエイ・ヴォルタ","sprite":"cp_lp07","theme":"ローポリ"},"owlSage":{"name":"灯クラゲのメドゥ","sprite":"cp_lp09","theme":"ローポリ"},"snailKnight":{"name":"方陣の騎士カドワルド","sprite":"cp_vx01","theme":"ボクセル"},"hammerMole":{"name":"氷盾のシロクマ・ユキノ","sprite":"cp_vx08","theme":"ボクセル"},"salamander":{"name":"翠王竜ヴェルドラグ","sprite":"cp_vx10","theme":"ボクセル","skName":"流星落とし"},"dragonTurtle":{"name":"星詠みの女帝セレスティア","sprite":"cp_lr01","theme":"LR厚塗り","skName":"流星落とし"},"swanQueen":{"name":"時巡りの機巧師クロノア","sprite":"cp_lr02","theme":"LR厚塗り","skName":"癒しの輪"},"starWhale":{"name":"薔薇刃の双剣士 ロゼリア","sprite":"cp_lr05","theme":"LR厚塗り","skName":"大波返し"},"frostWolf":{"name":"藍刃の剣豪 ソウジュウロウ","sprite":"cp_lr06","theme":"LR厚塗り","skName":"凍てつく時"},"leviathan":{"name":"雷拳の拳闘士 ボルガ","sprite":"cp_lr07","theme":"LR厚塗り","skName":"大海嘯"},"kyubiFox":{"name":"翠風の射手 エルネア","sprite":"cp_lr08","theme":"LR厚塗り","skName":"九つの火"},"crystalGolem":{"name":"白銀の城壁 ガルド","sprite":"cp_lr09","theme":"LR厚塗り","skName":"癒しの輪"},"omegaDragon":{"name":"閃爆の錬金術師 ヘリオラ","sprite":"cp_lr11","theme":"LR厚塗り","skName":"終の一撃"},"novaCat":{"name":"天光の竜騎将 アストライア","sprite":"cp_lr12","theme":"LR厚塗り","skName":"星の爆発"},"lanternJelly":{"name":"閃きの電球","sprite":"cp_pp03","theme":"ポップアート"},"steelBull":{"name":"バーガー重装兵","sprite":"cp_pp09","theme":"ポップアート"},"timeMage":{"name":"怪獣テレビ大王","sprite":"cp_pp10","theme":"ポップアート","skName":"凍てつく時"},"chickSquad":{"name":"光刃の執行官","sprite":"cp_gl01","theme":"グリッチ"},"crabGuard":{"name":"網目の犀","sprite":"cp_gl02","theme":"グリッチ"},"healSprite":{"name":"結界灯ドローン","sprite":"cp_gl03","theme":"グリッチ"},"pegasus":{"name":"量子の龍王","sprite":"cp_gl10","theme":"グリッチ","skName":"一閃の光"},"togeHedge":{"name":"ゼンマイ仕掛けの槍兵長","sprite":"cp_tn01","theme":"ブリキ"},"windKirin":{"name":"ネジ巻き時計塔の巨兵","sprite":"cp_tn04","theme":"ブリキ","skName":"一閃の光"},"magmaTurtle":{"name":"鉄巻きアルマジロの転がり番","sprite":"cp_tn09","theme":"ブリキ"},"herbRabbit":{"name":"杭打ち重機兵 ドゥームラム","sprite":"cp_mc01","theme":"メカ"},"cloudSheep":{"name":"大鋏の甲殻機 ピンサー","sprite":"cp_mc06","theme":"メカ"},"orcaKnight":{"name":"陽輪の巨神機 オーリオン","sprite":"cp_mc10","theme":"メカ","skName":"大波返し"},"sparkMouse":{"name":"鉄扇の策士 ハヤテ","sprite":"cp_mg06","theme":"少年漫画"},"kendoPanda":{"name":"鉄門の巨漢 ゲンブ","sprite":"cp_mg07","theme":"少年漫画"},"cheerTanuki":{"name":"鼓舞の太鼓師 オトハ","sprite":"cp_mg08","theme":"少年漫画"},"beeLancer":{"name":"せんぼん脚のマメ","sprite":"cp_cb02","theme":"ちびシンプル"},"moaiAlly":{"name":"からかさ番","sprite":"cp_cb07","theme":"ちびシンプル"},"moonArcher":{"name":"まんまる大王くじら","sprite":"cp_cb10","theme":"ちびシンプル","skName":"一閃の光"}},"vis":{"cp_px01":{"tier":"","atk":"cpu","dur":800},"cp_px02":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_px03":{"tier":"","atk":"cpu","dur":800},"thunderDragon":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"cp_px05":{"tier":"","atk":"cpu","dur":800},"cp_px06":{"tier":"","atk":"cpu","dur":800},"cp_px07":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"shadowCat":{"tier":"","atk":"cpu","dur":800},"cp_px09":{"tier":"","atk":"cpu","dur":800},"fireChameleon":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"cp_uk01":{"tier":"","atk":"cpu","dur":800},"cp_uk02":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_uk03":{"tier":"","atk":"cpu","dur":800},"cp_uk05":{"tier":"","atk":"cpu","dur":800},"cp_uk06":{"tier":"","atk":"cpu","dur":800},"iceFairy":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"rocketPenguin":{"tier":"","atk":"cpu","dur":800},"cp_uk09":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_uk10":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"goldLion":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380,"projBig":true},"cp_cd01":{"tier":"","atk":"cpu","dur":800},"duckMage":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_cd03":{"tier":"","atk":"cpu","dur":800},"phoenix":{"tier":"","atk":"cpu","dur":800},"cp_cd05":{"tier":"","atk":"cpu","dur":800},"bombFrog":{"tier":"","atk":"cpu","dur":800},"cp_cd07":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"armorRhino":{"tier":"","atk":"cpu","dur":800},"cp_cd09":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_cd10":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"cp_lp01":{"tier":"","atk":"cpu","dur":800},"slingSquirrel":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_lp03":{"tier":"","atk":"cpu","dur":800},"treeGuardian":{"tier":"","atk":"cpu","dur":800},"cp_lp05":{"tier":"","atk":"cpu","dur":800},"cp_lp06":{"tier":"","atk":"cpu","dur":800},"boomerKoala":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_lp08":{"tier":"","atk":"cpu","dur":800},"owlSage":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_lp10":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"snailKnight":{"tier":"","atk":"cpu","dur":800},"cp_vx02":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_vx03":{"tier":"","atk":"cpu","dur":800},"cp_vx04":{"tier":"","atk":"cpu","dur":800},"cp_vx05":{"tier":"","atk":"cpu","dur":800},"cp_vx06":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_vx07":{"tier":"","atk":"cpu","dur":800},"hammerMole":{"tier":"","atk":"cpu","dur":800},"cp_vx09":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"salamander":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"dragonTurtle":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380,"projBig":true},"swanQueen":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"starWhale":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"frostWolf":{"tier":"","atk":"cpu","dur":800},"leviathan":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"kyubiFox":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"crystalGolem":{"tier":"","atk":"cpu","dur":800},"cp_lr10":{"tier":"","atk":"cpu","dur":800},"omegaDragon":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"novaCat":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"cp_pp01":{"tier":"","atk":"cpu","dur":800},"cp_pp02":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"lanternJelly":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_pp04":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"cp_pp05":{"tier":"","atk":"cpu","dur":800},"cp_pp06":{"tier":"","atk":"cpu","dur":800},"cp_pp07":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_pp08":{"tier":"","atk":"cpu","dur":800},"steelBull":{"tier":"","atk":"cpu","dur":800},"timeMage":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"chickSquad":{"tier":"","atk":"cpu","dur":800},"crabGuard":{"tier":"","atk":"cpu","dur":800},"healSprite":{"tier":"","atk":"cpu","dur":800},"cp_gl04":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_gl05":{"tier":"","atk":"cpu","dur":800},"cp_gl06":{"tier":"","atk":"cpu","dur":800},"cp_gl07":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_gl08":{"tier":"","atk":"cpu","dur":800},"cp_gl09":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"pegasus":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380,"projBig":true},"togeHedge":{"tier":"","atk":"cpu","dur":800},"cp_tn02":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_tn03":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"windKirin":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380,"projBig":true},"cp_tn05":{"tier":"","atk":"cpu","dur":800},"cp_tn06":{"tier":"","atk":"cpu","dur":800},"cp_tn07":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_tn08":{"tier":"","atk":"cpu","dur":800},"magmaTurtle":{"tier":"","atk":"cpu","dur":800},"cp_tn10":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"herbRabbit":{"tier":"","atk":"cpu","dur":800},"cp_mc02":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_mc03":{"tier":"","atk":"cpu","dur":800},"cp_mc04":{"tier":"","atk":"cpu","dur":800},"cp_mc05":{"tier":"","atk":"cpu","dur":800},"cloudSheep":{"tier":"","atk":"cpu","dur":800},"cp_mc07":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_mc08":{"tier":"","atk":"cpu","dur":800},"cp_mc09":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"orcaKnight":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true,"projBig":true},"cp_mg01":{"tier":"","atk":"cpu","dur":800},"cp_mg02":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_mg03":{"tier":"","atk":"cpu","dur":800},"cp_mg04":{"tier":"","atk":"cpu","dur":800},"cp_mg05":{"tier":"","atk":"cpu","dur":800},"sparkMouse":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"kendoPanda":{"tier":"","atk":"cpu","dur":800},"cheerTanuki":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_mg09":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"cp_mg10":{"tier":"","atk":"cpu","dur":800},"cp_cb01":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"beeLancer":{"tier":"","atk":"cpu","dur":800},"cp_cb03":{"tier":"","atk":"cpu","dur":800},"cp_cb04":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_cb05":{"tier":"","atk":"cpu","dur":800},"cp_cb06":{"tier":"","atk":"cpu","dur":800},"moaiAlly":{"tier":"","atk":"cpu","dur":800},"cp_cb08":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380},"cp_cb09":{"tier":"","atk":"cpu","dur":800,"proj":"fireball","projDelay":260,"projMs":380,"arc":true,"explode":true},"moonArcher":{"tier":"","atk":"cpu","dur":800,"proj":"star","projDelay":260,"projMs":380,"projBig":true},"cp_gra01":{"tier":"","atk":"cpu","dur":1400,"proj":"lightning","projBig":true,"projDelay":500,"projMs":360,"explode":true},"cp_gra02":{"tier":"","atk":"cpu","dur":1400,"proj":"lightning","projBig":true,"projDelay":500,"projMs":360,"explode":true},"cp_grb01":{"tier":"","atk":"cpu","dur":1400,"proj":"fireball","projBig":true,"projDelay":500,"projMs":360,"explode":true},"cp_grb02":{"tier":"","atk":"cpu","dur":1400,"proj":"fireball","projBig":true,"projDelay":500,"projMs":360,"explode":true}},"enemyThemes":[{"code":"jl","from":1,"to":4,"map":{"slime":"cp_jl05","hare":"cp_jl06","bat":"cp_jl07","ghost":"cp_jl07","totem":"cp_jl01","torii":"cp_jl01","golem":"cp_jl01","mummy":"cp_jl01","shieldy":"cp_jl01","slinger":"cp_jl02","darkMage":"cp_jl02","cannon":"cp_jl02","bombSlime":"cp_jl08","splitMush":"cp_jl09","stoneGiant":"cp_jl10","buffer":"cp_jl10","healer":"cp_jl03","summoner":"cp_jl03"},"icon":"cp_jl05"},{"code":"ge","from":5,"to":8,"map":{"slime":"cp_ge01","hare":"cp_ge05","bat":"cp_ge06","ghost":"cp_ge06","totem":"cp_ge03","torii":"cp_ge03","golem":"cp_ge03","mummy":"cp_ge03","shieldy":"cp_ge03","slinger":"cp_ge02","darkMage":"cp_ge02","cannon":"cp_ge02","bombSlime":"cp_ge07","splitMush":"cp_ge08","stoneGiant":"cp_ge09","buffer":"cp_ge09","healer":"cp_ge10","summoner":"cp_ge10"},"icon":"cp_ge01"},{"code":"tt","from":9,"to":12,"map":{"slime":"cp_tt05","hare":"cp_tt06","bat":"cp_tt07","ghost":"cp_tt07","totem":"cp_tt01","torii":"cp_tt01","golem":"cp_tt01","mummy":"cp_tt01","shieldy":"cp_tt01","slinger":"cp_tt03","darkMage":"cp_tt03","cannon":"cp_tt03","bombSlime":"cp_tt08","splitMush":"cp_tt09","stoneGiant":"cp_tt10","buffer":"cp_tt10","healer":"cp_tt02","summoner":"cp_tt02"},"icon":"cp_tt05"},{"code":"sm","from":13,"to":16,"map":{"slime":"cp_sm04","hare":"cp_sm01","bat":"cp_sm05","ghost":"cp_sm05","totem":"cp_sm02","torii":"cp_sm02","golem":"cp_sm02","mummy":"cp_sm02","shieldy":"cp_sm02","slinger":"cp_sm03","darkMage":"cp_sm03","cannon":"cp_sm03","bombSlime":"cp_sm06","splitMush":"cp_sm07","stoneGiant":"cp_sm08","buffer":"cp_sm08","healer":"cp_sm09","summoner":"cp_sm09"},"icon":"cp_sm04"},{"code":"sh","from":17,"to":20,"map":{"slime":"cp_sh01","hare":"cp_sh05","bat":"cp_sh07","ghost":"cp_sh07","totem":"cp_sh06","torii":"cp_sh06","golem":"cp_sh06","mummy":"cp_sh06","shieldy":"cp_sh06","slinger":"cp_sh02","darkMage":"cp_sh02","cannon":"cp_sh02","bombSlime":"cp_sh08","splitMush":"cp_sh09","stoneGiant":"cp_sh03","buffer":"cp_sh03","healer":"cp_sh10","summoner":"cp_sh10"},"icon":"cp_sh01"},{"code":"dk","from":21,"to":25,"map":{"slime":"cp_dk01","hare":"cp_dk05","bat":"cp_dk06","ghost":"cp_dk06","totem":"cp_dk03","torii":"cp_dk03","golem":"cp_dk03","mummy":"cp_dk03","shieldy":"cp_dk03","slinger":"cp_dk02","darkMage":"cp_dk02","cannon":"cp_dk02","bombSlime":"cp_dk07","splitMush":"cp_dk08","stoneGiant":"cp_dk09","buffer":"cp_dk09","healer":"cp_dk10","summoner":"cp_dk10"},"icon":"cp_dk01"}],"bosses":["cp_gb01","cp_gb02","cp_gb03","cp_jl04","cp_gb04","cp_gb05","cp_gb06","cp_ge04","cp_gb07","cp_gb08","cp_gb09","cp_tt04","cp_gb10","cp_gb01","cp_gb02","cp_sm10","cp_gb03","cp_gb04","cp_gb05","cp_sh04","cp_gb06","cp_gb07","cp_gb08","cp_gb09","cp_dk04"],"rush":["cp_gb01","cp_gb02","cp_gb03","cp_gb04","cp_gb05","cp_gb06","cp_gb07","cp_gb08","cp_gb09","cp_gb10"]};
 
 function ggEnemyTheme(ch){ ch = ch || 1; if(ch > 25) ch = 25; for(var i=0;i<CP_DATA.enemyThemes.length;i++){ var e=CP_DATA.enemyThemes[i]; if(ch>=e.from && ch<=e.to) return e; } return CP_DATA.enemyThemes[0]; }
-var GG_FOE_PROXY = {takara:'hare', sora:'bat', saisei:'golem', kakure:'slime', fuuin:'summoner'};
+var GG_FOE_PROXY = {takara:'hare', sora:'bat', saisei:'golem', kakure:'slime', fuuin:'summoner', tossin:'ghost', mure:'slime', sogeki:'slinger', yoroi:'golem', rarefog:'summoner'};
 function ggEnemySprite(type, def, ch){ var th = ggEnemyTheme(ch); var pt = GG_FOE_PROXY[type] || type; return (th && th.map[pt]) || def; }
 function ggStageIcon(ch){ var th = ggEnemyTheme(ch); return th ? th.icon : 'slime'; }
 </script>
@@ -11163,6 +11195,37 @@ Object.assign(ROSTER, { // ===== 新キャラ13体（2026-10-15・ガチャ2。�
 Object.assign(ROSTER, CP_DATA.roster); for(var __ck in CP_DATA.rename){ if(ROSTER[__ck]){ var __cr=CP_DATA.rename[__ck]; ROSTER[__ck].name=__cr.name; ROSTER[__ck].sprite=__cr.sprite; ROSTER[__ck].theme=__cr.theme; if(__cr.skName && ROSTER[__ck].sk) ROSTER[__ck].sk=Object.assign({}, ROSTER[__ck].sk, {name:__cr.skName}); } } // キャラコンペ（10-16）
 const ROSTER_KEYS = Object.keys(ROSTER);
 
+/* ===== レアの役割と数値（10-23）===== */
+var GG_BAL = {
+  // 戦場の定員の重さ（ALLY_CAP は重さの合計）。N は2体で1人分
+  capW: {N:0.5, R:1, SR:1, SSR:1, LR:1, GR:1},
+  bodyCap: 30, // 戦場に出せる体の数の上限（N をたくさん出したときの重さ対策）
+  fieldMax: {LR:2, SSR:3}, // 戦場に同時に出せる数（GR の「戦場に1体」と同じ形）。高レアだけの10体だと戦場の残りが埋まらない
+  // レアごとの掛け目: cost 出撃のエネルギー・hp・atk 攻撃・scd 出したあとの待ち・weight おまかせで選ばれやすさ
+  rar: {
+    N:  {cost:0.75, hp:1.4, atk:1.0, scd:0.6, weight:1},
+    R:  {cost:0.9,  hp:1.1, atk:1.1, scd:0.9, weight:1},
+    SR: {cost:1,    hp:1,   atk:1,   scd:1,   weight:1},
+    SSR:{cost:1,    hp:1,   atk:1,   scd:1,   weight:1}, // 数値は下げない（引いた強さは削らず、戦場に3体までの決まりで縛る）
+    LR: {cost:1,    hp:1,   atk:1,   scd:1,   weight:1}, // 同じ（戦場に2体まで）
+    GR: {cost:1,    hp:1,   atk:1,   scd:1,   weight:1}
+  }
+};
+(function(){
+  try{ var o=(typeof window!=='undefined')&&window.__GG_BAL_OVERRIDE; if(o){ if(o.capW) Object.assign(GG_BAL.capW, o.capW); if(o.bodyCap) GG_BAL.bodyCap=o.bodyCap; if(o.fieldMax) GG_BAL.fieldMax=Object.assign({}, o.fieldMax); if(o.rar) for(var r in o.rar) GG_BAL.rar[r]=Object.assign({}, GG_BAL.rar[r]||{}, o.rar[r]); if(o.fn) GG_BAL.fn=o.fn; } }catch(e){}
+  for(var k in ROSTER){ var u=ROSTER[k], m=GG_BAL.rar[u.rar]; if(!m || u.__bal) continue;
+    u.__base={cost:u.cost, hp:u.hp, atk:u.atk, scd:u.scd, weight:u.weight};
+    u.cost=Math.max(5, Math.round(u.cost*(m.cost||1)));
+    u.hp=Math.max(1, Math.round(u.hp*(m.hp||1)));
+    u.atk=Math.round(u.atk*(m.atk||1)*10)/10;
+    if(u.scd) u.scd=Math.round(u.scd*(m.scd||1)*100)/100;
+    if(u.weight) u.weight=Math.max(1, Math.round(u.weight*(m.weight||1)));
+    u.__bal=1; }
+  if(typeof GG_BAL.fn==='function'){ try{ GG_BAL.fn(ROSTER); }catch(e){} }
+})();
+function ggCapW(key){ var r=ROSTER[key]; return (r && GG_BAL.capW[r.rar]!=null) ? GG_BAL.capW[r.rar] : 1; }
+
+
 // 🏯城スキン（要望#15・2026-06-08）：最初から引けるガチャ。装備中の1つだけバフが有効（ユーザー確定）。
 // t='atk'|'hp'（微弱バフの種類）。バフはskinBuffForで rar から導出。SVGはパレット差し替えで生成。
 const CASTLE_SKINS = [
@@ -11419,7 +11482,13 @@ const ENEMY_TYPES = {
   sora:{name:"空とぶ敵", sprite:"bat", hp:110, atk:14, speed:34, range:40, gg:"sora"},
   saisei:{name:"再生する敵", sprite:"totem", hp:300, atk:16, speed:15, range:44, gg:"saisei", regen:0.04},
   kakure:{name:"かくれ身", sprite:"slime", hp:130, atk:18, speed:30, range:40, gg:"kakure"},
-  fuuin:{name:"封印術士", sprite:"darkMage", hp:200, atk:0, speed:12, range:0, gg:"fuuin", sealEvery:6, sealRange:170}
+  fuuin:{name:"封印術士", sprite:"darkMage", hp:200, atk:0, speed:12, range:0, gg:"fuuin", sealEvery:6, sealRange:170},
+  // ===== 役割で解く敵（2026-10-23）。弱点は編成の役割 =====
+  tossin:{name:"突進兵", sprite:"ghost", hp:170, atk:18, speed:62, range:40, gg:"tossin"},
+  mure:{name:"群れ", sprite:"slime", hp:38, atk:6, speed:34, range:34, gg:"mure", scale:0.72},
+  sogeki:{name:"狙撃手", sprite:"slinger", hp:85, atk:24, speed:18, range:200, gg:"sogeki"},
+  yoroi:{name:"鎧騎士", sprite:"golem", hp:300, atk:17, speed:15, range:44, gg:"yoroi"},
+  rarefog:{name:"封じの霧", sprite:"darkMage", hp:240, atk:0, speed:12, range:0, gg:"rarefog", fogRange:160}
 };
 
 /* =========================================================================
@@ -12205,7 +12274,7 @@ const Game = (()=>{
     h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
     h+=stat('コスト','⚡'+r.cost)+stat('クールダウン',summonCd(key)+'秒')+stat('攻撃力','⚔'+cur.atk);
     h+=stat('HP','♥'+cur.hp)+stat('射程',r.range)+stat('速さ',r.speed)+'</div>';
-    h+='<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:7px;margin-bottom:10px;font-size:13px"><span class="muted">とくせい：</span><b>'+traitText(r)+'</b></div>'+skHtml(r);
+    h+='<div style="background:#fff;border:2px solid var(--line);border-radius:10px;padding:7px;margin-bottom:10px;font-size:13px"><span class="muted">とくせい：</span><b>'+traitText(r)+'</b>'+ggSerTag(key)+(typeof ggRarTag==='function'?ggRarTag(key):'')+'</div>'+skHtml(r);
     card.innerHTML=h;
     const acts=document.createElement('div'); acts.style.cssText='display:flex;flex-direction:column;gap:8px';
     if(mode==='deck' && isGR(key)){
@@ -12480,8 +12549,9 @@ const Game = (()=>{
       row.appendChild(slot);
     }
     body.appendChild(row);
+    body.appendChild(ggSerPanel()); // シリーズの技（10-23）
     body.appendChild(ggGrRow());
-    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='編成は10体＋GR枠。手持ちをタップ→入れる・入れ替えで変更できます。戦闘の召喚はこの'+deck.length+'体とGR枠から出ます。';
+    const note=document.createElement('div'); note.className='muted'; note.style.marginBottom='6px'; note.textContent='編成は10体＋GR枠。手持ちをタップ→入れる・入れ替えで変更できます。戦闘の召喚はこの'+deck.length+'体とGR枠から出ます。戦場に同時に出せるのは、LRは'+GG_BAL.fieldMax.LR+'体・SSRは'+GG_BAL.fieldMax.SSR+'体まで。';
     body.appendChild(note);
     body.appendChild(ggBoxBar(renderDeck));
     const __ks=ggBoxKeys(); const __c=document.createElement('div'); __c.className='ggcount'; __c.textContent=__ks.length+'体'; body.appendChild(__c);
@@ -13273,6 +13343,7 @@ const Game = (()=>{
           +(lock?`<span class="lockmark">🔒</span>`:'');
         if(__clr) d.classList.add('clr'); if(!lock&&!__clr&&!heroView&&!ironView&&s.area===Math.min(STAGES.length,unlocked)){ d.classList.add('next'); var __me=deck[0]&&ROSTER[deck[0]]; d.insertAdjacentHTML('beforeend','<span class="ggnx">つぎはここ</span>'+(__me?'<span class="ggme">'+SVG.get(__me.sprite)+'</span>':'')); }
         if(lock){ d.disabled=true; } else { d.onclick=()=>enterBattle(heroView?heroicStage(s):ironView?ironStage(s):s); }
+        if(!ironView){ try{ var __ws=ggWeakSer(s); if(__ws && GG_NEW.foes2) d.insertAdjacentHTML('beforeend','<span class="ggws">弱点 '+GG_SER[__ws].nm+'</span>'); }catch(e){} } // 弱点シリーズ（10-23）
         if(!ironView){ try{ var __rr=ggRulesFor(s); if(__rr.length && (!window.GG_NEW || GG_NEW.rules)) d.insertAdjacentHTML('beforeend','<span class="ggrc">'+__rr.map(function(r){ return GG_RULE_INFO[r][0]+GG_RULE_INFO[r][1]; }).join(' ')+'</span>'); }catch(e){} }
         grid.appendChild(d);
       });
@@ -13331,7 +13402,7 @@ const Game = (()=>{
     // ギミックHUD/勇者は前の戦闘の表示が残らないよう毎回隠す（該当ギミックのtickが再表示する）
     ['chargeBar','heroBar','heroUnit'].forEach(function(id){ var b=$(id); if(b){ b.style.display='none'; b.classList.remove('danger'); } });
     // 召喚キュー初期化（次2体プレビュー）
-    B.cd={}; rebuildQueue();
+    B.cd={}; B.ser=ggSerOf(); B.weakSer=ggWeakSer(stage); rebuildQueue(); if(B.weakSer) setTimeout(ggWeakBanner, 2600); setTimeout(ggSerBanner, 900); // シリーズの技（10-23）
     show('battle');
     if(B.recoBonus){ try{ fxBanner('📊 推奨級チャレンジ! ⚡加速+30% 💎2倍','#3aa6a0'); }catch(e){} }
     // 1戦15問プール（同じ問題が繰り返し出て定着）。学習/修練の塔は別ロジックなのでクリア。
@@ -13351,7 +13422,7 @@ const Game = (()=>{
      ・一度出すとそのキャラはクールダウン中は再出撃不可。
      ・予想枠の表示ルール：q1(次)=CD2秒以内のみ／q2(次の次)=CD5秒未満のみ。
        SSRはCDが長く予想に出ない＝高コストが連続して詰まらない。 */
-  function summonCd(key){ return ROSTER[key].scd||1.5; }
+  function summonCd(key){ return (ROSTER[key].scd||1.5)*ggSerCd(key); } // わらわら（10-23）
   function deckKeys(){ var d=((deck&&deck.length)?deck:ROSTER_KEYS).concat(grDeck).filter(function(k,i,a){return ROSTER[k] && a.indexOf(k)===i;}); if(!d.length) d=ROSTER_KEYS.slice();
     // 📅きょうのチャレンジ: 編成制約（全滅しないよう最低2体は保証）
     if(B&&B.stage&&B.stage.daily){
@@ -13372,8 +13443,8 @@ const Game = (()=>{
     return keys[keys.length-1];
   }
   function makeUnit(key){
-    const base=ROSTER[key]; let cost=base.cost, bargain=false;
-    if((base.rar==="SR"||base.rar==="SSR"||base.rar==="LR") && Math.random()<0.18){ cost=Math.round(base.cost*0.6); bargain=true; }
+    const base=ROSTER[key]; let cost=Math.max(1, Math.round(base.cost*ggSerCost(key))), bargain=false; // 勢い（10-23）
+    if((base.rar==="SR"||base.rar==="SSR"||base.rar==="LR") && Math.random()<0.18){ cost=Math.round(cost*0.6); bargain=true; }
     return { key, cost, bargain };
   }
   // そのスロットに出しうるキャラ（しきい値内）。短CDが編成に居なければ全員にフォールバック
@@ -13383,7 +13454,7 @@ const Game = (()=>{
   }
   // 出せるキャラを優先抽選。全員CD中なら「一番早く明けるキャラ」を灰色予約として返す
   function pickSlot(maxScd){
-    var cand=deckByThreshold(maxScd).filter(function(k){ return !(isGR(k) && grOnField()); }); if(!cand.length) return null; // GR は戦場に1体
+    var cand=deckByThreshold(maxScd).filter(function(k){ return !(isGR(k) && grOnField()) && !ggRarFull(k); }); if(!cand.length) return null; // GR は戦場に1体
     var ready=cand.filter(function(k){ return cdLeft(k)<=0; });
     var key = ready.length ? weightedPick(ready)
                            : cand.slice().sort(function(a,b){ return cdLeft(a)-cdLeft(b); })[0];
@@ -13420,7 +13491,7 @@ const Game = (()=>{
       if(pending){ const __c=el.querySelector('.cd'); if(__c) __c.textContent='⏳'+cd.toFixed(1); }
     });
     const front=B.queue[0];
-    if(B.allies.length>=ALLY_CAP){ $('summonBtn').disabled=true; $('summonBtn').textContent='🚧 満員（'+ALLY_CAP+'体）'; return; }
+    if(ggFull(B.queue[0]&&B.queue[0].key)){ $('summonBtn').disabled=true; $('summonBtn').textContent='🚧 満員'; return; }
     if(!front||!ROSTER[front.key]){ $('summonBtn').disabled=true; $('summonBtn').textContent='⏳ じゅんび中…'; return; }
     const fcd=cdLeft(front.key);
     if(fcd>0){ $('summonBtn').disabled=true; $('summonBtn').textContent=`⏳ クールダウン ${fcd.toFixed(1)}秒`; return; }
@@ -13428,12 +13499,97 @@ const Game = (()=>{
     $('summonBtn').disabled = !canPay;
     $('summonBtn').textContent = canPay ? `召喚 ⎵ (${ROSTER[front.key].name})` : `あと⚡${Math.ceil(front.cost-B.energy)}`;
   }
+  /* 定員（10-23）: 重さの合計（N は 0.5）。体の数は GG_BAL.bodyCap まで */
+  function ggPop(){ var s=0; if(B&&B.allies) B.allies.forEach(function(a){ if(a.hp>0) s+=ggCapW(a.key); }); return s; }
+  // 戦場に同時に出せる数（LR 2・SSR 3）。GR は前からの grOnField（1体）。B が見える所（Game の中）に置く
+  function ggRarFull(key){ var r=ROSTER[key]; if(!r || !B || !B.allies) return false; var mx=GG_BAL.fieldMax[r.rar]; if(mx==null) return false; var n=0; for(var i=0;i<B.allies.length;i++){ var a=B.allies[i]; if(a.hp>0 && ROSTER[a.key] && ROSTER[a.key].rar===r.rar) n++; } return n>=mx; }
+  function ggRarTag(key){ var r=ROSTER[key]; if(!r || GG_BAL.fieldMax[r.rar]==null) return ''; return '<div class="ggser-tag" style="background:#ffe9e4;border-color:#f3b3a5;color:#8a2e1c">戦場に同時に出せるのは'+r.rar+' '+GG_BAL.fieldMax[r.rar]+'体まで</div>'; }
+  function ggFull(key){ if(!B||!B.allies) return false; var n=B.allies.filter(function(a){ return a.hp>0; }).length; return (ggPop()+(key?ggCapW(key):1) > ALLY_CAP+0.001) || n>=GG_BAL.bodyCap; }
+  /* ===== シリーズの技（10-23）===== */
+  // code＝ROSTER の theme。nm＝図鑑のアルバムの名前。v＝[Lv1, Lv2] の値。ds＝説明（%v% に値）
+  var GG_SER = {
+    '':          {nm:'はじまりの守り手', sk:'団結',     v:[0.05,0.10], ds:'編成の全員のHP+%v%', all:1},
+    'ちびシンプル': {nm:'まるっこ一座',   sk:'わらわら', v:[0.30,0.50], ds:'このシリーズの出撃の待ち時間-%v%'},
+    'ピクセルドット':{nm:'ドットの迷宮',  sk:'残機',     v:[0.15,0.30], ds:'倒れたとき%v%の確率でその場で復活（HP半分・1回）'},
+    '浮世絵':    {nm:'浮世の絵巻',     sk:'見得',     v:[0.50,1.00], ds:'攻撃で敵を押し返す力+%v%'},
+    '絵札':      {nm:'札の王国',       sk:'手札',     v:[1,2],       ds:'出撃のたびに攻撃・速さ・HPのどれか%n%つが+20%', n:1},
+    'グリッチ':  {nm:'電脳界',         sk:'すり抜け', v:[0.15,0.25], ds:'%v%の確率で攻撃をかわす'},
+    'ローポリ':  {nm:'多面体の獣',     sk:'結晶の守り',v:[0.15,0.25], ds:'受けるダメージ-%v%'},
+    'メカ':      {nm:'鋼鉄機兵団',     sk:'修理',     v:[0.01,0.02], ds:'戦場にいる間、毎秒HPが%v%回復'},
+    '少年漫画':  {nm:'武闘の里',       sk:'必殺の一撃',v:[0.15,0.25], ds:'%v%の確率で攻撃が2倍'},
+    'ポップアート':{nm:'ポップ街',     sk:'勢い',     v:[0.10,0.20], ds:'このシリーズの出撃のエネルギー-%v%'},
+    'ブリキ':    {nm:'ブリキ工房',     sk:'ゼンマイ', v:[0.30,0.50], ds:'出撃してから6秒、速さと攻撃の速さ+%v%'},
+    'ボクセル':  {nm:'積み木の王国',   sk:'積み上げ', v:[0.03,0.05], ds:'戦場にいる同じシリーズ1体ごとに攻撃+%v%（最大+30%）'}
+  };
+  var GG_SER_NEED = [3,5];
+  // どのシリーズにも共通の上乗せ（そのシリーズのキャラの攻撃とHP）。技だけだと、そろえる得が小さかった（10-23 の編成さがし: 上位10%に3体そろったシリーズがほぼ0）
+  var GG_SER_STAT = [0, 0.15, 0.35];
+  try{ var __so=window.__GG_SER_OVERRIDE; if(__so){ if(__so.stat) GG_SER_STAT=__so.stat; if(__so.v) for(var __t in __so.v){ if(GG_SER[__t]) GG_SER[__t].v=__so.v[__t]; } } }catch(e){}
+  function ggSerCode(k){ var r=ROSTER[k]; return r ? (r.theme||'') : null; }
+  function ggSerCount(keys){ var c={}; (keys||[]).forEach(function(k){ if(!ROSTER[k] || isGR(k)) return; var t=ggSerCode(k); if(!GG_SER[t]) return; c[t]=(c[t]||0)+1; }); return c; }
+  function ggSerLvOf(n){ return n>=GG_SER_NEED[1] ? 2 : n>=GG_SER_NEED[0] ? 1 : 0; }
+  function ggSerOf(){ var c=ggSerCount(deckKeys()), o={}; for(var t in c){ var lv=ggSerLvOf(c[t]); if(lv) o[t]=lv; } return o; }
+  function ggSerVal(t){ var lv=(B&&B.ser&&B.ser[t])||0; return lv ? GG_SER[t].v[lv-1] : 0; }
+  function ggSerOn(k,t){ return ggSerCode(k)===t && ggSerVal(t); }
+  function ggSerTxt(t, lv){ var s=GG_SER[t], v=s.v[Math.max(0,(lv||1)-1)]; return s.ds.replace('%v%', s.n?v:Math.round(v*100)+'%').replace('%n%', v); }
+  function ggSerCd(k){ var v=ggSerOn(k,'ちびシンプル'); return v ? 1-v : 1; }
+  function ggSerCost(k){ var v=ggSerOn(k,'ポップアート'); return v ? 1-v : 1; }
+  function ggSerOnSpawn(a){
+    if(!B || !B.ser) return; var t=ggSerCode(a.key);
+    var u=ggSerVal(''); if(u){ a.hp=Math.round(a.hp*(1+u)); a.hpMax=Math.round(a.hpMax*(1+u)); }
+    var lv=(B.ser[t]||0), gs=GG_SER_STAT[lv]||0; if(gs && GG_SER[t]){ a.atk*=1+gs; a.hp=Math.round(a.hp*(1+gs)); a.hpMax=Math.round(a.hpMax*(1+gs)); } // 共通の上乗せ
+    var v=ggSerVal(t); if(!v) return;
+    if(t==='浮世絵') a.knockback=Math.round((a.knockback||6)*(1+v));
+    else if(t==='絵札'){ var ops=['atk','spd','hp']; for(var i=0;i<v;i++){ var o=ops.splice(Math.floor(Math.random()*ops.length),1)[0]; if(o==='atk') a.atk*=1.2; else if(o==='spd') a.speed*=1.2; else { a.hp=Math.round(a.hp*1.2); a.hpMax=Math.round(a.hpMax*1.2); } } }
+    else if(t==='グリッチ') a.ggDodge=v;
+    else if(t==='ローポリ') a.ggDR=1-v;
+    else if(t==='メカ') a.ggRep=v;
+    else if(t==='少年漫画') a.ggCrit=v;
+    else if(t==='ボクセル') a.ggVox=v;
+    else if(t==='ピクセルドット') a.ggLife=v;
+    else if(t==='ブリキ'){ a.ggTin={t:6, s:a.speed, c:a.atkCd}; a.speed*=(1+v); a.atkCd=a.atkCd/(1+v); }
+  }
+  function ggSerTick(a, dt){
+    if(a.ggRep && a.hp>0 && a.hp<a.hpMax){ a.hp=Math.min(a.hpMax, a.hp+a.hpMax*a.ggRep*dt); }
+    if(a.ggTin){ a.ggTin.t-=dt; if(a.ggTin.t<=0){ a.speed=a.ggTin.s; a.atkCd=a.ggTin.c; a.ggTin=null; } }
+  }
+  function ggSerAtk(a){
+    var m=1;
+    if(a.ggVox){ var n=0; for(var i=0;i<B.allies.length;i++){ var o=B.allies[i]; if(o!==a && o.hp>0 && ggSerCode(o.key)==='ボクセル') n++; } m*=1+Math.min(0.3, n*a.ggVox); }
+    if(a.ggCrit && Math.random()<a.ggCrit){ m*=2; try{ if(!lod()) floatText(a.x, 14, '会心！', '#e07b00'); }catch(e){} }
+    return m;
+  }
+  function ggSerRevive(a){
+    if(!a.ggLife || a.ggRv || Math.random()>=a.ggLife) return false;
+    a.ggRv=1; a.hp=Math.round(a.hpMax*0.5);
+    try{ var i=a.el.querySelector('.hpb i'); if(i) i.style.width='50%'; floatText(a.x, 20, '残機！', '#2f9e6e'); }catch(e){}
+    return true;
+  }
+  // 編成の画面の札: 編成にいるシリーズを、数の多い順に
+  function ggSerPanel(){
+    var c=ggSerCount(deck), ks=Object.keys(c).sort(function(a,b){ return c[b]-c[a]; });
+    var w=document.createElement('div'); w.className='ggser';
+    var on=ks.filter(function(t){ return ggSerLvOf(c[t]); }).length;
+    w.innerHTML='<div class="h">シリーズの技<small>3体でLv1・5体でLv2'+(on?'・いま'+on+'つ':'')+'</small></div>';
+    if(!ks.length){ var e=document.createElement('div'); e.className='r off'; e.innerHTML='<span class="s">シリーズのキャラを3体そろえると、技が出る。</span>'; w.appendChild(e); }
+    ks.forEach(function(t){ var s=GG_SER[t], n=c[t], lv=ggSerLvOf(n), r=document.createElement('div'); r.className='r'+(lv?'':' off');
+      var dots=''; for(var i=1;i<=5;i++) dots+='<i class="'+(i<=n?'on':'')+(i===3||i===5?' t':'')+'"></i>';
+      var nx = lv>=2 ? '' : ('あと'+((lv?GG_SER_NEED[1]:GG_SER_NEED[0])-n)+'体で'+(lv?'Lv2':'Lv1'));
+      r.innerHTML='<span class="c">'+dots+'</span><span class="n">'+s.nm+'<small>'+n+'体</small></span>'+
+        '<span class="s">攻撃とHP+'+Math.round(GG_SER_STAT[lv||1]*100)+'%・<b>'+s.sk+'</b>'+(lv?'<span class="lv">Lv'+lv+'</span>':'')+'：'+ggSerTxt(t, lv||1)+(nx?'（'+nx+'）':'')+'</span>';
+      w.appendChild(r); });
+    return w;
+  }
+  function ggSerTag(k){ var t=ggSerCode(k), s=GG_SER[t]; if(!s) return ''; return '<div class="ggser-tag">シリーズ：'+s.nm+'（'+s.sk+'）</div>'; }
+  function ggWeakBanner(){ try{ if(!B || !B.weakSer || !B.running) return; fxBanner('弱点：'+GG_SER[B.weakSer].nm+'の攻撃1.5倍', '#a8760a'); }catch(e){} }
+  function ggSerBanner(){ try{ var ks=Object.keys(B.ser||{}); if(!ks.length) return; fxBanner('シリーズの技 '+ks.map(function(t){ return GG_SER[t].sk+'Lv'+B.ser[t]; }).join('・'), '#9a6b00'); }catch(e){} }
   function summon(){
     if(!B||!B.running) return;
-    if(B.allies.length >= ALLY_CAP) return; // 召喚上限（性能対策）
+    if(ggFull(B.queue[0]&&B.queue[0].key)) return; // 召喚上限（重さで数える・10-23）
     const u=B.queue[0]; if(!u||!ROSTER[u.key]) return;
     if(cdLeft(u.key)>0) return;        // クールダウン中は出せない（灰色予約）
     if(isGR(u.key) && grOnField()) return; // GR は戦場に1体
+    if(ggRarFull(u.key)) return; // LR 2・SSR 3 まで（10-23）
     if(B.energy < u.cost) return;
     B.energy -= u.cost;
     spawnAlly(u.key);
@@ -13486,6 +13642,7 @@ const Game = (()=>{
     const __atk=Math.round(__st.atk*__lb);
     if(__part) el.classList.add('haspart');
     B.allies.push({ key, el, x, dir, hp:__hp, hpMax:__hp, atk:__atk, speed:r.speed, range:r.range, cd:0, atkCd:0.7*(1-(skinBuff().atkSpd||0)), splash:r.splash, heal:r.heal, def:r.def||0, knockback:r.knockback||0, pierce:r.pierce||false, slow:r.slow||false, buff:r.buff||0, part:__part });
+    ggSerOnSpawn(B.allies[B.allies.length-1]); // シリーズの技（10-23）
     { var __kt=ggKsTheme(key); if(__kt){ var __cv=el.querySelector('.cv'); var __sh=ggSprUnit(key, el); if(__cv) __cv.innerHTML=__sh||ggKsSVG(key,1); if(__sh) B.allies[B.allies.length-1].ggSpr=1; ggVfx(__kt,'summon',{x:x, y:($('field').clientHeight||300)-14}); ggKsCutin(key); } ggKsWrap(__kt, 'summon', function(){ ggOnSummon(B.allies[B.allies.length-1]); }); } // ガチャ2: SR以上の登場演出・SSR/LRの必殺技（10-21 夜: スキンは専用の演出）
   }
   /* 敵の特徴（10-17 要素11）。[印, 札の名前, ひとこと] */
@@ -13495,6 +13652,11 @@ const Game = (()=>{
     if(t.gg==='saisei') return ['♻️','再生する敵','体力が戻る。<b>正解すると再生が止まる。</b>'];
     if(t.gg==='kakure') return ['👻','かくれ身','ふだんは攻撃が当たらない。<b>正解すると姿が見える。</b>'];
     if(t.gg==='fuuin') return ['⛓️','封印術士','味方を動けなくする。<b>正解すると封印がとける。</b>'];
+    if(t.gg==='tossin') return ['🐗','突進兵','最初の一撃が3倍。前に<b>安い壁役（N）</b>を出して受けよう。'];
+    if(t.gg==='mure') return ['🐜','群れ','弱い敵がまとまって来る。<b>範囲攻撃</b>でまとめて倒そう。'];
+    if(t.gg==='sogeki') return ['🎯','狙撃手','いちばん高い味方を遠くからねらう。<b>足の速い安い味方</b>で近づいて倒そう。'];
+    if(t.gg==='yoroi') return ['🛡️','鎧騎士','弱い攻撃をはじく。<b>一撃の重い攻撃</b>か<b>貫通</b>なら通る。'];
+    if(t.gg==='rarefog') return ['🌫️','封じの霧','近くの<b>SSR・LR</b>の攻撃を半分にする。<b>N・R</b>で倒そう。'];
     if(t.bomb) return ['💣','爆発する敵','倒すと爆発して、近くの仲間にダメージ。'];
     if(t.split) return ['✂','分裂する敵','倒すと小さい敵2体に分かれる。'];
     if(t.summon) return ['🔮','呼び出す敵','後ろで敵を呼び続ける。早めに倒そう。'];
@@ -13554,6 +13716,7 @@ const Game = (()=>{
       if(a===68) add(8, 'kakure', 2, 1.2, true); else if(a>=69){ add(14, 'kakure', 2, 1.0); for(var k3=0;k3<7;k3+=2) add(28+k3*7, 'kakure', 2, 0.9); }
       if(a===83) add(10, 'fuuin', 1, 0, true); else if(a>=84){ add(18, 'fuuin', 1); for(var k4=2;k4<7;k4+=3) add(30+k4*7, 'fuuin', 1); }
     }
+    try{ ggFoe2Sched(stage, S, add); }catch(e){} // 役割で解く敵（10-23）
     if(window.GG_NEW && GG_NEW.only) S=S.filter(function(s){ return GG_NEW.only.indexOf(s.type)>=0; }); // シミュレーターで種類ごとに分けて測る用
     return S.sort(function(x,y){ return x.at-y.at; });
   }
@@ -13729,6 +13892,64 @@ const Game = (()=>{
     if(ggHas('kaminari')){ B.ggLastOk=B.t; B.ggLastLm=lm; if(B.ggBolt) t.push('⚡雷が味方に'); }
     return t.join(' ');
   });
+  /* ===== 役割で解く敵（10-23）===== */
+  window.GG_NEW = window.GG_NEW || {foes:1, rules:1}; if(GG_NEW.foes2==null) GG_NEW.foes2=1;
+  var GG_FOE2_INTRO = {tossin:13, mure:18, sogeki:23, yoroi:36, rarefog:48};
+  var ggCurA = null; // いま攻撃している味方（鎧騎士の「貫通なら通る」用）
+  function ggFoe2Sched(stage, S, add){
+    if(!GG_NEW.foes2) return;
+    var a=stage.area||0, boss=!!stage.boss; if(boss) return;
+    if(a===13) add(9, 'tossin', 1, 0, true); else if(a>=14){ add(15, 'tossin', 1); for(var k=1;k<7;k+=2) add(24+k*7, 'tossin', 1); }
+    if(a===18) add(10, 'mure', 1, 0, true); else if(a>=19){ add(20, 'mure', 1); for(var k2=2;k2<8;k2+=3) add(26+k2*7, 'mure', 1); }
+    if(a===23) add(12, 'sogeki', 1, 0, true); else if(a>=24){ add(18, 'sogeki', 1); for(var k3=1;k3<7;k3+=3) add(30+k3*7, 'sogeki', 1); }
+    if(a===36) add(10, 'yoroi', 1, 0, true); else if(a>=37){ add(16, 'yoroi', 1); for(var k4=2;k4<7;k4+=2) add(28+k4*7, 'yoroi', 1); }
+    if(a===48) add(12, 'rarefog', 1, 0, true); else if(a>=49){ add(20, 'rarefog', 1); for(var k5=3;k5<7;k5+=3) add(32+k5*7, 'rarefog', 1); }
+  }
+  // 1面ごとに決まる弱点シリーズ（3章から・ボスの面はなし）。技のあるシリーズから面の番号で選ぶ
+  var GG_WEAK_SER = ['ちびシンプル','ピクセルドット','浮世絵','絵札','グリッチ','ローポリ','メカ','少年漫画','ポップアート','ブリキ','ボクセル'];
+  function ggWeakSer(stage){ if(!stage || stage.boss || stage.endless || stage.learn || stage.pvp || (stage.area||0)<11) return null; var a=stage.area; return GG_WEAK_SER[(a*7+3)%GG_WEAK_SER.length]; }
+  function ggWeakMul(a){ return (B && B.weakSer && ggSerCode(a.key)===B.weakSer) ? 1.5 : 1; }
+  function ggFogMul(a){
+    if(!B) return 1; var r=ROSTER[a.key]; if(!r || (r.rar!=='SSR' && r.rar!=='LR')) return 1;
+    for(var i=0;i<B.enemies.length;i++){ var e=B.enemies[i]; if(e.gg==='rarefog' && e.hp>0 && Math.abs(e.x-a.x)<=(e.ggFog||160)) { if(a.el && !a.ggFogged){ a.ggFogged=1; a.el.classList.add('ggfogged'); } return 0.5; } }
+    if(a.ggFogged){ a.ggFogged=0; if(a.el) a.el.classList.remove('ggfogged'); }
+    return 1;
+  }
+  function ggFoe2Init(e, t){
+    var el=e.el;
+    if(t.gg==='tossin'){ e.ggCharge=1; el.classList.add('ggtossin'); }
+    else if(t.gg==='mure'){ el.classList.add('ggmure'); }
+    else if(t.gg==='sogeki'){ el.classList.add('ggsogeki'); e.ggAimCd=1.2; }
+    else if(t.gg==='yoroi'){ var s=B.stage||{}; e.ggArmor=Math.round(14*(s.enemyAtkMul||1)*(GG_FOE_K?GG_FOE_K.atk:1)); el.classList.add('ggyoroi'); el.insertAdjacentHTML('beforeend','<div class="ggarmor">🛡'+e.ggArmor+'</div>'); }
+    else if(t.gg==='rarefog'){ e.ggFog=t.fogRange||160; el.classList.add('ggrarefog'); }
+  }
+  // 群れ: 1体出たら、近くに5体を足す（初めての面は3体・満員の分は出さない）
+  function ggMureSpawn(e){
+    var want=(B.stage && B.stage.area===GG_FOE2_INTRO.mure) ? 3 : 5, n=0;
+    for(var i=0;i<want && B.enemies.length<ENEMY_CAP;i++){ spawnEnemy('mure'); var m=B.enemies[B.enemies.length-1]; if(!m || m===e) break; m.ggMureKid=1; m.x=e.x+12+i*11; place(m.el, m.x); n++; }
+    return n;
+  }
+  // 敵の1コマ（10-21 の ggFoeStep の前に呼ぶ）。true＝この敵の動きはここで終わり
+  function ggFoe2Step(e, dt, W){
+    if(e.gg==='tossin' && e.ggCharge){
+      var tg=nearestAlly(e);
+      if(tg && Math.abs(tg.x-e.x)<=e.range){ if(e.cd<=0){ var a=e.atk*enemyDmgBuff(e)*3; damage(tg, a); e.ggCharge=0; e.speed=Math.round(e.speed*0.4); e.cd=0.8; if(e.el) e.el.classList.add('hitdone'); flash(e.el); lunge(e.el); hitFx(tg); floatText(tg.x, 22, '突進！', '#e2462b'); ggSt('tossin_hit'); if(ROSTER[tg.key] && (ROSTER[tg.key].rar==='SSR'||ROSTER[tg.key].rar==='LR')) ggHintCount('tossin', 2, '🐗', '突進兵の<b>最初の一撃は3倍</b>。前に<b>安い壁役（N）</b>がいると、そこで受けられる。'); } place(e.el,e.x); return true; }
+      return false;
+    }
+    if(e.gg==='sogeki'){
+      var best=null; B.allies.forEach(function(o){ if(o.hp>0 && o.x<=e.x+4 && e.x-o.x<=e.range){ var c=(ROSTER[o.key]||{}).cost||0; if(!best || c>((ROSTER[best.key]||{}).cost||0)) best=o; } });
+      if(best){ e.ggAimCd-=dt; if(e.ggAimCd<=0){ var a2=e.atk*enemyDmgBuff(e); damage(best, a2); e.ggAimCd=1.6; flash(e.el); lunge(e.el); hitFx(best); ggSt('sogeki_hit');
+          try{ if(!lod()){ var f=$('field'), m=document.createElement('div'); m.className='ggaim'; m.style.left=best.x+'px'; m.style.top=Math.max(30,(f.clientHeight||300)-60)+'px'; f.appendChild(m); setTimeout(function(){ m.remove(); }, 520); } }catch(_){}
+          var r=ROSTER[best.key]; if(r && (r.rar==='SSR'||r.rar==='LR')) ggHintCount('sogeki', 3, '🎯', '狙撃手は<b>いちばん高い味方</b>をねらう。<b>足の速い安い味方</b>で近づいて倒そう。'); }
+        place(e.el,e.x); return true; }
+      e.x -= e.speed*(e.slowT>0?0.45:1)*dt; place(e.el,e.x); return true;
+    }
+    if(e.gg==='rarefog'){ e.x=Math.max(130, e.x-e.speed*(e.slowT>0?0.45:1)*dt); place(e.el,e.x);
+      if(B.allies.some(function(o){ return o.ggFogged; })) ggHintCount('rarefog', 90, '🌫️', '封じの霧の近くでは<b>SSR・LR の攻撃が半分</b>。<b>N・R</b>で倒そう。');
+      return true; }
+    return false;
+  }
+  var __mureKid=0;
   function spawnEnemy(type, side){
     if(type==="BOSS"){ spawnBoss(); return; }
     const t=ENEMY_TYPES[type]; const s=B.stage;
@@ -13746,7 +13967,8 @@ const Game = (()=>{
     B.enemies.push({ type, el, x, dir, hp, hpMax:hp, atk:t.atk*s.enemyAtkMul*GG_FOE_K.atk, speed:t.speed, range:t.range, cd:0, boss:false, def:t.def||0, bomb:t.bomb||0, split:t.split||null,
       heal: t.heal? Math.round(t.heal*s.enemyHpMul) : 0, buffer: !!t.buffAura, buffAura: t.buffAura||0, buffRange: t.buffRange||0,
       shield: t.shield||0, summon: t.summon||null, sumCd: (t.summonEvery||0)*0.6, summonEvery: t.summonEvery||0 });
-    if(t.gg){ try{ ggFoeInit(B.enemies[B.enemies.length-1], t); }catch(e){} }
+    if(t.gg){ try{ ggFoeInit(B.enemies[B.enemies.length-1], t); }catch(e){} try{ ggFoe2Init(B.enemies[B.enemies.length-1], t); }catch(e){} }
+    if(t.gg==='mure' && !__mureKid){ __mureKid=1; try{ ggMureSpawn(B.enemies[B.enemies.length-1]); }catch(e){} __mureKid=0; }
     try{ ggRuleSpawn(B.enemies[B.enemies.length-1]); }catch(e){}
   }
   function spawnBoss(rush){
@@ -14296,6 +14518,7 @@ const Game = (()=>{
     const survive = B.stage.mode==='survive' && IMPLEMENTED_GIMMICKS.survive; // ④通常配置の耐久(敵城は無敵・timeLimitで勝ち)
     // 味方：右へ。敵 or 敵城と戦う
     B.allies.forEach(a=>{
+      ggSerTick(a, dt); ggCurA=a; // 修理・ゼンマイ（10-23）
       if(a.ggSealT>0){ a.ggSealT-=dt; if(a.ggSealT<=0){ if(a.el) a.el.classList.remove('ggsealed'); } else { place(a.el,a.x); return; } }
       if(a.kbT>0){ ggKbStep(a, dt, 70, W-60); return; } // ノックバック中は下がるだけ
       a.cd-=dt; ggSkillTick(a,dt);
@@ -14319,6 +14542,7 @@ const Game = (()=>{
       if(a.ggSpr){ var __still=!a.ggMv; if(__still!==a.ggStill){ a.ggStill=__still; a.el.classList.toggle('ggstill', __still); } a.ggMv=0; }
       place(a.el, a.x);
     });
+    ggCurA=null;
     // 敵：左へ。味方 or 自城と戦う
     B.enemies.forEach(e=>{
       if(B.frozenT>0){ if(e.el) e.el.classList.add('frz'); return; } // ❄フリーズ中：敵は動かず攻撃もしない
@@ -14326,6 +14550,7 @@ const Game = (()=>{
       if(e.kbT>0){ ggKbStep(e, dt, 70, W-60); return; } // ノックバック中は下がるだけ
       e.cd-=dt;
       if(e.slowT>0){ e.slowT-=dt; } if(e.el) e.el.classList.toggle('slowed', e.slowT>0);
+      if(e.gg && ggFoe2Step(e, dt, W)) return; // 役割で解く敵（10-23）
       if(e.gg && ggFoeStep(e, dt, W)) return;
       // 壁3：敵ヒーラー＝攻撃せず前進しつつ周囲の敵を回復（後方支援）
       if(e.heal){ if(e.cd<=0){ var __eh=false; B.enemies.forEach(function(o){ if(o!==e && Math.abs(o.x-e.x)<=e.range && o.hp<o.hpMax){ o.hp=Math.min(o.hpMax,o.hp+e.heal); var __hi=o.el.querySelector('.hpb i'); if(__hi)__hi.style.width=(o.hp/o.hpMax*100)+'%'; __eh=true; } }); if(__eh){ e.cd=1.0; flash(e.el); floatText(e.x,24,'+♥','#e07ba0'); } } e.x -= e.speed*(e.slowT>0?0.45:1)*dt; place(e.el,e.x); return; }
@@ -14350,7 +14575,8 @@ const Game = (()=>{
     });
     cleanup();
   }
-  function allyAtkMul(a){ var m=1+((B.ggRally&&B.t<B.ggRally)?0.5:0); B.allies.forEach(function(o){ if(o.buff && o!==a && Math.abs(o.x-a.x)<=o.range) m+=o.buff; }); return m; }
+  function allyAtkMul(a){ return ggAllyAtkMul0(a)*ggSerAtk(a)*ggWeakMul(a)*ggFogMul(a); } // 積み上げ・必殺の一撃（10-23）
+  function ggAllyAtkMul0(a){ var m=1+((B.ggRally&&B.t<B.ggRally)?0.5:0); B.allies.forEach(function(o){ if(o.buff && o!==a && Math.abs(o.x-a.x)<=o.range) m+=o.buff; }); return m; }
   // 壁2：攻撃バッファー中ボスが近くにいる敵は攻撃力UP
   function enemyDmgBuff(e){ var m=1; for(var i=0;i<B.enemies.length;i++){ var o=B.enemies[i]; if(o.buffAura && o!==e && Math.abs(o.x-e.x)<=o.buffRange) m+=o.buffAura; } return m; }
   function nearestEnemy(a){ let best=null,bd=1e9; B.enemies.forEach(e=>{ if(e.x>=a.x-4 && !ggNoTarget(e,a)){ const d=e.x-a.x; if(d<bd){bd=d;best=e;} }}); return best; }
@@ -14358,6 +14584,8 @@ const Game = (()=>{
   function damage(u,amt){ if(u.invincible){ flash(u.el); return; }
     // 🛡シールド兵: シールドが残っている間はダメージ無効（1被弾で1枚消費）。正解で全砕き＝answer()参照
     if(u.shield>0){ u.shield--; var __sbg=u.el.querySelector('.shieldbadge'); if(__sbg){ if(u.shield>0){ __sbg.textContent='🛡'+u.shield; } else { __sbg.remove(); } } flash(u.el); return; }
+    if(u.ggArmor && !(ggCurA && ggCurA.pierce)){ amt=Math.max(1, amt-u.ggArmor); } // 鎧騎士（10-23）
+    if(u.ggDodge && Math.random()<u.ggDodge){ try{ if(!lod()) floatText(u.x, 22, 'ミス', '#6b5cff'); }catch(e){} return; } if(u.ggDR) amt*=u.ggDR; // すり抜け・結晶の守り（10-23）
     amt=Math.max(1, amt-(u.def||0)); u.hp-=amt; const i=u.el.querySelector('.hpb i'); if(i) i.style.width=Math.max(0,u.hp/u.hpMax*100)+'%'; ggKbCheck(u); }
   /* 倒れ方（10-16 要素3）。kind='kb'=敵が後ろへ吹っ飛ぶ／'soul'=味方が昇る */
   function ggDie(el, kind){
@@ -14389,7 +14617,7 @@ const Game = (()=>{
   function flash(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),90); }
   function place(el,x){ el.style.left=(x-27)+'px'; }
   function cleanup(){
-    B.allies=B.allies.filter(a=>{ if(a.hp<=0){ fxFrag(a.x, fieldFloorY(), '#9cc5d6'); ggDie(a.el,'soul'); return false;} return true; });
+    B.allies=B.allies.filter(a=>{ if(a.hp<=0 && ggSerRevive(a)) return true; if(a.hp<=0){ fxFrag(a.x, fieldFloorY(), '#9cc5d6'); ggDie(a.el,'soul'); return false;} return true; });
     const born=[];
     B.enemies=B.enemies.filter(e=>{ if(e.hp<=0){
       if(e.ggEscaped){ try{ if(e.el) e.el.remove(); }catch(_){} return false; }
@@ -15831,7 +16059,7 @@ const Game = (()=>{
     var units=deck.concat(grDeck).map(function(k){
       var s=unitStats(k), r=ROSTER[k];
       return { key:k, atk:Math.round(s.atk*lb), hp:Math.round(s.hp*lb), speed:r.speed, range:r.range,
-        atkCd:Math.max(0.2,(r.atkCd||0.7)*(1-(sb.atkSpd||0))), cost:r.cost, def:r.def||0, heal:r.heal?Math.round(r.heal):0, gr:isGR(k) };
+        atkCd:Math.max(0.2,(r.atkCd||0.7)*(1-(sb.atkSpd||0))), cost:r.cost, def:r.def||0, heal:r.heal?Math.round(r.heal):0, gr:isGR(k), rar:r.rar };
     }).filter(Boolean);
     if(!units.length) units=[{key:'guardTurtle',atk:12,hp:130,speed:30,range:42,atkCd:0.9,cost:20,def:0,heal:0}];
     return { name:(card.name||'プレイヤー'), units:units, castleHp:castleMaxHp(), regen:regenVal()+(sb.castleHp?0:0), enMax:enMaxVal() };
@@ -15844,7 +16072,10 @@ const Game = (()=>{
     var L=side(A,1), R=side(B,-1);
     function summon(st){ var u=st.deck[st.idx % st.deck.length]; var __grUp=function(){ return st.units.some(function(x){ return x.gr && x.hp>0; }); };
       for(var __g=0; u.gr && __g<st.deck.length && __grUp(); __g++){ st.idx++; u=st.deck[st.idx % st.deck.length]; } // GR は1体まで（10-22 夕方）
-      if(u.gr && __grUp()) return false; if(st.energy<u.cost) return false; st.energy-=u.cost; st.idx++; st.units.push({gr:u.gr,x:st.dir>0?84:W-84,dir:st.dir,hp:u.hp,hpMax:u.hp,atk:u.atk,speed:u.speed,range:u.range,cd:0,atkCd:u.atkCd,def:u.def,heal:u.heal}); return true; }
+      if(u.gr && __grUp()) return false;
+      var __rf=function(v){ var mx=GG_BAL.fieldMax[v.rar]; if(mx==null) return false; var n=0; st.units.forEach(function(x){ if(x.rar===v.rar && x.hp>0) n++; }); return n>=mx; }; // LR 2・SSR 3 まで（10-23）
+      for(var __r=0; __rf(u) && __r<st.deck.length; __r++){ st.idx++; u=st.deck[st.idx % st.deck.length]; }
+      if(__rf(u) || (u.gr && __grUp())) return false; if(st.energy<u.cost) return false; st.energy-=u.cost; st.idx++; st.units.push({gr:u.gr,rar:u.rar,x:st.dir>0?84:W-84,dir:st.dir,hp:u.hp,hpMax:u.hp,atk:u.atk,speed:u.speed,range:u.range,cd:0,atkCd:u.atkCd,def:u.def,heal:u.heal}); return true; }
     function nearestLiveFoe(u, foes){ var best=null,bd=1e9; for(var i=0;i<foes.length;i++){ var f=foes[i]; if(f.hp<=0) continue; var d=Math.abs(f.x-u.x); if(d<bd){bd=d;best=f;} } return best; }
     function stepSide(me, foe){
       for(var i=0;i<me.units.length;i++){ var u=me.units[i]; if(u.hp<=0) continue; u.cd-=dt;
@@ -15953,6 +16184,15 @@ const Game = (()=>{
     deckKeysNow(){ return deckKeys(); },
     deckIronKeys(a){ var s=STAGES[a-1]; if(!s) return null; enterBattle(ironStage(s)); var k=deckKeys(); stopBattle(); return k; },
     pvpSide(c){ var s=pvpSnap(); var side=pvpComputeSide(c); var r={units:side.units.map(function(u){ return u.key+(u.gr?'*':''); })}; pvpRestore(s); return r; },
+    balInfo(){ var o={}; for(var k in ROSTER){ var r=ROSTER[k]; o[k]={rar:r.rar, theme:r.theme||'', cost:r.cost, hp:r.hp, atk:r.atk, scd:r.scd, weight:r.weight, range:r.range, atkCd:r.atkCd, name:r.name}; } return {bal:GG_BAL, roster:o}; },
+    popNow(){ return {pop:ggPop(), bodies:B?B.allies.length:0}; },
+    serOf(keys){ var c=ggSerCount(keys||deck), o={}; for(var t in c){ var lv=ggSerLvOf(c[t]); if(lv) o[t]=lv; } return {count:c, lv:o}; },
+    serNow(){ return B ? B.ser : null; },
+    serTable(){ return GG_SER; },
+    weakSerOf(a){ return ggWeakSer(STAGES[a-1]); },
+    allyMul(k){ var a=B&&B.allies.find(function(x){ return x.key===k; }); return a ? {weak:ggWeakMul(a), fog:ggFogMul(a)} : null; },
+    armorTest(pierce, amt){ var e=B&&B.enemies.find(function(x){ return x.gg==='yoroi'; }); if(!e) return null; var h=e.hp; var keep=ggCurA; ggCurA={pierce:!!pierce}; damage(e, amt); ggCurA=keep; var d=h-e.hp; e.hp=h; return {armor:e.ggArmor, dealt:d}; },
+    foe2Sched(a){ var S=[]; function add(at,type,n,gap,weak){ for(var i=0;i<n;i++) S.push({at:at+i*(gap||0), type:type, weak:!!weak}); } ggFoe2Sched(STAGES[a-1], S, add); return S; },
     applyPower(p){
       p=p||{};
       var roster = (p.deckKeys && p.deckKeys.length) ? p.deckKeys.slice(0,DECK_MAX+GR_SLOTS) : STARTERS.slice(); // SSR編成も検証可（10体編成・10-23）
