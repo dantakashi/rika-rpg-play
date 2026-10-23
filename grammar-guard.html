@@ -950,6 +950,33 @@
   .ggweak{position:absolute; left:8px; top:8px; z-index:39; font:900 11px/1.2 sans-serif; color:#fff; background:#b8860bdd; border:2px solid #fff3; border-radius:8px; padding:3px 7px; pointer-events:none}
   .stage .ggws,.ggpath .stage>span.ggws{position:absolute; bottom:-9px; left:12px; background:linear-gradient(#b07e0e,#7a5205); color:#fff; padding:0 7px; border-radius:6px; border:1.5px solid #ffd77a; font-size:11px; font-weight:800; line-height:16px; white-space:nowrap; z-index:2}
 
+  /* ===== 出撃のボタン10個（10-23 夜）===== */
+  #queue.gg10 > #q0, #queue.gg10 > #q1, #queue.gg10 > #q2, #queue.gg10 > #summonBtn, #queue.gg10 > div:not([id]){display:none!important}
+  #ggSortie{flex:1 1 auto; min-width:0; display:grid; grid-template-columns:repeat(var(--ggn,10),minmax(0,1fr)); gap:5px}
+  .ggsb{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:58px; padding:2px 0 3px; border-radius:11px; border:2px solid var(--rc,#9aa7b8); background:#fff; overflow:hidden; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; font:inherit; color:inherit}
+  .ggsb .a{width:34px; height:34px; display:block; margin-bottom:1px} .ggsb .a svg{width:100%; height:100%}
+  .ggsb .c{font-size:11px; font-weight:900; line-height:1; color:#3d3426; position:relative; z-index:2}
+  .ggsb .r{position:absolute; top:1px; left:3px; font-size:8px; font-weight:900; color:var(--rc,#9aa7b8); z-index:2}
+  .ggsb .kn{position:absolute; top:1px; right:4px; font-size:8px; font-weight:900; color:#b9ad97; z-index:2}
+  .ggsb .cdv{position:absolute; left:0; right:0; bottom:0; height:0; background:#2d261c66; pointer-events:none; z-index:1}
+  .ggsb .bg{position:absolute; top:12px; right:-1px; font-size:8px; font-weight:900; background:var(--gold,#e0a800); color:#fff; padding:0 3px; border-radius:5px 0 0 5px; display:none; z-index:2}
+  .ggsb.bar .bg{display:block}
+  .ggsb .au{position:absolute; top:11px; left:1px; font-size:10px; display:none; z-index:2}
+  .ggsb.au .au{display:block}
+  .ggsb.ready{box-shadow:0 0 0 2px #fff, 0 0 9px var(--rc,#9aa7b8)}
+  .ggsb.poor .a{filter:grayscale(.55) brightness(.92)} .ggsb.poor .c{color:#c0392b}
+  .ggsb.cool .a{filter:grayscale(.35)}
+  .ggsb.full{opacity:.42}
+  .ggsb.no{animation:ggsbno .28s}
+  @keyframes ggsbno{0%,100%{transform:none}30%{transform:translateX(-3px)}70%{transform:translateX(3px)}}
+  @media (max-width:599px){
+    #queue.gg10{flex-wrap:wrap; row-gap:6px}
+    #ggSortie{flex:1 1 100%; grid-template-columns:repeat(var(--ggc,5),minmax(0,1fr))} /* ボタンの数の半分（切り上げ）の列で2段（11個なら6列） */
+    .ggsb{height:54px} .ggsb .a{width:30px; height:30px}
+  }
+  @media (max-width:599px) and (max-height:700px){ .ggsb{height:46px; padding-bottom:2px} .ggsb .a{width:26px; height:26px} .ggsb .c{font-size:10px} }
+  @media (max-height:480px){ .ggsb{height:46px} .ggsb .a{width:26px; height:26px} }
+
   /* ===== 授業中のパスワード（10-23 夜）===== */
   #gglock{position:fixed; inset:0; z-index:100000; display:none; align-items:center; justify-content:center; padding:18px; background:radial-gradient(circle at 50% 30%,#2b3550f2,#0d1220f7); color:#fff}
   #gglock.on{display:flex}
@@ -1835,7 +1862,7 @@ if(typeof CP_ART!=='undefined'){ var __sprb=(typeof window!=='undefined' && wind
       <div class="qslot qnext" id="q2"></div>
       <button class="btn" id="summonBtn" onclick="Game.summon()">召喚 ⎵</button>
       <button class="btn" id="freezeBtn" onclick="Game.freeze()" style="display:none">❄ フリーズ ⏎</button>
-      <button class="toggle" id="tgAutoBattle" onclick="Game.toggleAuto()" title="自動召喚＝撃てるキャラを自動で出す。英語の問題に集中したい人向け">🤖 おまかせ</button>
+      <button class="toggle" id="tgAutoBattle" onclick="Game.toggleAuto()" title="自動召喚＝役割を見てキャラを自動で出す（空とぶ敵には遠距離・前が手うすなら安い壁）。英語の問題に集中したい人向け">🤖 おまかせ</button>
       <div id="autoTip" style="display:none"></div>
     </div>
 
@@ -13458,7 +13485,7 @@ const Game = (()=>{
   }
   function makeUnit(key){
     const base=ROSTER[key]; let cost=Math.max(1, Math.round(base.cost*ggSerCost(key))), bargain=false; // 勢い（10-23）
-    if((base.rar==="SR"||base.rar==="SSR"||base.rar==="LR") && Math.random()<0.18){ cost=Math.round(cost*0.6); bargain=true; }
+    if(ggBarOf(key)){ cost=Math.round(cost*0.6); bargain=true; } // お得はキャラごと（10-23 夜）
     return { key, cost, bargain };
   }
   // そのスロットに出しうるキャラ（しきい値内）。短CDが編成に居なければ全員にフォールバック
@@ -13474,7 +13501,7 @@ const Game = (()=>{
                            : cand.slice().sort(function(a,b){ return cdLeft(a)-cdLeft(b); })[0];
     return key?makeUnit(key):null;
   }
-  function rebuildQueue(){ B.queue=[ pickSlot(999), pickSlot(2), pickSlot(4.99) ]; }
+  function rebuildQueue(){ B.queue=[ ggAutoPick(), pickSlot(2), pickSlot(4.99) ]; } // おまかせは役割を見る（10-23 夜）
   function renderQueue(){
     // ❄フリーズ砲ボタン（章4以降のみ表示）
     const fb=$('freezeBtn');
@@ -13489,6 +13516,7 @@ const Game = (()=>{
         else { fb.disabled=false; fb.textContent='❄ フリーズ ⏎（⚡'+cost+'）'; }
       }
     }
+    if($('queue')){ ggSortieRender(); return; } // 出撃のボタン10個（10-23 夜）
     const slots=['q0','q1','q2'];
     slots.forEach((id,i)=>{
       const u=B.queue[i]; const el=$(id); if(!el) return;
@@ -13597,6 +13625,79 @@ const Game = (()=>{
   function ggSerTag(k){ var t=ggSerCode(k), s=GG_SER[t]; if(!s) return ''; return '<div class="ggser-tag">シリーズ：'+s.nm+'（'+s.sk+'）</div>'; }
   function ggWeakBanner(){ try{ if(!B || !B.weakSer || !B.running) return; fxBanner('弱点：'+GG_SER[B.weakSer].nm+'の攻撃1.5倍', '#a8760a'); }catch(e){} }
   function ggSerBanner(){ try{ var ks=Object.keys(B.ser||{}); if(!ks.length) return; fxBanner('シリーズの技 '+ks.map(function(t){ return GG_SER[t].sk+'Lv'+B.ser[t]; }).join('・'), '#9a6b00'); }catch(e){} }
+  /* ===== 出撃のボタン10個（10-23 夜）===== */
+  function ggBarOf(key){ if(!B) return false; B.ggBar=B.ggBar||{}; if(B.ggBar[key]==null){ var r=ROSTER[key]&&ROSTER[key].rar; B.ggBar[key]=(r==='SR'||r==='SSR'||r==='LR') && Math.random()<0.18; } return B.ggBar[key]; }
+  function ggCanField(k){ return !(isGR(k) && grOnField()) && !(typeof ggRarFull==='function' && ggRarFull(k)) && !(typeof ggFull==='function' && ggFull(k)); }
+  function ggIsWall(k){ var r=ROSTER[k]; return !!r && (r.rar==='N' || ((r.range||0)<=50 && ((r.def||0)>0 || r.hp/Math.max(1,r.cost)>=3))); }
+  function ggCheapest(arr){ return arr.slice().sort(function(a,b){ return (cdLeft(a)-cdLeft(b)) || (ROSTER[a].cost-ROSTER[b].cost); })[0]; }
+  var GG_AUTO_RULES = {wall:1, air:1, fog:0}; // 10-23 夜: fog（霧の近くで SSR・LR を避ける）を入れると見本6編成の平均 k が 0.79→0.74 に下がったので外した（sim/auto-compare.js） try{ if(window.__GG_AUTO_RULES) Object.assign(GG_AUTO_RULES, window.__GG_AUTO_RULES); }catch(e){} // 試験で1つずつ止められる
+  function ggAutoNeed(){
+    if(!B) return ''; var ens=B.enemies.filter(function(e){ return e.hp>0; }); if(!ens.length) return '';
+    var al=B.allies.filter(function(a){ return a.hp>0; });
+    if(GG_AUTO_RULES.air && ens.some(function(e){ return e.gg==='sora'; }) && !al.some(function(a){ return (a.range||0)>=100; })) return 'air';
+    if(GG_AUTO_RULES.wall && al.filter(function(a){ return ggIsWall(a.key); }).length<2) return 'wall';
+    return '';
+  }
+  function ggNeedOk(k, need){ return !need || (need==='air' ? (ROSTER[k].range||0)>=100 : ggIsWall(k)); }
+  // おまかせが次に出すキャラ（B.queue[0]）
+  function ggAutoPick(){
+    if(window.__GG_AUTO_OLD) return pickSlot(999);
+    var keys=deckKeys().filter(function(k){ return !(isGR(k) && grOnField()) && !(typeof ggRarFull==='function' && ggRarFull(k)); });
+    if(!keys.length) return null;
+    var ready=keys.filter(function(k){ return cdLeft(k)<=0; }), pool=ready.length?ready:keys;
+    if(GG_AUTO_RULES.fog && B.enemies.some(function(e){ return e.hp>0 && e.gg==='rarefog'; })){ var nf=pool.filter(function(k){ var r=ROSTER[k].rar; return r!=='SSR' && r!=='LR'; }); if(nf.length) pool=nf; }
+    var need=ggAutoNeed();
+    if(need){ var m=pool.filter(function(k){ return ggNeedOk(k, need); }); if(m.length) return makeUnit(ggCheapest(m)); }
+    var key=ready.length ? weightedPick(pool) : pool.slice().sort(function(a,b){ return cdLeft(a)-cdLeft(b); })[0];
+    return key?makeUnit(key):null;
+  }
+  function ggNextGR(){ var g=deckKeys().filter(isGR); if(!g.length) return null; var r=g.filter(function(k){ return cdLeft(k)<=0; }); return r.length?r[0]:g.slice().sort(function(a,b){ return cdLeft(a)-cdLeft(b); })[0]; }
+  // ボタンで1体出す
+  function ggSummonKey(k){
+    if(!B || !B.running || window.ggLocked) return false;
+    var key = k==='__GR' ? ggNextGR() : k;
+    if(!key || !ROSTER[key] || deckKeys().indexOf(key)<0) return false;
+    if(cdLeft(key)>0 || !ggCanField(key)) return false;
+    var u=makeUnit(key); if(B.energy<u.cost) return false;
+    B.energy-=u.cost; spawnAlly(key); B.cd[key]=summonCd(key); if(B.ggBar) delete B.ggBar[key];
+    rebuildQueue(); renderQueue(); syncHUD();
+    return true;
+  }
+  function ggSortieEnsure(){
+    var q=$('queue'); if(!q || !B) return null;
+    var ks=deckKeys(), sig=ks.join(',')+'|'+(B.stage&&B.stage.id);
+    var box=$('ggSortie');
+    if(box && box.__sig===sig) return box;
+    if(!box){ box=document.createElement('div'); box.id='ggSortie'; q.insertBefore(box, q.firstChild); q.classList.add('gg10'); }
+    box.__sig=sig; box.innerHTML='';
+    var list=ks.filter(function(k){ return !isGR(k); }); if(ks.some(isGR)) list.push('__GR');
+    box.style.setProperty('--ggn', Math.max(5, list.length)); box.style.setProperty('--ggc', Math.max(3, Math.ceil(list.length/2)));
+    list.forEach(function(k, i){
+      var rk = k==='__GR' ? (ggNextGR()||ks.filter(isGR)[0]) : k, r=ROSTER[rk];
+      var b=document.createElement('button'); b.type='button'; b.className='ggsb'; b.__k=k; b.__gk=rk;
+      b.style.setProperty('--rc', r.rarColor||'#9aa7b8');
+      b.innerHTML='<span class="r">'+(k==='__GR'?'GR':r.rar)+'</span>'+(i<10?'<span class="kn">'+((i+1)%10)+'</span>':'')+'<span class="au">🤖</span><span class="bg">お得</span><span class="a">'+(typeof ggKsSVG==='function'?ggKsSVG(rk):SVG.get(r.sprite))+'</span><span class="c">⚡'+r.cost+'</span><span class="cdv"></span>';
+      b.__c=b.querySelector('.c'); b.__v=b.querySelector('.cdv');
+      b.addEventListener('click', function(){ if(!ggSummonKey(b.__k)){ b.classList.remove('no'); void b.offsetWidth; b.classList.add('no'); } });
+      box.appendChild(b);
+    });
+    return box;
+  }
+  function ggSortieRender(){
+    var box=ggSortieEnsure(); if(!box) return;
+    var q0=B.queue&&B.queue[0], bs=box.children;
+    for(var i=0;i<bs.length;i++){
+      var b=bs[i], key = b.__k==='__GR' ? ggNextGR() : b.__k; if(!key) continue;
+      if(b.__k==='__GR' && b.__gk!==key){ b.__gk=key; var a=b.querySelector('.a'); if(a) a.innerHTML=(typeof ggKsSVG==='function'?ggKsSVG(key):SVG.get(ROSTER[key].sprite)); }
+      var cd=cdLeft(key), u=makeUnit(key), full=!ggCanField(key), can=B.energy>=u.cost;
+      var st=(full?'full':cd>0?'cool':can?'ready':'poor')+(u.bargain?' bar':'')+((autoSummon && q0 && q0.key===key)?' au':'');
+      if(b.__st!==st){ b.__st=st; b.className='ggsb '+st; }
+      var ct='⚡'+u.cost; if(b.__ct!==ct){ b.__ct=ct; b.__c.textContent=ct; }
+      var h=cd>0?Math.min(100, Math.round(cd/Math.max(0.1, summonCd(key))*100)):0; if(b.__h!==h){ b.__h=h; b.__v.style.height=h+'%'; }
+    }
+    // おまかせ: 急ぎの役割（空とぶ敵・前の壁）が出たら、次の1体を選び直す（0.5秒ごと）
+    if(autoSummon && !window.__GG_AUTO_OLD){ B.ggAutoT=(B.ggAutoT||0)+1; if(B.ggAutoT>=30){ B.ggAutoT=0; var nd=ggAutoNeed(); if(nd && q0 && !ggNeedOk(q0.key, nd)) rebuildQueue(); } }
+  }
   function summon(){
     if(!B||!B.running) return;
     if(ggFull(B.queue[0]&&B.queue[0].key)) return; // 召喚上限（重さで数える・10-23）
@@ -13608,6 +13709,7 @@ const Game = (()=>{
     B.energy -= u.cost;
     spawnAlly(u.key);
     B.cd[u.key]=summonCd(u.key);       // 出したキャラはクールダウン中、再出撃しない
+    if(B.ggBar) delete B.ggBar[u.key]; // 次の「お得」を決め直す（10-23 夜）
     rebuildQueue();
     renderQueue(); syncHUD();
   }
@@ -15865,6 +15967,7 @@ const Game = (()=>{
   // スペースキー召喚／Enterキーでフリーズ砲
   window.addEventListener('keydown', e=>{
     if(e.code==='Space'){ e.preventDefault(); summon(); }
+    else if(/^(Digit|Numpad)[0-9]$/.test(e.code) && B && B.running && !(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName))){ var __n=+e.code.slice(-1), __b=$('ggSortie') && $('ggSortie').children[__n===0?9:__n-1]; if(__b){ e.preventDefault(); __b.click(); } } // 出撃のボタン10個（10-23 夜）
     else if(e.code==='Enter'||e.code==='NumpadEnter'){ e.preventDefault(); freeze(); }
   });
   // 凍結タブ復元時は戦闘の途中状態で固まらないようホームへ戻す
@@ -16212,6 +16315,10 @@ const Game = (()=>{
     allyMul(k){ var a=B&&B.allies.find(function(x){ return x.key===k; }); return a ? {weak:ggWeakMul(a), fog:ggFogMul(a)} : null; },
     armorTest(pierce, amt){ var e=B&&B.enemies.find(function(x){ return x.gg==='yoroi'; }); if(!e) return null; var h=e.hp; var keep=ggCurA; ggCurA={pierce:!!pierce}; damage(e, amt); ggCurA=keep; var d=h-e.hp; e.hp=h; return {armor:e.ggArmor, dealt:d}; },
     foe2Sched(a){ var S=[]; function add(at,type,n,gap,weak){ for(var i=0;i<n;i++) S.push({at:at+i*(gap||0), type:type, weak:!!weak}); } ggFoe2Sched(STAGES[a-1], S, add); return S; },
+    sortieKey(k){ return ggSummonKey(k); },
+    sortieState(){ var box=$('ggSortie'); return {n: box?box.children.length:0, keys: box?[].map.call(box.children, function(b){ return b.__k; }):[], q0: B&&B.queue&&B.queue[0]?B.queue[0].key:null, need: ggAutoNeed()}; },
+    autoPick(){ var u=ggAutoPick(); return u?u.key:null; },
+    autoSet(on){ autoSummon=!!on; return autoSummon; },
     applyPower(p){
       p=p||{};
       var roster = (p.deckKeys && p.deckKeys.length) ? p.deckKeys.slice(0,DECK_MAX+GR_SLOTS) : STARTERS.slice(); // SSR編成も検証可（10体編成・10-23）
