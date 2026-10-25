@@ -203,6 +203,12 @@
       "source": "Original diagrams: build/gameplay-audit/make-earthquakes-diagrams.py",
       "license": "Project-authored; no third-party images embedded",
       "scope": "Schematic comparisons and conditional examples, not real event predictions."
+    },
+    "solarNotes": {
+      "files": "art/solar-note__*.svg (24 files)",
+      "source": "Original geometric SVG diagrams authored for this project",
+      "license": "Project-authored; no third-party images embedded",
+      "scope": "Comparison diagrams. Sizes use mean radii where stated; sky positions, rings and eclipses are schematic. Tiny card images are identified by name; details are shown in the explanation viewer."
     }
   },
   "contentReferences": {
@@ -539,6 +545,24 @@
         "https://www.jma.go.jp/jma/kishou/know/jishin/joho/tsunamiinfo.html",
         "https://www.bousai.go.jp/kyoiku/hokenkyousai/check.html",
         "https://www.bousai.go.jp/taisaku/hinanbasyo.html"
+      ]
+    },
+    "earth_solar_system": {
+      "title": "太陽系と恒星の比較",
+      "note": "NASA・JPL・国立天文台等の一次資料を参照して比較条件と説明を作成。24図は教材用の自作模式図。資料本文・画像の転載なし。恒星の見える位置、環、食は実寸や実角度の図ではない。",
+      "urls": [
+        "https://ssd.jpl.nasa.gov/sats/phys_par/",
+        "https://ssd.jpl.nasa.gov/planets/phys_par.html",
+        "https://eco.mtk.nao.ac.jp/koyomi/topics/html/topics2009_1.html",
+        "https://eco.mtk.nao.ac.jp/koyomi/faq/stars.html",
+        "https://science.nasa.gov/sun/facts/",
+        "https://science.nasa.gov/universe/what-is-betelgeuse-inside-the-strange-volatile-star/",
+        "https://science.nasa.gov/missions/hubble/astronomers-use-hubble-to-weigh-dog-stars-companion/",
+        "https://arxiv.org/html/2309.03257v1",
+        "https://spaceplace.nasa.gov/eclipses/en/",
+        "https://spaceplace.nasa.gov/comets/en/",
+        "https://www.eaps.purdue.edu/news/articles/2024/0925_sori_nature.html",
+        "https://www.nasa.gov/solar-system/asteroids/vesta/nasa-studies-reveal-hidden-secrets-about-interiors-of-moon-vesta/"
       ]
     }
   }
