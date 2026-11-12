@@ -88,6 +88,7 @@
   .ic-sengoku{background:linear-gradient(160deg,#fb923c,#9a3412)}
   .ic-numsense{background:linear-gradient(160deg,#c084fc,#7c3aed)}
   .ic-quiz{background:linear-gradient(160deg,#f6d365,#b8860b)}
+  .ic-test{background:linear-gradient(160deg,#f87171,#991b1b)}
   .app.soon{cursor:default}
   .app.soon:active{transform:none}
   .badge-beta{position:absolute; right:-3px; top:-3px; background:#f87171; color:#fff; font-size:8px; font-weight:800;
@@ -274,11 +275,13 @@
     {key:'rika',  label:'理科RPG',        icon:'🧪', cls:'ic-rika',  href:RIKA,                      cat:'science'},
     {key:'rika3', label:'理科RPG3',       icon:'⛏️', cls:'ic-rika',  href:'rika3/index.html',        cat:'science', beta:true},  // 2026-09-30 掲載（実体は C:/dev/rika3 の配る版を rika3/ に置く）。理科RPG2 は同じ日に公開停止
     {key:'quizbattle', label:'あてっこ対戦', icon:'🃏', cls:'ic-quiz', href:'quizbattle/index.html',  cat:'other'},  // 全教科105題材の対面カードバトル（2026-09-02 掲載・実体は rika2/apps/quizbattle/dist）
+    {key:'testprep', label:'テスト対策', icon:'📝', cls:'ic-test', href:'test-taisaku/index.html', cat:'gachi'},  // 2026-11-12 掲載。定期テスト対策（固定テスト・ランダムテスト）。実体は C:/dev/_lib/teiki-test/2026-11/gen_quiz.py
     {key:'data',  label:'データ',          icon:'💾', cls:'ic-data',  action:'data',                  cat:'tool'},
   ];
 
   // 教科ごとの「枠」。配列の順＝表示順。1ページに入りきらないぶんは次ページへ。
   var GROUPS = [
+    {cat:'gachi',    em:'📝', name:'ガチ（テスト対策）', color:'#f87171'},   // 遊びの要素なしの実用枠（2026-11-12）
     {cat:'math',     em:'🔢', name:'数学',   color:'#fbbf24'},
     {cat:'japanese', em:'📖', name:'国語',   color:'#fb7185'},
     {cat:'english',  em:'🔤', name:'英語',   color:'#a78bfa'},
@@ -534,6 +537,11 @@
   // ★運用ルール: ポータルやゲームを更新して生徒に配信したら、必ず UPDATES の
   //   先頭に1件追加すること（date=配信日 / title / body=やさしい言葉の箇条書き）。
   var UPDATES = [
+    { date:'2026-11-12', title:'テスト対策ができた（中2 理科・生物）', body:[
+      'いちばん上の「<b>ガチ（テスト対策）</b>」の枠に、<b>テスト対策</b>を置いた。ゲームではなく、テストと同じ形式の問題を解くところ。',
+      '中2 理科 単元2「生物のからだのつくりとはたらき」の52問・100点。1問ずつ答えると、その場で正解・不正解が出て、最後に点数が出る。',
+      '<b>固定テスト</b>は対策プリントと同じ問題。<b>ランダムテスト</b>は、問題の組み合わせが毎回変わる。まちがえた問題だけの解き直しもできる。'
+    ] },
     { date:'2026-10-28', title:'6つの食品群を、原料や食べる部分でも比べよう', body:[
       '牛乳・チーズ・バター、さけ・煮干しなどを、食品群と原料の両方から比べる24枚の図を追加したよ。',
       '根と地下の茎、粒を食べるものと油を取り出すものも比べよう。加工食品は札に書かれた材料の例で考えてね。大きな図は題材の説明から開けるよ。'
