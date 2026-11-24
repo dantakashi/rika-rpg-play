@@ -121,6 +121,7 @@ const MODES = {
   hon:   { name: '本番', limit: 50, sho: 3, dai: 4 },
   puchi: { name: 'プチ番', limit: 12, sho: 1, dai: 1 },
   bun:   { name: '分野しぼり', limit: 12, sho: 3, dai: 1 },
+  miss:  { name: 'まちがえた問題', limit: 99999, sho: 0, dai: 0 },
 };
 const ONWEB = location.protocol.startsWith('http');
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
@@ -155,22 +156,36 @@ function choose(s, m, g, bf){
   return { sho, dai, rnd };
 }
 
+function mkq(u, q, rnd, mon, no, dn){
+  const d = { uid: u.id, qi: u.qs.indexOf(q), f: u.field, src: u.src, kind: u.kind, k: q.k, text: q.text, kai: q.kai, ctx: u.ctx || '',
+              ten: u.kind === 'dai' ? 4 : 3, mon, no, dn };
+  if (q.sel){
+    const order = q.fix ? q.sel.map((_, i) => i) : shuffle(q.sel.map((_, i) => i), rnd);
+    d.sel = order.map(i => q.sel[i]);
+    d.ans = q.ans.map(a => order.indexOf(a - 1) + 1).sort((a, b) => a - b);
+    d.multi = !!q.multi;
+  } else { d.num = q.num; d.unit = q.unit; }
+  return d;
+}
+const mkey = q => q.uid + '#' + q.qi;
+// まちがえた問題リスト（この端末に残る）。いまの問題データにあるものだけ返す
+function missList(R){
+  const m = (R || load()).miss || {}, out = [];
+  UNITS.forEach(u => u.qs.forEach((q, qi) => { const n = m[u.id + '#' + qi]; if (n) out.push({ u, q, n }); }));
+  return out;
+}
+function makeMiss(){
+  mode = 'miss'; seed = 0;
+  const L = missList(), rnd = mkrnd(L.length * 31 + 7 + L.reduce((x, o) => x + o.n, 0));
+  QS = L.map(o => mkq(o.u, o.q, rnd, 0, '', o.u.field + '　' + o.u.topic)); ALL = QS.slice();
+}
+
 function makeTest(s){
   seed = s;
   const { sho, dai, rnd } = choose(s, mode, grade, bunF);
   const qs = [];
   let mon = 0;
-  const push = (u, q, no, dn) => {
-    const d = { uid: u.id, f: u.field, src: u.src, kind: u.kind, k: q.k, text: q.text, kai: q.kai, ctx: u.ctx || '',
-                ten: u.kind === 'dai' ? 4 : 3, mon, no, dn };
-    if (q.sel){
-      const order = q.fix ? q.sel.map((_, i) => i) : shuffle(q.sel.map((_, i) => i), rnd);
-      d.sel = order.map(i => q.sel[i]);
-      d.ans = q.ans.map(a => order.indexOf(a - 1) + 1).sort((a, b) => a - b);
-      d.multi = !!q.multi;
-    } else { d.num = q.num; d.unit = q.unit; }
-    qs.push(d);
-  };
+  const push = (u, q, no, dn) => qs.push(mkq(u, q, rnd, mon, no, dn));
   FIELDS.forEach(f => {
     const us = sho.filter(u => u.field === f); if (!us.length) return;
     mon++; us.forEach((u, i) => push(u, u.qs[0], KANA[i], f + '（小問）'));
@@ -205,6 +220,7 @@ function start(){
   $('#sub').textContent = '';
   const fr = R.f || {};
   const frows = FIELDS.map(f => { const x = fr[f]; return `<td>${x && x.all ? Math.round(x.ok / x.all * 100) + '％<br><span class="hint">' + x.ok + ' / ' + x.all + ' 問</span>' : '—'}</td>`; }).join('');
+  const ML = missList(R);
   const nSeen = Object.keys(R.seen || {}).filter(id => UNITS.some(u => u.id === id)).length;
   $('#main').innerHTML = `<div class="card home">
     <h1>高校入試 仮想テスト（理科）</h1>
@@ -226,6 +242,14 @@ function start(){
     </div>
     <h2>これまでの分野ごとの正答率</h2>
     <table class="tbl"><tr>${FIELDS.map(f => `<th>${f}</th>`).join('')}</tr><tr>${frows}</tr></table>
+    <h2>まちがえた問題リスト</h2>
+    <p class="meta">テストでまちがえた問題が、ここにたまる。解き直して正解すると、リストから消える。</p>
+    <div class="act"><button class="btn" id="missgo"${ML.length ? '' : ' disabled'}>解き直す（${ML.length}問）</button></div>
+    ${ML.length ? `<details><summary>リストを見る（${ML.length}問）</summary>${ML.map(o => `<div class="miss"><p class="q"><b>${o.u.field}　${o.u.topic}</b>　${o.q.text}</p><p class="hint">${o.u.src.split(' ')[0]}の入試の類題　／　まちがえた回数 ${o.n}</p></div>`).join('')}</details>` : ''}
+    <details><summary>記録を消す</summary>
+      <p class="meta">消した記録は、もとにもどせない。</p>
+      <div class="act"><button class="btn ghost" data-r="f">正答率をリセット</button><button class="btn ghost" data-r="miss">まちがえた問題リストを空にする</button><button class="btn ghost" data-r="all">全部の記録を消す</button></div>
+    </details>
     <details><summary>答え方・しくみ</summary><ul>
       <li>選択肢は、おして選ぶ。パソコンでは数字キーでも選べる。Enter キーで次へ進める。</li>
       <li>「すべて選びなさい」の問題は、当てはまるものを全部選んでから「答える」をおす。全部合って正解。</li>
@@ -246,17 +270,26 @@ function start(){
     const v = parseInt(norm($('#seed').value), 10);
     makeTest(v >= 1 && v <= 9999 ? v : newSeed()); begin();
   });
+  $('#missgo').onclick = () => { makeMiss(); if (QS.length) begin(true); };
+  const RN = { f: '分野ごとの正答率', miss: 'まちがえた問題リスト', all: '全部の記録（最高記録・正答率・まちがえた問題リスト・解いた問題の印）' };
+  document.querySelectorAll('button[data-r]').forEach(b => b.onclick = () => {
+    const k = b.dataset.r;
+    if (!confirm(RN[k] + 'を消す？　もとにはもどせない。')) return;
+    let o = load();
+    if (k === 'all') o = { grade: o.grade, bunF: o.bunF }; else delete o[k];
+    save(o); start();
+  });
   $('#st-pos').textContent = ''; $('#st-score').textContent = '0'; $('#st-time').textContent = ''; $('#bar').style.width = '0';
   window.scrollTo(0, 0);
 }
 
-function label(){ return MODES[mode].name + (mode === 'bun' ? '（' + bunF + '）' : '') + (grade < 3 ? '・中' + grade + 'まで' : '') + '　番号 ' + seed; }
+function label(){ if (mode === 'miss') return 'まちがえた問題の解き直し'; return MODES[mode].name + (mode === 'bun' ? '（' + bunF + '）' : '') + (grade < 3 ? '・中' + grade + 'まで' : '') + '　番号 ' + seed; }
 
 function begin(part){
   partial = !!part; playing = true; idx = 0; score = 0; rec = []; t0 = Date.now();
   clearInterval(timer); timer = setInterval(tick, 1000); tick();
   hb('やめる', () => { if (confirm('このテストをやめて、最初の画面にもどる？（ここまでの点数は残らない）')) start(); });
-  $('#sub').textContent = label() + (partial ? '（解き直し）' : '');
+  $('#sub').textContent = label() + (partial && mode !== 'miss' ? '（解き直し）' : '');
   show();
 }
 
@@ -277,7 +310,7 @@ function show(){
   $('#main').innerHTML = `<div class="wrap${q.ctx ? '' : ' noctx'}">
     ${q.ctx ? `<div class="card ctx">${q.ctx}</div>` : ''}
     <div class="card">
-      <div><span class="tag">問${zen(q.mon)}　${q.dn}</span><span class="tag">（${q.no}）　${q.ten}点</span><span class="tag src">${q.src.split(' ')[0]}の入試の類題</span></div>
+      <div><span class="tag">${q.mon ? '問' + zen(q.mon) + '　' : ''}${q.dn}</span><span class="tag">${q.no ? '（' + q.no + '）　' : ''}${q.ten}点</span><span class="tag src">${q.src.split(' ')[0]}の入試の類題</span></div>
       <p class="qtext">${q.text}</p>${body}
       <div id="res"></div>
     </div></div>`;
@@ -352,6 +385,17 @@ function result(){
     QS.forEach((q, i) => { const x = R.f[q.f] = R.f[q.f] || { ok: 0, all: 0 }; x.all++; if (rec[i].ok) x.ok++; R.seen[q.uid] = 1; });
     save(R);
   }
+  {
+    // まちがえた問題リスト: まちがえたら足す。リストの解き直しで正解したら消す
+    const R = load(); R.miss = R.miss || {};
+    QS.forEach((q, i) => {
+      const k = mkey(q);
+      if (!rec[i].ok){ if (!partial || mode === 'miss') R.miss[k] = (R.miss[k] || 0) + 1; else if (!R.miss[k]) R.miss[k] = 1; }
+      else if (mode === 'miss') delete R.miss[k];
+    });
+    save(R);
+  }
+  const left = missList().length;
   let chi = 0, shi = 0, chiA = 0, shiA = 0;
   QS.forEach((q, i) => { if (q.k === '知'){ chiA += q.ten; if (rec[i].ok) chi += q.ten; } else { shiA += q.ten; if (rec[i].ok) shi += q.ten; } });
   const stat = FIELDS.map(f => {
@@ -364,18 +408,26 @@ function result(){
   const miss = QS.map((q, i) => i).filter(i => !rec[i].ok);
   const text = i => { const q = QS[i]; let a = rec[i].right, m = rec[i].mine;
     if (q.sel && !q.multi){ a += '　' + q.sel[q.ans[0] - 1]; }
-    return `<div class="miss"><p class="q"><b>問${zen(q.mon)}（${q.no}）</b>　${q.text}</p><p class="a">あなたの答え <s>${m}</s>　／　正しい答え <b>${a}</b></p><p class="kai">${q.kai}</p>${q.ctx ? `<details><summary>資料を見る</summary>${q.ctx}</details>` : ''}</div>`; };
+    return `<div class="miss"><p class="q"><b>${q.mon ? '問' + zen(q.mon) + '（' + q.no + '）' : q.dn}</b>　${q.text}</p><p class="a">あなたの答え <s>${m}</s>　／　正しい答え <b>${a}</b></p><p class="kai">${q.kai}</p>${q.ctx ? `<details><summary>資料を見る</summary>${q.ctx}</details>` : ''}</div>`; };
   const over = !partial && sec > MODES[mode].limit * 60;
   $('#main').innerHTML = `<div class="card result" style="max-width:1000px;margin:0 auto">
-    <h2>結果　<span class="hint">${label()}${partial ? '（解き直し・記録には入らない）' : ''}${newBest ? '　最高記録を更新' : ''}</span></h2>
+    <h2>結果　<span class="hint">${label()}${partial ? (mode === 'miss' ? '（最高記録・正答率には入らない）' : '（解き直し・記録には入らない）') : ''}${newBest ? '　最高記録を更新' : ''}</span></h2>
     <div class="big">${score}<small> 点 / ${all}点${all !== 100 ? '（' + pct + '％）' : ''}　${QS.length - miss.length} / ${QS.length} 問正解・${fmt(sec)}${over ? '（時間オーバー）' : ''}</small></div>
     <table class="tbl"><tr><th>知識・技能</th><td>${chi} / ${chiA} 点</td><th>思考・判断・表現</th><td>${shi} / ${shiA} 点</td></tr></table>
     <table class="tbl">${rows}</table>
     ${stat.length > 1 && low < 1 ? '<p class="hint">色のついた分野が、いちばん点を落としたところ。「分野しぼり」でその分野だけ解ける。</p>' : ''}
-    <div class="act"><button class="btn" id="other">別の問題でもう一度</button><button class="btn ghost" id="again">同じ番号をもう一度</button>${miss.length ? '<button class="btn ghost" id="retry">まちがえた問題だけ解き直す</button>' : ''}</div>
+    ${mode === 'miss'
+      ? `<p class="hint">まちがえた問題リストの残り：${left}問</p><div class="act">${left ? '<button class="btn" id="missagain">リストの残りを解き直す</button>' : ''}<button class="btn ghost" id="home">最初の画面へ</button></div>`
+      : `<div class="act"><button class="btn" id="other">別の問題でもう一度</button><button class="btn ghost" id="again">同じ番号をもう一度</button>${miss.length ? '<button class="btn ghost" id="retry">まちがえた問題だけ解き直す</button>' : ''}</div>
+    <p class="hint">まちがえた問題は「まちがえた問題リスト」（最初の画面）に入った。いまのリスト：${left}問</p>`}
     <h2 style="margin-top:22px">${miss.length ? 'まちがえた問題（' + miss.length + '問）' : '全問正解'}</h2>
     ${miss.map(text).join('')}</div>`;
   window.scrollTo(0, 0);
+  if (mode === 'miss'){
+    $('#home').onclick = start;
+    if (left) $('#missagain').onclick = () => { makeMiss(); begin(true); };
+    return;
+  }
   $('#again').onclick = () => { QS = ALL.slice(); begin(); };
   $('#other').onclick = () => { makeTest(newSeed()); begin(); };
   if (miss.length) $('#retry').onclick = () => { QS = miss.map(i => QS[i]); begin(true); };
