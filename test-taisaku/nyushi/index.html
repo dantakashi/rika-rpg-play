@@ -99,6 +99,80 @@ tr.weak th, tr.weak td{ background:#fff4e0; }
   .ctx table{ font-size:15px; } .ctx th,.ctx td{ padding:3px 5px; }
   .tbl{ font-size:16px; } .tbl th,.tbl td{ padding:4px 8px; }
 }
+/* ---- 最初の画面 ---- */
+:root{ --navy:#14304b; --amber:#e9a31c; --paper:#f7f5f0; }
+body.athome{ background:var(--paper); }
+body.athome header .stat, body.athome .bar{ display:none; }
+.home{ max-width:1040px; margin:0 auto; display:grid; gap:22px; }
+.home h2{ font-size:19px; margin:0 0 12px; letter-spacing:.04em; }
+.eyebrow{ margin:0 0 6px; font-size:14px; letter-spacing:.18em; color:var(--blue); font-weight:bold; }
+.hero{ padding:26px 4px 2px; }
+.hero h1{ margin:0; font-size:44px; line-height:1.25; letter-spacing:.03em; color:var(--navy); }
+.hero .lede{ margin:10px 0 14px; font-size:19px; color:#3d4854; max-width:36em; }
+.chips{ display:flex; flex-wrap:wrap; gap:6px 8px; }
+.chips span{ font-size:14px; padding:1px 12px; border:1px solid #cfd6de; border-radius:999px; background:#fff; color:#44505c; }
+.chips .tot{ border-color:var(--navy); background:var(--navy); color:#fff; }
+.next{ display:flex; gap:14px 24px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:#fff; border:1px solid #e3ddd0; border-left:8px solid var(--amber); border-radius:14px; padding:16px 22px; }
+.next .eyebrow{ color:#9a6a00; }
+.next .nt{ margin:0; font-size:20px; max-width:34em; }
+.btn.amber{ background:var(--amber); color:#2a1d00; font-size:20px; padding:12px 30px; white-space:nowrap; }
+.range{ display:flex; gap:10px 20px; align-items:center; flex-wrap:wrap; font-size:17px; }
+.range .lbl{ color:var(--sub); letter-spacing:.08em; }
+.seg{ display:inline-flex; background:#e9e6de; border-radius:999px; padding:4px; }
+.seg label{ position:relative; cursor:pointer; }
+.seg input{ position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+.seg span{ display:block; padding:3px 18px; border-radius:999px; color:#55606b; white-space:nowrap; }
+.seg input:checked + span{ background:#fff; color:var(--navy); font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,.18); }
+.seg input:focus-visible + span{ outline:3px solid var(--blue); }
+.seedl{ margin-left:auto; color:var(--sub); white-space:nowrap; }
+.seedl input{ font:inherit; width:6em; padding:2px 10px; border:1px solid #cfd6de; border-radius:8px; background:#fff; }
+.home .modes{ display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:16px; margin:0; }
+.home .mode{ background:#fff; border:1px solid #e3ddd0; border-radius:16px; padding:18px 20px 20px; gap:6px; box-shadow:0 1px 0 rgba(20,48,75,.04); }
+.home .mode .cap{ margin:0; font-size:14px; letter-spacing:.06em; color:var(--sub); }
+.home .mode > b{ font-size:30px; line-height:1.3; color:var(--navy); letter-spacing:.04em; }
+.home .mode > span{ font-size:17px; color:#3d4854; }
+.home .mode select{ display:block; margin-top:8px; background:#fff; }
+.home .mode .rec{ border-top:1px solid #ece7dc; margin-top:6px; padding-top:10px; font-size:15px; }
+.home .mode .rec b{ font-size:24px; color:var(--navy); }
+.home .mode .rec .sep{ margin-left:12px; }
+.home .mode .rec .none{ color:#8a939d; }
+.home .mode .btn{ margin-top:6px; }
+.home .mode.main{ background:var(--navy); border-color:var(--navy); }
+.home .mode.main .cap{ color:#b9c8d8; }
+.home .mode.main > b, .home .mode.main .rec b{ color:#fff; }
+.home .mode.main > span{ color:#dbe5ee; }
+.home .mode.main .rec{ border-top-color:rgba(255,255,255,.22); color:#b9c8d8; }
+.home .mode.main .rec .none{ color:#9fb2c5; }
+.home .mode.main .btn{ background:#fff; color:var(--navy); }
+.home .mode.main .btn:disabled{ background:#7f93a6; color:#dfe6ec; }
+.grid2{ display:grid; grid-template-columns:1fr 1.6fr; gap:16px; }
+.panel{ background:#fff; border:1px solid #e3ddd0; border-radius:16px; padding:18px 22px; }
+.ringrow{ display:flex; gap:18px; align-items:center; }
+.ring{ width:104px; height:104px; flex:none; }
+.ringrow p{ margin:0; line-height:1.4; }
+.ringrow b{ font-size:40px; color:var(--navy); }
+.ringrow span{ font-size:18px; color:var(--sub); }
+.ringrow small{ font-size:15px; color:var(--sub); }
+.fb{ display:grid; grid-template-columns:3em 1fr 3.4em 6em; gap:12px; align-items:center; padding:5px 0; font-size:17px; }
+.fb .track{ height:12px; background:#eceff3; border-radius:999px; overflow:hidden; }
+.fb .track i{ display:block; height:100%; background:var(--blue); border-radius:999px; }
+.fb b{ text-align:right; color:var(--navy); }
+.fb small{ font-size:14px; color:var(--sub); }
+.fb.weak .track i{ background:var(--amber); }
+.fb.weak .fn{ font-weight:bold; }
+.foot{ display:grid; gap:2px; padding:0 4px 10px; }
+.foot details{ margin-top:6px; }
+@media (max-width:820px){
+  .home{ gap:16px; }
+  .hero{ padding-top:12px; }
+  .hero h1{ font-size:32px; }
+  .hero .lede{ font-size:17px; }
+  .next{ padding:14px 16px; } .next .nt{ font-size:18px; } .btn.amber{ width:100%; }
+  .home .modes, .grid2{ grid-template-columns:1fr; }
+  .seedl{ margin-left:0; }
+  .seg span{ padding:3px 12px; font-size:16px; }
+  .fb{ grid-template-columns:2.6em 1fr 3.2em; } .fb small{ display:none; }
+}
 </style>
 </head>
 <body>
@@ -212,64 +286,97 @@ function recLine(r){
 }
 function count(m, g, bf){ const c = choose(1, m, g, bf); return c.sho.length + c.dai.length * 4; }
 
+function ring(p){
+  const r = 34, c = 2 * Math.PI * r;
+  return `<svg viewBox="0 0 84 84" class="ring" aria-hidden="true"><circle cx="42" cy="42" r="${r}" fill="none" stroke="#e4e8ee" stroke-width="9"/>${p > 0 ? `<circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--amber)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 42 42)"/>` : ''}</svg>`;
+}
+
 function start(){
   playing = false; clearInterval(timer);
+  document.body.classList.add('athome');
   const R = load();
   grade = R.grade || 3; bunF = R.bunF || '物理';
   hb(ONWEB ? '← テスト対策' : '', () => { location.href = '../index.html'; });
   $('#sub').textContent = '';
-  const fr = R.f || {};
-  const frows = FIELDS.map(f => { const x = fr[f]; return `<td>${x && x.all ? Math.round(x.ok / x.all * 100) + '％<br><span class="hint">' + x.ok + ' / ' + x.all + ' 問</span>' : '—'}</td>`; }).join('');
-  const ML = missList(R);
-  const nSeen = Object.keys(R.seen || {}).filter(id => UNITS.some(u => u.id === id)).length;
-  $('#main').innerHTML = `<div class="card home">
-    <h1>高校入試 仮想テスト（理科）</h1>
-    <p class="meta">全国の公立高校入試の問題をもとに作った類題から、毎回ちがう組み合わせで仮想の入試を作る。答えるとその場で正解・不正解と解説が出て、最後に点数が出る。</p>
-    <p class="meta">いま入っている問題：${INFO.q}問（${INFO.prefs.join('・')} の入試をもとにした類題）　／　解いたことのある問題：${nSeen} / ${UNITS.length} 組</p>
-    <div class="opts"><span>出題範囲</span>
-      <label><input type="radio" name="g" value="1"> 中1まで</label>
-      <label><input type="radio" name="g" value="2"> 中2まで</label>
-      <label><input type="radio" name="g" value="3"> 中3まで（全部）</label>
-      <label>テスト番号 <input type="text" id="seed" inputmode="numeric" maxlength="4" placeholder="おまかせ"></label></div>
-    <div class="modes">
-      <div class="mode"><b>本番</b><span>入試1回分。小問12問＋大問4本。<span id="n-hon"></span>・50分。</span>
-        <div class="rec">${recLine(R.hon)}</div><button class="btn" data-m="hon">はじめる</button></div>
-      <div class="mode"><b>プチ番</b><span>時間がないとき用。小問4問＋大問1本。<span id="n-puchi"></span>・10分ほど。</span>
-        <div class="rec">${recLine(R.puchi)}</div><button class="btn" data-m="puchi">はじめる</button></div>
-      <div class="mode"><b>分野しぼり</b><span>1つの分野だけ。小問3問＋大問1本。<span id="n-bun"></span>・10分ほど。</span>
-        <select id="bunf">${FIELDS.map(f => `<option${f === bunF ? ' selected' : ''}>${f}</option>`).join('')}</select>
-        <div class="rec">${recLine(R.bun)}</div><button class="btn" data-m="bun">はじめる</button></div>
-    </div>
-    <h2>これまでの分野ごとの正答率</h2>
-    <table class="tbl"><tr>${FIELDS.map(f => `<th>${f}</th>`).join('')}</tr><tr>${frows}</tr></table>
-    <h2>まちがえた問題リスト</h2>
-    <p class="meta">テストでまちがえた問題が、ここにたまる。解き直して正解すると、リストから消える。</p>
-    <div class="act"><button class="btn" id="missgo"${ML.length ? '' : ' disabled'}>解き直す（${ML.length}問）</button></div>
-    ${ML.length ? `<details><summary>リストを見る（${ML.length}問）</summary>${ML.map(o => `<div class="miss"><p class="q"><b>${o.u.field}　${o.u.topic}</b>　${o.q.text}</p><p class="hint">${o.u.src.split(' ')[0]}の入試の類題　／　まちがえた回数 ${o.n}</p></div>`).join('')}</details>` : ''}
-    <details><summary>記録を消す</summary>
-      <p class="meta">消した記録は、もとにもどせない。</p>
-      <div class="act"><button class="btn ghost" data-r="f">正答率をリセット</button><button class="btn ghost" data-r="miss">まちがえた問題リストを空にする</button><button class="btn ghost" data-r="all">全部の記録を消す</button></div>
-    </details>
-    <details><summary>答え方・しくみ</summary><ul>
-      <li>選択肢は、おして選ぶ。パソコンでは数字キーでも選べる。Enter キーで次へ進める。</li>
-      <li>「すべて選びなさい」の問題は、当てはまるものを全部選んでから「答える」をおす。全部合って正解。</li>
-      <li>計算の問題は、数字を入力して「答える」をおす。</li>
-      <li>配点は神奈川県の入試と同じ形（小問は1問3点、大問の中の問いは1問4点）。記録は100点満点に直した数字（％）で残る。</li>
-      <li>テスト番号が同じなら同じ問題が出る。友だちと同じ番号で解いて、点数を比べられる。番号を入れなければ、まだ解いていない問題が多く入るように選ぶ。</li>
-      <li>問題は、それぞれの県の入試問題そのものではない。同じ考え方を使う別の問題に作りかえてある。</li>
-      <li>記録は、この端末のこのブラウザに残る。</li>
-    </ul></details></div>`;
+  const fr = R.f || {}, ML = missList(R), seen = R.seen || {};
+  const seenQ = UNITS.filter(u => seen[u.id]).reduce((x, u) => x + u.qs.length, 0);
+  const rates = FIELDS.map(f => { const x = fr[f]; return { f, ok: x ? x.ok : 0, all: x ? x.all : 0, p: x && x.all ? x.ok / x.all : null }; });
+  const done = rates.filter(r => r.all >= 5);      // 5問より少ない分野は、まだ弱点と決めない
+  const weak = done.length >= 2 ? done.reduce((a, b) => b.p < a.p ? b : a) : null;
+  const plays = ['hon', 'puchi', 'bun'].reduce((x, m) => x + ((R[m] || {}).n || 0), 0);
+  // 次の一手（記録から1つだけ決める）
+  let nx;
+  if (!plays) nx = { t: 'まずはプチ番から。10分ほどで、入試の理科がどんな問題かをひととおり見られる。', b: 'プチ番をはじめる', go: () => go('puchi') };
+  else if (ML.length >= 5) nx = { t: `まちがえた問題が ${ML.length} 問たまっている。新しい問題に進む前に、ここを解き直すのがいちばん点につながる。`, b: `${ML.length} 問を解き直す`, go: () => { makeMiss(); begin(true); } };
+  else if (weak && weak.p < 0.6) nx = { t: `いま、いちばん点を落としているのは${weak.f}（正答率 ${Math.round(weak.p * 100)}％）。${weak.f}だけを10分ほどで解ける。`, b: `${weak.f}を解く`, go: () => { bunF = weak.f; const o = load(); o.bunF = bunF; save(o); go('bun'); } };
+  else if (seenQ < INFO.q) nx = { t: `まだ解いていない問題が ${INFO.q - seenQ} 問ある。50分をはかって、本番を1回。`, b: '本番をはじめる', go: () => go('hon') };
+  else nx = { t: '入っている問題は、全部1回は解いた。組み合わせをかえて、本番をもう1回。', b: '本番をはじめる', go: () => go('hon') };
+  const recLine2 = r => (!r || !r.n) ? '<span class="none">まだ記録なし</span>' : `最高 <b>${r.best}</b>％<span class="sep">前回 ${r.last}％・${r.n}回</span>`;
+  const bars = rates.map(r => `<div class="fb${weak && r.f === weak.f && r.p < 1 ? ' weak' : ''}"><span class="fn">${r.f}</span><div class="track"><i style="width:${r.p === null ? 0 : Math.max(3, Math.round(r.p * 100))}%"></i></div><b>${r.p === null ? '—' : Math.round(r.p * 100) + '％'}</b><small>${r.all ? r.ok + ' / ' + r.all + ' 問' : 'まだ'}</small></div>`).join('');
+  $('#main').innerHTML = `<div class="home">
+    <section class="hero">
+      <p class="eyebrow">テスト対策　｜　理科</p>
+      <h1>高校入試 仮想テスト</h1>
+      <p class="lede">全国の公立高校入試をもとにした類題から、毎回ちがう1回分の入試を組む。答えるたびに、正誤と解説が出る。</p>
+      <div class="chips">${INFO.prefs.map(p => `<span>${p}</span>`).join('')}<span class="tot">全 ${INFO.q} 問</span></div>
+    </section>
+    <section class="next">
+      <div><p class="eyebrow">次の一手</p><p class="nt">${nx.t}</p></div>
+      <button class="btn amber" id="nextgo">${nx.b}</button>
+    </section>
+    <section class="range">
+      <span class="lbl">出題範囲</span>
+      <div class="seg">${[[1, '中1まで'], [2, '中2まで'], [3, '中3まで（全部）']].map(([v, t]) => `<label><input type="radio" name="g" value="${v}"><span>${t}</span></label>`).join('')}</div>
+      <label class="seedl">テスト番号 <input type="text" id="seed" inputmode="numeric" maxlength="4" placeholder="おまかせ"></label>
+    </section>
+    <section class="modes">
+      <div class="mode main"><p class="cap">50分　｜　<span id="n-hon"></span>　｜　100点</p><b>本番</b><span>入試1回分。小問12問と、物理・化学・生物・地学の大問を1本ずつ。</span>
+        <div class="rec">${recLine2(R.hon)}</div><button class="btn" data-m="hon">はじめる</button></div>
+      <div class="mode"><p class="cap">10分ほど　｜　<span id="n-puchi"></span></p><b>プチ番</b><span>時間がないとき用。小問4問と、大問を1本。</span>
+        <div class="rec">${recLine2(R.puchi)}</div><button class="btn" data-m="puchi">はじめる</button></div>
+      <div class="mode"><p class="cap">10分ほど　｜　<span id="n-bun"></span></p><b>分野しぼり</b><span>1つの分野だけ。小問3問と、大問を1本。
+        <select id="bunf" aria-label="分野">${FIELDS.map(f => `<option${f === bunF ? ' selected' : ''}>${f}</option>`).join('')}</select></span>
+        <div class="rec">${recLine2(R.bun)}</div><button class="btn" data-m="bun">はじめる</button></div>
+    </section>
+    <section class="grid2">
+      <div class="panel"><h2>進みぐあい</h2>
+        <div class="ringrow">${ring(INFO.q ? seenQ / INFO.q : 0)}<p><b>${seenQ}</b><span> / ${INFO.q} 問</span><br><small>1回は解いた問題</small></p></div></div>
+      <div class="panel"><h2>分野ごとの正答率</h2>${bars}</div>
+    </section>
+    <section class="panel">
+      <h2>まちがえた問題リスト</h2>
+      <p class="meta">テストでまちがえた問題が、ここにたまる。解き直して正解すると、リストから消える。</p>
+      <div class="act"><button class="btn" id="missgo"${ML.length ? '' : ' disabled'}>解き直す（${ML.length}問）</button></div>
+      ${ML.length ? `<details><summary>リストを見る（${ML.length}問）</summary>${ML.map(o => `<div class="miss"><p class="q"><b>${o.u.field}　${o.u.topic}</b>　${o.q.text}</p><p class="hint">${o.u.src.split(' ')[0]}の入試の類題　／　まちがえた回数 ${o.n}</p></div>`).join('')}</details>` : ''}
+    </section>
+    <section class="foot">
+      <details><summary>答え方・しくみ</summary><ul>
+        <li>選択肢は、おして選ぶ。パソコンでは数字キーでも選べる。Enter キーで次へ進める。</li>
+        <li>「すべて選びなさい」の問題は、当てはまるものを全部選んでから「答える」をおす。全部合って正解。</li>
+        <li>計算の問題は、数字を入力して「答える」をおす。</li>
+        <li>配点は神奈川県の入試と同じ形（小問は1問3点、大問の中の問いは1問4点）。記録は100点満点に直した数字（％）で残る。</li>
+        <li>テスト番号が同じなら同じ問題が出る。友だちと同じ番号で解いて、点数を比べられる。番号を入れなければ、まだ解いていない問題が多く入るように選ぶ。</li>
+        <li>問題は、それぞれの都県の入試問題そのものではない。同じ考え方を使う別の問題に作りかえてある。</li>
+        <li>記録は、この端末のこのブラウザに残る。</li>
+      </ul></details>
+      <details><summary>記録を消す</summary>
+        <p class="meta">消した記録は、もとにもどせない。</p>
+        <div class="act"><button class="btn ghost" data-r="f">正答率をリセット</button><button class="btn ghost" data-r="miss">まちがえた問題リストを空にする</button><button class="btn ghost" data-r="all">全部の記録を消す</button></div>
+      </details>
+    </section></div>`;
   const setN = () => {
     ['hon', 'puchi', 'bun'].forEach(m => { const n = count(m, grade, bunF); $('#n-' + m).textContent = n + '問'; document.querySelector(`button[data-m=${m}]`).disabled = n === 0; });
   };
+  function go(m){
+    mode = m;
+    const v = parseInt(norm($('#seed').value), 10);
+    makeTest(v >= 1 && v <= 9999 ? v : newSeed()); if (QS.length) begin();
+  }
   document.querySelectorAll('input[name=g]').forEach(r => { r.checked = +r.value === grade; r.onchange = () => { grade = +r.value; const o = load(); o.grade = grade; save(o); setN(); }; });
   $('#bunf').onchange = e => { bunF = e.target.value; const o = load(); o.bunF = bunF; save(o); setN(); };
   setN();
-  document.querySelectorAll('button[data-m]').forEach(b => b.onclick = () => {
-    mode = b.dataset.m;
-    const v = parseInt(norm($('#seed').value), 10);
-    makeTest(v >= 1 && v <= 9999 ? v : newSeed()); begin();
-  });
+  document.querySelectorAll('button[data-m]').forEach(b => b.onclick = () => go(b.dataset.m));
+  $('#nextgo').onclick = nx.go;
   $('#missgo').onclick = () => { makeMiss(); if (QS.length) begin(true); };
   const RN = { f: '分野ごとの正答率', miss: 'まちがえた問題リスト', all: '全部の記録（最高記録・正答率・まちがえた問題リスト・解いた問題の印）' };
   document.querySelectorAll('button[data-r]').forEach(b => b.onclick = () => {
@@ -286,6 +393,7 @@ function start(){
 function label(){ if (mode === 'miss') return 'まちがえた問題の解き直し'; return MODES[mode].name + (mode === 'bun' ? '（' + bunF + '）' : '') + (grade < 3 ? '・中' + grade + 'まで' : '') + '　番号 ' + seed; }
 
 function begin(part){
+  document.body.classList.remove('athome');
   partial = !!part; playing = true; idx = 0; score = 0; rec = []; t0 = Date.now();
   clearInterval(timer); timer = setInterval(tick, 1000); tick();
   hb('やめる', () => { if (confirm('このテストをやめて、最初の画面にもどる？（ここまでの点数は残らない）')) start(); });
