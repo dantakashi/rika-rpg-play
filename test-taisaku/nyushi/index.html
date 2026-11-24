@@ -107,7 +107,7 @@ body.athome header .stat, body.athome .bar{ display:none; }
 .home h2{ font-size:19px; margin:0 0 12px; letter-spacing:.04em; }
 .eyebrow{ margin:0 0 6px; font-size:14px; letter-spacing:.18em; color:var(--blue); font-weight:bold; }
 .hero{ padding:26px 4px 2px; }
-.hero h1{ margin:0; font-size:44px; line-height:1.25; letter-spacing:.03em; color:var(--navy); }
+.hero h1{ margin:0 0 14px; font-size:44px; line-height:1.25; letter-spacing:.03em; color:var(--navy); }
 .hero .lede{ margin:10px 0 14px; font-size:19px; color:#3d4854; max-width:36em; }
 .chips{ display:flex; flex-wrap:wrap; gap:6px 8px; }
 .chips span{ font-size:14px; padding:1px 12px; border:1px solid #cfd6de; border-radius:999px; background:#fff; color:#44505c; }
@@ -194,7 +194,7 @@ const KANA = 'アイウエオカキクケコサシ';
 const MODES = {
   hon:   { name: '本番', limit: 50, sho: 3, dai: 4 },
   puchi: { name: 'プチ番', limit: 12, sho: 1, dai: 1 },
-  bun:   { name: '分野しぼり', limit: 12, sho: 3, dai: 1 },
+  bun:   { name: '分野別', limit: 12, sho: 3, dai: 1 },
   miss:  { name: 'まちがえた問題', limit: 99999, sho: 0, dai: 0 },
 };
 const ONWEB = location.protocol.startsWith('http');
@@ -296,7 +296,7 @@ function start(){
   document.body.classList.add('athome');
   const R = load();
   grade = R.grade || 3; bunF = R.bunF || '物理';
-  hb(ONWEB ? '← テスト対策' : '', () => { location.href = '../index.html'; });
+  hb(ONWEB ? '← 戻る' : '', () => { location.href = '../index.html'; });
   $('#sub').textContent = '';
   const fr = R.f || {}, ML = missList(R), seen = R.seen || {};
   const seenQ = UNITS.filter(u => seen[u.id]).reduce((x, u) => x + u.qs.length, 0);
@@ -306,62 +306,57 @@ function start(){
   const plays = ['hon', 'puchi', 'bun'].reduce((x, m) => x + ((R[m] || {}).n || 0), 0);
   // 次の一手（記録から1つだけ決める）
   let nx;
-  if (!plays) nx = { t: 'まずはプチ番から。10分ほどで、入試の理科がどんな問題かをひととおり見られる。', b: 'プチ番をはじめる', go: () => go('puchi') };
-  else if (ML.length >= 5) nx = { t: `まちがえた問題が ${ML.length} 問たまっている。新しい問題に進む前に、ここを解き直すのがいちばん点につながる。`, b: `${ML.length} 問を解き直す`, go: () => { makeMiss(); begin(true); } };
-  else if (weak && weak.p < 0.6) nx = { t: `いま、いちばん点を落としているのは${weak.f}（正答率 ${Math.round(weak.p * 100)}％）。${weak.f}だけを10分ほどで解ける。`, b: `${weak.f}を解く`, go: () => { bunF = weak.f; const o = load(); o.bunF = bunF; save(o); go('bun'); } };
-  else if (seenQ < INFO.q) nx = { t: `まだ解いていない問題が ${INFO.q - seenQ} 問ある。50分をはかって、本番を1回。`, b: '本番をはじめる', go: () => go('hon') };
-  else nx = { t: '入っている問題は、全部1回は解いた。組み合わせをかえて、本番をもう1回。', b: '本番をはじめる', go: () => go('hon') };
-  const recLine2 = r => (!r || !r.n) ? '<span class="none">まだ記録なし</span>' : `最高 <b>${r.best}</b>％<span class="sep">前回 ${r.last}％・${r.n}回</span>`;
-  const bars = rates.map(r => `<div class="fb${weak && r.f === weak.f && r.p < 1 ? ' weak' : ''}"><span class="fn">${r.f}</span><div class="track"><i style="width:${r.p === null ? 0 : Math.max(3, Math.round(r.p * 100))}%"></i></div><b>${r.p === null ? '—' : Math.round(r.p * 100) + '％'}</b><small>${r.all ? r.ok + ' / ' + r.all + ' 問' : 'まだ'}</small></div>`).join('');
+  if (!plays) nx = { t: 'まずは10分', b: 'プチ番', go: () => go('puchi') };
+  else if (ML.length >= 5) nx = { t: `誤答 ${ML.length}問`, b: '解き直す', go: () => { makeMiss(); begin(true); } };
+  else if (weak && weak.p < 0.6) nx = { t: `${weak.f}　${Math.round(weak.p * 100)}％`, b: `${weak.f}を解く`, go: () => { bunF = weak.f; const o = load(); o.bunF = bunF; save(o); go('bun'); } };
+  else if (seenQ < INFO.q) nx = { t: `未解答 ${INFO.q - seenQ}問`, b: '本番', go: () => go('hon') };
+  else nx = { t: '全問 解答済み', b: '本番', go: () => go('hon') };
+  const recLine2 = r => (!r || !r.n) ? '<span class="none">記録なし</span>' : `最高 <b>${r.best}</b>％<span class="sep">前回 ${r.last}％　${r.n}回</span>`;
+  const bars = rates.map(r => `<div class="fb${weak && r.f === weak.f && r.p < 1 ? ' weak' : ''}"><span class="fn">${r.f}</span><div class="track"><i style="width:${r.p === null ? 0 : Math.max(3, Math.round(r.p * 100))}%"></i></div><b>${r.p === null ? '—' : Math.round(r.p * 100) + '％'}</b><small>${r.all ? r.ok + ' / ' + r.all : ''}</small></div>`).join('');
   $('#main').innerHTML = `<div class="home">
     <section class="hero">
       <p class="eyebrow">テスト対策　｜　理科</p>
       <h1>高校入試 仮想テスト</h1>
-      <p class="lede">全国の公立高校入試をもとにした類題から、毎回ちがう1回分の入試を組む。答えるたびに、正誤と解説が出る。</p>
-      <div class="chips">${INFO.prefs.map(p => `<span>${p}</span>`).join('')}<span class="tot">全 ${INFO.q} 問</span></div>
+      <div class="chips">${INFO.prefs.map(p => `<span>${p}</span>`).join('')}<span class="tot">${INFO.q}問</span></div>
     </section>
     <section class="next">
       <div><p class="eyebrow">次の一手</p><p class="nt">${nx.t}</p></div>
       <button class="btn amber" id="nextgo">${nx.b}</button>
     </section>
     <section class="range">
-      <span class="lbl">出題範囲</span>
-      <div class="seg">${[[1, '中1まで'], [2, '中2まで'], [3, '中3まで（全部）']].map(([v, t]) => `<label><input type="radio" name="g" value="${v}"><span>${t}</span></label>`).join('')}</div>
-      <label class="seedl">テスト番号 <input type="text" id="seed" inputmode="numeric" maxlength="4" placeholder="おまかせ"></label>
+      <span class="lbl">範囲</span>
+      <div class="seg">${[[1, '中1まで'], [2, '中2まで'], [3, '全範囲']].map(([v, t]) => `<label><input type="radio" name="g" value="${v}"><span>${t}</span></label>`).join('')}</div>
+      <label class="seedl">番号 <input type="text" id="seed" inputmode="numeric" maxlength="4" placeholder="自動"></label>
     </section>
     <section class="modes">
-      <div class="mode main"><p class="cap">50分　｜　<span id="n-hon"></span>　｜　100点</p><b>本番</b><span>入試1回分。小問12問と、物理・化学・生物・地学の大問を1本ずつ。</span>
-        <div class="rec">${recLine2(R.hon)}</div><button class="btn" data-m="hon">はじめる</button></div>
-      <div class="mode"><p class="cap">10分ほど　｜　<span id="n-puchi"></span></p><b>プチ番</b><span>時間がないとき用。小問4問と、大問を1本。</span>
-        <div class="rec">${recLine2(R.puchi)}</div><button class="btn" data-m="puchi">はじめる</button></div>
-      <div class="mode"><p class="cap">10分ほど　｜　<span id="n-bun"></span></p><b>分野しぼり</b><span>1つの分野だけ。小問3問と、大問を1本。
-        <select id="bunf" aria-label="分野">${FIELDS.map(f => `<option${f === bunF ? ' selected' : ''}>${f}</option>`).join('')}</select></span>
-        <div class="rec">${recLine2(R.bun)}</div><button class="btn" data-m="bun">はじめる</button></div>
+      <div class="mode main"><p class="cap">50分　｜　<span id="n-hon"></span>　｜　100点</p><b>本番</b>
+        <div class="rec">${recLine2(R.hon)}</div><button class="btn" data-m="hon">開始</button></div>
+      <div class="mode"><p class="cap">10分　｜　<span id="n-puchi"></span></p><b>プチ番</b>
+        <div class="rec">${recLine2(R.puchi)}</div><button class="btn" data-m="puchi">開始</button></div>
+      <div class="mode"><p class="cap">10分　｜　<span id="n-bun"></span></p><b>分野別</b>
+        <select id="bunf" aria-label="分野">${FIELDS.map(f => `<option${f === bunF ? ' selected' : ''}>${f}</option>`).join('')}</select>
+        <div class="rec">${recLine2(R.bun)}</div><button class="btn" data-m="bun">開始</button></div>
     </section>
     <section class="grid2">
-      <div class="panel"><h2>進みぐあい</h2>
-        <div class="ringrow">${ring(INFO.q ? seenQ / INFO.q : 0)}<p><b>${seenQ}</b><span> / ${INFO.q} 問</span><br><small>1回は解いた問題</small></p></div></div>
-      <div class="panel"><h2>分野ごとの正答率</h2>${bars}</div>
+      <div class="panel"><h2>進度</h2>
+        <div class="ringrow">${ring(INFO.q ? seenQ / INFO.q : 0)}<p><b>${seenQ}</b><span> / ${INFO.q} 問</span><br><small>解答済み</small></p></div></div>
+      <div class="panel"><h2>正答率</h2>${bars}</div>
     </section>
     <section class="panel">
-      <h2>まちがえた問題リスト</h2>
-      <p class="meta">テストでまちがえた問題が、ここにたまる。解き直して正解すると、リストから消える。</p>
-      <div class="act"><button class="btn" id="missgo"${ML.length ? '' : ' disabled'}>解き直す（${ML.length}問）</button></div>
-      ${ML.length ? `<details><summary>リストを見る（${ML.length}問）</summary>${ML.map(o => `<div class="miss"><p class="q"><b>${o.u.field}　${o.u.topic}</b>　${o.q.text}</p><p class="hint">${o.u.src.split(' ')[0]}の入試の類題　／　まちがえた回数 ${o.n}</p></div>`).join('')}</details>` : ''}
+      <h2>誤答リスト</h2>
+      <div class="act"><button class="btn" id="missgo"${ML.length ? '' : ' disabled'}>解き直す　${ML.length}問</button></div>
+      ${ML.length ? `<details><summary>一覧</summary>${ML.map(o => `<div class="miss"><p class="q"><b>${o.u.field}　${o.u.topic}</b>　${o.q.text}</p><p class="hint">${o.u.src.split(' ')[0]}　誤答 ${o.n}回</p></div>`).join('')}</details>` : ''}
     </section>
     <section class="foot">
-      <details><summary>答え方・しくみ</summary><ul>
-        <li>選択肢は、おして選ぶ。パソコンでは数字キーでも選べる。Enter キーで次へ進める。</li>
-        <li>「すべて選びなさい」の問題は、当てはまるものを全部選んでから「答える」をおす。全部合って正解。</li>
-        <li>計算の問題は、数字を入力して「答える」をおす。</li>
-        <li>配点は神奈川県の入試と同じ形（小問は1問3点、大問の中の問いは1問4点）。記録は100点満点に直した数字（％）で残る。</li>
-        <li>テスト番号が同じなら同じ問題が出る。友だちと同じ番号で解いて、点数を比べられる。番号を入れなければ、まだ解いていない問題が多く入るように選ぶ。</li>
-        <li>問題は、それぞれの都県の入試問題そのものではない。同じ考え方を使う別の問題に作りかえてある。</li>
-        <li>記録は、この端末のこのブラウザに残る。</li>
+      <details><summary>使い方</summary><ul>
+        <li>「すべて選びなさい」は、全部選んでから「答える」。</li>
+        <li>配点は神奈川県と同じ（小問3点・大問4点）。記録は％。</li>
+        <li>同じ番号なら同じ問題。</li>
+        <li>問題は入試そのものではなく、類題。</li>
+        <li>記録はこの端末に残る。</li>
       </ul></details>
-      <details><summary>記録を消す</summary>
-        <p class="meta">消した記録は、もとにもどせない。</p>
-        <div class="act"><button class="btn ghost" data-r="f">正答率をリセット</button><button class="btn ghost" data-r="miss">まちがえた問題リストを空にする</button><button class="btn ghost" data-r="all">全部の記録を消す</button></div>
+      <details><summary>記録の消去</summary>
+        <div class="act"><button class="btn ghost" data-r="f">正答率</button><button class="btn ghost" data-r="miss">誤答リスト</button><button class="btn ghost" data-r="all">全部</button></div>
       </details>
     </section></div>`;
   const setN = () => {
@@ -378,10 +373,10 @@ function start(){
   document.querySelectorAll('button[data-m]').forEach(b => b.onclick = () => go(b.dataset.m));
   $('#nextgo').onclick = nx.go;
   $('#missgo').onclick = () => { makeMiss(); if (QS.length) begin(true); };
-  const RN = { f: '分野ごとの正答率', miss: 'まちがえた問題リスト', all: '全部の記録（最高記録・正答率・まちがえた問題リスト・解いた問題の印）' };
+  const RN = { f: '正答率', miss: '誤答リスト', all: '全部の記録' };
   document.querySelectorAll('button[data-r]').forEach(b => b.onclick = () => {
     const k = b.dataset.r;
-    if (!confirm(RN[k] + 'を消す？　もとにはもどせない。')) return;
+    if (!confirm(RN[k] + 'を消去する？')) return;
     let o = load();
     if (k === 'all') o = { grade: o.grade, bunF: o.bunF }; else delete o[k];
     save(o); start();
@@ -390,13 +385,13 @@ function start(){
   window.scrollTo(0, 0);
 }
 
-function label(){ if (mode === 'miss') return 'まちがえた問題の解き直し'; return MODES[mode].name + (mode === 'bun' ? '（' + bunF + '）' : '') + (grade < 3 ? '・中' + grade + 'まで' : '') + '　番号 ' + seed; }
+function label(){ if (mode === 'miss') return '誤答の解き直し'; return MODES[mode].name + (mode === 'bun' ? '（' + bunF + '）' : '') + (grade < 3 ? '・中' + grade + 'まで' : '') + '　' + seed; }
 
 function begin(part){
   document.body.classList.remove('athome');
   partial = !!part; playing = true; idx = 0; score = 0; rec = []; t0 = Date.now();
   clearInterval(timer); timer = setInterval(tick, 1000); tick();
-  hb('やめる', () => { if (confirm('このテストをやめて、最初の画面にもどる？（ここまでの点数は残らない）')) start(); });
+  hb('中断', () => { if (confirm('中断する？　点数は残らない。')) start(); });
   $('#sub').textContent = label() + (partial && mode !== 'miss' ? '（解き直し）' : '');
   show();
 }
@@ -410,7 +405,7 @@ function show(){
   if (q.sel){
     body = '<div class="sel">' + q.sel.map((s, i) =>
       `<button data-i="${i + 1}"><span class="n">${zen(i + 1)}</span><span>${s}</span></button>`).join('') + '</div>'
-      + (q.multi ? '<div class="act"><button class="btn" id="ok" disabled>答える</button><span class="hint">当てはまるものを全部選ぶ</span></div>' : '');
+      + (q.multi ? '<div class="act"><button class="btn" id="ok" disabled>答える</button></div>' : '');
   } else {
     body = `<div class="numrow"><input id="num" inputmode="decimal" autocomplete="off"><span>${q.unit}</span></div>
       <div class="act"><button class="btn" id="ok">答える</button></div>`;
@@ -418,7 +413,7 @@ function show(){
   $('#main').innerHTML = `<div class="wrap${q.ctx ? '' : ' noctx'}">
     ${q.ctx ? `<div class="card ctx">${q.ctx}</div>` : ''}
     <div class="card">
-      <div><span class="tag">${q.mon ? '問' + zen(q.mon) + '　' : ''}${q.dn}</span><span class="tag">${q.no ? '（' + q.no + '）　' : ''}${q.ten}点</span><span class="tag src">${q.src.split(' ')[0]}の入試の類題</span></div>
+      <div><span class="tag">${q.mon ? '問' + zen(q.mon) + '　' : ''}${q.dn}</span><span class="tag">${q.no ? '（' + q.no + '）　' : ''}${q.ten}点</span><span class="tag src">${q.src.split(' ')[0]}</span></div>
       <p class="qtext">${q.text}</p>${body}
       <div id="res"></div>
     </div></div>`;
@@ -469,9 +464,9 @@ function judge(){
   rec.push({ ok, mine, right });
   $('#st-score').textContent = score;
   const last = idx === QS.length - 1;
-  $('#res').innerHTML = `<div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '〇 正解　＋' + q.ten + '点' : '× 不正解　正しい答えは ' + right}</div>
+  $('#res').innerHTML = `<div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '〇 正解　＋' + q.ten + '点' : '× 不正解　正答 ' + right}</div>
     <p class="kai">${q.kai}</p>
-    <div class="act"><button class="btn" id="next">${last ? '結果を見る' : '次の問題へ'}</button></div>`;
+    <div class="act"><button class="btn" id="next">${last ? '結果' : '次へ'}</button></div>`;
   $('#next').onclick = next; $('#next').focus({ preventScroll: true });
   $('#res').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
@@ -482,7 +477,7 @@ function result(){
   clearInterval(timer); playing = false;
   const sec = Math.floor((Date.now() - t0) / 1000);
   $('#bar').style.width = '100%'; $('#st-pos').textContent = '結果';
-  hb('最初の画面へ', start);
+  hb('ホーム', start);
   const all = total(QS), pct = Math.round(score / all * 100);
   let newBest = false;
   if (!partial){
@@ -516,19 +511,17 @@ function result(){
   const miss = QS.map((q, i) => i).filter(i => !rec[i].ok);
   const text = i => { const q = QS[i]; let a = rec[i].right, m = rec[i].mine;
     if (q.sel && !q.multi){ a += '　' + q.sel[q.ans[0] - 1]; }
-    return `<div class="miss"><p class="q"><b>${q.mon ? '問' + zen(q.mon) + '（' + q.no + '）' : q.dn}</b>　${q.text}</p><p class="a">あなたの答え <s>${m}</s>　／　正しい答え <b>${a}</b></p><p class="kai">${q.kai}</p>${q.ctx ? `<details><summary>資料を見る</summary>${q.ctx}</details>` : ''}</div>`; };
+    return `<div class="miss"><p class="q"><b>${q.mon ? '問' + zen(q.mon) + '（' + q.no + '）' : q.dn}</b>　${q.text}</p><p class="a">解答 <s>${m}</s>　／　正答 <b>${a}</b></p><p class="kai">${q.kai}</p>${q.ctx ? `<details><summary>資料</summary>${q.ctx}</details>` : ''}</div>`; };
   const over = !partial && sec > MODES[mode].limit * 60;
   $('#main').innerHTML = `<div class="card result" style="max-width:1000px;margin:0 auto">
-    <h2>結果　<span class="hint">${label()}${partial ? (mode === 'miss' ? '（最高記録・正答率には入らない）' : '（解き直し・記録には入らない）') : ''}${newBest ? '　最高記録を更新' : ''}</span></h2>
-    <div class="big">${score}<small> 点 / ${all}点${all !== 100 ? '（' + pct + '％）' : ''}　${QS.length - miss.length} / ${QS.length} 問正解・${fmt(sec)}${over ? '（時間オーバー）' : ''}</small></div>
+    <h2>結果　<span class="hint">${label()}${partial && mode !== 'miss' ? '（解き直し）' : ''}${newBest ? '　最高更新' : ''}</span></h2>
+    <div class="big">${score}<small> 点 / ${all}点${all !== 100 ? '（' + pct + '％）' : ''}　${QS.length - miss.length} / ${QS.length} 問正解・${fmt(sec)}${over ? '（時間超過）' : ''}</small></div>
     <table class="tbl"><tr><th>知識・技能</th><td>${chi} / ${chiA} 点</td><th>思考・判断・表現</th><td>${shi} / ${shiA} 点</td></tr></table>
     <table class="tbl">${rows}</table>
-    ${stat.length > 1 && low < 1 ? '<p class="hint">色のついた分野が、いちばん点を落としたところ。「分野しぼり」でその分野だけ解ける。</p>' : ''}
     ${mode === 'miss'
-      ? `<p class="hint">まちがえた問題リストの残り：${left}問</p><div class="act">${left ? '<button class="btn" id="missagain">リストの残りを解き直す</button>' : ''}<button class="btn ghost" id="home">最初の画面へ</button></div>`
-      : `<div class="act"><button class="btn" id="other">別の問題でもう一度</button><button class="btn ghost" id="again">同じ番号をもう一度</button>${miss.length ? '<button class="btn ghost" id="retry">まちがえた問題だけ解き直す</button>' : ''}</div>
-    <p class="hint">まちがえた問題は「まちがえた問題リスト」（最初の画面）に入った。いまのリスト：${left}問</p>`}
-    <h2 style="margin-top:22px">${miss.length ? 'まちがえた問題（' + miss.length + '問）' : '全問正解'}</h2>
+      ? `<div class="act">${left ? `<button class="btn" id="missagain">残り ${left}問</button>` : ''}<button class="btn ghost" id="home">ホーム</button></div>`
+      : `<div class="act"><button class="btn" id="other">次のテスト</button><button class="btn ghost" id="again">再挑戦</button>${miss.length ? '<button class="btn ghost" id="retry">誤答だけ</button>' : ''}</div>`}
+    <h2 style="margin-top:22px">${miss.length ? '誤答　' + miss.length + '問' : '全問正解'}</h2>
     ${miss.map(text).join('')}</div>`;
   window.scrollTo(0, 0);
   if (mode === 'miss'){
