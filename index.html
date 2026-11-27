@@ -276,6 +276,7 @@
     {key:'rika3', label:'理科RPG3',       icon:'⛏️', cls:'ic-rika',  href:'rika3/index.html',        cat:'science', beta:true},  // 2026-09-30 掲載（実体は C:/dev/rika3 の配る版を rika3/ に置く）。理科RPG2 は同じ日に公開停止
     {key:'quizbattle', label:'あてっこ対戦', icon:'🃏', cls:'ic-quiz', href:'quizbattle/index.html',  cat:'other'},  // 全教科105題材の対面カードバトル（2026-09-02 掲載・実体は rika2/apps/quizbattle/dist）
     {key:'testprep', label:'テスト対策', icon:'📝', cls:'ic-test', href:'test-taisaku/index.html', cat:'gachi'},  // 2026-11-12 掲載。定期テスト対策（固定テスト・ランダムテスト）。実体は C:/dev/_lib/teiki-test/2026-11/gen_quiz.py
+    {key:'tentaiugoki', label:'天体の動き', icon:'🪐', cls:'ic-test', href:'tentai-ugoki/index.html', cat:'gachi'},  // 2026-11-27 掲載。中3 天体の動くスライド15場面（授業の提示用）。実体は C:/dev/tentai-slides/index.html
     {key:'data',  label:'データ',          icon:'💾', cls:'ic-data',  action:'data',                  cat:'tool'},
   ];
 
@@ -537,6 +538,11 @@
   // ★運用ルール: ポータルやゲームを更新して生徒に配信したら、必ず UPDATES の
   //   先頭に1件追加すること（date=配信日 / title / body=やさしい言葉の箇条書き）。
   var UPDATES = [
+    { date:'2026-11-27', title:'天体の動きが見られる（中3 理科）', body:[
+      '「<b>ガチ（テスト対策）</b>」の枠に、<b>天体の動き</b>を置いた。地球・月・金星・星・太陽の動きを、動く図で見るところ。',
+      '場面は15個。地球の自転と公転、天球の太陽と星、季節の星座、月の満ち欠け、金星、日食と月食など。',
+      '下のボタンで<b>停止</b>したり、<b>速さ</b>を変えたりできる。「<b>一覧</b>」で見たい場面へ飛べる。'
+    ] },
     { date:'2026-11-12', title:'テスト対策ができた（中2 理科・生物）', body:[
       'いちばん上の「<b>ガチ（テスト対策）</b>」の枠に、<b>テスト対策</b>を置いた。ゲームではなく、テストと同じ形式の問題を解くところ。',
       '中2 理科 単元2「生物のからだのつくりとはたらき」の52問・100点。1問ずつ答えると、その場で正解・不正解が出て、最後に点数が出る。',

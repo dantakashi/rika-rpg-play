@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天体の動き</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; color: #f2f4f8; overflow: hidden;
+    font-family: "UD デジタル 教科書体 NK-R", "UD デジタル 教科書体 NK", "BIZ UDPGothic", "Yu Gothic", "Hiragino Sans", sans-serif; }
+  #wrap { display: flex; flex-direction: column; height: 100%; }
+  #top { display: flex; align-items: baseline; gap: 2vw; padding: 1.2vh 2vw 0.4vh; }
+  #title { font-size: 4.4vh; font-weight: bold; }
+  #sub { font-size: 2.8vh; color: #ffd76a; }
+  #no { margin-left: auto; font-size: 2.4vh; color: #9fb0cc; }
+  canvas { flex: 1; width: 100%; min-height: 0; display: block; }
+  #bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8vw; padding: 1vh 2vw 1.4vh; background: #121a30; }
+  button { font: inherit; font-size: 2.5vh; color: #f2f4f8; background: #24314f; border: 0.3vh solid #3d4f7a;
+    border-radius: 1vh; padding: 0.5vh 1.2vw; cursor: pointer; }
+  button.on { background: #ffd76a; color: #1a1a1a; border-color: #ffd76a; }
+  .sp { width: 1.2vw; }
+  #extra { display: flex; flex-wrap: wrap; gap: 0.5vw; margin-left: auto; align-items: center; }
+  #list { position: fixed; inset: 0; background: rgba(8,12,26,0.96); display: none; padding: 4vh 6vw; overflow: auto; }
+  #list.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6vh 1.6vw; align-content: start; }
+  #list button { text-align: left; font-size: 3vh; padding: 1.4vh 1.2vw; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="top"><div id="title"></div><div id="sub"></div><div id="no"></div></div>
+  <canvas id="cv"></canvas>
+  <div id="bar">
+    <button id="prev">◀</button><button id="next">▶</button><button id="menu">一覧</button>
+    <span class="sp"></span>
+    <button id="play">停止</button><button id="reset">最初</button>
+    <span class="sp"></span>
+    <button class="spd" data-k="0.3">おそい</button><button class="spd on" data-k="1">ふつう</button><button class="spd" data-k="3">はやい</button>
+    <div id="extra"></div>
+  </div>
+</div>
+<div id="list"></div>
+<script>
+'use strict';
+// 中3「地球と宇宙」（東書 R7 p.190〜237）の提示用。←→ で場面、スペースで再生・停止。
+// 周期: 地球の自転1日・公転365日／月の公転27.3日・満ち欠け29.5日／金星の公転225日。黄道の星座と月は p.210 の図。
+const cv = document.getElementById('cv'), g = cv.getContext('2d');
+const TAU = Math.PI * 2, rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+let W = 0, H = 0, U = 1;          // U = 画面の短い辺 / 100
+let cur = 0, day = 0, playing = true, speed = 1, last = 0;
+const C = { sun: '#ffb020', earth: '#3f8cff', night: '#14254d', moon: '#f3f0df', venus: '#ffe9a8', line: '#4a5a80', text: '#f2f4f8', dim: '#9fb0cc', hi: '#ffd76a', red: '#ff6b5a' };
+const FF = getComputedStyle(document.body).fontFamily;
+
+function fit() {
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  cv.width = r.width * d; cv.height = r.height * d; g.setTransform(d, 0, 0, d, 0, 0);
+  W = r.width; H = r.height; U = Math.min(W, H) / 100;
+}
+function text(s, x, y, size, col, align) {
+  g.font = `${size * U}px ${FF}`; g.fillStyle = col || C.text; g.textAlign = align || 'center'; g.textBaseline = 'middle'; g.fillText(s, x, y);
+}
+function disc(x, y, r, col) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = col; g.fill(); }
+function ring(x, y, r, col, w) { g.beginPath(); g.arc(x, y, r, 0, TAU); g.strokeStyle = col || C.line; g.lineWidth = w || 0.25 * U; g.stroke(); }
+function seg(x0, y0, x1, y1, col, w, dash) {
+  g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.strokeStyle = col; g.lineWidth = w || 0.25 * U;
+  if (dash) g.setLineDash([U, U]); g.stroke(); g.setLineDash([]);
+}
+function arrow(x0, y0, x1, y1, col, w) {
+  const a = Math.atan2(y1 - y0, x1 - x0), L = 2.2 * U;
+  g.strokeStyle = g.fillStyle = col; g.lineWidth = w || 0.4 * U;
+  g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x1 - L * Math.cos(a - 0.4), y1 - L * Math.sin(a - 0.4));
+  g.lineTo(x1 - L * Math.cos(a + 0.4), y1 - L * Math.sin(a + 0.4)); g.fill();
+}
+// 北極の上から見た図。角度は反時計回りが＋（画面では y を逆にする）
+const pos = (cx, cy, r, a) => [cx + r * Math.cos(a), cy - r * Math.sin(a)];
+function arcArrow(cx, cy, r, a0, a1, col) {              // 反時計回りの矢印（a0→a1）
+  g.beginPath(); g.arc(cx, cy, r, -a0, -a1, true); g.strokeStyle = col; g.lineWidth = 0.4 * U; g.stroke();
+  const [x, y] = pos(cx, cy, r, a1); arrow(x + Math.sin(a1), y + Math.cos(a1), x - Math.sin(a1), y - Math.cos(a1), col);
+}
+function sunDisc(x, y, r) {
+  const gr = g.createRadialGradient(x, y, r * 0.2, x, y, r * 1.8);
+  gr.addColorStop(0, '#fff3c0'); gr.addColorStop(0.5, C.sun); gr.addColorStop(1, 'rgba(255,176,32,0)');
+  disc(x, y, r * 1.8, gr); disc(x, y, r, C.sun);
+}
+function litBall(x, y, r, sx, sy, colDay, colNight) {     // 太陽の光が (sx,sy) から当たる球
+  const a = Math.atan2(sy - y, sx - x);
+  disc(x, y, r, colNight);
+  g.beginPath(); g.arc(x, y, r, a - Math.PI / 2, a + Math.PI / 2); g.closePath(); g.fillStyle = colDay; g.fill();
+}
+// 地球から見た形。ph: 0＝光っていない（新月）〜 π＝全部（満月）。right＝右側が光る
+function phase(x, y, r, ph, right, col) {
+  disc(x, y, r, '#1b2238');
+  const k = Math.cos(ph);
+  g.save(); g.translate(x, y); if (!right) g.scale(-1, 1);
+  g.beginPath(); g.arc(0, 0, r, -Math.PI / 2, Math.PI / 2);
+  g.ellipse(0, 0, Math.abs(k) * r, r, 0, Math.PI / 2, -Math.PI / 2, k > 0);        // 細いときは右を通り、太いときは左を通る
+  g.closePath(); g.fillStyle = col; g.fill(); g.restore();
+  ring(x, y, r, '#55648a', 0.15 * U);
+}
+function panel(x, y, w, h, title) {
+  g.fillStyle = 'rgba(18,26,48,0.9)'; g.strokeStyle = C.line; g.lineWidth = 0.2 * U;
+  g.beginPath(); g.roundRect(x, y, w, h, 1.5 * U); g.fill(); g.stroke();
+  if (title) text(title, x + w / 2, y + 3 * U, 3, C.dim);
+}
+const fmt = (v, n) => v.toFixed(n === undefined ? 0 : n);
+const clock = h => { h = ((Math.round(h) % 24) + 24) % 24; return h === 0 ? '午前0時' : h < 12 ? `午前${h}時` : h === 12 ? '正午' : `午後${h - 12}時`; };
+const MD = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function monthDay(d) { d = Math.floor(((d % 365) + 365) % 365); let m = 0; while (d >= MD[m]) { d -= MD[m]; m++; } return [m + 1, d + 1]; }
+const dateStr = d => { const [m, dd] = monthDay(d); return `${m}月${dd}日`; };
+function rng(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+
+// ---- 天球 ----
+const EPS = 23.4;
+const decl = d => EPS * Math.sin(TAU * (d - 79) / 365);                  // d＝1月1日からの日数。3月21日ごろ 0
+function vec(lat, dec, Hdeg) {                                           // 北・東・上。H は南中からの角（西へ＋）
+  const p = rad(lat), dl = rad(dec), h = rad(Hdeg);
+  return [Math.cos(p) * Math.sin(dl) - Math.sin(p) * Math.cos(dl) * Math.cos(h), -Math.cos(dl) * Math.sin(h),
+          Math.sin(p) * Math.sin(dl) + Math.cos(p) * Math.cos(dl) * Math.cos(h)];
+}
+function dome(cx, cy, R, compass) {                                      // 少し南寄りのななめ上から見る
+  const ct = Math.cos(rad(22)), st = Math.sin(rad(22));
+  const P = ([n, e, z]) => [cx + R * (n * ct - e * st), cy + R * (0.26 * (n * st + e * ct) - 0.966 * z)];
+  g.beginPath(); for (let t = 0; t <= 360; t += 4) { const [x, y] = P([Math.cos(rad(t)), Math.sin(rad(t)), 0]); t ? g.lineTo(x, y) : g.moveTo(x, y); }
+  g.fillStyle = '#1f3a2c'; g.fill(); g.strokeStyle = '#5c7f6a'; g.lineWidth = 0.25 * U; g.stroke();
+  g.beginPath(); g.arc(cx, cy, R, Math.PI, 0); g.strokeStyle = '#6f7fa6'; g.stroke();
+  seg(...P([-1, 0, 0]), ...P([1, 0, 0]), '#55648a', 0.2 * U, true); seg(...P([0, -1, 0]), ...P([0, 1, 0]), '#55648a', 0.2 * U, true);
+  seg(cx, cy, ...P([0, 0, 1]), '#55648a', 0.2 * U, true);
+  if (compass !== false) [['南', [-1, 0, 0], -4, 0], ['北', [1, 0, 0], 4, 0], ['東', [0, 1, 0], -2, 4], ['西', [0, -1, 0], 3, -3]].forEach(([s, v, dx, dy]) => { const [x, y] = P(v); text(s, x + dx * U, y + dy * U, 3.6); });
+  text('天頂', cx, cy - 0.966 * R - 3.5 * U, 3, C.dim);
+  g.fillStyle = '#fff'; g.fillRect(cx - 0.5 * U, cy - 4 * U, U, 4 * U); disc(cx, cy - 5 * U, 1 * U, '#fff');
+  return P;
+}
+function domePath(P, lat, dc, col, w, dash) {
+  g.beginPath(); let pen = false;
+  for (let h = -180; h <= 180; h += 2) { const v = vec(lat, dc, h); if (v[2] >= 0) { const [x, y] = P(v); pen ? g.lineTo(x, y) : g.moveTo(x, y); pen = true; } else pen = false; }
+  g.strokeStyle = col; g.lineWidth = w * U; if (dash) g.setLineDash([U, U]); g.stroke(); g.setLineDash([]);
+}
+const LATS = [['東京', 35.7], ['北極付近', 85], ['赤道', 0], ['シドニー', -33.9]];
+const DATES = [['春分', 79], ['夏至', 171], ['秋分', 265], ['冬至', 355]];
+
+// ---- 星 ----（赤経は時、赤緯は度）
+const ORION = [[5.92, 7.4], [5.42, 6.3], [5.53, -0.3], [5.60, -1.2], [5.68, -1.9], [5.80, -9.7], [5.24, -8.2]];
+const ORION_L = [[0, 1], [0, 4], [1, 2], [2, 3], [3, 4], [4, 5], [2, 6], [5, 6]];
+const CAS = [[0.15, 59.1], [0.68, 56.5], [0.95, 60.7], [1.43, 60.2], [1.91, 63.7]];
+const DIPPER = [[11.06, 61.8], [11.03, 56.4], [11.90, 53.7], [12.26, 57.0], [12.90, 56.0], [13.40, 54.9], [13.79, 49.3]];
+const DIPPER_L = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 4], [4, 5], [5, 6]];
+const chain = n => Array.from({ length: n - 1 }, (_, i) => [i, i + 1]);
+const FIGS = [[ORION, ORION_L, 'オリオン座'], [CAS, chain(5), 'カシオペヤ座'], [DIPPER, DIPPER_L, '北斗七星']];
+const POLARIS = [2.53, 89.3];
+const RAND = (() => { const r = rng(7), a = []; for (let i = 0; i < 170; i++) a.push([r() * 24, deg(Math.asin(r() * 2 - 1)), 0.5 + r() * 0.6]); return a; })();
+const starVec = (lat, ra, dec, lst) => vec(lat, dec, (lst - ra) * 15);     // lst＝その場所の星の時刻（時）
+
+// ---------------------------------------------------------------- 場面
+const SCENES = [];
+
+// 地球の自転と方位、時刻（p.203 図3）
+SCENES.push({
+  title: '地球の自転', sub: '1日に1回', rate: 0.125,
+  draw() {
+    const cx = W * 0.56, cy = H * 0.5, r = 26 * U, a = TAU * day;          // 0時＝太陽の反対側（右）
+    for (let i = -2; i <= 2; i++) arrow(W * 0.06, cy + i * 9 * U, W * 0.2, cy + i * 9 * U, C.sun, 0.5 * U);
+    text('太陽の光', W * 0.13, cy - 24 * U, 3.4, C.sun);
+    litBall(cx, cy, r, -1e6, cy, C.earth, C.night);
+    disc(cx, cy, 0.9 * U, '#fff'); text('北極', cx + 5 * U, cy + 3 * U, 2.8);
+    arcArrow(cx, cy, r + 4 * U, rad(-70), rad(-20), C.dim); text('自転の向き', cx + r * 0.75, cy + r + 6 * U, 3, C.dim);
+    const [x, y] = pos(cx, cy, r * 0.7, a);
+    const L = 8 * U, n = [cx - x, cy - y], nl = Math.hypot(...n), nx = n[0] / nl, ny = n[1] / nl;   // 北＝北極の向き
+    const ex = -Math.sin(a), ey = -Math.cos(a);                                                     // 東＝自転で進む向き
+    arrow(x, y, x + nx * L, y + ny * L, '#fff'); text('北', x + nx * (L + 2.5 * U), y + ny * (L + 2.5 * U), 3);
+    arrow(x, y, x + ex * L, y + ey * L, C.hi); text('東', x + ex * (L + 2.5 * U), y + ey * (L + 2.5 * U), 3, C.hi);
+    text('西', x - ex * 5 * U, y - ey * 5 * U, 2.6, C.dim); text('南', x - nx * 5 * U, y - ny * 5 * U, 2.6, C.dim);
+    disc(x, y, 1.6 * U, C.red);
+    const h = (day % 1) * 24;
+    const name = h < 3 ? '真夜中' : h < 9 ? '朝' : h < 15 ? '昼' : h < 21 ? '夕方' : '真夜中';
+    const px = W * 0.8, py = H * 0.2, pw = 27 * U; panel(px, py, pw, 30 * U);
+    text(`${Math.floor(h)}時`, px + pw / 2, py + 9 * U, 8, C.hi); text(name, px + pw / 2, py + 20 * U, 6);
+    text(`${Math.floor(day) + 1}日目`, px + pw / 2, py + 27 * U, 3, C.dim);
+  }
+});
+
+// 太陽の1日の動き・1年の動き（p.200 図2・p.215 図4）
+function sunDome(s, lat, cx, cy, R) {
+  const yearMode = s.mode === 1;
+  const d = yearMode ? s.d0 + day * 40 : s.d0, hour = yearMode ? 12 : (day % 1) * 24, dec = decl(d);
+  const P = dome(cx, cy, R, Math.abs(lat) < 84);
+  [[EPS, '6月'], [0, '3月・9月'], [-EPS, '12月']].forEach(([dc, n]) => { domePath(P, lat, dc, '#55648a', 0.3, true);
+    const v = vec(lat, dc, 0); if (v[2] > 0.03) { const [x, y] = P(v); text(n, x, y - 3 * U, 2.4, C.dim); } });
+  domePath(P, lat, dec, C.hi, 0.7);
+  const v = vec(lat, dec, (hour - 12) * 15);
+  if (v[2] >= 0) { const [x, y] = P(v); sunDisc(x, y, 2.4 * U); }
+  return { d, hour, dec, up: v[2] >= 0, yearMode };
+}
+SCENES.push({
+  title: '太陽の動き（天球）', sub: '東京', rate: 0.25, mode: 0, d0: 79,
+  groups() { return [[['1日', () => { this.mode = 0; }], ['1年', () => { this.mode = 1; }]], DATES.map(([n, d]) => [n, () => { this.d0 = d; }])]; },
+  draw() {
+    const cx = W * 0.4, cy = H * 0.66, R = 40 * U, r = sunDome(this, 35.7, cx, cy, R);
+    const px = W * 0.74, py = H * 0.12, pw = 38 * U, ph = 52 * U; panel(px, py, pw, ph);
+    text(dateStr(r.d), px + pw / 2, py + 9 * U, 6.5, C.hi);
+    text(r.yearMode ? '正午ごろ' : `${Math.floor(r.hour)}時`, px + pw / 2, py + 20 * U, 5.5);
+    text('南中高度', px + pw / 2, py + 32 * U, 3.4, C.dim); text(`${fmt(90 - 35.7 + r.dec)}°`, px + pw / 2, py + 41 * U, 7);
+    if (!r.up) text('太陽は地平線の下', cx, cy + 16 * U, 3.4, C.dim);
+  }
+});
+
+// 世界各地の太陽の動き（p.201 図6）
+SCENES.push({
+  title: '世界各地の太陽の動き', sub: '緯度がちがうと', rate: 0.25, mode: 0, d0: 79, li: 0,
+  groups() { return [LATS.map(([n], i) => [n, () => { this.li = i; }]), DATES.map(([n, d]) => [n, () => { this.d0 = d; }])]; },
+  draw() {
+    const [name, lat] = LATS[this.li], cx = W * 0.4, cy = H * 0.66, R = 40 * U, r = sunDome(this, lat, cx, cy, R);
+    const px = W * 0.74, py = H * 0.12, pw = 38 * U, ph = 46 * U; panel(px, py, pw, ph);
+    text(name, px + pw / 2, py + 8 * U, 6, C.hi);
+    text(lat >= 0 ? `北緯${fmt(lat)}°` : `南緯${fmt(-lat)}°`, px + pw / 2, py + 17 * U, 4);
+    text(dateStr(r.d), px + pw / 2, py + 28 * U, 5); text(`${Math.floor(r.hour)}時`, px + pw / 2, py + 38 * U, 5.5);
+    if (!r.up) text('太陽は地平線の下', cx, cy + 16 * U, 3.4, C.dim);
+  }
+});
+
+// 星の1日の動き・東西南北の空（p.207 図1）
+SCENES.push({
+  title: '星の1日の動き', sub: '東西南北の空', rate: 1 / 24,
+  draw() {
+    const lst0 = 4.0, lst = lst0 + day * 24, lat = 35.7;                 // 午後8時にオリオン座が東の空にある日
+    const views = [['北の空', 0, '西', '東'], ['南の空', 180, '東', '西'], ['東の空', 90, '北', '南'], ['西の空', 270, '南', '北']];
+    const pw = W * 0.34, ph = H * 0.44, gx = W * 0.03, gy = H * 0.02;
+    views.forEach(([name, az0, l, r], k) => {
+      const x0 = W * 0.04 + (k % 2) * (pw + gx), y0 = H * 0.02 + Math.floor(k / 2) * (ph + gy);
+      g.save(); g.beginPath(); g.rect(x0, y0, pw, ph); g.clip();
+      g.fillStyle = '#060a18'; g.fillRect(x0, y0, pw, ph);
+      const yh = y0 + ph * 0.86, sc = pw / 120;                           // 横120°を1枚に
+      const Q = (ra, dec, t) => { const [n, e, z] = starVec(lat, ra, dec, t); if (z < 0) return null;
+        let da = ((deg(Math.atan2(e, n)) - az0 + 540) % 360) - 180; if (Math.abs(da) > 75) return null;
+        return [x0 + pw / 2 + da * sc, yh - deg(Math.asin(z)) * sc]; };
+      const trail = (ra, dec, col, w) => { g.beginPath(); let pen = false;
+        for (let b = 2; b >= 0; b -= 0.25) { const q = Q(ra, dec, lst - b); if (q) { pen ? g.lineTo(...q) : g.moveTo(...q); pen = true; } else pen = false; }
+        g.strokeStyle = col; g.lineWidth = w; g.stroke(); };
+      RAND.forEach(([ra, dec, m]) => { trail(ra, dec, 'rgba(160,180,220,0.35)', 0.12 * U); const q = Q(ra, dec, lst); if (q) disc(q[0], q[1], m * 0.35 * U, '#dfe6f5'); });
+      FIGS.forEach(([st, ln, nm]) => { const q = st.map(([ra, dec]) => Q(ra, dec, lst));
+        st.forEach(([ra, dec]) => trail(ra, dec, 'rgba(255,215,106,0.45)', 0.18 * U));
+        ln.forEach(([i, j]) => { if (q[i] && q[j]) seg(...q[i], ...q[j], '#ffd76a', 0.2 * U); });
+        q.forEach(p => p && disc(p[0], p[1], 0.6 * U, '#fff3c0'));
+        if (q[0] && q.every(Boolean)) text(nm, q[0][0], q[0][1] - 3 * U, 2.4, C.hi); });
+      const pq = Q(...POLARIS, lst); if (pq) { disc(pq[0], pq[1], 0.8 * U, '#fff'); text('北極星', pq[0], pq[1] - 3 * U, 2.6); }
+      g.fillStyle = '#16261d'; g.fillRect(x0, yh, pw, ph);
+      text(name, x0 + pw / 2, yh + (y0 + ph - yh) / 2, 3.4); text(l, x0 + 4 * U, yh + (y0 + ph - yh) / 2, 2.8, C.dim); text(r, x0 + pw - 4 * U, yh + (y0 + ph - yh) / 2, 2.8, C.dim);
+      g.restore(); g.strokeStyle = C.line; g.lineWidth = 0.2 * U; g.strokeRect(x0, y0, pw, ph);
+    });
+    const px = W * 0.78, py = H * 0.1, pw2 = 32 * U; panel(px, py, pw2, 40 * U);
+    text(clock(20 + day * 24), px + pw2 / 2, py + 9 * U, 5.5, C.hi);
+    text('1時間に15°', px + pw2 / 2, py + 21 * U, 4.2); text('線＝2時間ぶん', px + pw2 / 2, py + 31 * U, 3, C.dim);
+  }
+});
+
+// 星の1日の動き・天球（p.207 図2・図3）
+SCENES.push({
+  title: '星の1日の動き（天球）', sub: '地軸を中心に回って見える', rate: 1 / 12, li: 0,
+  groups() { return [[['東京', 35.7], ['北極', 90], ['赤道', 0]].map(([n, la], i) => [n, () => { this.li = i; this.lat = la; }])]; },
+  lat: 35.7,
+  draw() {
+    const cx = W * 0.4, cy = H * 0.66, R = 40 * U, lat = this.lat, lst = day * 24, P = dome(cx, cy, R, lat < 89);
+    const draw1 = (ra, dec, col, w, r) => { g.beginPath(); let pen = false;
+      for (let b = 3; b >= 0; b -= 0.25) { const v = starVec(lat, ra, dec, lst - b); if (v[2] >= 0) { const q = P(v); pen ? g.lineTo(...q) : g.moveTo(...q); pen = true; } else pen = false; }
+      g.strokeStyle = col; g.lineWidth = w; g.stroke();
+      const v = starVec(lat, ra, dec, lst); if (v[2] >= 0) { const q = P(v); disc(q[0], q[1], r, '#fff3c0'); } };
+    RAND.forEach(([ra, dec, m]) => draw1(ra, dec, 'rgba(255,215,106,0.4)', 0.15 * U, m * 0.4 * U));
+    const pole = [Math.cos(rad(lat)), 0, Math.sin(rad(lat))], [qx, qy] = P(pole);
+    seg(cx, cy, qx, qy, C.red, 0.35 * U); disc(qx, qy, 0.9 * U, '#fff'); text('北極星', qx + 6 * U, qy - 2 * U, 3);
+    text('地軸をのばした線', (cx + qx) / 2 + 13 * U, (cy + qy) / 2, 2.6, C.red);
+    const px = W * 0.76, py = H * 0.12, pw = 34 * U; panel(px, py, pw, 34 * U);
+    text(['東京', '北極', '赤道'][this.li], px + pw / 2, py + 8 * U, 6, C.hi);
+    text(`${fmt((day * 24) % 24)}時間`, px + pw / 2, py + 19 * U, 5); text('線＝3時間ぶん', px + pw / 2, py + 28 * U, 3, C.dim);
+  }
+});
+
+// 地球の公転
+SCENES.push({
+  title: '地球の公転', sub: '1年に1回', rate: 3,
+  draw() {
+    const cx = W * 0.42, cy = H * 0.5, R = 36 * U, a = TAU * (day % 365) / 365;
+    ring(cx, cy, R); sunDisc(cx, cy, 5 * U); text('太陽', cx, cy + 9.5 * U, 3, C.sun);
+    const [x, y] = pos(cx, cy, R, a), er = 4.2 * U;
+    litBall(x, y, er, cx, cy, C.earth, C.night);
+    const [jx, jy] = pos(x, y, er * 0.75, TAU * day + a + Math.PI); disc(jx, jy, 0.9 * U, C.red);
+    text('地球', x, y - 7 * U, 3);
+    g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R * 0.25, 0, -a, true); g.closePath(); g.fillStyle = 'rgba(255,215,106,0.25)'; g.fill();
+    const px = W * 0.76, py = H * 0.16, pw = 36 * U, ph = 46 * U; panel(px, py, pw, ph);
+    text(`${Math.floor(day % 365) + 1}日目`, px + pw / 2, py + 8 * U, 7, C.hi);
+    text(`自転　${Math.floor(day % 365)}回`, px + pw / 2, py + 19 * U, 4.5);
+    text(`公転　${fmt((day % 365) / 365 * 360)}°`, px + pw / 2, py + 28 * U, 4.5);
+    text('1日で約1°', px + pw / 2, py + 38 * U, 4, C.dim);
+  }
+});
+
+// 季節の星座（p.210 図2〜4・p.212 図1）
+const ZOD = ['みずがめ座', 'うお座', 'おひつじ座', 'おうし座', 'ふたご座', 'かに座', 'しし座', 'おとめ座', 'てんびん座', 'さそり座', 'いて座', 'やぎ座'];  // 3月〜2月に太陽の方向
+SCENES.push({
+  title: '季節の星座', sub: '地球の公転と見える星座', rate: 12,
+  draw() {
+    const cx = W * 0.4, cy = H * 0.5, R = 22 * U, RZ = 42 * U, lam = TAU * day / 365 + rad(15);   // 3月の真ん中から。太陽が見える向き
+    const near = (a, b) => Math.abs(((a - b + Math.PI) % TAU + TAU) % TAU - Math.PI) < TAU / 24;
+    ring(cx, cy, R); sunDisc(cx, cy, 4 * U);
+    ZOD.forEach((n, i) => { const a = rad(15) + i * TAU / 12, [x, y] = pos(cx, cy, RZ, a); text(n, x, y, 3.2, near(lam + Math.PI, a) ? C.hi : near(lam, a) ? C.sun : '#7f8fb0'); });
+    const [ex, ey] = pos(cx, cy, R, lam + Math.PI); litBall(ex, ey, 3 * U, cx, cy, C.earth, C.night);
+    const [nx, ny] = pos(cx, cy, RZ - 6 * U, lam + Math.PI); arrow(ex + (nx - ex) * 0.25, ey + (ny - ey) * 0.25, nx, ny, C.hi, 0.5 * U);
+    const [sx2, sy2] = pos(cx, cy, RZ - 6 * U, lam); seg(ex, ey, sx2, sy2, C.sun, 0.25 * U, true);
+    const mIdx = Math.floor((((lam - rad(15)) % TAU + TAU) % TAU) / (TAU / 12) + 0.5) % 12;
+    const px = W * 0.74, py = H * 0.14, pw = 40 * U, ph = 58 * U; panel(px, py, pw, ph);
+    text(`${(mIdx + 2) % 12 + 1}月`, px + pw / 2, py + 9 * U, 8, C.hi);
+    text('真夜中に南に見える', px + pw / 2, py + 21 * U, 3.2, C.dim); text(ZOD[(mIdx + 6) % 12], px + pw / 2, py + 29 * U, 5.5, C.hi);
+    text('太陽の方向にある', px + pw / 2, py + 41 * U, 3.2, C.dim); text(ZOD[mIdx], px + pw / 2, py + 49 * U, 5.5, C.sun);
+  }
+});
+
+// オリオン座の1年の動き（p.210 図1）
+SCENES.push({
+  title: 'オリオン座の1年', sub: '毎日、午後9時に見る', rate: 10,
+  draw() {
+    const cx = W * 0.4, cy = H * 0.66, R = 40 * U, lat = 35.7, P = dome(cx, cy, R);
+    const d = 305 + day, lstAt = dd => 9 + 24 * (dd - 79) / 365;         // 11月1日から。午後9時の星の時刻
+    const fig = (dd, col, lw, r) => { const q = ORION.map(([ra, dec]) => { const v = starVec(lat, ra, dec, lstAt(dd)); return v[2] >= 0 ? P(v) : null; });
+      ORION_L.forEach(([i, j]) => { if (q[i] && q[j]) seg(...q[i], ...q[j], col, lw); }); q.forEach(p => p && disc(p[0], p[1], r, col)); return q[3]; };
+    [305, 335, 366, 397, 425, 456].forEach(m0 => { if (m0 <= d) { const q = fig(m0, 'rgba(160,180,220,0.55)', 0.15 * U, 0.4 * U); if (q) text(`${monthDay(m0)[0]}月1日`, q[0], q[1] - 6 * U, 2.4, C.dim); } });
+    const q = fig(d, C.hi, 0.3 * U, 0.7 * U);
+    const px = W * 0.74, py = H * 0.12, pw = 38 * U, ph = 42 * U; panel(px, py, pw, ph);
+    text(dateStr(d), px + pw / 2, py + 9 * U, 6.5, C.hi); text('午後9時', px + pw / 2, py + 20 * U, 5);
+    text('1か月で約30°', px + pw / 2, py + 31 * U, 4); text('1日で約1°', px + pw / 2, py + 37.5 * U, 3.2, C.dim);
+    if (!q) text('オリオン座は地平線の下', cx, cy + 16 * U, 3.4, C.dim);
+  }
+});
+
+// 地軸の傾きと季節（p.215 図5・p.217）
+SCENES.push({
+  title: '地軸の傾きと季節', sub: '地軸を傾けたまま公転する', rate: 12,
+  draw() {
+    const d = 79 + day, dec = decl(d), lat = 35.7, cx = W * 0.46, cy = H * 0.5, r = 27 * U;
+    for (let i = -2; i <= 2; i++) arrow(W * 0.04, cy + i * 10 * U, W * 0.16, cy + i * 10 * U, C.sun, 0.5 * U);
+    text('太陽の光', W * 0.1, cy - 27 * U, 3.4, C.sun);
+    litBall(cx, cy, r, -1e6, cy, C.earth, C.night);
+    const ax = rad(90 + dec), ux = Math.cos(ax), uy = -Math.sin(ax), vx = -uy, vy = ux;       // 軸の向き・それに垂直な向き
+    seg(cx - ux * r * 1.25, cy - uy * r * 1.25, cx + ux * r * 1.25, cy + uy * r * 1.25, '#fff', 0.3 * U);
+    text('北極', cx + ux * r * 1.36, cy + uy * r * 1.36, 3); text('地軸', cx - ux * r * 1.36, cy - uy * r * 1.36, 2.8, C.dim);
+    const lineAt = (la, col, w) => { const c0 = [cx + ux * r * Math.sin(rad(la)), cy + uy * r * Math.sin(rad(la))], hw = r * Math.cos(rad(la));
+      seg(c0[0] - vx * hw, c0[1] - vy * hw, c0[0] + vx * hw, c0[1] + vy * hw, col, w); return [c0, hw]; };
+    lineAt(0, '#b9c6e0', 0.2 * U); text('赤道', cx + vx * r * 1.12, cy + vy * r * 1.12, 2.6, C.dim);
+    const [c0, hw] = lineAt(lat, C.night, 0.9 * U);
+    // 日本の緯度の線のうち、光が当たる側（左）を明るく
+    const t0 = (cx - c0[0]) / (vx || 1e-9), tt = Math.max(-hw, Math.min(hw, t0)), sgn = vx < 0 ? 1 : -1;
+    seg(c0[0] + vx * hw * sgn, c0[1] + vy * hw * sgn, c0[0] + vx * tt, c0[1] + vy * tt, C.hi, 0.9 * U);
+    text('日本の緯度', c0[0] + vx * hw * -sgn + 9 * U, c0[1] + vy * hw * -sgn, 2.8, C.hi);
+    const H0 = deg(Math.acos(Math.max(-1, Math.min(1, -Math.tan(rad(lat)) * Math.tan(rad(dec)))))), len = 2 * H0 / 15;
+    const px = W * 0.74, py = H * 0.08, pw = 40 * U, ph = 50 * U; panel(px, py, pw, ph);
+    text(dateStr(d), px + pw / 2, py + 9 * U, 6.5, C.hi);
+    text('昼の長さ', px + pw / 2, py + 20 * U, 3.2, C.dim); text(`${Math.floor(len)}時間${fmt((len % 1) * 60)}分`, px + pw / 2, py + 27 * U, 5);
+    text('南中高度', px + pw / 2, py + 37 * U, 3.2, C.dim); text(`${fmt(90 - lat + dec)}°`, px + pw / 2, py + 44 * U, 5);
+    // 上から見た公転
+    const ox = px + pw / 2, oy = H * 0.76, oR = 9 * U; ring(ox, oy, oR); disc(ox, oy, 1.6 * U, C.sun);
+    const [ex, ey] = pos(ox, oy, oR, TAU * (d - 171) / 365 + Math.PI); disc(ex, ey, 1.3 * U, C.earth);  // 夏至に左
+    [['夏至', Math.PI], ['秋分', -Math.PI / 2], ['冬至', 0], ['春分', Math.PI / 2]].forEach(([n, a]) => { const [x, y] = pos(ox, oy, oR + 4.5 * U, a); text(n, x, y, 2.4, C.dim); });
+  }
+});
+
+// 月の公転（p.223 図2）
+SCENES.push({
+  title: '月の公転', sub: '約27.3日で1回', rate: 2,
+  draw() {
+    const cx = W * 0.36, cy = H * 0.52, R = 30 * U, a = TAU * day / 365, m = TAU * day / 27.3 + Math.PI;   // 新月から
+    ring(cx, cy, R); sunDisc(cx, cy, 4.5 * U); text('太陽', cx, cy + 8.5 * U, 3, C.sun);
+    const [ex, ey] = pos(cx, cy, R, a), mr = 9 * U;
+    ring(ex, ey, mr, '#6f7fa6'); litBall(ex, ey, 3 * U, cx, cy, C.earth, C.night); text('地球', ex, ey + 6 * U + mr, 3);
+    const [mx, my] = pos(ex, ey, mr, m); litBall(mx, my, 1.5 * U, cx, cy, '#e8e8e8', '#555');
+    const sunDir = Math.atan2(-(cy - ey), cx - ex), el = ((m - sunDir) % TAU + TAU) % TAU;                  // 0 新月・π 満月
+    const px = W * 0.7, py = H * 0.06, pw = 44 * U, ph = 80 * U; panel(px, py, pw, ph, '地球から見た月');
+    phase(px + pw / 2, py + 22 * U, 13 * U, el <= Math.PI ? el : TAU - el, el <= Math.PI, C.moon);
+    const names = ['新月', '三日月', '上弦の月', '', '満月', '', '下弦の月', ''];
+    text(names[Math.round(el / TAU * 8) % 8] || '　', px + pw / 2, py + 41 * U, 5, C.hi);
+    text(`南中　${clock(12 + deg(el) / 15)}ごろ`, px + pw / 2, py + 50 * U, 3.8);
+    text(`${fmt(day, 0)}日`, px + pw / 2, py + 60 * U, 6);
+    text(`月の公転　${Math.floor(day / 27.3)}回`, px + pw / 2, py + 69 * U, 3.8);
+    text(`地球の公転　${fmt(day / 365 * 360)}°`, px + pw / 2, py + 74.5 * U, 3.8, C.dim);
+  }
+});
+
+// 同じ時刻に見た月（p.222 図1）
+SCENES.push({
+  title: '夕方の月', sub: '毎日、日の入りのころに見る', rate: 1,
+  draw() {
+    const cx = W * 0.44, cy = H * 0.8, R = Math.min(W * 0.36, H * 0.66), t = day % 16;
+    g.fillStyle = '#16261d'; g.fillRect(0, cy, W, H - cy);
+    const gr = g.createRadialGradient(cx + R, cy, 0, cx + R, cy, R * 0.9); gr.addColorStop(0, 'rgba(255,140,40,0.55)'); gr.addColorStop(1, 'rgba(255,140,40,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, W, cy);
+    g.beginPath(); g.arc(cx, cy, R, Math.PI, 0); g.strokeStyle = '#55648a'; g.lineWidth = 0.2 * U; g.setLineDash([U, U]); g.stroke(); g.setLineDash([]);
+    text('西', cx + R, cy + 5 * U, 4.5); text('南', cx, cy + 5 * U, 4.5); text('東', cx - R, cy + 5 * U, 4.5); text('太陽がしずんだ所', cx + R, cy + 10.5 * U, 2.6, C.sun);
+    const at = dd => { const el = rad(dd * 360 / 29.5); return [...pos(cx, cy, R, el), el]; };
+    for (let k = 1; k <= Math.floor(t) && k <= 15; k++) { const [x, y, el] = at(k); g.globalAlpha = 0.45; phase(x, y, 3 * U, el, true, C.moon); g.globalAlpha = 1; text(`${k}`, x, y - 5 * U, 2.2, C.dim); }
+    const [x, y, el] = at(Math.min(t, 15)); phase(x, y, 4.4 * U, el, true, C.moon);
+    const px = W * 0.78, py = H * 0.08, pw = 34 * U, ph = 40 * U; panel(px, py, pw, ph);
+    text(`新月から${Math.floor(Math.min(t, 15))}日`, px + pw / 2, py + 9 * U, 5, C.hi);
+    text('1日で約12°東へ', px + pw / 2, py + 21 * U, 3.8); text('数字＝新月からの日数', px + pw / 2, py + 31 * U, 2.8, C.dim);
+  }
+});
+
+// 金星と地球（p.227 図3）
+SCENES.push({
+  title: '金星と地球', sub: '金星は約225日で1回', rate: 8,
+  draw() {
+    const cx = W * 0.34, cy = H * 0.52, Re = 36 * U, Rv = Re * 0.72;
+    const ae = TAU * day / 365 - Math.PI / 2, av = TAU * day / 225 - Math.PI / 2 + 0.6;
+    ring(cx, cy, Re); ring(cx, cy, Rv); sunDisc(cx, cy, 4.5 * U); text('太陽', cx, cy + 8.5 * U, 3, C.sun);
+    const [ex, ey] = pos(cx, cy, Re, ae), [vx, vy] = pos(cx, cy, Rv, av);
+    seg(ex, ey, vx, vy, '#6f7fa6', 0.2 * U, true);
+    litBall(ex, ey, 2.8 * U, cx, cy, C.earth, C.night); text('地球', ex, ey + 6 * U, 3);
+    litBall(vx, vy, 2.2 * U, cx, cy, C.venus, '#6b5d33'); text('金星', vx, vy - 5 * U, 3, C.venus);
+    const dx = vx - ex, dy = vy - ey, dist = Math.hypot(dx, dy) / Re, sx = cx - ex, sy = cy - ey;
+    const cross = sx * (-dy) - (-sy) * dx;                                              // ＋なら金星は太陽の東＝夕方
+    const cosA = ((cx - vx) * (ex - vx) + (cy - vy) * (ey - vy)) / (Math.hypot(cx - vx, cy - vy) * Math.hypot(ex - vx, ey - vy));
+    const alpha = Math.acos(Math.max(-1, Math.min(1, cosA)));
+    const elong = Math.acos((sx * dx + sy * dy) / (Math.hypot(sx, sy) * Math.hypot(dx, dy)));
+    const px = W * 0.66, py = H * 0.1, pw = 50 * U, ph = 70 * U; panel(px, py, pw, ph, '地球から見た金星');
+    phase(px + pw / 2, py + 24 * U, Math.min(15, 4.2 / dist) * U, Math.PI - alpha, cross > 0, C.venus);
+    const near = elong < rad(8);
+    text(near ? '太陽に近くて見えない' : cross > 0 ? 'よいの明星（夕方・西の空）' : '明けの明星（明け方・東の空）', px + pw / 2, py + 45 * U, 3.6, near ? C.dim : C.hi);
+    text(`${fmt(day, 0)}日`, px + pw / 2, py + 54 * U, 6);
+    text(`金星の公転　${Math.floor(day / 225)}回`, px + pw / 2, py + 62 * U, 3.6); text(`地球の公転　${Math.floor(day / 365)}回`, px + pw / 2, py + 67 * U, 3.6);
+  }
+});
+
+// 日食と月食（p.229 図4・図5）
+SCENES.push({
+  title: '日食と月食', sub: '一直線に並ぶとき', rate: 0.12, mode: 0,
+  groups() { return [[['日食', () => { this.mode = 0; }], ['月食', () => { this.mode = 1; }]]]; },
+  draw() {
+    const u = ((day % 1) * 2 - 1) * 1.5, cy = H * 0.5, sx = W * 0.08, exx = W * 0.5, er = 7 * U;   // u: −1.5〜1.5
+    sunDisc(sx, cy, 9 * U); text('太陽', sx, cy + 16 * U, 3.4, C.sun);
+    const px = W * 0.7, py = H * 0.1, pw = 46 * U, ph = 66 * U;
+    if (this.mode === 0) {
+      const mx = exx - 20 * U, my = cy - u * 16 * U, mr = 2.2 * U;
+      ring(exx, cy, 20 * U, '#33405f');
+      const hit = Math.abs(u) < 0.42;
+      g.beginPath(); g.moveTo(mx, my - mr); g.lineTo(exx - er * 0.9, my + (cy - my) * 0.2); g.lineTo(mx, my + mr); g.closePath(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill();
+      litBall(exx, cy, er, sx, cy, C.earth, C.night); text('地球', exx, cy + er + 4 * U, 3.2);
+      if (hit) disc(exx - er * 0.93, cy - u * 5 * U, 1 * U, '#000');
+      litBall(mx, my, mr, sx, cy, '#e8e8e8', '#555'); text('月', mx, my - 5 * U, 3.2);
+      panel(px, py, pw, ph, '地球から見た太陽'); const ox = px + pw / 2, oy = py + 28 * U, R = 13 * U;
+      sunDisc(ox, oy, R); disc(ox + u * R * 2.4, oy, R * 1.01, '#0b1020');
+      const a = Math.abs(u); text(a < 0.03 ? '皆既日食' : a < 0.83 ? '部分日食' : '　', ox, py + 50 * U, 5.5, C.hi);
+      text('太陽 − 月 − 地球', ox, py + 59 * U, 4);
+    } else {
+      const mxx = exx + 20 * U, my = cy - u * 16 * U, mr = 2.2 * U, sh = er * 0.95;
+      ring(exx, cy, 20 * U, '#33405f');
+      g.fillStyle = 'rgba(0,0,0,0.6)'; g.beginPath(); g.moveTo(exx, cy - sh); g.lineTo(exx + 34 * U, cy - sh * 0.75); g.lineTo(exx + 34 * U, cy + sh * 0.75); g.lineTo(exx, cy + sh); g.closePath(); g.fill();
+      text('地球のかげ', exx + 27 * U, cy + sh + 4 * U, 2.8, C.dim);
+      litBall(exx, cy, er, sx, cy, C.earth, C.night); text('地球', exx, cy + er + 4 * U, 3.2);
+      const dd = Math.abs(my - cy), inS = dd < sh * 0.8 - mr, part = dd < sh * 0.8 + mr;
+      disc(mxx, my, mr, inS ? '#8a3a22' : part ? '#9a8f80' : '#e8e8e8'); text('月', mxx + 5 * U, my, 3.2);
+      panel(px, py, pw, ph, '地球から見た月'); const ox = px + pw / 2, oy = py + 28 * U, R = 11 * U, k = Math.abs(u) / 1.5;
+      disc(ox, oy, R, k < 0.18 ? '#8a3a22' : C.moon);
+      g.save(); g.beginPath(); g.arc(ox, oy, R, 0, TAU); g.clip(); disc(ox + u * R * 2.9, oy, R * 2.4, k < 0.18 ? 'rgba(90,30,20,0.6)' : 'rgba(10,14,30,0.92)'); g.restore();
+      text(k < 0.18 ? '皆既月食' : k < 0.78 ? '部分月食' : '満月', ox, py + 50 * U, 5.5, C.hi);
+      text('太陽 − 地球 − 月', ox, py + 59 * U, 4);
+    }
+    text('※大きさと距離は実際とちがう', W * 0.3, H * 0.94, 2.6, C.dim);
+  }
+});
+
+// 惑星の公転（p.232）
+const PL = [['水星', 0.24, '#b0a090'], ['金星', 0.62, '#ffe9a8'], ['地球', 1, '#3f8cff'], ['火星', 1.88, '#e0603c'],
+            ['木星', 11.86, '#d9b38c'], ['土星', 29.46, '#e6d49a'], ['天王星', 84.02, '#9fe0e6'], ['海王星', 164.8, '#5f7fe8']];
+SCENES.push({
+  title: '惑星の公転', sub: '外側ほどゆっくり', rate: 40,
+  draw() {
+    const cx = W * 0.36, cy = H * 0.5, yr = day / 365;
+    sunDisc(cx, cy, 3 * U);
+    PL.forEach(([n, T, col], i) => { const R = (8 + i * 5.2) * U, a = TAU * yr / T + i * 0.9; ring(cx, cy, R, '#33405f', 0.18 * U);
+      const [x, y] = pos(cx, cy, R, a); disc(x, y, (i > 3 ? 1.9 : 1.3) * U, col); text(n, x, y - 3.2 * U, 2.4, col); });
+    const px = W * 0.68, py = H * 0.06, pw = 52 * U, ph = 82 * U; panel(px, py, pw, ph);
+    text(`地球の ${fmt(yr, 1)} 年`, px + pw / 2, py + 7 * U, 5.5, C.hi); text('1回まわるのにかかる時間', px + pw / 2, py + 15 * U, 3, C.dim);
+    PL.forEach(([n, T, col], i) => { const y = py + (23 + i * 7) * U; text(n, px + 4 * U, y, 3.6, col, 'left');
+      text(`${T}年`, px + 35 * U, y, 3.6, C.text, 'right'); text(`${Math.floor(yr / T)}回`, px + pw - 4 * U, y, 3.6, C.hi, 'right'); });
+    text('※軌道の大きさは実際とちがう', px + pw / 2, py + ph - 4 * U, 2.6, C.dim);
+  }
+});
+
+// 黒点の移動と太陽の自転（p.194 図1・図2）
+const SPOTS = [[10, 18, 1.6], [70, -12, 1.1], [150, 25, 1.3], [215, -20, 1.8], [290, 8, 1.0]];   // 経度・緯度・大きさ
+SCENES.push({
+  title: '黒点の動き', sub: '太陽も自転している', rate: 1.5,
+  draw() {
+    const cx = W * 0.4, cy = H * 0.5, R = 34 * U, rot = 360 * day / 27;
+    const gr = g.createRadialGradient(cx - R * 0.2, cy - R * 0.2, R * 0.1, cx, cy, R); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#f59a1c'); disc(cx, cy, R, gr);
+    SPOTS.forEach(([lon, lat, s]) => { const l = rad(lon + rot), c = Math.cos(l); if (c <= 0.03) return;
+      const x = cx + R * Math.cos(rad(lat)) * Math.sin(l), y = cy - R * Math.sin(rad(lat));
+      g.beginPath(); g.ellipse(x, y, s * U * 1.6 * c, s * U * 1.6, 0, 0, TAU); g.fillStyle = '#3a2410'; g.fill(); });
+    text('東', cx - R - 5 * U, cy, 4); text('西', cx + R + 5 * U, cy, 4); arrow(cx - 10 * U, cy + R + 5 * U, cx + 10 * U, cy + R + 5 * U, C.dim);
+    const px = W * 0.74, py = H * 0.16, pw = 38 * U, ph = 40 * U; panel(px, py, pw, ph);
+    text(`${Math.floor(day) + 1}日目`, px + pw / 2, py + 9 * U, 6.5, C.hi);
+    text('中央では円形', px + pw / 2, py + 21 * U, 3.8); text('端ではだ円形', px + pw / 2, py + 28 * U, 3.8); text('→ 太陽は球体', px + pw / 2, py + 35 * U, 3.4, C.dim);
+  }
+});
+
+// ---------------------------------------------------------------- 進行
+const $ = id => document.getElementById(id);
+function show(i) {
+  cur = (i + SCENES.length) % SCENES.length; day = 0;
+  const s = SCENES[cur];
+  $('title').textContent = s.title; $('sub').textContent = s.sub; $('no').textContent = `${cur + 1} / ${SCENES.length}`;
+  const ex = $('extra'); ex.innerHTML = '';
+  (s.groups ? s.groups() : []).forEach((grp, gi) => {
+    if (gi) { const sp = document.createElement('span'); sp.className = 'sp'; ex.appendChild(sp); }
+    const bs = grp.map(([label, fn], k) => { const b = document.createElement('button'); b.textContent = label;
+      b.onclick = () => { fn(); day = 0; bs.forEach(x => x.classList.toggle('on', x === b)); }; ex.appendChild(b); return b; });
+    bs[0].click();
+  });
+  $('list').classList.remove('open');
+}
+function frame(t) {
+  const dt = Math.min(0.1, (t - last) / 1000 || 0); last = t;
+  if (playing) day += dt * SCENES[cur].rate * speed;
+  g.clearRect(0, 0, W, H); SCENES[cur].draw();
+  requestAnimationFrame(frame);
+}
+function setPlay(p) { playing = p; $('play').textContent = p ? '停止' : '再生'; }
+$('prev').onclick = () => show(cur - 1); $('next').onclick = () => show(cur + 1);
+$('play').onclick = () => setPlay(!playing); $('reset').onclick = () => { day = 0; };
+$('menu').onclick = () => $('list').classList.toggle('open');
+SCENES.forEach((s, i) => { const b = document.createElement('button'); b.textContent = `${i + 1}　${s.title}`; b.onclick = () => show(i); $('list').appendChild(b); });
+if (location.protocol.startsWith('http')) { const b = document.createElement('button'); b.textContent = '← ポータル'; b.onclick = () => { location.href = '../index.html'; }; $('list').appendChild(b); }
+document.querySelectorAll('.spd').forEach(b => b.onclick = () => { speed = +b.dataset.k; document.querySelectorAll('.spd').forEach(x => x.classList.toggle('on', x === b)); });
+addEventListener('keydown', e => { if (e.key === 'ArrowRight') show(cur + 1); else if (e.key === 'ArrowLeft') show(cur - 1); else if (e.key === ' ') { e.preventDefault(); setPlay(!playing); } else if (e.key === 'Escape') $('list').classList.remove('open'); });
+addEventListener('resize', fit);
+fit();
+const q = new URLSearchParams(location.search);       // 確認用: ?s=場面&t=日数&b=押すボタンの番号（カンマ区切り）&stop=1
+show((+q.get('s') || 1) - 1);
+if (q.get('b')) q.get('b').split(',').forEach(n => $('extra').querySelectorAll('button')[+n].click());
+if (q.get('t')) day = +q.get('t');
+if (q.get('stop')) setPlay(false);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
